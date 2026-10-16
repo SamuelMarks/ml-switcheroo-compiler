@@ -1,13 +1,16 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Keras backend generator that maps LogicalNodes and IR layers to Keras equivalent code representations."""
 
 import os
-from typing import Optional
+from collections.abc import Callable
+from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
@@ -50,7 +53,7 @@ class KerasTensorManipulator:
     """Help for tensor manipulations."""
 
     @staticmethod
-    def format_zeros_like(op: str, kwargs: dict[str, object]) -> str:
+    def format_zeros_like(op: str, kwargs: dict[str, EagerValue]) -> str:
         """Evaluate format_zeros_like operation.
 
         Args:
@@ -66,7 +69,7 @@ class KerasTensorManipulator:
         return res
 
     @staticmethod
-    def format_full(kwargs: dict[str, object]) -> str:
+    def format_full(kwargs: dict[str, EagerValue]) -> str:
         """Evaluate format_full operation.
 
         Args:
@@ -81,7 +84,7 @@ class KerasTensorManipulator:
         return res
 
     @staticmethod
-    def format_transpose(kwargs: dict[str, object]) -> str:
+    def format_transpose(kwargs: dict[str, EagerValue]) -> str:
         """Evaluate format_transpose operation.
 
         Args:
@@ -100,7 +103,7 @@ class KerasCodeGenerator(BaseGenerator):
     """Emit Keras Functional API script from IR."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
         """Load a serialized object.
 
         Args:
@@ -115,10 +118,10 @@ class KerasCodeGenerator(BaseGenerator):
         import pickle
 
         with open(filepath, "rb") as f:
-            return pickle.load(f)
+            return cast(EagerValue, pickle.load(f))
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save an array to a file.
 
         Args:
@@ -133,7 +136,7 @@ class KerasCodeGenerator(BaseGenerator):
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Save multiple arrays into a single file.
 
         Args:
@@ -143,13 +146,13 @@ class KerasCodeGenerator(BaseGenerator):
         """
         import pickle
 
-        data: dict[str, object] = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with open(file, "wb") as f:
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Save multiple arrays into a single compressed file.
 
         Args:
@@ -160,7 +163,7 @@ class KerasCodeGenerator(BaseGenerator):
         import gzip
         import pickle
 
-        data: dict[str, object] = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with gzip.open(file, "wb") as f:
             pickle.dump(data, f)
@@ -180,12 +183,12 @@ class KerasCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates: Visitor delegates.
         """
-        super().__init__(graph, delegates)
+        getattr(super(), "__init__")(graph, delegates)
         self.visitors.extend([*get_shared_ast_visitors(generator=self), KerasVisionVisitor(), KerasAudioVisitor()])
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []
 
-    def visit_ConvTranspose(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ConvTranspose(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Visit a ConvTranspose node.
 
         Args:
@@ -198,7 +201,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return f"keras_conv_transpose({input_vars[0]}, {input_vars[1]})"
 
-    def visit_RaggedDot(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_RaggedDot(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Visit a RaggedDot node.
 
         Args:
@@ -240,7 +243,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras.ops"
 
-    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -304,26 +307,25 @@ class KerasCodeGenerator(BaseGenerator):
 
         tmpl_path: str = os.path.join(os.path.dirname(__file__), "keras_prefix.yaml")
         with open(tmpl_path) as f:
-            data: dict[str, object] = yaml.safe_load(f)
+            data: dict[str, EagerValue] = yaml.safe_load(f)
 
         lines: list[str] = ["import keras\n"]
         if "imports" in data and data["imports"]:
             lines.extend(str(data["imports"]).split("\n"))
         if "functions" in data and data["functions"]:
-            for func_code in data["functions"].values():
+            for func_code in getattr(data["functions"], "values")():
                 lines.extend(str(func_code).split("\n"))
         return lines
 
     def _generate_function_signature(self) -> None:
         """Generate the model function signature."""
-        self.indent_level  # noqa: B018
         self.indent_level = 0
         self.add_line("def get_model() -> object:")
         self.keras_input_vars = []
         self.keras_output_vars = []
         self.indent_level = self.indent_level + 1
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into ahead-of-time Keras executable artifact.
 
         Args:
@@ -341,11 +343,11 @@ class KerasCodeGenerator(BaseGenerator):
         try:
             exec(source_code, scope)
             if "get_model" in scope:
-                model_obj = scope["get_model"]()
+                model_obj = cast(Callable[[], EagerValue], scope["get_model"])()
         except Exception:
             model_obj = None
 
-        def runner(*args: object, **runner_kwargs: object) -> object:
+        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
             """Execute compiled Keras artifact using instantiated model or graph fallback.
 
             Args:
@@ -356,19 +358,19 @@ class KerasCodeGenerator(BaseGenerator):
                 object: Model execution output or evaluated graph output.
             """
             if model_obj is not None:
-                return model_obj(*args, **runner_kwargs)
+                return cast(Callable[..., EagerValue], model_obj)(*args, **runner_kwargs)
 
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-            feed_dict: dict[str, object] = {}
+            feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, feed_dict)
+            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict))
             if not graph.outputs:
-                return res_dict
+                return cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:
-                return res_dict.get(graph.outputs[0])
+                return cast(EagerValue, res_dict.get(graph.outputs[0]))
             return tuple(res_dict.get(out) for out in graph.outputs)
 
         return CompiledArtifact(

@@ -1,7 +1,3 @@
-# ruff: noqa: E402, E501, F403
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Eager backend utilities."""
 
 from .audio import istft_eager, mel_filterbank_eager, mfcc_eager

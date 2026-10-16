@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Text operations class definitions.
 
 Provides operations and node definitions related to text manipulation and processing.
@@ -6,7 +5,9 @@ Provides operations and node definitions related to text manipulation and proces
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import (
     Tensor,
@@ -19,11 +20,11 @@ from ml_switcheroo_compiler.ops.base import (
 )
 
 
-def _extract_shape(arg: object) -> tuple[int, ...]:
+def _extract_shape(arg: EagerValue) -> tuple[int, ...]:
     """Extract shape tuple from tensor or shape metadata.
 
     Args:
-        arg (object): Target tensor or shape structure.
+        arg: Target tensor or shape structure.
 
     Returns:
         tuple[int, ...]: Extracted shape tuple.
@@ -31,7 +32,7 @@ def _extract_shape(arg: object) -> tuple[int, ...]:
     if arg is None:
         return ()
     if hasattr(arg, "shape"):
-        return tuple(int(d) for d in arg.shape)
+        return tuple(int(d) for d in getattr(arg.shape, "__iter__")())
     if hasattr(arg, "shape_metadata"):
         sm = arg.shape_metadata
         if sm:
@@ -45,7 +46,7 @@ def _extract_shape(arg: object) -> tuple[int, ...]:
 class StringToHash(OpDef):
     """Operation that computes a hash value for a given string tensor."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the output shape.
 
         Args:
@@ -63,7 +64,7 @@ class StringToHash(OpDef):
 class RegexReplace(OpDef):
     """Operation that replaces matches of a regular expression in a string tensor."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the regular expression replacement.
 
         Args:
@@ -81,7 +82,7 @@ class RegexReplace(OpDef):
 class StringSplit(OpDef):
     """Operation that splits string elements based on a given delimiter."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after splitting strings in the input tensor.
 
         Args:
@@ -108,7 +109,7 @@ class StringSplit(OpDef):
 class Lookup(OpDef):
     """Operation that retrieves values from a table based on given keys."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the table lookup.
 
         Args:
@@ -126,7 +127,7 @@ class Lookup(OpDef):
 class Hashing(OpDef):
     """Operation that applies a hashing algorithm to map inputs to bins."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the hashing operation.
 
         Args:
@@ -144,7 +145,7 @@ class Hashing(OpDef):
 class StringLookup(OpDef):
     """Operation that translates strings into integer indices using a vocabulary."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the string lookup operation.
 
         Args:
@@ -162,7 +163,7 @@ class StringLookup(OpDef):
 class IntegerLookup(OpDef):
     """Operation that translates integer indices into other integers or strings using a vocabulary."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after applying the integer lookup operation.
 
         Args:
@@ -179,7 +180,7 @@ class IntegerLookup(OpDef):
 class TextVectorization(OpDef):
     """Operation that maps text features to integer sequences or dense vectors."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after applying the text vectorization operation.
 
         Args:
@@ -197,10 +198,10 @@ class TextVectorization(OpDef):
             return ()
         output_sequence_length = kwargs.get("output_sequence_length")
         if output_sequence_length is not None:
-            return s + (int(output_sequence_length),)
+            return s + (int(cast(int, output_sequence_length)),)
         max_tokens = kwargs.get("max_tokens")
         if max_tokens is not None and kwargs.get("output_mode") in ("count", "tf_idf", "multi_hot"):
-            return s[:-1] + (int(max_tokens),) if s else (int(max_tokens),)
+            return s[:-1] + (int(cast(int, max_tokens)),) if s else (int(cast(int, max_tokens)),)
         return s + (SymVar("seq_len"),)
 
 
@@ -208,7 +209,7 @@ class TextVectorization(OpDef):
 class StringToNumber(OpDef):
     """Operation that converts strings to numeric values."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after converting strings to numbers.
 
         Args:
@@ -225,7 +226,7 @@ class StringToNumber(OpDef):
 class StringLower(OpDef):
     """Operation that converts string characters to lowercase."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after applying the lowercase conversion.
 
         Args:
@@ -242,7 +243,7 @@ class StringLower(OpDef):
 class StringUpper(OpDef):
     """Operation that converts string characters to uppercase."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after applying the uppercase conversion.
 
         Args:
@@ -259,7 +260,7 @@ class StringUpper(OpDef):
 class StringJoin(OpDef):
     """Operation that joins an iterable of strings into a single string using a separator."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the resulting shape after joining the strings.
 
         Args:
@@ -279,7 +280,7 @@ class StringJoin(OpDef):
         s = list(_extract_shape(inp))
         axis = kwargs.get("axis")
         if axis is not None and s:
-            ax = int(axis)
+            ax = int(cast(int, axis))
             if ax < 0:
                 ax += len(s)
             if 0 <= ax < len(s):
@@ -292,7 +293,7 @@ class StringJoin(OpDef):
 class StringLength(OpDef):
     """Operation that computes the length of each string in the input tensor."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after computing the string lengths.
 
         Args:
@@ -309,7 +310,7 @@ class StringLength(OpDef):
 class StringSubstr(OpDef):
     """Operation that extracts substrings from a tensor of strings."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after extracting substrings.
 
         Args:
@@ -326,7 +327,7 @@ class StringSubstr(OpDef):
 class RegexFullMatch(OpDef):
     """Operation that checks if the input strings fully match a given regular expression."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the resulting shape after checking for full regular expression matches.
 
         Args:
@@ -339,7 +340,7 @@ class RegexFullMatch(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def string_to_hash(inputs: Tensor, **kwargs) -> Tensor:
+def string_to_hash(inputs: Tensor, **kwargs: EagerValue) -> Tensor:
     """Apply a hashing algorithm to map input string tensors to hash representations.
 
     Args:
@@ -355,13 +356,13 @@ def string_to_hash(inputs: Tensor, **kwargs) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
+            TensorConfig(getattr(backend.array(data), "shape"), inputs.dtype, inputs.device),
         )
 
     return get_op("Hashing")()(inputs, **kwargs)
 
 
-def lookup(inputs: Tensor, **kwargs) -> Tensor:
+def lookup(inputs: Tensor, **kwargs: EagerValue) -> Tensor:
     """Map the given input strings or numbers into corresponding vocabulary indices or strings.
 
     Args:
@@ -377,13 +378,13 @@ def lookup(inputs: Tensor, **kwargs) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
+            TensorConfig(getattr(backend.array(data), "shape"), inputs.dtype, inputs.device),
         )
 
     return get_op("StringLookup")()(inputs, **kwargs)
 
 
-def text_vectorization(inputs: Tensor, **kwargs) -> Tensor:
+def text_vectorization(inputs: Tensor, **kwargs: EagerValue) -> Tensor:
     """Transform textual data into numerical tensor sequences based on pre-computed vocabularies.
 
     Args:
@@ -399,7 +400,7 @@ def text_vectorization(inputs: Tensor, **kwargs) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
+            TensorConfig(getattr(backend.array(data), "shape"), inputs.dtype, inputs.device),
         )
 
     return get_op("TextVectorization")()(inputs, **kwargs)
@@ -409,7 +410,7 @@ def text_vectorization(inputs: Tensor, **kwargs) -> Tensor:
 class EditDistance(OpDef):
     """Operation that computes the Levenshtein distance between two sequences."""
 
-    def infer_shape(self, hypothesis, truth=None, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, hypothesis: EagerTensorProtocol, truth: EagerValue = None, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the resulting shape after computing the edit distance.
 
         Args:
@@ -428,7 +429,7 @@ class EditDistance(OpDef):
 class AsString(OpDef):
     """Operation that converts elements of a tensor into string representations."""
 
-    def infer_shape(self, input_tensor, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, input_tensor: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer the resulting shape after formatting the input elements as strings.
 
         Args:
@@ -447,7 +448,7 @@ class ArrayRepr(OpDef):
 
     op_name = "ArrayRepr"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -466,7 +467,7 @@ class ArrayStr(OpDef):
 
     op_name = "ArrayStr"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:

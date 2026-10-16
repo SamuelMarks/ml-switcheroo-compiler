@@ -1,12 +1,14 @@
 # ruff: noqa: E501
 """Core abstractions and logic definitions for test_lowering.py."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_jax_spmd_lowering():
+def test_jax_spmd_lowering() -> None:
     """Test the jax spmd lowering behavior.
 
     Returns:
@@ -25,7 +27,7 @@ def test_jax_spmd_lowering():
     assert "jax.lax.pmean" in code_allreduce or "jax.lax.psum" in code_allreduce
 
 
-def test_torch_spmd_lowering():
+def test_torch_spmd_lowering() -> None:
     """Test the torch spmd lowering behavior.
 
     Returns:

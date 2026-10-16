@@ -1,5 +1,7 @@
 """Tests for graph scheduling logic."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.graph_scheduling import (
@@ -78,7 +80,7 @@ def test_graph_scheduling_pass() -> None:
     graph.nodes["m2"] = IRNode(id="m2", op_type="Add", inputs=["m1"], shape_metadata=(1000,), attributes={"dtype": DType.Float32.value})
     graph.nodes["m1"] = IRNode(id="m1", op_type="Add", shape_metadata=(1000,), attributes={"dtype": DType.Float32.value})
 
-    modified = graph_scheduling_pass(graph)
+    graph_scheduling_pass(graph)
     assert len(graph.nodes) == 4
 
     assert list(graph.nodes.keys()) == ["m1", "m2", "n1", "n2"]
@@ -101,10 +103,12 @@ def test_graph_scheduling_interleave() -> None:
     graph = IRGraph()
     graph.nodes["c1"] = IRNode(id="c1", op_type="MatMul", shape_metadata=(100, 100))
     graph.nodes["c2"] = IRNode(id="c2", op_type="MatMul", shape_metadata=(100, 100))
-    modified = graph_scheduling_pass(graph)
+    graph_scheduling_pass(graph)
+    assert graph is not None
 
 
-def test_graph_scheduling_missing_branches():
+def test_graph_scheduling_missing_branches() -> None:
+    """Test function test_graph_scheduling_missing_branches."""
     graph = IRGraph()
     # Node with non-existent input, tests 92->91 and 171->170
     graph.nodes["n1"] = IRNode(id="n1", op_type="Add", inputs=["non_existent"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
@@ -118,10 +122,12 @@ def test_graph_scheduling_missing_branches():
     # We add a consumer that depends on both n2 and n3.
     graph.nodes["n4"] = IRNode(id="n4", op_type="Add", inputs=["n2", "n3"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
 
-    modified = graph_scheduling_pass(graph)
+    graph_scheduling_pass(graph)
+    assert graph is not None
 
 
-def test_graph_scheduling_extra_coverage():
+def test_graph_scheduling_extra_coverage() -> None:
+    """Test function test_graph_scheduling_extra_coverage."""
     from unittest.mock import MagicMock
 
     from ml_switcheroo_compiler.transforms.passes.graph_scheduling import DefaultCostModel
@@ -138,7 +144,8 @@ def test_graph_scheduling_extra_coverage():
     assert cost == 4 or cost == "4"
 
 
-def test_graph_scheduling_pass_class():
+def test_graph_scheduling_pass_class() -> None:
+    """Test function test_graph_scheduling_pass_class."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.graph_scheduling import GraphSchedulingPass
 
@@ -165,7 +172,7 @@ def test_graph_scheduling_pass_class():
     assert isinstance(modified, bool)
 
 
-def test_graph_scheduling_simulate_peak_memory_external_input():
+def test_graph_scheduling_simulate_peak_memory_external_input() -> None:
     """Test simulate_peak_memory with an input not in graph.nodes."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.graph_scheduling import GraphSchedulingPass

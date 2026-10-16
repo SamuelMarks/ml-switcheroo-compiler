@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import importlib
+from collections.abc import Callable
+from typing import Optional, cast
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
 
 _DPNP_OP_ALIASES: dict[str, str] = {
     # Unary arithmetic & elementary functions
@@ -166,7 +170,7 @@ _DPNP_OP_ALIASES: dict[str, str] = {
 }
 
 
-def _get_target_function(module: object, target_path: str) -> object | None:
+def _get_target_function(module: EagerValue, target_path: str) -> EagerValue | None:
     """Retrieve target function from module resolving dot-delimited submodules.
 
     Args:
@@ -184,7 +188,7 @@ def _get_target_function(module: object, target_path: str) -> object | None:
     return curr if callable(curr) else None
 
 
-def _unwrap_arg(arg: object) -> object:
+def _unwrap_arg(arg: EagerValue) -> EagerValue:
     """Unwrap framework Tensor objects to underlying array buffers.
 
     Args:
@@ -194,16 +198,46 @@ def _unwrap_arg(arg: object) -> object:
         object: Unwrapped buffer or original value.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return arg.data
+        return cast(EagerValue, getattr(arg, "data"))
     return arg
 
 
-def execute_op(  # noqa: C901
-    cls_or_op: object,
-    op_type_or_first: object = None,
-    *args: object,
-    **kwargs: object,
-) -> object:
+def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | None:
+    """Resolve callable function on the DPNP module via direct attribute, alias, or linalg submodule.
+
+    Args:
+        dpnp_mod (EagerValue): Loaded DPNP or fallback NumPy module.
+        fn_name (str): Lowercase operation name.
+
+    Returns:
+        EagerValue | None: Resolved callable or None if not found.
+    """
+    if hasattr(dpnp_mod, fn_name):
+        fn = getattr(dpnp_mod, fn_name)
+        if callable(fn):
+            return cast(Optional[EagerValue], fn)
+
+    target_path = _DPNP_OP_ALIASES.get(fn_name)
+    if target_path is not None:
+        fn = _get_target_function(dpnp_mod, target_path)
+        if fn is not None:
+            return fn
+
+    linalg_mod = getattr(dpnp_mod, "linalg", None)
+    if linalg_mod is not None and hasattr(linalg_mod, fn_name):
+        fn = getattr(linalg_mod, fn_name)
+        if callable(fn):
+            return cast(Optional[EagerValue], fn)
+
+    return None
+
+
+def execute_op(
+    cls_or_op: EagerValue,
+    op_type_or_first: EagerValue = None,
+    *args: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Execute operation eagerly on DPNP backend with Intel SYCL target.
 
     Args:
@@ -230,32 +264,12 @@ def execute_op(  # noqa: C901
     try:
         dpnp_mod = importlib.import_module("dpnp")
     except Exception:
-        dpnp_mod = importlib.import_module("numpy")
+        dpnp_mod = _np_mod()
 
-    fn_name = op_type.lower()
+    fn = _resolve_dpnp_callable(dpnp_mod, op_type.lower())
+    if fn is not None:
+        return cast(Callable[..., EagerValue], fn)(*actual_args, **kwargs)
 
-    # 1. Direct match on root module
-    if hasattr(dpnp_mod, fn_name):
-        fn = getattr(dpnp_mod, fn_name)
-        if callable(fn):
-            return fn(*actual_args, **kwargs)
-
-    # 2. Alias resolution via comprehensive alias table
-    target_path = _DPNP_OP_ALIASES.get(fn_name)
-    if target_path is not None:
-        fn = _get_target_function(dpnp_mod, target_path)
-        if fn is not None:
-            return fn(*actual_args, **kwargs)
-
-    # 3. Check linalg submodule directly for op_type
-    if hasattr(dpnp_mod, "linalg"):
-        linalg_mod = dpnp_mod.linalg
-        if hasattr(linalg_mod, fn_name):
-            fn = getattr(linalg_mod, fn_name)
-            if callable(fn):
-                return fn(*actual_args, **kwargs)
-
-    # 4. Fallback to global eager registry
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     registered_func = global_eager_registry.get(op_type)

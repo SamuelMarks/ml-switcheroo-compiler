@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Gradient computation and autodiff utilities."""
 
 import contextlib
@@ -7,9 +6,11 @@ import typing
 import uuid  # noqa: F401
 from collections.abc import Callable, Sequence  # noqa: F401
 from dataclasses import dataclass, field  # noqa: F401
+from typing import cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: F401
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import get_active_backend  # noqa: F401
 from ml_switcheroo_compiler.core.config import config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
@@ -37,7 +38,7 @@ class JitOptions:
     abstracted_axes = None
 
 
-def jit(fun, options=None):
+def jit(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
     """Return a JIT wrapper.
 
     Args:
@@ -47,9 +48,9 @@ def jit(fun, options=None):
     Returns:
         Callable[..., object]: The JIT wrapped function.
     """
-    options = options or JitOptions()
+    options = cast(EagerValue, options or JitOptions())
 
-    def wrapped(*args, **kwargs):
+    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate wrapped operation.
 
         Args:
@@ -74,7 +75,7 @@ def disable_jit() -> typing.Iterator[None]:
     yield
 
 
-def eval_shape(fun, *args, **kwargs):
+def eval_shape(fun: Callable[..., EagerValue], *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate eval_shape operation.
 
     Args:

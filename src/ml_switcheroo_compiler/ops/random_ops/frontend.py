@@ -1,20 +1,17 @@
-"""Module frontend.py."""
-
-# ruff: noqa: E402, E501, F403
 """Generate random ops frontend."""
 
 import uuid
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
-def sobol_sample(dim: int, num_results: int, skip: int = 0):
+def sobol_sample(dim: int, num_results: int, skip: int = 0) -> EagerValue:
     """Sobol sequence generator.
 
     Args:

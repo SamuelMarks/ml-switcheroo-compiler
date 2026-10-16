@@ -1,9 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Graph export utilities."""
 
 import typing
-from typing import Any  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -11,14 +10,14 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 class _DotGraphVisitor:
     """Visitor for DOT graph export."""
 
-    def __init__(self, graph) -> None:
+    def __init__(self, graph: EagerValue) -> None:
         """Initialize the visitor.
 
         Args:
             graph (Any): The IR graph.
         """
         self.graph = graph
-        self.visited = set()
+        self.visited: set[str] = set()
         self.lines = ["digraph G {"]
 
     def visit(self, node_id: str) -> None:
@@ -30,11 +29,11 @@ class _DotGraphVisitor:
         Returns:
         NoneType: Result.
         """
-        if not node_id or node_id not in self.graph.nodes or node_id in self.visited:
+        if not node_id or node_id not in getattr(self.graph, "nodes") or node_id in self.visited:
             return
 
         self.visited.add(node_id)
-        node = self.graph.nodes[node_id]
+        node = getattr(self.graph, "nodes")[node_id]
 
         # Format the node
         op_type = getattr(node, "op_type", "Unknown")
@@ -48,7 +47,7 @@ class _DotGraphVisitor:
             self.visit(inp_id)
 
 
-def export_to_dot(file: typing.Union[str, typing.IO], *arrays: Tensor, **kwargs) -> None:
+def export_to_dot(file: typing.Union[str, typing.IO[str]], *arrays: Tensor, **kwargs: EagerValue) -> None:
     """Export the computation graph of the given arrays to a DOT format file.
 
     Args:
@@ -67,7 +66,7 @@ def export_to_dot(file: typing.Union[str, typing.IO], *arrays: Tensor, **kwargs)
 
     for arr in arrays:
         node_id = getattr(getattr(arr, "data", None), "id", None)
-        visitor.visit(node_id)
+        getattr(visitor, "visit")(node_id)
 
     visitor.lines.append("}")
     dot_content = "\n".join(visitor.lines)

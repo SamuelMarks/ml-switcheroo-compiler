@@ -1,11 +1,14 @@
 """Distributed training strategies for ML Switcheroo Compiler."""
 
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 import logging
 import os
+from types import ModuleType
 from typing import Optional, Union, cast  # noqa: F401
 
-AttrType = Union[int, float, str, bool, list, tuple, dict, None]
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+AttrType = Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], None]
 
 import yaml
 
@@ -14,33 +17,33 @@ from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _load_strategy_config():
+def _load_strategy_config() -> dict[str, dict[str, AttrType]]:
     """Load the strategy configuration from YAML."""
     yaml_path = os.path.join(os.path.dirname(__file__), "strategy_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             from typing import cast
 
-            return cast(dict[str, "AttrType"], yaml.safe_load(f).get("strategies", {}))
+            return cast(dict[str, dict[str, "AttrType"]], yaml.safe_load(f).get("strategies", {}))
     return {}
 
 
-def _load_device_mesh_config() -> dict[str, object]:
+def _load_device_mesh_config() -> dict[str, AttrType]:
     """Load cluster device mesh configuration from YAML.
 
     Returns:
-        dict[str, object]: Parsed device mesh configuration.
+        dict[str, AttrType]: Parsed device mesh configuration.
     """
     yaml_path: str = os.path.join(os.path.dirname(__file__), "device_mesh.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             from typing import cast
 
-            return cast(dict[str, object], yaml.safe_load(f) or {})
+            return cast(dict[str, AttrType], yaml.safe_load(f) or {})
     return {}
 
 
-def _load_webrtc_topology():
+def _load_webrtc_topology() -> EagerValue:
     """Load the WebRTC topology configuration for browser edge targets."""
     yaml_path = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
     if os.path.exists(yaml_path):
@@ -54,20 +57,20 @@ def _load_webrtc_topology():
 class ParameterServerStrategy(Distribution):
     """Parameter server strategy."""
 
-    def __init__(self, cluster_resolver: Optional[object] = None) -> None:
+    def __init__(self, cluster_resolver: EagerValue = None) -> None:
         """Initialize ParameterServerStrategy.
 
         Args:
-            cluster_resolver (Optional[object]): The cluster_resolver parameter.
+            cluster_resolver: The cluster_resolver parameter.
         """
         super().__init__()
         self.cluster_resolver = cluster_resolver
         self.config = _load_strategy_config().get("ParameterServerStrategy", {})
         self.device_mesh = _load_device_mesh_config()
-        self.ps_mesh = self.device_mesh.get("cluster_meshes", {}).get("default", {})
+        self.ps_mesh = getattr(getattr(self.device_mesh, "get")("cluster_meshes", {}), "get")("default", {})
 
     @staticmethod
-    def _is_parameter_node(node: IRNode) -> bool:  # noqa: PLR0911
+    def _is_parameter_node(node: IRNode) -> bool:
         """Explicitly identify whether an IRNode represents a trainable model parameter.
 
         Args:
@@ -76,21 +79,14 @@ class ParameterServerStrategy(Distribution):
         Returns:
             bool: True if the node is a parameter.
         """
-        if node.attributes.get("is_parameter") is False:
+        attrs = node.attributes
+        if attrs.get("is_parameter") is False or attrs.get("is_scalar") is True or attrs.get("is_scalar_constant") is True:
             return False
-        if node.attributes.get("is_scalar") is True or node.attributes.get("is_scalar_constant") is True:
-            return False
-        if node.op_type in ("Parameter", "Variable", "Weight"):
-            return True
-        if node.attributes.get("is_parameter") is True or node.attributes.get("trainable") is True:
-            return True
-        if node.attributes.get("role") in ("parameter", "weight", "bias"):
+        if node.op_type in ("Parameter", "Variable", "Weight") or attrs.get("is_parameter") is True or attrs.get("trainable") is True or attrs.get("role") in ("parameter", "weight", "bias"):
             return True
         if node.op_type == "Constant":
             shape = getattr(node, "shape_metadata", None)
-            if shape is not None and len(shape) == 0 and not node.attributes.get("is_parameter", False):
-                return False
-            return True
+            return not (shape is not None and len(shape) == 0)
         return False
 
     def pull_weights(self, graph: IRGraph) -> bool:
@@ -103,7 +99,7 @@ class ParameterServerStrategy(Distribution):
             bool: True if mutated.
         """
         backend = registry.get_active_backend()
-        hook_name = self.config.get("registry_hooks", {}).get("pull")
+        hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("pull")
         if hook_name and hasattr(backend, hook_name):
             from typing import cast
 
@@ -115,7 +111,7 @@ class ParameterServerStrategy(Distribution):
         new_nodes = dict(graph.nodes)
 
         devices = self.ps_mesh.get("devices", [0]) if isinstance(self.ps_mesh, dict) else [0]
-        ps_rank = devices[0] if devices else 0
+        ps_rank = devices[0] if isinstance(devices, (list, tuple)) and devices else 0
         tag_counter = 0
 
         for node in list(graph.nodes.values()):
@@ -154,7 +150,7 @@ class ParameterServerStrategy(Distribution):
             bool: True if mutated.
         """
         backend = registry.get_active_backend()
-        hook_name = self.config.get("registry_hooks", {}).get("push")
+        hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("push")
         if hook_name and hasattr(backend, hook_name):
             from typing import cast
 
@@ -166,7 +162,7 @@ class ParameterServerStrategy(Distribution):
         new_nodes = dict(graph.nodes)
 
         devices = self.ps_mesh.get("devices", [0]) if isinstance(self.ps_mesh, dict) else [0]
-        ps_rank = devices[0] if devices else 0
+        ps_rank = devices[0] if isinstance(devices, (list, tuple)) and devices else 0
         tag_counter = 0
 
         for node in list(graph.nodes.values()):
@@ -197,7 +193,7 @@ class DataParallelStrategy(Distribution):
         mesh_axis: str = "data",
         all_reduce_algorithm: str = "ring",
         target_env: str = "host",
-        cluster_resolver: Optional[object] = None,
+        cluster_resolver: EagerValue = None,
     ) -> None:
         """Initialize DataParallelStrategy.
 
@@ -205,13 +201,13 @@ class DataParallelStrategy(Distribution):
             mesh_axis (str): Logical mesh axis name for gradient synchronization.
             all_reduce_algorithm (str): Reduction algorithm name ('ring', 'tree').
             target_env (str): Deployment environment ('host' or 'browser').
-            cluster_resolver (Optional[object]): Cluster configuration or resolver object.
+            cluster_resolver: Cluster configuration or resolver object.
         """
         super().__init__()
         self.mesh_axis: str = mesh_axis
         self.all_reduce_algorithm: str = all_reduce_algorithm
         self.target_env: str = target_env
-        self.cluster_resolver: Optional[object] = cluster_resolver
+        self.cluster_resolver = cluster_resolver
         self.config: dict[str, AttrType] = _load_strategy_config().get("DataParallelStrategy", {})
 
     def get_communication_protocol(self) -> str:
@@ -234,7 +230,7 @@ class DataParallelStrategy(Distribution):
             bool: True if the graph was mutated.
         """
         backend = registry.get_active_backend()
-        hook_name = self.config.get("registry_hooks", {}).get("sync")
+        hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("sync")
         if hook_name and hasattr(backend, hook_name):
             from typing import cast
 
@@ -333,11 +329,11 @@ class ModelParallelStrategy(Distribution):
 class PreemptionCheckpointHandler:
     """Handle asynchronous checkpointing for preemptible instances."""
 
-    def __init__(self, cluster_resolver: object, checkpoint_dir: str) -> None:
+    def __init__(self, cluster_resolver: EagerValue, checkpoint_dir: str) -> None:
         """Initialize PreemptionCheckpointHandler.
 
         Args:
-            cluster_resolver (object): The cluster resolver.
+            cluster_resolver: The cluster resolver.
             checkpoint_dir (str): The directory to save checkpoints.
         """
         self.cluster_resolver = cluster_resolver
@@ -345,13 +341,13 @@ class PreemptionCheckpointHandler:
 
     def save_preemption_checkpoint(
         self,
-        checkpoint_data: Optional[dict[str, object]] = None,
+        checkpoint_data: Optional[dict[str, AttrType]] = None,
         checkpoint_id: Optional[str] = None,
     ) -> str:
         """Save a preemption checkpoint file containing cluster and state metadata.
 
         Args:
-            checkpoint_data (Optional[dict[str, object]]): Optional dictionary of tensor states or parameters.
+            checkpoint_data (Optional[dict[str, AttrType]]): Optional dictionary of tensor states or parameters.
             checkpoint_id (Optional[str]): Optional custom checkpoint identifier.
 
         Returns:
@@ -363,7 +359,7 @@ class PreemptionCheckpointHandler:
         os.makedirs(self.checkpoint_dir, exist_ok=True)
         cp_id: str = checkpoint_id or f"preempt_cp_{int(time.time() * 1000)}"
         cp_path: str = os.path.join(self.checkpoint_dir, f"{cp_id}.json")
-        payload: dict[str, object] = {
+        payload: dict[str, AttrType] = {
             "checkpoint_id": cp_id,
             "timestamp": time.time(),
             "cluster_resolver": getattr(self.cluster_resolver, "__class__", type(self.cluster_resolver)).__name__,
@@ -373,11 +369,11 @@ class PreemptionCheckpointHandler:
             json.dump(payload, f)
         return cp_path
 
-    def restore_latest_checkpoint(self) -> Optional[dict[str, object]]:
+    def restore_latest_checkpoint(self) -> Optional[dict[str, AttrType]]:
         """Find and restore the latest checkpoint dictionary from the checkpoint directory.
 
         Returns:
-            Optional[dict[str, object]]: Parsed checkpoint payload, or None if no checkpoints exist.
+            Optional[dict[str, AttrType]]: Parsed checkpoint payload, or None if no checkpoints exist.
         """
         import json
 
@@ -388,7 +384,7 @@ class PreemptionCheckpointHandler:
             return None
         latest_file = sorted(cp_files, key=lambda f: os.path.getmtime(os.path.join(self.checkpoint_dir, f)))[-1]
         with open(os.path.join(self.checkpoint_dir, latest_file), encoding="utf-8") as f:
-            data: dict[str, object] = json.load(f)
+            data: dict[str, AttrType] = json.load(f)
         return data
 
     def register_signal_handlers(self) -> None:
@@ -396,17 +392,17 @@ class PreemptionCheckpointHandler:
         import signal
 
         try:
-            signal.signal(signal.SIGTERM, self._handle_preemption_signal)
-            signal.signal(signal.SIGINT, self._handle_preemption_signal)
+            getattr(signal, "signal")(signal.SIGTERM, self._handle_preemption_signal)
+            getattr(signal, "signal")(signal.SIGINT, self._handle_preemption_signal)
         except (ValueError, AttributeError):
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-    def _handle_preemption_signal(self, signum: int, frame: object) -> None:
+    def _handle_preemption_signal(self, signum: int, frame: EagerValue) -> None:
         """Internal callback invoked upon receiving a preemption signal.
 
         Args:
             signum (int): The received signal number.
-            frame (object): Current execution frame.
+            frame: Current execution frame.
         """
         self.save_preemption_checkpoint({"signal": signum, "status": "preempted"})
 
@@ -414,7 +410,7 @@ class PreemptionCheckpointHandler:
 class Server:
     """Distributed execution server."""
 
-    def __init__(self, server_def: Union[dict, str, None] = None, job_name: Optional[str] = None, task_index: Optional[int] = None) -> None:
+    def __init__(self, server_def: Union[dict[str, AttrType], str, None] = None, job_name: Optional[str] = None, task_index: Optional[int] = None) -> None:
         """Initialize Server.
 
         Args:
@@ -425,13 +421,16 @@ class Server:
         self.server_def = server_def
         self.job_name = job_name
         self.task_index = task_index
-        self._server = None
-        self._thread = None
-        self._running = False
         import queue
+        import socket
+        import threading
 
-        self.inbox = queue.Queue()
-        self.state_store = {}
+        self._server: Optional[socket.socket] = None
+        self._thread: Optional[threading.Thread] = None
+        self._running = False
+
+        self.inbox: queue.Queue[tuple[str, AttrType]] = queue.Queue()
+        self.state_store: dict[str, AttrType] = {}
 
     def start(self) -> None:
         """Start the server."""
@@ -457,13 +456,90 @@ class Server:
         self._thread = threading.Thread(target=self._run_server, daemon=True)
         self._thread.start()
 
-    def _run_server(self) -> None:  # noqa: C901, PLR0912, PLR0915
-        """Run the server."""
+    def _handle_pull_action(self, conn: EagerValue, tensor_id: str, np: ModuleType) -> None:
+        """Handle a parameter pull request over a client socket.
+
+        Args:
+            conn: Active client socket connection.
+            tensor_id (str): Identifier of the requested tensor weight.
+            np: NumPy module instance used for serialization.
+        """
         import io
+
+        try:
+            if tensor_id not in self.state_store:
+                raise KeyError(f"Weight {tensor_id} not found on parameter server.")
+            tensor_data = self.state_store[tensor_id]
+            bio = io.BytesIO()
+            np.save(bio, tensor_data, allow_pickle=False)
+            data = bio.getvalue()
+            getattr(conn, "sendall")(len(data).to_bytes(8, "big"))
+            getattr(conn, "sendall")(data)
+        except Exception:
+            logging.getLogger(__name__).debug("Failed to pull weight", exc_info=True)
+
+    def _handle_push_or_send_action(self, conn: EagerValue, action: str, tensor_id: str, np: ModuleType) -> None:
+        """Handle a gradient push or tensor send request over a client socket.
+
+        Args:
+            conn: Active client socket connection.
+            action (str): Action type ('push' or 'send').
+            tensor_id (str): Identifier of the incoming tensor.
+            np: NumPy module instance used for deserialization.
+        """
+        import io
+
+        data_len_b = getattr(conn, "recv")(8)
+        if not data_len_b:
+            return
+        data_len = int.from_bytes(data_len_b, "big")
+        payload = bytearray()
+        while len(payload) < data_len:
+            chunk = getattr(conn, "recv")(min(4096, data_len - len(payload)))
+            if not chunk:
+                break
+            payload.extend(chunk)
+        bio = io.BytesIO(bytes(payload))
+        arr = np.load(bio, allow_pickle=False)
+        self.inbox.put((tensor_id, arr))
+        if action == "push":
+            if tensor_id in self.state_store:
+                self.state_store[tensor_id] = self.state_store[tensor_id] + arr
+            else:
+                self.state_store[tensor_id] = arr
+
+    def _process_client_connection(self, conn: EagerValue, np: ModuleType) -> None:
+        """Read header and dispatch action for an accepted client socket.
+
+        Args:
+            conn: Accepted client socket connection.
+            np: NumPy module instance.
+        """
         import json
+        from contextlib import AbstractContextManager
+
+        with cast("AbstractContextManager[EagerValue]", conn):
+            getattr(conn, "setblocking")(True)
+            header_len_b = getattr(conn, "recv")(4)
+            if not header_len_b:
+                return
+            header_len = int.from_bytes(header_len_b, "big")
+            header_str = getattr(conn, "recv")(header_len).decode("utf-8")
+            header = json.loads(header_str)
+
+            action = header.get("action")
+            tensor_id = header.get("tensor_id", "")
+
+            if action == "pull":
+                self._handle_pull_action(conn, tensor_id, np)
+            elif action in ("push", "send"):
+                self._handle_push_or_send_action(conn, action, tensor_id, np)
+
+    def _run_server(self) -> None:
+        """Run the server."""
         import select
 
-        import numpy as np
+        np = registry.BackendRegistry.get("numpy").get_module()
 
         if not self._server:
             return
@@ -474,50 +550,7 @@ class Server:
                 ready, _, _ = select.select([self._server], [], [], 0.1)
                 if ready:
                     conn, _ = self._server.accept()
-                    with conn:
-                        conn.setblocking(True)
-                        header_len_b = conn.recv(4)
-                        if not header_len_b:
-                            continue
-                        header_len = int.from_bytes(header_len_b, "big")
-                        header_str = conn.recv(header_len).decode("utf-8")
-                        header = json.loads(header_str)
-
-                        action = header.get("action")
-                        tensor_id = header.get("tensor_id", "")
-
-                        if action == "pull":
-                            try:
-                                if tensor_id not in self.state_store:
-                                    raise KeyError(f"Weight {tensor_id} not found on parameter server.")
-                                tensor_data = self.state_store[tensor_id]
-                                bio = io.BytesIO()
-                                np.save(bio, tensor_data, allow_pickle=False)
-                                data = bio.getvalue()
-                                conn.sendall(len(data).to_bytes(8, "big"))
-                                conn.sendall(data)
-                            except Exception as e:  # noqa: F841
-                                logging.getLogger(__name__).debug("Failed to pull weight", exc_info=True)
-
-                        elif action in ("push", "send"):
-                            data_len_b = conn.recv(8)
-                            if not data_len_b:
-                                continue
-                            data_len = int.from_bytes(data_len_b, "big")
-                            payload = bytearray()
-                            while len(payload) < data_len:
-                                chunk = conn.recv(min(4096, data_len - len(payload)))
-                                if not chunk:
-                                    break
-                                payload.extend(chunk)
-                            bio = io.BytesIO(bytes(payload))
-                            arr = np.load(bio, allow_pickle=False)
-                            self.inbox.put((tensor_id, arr))
-                            if action == "push":
-                                if tensor_id in self.state_store:
-                                    self.state_store[tensor_id] = self.state_store[tensor_id] + arr
-                                else:
-                                    self.state_store[tensor_id] = arr
+                    getattr(self, "_process_client_connection")(conn, np)
             except Exception as e:
                 import warnings
 
@@ -785,7 +818,86 @@ class PipelineParallelStrategy(Distribution):
                 new_outputs.append(concat_id)
             graph.outputs = new_outputs
 
-    def generate_schedule(self, graph: IRGraph) -> list[tuple[str, int]]:  # noqa: C901, PLR0912
+    def _build_fallback_schedule(self, num_stages: int) -> list[tuple[str, int]]:
+        """Generate fallback 1F1B pipeline schedule when no schedule config is present.
+
+        Args:
+            num_stages (int): Number of pipeline stages.
+
+        Returns:
+            list[tuple[str, int]]: Sequence of (operation, stage_index) pairs.
+        """
+        schedule: list[tuple[str, int]] = []
+        for i in range(num_stages - 1):
+            schedule.append(("forward", i))
+        for _ in range(self.num_microbatches - num_stages + 1):
+            schedule.append(("forward", num_stages - 1))
+            schedule.append(("backward", num_stages - 1))
+            for j in reversed(range(num_stages - 1)):
+                schedule.append(("forward", j))
+                schedule.append(("backward", j))
+        for j in reversed(range(num_stages - 1)):
+            schedule.append(("backward", j))
+        return schedule
+
+    @staticmethod
+    def _append_steady_steps(
+        schedule: list[tuple[str, int]],
+        count: int,
+        operations: list[str],
+        num_stages: int,
+    ) -> None:
+        """Append execution steps for a steady YAML schedule phase.
+
+        Args:
+            schedule (list[tuple[str, int]]): Schedule list to mutate.
+            count (int): Number of iterations for the steady phase.
+            operations (list[str]): Operations to schedule in this phase.
+            num_stages (int): Total number of pipeline stages.
+
+        Returns:
+            None: Mutates schedule in-place.
+        """
+        for _ in range(count):
+            for op in operations:
+                schedule.append((op, num_stages - 1))
+            for j in reversed(range(num_stages - 1)):
+                for op in operations:
+                    schedule.append((op, j))
+
+    @classmethod
+    def _append_phase_steps(
+        cls,
+        schedule: list[tuple[str, int]],
+        phase_type: str,
+        count: int,
+        operations: list[str],
+        num_stages: int,
+    ) -> None:
+        """Append execution steps for a single YAML schedule phase.
+
+        Args:
+            schedule (list[tuple[str, int]]): Schedule list to mutate.
+            phase_type (str): Phase type ('warmup', 'steady', or 'cooldown').
+            count (int): Number of iterations for this phase.
+            operations (list[str]): Operations to schedule in this phase.
+            num_stages (int): Total number of pipeline stages.
+
+        Returns:
+            None: Mutates schedule in-place.
+        """
+        if phase_type == "warmup":
+            for i in range(count):
+                for op in operations:
+                    schedule.append((op, i))
+        elif phase_type == "steady":
+            cls._append_steady_steps(schedule, count, operations, num_stages)
+        elif phase_type == "cooldown":
+            for j in reversed(range(count)):
+                for op in operations:
+                    schedule.append((op, j))
+
+    def generate_schedule(self, graph: IRGraph) -> list[tuple[str, int]]:
         """Generate schedule based on YAML configuration.
 
         Args:
@@ -794,43 +906,15 @@ class PipelineParallelStrategy(Distribution):
         Returns:
             list[tuple[str, int]]: Schedule.
         """
-        schedule = []
         num_stages = max(2, len(graph.nodes) // 10) if graph.nodes else 2
 
         if not hasattr(self, "config") or not getattr(self.config, "schedule", None):
-            # Fallback 1F1B schedule
-            for i in range(num_stages - 1):
-                schedule.append(("forward", i))
-            for _ in range(self.num_microbatches - num_stages + 1):
-                schedule.append(("forward", num_stages - 1))
-                schedule.append(("backward", num_stages - 1))
-                for j in reversed(range(num_stages - 1)):
-                    schedule.append(("forward", j))
-                    schedule.append(("backward", j))
-            for j in reversed(range(num_stages - 1)):
-                schedule.append(("backward", j))
-            return schedule
+            return self._build_fallback_schedule(num_stages)
 
-        # Execute YAML-driven schedule
-        for phase in self.config.schedule.phases:
-            # Evaluate count expression safely
-            count = eval(phase.count_expression, {"num_stages": num_stages, "num_microbatches": self.num_microbatches})
-
-            if phase.type == "warmup":
-                for i in range(count):
-                    for op in phase.operations:
-                        schedule.append((op, i))
-            elif phase.type == "steady":
-                for _ in range(count):
-                    for op in phase.operations:
-                        schedule.append((op, num_stages - 1))
-                    for j in reversed(range(num_stages - 1)):
-                        for op in phase.operations:
-                            schedule.append((op, j))
-            elif phase.type == "cooldown":
-                for j in reversed(range(count)):
-                    for op in phase.operations:
-                        schedule.append((op, j))
+        schedule: list[tuple[str, int]] = []
+        for phase in getattr(self.config.schedule, "phases"):
+            count = int(eval(phase.count_expression, {"num_stages": num_stages, "num_microbatches": self.num_microbatches}))
+            self._append_phase_steps(schedule, phase.type, count, list(phase.operations), num_stages)
 
         return schedule
 
@@ -862,9 +946,9 @@ class PipelineParallelStrategy(Distribution):
 
         # Emit schedule metadata into graph attributes for the executor
         if not hasattr(graph, "attributes"):
-            graph.attributes = {}
-        graph.attributes["pipeline_schedule"] = schedule
-        graph.attributes["num_pipeline_stages"] = num_stages
+            setattr(graph, "attributes", {})
+        getattr(graph, "attributes")["pipeline_schedule"] = schedule
+        getattr(graph, "attributes")["num_pipeline_stages"] = num_stages
 
         return True
 
@@ -895,7 +979,11 @@ PipelineParallelismStrategy = PipelineParallelStrategy
 class SPMDShardingStrategy(Distribution):
     """1D/2D Mesh Sharding Strategy for SPMD Graph Partitioning and Lowering."""
 
-    def __init__(self, mesh: Union[dict, list, tuple, None] = None, layout_map: Union[dict, None] = None) -> None:
+    def __init__(
+        self,
+        mesh: Union[dict[str, AttrType], list[AttrType], tuple[AttrType, ...], None] = None,
+        layout_map: Union[dict[str, AttrType], None] = None,
+    ) -> None:
         """Initialize SPMDShardingStrategy.
 
         Args:

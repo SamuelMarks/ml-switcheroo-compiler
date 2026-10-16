@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
 import ml_switcheroo_compiler.serialization.formats.config_models as ser_cfg
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
@@ -82,7 +87,7 @@ class _MockCustomModule:
         """
         return ("custom_zeros", shape)
 
-    def array(self, data: object, dtype: object | None = None) -> tuple[str, object, object | None]:
+    def array(self, data: EagerValue, dtype: EagerValue | None = None) -> tuple[str, EagerValue, EagerValue | None]:
         """Mock array.
 
         Args:
@@ -94,7 +99,7 @@ class _MockCustomModule:
         """
         return ("custom_array", data, dtype)
 
-    def asarray(self, data: object) -> tuple[str, object]:
+    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
         """Mock asarray.
 
         Args:
@@ -105,7 +110,7 @@ class _MockCustomModule:
         """
         return ("custom_asarray", data)
 
-    def item(self, data: object) -> float:
+    def item(self, data: EagerValue) -> float:
         """Mock item.
 
         Args:

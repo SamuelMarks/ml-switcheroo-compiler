@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import ml_switcheroo_compiler.ops.info_and_histograms.histograms as hist_mod
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -38,7 +44,7 @@ def test_histograms_coverage() -> None:
     # Histogram2d infer_shape
     hist2d_op = hist_mod.Histogram2d()
     assert hist2d_op.infer_shape(bins=(10, 20)) == (10, 20)
-    assert hist2d_op.infer_shape(bins=[DummyWithShape((6,)), DummyWithoutShape()]) == (5, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", hist2d_op.infer_shape)(bins=[cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((6,)), cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()]) == (5, 10)
     assert hist2d_op.infer_shape(bins=[10]) == (10, 10)
     assert hist2d_op.infer_shape(bins=10) == (10, 10)
 
@@ -51,8 +57,8 @@ def test_histograms_coverage() -> None:
     # Histogramdd infer_shape
     dd_op = hist_mod.Histogramdd()
     assert dd_op.infer_shape() == ()
-    assert dd_op.infer_shape(DummyWithShape((100, 3))) == (10, 10, 10)
-    assert dd_op.infer_shape(DummyWithoutShape()) == (10,)
+    assert cast("Callable[..., EagerTensorProtocol]", dd_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((100, 3))) == (10, 10, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", dd_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()) == (10,)
 
     # Module wrappers dispatch
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", side_effect=lambda op, *args, **kwargs: f"dispatched_{op}"):

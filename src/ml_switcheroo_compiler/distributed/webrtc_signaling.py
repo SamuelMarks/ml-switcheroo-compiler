@@ -123,12 +123,16 @@ _GLOBAL_STORE = SignalingStore()
 class SignalingHandler(BaseHTTPRequestHandler):
     """Modular HTTP/WebSocket signaling request handler for WebRTC peers."""
 
-    def _send_json(self, status: int, data: object) -> None:
+    def _send_json(
+        self,
+        status: int,
+        data: dict[str, str | int | float | bool | list[str] | dict[str, str] | None] | list[str] | str | int | float | bool | None,
+    ) -> None:
         """Send a JSON formatted HTTP response.
 
         Args:
             status (int): HTTP status code.
-            data (object): Serializable JSON payload.
+            data: Serializable JSON payload.
         """
         self.send_response(status)
         self.send_header("Content-Type", "application/json")

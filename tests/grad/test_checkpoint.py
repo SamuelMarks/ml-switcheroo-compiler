@@ -1,5 +1,9 @@
 """Unit tests for activation checkpointing and rematerialization."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 import ml_switcheroo_compiler.ops as ops
@@ -11,11 +15,16 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import checkpoint, grad, remat, value_and_grad
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_checkpoint_activation_eviction_and_memory():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_checkpoint_activation_eviction_and_memory() -> None:
     """Verify that intermediate activations are evicted from the outer tape during checkpointing."""
 
-    def complex_forward(x):
+    def complex_forward(x: EagerValue) -> EagerValue:
         """Forward pass with multiple intermediate steps."""
         h1 = ops.multiply(x, x)
         h2 = ops.add(h1, x)
@@ -28,8 +37,8 @@ def test_checkpoint_activation_eviction_and_memory():
     t = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     with ConfigContext(eager_mode=False):
-        block_standard = _trace_function(complex_forward, (t,), "std")
-        block_checkpoint = _trace_function(cp_forward, (t,), "cp")
+        block_standard = cast("Callable[..., EagerTensorProtocol]", _trace_function)(complex_forward, (t,), "std")
+        block_checkpoint = cast("Callable[..., EagerTensorProtocol]", _trace_function)(cp_forward, (t,), "cp")
 
     std_nodes = [n.op_type for n in (block_standard.nodes if isinstance(block_standard.nodes, list) else block_standard.nodes.values())]
     cp_nodes = [n.op_type for n in (block_checkpoint.nodes if isinstance(block_checkpoint.nodes, list) else block_checkpoint.nodes.values())]
@@ -38,15 +47,15 @@ def test_checkpoint_activation_eviction_and_memory():
     assert len(std_nodes) > len(cp_nodes)
     assert "Checkpoint" in cp_nodes
     # Intermediate Multiply, Add, Subtract operations are not present in the outer checkpoint tape
-    assert cp_nodes.count("Multiply") == 0
-    assert cp_nodes.count("Add") == 0
-    assert cp_nodes.count("Subtract") == 0
+    assert cast("Callable[..., EagerTensorProtocol]", cp_nodes.count)("Multiply") == 0
+    assert cast("Callable[..., EagerTensorProtocol]", cp_nodes.count)("Add") == 0
+    assert cast("Callable[..., EagerTensorProtocol]", cp_nodes.count)("Subtract") == 0
 
 
-def test_checkpoint_gradient_exact_numerical_match():
+def test_checkpoint_gradient_exact_numerical_match() -> None:
     """Verify exact float-for-float equivalence between standard autodiff and checkpointed backward pass."""
 
-    def f(x):
+    def f(x: EagerValue) -> EagerValue:
         """Nonlinear function."""
         y = ops.multiply(x, x)
         z = ops.add(y, ops.multiply(x, 3.0))
@@ -67,13 +76,14 @@ def test_checkpoint_gradient_exact_numerical_match():
     val_std = get_active_backend().asarray(g_std)
     val_cp = get_active_backend().asarray(g_cp)
 
-    np.testing.assert_allclose(val_std, val_cp, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(val_std, val_cp, rtol=1e-5, atol=1e-5)
 
 
-def test_checkpoint_value_and_grad_parity():
+def test_checkpoint_value_and_grad_parity() -> None:
     """Verify value_and_grad works identically with checkpointed function."""
 
-    def f(x):
+    def f(x: EagerValue) -> EagerValue:
+        """Test function f."""
         return ops.multiply(x, ops.multiply(x, x))
 
     f_cp = checkpoint(f)
@@ -84,17 +94,18 @@ def test_checkpoint_value_and_grad_parity():
     vg_std = value_and_grad(f)
     vg_cp = value_and_grad(f_cp)
 
-    v1, g1 = vg_std(x1)
-    v2, g2 = vg_cp(x2)
+    v1, g1 = cast("Callable[..., EagerTensorProtocol]", vg_std)(x1)
+    v2, g2 = cast("Callable[..., EagerTensorProtocol]", vg_cp)(x2)
 
-    np.testing.assert_allclose(get_active_backend().asarray(v1), get_active_backend().asarray(v2))
-    np.testing.assert_allclose(get_active_backend().asarray(g1), get_active_backend().asarray(g2))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(v1), cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(v2))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(g1), cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(g2))
 
 
-def test_checkpoint_eager_execution():
+def test_checkpoint_eager_execution() -> None:
     """Verify checkpointed function executes correctly in eager mode."""
 
-    def f(x):
+    def f(x: EagerValue) -> EagerValue:
+        """Test function f."""
         return ops.add(x, 10.0)
 
     f_cp = checkpoint(f)
@@ -103,4 +114,4 @@ def test_checkpoint_eager_execution():
     with ConfigContext(eager_mode=True):
         out = f_cp(t)
 
-    assert float(get_active_backend().asarray(out)[0]) == 15.0
+    assert cast("Callable[..., EagerTensorProtocol]", float)(cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(out), "__getitem__")(0))) == 15.0

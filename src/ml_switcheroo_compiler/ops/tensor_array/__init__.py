@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Tensor array ops."""
 
 from __future__ import annotations

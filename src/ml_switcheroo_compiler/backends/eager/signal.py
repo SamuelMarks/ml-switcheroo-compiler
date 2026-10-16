@@ -1,11 +1,12 @@
 """signal.py module."""
 
-from typing import Any, Optional
+from typing import Callable, Optional, cast
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
-def _generate_gaussian_kernel(np_mod: Any, kernel_size: tuple[int, int], sigma: tuple[float, float]) -> Any:
+def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], sigma: tuple[float, float]) -> EagerValue:
     """Evaluate _generate_gaussian_kernel operation.
 
     Args:
@@ -18,14 +19,14 @@ def _generate_gaussian_kernel(np_mod: Any, kernel_size: tuple[int, int], sigma: 
     """
     kx, ky = kernel_size
     sx, sy = sigma
-    ax = np_mod.arange(-kx // 2 + 1.0, kx // 2 + 1.0)
-    ay = np_mod.arange(-ky // 2 + 1.0, ky // 2 + 1.0)
-    xx, yy = np_mod.meshgrid(ax, ay)
-    kernel = np_mod.exp(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
-    return kernel / np_mod.sum(kernel)
+    ax = getattr(np_mod, "arange")(-kx // 2 + 1.0, kx // 2 + 1.0)
+    ay = getattr(np_mod, "arange")(-ky // 2 + 1.0, ky // 2 + 1.0)
+    xx, yy = getattr(np_mod, "meshgrid")(ax, ay)
+    kernel = getattr(np_mod, "exp")(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
+    return cast(EagerValue, kernel / getattr(np_mod, "sum")(kernel))
 
 
-def _apply_conv2d_batch(np_mod: Any, imgs: Any, kernel: Any, mode: str) -> Any:
+def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue, mode: str) -> EagerValue:
     """Evaluate _apply_conv2d_batch operation.
 
     Args:
@@ -41,26 +42,26 @@ def _apply_conv2d_batch(np_mod: Any, imgs: Any, kernel: Any, mode: str) -> Any:
         ValueError: An exception.
     """
     # Basic implementation for 4D images (B, C, H, W)
-    if imgs.ndim != 4:
+    if getattr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    B, C, H, W = imgs.shape
-    kH, kW = kernel.shape
+    B, C, H, W = cast(tuple[int, ...], getattr(imgs, "shape"))
+    kH, kW = cast(tuple[int, ...], getattr(kernel, "shape"))
     pad_h = kH // 2
     pad_w = kW // 2
-    padded = np_mod.pad(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
-    out = np_mod.zeros_like(imgs)
+    padded = getattr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
+    out = getattr(np_mod, "zeros_like")(imgs)
     # Simple nested loops or vectorization
     # Since np_mod might be cupy or jax, use standard indexing
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
             # kernel shape is (kH, kW), expand to (1, 1, kH, kW)
-            expanded_kernel = np_mod.expand_dims(np_mod.expand_dims(kernel, 0), 0)
-            out[:, :, y, x] = np_mod.sum(region * expanded_kernel, axis=(-2, -1))
-    return out
+            expanded_kernel = getattr(np_mod, "expand_dims")(getattr(np_mod, "expand_dims")(kernel, 0), 0)
+            out[:, :, y, x] = getattr(np_mod, "sum")(region * expanded_kernel, axis=(-2, -1))
+    return cast(EagerValue, out)
 
 
-def _get_blur_config(kwargs: dict[str, object], config_obj: Optional[BlurConfig]) -> BlurConfig:
+def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: Optional[BlurConfig]) -> BlurConfig:
     """Evaluate _get_blur_config operation.
 
     Args:
@@ -71,15 +72,18 @@ def _get_blur_config(kwargs: dict[str, object], config_obj: Optional[BlurConfig]
             BlurConfig: Result.
     """
     if config_obj is None:
-        return BlurConfig(
-            kernel_size=kwargs.get("kernel_size", (3, 3)) if hasattr(kwargs, "get") else (3, 3),
-            sigma=kwargs.get("sigma", (1.0, 1.0)) if hasattr(kwargs, "get") else (1.0, 1.0),
-            data_format=str(kwargs.get("data_format", None)) if hasattr(kwargs, "get") else None,
+        return cast(
+            BlurConfig,
+            cast("Callable[..., EagerTensorProtocol]", BlurConfig)(
+                kernel_size=kwargs.get("kernel_size", (3, 3)) if hasattr(kwargs, "get") else (3, 3),
+                sigma=kwargs.get("sigma", (1.0, 1.0)) if hasattr(kwargs, "get") else (1.0, 1.0),
+                data_format=str(kwargs.get("data_format", None)) if hasattr(kwargs, "get") else None,
+            ),
         )
     return config_obj
 
 
-def gaussian_blur_eager(backend_module: Any, images: Any, config_obj: Optional[BlurConfig] = None, **kwargs: Any) -> Any:
+def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_obj: Optional[BlurConfig] = None, **kwargs: EagerValue) -> EagerValue:
     """Evaluate gaussian_blur_eager operation.
 
     Args:
@@ -92,11 +96,11 @@ def gaussian_blur_eager(backend_module: Any, images: Any, config_obj: Optional[B
             object: Result.
     """
     config = _get_blur_config(kwargs, config_obj)
-    kernel = _generate_gaussian_kernel(backend_module, config.kernel_size, config.sigma)
+    kernel = cast("Callable[..., EagerTensorProtocol]", _generate_gaussian_kernel)(backend_module, config.kernel_size, config.sigma)
     return _apply_conv2d_batch(backend_module, images, kernel, "reflect")
 
 
-def _apply_median_filter_batch(np_mod: Any, imgs: Any, kernel_size: tuple[int, int], padding: str) -> Any:
+def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size: tuple[int, int], padding: str) -> EagerValue:
     """Evaluate _apply_median_filter_batch operation.
 
     Args:
@@ -111,30 +115,30 @@ def _apply_median_filter_batch(np_mod: Any, imgs: Any, kernel_size: tuple[int, i
     Raises:
         ValueError: An exception.
     """
-    if imgs.ndim != 4:
+    if getattr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    B, C, H, W = imgs.shape
+    B, C, H, W = cast(tuple[int, ...], getattr(imgs, "shape"))
     kH, kW = kernel_size
     pad_h = kH // 2
     pad_w = kW // 2
-    padded = np_mod.pad(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant" if padding == "same" else "reflect")
-    out = np_mod.zeros_like(imgs)
+    padded = getattr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant" if padding == "same" else "reflect")
+    out = getattr(np_mod, "zeros_like")(imgs)
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
             # flattening the last two dims and taking median
-            flat_region = np_mod.reshape(region, (B, C, kH * kW))
-            out[:, :, y, x] = np_mod.median(flat_region, axis=-1)
-    return out
+            flat_region = getattr(np_mod, "reshape")(region, (B, C, kH * kW))
+            out[:, :, y, x] = getattr(np_mod, "median")(flat_region, axis=-1)
+    return cast(EagerValue, out)
 
 
 def median_filter_eager(
-    backend_module: Any,
-    images: Any,
+    backend_module: EagerValue,
+    images: EagerValue,
     kernel_size: tuple[int, int],
     padding: str = "same",
-    data_format: Optional[object] = None,
-) -> Any:
+    data_format: Optional[EagerValue] = None,
+) -> EagerValue:
     """Evaluate median_filter_eager operation.
 
     Args:

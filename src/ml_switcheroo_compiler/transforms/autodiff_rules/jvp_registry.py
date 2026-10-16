@@ -1,16 +1,22 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Provide a registry for Jacobian-Vector Product (JVP) rules used in forward-mode automatic differentiation.
 
 This module allows registering and retrieving JVP functions for various mathematical
 operations.
 """
 
+from __future__ import annotations
+
 import os
 from collections.abc import Callable
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 from pydantic import BaseModel, Field
+
+from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+
+JVPRuleCallable = Callable[..., Union[str, tuple[str, ...], UnconnectedGradients, None]]
 
 
 class JVPRuleModel(BaseModel):
@@ -61,27 +67,27 @@ def load_primitive_jvp_rules(path: Optional[str] = None) -> dict[str, JVPRuleMod
 
 
 # Registry mapping op_name to JVP function
-_JVP_REGISTRY: dict[str, Callable] = {}
+_JVP_REGISTRY: dict[str, JVPRuleCallable] = {}
 
 
-def register_jvp(op_name: str) -> Callable[[Callable], Callable]:
+def register_jvp(op_name: str) -> Callable[[JVPRuleCallable], JVPRuleCallable]:
     """Register a Jacobian-Vector Product (JVP) rule for a specific mathematical operation.
 
     Args:
         op_name (str): The op_name parameter.
 
     Returns:
-        Callable[[Callable], Callable]: Decorator function.
+        Callable[[JVPRuleCallable], JVPRuleCallable]: Decorator function.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: JVPRuleCallable) -> JVPRuleCallable:
         """Evaluate decorator operation.
 
         Args:
-            func (Callable): The func parameter.
+            func (JVPRuleCallable): The func parameter.
 
         Returns:
-            Callable: Result.
+            JVPRuleCallable: Result.
         """
         if op_name in _JVP_REGISTRY:
             msg = f"JVP for operation '{op_name}' is already registered."
@@ -95,7 +101,7 @@ def register_jvp(op_name: str) -> Callable[[Callable], Callable]:
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data
 
 
-def get_jvp(op_name: str) -> Callable:
+def get_jvp(op_name: str) -> JVPRuleCallable:
     """Get the JVP rule.
 
     Args:
@@ -110,7 +116,7 @@ def get_jvp(op_name: str) -> Callable:
     if op_name in _JVP_REGISTRY:
         return _JVP_REGISTRY[op_name]
     data_jvp = get_jvp_from_data(op_name)
-    if data_jvp:
+    if data_jvp is not None:
         return data_jvp
     if op_name not in _JVP_REGISTRY:
         raise ValueError(f"No JVP rule registered for operation: {op_name}")

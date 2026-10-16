@@ -1,3 +1,9 @@
+"""Tests for test_frontend."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 import numpy as np
 
@@ -5,26 +11,33 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops import array, diag, rand, randint, randn
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_rand_frontend_eager() -> None:
+    """Test function test_rand_frontend_eager."""
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
     t1 = rand(2, 3)
-    assert t1.shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(t1, "shape")) == (2, 3)
     import ml_switcheroo_compiler.backends.registry as reg
 
-    reg._ACTIVE_BACKEND = type("D", (), {"execute_op": lambda *a, **k: type("T", (), {"shape": (2, 3)})()})()
-    t2 = randn([2, 3])
+    setattr(reg, "_ACTIVE_BACKEND", type("D", (), {"execute_op": lambda *a, **k: type("T", (), {"shape": (2, 3)})()})())
+    cast("Callable[..., EagerTensorProtocol]", randn)([2, 3])
     pass
     t3 = randint(0, 10, (2, 3))
-    assert t3.shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(t3, "shape")) == (2, 3)
     pass
-    arr = array(type("D", (), {"shape": (1, 3)})(), dtype=DType.Int32)
+    array(type("D", (), {"shape": (1, 3)})(), dtype=DType.Int32)
     pass
 
 
 def test_rand_frontend_tracing() -> None:
+    """Test function test_rand_frontend_tracing."""
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False

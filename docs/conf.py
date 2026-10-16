@@ -11,7 +11,7 @@ import sys
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    import sphinx.application  # type: ignore[import-untyped]
+    import sphinx.application
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 

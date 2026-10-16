@@ -1,20 +1,32 @@
 """Tests for SPMD communication passes."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.distributed.strategy import MeshShardingStrategy
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class MockSharding:
-    def __init__(self, axes):
+    """Test class MockSharding."""
+
+    def __init__(self, axes: EagerValue) -> None:
+        """Test function __init__."""
         self.mesh_mapping = axes
 
 
-def test_spmd_all_gather(monkeypatch):
+def test_spmd_all_gather(monkeypatch: EagerTensorProtocol) -> None:
     """Test AllGather injection."""
     graph = IRGraph()
-    n1 = IRNode(id="n1", op_type="Linear", sharding=MockSharding([None, "x"]))
-    n2 = IRNode(id="n2", op_type="Linear", inputs=["n1"], sharding=MockSharding(["x", "y"]))
+    n1 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n1", op_type="Linear", sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)([None, "x"]))
+    n2 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)(["x", "y"]))
     graph.nodes["n1"] = n1
     graph.nodes["n2"] = n2
 
@@ -28,11 +40,11 @@ def test_spmd_all_gather(monkeypatch):
     assert graph.nodes["n2"].inputs == ["n1_all_gather"]
 
 
-def test_spmd_reduce_scatter(monkeypatch):
+def test_spmd_reduce_scatter(monkeypatch: EagerTensorProtocol) -> None:
     """Test ReduceScatter injection."""
     graph = IRGraph()
-    n1 = IRNode(id="n1", op_type="Linear", sharding=MockSharding(["x", "y"]))
-    n2 = IRNode(id="n2", op_type="Linear", inputs=["n1"], sharding=MockSharding(["x", None]))
+    n1 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n1", op_type="Linear", sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)(["x", "y"]))
+    n2 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)(["x", None]))
     graph.nodes["n1"] = n1
     graph.nodes["n2"] = n2
 
@@ -46,11 +58,11 @@ def test_spmd_reduce_scatter(monkeypatch):
     assert graph.nodes["n2"].inputs == ["n1_reduce_scatter"]
 
 
-def test_spmd_all_reduce():
+def test_spmd_all_reduce() -> None:
     """Test AllReduce injection for reductions."""
     graph = IRGraph()
-    n1 = IRNode(id="n1", op_type="Linear", sharding=MockSharding(["x"]))
-    n2 = IRNode(id="n2", op_type="Sum", inputs=["n1"], sharding=MockSharding(["x"]))
+    n1 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n1", op_type="Linear", sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)(["x"]))
+    n2 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n2", op_type="Sum", inputs=["n1"], sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)(["x"]))
     graph.nodes["n1"] = n1
     graph.nodes["n2"] = n2
 
@@ -65,11 +77,11 @@ def test_spmd_all_reduce():
     assert graph.nodes["n2"].inputs == ["n1_all_reduce"]
 
 
-def test_spmd_all_to_all():
+def test_spmd_all_to_all() -> None:
     """Test AllToAll injection."""
     graph = IRGraph()
-    n1 = IRNode(id="n1", op_type="Linear", sharding=MockSharding(["x", None]))
-    n2 = IRNode(id="n2", op_type="Linear", inputs=["n1"], sharding=MockSharding([None, "y"]))
+    n1 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n1", op_type="Linear", sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)(["x", None]))
+    n2 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)([None, "y"]))
     graph.nodes["n1"] = n1
     graph.nodes["n2"] = n2
 
@@ -83,10 +95,10 @@ def test_spmd_all_to_all():
     assert graph.nodes["n2"].inputs == ["n1_all_to_all"]
 
 
-def test_mesh_sharding_strategy():
+def test_mesh_sharding_strategy() -> None:
     """Test the MeshShardingStrategy."""
     graph = IRGraph()
-    n1 = IRNode(id="n1", op_type="Linear", sharding=MockSharding(["x"]))
+    n1 = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n1", op_type="Linear", sharding=cast("Callable[..., EagerTensorProtocol]", MockSharding)(["x"]))
     n2 = IRNode(id="n2", op_type="Linear", inputs=["n1"])
     graph.nodes["n1"] = n1
     graph.nodes["n2"] = n2

@@ -1,9 +1,9 @@
 Arange:
   autodiff:
-    jvp: null
-    jvp_rule_id: arange_jvp
+    vjp_rule_id: Arange_vjp
+    jvp_rule_id: Arange_jvp
     vjp: null
-    vjp_rule_id: arange_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Arange operation.
   domain: creation
@@ -18,8 +18,14 @@ Arange:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -42,12 +48,27 @@ Arange:
     pytorch:
       generator: torch.arange({0})
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Empty:
   autodiff:
-    jvp: null
-    jvp_rule_id: empty_jvp
+    vjp_rule_id: Empty_vjp
+    jvp_rule_id: Empty_jvp
     vjp: null
-    vjp_rule_id: empty_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Returns an uninitialized array having a specified `shape`.
   domain: creation
@@ -62,19 +83,40 @@ Empty:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Eye:
   autodiff:
-    jvp: null
-    jvp_rule_id: eye_jvp
+    vjp_rule_id: Eye_vjp
+    jvp_rule_id: Eye_jvp
     vjp: null
-    vjp_rule_id: eye_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Returns a two-dimensional array with ones on the ``k``\th diagonal
     and zeros elsewhere.
@@ -90,19 +132,40 @@ Eye:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Full:
   autodiff:
-    jvp: null
-    jvp_rule_id: full_jvp
+    vjp_rule_id: Full_vjp
+    jvp_rule_id: Full_jvp
     vjp: null
-    vjp_rule_id: full_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Full operation.
   domain: creation
@@ -117,8 +180,14 @@ Full:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     edge_wasm_simd:
@@ -135,12 +204,27 @@ Full:
       generator: np.full
     pytorch:
       generator: torch.full({shape}, {fill_value})
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Linspace:
   autodiff:
-    jvp: null
-    jvp_rule_id: linspace_jvp
+    vjp_rule_id: Linspace_vjp
+    jvp_rule_id: Linspace_jvp
     vjp: null
-    vjp_rule_id: linspace_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Returns evenly spaced numbers over a specified interval.
   domain: creation
@@ -155,19 +239,40 @@ Linspace:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Meshgrid:
   autodiff:
-    jvp: null
-    jvp_rule_id: meshgrid_jvp
+    vjp_rule_id: Meshgrid_vjp
+    jvp_rule_id: Meshgrid_jvp
     vjp: null
-    vjp_rule_id: meshgrid_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Returns coordinate matrices from coordinate vectors.
   domain: creation
@@ -182,19 +287,40 @@ Meshgrid:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Ones:
   autodiff:
-    jvp: null
-    jvp_rule_id: ones_jvp
+    vjp_rule_id: Ones_vjp
+    jvp_rule_id: Ones_jvp
     vjp: null
-    vjp_rule_id: ones_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Ones operation.
   domain: creation
@@ -209,8 +335,14 @@ Ones:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -233,12 +365,27 @@ Ones:
     pytorch:
       generator: torch.ones({shape})
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Tril:
   autodiff:
-    jvp: null
-    jvp_rule_id: tril_jvp
+    vjp_rule_id: Tril_vjp
+    jvp_rule_id: Tril_jvp
     vjp: null
-    vjp_rule_id: tril_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Returns the lower triangular part of a matrix (or a stack of matrices)
     ``x``.
@@ -254,19 +401,40 @@ Tril:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Triu:
   autodiff:
-    jvp: null
-    jvp_rule_id: triu_jvp
+    vjp_rule_id: Triu_vjp
+    jvp_rule_id: Triu_jvp
     vjp: null
-    vjp_rule_id: triu_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Returns the upper triangular part of a matrix (or a stack of matrices)
     ``x``.
@@ -282,19 +450,40 @@ Triu:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Zeros:
   autodiff:
-    jvp: null
-    jvp_rule_id: zeros_jvp
+    vjp_rule_id: Zeros_vjp
+    jvp_rule_id: Zeros_jvp
     vjp: null
-    vjp_rule_id: zeros_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Zeros operation.
   domain: creation
@@ -309,8 +498,14 @@ Zeros:
   - out
   signature:
     args: []
-    output_dtype_formula: float32
-    output_shape_formula: shape
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -333,3 +528,18 @@ Zeros:
     pytorch:
       generator: torch.zeros({shape})
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

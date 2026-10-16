@@ -1,14 +1,10 @@
-"""Module __init__.py."""
+"""Control flow operators dispatcher."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import Callable, Optional, cast  # noqa: F401
 
-"""Control flow operators dispatcher."""
-
-
-from typing import Any, Callable  # noqa: F401
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -21,6 +17,7 @@ from ml_switcheroo_compiler.ops.binary import (
     less,
 )
 from ml_switcheroo_compiler.ops.vmap import vmap as vmap
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 from .cond import cond as cond
 from .eager import (
@@ -45,7 +42,7 @@ from .tracing import (
 from .while_loop import while_loop as while_loop
 
 
-def map_fn(fn, elems: Tensor, dtype: DType | None = None):
+def map_fn(fn: Callable[..., EagerValue], elems: Tensor, dtype: DType | None = None) -> EagerValue:
     """Evaluate map_fn operation.
 
     Args:
@@ -61,7 +58,7 @@ def map_fn(fn, elems: Tensor, dtype: DType | None = None):
     return map_fn_tracing(fn, elems, dtype)
 
 
-def pmap(func, axis_name: str | None = None):
+def pmap(func: Callable[..., EagerValue], axis_name: str | None = None) -> EagerValue:
     """Evaluate pmap operation.
 
     Args:
@@ -76,7 +73,7 @@ def pmap(func, axis_name: str | None = None):
     return pmap_tracing(func, axis_name)
 
 
-def stop_gradient(x):
+def stop_gradient(x: Tensor | ProxyTensor) -> Tensor | ProxyTensor:
     """Evaluate stop_gradient operation.
 
     Args:
@@ -90,7 +87,7 @@ def stop_gradient(x):
     return stop_gradient_tracing(x)
 
 
-def assert_value(condition, message: str = "") -> None:
+def assert_value(condition: EagerValue, message: str = "") -> None:
     """Evaluate assert_value operation.
 
     Args:
@@ -107,7 +104,7 @@ def assert_value(condition, message: str = "") -> None:
 class AssertOp(OpDef):
     """Configuration class for assert op."""
 
-    def infer_shape(self, condition, **kwargs):
+    def infer_shape(self, condition: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Evaluate infer_shape operation.
 
         Args:
@@ -120,7 +117,7 @@ class AssertOp(OpDef):
         return ()
 
 
-def fori_loop(lower, upper, body_fun, init_val):
+def fori_loop(lower: EagerValue, upper: EagerValue, body_fun: Callable[..., EagerValue], init_val: EagerValue) -> EagerValue:
     """Evaluate fori_loop operation.
 
     Args:
@@ -133,7 +130,7 @@ def fori_loop(lower, upper, body_fun, init_val):
             tuple[int, ...]: Result.
     """
 
-    def cond_fn(val):
+    def cond_fn(val: EagerValue) -> EagerValue:
         """Evaluate cond_fn operation.
 
         Args:
@@ -142,10 +139,10 @@ def fori_loop(lower, upper, body_fun, init_val):
         Returns:
             tuple[int, ...]: Result.
         """
-        i, _ = val
+        i, _ = getattr(val, "__iter__")()
         return less(i, upper)
 
-    def body_wrapper(val):
+    def body_wrapper(val: EagerValue) -> EagerValue:
         """Evaluate body_wrapper operation.
 
         Args:
@@ -154,14 +151,14 @@ def fori_loop(lower, upper, body_fun, init_val):
         Returns:
             tuple[int, ...]: Result.
         """
-        i, x = val
+        i, x = getattr(val, "__iter__")()
         return add(i, 1), body_fun(i, x)
 
-    _, res = while_loop(cond_fn, body_wrapper, (lower, init_val))
-    return res
+    _, res = cast("Callable[..., EagerTensorProtocol]", while_loop)(cond_fn, body_wrapper, (lower, init_val))
+    return cast(EagerValue, res)
 
 
-def map(fn, elems: Tensor):
+def map(fn: Callable[..., EagerValue], elems: Tensor) -> EagerValue:
     """Apply a function iteratively over elements of a tensor.
 
     Args:
@@ -174,7 +171,7 @@ def map(fn, elems: Tensor):
     return map_fn(fn, elems)
 
 
-def vectorized_map(fn, elems: Tensor):
+def vectorized_map(fn: Callable[..., EagerValue], elems: Tensor) -> EagerValue:
     """Apply a function in a vectorized manner over elements of a tensor.
 
     Args:
@@ -184,10 +181,10 @@ def vectorized_map(fn, elems: Tensor):
     Returns:
         Tensor: The vectorized result tensor.
     """
-    return vmap(fn)(elems)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", vmap)(fn)(elems))
 
 
-def switch(index: Tensor, branches, *operands):
+def switch(index: Tensor, branches: EagerValue, *operands: EagerValue) -> EagerValue:
     """Select a specific branch function based on an index tensor.
 
     Args:
@@ -204,7 +201,7 @@ def switch(index: Tensor, branches, *operands):
     if not branches:
         raise ValueError("branches cannot be empty")
 
-    def build_tree(start: int, end: int):
+    def build_tree(start: int, end: int) -> EagerValue:
         """Evaluate build_tree operation.
 
         Args:
@@ -215,11 +212,11 @@ def switch(index: Tensor, branches, *operands):
             tuple[int, ...]: Result.
         """
         if end - start == 1:
-            return branches[start](*operands)
+            return cast(EagerValue, getattr(branches, "__getitem__")(start)(*operands))
 
         mid = (start + end) // 2
 
-        def true_fn():
+        def true_fn() -> EagerValue:
             """Evaluate true_fn operation.
 
             Returns:
@@ -227,7 +224,7 @@ def switch(index: Tensor, branches, *operands):
             """
             return build_tree(start, mid)
 
-        def false_fn():
+        def false_fn() -> EagerValue:
             """Evaluate false_fn operation.
 
             Returns:
@@ -237,10 +234,10 @@ def switch(index: Tensor, branches, *operands):
 
         return cond(less(index, mid), true_fn, false_fn)
 
-    return build_tree(0, len(branches))
+    return build_tree(0, getattr(branches, "__len__")())
 
 
-def custom_gradient(func):
+def custom_gradient(func: Callable[..., EagerValue]) -> EagerValue:
     """Create a wrapper that enables custom gradient definitions.
 
     Args:
@@ -250,7 +247,7 @@ def custom_gradient(func):
         Callable: A wrapped version of the function that can integrate with autograd.
     """
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate wrapper operation.
 
         Args:
@@ -260,9 +257,9 @@ def custom_gradient(func):
         Returns:
             tuple[int, ...]: Result.
         """
-        val, grad_fn = func(*args, **kwargs)
+        val, grad_fn = getattr(func(*getattr(args, "__iter__")(), **kwargs), "__iter__")()
         if config.eager_mode:
-            return val
+            return cast(EagerValue, val)
 
         import uuid
 
@@ -278,7 +275,7 @@ def custom_gradient(func):
 
             op_name_class = op_name
 
-            def infer_shape(self, *args, **kwargs):
+            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
                 """Evaluate infer_shape operation.
 
                 Args:
@@ -291,7 +288,7 @@ def custom_gradient(func):
                 return getattr(val, "shape", ())
 
         @register_vjp(op_name)
-        def dyn_vjp(graph, node, cotangent: str):
+        def dyn_vjp(graph: EagerValue, node: EagerValue, cotangent: str) -> tuple[str, ...]:
             """VJP function for dynamic custom gradient.
 
             Args:
@@ -302,14 +299,17 @@ def custom_gradient(func):
             Returns:
                 tuple: Input gradients.
             """
-            return tuple([cotangent] * len(node.inputs if node else []))
+            return tuple([cotangent] * len(getattr(node, "inputs") if node else []))
 
         return _emit_shape_node(op_name, list(args), kwargs, getattr(val, "shape", ()), getattr(val, "dtype", None))
 
     return wrapper
 
 
-def case(pred_fn_pairs, default=None):
+def case(
+    pred_fn_pairs: list[tuple[Tensor, Callable[[], Tensor | None]]],
+    default: Callable[[], Tensor | None] | None = None,
+) -> Tensor | None:
     """Evaluate case operation.
 
     Args:
@@ -327,7 +327,7 @@ def case(pred_fn_pairs, default=None):
             return default()
         raise ValueError("case requires at least one (pred, fn) pair or a default")
 
-    def _build_case(idx: int):
+    def _build_case(idx: int) -> EagerValue:
         """Evaluate _build_case operation.
 
         Args:
@@ -339,12 +339,12 @@ def case(pred_fn_pairs, default=None):
         if idx == len(pred_fn_pairs):
             return default if default is not None else lambda: None
         pred, fn = pred_fn_pairs[idx]
-        return lambda: cond(pred, fn, _build_case(idx + 1))
+        return lambda: cast("Callable[..., EagerTensorProtocol]", cond)(pred, fn, _build_case(idx + 1))
 
-    return _build_case(0)()
+    return cast(Optional[Tensor], cast("Callable[..., EagerTensorProtocol]", _build_case)(0)())
 
 
-def switch_case(branch_index: Tensor, branch_fns, default=None):
+def switch_case(branch_index: Tensor, branch_fns: EagerValue, default: EagerValue = None) -> EagerValue:
     """Select a specific function based on a dynamic index mapping.
 
     Args:
@@ -360,17 +360,17 @@ def switch_case(branch_index: Tensor, branch_fns, default=None):
     """
     if not branch_fns:
         if default is not None:
-            return default()
+            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", default)())
         raise ValueError("switch_case requires at least one branch or a default")
 
     pred_fn_pairs = []
     # Sort keys to ensure deterministic ordering (not strictly necessary but good practice)
-    for key in sorted(branch_fns.keys()):
+    for key in sorted(getattr(branch_fns, "keys")()):
         key_tensor = Tensor(key, TensorConfig((), branch_index.dtype, branch_index.device))
         pred = equal(branch_index, key_tensor)
-        pred_fn_pairs.append((pred, branch_fns[key]))
+        pred_fn_pairs.append((pred, getattr(branch_fns, "__getitem__")(key)))
 
-    return case(pred_fn_pairs, default)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", case)(pred_fn_pairs, default))
 
 
 @register_op("DebugInfs")
@@ -379,7 +379,7 @@ class DebugInfs(OpDef):
 
     op_name = "DebugInfs"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate infer_shape operation.
 
         Args:
@@ -398,7 +398,7 @@ class DebugNans(OpDef):
 
     op_name = "DebugNans"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate infer_shape operation.
 
         Args:
@@ -421,7 +421,7 @@ class SwitchOp(OpDef):
 
     op_name = "Switch"
 
-    def infer_shape(self, index, branches, *operands, **kwargs):
+    def infer_shape(self, index: EagerTensorProtocol, branches: EagerTensorProtocol, *operands: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Evaluate infer_shape operation.
 
         Args:
@@ -442,7 +442,7 @@ class ScanOp(OpDef):
 
     op_name = "Scan"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate infer_shape operation.
 
         Args:
@@ -461,7 +461,7 @@ class AssociativeScan(OpDef):
 
     op_name = "AssociativeScan"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate infer_shape operation.
 
         Args:
@@ -474,7 +474,7 @@ class AssociativeScan(OpDef):
         return args[0] if args else ()
 
 
-def associative_scan(*args, **kwargs):
+def associative_scan(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate associative_scan operation.
 
     Args:
@@ -499,7 +499,7 @@ def associative_scan(*args, **kwargs):
     return _emit_shape_node("AssociativeScan", list(args), kwargs, shape, dtype)
 
 
-def scan_bind(f, xs, *args, **kwargs):
+def scan_bind(f: Callable[..., EagerValue], xs: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Bind arguments to a scanning function prior to execution.
 
     Args:
@@ -516,8 +516,14 @@ def scan_bind(f, xs, *args, **kwargs):
 
 __all__ = [
     "cond",
+    "cond_eager",
+    "cond_tracing",
     "while_loop",
+    "while_loop_eager",
+    "while_loop_tracing",
     "scan",
+    "scan_eager",
+    "scan_tracing",
     "map_fn",
     "pmap",
     "stop_gradient",

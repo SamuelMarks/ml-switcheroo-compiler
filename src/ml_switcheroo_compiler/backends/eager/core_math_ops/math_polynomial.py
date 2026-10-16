@@ -1,16 +1,16 @@
-# ruff: noqa: E402, E501, F403
 """math_polynomial module."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import Any
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Polyval")
-def _polyval(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _polyval(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _polyval operation.
 
     Args:
@@ -26,7 +26,7 @@ def _polyval(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Polyint")
-def _np_polyint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_polyint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_polyint operation.
 
     Args:
@@ -39,7 +39,5 @@ def _np_polyint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.polyint(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.polyint(*args, **kwargs))

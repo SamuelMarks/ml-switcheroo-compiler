@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Core abstractions and logic definitions for exponential operations."""
 
 from __future__ import annotations
@@ -85,7 +84,7 @@ class NanToNum(UnaryMathOp):
         self,
         x: Tensor | IRNode | int | float | str,
         **kwargs: int | float | str | bool | None,
-    ) -> Tensor | IRNode | str:
+    ) -> Tensor:
         """Call NanToNum, filtering out the copy kwarg.
 
         Args:
@@ -93,10 +92,10 @@ class NanToNum(UnaryMathOp):
             **kwargs (int | float | str | bool | None): Keyword args.
 
         Returns:
-            Tensor | IRNode | str: Result.
+            Tensor: Result.
         """
-        kwargs.pop("copy", None)
-        return super().__call__(x, **kwargs)
+        clean_kwargs = {k: v for k, v in kwargs.items() if k != "copy"}
+        return super().__call__(x, **clean_kwargs)
 
 
 @register_op("ZeroFraction")

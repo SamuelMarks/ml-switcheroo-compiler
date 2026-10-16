@@ -1,3 +1,8 @@
+"""Tests for test_wgsl_templates."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -12,8 +17,13 @@ from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
     get_wgsl_template,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_wgsl_provider_functions():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_wgsl_provider_functions() -> None:
     """Test WGSL template and config retrieval functions."""
     tpl = get_wgsl_template("add")
     assert isinstance(tpl, (dict, str))
@@ -32,7 +42,7 @@ def test_wgsl_provider_functions():
     assert ops2 is ops
 
 
-def test_wgsl_provider_missing_files():
+def test_wgsl_provider_missing_files() -> None:
     """Test behavior when YAML template files do not exist."""
     with patch("os.path.exists", return_value=False):
         provider._WGSL_TEMPLATES = {}
@@ -44,7 +54,7 @@ def test_wgsl_provider_missing_files():
         assert get_webgpu_ops() == {}
 
 
-def test_wgsl_provider_non_dict_fallback():
+def test_wgsl_provider_non_dict_fallback() -> None:
     """Test non-dict fallbacks for templates and orchestration."""
     provider._WGSL_TEMPLATES = {"templates": "not_a_dict", "js_orchestration": "not_a_dict"}
     assert get_wgsl_template("add") == {}
@@ -63,8 +73,8 @@ def test_wgsl_provider_non_dict_fallback():
     with patch("os.path.exists", side_effect=lambda p: not p.endswith("templates.yaml")):
         with patch("os.listdir", return_value=["ignore.txt", "broken.yaml"]):
             with patch("builtins.open", side_effect=OSError("corrupted file")):
-                d: dict = {}
-                provider._merge_modular_templates(d)
+                d: dict[str, EagerValue] = {}
+                cast("Callable[..., EagerTensorProtocol]", provider._merge_modular_templates)(d)
 
     # Reset
     provider._WGSL_TEMPLATES = {}
@@ -115,7 +125,7 @@ def test_wgsl_provider_kernels_config_and_global_bindings() -> None:
     assert isinstance(cfg, dict)
     with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value={"op_mappings": {"invalid_op": "not_a_dict"}}):
         assert get_wgsl_op_mapping("invalid_op") == {}
-    mock_base = {"templates": {}}
+    mock_base = cast("EagerTensorProtocol", {"templates": {}})
     mock_kernels = {"templates": {"mock_k": {}}, "bindings": {"global_bindings": "// global bindings test"}}
     import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
 
@@ -172,7 +182,7 @@ def test_wgsl_grounding_schema_missing_and_validate_edges() -> None:
     with mock.patch("os.path.exists", return_value=True):
         with mock.patch("builtins.open", mock.mock_open(read_data=mock_json_content)):
             schema_loaded = wp.get_wgsl_grounding_schema()
-            assert len(schema_loaded["ops"]) == 3
+            assert cast("Callable[..., EagerTensorProtocol]", len)(schema_loaded["ops"]) == 3
 
     # 4. validate_wgsl_statement finding op in ops_list
     assert wp.validate_wgsl_statement("mock_op") is True

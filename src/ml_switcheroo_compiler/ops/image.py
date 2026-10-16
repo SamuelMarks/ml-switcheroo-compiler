@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module image.py."""
-
 """Image processing operations (alias for vision module)."""
 
 from ml_switcheroo_compiler.ops.vision import (

@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_logical_reductions as logical_reductions
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_math_logical_reductions() -> None:
@@ -13,15 +20,15 @@ def test_math_logical_reductions() -> None:
     arr_all_true = np.array([True, True, True])
     arr_some_false = np.array([True, False, True])
 
-    assert logical_reductions._np_all(np, arr_all_true) == True
-    assert logical_reductions._np_all(np, arr_some_false) == False
+    assert logical_reductions._np_all(np, arr_all_true)
+    assert not logical_reductions._np_all(np, arr_some_false)
 
     reg_all = numpy_eager_registry.get("All")
-    assert reg_all(np, arr_all_true) == True
-    assert reg_all(np, arr_some_false) == False
+    assert cast("Callable[..., EagerTensorProtocol]", reg_all)(np, arr_all_true)
+    assert not cast("Callable[..., EagerTensorProtocol]", reg_all)(np, arr_some_false)
 
     arr_counts = np.array([[0, 1, 2], [3, 0, 0]])
     assert logical_reductions._np_count_nonzero(np, arr_counts) == 3
 
     reg_count = numpy_eager_registry.get("CountNonzero")
-    assert reg_count(np, arr_counts) == 3
+    assert cast("Callable[..., EagerTensorProtocol]", reg_count)(np, arr_counts) == 3

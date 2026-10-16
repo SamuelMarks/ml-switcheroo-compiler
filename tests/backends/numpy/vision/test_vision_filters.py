@@ -1,5 +1,9 @@
 """Tests for numpy eager vision filters."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
@@ -8,6 +12,9 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_filters import (
     _np_random_gaussian_blur,
     _np_random_sharpness,
 )
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_random_gaussian_blur(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -21,7 +28,7 @@ def test_random_gaussian_blur(monkeypatch: pytest.MonkeyPatch) -> None:
     kernel_size = (3, 3)
     sigma = (1.0, 1.0)
     res = _np_random_gaussian_blur(np, images, kernel_size, sigma)
-    assert res.shape == (1, 5, 5, 3)
+    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 5, 5, 3)
 
 
 def test_random_sharpness() -> None:
@@ -33,4 +40,4 @@ def test_random_sharpness() -> None:
     images = np.ones((1, 5, 5, 3))
     factor = 1.5
     res = _np_random_sharpness(np, images, factor)
-    assert res.shape == (1, 5, 5, 3)
+    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 5, 5, 3)

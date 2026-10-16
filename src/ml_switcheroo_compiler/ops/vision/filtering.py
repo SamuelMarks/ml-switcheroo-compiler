@@ -1,12 +1,10 @@
-"""Module filtering.py."""
+"""Vision operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import Callable, Optional, cast
 
-"""Vision operations."""
-
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -15,7 +13,7 @@ from ml_switcheroo_compiler.ops.configs import BlurConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def gaussian_blur(images: Tensor, config_obj=None, **kwargs):
+def gaussian_blur(images: Tensor, config_obj: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Apply Gaussian blur to the image(s).
 
     Args:
@@ -33,7 +31,7 @@ def gaussian_blur(images: Tensor, config_obj=None, **kwargs):
             kernel_size = (kernel_size, kernel_size)
         if isinstance(sigma, (float, int)):
             sigma = (float(sigma), float(sigma))
-        config_obj = BlurConfig(kernel_size=kernel_size, sigma=sigma, data_format=kwargs.get("data_format", None))
+        config_obj = cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", BlurConfig)(kernel_size=kernel_size, sigma=sigma, data_format=cast("Optional[str]", kwargs.get("data_format", None))))
 
     padding = kwargs.get("padding", "same")
 
@@ -45,7 +43,7 @@ def gaussian_blur(images: Tensor, config_obj=None, **kwargs):
             config=config_obj,
             padding=padding,
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "GaussianBlur",
         [images],
@@ -60,7 +58,7 @@ def median_filter(
     kernel_size: int | tuple[int, int],
     padding: str = "same",
     data_format: str | None = None,
-):
+) -> EagerValue:
     """Apply a median filter to the image(s).
 
     Args:
@@ -84,7 +82,7 @@ def median_filter(
             padding=padding,
             data_format=data_format,
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "MedianFilter",
         [images],
@@ -102,7 +100,7 @@ def iou(
     boxes1: Tensor,
     boxes2: Tensor,
     bounding_box_format: str = "xyxy",
-):
+) -> EagerValue:
     """Compute Intersection-Over-Union between two sets of bounding boxes.
 
     Args:
@@ -123,7 +121,7 @@ def iou(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, boxes1.dtype, boxes1.device),
+            TensorConfig(getattr(backend.array(data), "shape"), boxes1.dtype, boxes1.device),
         )
     return _emit_shape_node(
         "IoU",
@@ -140,7 +138,7 @@ def non_max_suppression(
     max_output_size: int,
     iou_threshold: float = 0.5,
     score_threshold: float = float("-inf"),
-):
+) -> EagerValue:
     """Greedily selects a subset of bounding boxes in descending order of score.
 
     Args:
@@ -164,7 +162,7 @@ def non_max_suppression(
             score_threshold=score_threshold,
         )
         # Note: output of NMS is typically integer indices
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, boxes.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, boxes.device))
     return _emit_shape_node(
         "NonMaxSuppression",
         [boxes, scores],
@@ -178,7 +176,7 @@ def non_max_suppression(
     )
 
 
-def sharpen(images: Tensor, factor: float = 1.0):
+def sharpen(images: Tensor, factor: float = 1.0) -> EagerValue:
     """Sharpen images.
 
     Args:
@@ -193,7 +191,7 @@ def sharpen(images: Tensor, factor: float = 1.0):
         data = backend.execute_op("Sharpen", images.data, factor=factor)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
 
     return get_op("Sharpen")()(images)
@@ -203,8 +201,8 @@ def random_gaussian_blur(
     images: Tensor,
     kernel_size: int | tuple[int, int],
     sigma: float | tuple[float, float],
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Randomly apply Gaussian blur.
 
     Args:
@@ -227,7 +225,7 @@ def random_gaussian_blur(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomGaussianBlur",
@@ -242,7 +240,7 @@ def random_gaussian_blur(
     )
 
 
-def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs):
+def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: EagerValue) -> EagerValue:
     """Randomly adjust sharpness.
 
     Args:
@@ -263,7 +261,7 @@ def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwar
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomSharpness",

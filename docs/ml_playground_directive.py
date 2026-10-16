@@ -11,10 +11,10 @@ import os
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    import sphinx.application  # type: ignore[import-untyped]
+    import sphinx.application
 
-from docutils import nodes  # type: ignore[import-untyped]
-from docutils.parsers.rst import Directive  # type: ignore[import-untyped]
+from docutils import nodes
+from docutils.parsers.rst import Directive
 
 
 def get_wheel_assets() -> list[str]:

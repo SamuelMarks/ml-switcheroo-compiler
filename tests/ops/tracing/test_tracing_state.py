@@ -1,10 +1,21 @@
+"""Tests for test_tracing_state."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import sys
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.tracing.state import TracingState
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_tracing_state():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_tracing_state() -> None:
+    """Test function test_tracing_state."""
     state = TracingState()
     assert not state.is_tracing
     graph = state.start_tracing("MyGraph")
@@ -12,7 +23,10 @@ def test_tracing_state():
     assert state.active_graph is graph
 
     class MockNode:
-        def __init__(self):
+        """Test class MockNode."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
             self.id = "1"
             self.source_ast_ref = None
             self.domain = ""
@@ -37,31 +51,38 @@ def test_tracing_state():
     state.add_node(MockNode())
 
 
-def test_enrich_ast_and_domain_extra():
+def test_enrich_ast_and_domain_extra() -> None:
+    """Test function test_enrich_ast_and_domain_extra."""
     state = TracingState()
     state.start_tracing()
 
     class MockNode:
-        def __init__(self):
+        """Test class MockNode."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
             self.source_ast_ref = "existing"
             self.domain = "existing_domain"
 
     node = MockNode()
-    state._enrich_ast_and_domain(node)
+    cast("Callable[..., EagerTensorProtocol]", state._enrich_ast_and_domain)(node)
     assert node.source_ast_ref == "existing"
     assert node.domain == "existing_domain"
     state.stop_tracing()
 
 
-def test_enrich_stream_no_config(mocker):
+def test_enrich_stream_no_config(mocker: EagerTensorProtocol) -> None:
+    """Test function test_enrich_stream_no_config."""
     old_config = sys.modules.pop("ml_switcheroo_compiler.core.config", None)
     state = TracingState()
 
     class MockNode:
+        """Test class MockNode."""
+
         stream = "existing"
 
     node = MockNode()
-    state._enrich_stream(node)
+    cast("Callable[..., EagerTensorProtocol]", state._enrich_stream)(node)
     assert node.stream == "existing"
 
     if old_config is not None:

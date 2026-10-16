@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Core module for ml-switcheroo."""
 
 from .assertions import clear_assertions, evaluate_assertions, record_assertion

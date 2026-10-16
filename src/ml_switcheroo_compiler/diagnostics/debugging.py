@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module debugging.py."""
-
 """Debugging and diagnostic hooks."""
 
 

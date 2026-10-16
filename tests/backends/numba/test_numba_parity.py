@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import numpy as np
@@ -15,6 +16,11 @@ from ml_switcheroo_compiler.backends.numba.profiler import NumbaProfiler, _get_p
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_numba_dynamic_control_flow_visitors_and_parity() -> None:
@@ -54,7 +60,7 @@ def test_numba_dynamic_control_flow_visitors_and_parity() -> None:
 
     # Eager Scan
     scan_res = execute_op(NumbaGenerator, "Scan", 0, [1.0, 2.0, 3.0, 4.0])
-    np.testing.assert_allclose(scan_res, [1.0, 3.0, 6.0, 10.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(scan_res, [1.0, 3.0, 6.0, 10.0])
 
 
 def test_numba_vectorized_ufunc_generation_and_compilation() -> None:
@@ -81,7 +87,7 @@ def test_numba_vectorized_ufunc_generation_and_compilation() -> None:
     a = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     b = np.array([2.0, 3.0, 4.0], dtype=np.float32)
     expected = a + b * b
-    np.testing.assert_allclose(ufunc(a, b), expected)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", ufunc)(a, b), expected)
 
     # 2. Unary vectorized ufunc: relu_scale (max(0, x) * 2)
     ufunc_unary = gen.compile_vectorized_ufunc(
@@ -91,7 +97,7 @@ def test_numba_vectorized_ufunc_generation_and_compilation() -> None:
     )
     x = np.array([-1.0, 0.0, 2.5], dtype=np.float32)
     expected_unary = np.array([0.0, 0.0, 5.0], dtype=np.float32)
-    np.testing.assert_allclose(ufunc_unary(x), expected_unary)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", ufunc_unary)(x), expected_unary)
 
     # 3. Failing compilation branch
     with mock.patch("builtins.exec"):
@@ -110,14 +116,15 @@ def test_numba_eager_dispatch_and_tensor_unwrap() -> None:
     assert _unwrap_arg(5) == 5
 
     res_add = execute_op(NumbaGenerator, "Add", t1, t2)
-    np.testing.assert_allclose(res_add, [5.0, 7.0, 9.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_add, [5.0, 7.0, 9.0])
 
     # Direct numpy function
     res_sin = execute_op(NumbaGenerator, "sin", np.array([0.0, np.pi / 2.0]))
-    np.testing.assert_allclose(res_sin, [0.0, 1.0], atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_sin, [0.0, 1.0], atol=1e-5)
 
     # Eager registry fallback
-    def mock_nb_custom(mod: object, *args: object, **kwargs: object) -> str:
+    def mock_nb_custom(mod: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> str:
+        """Test function mock_nb_custom."""
         del mod, args, kwargs
         return "custom_numba_res"
 
@@ -150,12 +157,12 @@ def test_numba_profiler_and_memory_metrics() -> None:
     )
 
     assert "latencies" in metrics
-    assert len(metrics["latencies"]) == 3
-    assert metrics["latency_ms"] >= 0.0
-    assert metrics["p50_ms"] >= 0.0
-    assert metrics["p95_ms"] >= 0.0
-    assert metrics["p99_ms"] >= 0.0
-    assert metrics["peak_memory_mb"] > 0.0
+    assert cast("Callable[..., EagerTensorProtocol]", len)(metrics["latencies"]) == 3
+    assert getattr(metrics, "__getitem__")("latency_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("p50_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("p95_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("p99_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("peak_memory_mb") > 0.0
 
     # Test Linux RSS branch in _get_process_memory_mb
     with mock.patch("sys.platform", "linux"):
@@ -164,7 +171,7 @@ def test_numba_profiler_and_memory_metrics() -> None:
     # Profile with empty inputs
     empty_graph = IRGraph()
     metrics_empty = profiler.profile_graph(empty_graph, inputs={}, num_iters=2, warmup_iters=1)
-    assert len(metrics_empty["latencies"]) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(metrics_empty["latencies"]) == 2
 
     # Profile with fallback summation
     metrics_sum = profiler.profile_graph(
@@ -172,20 +179,21 @@ def test_numba_profiler_and_memory_metrics() -> None:
         inputs={"a": np.array([1.0, 2.0]), "b": np.array([3.0, 4.0])},
         num_iters=2,
     )
-    assert len(metrics_sum["latencies"]) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(metrics_sum["latencies"]) == 2
 
     # Failing compile_graph fallback
     with mock.patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile failed")):
         metrics_fallback = profiler.profile_graph(g, inputs={"x": [[1.0, 2.0], [3.0, 4.0]]}, num_iters=2)
-        assert len(metrics_fallback["latencies"]) == 2
+        assert cast("Callable[..., EagerTensorProtocol]", len)(metrics_fallback["latencies"]) == 2
 
     # Profiler import fallback when numba is not installed
     real_import = __import__
 
-    def fake_nb_import(name: str, *args: object, **kwargs: object) -> object:
+    def fake_nb_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Test function fake_nb_import."""
         if name == "numba":
             raise ImportError("no numba")
-        return real_import(name, *args, **kwargs)
+        return cast("Callable[..., EagerTensorProtocol]", real_import)(name, *args, **kwargs)
 
     import importlib
 
@@ -215,15 +223,15 @@ def test_numba_generator_aot_and_classmethods() -> None:
 
     input_arr = np.array([[-1.0, 2.0], [-3.0, 4.0]], dtype=np.float32)
     res = artifact(input_arr)
-    np.testing.assert_allclose(res, np.abs(input_arr))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, cast("Callable[..., EagerTensorProtocol]", np.abs)(input_arr))
 
     # Classmethods on NumbaGenerator and package exports
-    assert nb_pkg.zeros((2, 2)).shape == (2, 2)
-    assert NumbaGenerator.zeros((2, 2)).shape == (2, 2)
-    assert nb_pkg.array([1.0, 2.0]).shape == (2,)
-    assert NumbaGenerator.array([1.0, 2.0]).shape == (2,)
-    assert nb_pkg.asarray([1.0, 2.0]).shape == (2,)
-    assert NumbaGenerator.asarray([1.0, 2.0]).shape == (2,)
+    assert cast("EagerTensorProtocol", getattr(nb_pkg.zeros((2, 2)), "shape")) == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(NumbaGenerator.zeros((2, 2)), "shape")) == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(nb_pkg.array([1.0, 2.0]), "shape")) == (2,)
+    assert cast("EagerTensorProtocol", getattr(NumbaGenerator.array([1.0, 2.0]), "shape")) == (2,)
+    assert cast("EagerTensorProtocol", getattr(nb_pkg.asarray([1.0, 2.0]), "shape")) == (2,)
+    assert cast("EagerTensorProtocol", getattr(NumbaGenerator.asarray([1.0, 2.0]), "shape")) == (2,)
     assert nb_pkg.item(np.array([42.0])) == 42.0
     assert NumbaGenerator.item(np.array([42.0])) == 42.0
     assert nb_pkg.execute_op(NumbaGenerator, "Add", 1, 2) == 3

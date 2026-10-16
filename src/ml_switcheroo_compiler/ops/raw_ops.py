@@ -1,10 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Raw Operations mapping strategy."""
 
 from __future__ import annotations
 
 import math
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -13,10 +13,15 @@ class RawOp(OpDef):
 
     def infer_shape(
         self,
-        *args,
-        **kwargs,
-    ) -> tuple[int, ...]:
-        """Infer shape dynamically or fallback to unknown."""
+        *args: EagerTensorProtocol,
+        **kwargs: EagerValue,
+    ) -> EagerValue:
+        """Infer shape dynamically or fallback to unknown.
+
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
         if not args and "a" in kwargs:
             a = kwargs["a"]
         elif args:
@@ -32,8 +37,13 @@ class RawSwitch(RawOp):
 
     op_name = "RawSwitch"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape."""
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+        """Infer shape.
+
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
         shape = super().infer_shape(*args, **kwargs)
         return (shape, shape)
 
@@ -44,8 +54,13 @@ class RawMerge(RawOp):
 
     op_name = "RawMerge"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape."""
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+        """Infer shape.
+
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
         shape = super().infer_shape(*args, **kwargs)
         return (shape, ())
 
@@ -56,24 +71,26 @@ class RawConv2D(RawOp):
 
     op_name = "RawConv2D"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape."""
-        inp = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
-        filters = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+        """Infer shape.
+
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
+        inp: tuple[int, ...] = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
+        filters: tuple[int, ...] = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))
         padding = kwargs.get("padding", "VALID")
         strides = kwargs.get("strides", [1, 1, 1, 1])
 
         # inp: N, H, W, C
         # filters: FH, FW, C, K
         fh, fw = filters[0], filters[1]
-        sh, sw = strides[1], strides[2]
+        sh, sw = getattr(strides, "__getitem__")(1), getattr(strides, "__getitem__")(2)
 
         out_shape = [inp[0], 0, 0, filters[3]]
 
         for i, (dim, f, s) in enumerate(zip([inp[1], inp[2]], [fh, fw], [sh, sw])):
-            if not isinstance(dim, int):
-                out_shape[i + 1] = dim  # Keep symbolic
-                continue
             if padding == "SAME":
                 out_shape[i + 1] = math.ceil(dim / s)
             else:
@@ -88,16 +105,19 @@ class RawMatMul(RawOp):
 
     op_name = "RawMatMul"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape."""
-        a = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
-        b = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+        """Infer shape.
+
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
+        a: tuple[int, ...] = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
+        b: tuple[int, ...] = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))
         transpose_a = kwargs.get("transpose_a", False)
         transpose_b = kwargs.get("transpose_b", False)
 
         a_m = a[-1] if transpose_a else a[-2]
-        a_n = a[-2] if transpose_a else a[-1]  # noqa: F841
-        b_n = b[-2] if transpose_b else b[-1]  # noqa: F841
         b_p = b[-2] if transpose_b else b[-1]
 
         from ml_switcheroo_compiler.core.shape import broadcast_shapes

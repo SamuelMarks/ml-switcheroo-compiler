@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
@@ -9,12 +11,15 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.nn.time_distributed import TimeDistributed, time_distributed
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 @register_op("MockEmptyShapeOp")
 class MockEmptyShapeOp(OpDef):
     """Mock op returning empty shape for branch coverage."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
         """Return empty shape.
 
         Args:
@@ -66,9 +71,9 @@ def test_time_distributed_dispatch_eager(mocker: pytest.MonkeyPatch) -> None:
 
     # Graph/tracing mode (config.eager_mode = False) executes the underlying decorated function
     config.eager_mode = False
-    mock_op = mocker.patch("ml_switcheroo_compiler.ops.nn.time_distributed.get_op")
+    mock_op = cast("EagerTensorProtocol", getattr(mocker, "patch"))("ml_switcheroo_compiler.ops.nn.time_distributed.get_op")
     mock_instance = mock_op.return_value.return_value
-    mock_instance.return_value = "traced_result"
+    setattr(mock_instance, "return_value", "traced_result")
 
     res_graph = time_distributed(t_3d, wrapped_op_name="Relu")
     assert res_graph == "traced_result"

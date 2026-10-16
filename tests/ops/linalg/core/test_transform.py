@@ -1,3 +1,5 @@
+"""Tests for test_transform."""
+
 # ruff: noqa: E501
 import numpy as np
 
@@ -7,6 +9,7 @@ from ml_switcheroo_compiler.ops.linalg.transform import hadamard_transform
 
 
 def test_hadamard_transform() -> None:
+    """Test function test_hadamard_transform."""
     config.eager_mode = True
     input_data = np.array([1.0, 0.0, 1.0, 0.0], dtype=np.float32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "float32", "cpu"))

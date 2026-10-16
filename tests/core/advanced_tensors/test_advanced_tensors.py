@@ -1,6 +1,10 @@
 # ruff: noqa: E501
 """Test advanced tensors."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import ConfigContext
@@ -8,6 +12,11 @@ from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
 from ml_switcheroo_compiler.core.sparse_tensor import SparseTensorCOO
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_sparse_tensor() -> None:
@@ -57,4 +66,4 @@ def test_tensor_array_eager() -> None:
 
         assert res.shape == (2, 2)
         assert stacked.shape == (2, 2, 2)
-        assert np.array_equal(res.data, np.ones((2, 2)))
+        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res.data, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))

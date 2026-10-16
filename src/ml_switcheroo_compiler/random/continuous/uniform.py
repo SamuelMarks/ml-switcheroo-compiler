@@ -31,7 +31,7 @@ def uniform(
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node(
         "RandomUniform",
-        [key],  # type: ignore[list-item]
+        [key],
         shape,
         dtype,
         {"minval": minval, "maxval": maxval},

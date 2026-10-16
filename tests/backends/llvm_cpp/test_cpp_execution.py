@@ -1,3 +1,7 @@
+"""Tests for test_cpp_execution."""
+
+from __future__ import annotations
+
 import os
 import subprocess
 import tempfile
@@ -6,7 +10,8 @@ from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 
-def test_cpp_compile_and_execute():
+def test_cpp_compile_and_execute() -> None:
+    """Test function test_cpp_compile_and_execute."""
     graph = IRGraph()
     n1 = LogicalNode(id="in1", op_type="Input")
     n1.shape_metadata = (1, 1)
@@ -53,7 +58,8 @@ int main() {
             raise
 
 
-def test_cpp_compile_and_execute_matmul():
+def test_cpp_compile_and_execute_matmul() -> None:
+    """Test function test_cpp_compile_and_execute_matmul."""
     graph = IRGraph()
     n1 = LogicalNode(id="in1", op_type="Constant", attributes={"value": 2.0})
     n1.shape_metadata = (2, 2)

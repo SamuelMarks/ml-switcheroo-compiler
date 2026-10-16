@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib
+from typing import cast
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # Comprehensive mapping of standard IR operations to pyarrow.compute functions
@@ -204,7 +206,7 @@ ARROW_COMPUTE_OP_MAP: dict[str, str] = {
 }
 
 
-def _unwrap_arg(arg: object) -> object:
+def _unwrap_arg(arg: EagerValue) -> EagerValue:
     """Unwrap Tensor into underlying array or scalar.
 
     Args:
@@ -214,15 +216,15 @@ def _unwrap_arg(arg: object) -> object:
         object: Unwrapped raw data.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return arg.data
+        return cast(EagerValue, getattr(arg, "data"))
     return arg
 
 
 def _dispatch_groupby(
     fn_name: str,
-    actual_args: tuple[object, ...],
-    kwargs: dict[str, object],
-) -> tuple[bool, object]:
+    actual_args: tuple[EagerValue, ...],
+    kwargs: dict[str, EagerValue],
+) -> tuple[bool, EagerValue]:
     """Dispatch table group_by or hash aggregations if applicable.
 
     Args:
@@ -242,7 +244,7 @@ def _dispatch_groupby(
             keys = kwargs.get("keys", actual_args[1] if len(actual_args) > 1 else [])
             aggregations = kwargs.get("aggregations", actual_args[2] if len(actual_args) > 2 else [])
             try:
-                return True, table_obj.group_by(keys).aggregate(aggregations)
+                return True, getattr(table_obj, "group_by")(keys).aggregate(aggregations)
             except Exception as exc:
                 msg = f"Failed executing group_by: {exc}"
                 raise BackendNotSupportedError(msg) from exc
@@ -254,7 +256,7 @@ def _dispatch_groupby(
         agg_name = fn_name[5:]
         if hasattr(table_obj, "group_by"):
             try:
-                return True, table_obj.group_by(keys).aggregate([(agg_col, agg_name)])
+                return True, getattr(table_obj, "group_by")(keys).aggregate([(agg_col, agg_name)])
             except Exception as exc:
                 msg = f"Failed executing {fn_name}: {exc}"
                 raise BackendNotSupportedError(msg) from exc
@@ -264,9 +266,9 @@ def _dispatch_groupby(
 
 def _dispatch_cbrt(
     fn_name: str,
-    actual_args: tuple[object, ...],
-    pc_mod: object,
-) -> tuple[bool, object]:
+    actual_args: tuple[EagerValue, ...],
+    pc_mod: EagerValue,
+) -> tuple[bool, EagerValue]:
     """Dispatch cube root via pc_mod power if applicable.
 
     Args:
@@ -282,7 +284,7 @@ def _dispatch_cbrt(
     """
     if fn_name == "cbrt" and actual_args:
         try:
-            return True, pc_mod.power(actual_args[0], 1.0 / 3.0)
+            return True, getattr(pc_mod, "power")(actual_args[0], 1.0 / 3.0)
         except Exception as exc:
             msg = f"Failed executing cbrt: {exc}"
             raise BackendNotSupportedError(msg) from exc
@@ -290,11 +292,11 @@ def _dispatch_cbrt(
 
 
 def execute_op(
-    cls_or_op: object,
-    op_type_or_first: object = None,
-    *args: object,
-    **kwargs: object,
-) -> object:
+    cls_or_op: EagerValue,
+    op_type_or_first: EagerValue = None,
+    *args: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Execute operation eagerly on Apache Arrow Compute backend.
 
     Args:
@@ -339,7 +341,7 @@ def execute_op(
     if hasattr(pc_mod, fn_name):
         compute_fn = getattr(pc_mod, fn_name)
         try:
-            return compute_fn(*actual_args, **kwargs)
+            return cast(EagerValue, compute_fn(*actual_args, **kwargs))
         except Exception as exc:
             msg = f"Failed executing pyarrow.compute.{fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
@@ -349,7 +351,7 @@ def execute_op(
     if target_name and hasattr(pc_mod, target_name):
         compute_fn = getattr(pc_mod, target_name)
         try:
-            return compute_fn(*actual_args, **kwargs)
+            return cast(EagerValue, compute_fn(*actual_args, **kwargs))
         except Exception as exc:
             msg = f"Failed executing pyarrow.compute.{target_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc

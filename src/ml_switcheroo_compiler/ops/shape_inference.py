@@ -4,13 +4,16 @@ This module provides Pydantic schema models, symbolic dimension representations,
 and declarative shape transfer functions for all operations in the compiler.
 """
 
+import logging
 import math
 import os
 from collections.abc import Callable, Sequence
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import yaml
 from pydantic import BaseModel, ConfigDict
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 
 ShapeInferFn = Callable[..., "ShapeType"]
 _SHAPE_INFERENCE_REGISTRY: dict[str, ShapeInferFn] = {}
@@ -432,15 +435,15 @@ def infer_reshape(input_shape: ShapeType, target_shape: Sequence[Union[int, S]])
     has_symbolic = any(isinstance(d, S) for d in input_shape) or any(isinstance(d, S) for d in target)
 
     if not has_symbolic and all(isinstance(d, int) for d in input_shape) and all(isinstance(d, int) for d in target):
-        total_in = math.prod(int(d) for d in input_shape)
+        total_in = math.prod(cast(int, d) for d in input_shape)
         if neg_count == 1:
             neg_idx = target.index(-1)
-            other_prod = math.prod([d for i, d in enumerate(target) if i != neg_idx])
+            other_prod = math.prod([cast(int, d) for i, d in enumerate(target) if i != neg_idx])
             if other_prod == 0 or total_in % other_prod != 0:
                 raise ValueError(f"Cannot reshape from {input_shape} (numel={total_in}) to {target_shape}")
             target[neg_idx] = total_in // other_prod
         else:
-            total_out = math.prod(int(d) for d in target)
+            total_out = math.prod(cast(int, d) for d in target)
             if total_in != total_out:
                 raise ValueError(f"Cannot reshape tensor of size {total_in} into shape {target_shape} (size {total_out})")
 
@@ -542,7 +545,7 @@ def infer_flatten(input_shape: ShapeType, start_dim: int = 0, end_dim: int = -1)
     suffix = input_shape[end + 1 :]
 
     if all(isinstance(d, int) for d in middle):
-        flat_dim: DimType = math.prod(int(d) for d in middle)
+        flat_dim: DimType = math.prod(cast(int, d) for d in middle)
     else:
         flat_dim = S("flat_dim")
 
@@ -569,6 +572,7 @@ def infer_split(input_shape: ShapeType, num_or_size_splits: Union[int, Sequence[
 
     if isinstance(num_or_size_splits, int):
         num = num_or_size_splits
+        sub_dim: Union[int, S]
         if isinstance(dim, int):
             if dim % num != 0:
                 raise ValueError(f"Cannot evenly divide dimension {dim} into {num} splits")
@@ -697,7 +701,7 @@ def _dispatch_elementwise_and_reduction(
             return ()
         axis = kwargs.get("axis", kwargs.get("axes"))
         keepdims = bool(kwargs.get("keepdims", False))
-        return infer_reduction(valid_shapes[0], axis=axis, keepdims=keepdims)
+        return cast(Optional[ShapeType], cast("Callable[..., EagerTensorProtocol]", infer_reduction)(valid_shapes[0], axis=axis, keepdims=keepdims))
     return None
 
 
@@ -724,10 +728,10 @@ def _dispatch_view_ops(
         return infer_reshape(valid_shapes[0], target) if isinstance(target, (list, tuple)) else valid_shapes[0]
     if category == "transpose":
         axes = kwargs.get("axes", kwargs.get("permutation"))
-        return infer_transpose(valid_shapes[0], axes if isinstance(axes, (list, tuple)) else None)
+        return infer_transpose(valid_shapes[0], cast("Optional[Sequence[int]]", axes if isinstance(axes, (list, tuple)) else None))
     if category == "squeeze":
         axis = kwargs.get("axis")
-        return infer_squeeze(valid_shapes[0], axis=axis if isinstance(axis, (int, list, tuple)) else None)
+        return cast(Optional[ShapeType], cast("Callable[..., EagerTensorProtocol]", infer_squeeze)(valid_shapes[0], axis=axis if isinstance(axis, (int, list, tuple)) else None))
     if category == "expand_dims":
         axis = kwargs.get("axis", 0)
         return infer_expand_dims(valid_shapes[0], axis=int(axis) if isinstance(axis, (int, float)) else 0)
@@ -755,17 +759,17 @@ def _dispatch_group_ops(
     if category == "flatten":
         return infer_flatten(
             valid_shapes[0],
-            start_dim=int(kwargs.get("start_dim", 0)),
-            end_dim=int(kwargs.get("end_dim", -1)),
+            start_dim=int(cast(int, kwargs.get("start_dim", 0))),
+            end_dim=int(cast(int, kwargs.get("end_dim", -1))),
         )
     if category == "split":
         splits = kwargs.get("num_or_size_splits", kwargs.get("chunks", 2))
-        res = infer_split(valid_shapes[0], splits, axis=int(kwargs.get("axis", 0)))
+        res = cast("Callable[..., list[ShapeType]]", infer_split)(valid_shapes[0], splits, axis=int(cast(int, kwargs.get("axis", 0))))
         return res[0] if res else ()
     if category == "concat":
-        return infer_concat(valid_shapes, axis=int(kwargs.get("axis", 0)))
+        return infer_concat(valid_shapes, axis=int(cast(int, kwargs.get("axis", 0))))
     if category == "stack":
-        return infer_stack(valid_shapes, axis=int(kwargs.get("axis", 0)))
+        return infer_stack(valid_shapes, axis=int(cast(int, kwargs.get("axis", 0))))
     return None
 
 
@@ -824,13 +828,16 @@ def _dispatch_spatial_and_pooling(
                 s_dims = 3
             else:
                 s_dims = 2
-            return infer_conv(
-                valid_shapes[0],
-                valid_shapes[1],
-                stride=kwargs.get("stride", kwargs.get("strides", 1)),
-                padding=kwargs.get("padding", 0),
-                dilation=kwargs.get("dilation", kwargs.get("dilations", 1)),
-                spatial_dims=s_dims,
+            return cast(
+                Optional[ShapeType],
+                cast("Callable[..., EagerTensorProtocol]", infer_conv)(
+                    valid_shapes[0],
+                    valid_shapes[1],
+                    stride=kwargs.get("stride", kwargs.get("strides", 1)),
+                    padding=kwargs.get("padding", 0),
+                    dilation=kwargs.get("dilation", kwargs.get("dilations", 1)),
+                    spatial_dims=s_dims,
+                ),
             )
         raise ValueError(f"Spatial op '{op_type}' requires input and weight shapes")
     if category == "pooling":
@@ -841,12 +848,15 @@ def _dispatch_spatial_and_pooling(
                 s_dims = 3
             else:
                 s_dims = 2
-            return infer_pool(
-                valid_shapes[0],
-                kernel_size=kwargs.get("kernel_size", kwargs.get("window_size", 2)),
-                stride=kwargs.get("stride", kwargs.get("strides")),
-                padding=kwargs.get("padding", 0),
-                spatial_dims=s_dims,
+            return cast(
+                Optional[ShapeType],
+                cast("Callable[..., EagerTensorProtocol]", infer_pool)(
+                    valid_shapes[0],
+                    kernel_size=kwargs.get("kernel_size", kwargs.get("window_size", 2)),
+                    stride=kwargs.get("stride", kwargs.get("strides")),
+                    padding=kwargs.get("padding", 0),
+                    spatial_dims=s_dims,
+                ),
             )
         raise ValueError(f"Pooling op '{op_type}' requires an input shape")
     return None
@@ -916,11 +926,11 @@ def _normalize_inputs_to_shapes(
     if inputs is None:
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             if any(hasattr(x, "shape") or hasattr(x, "shape_metadata") or isinstance(x, (list, tuple)) for x in args[0]) or not all(isinstance(x, (int, S)) for x in args[0]):
-                inputs = list(args[0])
+                inputs = list(getattr(args[0], "__iter__")())
             else:
-                inputs = list(args)
+                inputs = list(getattr(args, "__iter__")())
         else:
-            inputs = list(args)
+            inputs = list(getattr(args, "__iter__")())
 
     shapes: list[ShapeType] = []
     if isinstance(inputs, (list, tuple)):
@@ -967,10 +977,10 @@ def infer_shape(
             if not hasattr(op_cls, "_yaml_data"):
                 instance = op_cls()
                 try:
-                    return instance.infer_shape(*shapes, **kwargs)
+                    return cast(tuple[int, ...], instance.infer_shape(*shapes, **kwargs))
                 except Exception:
-                    return instance.infer_shape(*args, **kwargs)
-    except Exception:
-        pass
+                    return cast(tuple[int, ...], instance.infer_shape(*args, **kwargs))
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return infer_op_shape_declarative(op_type, *shapes, **kwargs)

@@ -1,13 +1,20 @@
 """Coverage tests for npz."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_npz_load_save():
+
+def test_npz_load_save() -> None:
+    """Test function test_npz_load_save."""
     format = NpzWeightFormat()
 
     # Mock backend with load_npz and save_npz
@@ -16,7 +23,7 @@ def test_npz_load_save():
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend):
         res = format.load("dummy.npz")
-        assert res == {"a": 1}
+        assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", {"a": 1})
         mock_backend.load_npz.assert_called_with("dummy.npz")
 
         format.save({"b": 2}, "dummy.npz")
@@ -29,7 +36,7 @@ def test_npz_load_save():
         with patch("ml_switcheroo_compiler.serialization.formats.npz.parse_npz", return_value={"c": 3}):
             with pytest.warns(UserWarning, match="Backend load_npz failed"):
                 res = format.load("dummy.npz")
-                assert res == {"c": 3}
+                assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", {"c": 3})
 
     # Mock backend without save_npz
     mock_backend_no_save = MagicMock()

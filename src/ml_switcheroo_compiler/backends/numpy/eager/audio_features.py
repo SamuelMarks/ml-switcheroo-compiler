@@ -1,14 +1,16 @@
-# ruff: noqa: E402, E501, F403
 """Extra audio ops for eager numpy execution."""
 
-from typing import Any
+from __future__ import annotations
+
+from types import ModuleType
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 
 
-def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
+def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate _dct_1d_matrix operation.
 
     Args:
@@ -22,10 +24,10 @@ def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
     Raises:
         ValueError: An exception.
     """
-    n: np.ndarray = np.arange(N)
-    k: np.ndarray = np.arange(N)[:, None]
+    n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)
+    k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)[:, None]
     if type == 1:
-        m: np.ndarray = np.cos(np.pi * k * n / (N - 1))
+        m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.cos(np.pi * k * n / (N - 1))
         if norm == "ortho":
             m[0, :] *= np.sqrt(0.5)
             m[-1, :] *= np.sqrt(0.5)
@@ -34,7 +36,7 @@ def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
             m *= np.sqrt(2 / (N - 1))
         return m
     elif type == 2:
-        m: np.ndarray = np.cos(np.pi * k * (2 * n + 1) / (2 * N))
+        m = np.cos(np.pi * k * (2 * n + 1) / (2 * N))
         if norm == "ortho":
             m[0, :] *= np.sqrt(0.5)
             m *= np.sqrt(2 / N)
@@ -42,7 +44,7 @@ def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
             m *= 2.0
         return m
     elif type == 3:
-        m: np.ndarray = np.cos(np.pi * (2 * k + 1) * n / (2 * N))
+        m = np.cos(np.pi * (2 * k + 1) * n / (2 * N))
         if norm == "ortho":
             m[:, 0] *= np.sqrt(0.5)
             m *= np.sqrt(2 / N)
@@ -51,7 +53,7 @@ def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
             m *= 2.0
         return m
     elif type == 4:
-        m: np.ndarray = np.cos(np.pi * (2 * k + 1) * (2 * n + 1) / (4 * N))
+        m = np.cos(np.pi * (2 * k + 1) * (2 * n + 1) / (4 * N))
         if norm == "ortho":
             m *= np.sqrt(2 / N)
         else:
@@ -61,7 +63,7 @@ def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
 
 
 @numpy_eager_registry.register("Dct")
-def _np_dct(backend_module: Any, *args, **kwargs):
+def _np_dct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_dct operation.
 
     Args:
@@ -72,19 +74,19 @@ def _np_dct(backend_module: Any, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray = np.asarray(args[0])
-    type: int = kwargs.get("type", 2)
-    axis: int = kwargs.get("axis", -1)
-    norm: str = kwargs.get("norm", None)
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    type: int = cast(int, kwargs.get("type", 2))
+    axis: int = cast(int, kwargs.get("axis", -1))
+    norm: str | None = cast("str | None", kwargs.get("norm", None))
 
     N = x.shape[axis]
-    m: np.ndarray = _dct_1d_matrix(N, type, norm)
-    res: np.ndarray = np.tensordot(x, m, axes=(axis, 1))
-    res: np.ndarray = np.moveaxis(res, -1, axis)
+    m: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _dct_1d_matrix(N, type, norm)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
+    res = np.moveaxis(res, -1, axis)
     return res
 
 
-def _idct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
+def _idct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _idct_1d_matrix operation.
 
     Args:
@@ -99,22 +101,22 @@ def _idct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
         ValueError: An exception.
     """
     if type == 1:
-        m: np.ndarray = _dct_1d_matrix(N, 1, norm)
+        m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _dct_1d_matrix(N, 1, norm)
         if norm != "ortho":
             m /= 2 * (N - 1)
         return m
     elif type == 2:
-        m: np.ndarray = _dct_1d_matrix(N, 3, norm)
+        m = _dct_1d_matrix(N, 3, norm)
         if norm != "ortho":
             m /= 2 * N
         return m
     elif type == 3:
-        m: np.ndarray = _dct_1d_matrix(N, 2, norm)
+        m = _dct_1d_matrix(N, 2, norm)
         if norm != "ortho":
             m /= 2 * N
         return m
     elif type == 4:
-        m: np.ndarray = _dct_1d_matrix(N, 4, norm)
+        m = _dct_1d_matrix(N, 4, norm)
         if norm != "ortho":
             m /= 2 * N
         return m
@@ -122,7 +124,7 @@ def _idct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
 
 
 @numpy_eager_registry.register("Idct")
-def _np_idct(backend_module: Any, *args, **kwargs):
+def _np_idct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_idct operation.
 
     Args:
@@ -133,20 +135,20 @@ def _np_idct(backend_module: Any, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray = np.asarray(args[0])
-    type: int = kwargs.get("type", 2)
-    axis: int = kwargs.get("axis", -1)
-    norm: str = kwargs.get("norm", None)
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    type: int = cast(int, kwargs.get("type", 2))
+    axis: int = cast(int, kwargs.get("axis", -1))
+    norm: str | None = cast("str | None", kwargs.get("norm", None))
 
     N = x.shape[axis]
-    m: np.ndarray = _idct_1d_matrix(N, type, norm)
-    res: np.ndarray = np.tensordot(x, m, axes=(axis, 1))
-    res: np.ndarray = np.moveaxis(res, -1, axis)
+    m: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _idct_1d_matrix(N, type, norm)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
+    res = np.moveaxis(res, -1, axis)
     return res
 
 
 @numpy_eager_registry.register("Mdct")
-def _np_mdct(backend_module: Any, *args, **kwargs):
+def _np_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement MDCT eagerly in numpy.
 
     Args:
@@ -160,21 +162,22 @@ def _np_mdct(backend_module: Any, *args, **kwargs):
     Raises:
         ValueError: An exception.
     """
-    x: np.ndarray = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
     N = kwargs.get("N", x.shape[-1] // 2)
 
-    if x.shape[-1] != 2 * N:
+    n_int = int(cast(int, N))
+    if int(x.shape[-1]) != 2 * n_int:
         raise ValueError("MDCT input last dimension must be 2N")
 
-    n: np.ndarray = np.arange(2 * N)
-    k: np.ndarray = np.arange(N)[:, None]
-    m: np.ndarray = np.cos(np.pi / N * (n + 0.5 + N / 2) * (k + 0.5))
-    res: np.ndarray = np.tensordot(x, m, axes=(-1, 1))
+    n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(2 * n_int, dtype=float)
+    k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(n_int, dtype=float)[:, None]
+    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "cos")(np.pi / n_int * (n + 0.5 + n_int / 2) * (k + 0.5))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(-1, 1))
     return res
 
 
 @numpy_eager_registry.register("InverseMdct")
-def _np_inverse_mdct(backend_module: Any, *args, **kwargs):
+def _np_inverse_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Inverse MDCT eagerly in numpy.
 
     Args:
@@ -185,18 +188,18 @@ def _np_inverse_mdct(backend_module: Any, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
     N = x.shape[-1]
 
-    k: np.ndarray = np.arange(N)
-    n: np.ndarray = np.arange(2 * N)[:, None]
-    m: np.ndarray = np.cos(np.pi / N * (n + 0.5 + N / 2) * (k + 0.5))
-    res: np.ndarray = np.tensordot(x, m, axes=(-1, 1))
+    k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)
+    n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(2 * N, dtype=float)[:, None]
+    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.cos(np.pi / N * (n + 0.5 + N / 2) * (k + 0.5))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(-1, 1))
     return res * (1.0 / N)
 
 
 @numpy_eager_registry.register("Frame")
-def _np_frame(backend_module: Any, *args, **kwargs):
+def _np_frame(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Frame eagerly in numpy.
 
     Args:
@@ -207,19 +210,19 @@ def _np_frame(backend_module: Any, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray = np.asarray(args[0])
-    frame_length: int = kwargs.get("frame_length", 1)
-    frame_step: int = kwargs.get("frame_step", 1)
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    frame_length: int = cast(int, kwargs.get("frame_length", 1))
+    frame_step: int = cast(int, kwargs.get("frame_step", 1))
     num_frames: int = (x.shape[-1] - frame_length) // frame_step + 1
     if num_frames <= 0:
         return np.empty(list(x.shape)[:-1] + [0, frame_length], dtype=x.dtype)
-    shape: list = list(x.shape)[:-1] + [num_frames, frame_length]
-    strides: list = list(x.strides)[:-1] + [x.strides[-1] * frame_step, x.strides[-1]]
+    shape: list[int] = list(x.shape)[:-1] + [num_frames, frame_length]
+    strides: list[int] = list(x.strides)[:-1] + [x.strides[-1] * frame_step, x.strides[-1]]
     return np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
 
 
 @numpy_eager_registry.register("OverlapAndAdd")
-def _np_overlap_and_add(backend_module: Any, *args, **kwargs):
+def _np_overlap_and_add(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement OverlapAndAdd eagerly in numpy.
 
     Args:
@@ -230,23 +233,23 @@ def _np_overlap_and_add(backend_module: Any, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray = np.asarray(args[0])
-    frame_step: int = kwargs.get("frame_step", 1)
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    frame_step: int = cast(int, kwargs.get("frame_step", 1))
     num_frames: int = x.shape[-2]
     frame_length: int = x.shape[-1]
     res_length: int = (num_frames - 1) * frame_step + frame_length
-    res: np.ndarray = np.zeros(list(x.shape)[:-2] + [res_length], dtype=x.dtype)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.zeros(list(x.shape)[:-2] + [res_length], dtype=x.dtype)
 
-    orig_shape: list = x.shape
-    batch_shape: list = orig_shape[:-2]
+    orig_shape: tuple[int, ...] = x.shape
+    batch_shape: tuple[int, ...] = orig_shape[:-2]
     flat_batch_size: int = int(np.prod(batch_shape)) if batch_shape else 1
 
-    flat_signal: np.ndarray = x.reshape((flat_batch_size, num_frames, frame_length))
-    flat_res: np.ndarray = res.reshape((flat_batch_size, res_length))
+    flat_signal: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = x.reshape((flat_batch_size, num_frames, frame_length))
+    flat_res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = res.reshape((flat_batch_size, res_length))
 
     for i in range(num_frames):
-        start: int = i * frame_step
-        end: int = start + frame_length
-        flat_res[:, start:end] += flat_signal[:, i, :]
+        start = i * frame_step
+        end = start + frame_length
+        flat_res[:, start:end] = flat_res[:, start:end] + flat_signal[:, i, :].astype(np.float64)
 
     return res

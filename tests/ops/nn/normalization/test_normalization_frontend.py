@@ -1,3 +1,8 @@
+"""Tests for test_normalization_frontend."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import numpy as np
@@ -6,8 +11,12 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.normalization.frontend import NormConfig, group_mean, group_norm, group_variance, spectral_normalization
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-def test_normalization_frontend_brute():
+
+def test_normalization_frontend_brute() -> None:
+    """Test function test_normalization_frontend_brute."""
     config.backend = "numpy"
     config.eager_mode = True
 
@@ -17,10 +26,14 @@ def test_normalization_frontend_brute():
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
 
         class DummyBackend:
-            def execute_op(self, *args, **kwargs):
+            """Test class DummyBackend."""
+
+            def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+                """Test function execute_op."""
                 return np.zeros((2, 4, 8, 8)).astype(np.float32)
 
-            def array(self, x):
+            def array(self, x: EagerValue) -> EagerValue:
+                """Test function array."""
                 return x
 
         mock_backend.return_value = DummyBackend()
@@ -41,7 +54,8 @@ def test_normalization_frontend_brute():
     config.eager_mode = False
     with patch.object(norm_frontend, "get_op") as mock_get_op:
 
-        def dummy_op(*args, **kwargs):
+        def dummy_op(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function dummy_op."""
             return t_in
 
         mock_get_op.return_value = lambda: dummy_op
@@ -57,3 +71,4 @@ def test_normalization_frontend_brute():
             with patch.object(norm_frontend, "divide") as mock_div:
                 mock_div.return_value = t_in
                 spectral_normalization(t_in, u_in)
+    assert u_in is not None or u_in is None

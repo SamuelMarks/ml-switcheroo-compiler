@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+from types import ModuleType
 from typing import TYPE_CHECKING
 
-import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
+h5py: ModuleType | None
 try:
-    import h5py
+    import h5py as _h5py
+
+    h5py = _h5py
 except ImportError:
-    h5py = None  # type: ignore[assignment]
+    h5py = None
 
 if TYPE_CHECKING:
     import h5py as h5py_types
@@ -21,21 +25,21 @@ if TYPE_CHECKING:
 class WeightSchema(BaseModel):
     """Schema for validating weight structures."""
 
-    model_config: ConfigDict = ConfigDict(arbitrary_types_allowed=True)
-    data: dict[str, np.ndarray] = Field(description="The weight data")
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    data: dict[str, TensorLike] = Field(description="The weight data")
 
 
 class HDF5WeightLoader(WeightLoader):
     """HDF5 implementation for loading weights."""
 
-    def load(self, filepath: str) -> dict[str, np.ndarray]:
+    def load(self, filepath: str) -> dict[str, TensorLike]:
         """Load weights from an HDF5 file.
 
         Args:
             filepath (str): Path to the HDF5 file.
 
         Returns:
-            dict[str, np.ndarray]: The loaded weights.
+            dict[str, TensorLike]: The loaded weights.
 
         Raises:
             ImportError: If h5py is not installed.
@@ -43,7 +47,7 @@ class HDF5WeightLoader(WeightLoader):
         if h5py is None:
             raise ImportError("h5py is required for HDF5 weight loading. Please install h5py.")
 
-        weights: dict[str, np.ndarray] = {}
+        weights: dict[str, TensorLike] = {}
 
         def _visit_func(name: str, node: h5py_types.Group | h5py_types.Dataset) -> None:
             """Visit HDF5 nodes and extract datasets.
@@ -66,11 +70,11 @@ class HDF5WeightLoader(WeightLoader):
 class HDF5WeightSaver(WeightSaver):
     """HDF5 implementation for saving weights."""
 
-    def save(self, weights_np: dict[str, np.ndarray], filepath: str) -> None:
+    def save(self, weights_np: dict[str, TensorLike], filepath: str) -> None:
         """Save weights to an HDF5 file.
 
         Args:
-            weights_np (dict[str, np.ndarray]): The weights to save.
+            weights_np (dict[str, TensorLike]): The weights to save.
             filepath (str): Path to the HDF5 file.
 
         Raises:

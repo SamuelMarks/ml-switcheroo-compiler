@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 
@@ -15,10 +15,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.indexing import _dynamic_update
 @numpy_eager_registry.register("TensorScatterUpdate")
 def _np_tensor_scatter_update(
     backend_module: ModuleType,
-    tensor: np.ndarray,
-    indices: np.ndarray,
-    updates: np.ndarray,
-) -> np.ndarray:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate tensor scatter update operation.
 
     Args:
@@ -33,16 +33,16 @@ def _np_tensor_scatter_update(
     res = backend_module.copy(backend_module.array(tensor))
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     res[idx] = backend_module.array(updates)
-    return res
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
 def _np_tensor_scatter_add(
     backend_module: ModuleType,
-    tensor: np.ndarray,
-    indices: np.ndarray,
-    updates: np.ndarray,
-) -> np.ndarray:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate tensor scatter add operation.
 
     Args:
@@ -57,16 +57,16 @@ def _np_tensor_scatter_add(
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.add.at(res, idx, backend_module.array(updates))
-    return res
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
 
 
 @numpy_eager_registry.register("TensorScatterMax")
 def _np_tensor_scatter_max(
     backend_module: ModuleType,
-    tensor: np.ndarray,
-    indices: np.ndarray,
-    updates: np.ndarray,
-) -> np.ndarray:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate tensor scatter maximum operation.
 
     Args:
@@ -81,16 +81,16 @@ def _np_tensor_scatter_max(
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.maximum.at(res, idx, backend_module.array(updates))
-    return res
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
 
 
 @numpy_eager_registry.register("TensorScatterMin")
 def _np_tensor_scatter_min(
     backend_module: ModuleType,
-    tensor: np.ndarray,
-    indices: np.ndarray,
-    updates: np.ndarray,
-) -> np.ndarray:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate tensor scatter minimum operation.
 
     Args:
@@ -105,17 +105,17 @@ def _np_tensor_scatter_min(
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.minimum.at(res, idx, backend_module.array(updates))
-    return res
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
 
 
 @numpy_eager_registry.register("ScatterNd")
 def _np_scatter_nd(
     backend_module: ModuleType,
-    indices: Union[np.ndarray, Sequence[int]],
-    updates: np.ndarray,
+    indices: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], Sequence[int]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     shape: tuple[int, ...],
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate scatter_nd operation creating zero tensor with scattered updates.
 
     Args:
@@ -137,9 +137,9 @@ def _np_scatter_nd(
 @numpy_eager_registry.register("Scatter")
 def _np_scatter(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int],
     **kwargs: Union[int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate scatter operation along a dimension.
 
     Args:
@@ -156,15 +156,15 @@ def _np_scatter(
     dim_val = kwargs.get("dim", 0)
     dim = int(dim_val) if dim_val is not None else 0
     out = np.copy(input_data)
-    np.put_along_axis(out, index, src, axis=dim)
+    getattr(np, "put_along_axis")(out, index, src, axis=dim)
     return out
 
 
 def _band_part(
-    input_tensor: np.ndarray,
+    input_tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     num_lower: int,
     num_upper: int,
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate band_part matrix operation.
 
     Args:
@@ -183,9 +183,9 @@ def _band_part(
 @numpy_eager_registry.register("GatherNd")
 def _np_gather_nd(
     backend_module: ModuleType,
-    params: np.ndarray,
-    indices: np.ndarray,
-) -> np.ndarray:
+    params: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate gather_nd operation.
 
     Args:
@@ -197,16 +197,16 @@ def _np_gather_nd(
         np.ndarray: Gathered tensor elements.
     """
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
-    return params[idx]
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], params[idx])
 
 
 @numpy_eager_registry.register("TakeAlongAxis")
 def _np_take_along_axis(
     backend_module: ModuleType,
-    x: np.ndarray,
-    indices: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     axis: int,
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate take_along_axis operation.
 
     Args:
@@ -218,16 +218,18 @@ def _np_take_along_axis(
     Returns:
         np.ndarray: Selected slice values.
     """
-    return backend_module.take_along_axis(x, indices, axis=axis)
+    if x.ndim != indices.ndim:
+        return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.take(x, indices, axis=axis))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.take_along_axis(x, indices, axis=axis))
 
 
 @numpy_eager_registry.register("DynamicSlice")
 def _np_dynamic_slice(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     start_indices: Sequence[int],
     slice_sizes: Sequence[int],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate dynamic slicing from variable starts with fixed sizes.
 
     Args:
@@ -246,9 +248,9 @@ def _np_dynamic_slice(
 @numpy_eager_registry.register("DynamicUpdateSlice")
 def _np_dynamic_update_slice(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, Sequence[int]],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], Sequence[int]],
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate dynamic update slice operation.
 
     Args:

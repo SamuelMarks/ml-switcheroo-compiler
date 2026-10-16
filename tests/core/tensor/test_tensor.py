@@ -1,166 +1,106 @@
-# ruff: noqa: E501
-"""Core abstractions and logic definitions for test_tensor.py."""
+"""Unit tests for Tensor and Variable methods and edge cases."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+from unittest.mock import patch
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_tensor_coverage() -> None:
-    """Test the tensor coverage behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
+    """Test Tensor iteration, length, and indexing in eager mode."""
+    config.eager_mode = True
     try:
-        "Execute the requested function."
-        config.eager_mode = True
         t = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, Device("cpu")))
-        assert t.__len__() == 2
-        for _x in t:
-            pass
-        t[0]
+        assert len(t) == 2
+        elems = [x for x in t]
+        assert len(elems) == 2
+        assert t[0] is not None
+    finally:
         config.eager_mode = False
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-"""Tests for tensor edge cases to ensure full coverage."""
 
 
 def test_tensor_backward_and_view() -> None:
-    """Test tensor view and backward for coverage."""
-    t = Tensor(np.array(2.0), TensorConfig((), DType.Float32, "cpu"))
-    # The default backend might not have backward/view implemented, so we catch exceptions.
-    try:
-        t.backward()
-    except Exception:
-        pass
-
-    try:
-        t.view(1)
-    except Exception:
-        pass
-
-    try:
-        t.view([1])
-    except Exception:
-        pass
-
-    try:
-        t.transpose(0)
-    except Exception:
-        pass
-
-    try:
-        t.reshape(1)
-    except Exception:
-        pass
-
-    try:
-        t.astype("int32")
-    except Exception:
-        pass
-
-    try:
-        t.cpu()
-    except Exception:
-        pass
-
-    try:
-        t.to("cpu")
-    except Exception:
-        pass
+    """Test tensor view and backward methods."""
+    config.eager_mode = True
+    t = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, "cpu"))
+    t.backward()
+    assert cast("EagerTensorProtocol", getattr(t.view(1), "shape")) == (1,)
+    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", t.view)([1]), "shape")) == (1,)
 
 
 def test_tensor_more_methods() -> None:
-    """Test more methods for coverage."""
-    t = Tensor(np.array(2.0), TensorConfig((), DType.Float32, "cpu"))
-    try:
-        t.contiguous()
-    except Exception:
-        pass
-    try:
-        t.detach()
-    except Exception:
-        pass
-    try:
-        int(t)
-    except Exception:
-        pass
+    """Test contiguous, detach, int conversion, and Variable assign_add/assign_sub."""
+    config.eager_mode = True
+    t = Tensor(np.array(2, dtype=np.int32), TensorConfig((), DType.Int32, "cpu"))
+    assert t.contiguous() is t
+    assert t.detach() is not None
+    assert int(t) == 2
 
-    from ml_switcheroo_compiler.core.tensor import Variable
-
-    v = Variable(np.array(2.0), TensorConfig((), DType.Float32, "cpu"))
-    try:
-        v.assign_add(t)
-    except Exception:
-        pass
-    try:
-        v.assign_sub(t)
-    except Exception:
-        pass
+    v = Variable(np.array(2.0, dtype=np.float32), TensorConfig((), DType.Float32, "cpu"))
+    t_f = Tensor(np.array(1.0, dtype=np.float32), TensorConfig((), DType.Float32, "cpu"))
+    assert v.assign_add(t_f) is not None
+    assert v.assign_sub(t_f) is not None
 
 
 def test_tensor_non_eager_and_index() -> None:
     """Test non-eager mode Variable and __index__."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.tensor import Variable
-
     v = Variable(np.array(2.0), TensorConfig((), DType.Float32, "cpu"))
-    t = Tensor(np.array(1.0), TensorConfig((), DType.Float32, "cpu"))
+    t = Tensor(np.array(1, dtype=np.int32), TensorConfig((), DType.Int32, "cpu"))
     old_eager = config.eager_mode
     config.eager_mode = False
+    global_tracing_state.is_tracing = False
     try:
-        v.assign_add(t)
-    except Exception:
-        pass
-    try:
-        v.assign_sub(t)
-    except Exception:
-        pass
-    config.eager_mode = old_eager
+        with patch("ml_switcheroo_compiler.ops.registry.get_util", side_effect=RuntimeError("not tracing")):
+            with pytest.raises(RuntimeError):
+                v.assign_add(t)
+            with pytest.raises(RuntimeError):
+                v.assign_sub(t)
+    finally:
+        config.eager_mode = old_eager
 
-    try:
-        t.__index__()
-    except Exception:
-        pass
+    assert t.__index__() == 1
 
 
 def test_tensor_config_list_shape() -> None:
     """Test initializing TensorConfig with list shape."""
-    config = TensorConfig(shape=[2, 2], dtype=DType("float32"), device=Device("cpu"))
-    assert config.shape == (2, 2)
+    cfg = TensorConfig(shape=[2, 2], dtype=DType("float32"), device=Device("cpu"))
+    assert cfg.shape == (2, 2)
 
 
 def test_tensor_view() -> None:
     """Test tensor view with different shape args."""
-    config = TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu"))
-    t = Tensor(42, config=config)
-    from unittest.mock import patch
+    cfg = TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu"))
+    t = Tensor(42, config=cfg)
 
     with patch("ml_switcheroo_compiler.ops.registry.get_frontend") as mock_frontend:
         mock_frontend.return_value = lambda x, s: x
         res = t.view(2, 2)
         assert res is t
 
-        res2 = t.view([2, 2])
-        assert res2 is t
+        res2 = cast("Callable[..., EagerTensorProtocol]", t.view)([2, 2])
+        assert id(res2) == id(t)
 
 
 def test_valid_force_edge_cases() -> None:
     """Verify that edge inputs like zero-length arrays and empty shapes are handled correctly."""
-    # Verify that a 0-D empty array handles operations correctly
     t1 = Tensor(np.array(0.0), TensorConfig((), DType.Float32, "cpu"))
     assert t1.shape == ()
     assert t1.data == 0.0
 
-    # Verify that a zero-length array handles shape mappings
     t2 = Tensor(np.zeros((0, 5)), TensorConfig((0, 5), DType.Float32, "cpu"))
     assert t2.shape == (0, 5)
-    assert t2.data.size == 0
+    assert cast("EagerTensorProtocol", getattr(t2.data, "size")) == 0

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -293,8 +294,8 @@ class StablehloSchemaConfig(BaseModel):
     operations: dict[str, str]
     op_mapping: dict[str, str]
     lowering_rules: dict[str, StablehloOpLoweringConfig] = Field(default_factory=dict)
-    control_flow: dict[str, object] = Field(default_factory=dict)
-    bytecode: dict[str, object] = Field(default_factory=dict)
+    control_flow: dict[str, AttributeValue] = Field(default_factory=dict)
+    bytecode: dict[str, AttributeValue] = Field(default_factory=dict)
 
 
 class OnnxOpBuilderConfig(BaseModel):

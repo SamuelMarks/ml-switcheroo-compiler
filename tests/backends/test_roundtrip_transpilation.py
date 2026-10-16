@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
 from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
 from ml_switcheroo_compiler.backends.ir_to_ast import emit_ir_to_ast
 from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_roundtrip_transpilation_pytorch_jax_mlx() -> None:
@@ -63,16 +70,16 @@ def test_roundtrip_transpilation_pytorch_jax_mlx() -> None:
     y_val = np.array([[0.5, 0.5], [1.0, 1.0]], dtype=np.float32)
     input_map = {"x": x_val, "y": y_val}
 
-    res_pt = evaluate_graph(ir_from_pt, input_map)
-    res_jax = evaluate_graph(ir_from_jax, input_map)
-    res_mlx = evaluate_graph(ir_from_mlx, input_map)
+    res_pt = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_from_pt, input_map)
+    res_jax = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_from_jax, input_map)
+    res_mlx = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_from_mlx, input_map)
 
     out_pt = res_pt[ir_from_pt.outputs[-1]]
     out_jax = res_jax[ir_from_jax.outputs[-1]]
     out_mlx = res_mlx[ir_from_mlx.outputs[-1]]
 
-    np.testing.assert_allclose(out_pt, out_jax)
-    np.testing.assert_allclose(out_jax, out_mlx)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_pt, out_jax)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_jax, out_mlx)
 
 
 def test_roundtrip_source_level_cst() -> None:
@@ -134,19 +141,19 @@ def test_roundtrip_mlp_parity() -> None:
         "b2": np.random.randn(2).astype(np.float32),
     }
 
-    res_pt = evaluate_graph(ir_pt, inputs)
-    res_jax = evaluate_graph(ir_jax, inputs)
-    res_mlx = evaluate_graph(ir_mlx, inputs)
-    res_rt = evaluate_graph(ir_pt_roundtrip, inputs)
+    res_pt = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_pt, inputs)
+    res_jax = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_jax, inputs)
+    res_mlx = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_mlx, inputs)
+    res_rt = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_pt_roundtrip, inputs)
 
     out_pt = res_pt[ir_pt.outputs[-1]]
     out_jax = res_jax[ir_jax.outputs[-1]]
     out_mlx = res_mlx[ir_mlx.outputs[-1]]
     out_rt = res_rt[ir_pt_roundtrip.outputs[-1]]
 
-    np.testing.assert_allclose(out_pt, out_jax, rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out_jax, out_mlx, rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out_mlx, out_rt, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_pt, out_jax, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_jax, out_mlx, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_mlx, out_rt, rtol=1e-5, atol=1e-5)
 
 
 def test_roundtrip_attention_parity() -> None:
@@ -176,16 +183,16 @@ def test_roundtrip_attention_parity() -> None:
         "v": np.random.randn(2, 4, 8).astype(np.float32),
     }
 
-    res_pt = evaluate_graph(ir_pt, inputs)
-    res_jax = evaluate_graph(ir_jax, inputs)
-    res_rt = evaluate_graph(ir_pt_rt, inputs)
+    res_pt = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_pt, inputs)
+    res_jax = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_jax, inputs)
+    res_rt = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_pt_rt, inputs)
 
     out_pt = res_pt[ir_pt.outputs[-1]]
     out_jax = res_jax[ir_jax.outputs[-1]]
     out_rt = res_rt[ir_pt_rt.outputs[-1]]
 
-    np.testing.assert_allclose(out_pt, out_jax, rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out_jax, out_rt, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_pt, out_jax, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_jax, out_rt, rtol=1e-5, atol=1e-5)
 
 
 def test_roundtrip_keras_to_pytorch_parity() -> None:
@@ -214,13 +221,13 @@ def test_roundtrip_keras_to_pytorch_parity() -> None:
         "b": np.random.randn(4).astype(np.float32),
     }
 
-    res_keras = evaluate_graph(ir_keras, inputs)
-    res_pt = evaluate_graph(ir_pt, inputs)
+    res_keras = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_keras, inputs)
+    res_pt = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_pt, inputs)
 
     out_keras = res_keras[ir_keras.outputs[-1]]
     out_pt = res_pt[ir_pt.outputs[-1]]
 
-    np.testing.assert_allclose(out_keras, out_pt, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_keras, out_pt, rtol=1e-5, atol=1e-5)
 
 
 def test_roundtrip_convnet_parity() -> None:
@@ -240,13 +247,13 @@ def test_roundtrip_convnet_parity() -> None:
         "b": np.random.randn(4).astype(np.float32),
     }
 
-    res_pt = evaluate_graph(ir_pt, inputs)
-    res_mlx = evaluate_graph(ir_mlx, inputs)
+    res_pt = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_pt, inputs)
+    res_mlx = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_mlx, inputs)
 
     out_pt = res_pt[ir_pt.outputs[-1]]
     out_mlx = res_mlx[ir_mlx.outputs[-1]]
 
-    np.testing.assert_allclose(out_pt, out_mlx, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out_pt, out_mlx, rtol=1e-5, atol=1e-5)
 
 
 def test_standard_architectures_code_generation_parity() -> None:
@@ -288,5 +295,5 @@ def test_standard_architectures_code_generation_parity() -> None:
         for w_name, w_spec in workload.weights.items():
             sample_inputs[w_name] = np.ones(tuple(w_spec.shape), dtype=np.float32)
 
-        ref_result = evaluate_graph(graph, sample_inputs)
+        ref_result = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(graph, sample_inputs)
         assert len(ref_result) > 0

@@ -1,17 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """math_internal module."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 import typing  # noqa: F401
-from typing import Any
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    global_eager_registry,
+)
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Copysign")
-def _copysign(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _copysign(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _copysign operation.
 
     Args:
@@ -24,14 +28,14 @@ def _copysign(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "copysign", None)
     if func:
-        return func(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
     x = args[0]
     y = args[1]
-    return backend_module.abs(x) * backend_module.sign(y)
+    return cast(EagerValue, getattr(backend_module, "abs")(x) * getattr(backend_module, "sign")(y))
 
 
 @global_eager_registry.register("GetPrintoptions")
-def _getprintoptions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _getprintoptions(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _getprintoptions operation.
 
     Args:
@@ -42,11 +46,11 @@ def _getprintoptions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.get_printoptions(*args, **kwargs)
+    return cast(EagerValue, getattr(backend_module, "get_printoptions")(*args, **kwargs))
 
 
 @global_eager_registry.register("NpTensorarrayread")
-def _np_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorarrayread(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_tensorarrayread operation.
 
     Args:
@@ -64,28 +68,29 @@ def _np_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         return 0
 
     arr = args[0]
-    index = int(args[1]) if len(args) > 1 else int(kwargs.get("index", 0))
+    index = int(cast(int, args[1])) if len(args) > 1 else int(cast(int, kwargs.get("index", 0)))
 
     if isinstance(arr, list):
         if index < 0 or index >= len(arr):
             raise IndexError(f"TensorArray index {index} out of bounds for list of length {len(arr)}")
-        return arr[index]
+        return cast(EagerValue, arr[index])
 
     if hasattr(arr, "shape") and hasattr(arr, "__getitem__"):
-        if index < 0 or index >= arr.shape[0]:
-            raise IndexError(f"TensorArray index {index} out of bounds for axis 0 of size {arr.shape[0]}")
-        return arr[index]
+        arr_t = typing.cast(EagerTensorProtocol, arr)
+        if index < 0 or index >= arr_t.shape[0]:
+            raise IndexError(f"TensorArray index {index} out of bounds for axis 0 of size {arr_t.shape[0]}")
+        return arr_t[index]
 
     if isinstance(arr, dict):
         if index not in arr:
             raise IndexError(f"TensorArray index {index} not found in sparse handle")
-        return arr[index]
+        return cast(EagerValue, arr[index])
 
     return 0
 
 
 @global_eager_registry.register("NpTensorarraywrite")
-def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorarraywrite(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_tensorarraywrite operation.
 
     Args:
@@ -103,7 +108,7 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         return 0
 
     arr = args[0]
-    index = int(args[1]) if len(args) > 1 else int(kwargs.get("index", 0))
+    index = int(cast(int, args[1])) if len(args) > 1 else int(cast(int, kwargs.get("index", 0)))
     value = args[2] if len(args) > 2 else kwargs.get("value", None)
 
     if index < 0:
@@ -116,19 +121,17 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         res[index] = value
         return res
 
-    import numpy as np
-
     if isinstance(arr, np.ndarray):
         if index < arr.shape[0]:
             res_arr = arr.copy()
             res_arr[index] = value
-            return res_arr
+            return cast(EagerValue, res_arr)
         pad_shape = list(arr.shape)
         pad_shape[0] = index - arr.shape[0] + 1
         pad = np.zeros(pad_shape, dtype=arr.dtype)
         res_arr = np.concatenate([arr, pad], axis=0)
         res_arr[index] = value
-        return res_arr
+        return cast(EagerValue, res_arr)
 
     if isinstance(arr, dict):
         res_dict = dict(arr)
@@ -139,7 +142,7 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("NpTopk")
-def _np_topk(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_topk(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_topk operation.
 
     Args:
@@ -151,9 +154,7 @@ def _np_topk(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
             object: Result.
     """
     arr = args[0]
-    k = args[1] if len(args) > 1 else 1
-    import numpy as np
-
+    k = int(cast(int, args[1])) if len(args) > 1 else 1
     if isinstance(arr, (list, np.ndarray)):
         arr_np = np.array(arr)
         idx = np.argsort(arr_np)[-k:][::-1]

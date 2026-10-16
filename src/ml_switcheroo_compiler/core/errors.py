@@ -1,12 +1,11 @@
-# ruff: noqa: E402, E501, F403
-"""Module errors.py."""
+"""Error classes for the ml-switcheroo compiler."""
+
+from __future__ import annotations
 
 import os
-from typing import Any, Optional
+from typing import Optional
 
 import yaml
-
-"""Error classes for the ml-switcheroo compiler."""
 
 _ERROR_TEMPLATES: dict[str, str] = {}
 
@@ -25,10 +24,18 @@ def _load_error_templates() -> None:
                 _ERROR_TEMPLATES = yaml.safe_load(f) or {}
 
 
-class CompilerError(Exception):
+class CompilerError(RuntimeError):
     """Define single authoritative root exception for all ml-switcheroo errors."""
 
-    def __init__(self, message: str = "", node_id: Optional[str] = None, op_type: Optional[str] = None, backend_target: Optional[str] = None, trace_context: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        message: str = "",
+        node_id: Optional[str] = None,
+        op_type: Optional[str] = None,
+        backend_target: Optional[str] = None,
+        trace_context: Optional[str] = None,
+        **kwargs: str | int | float | bool | None,
+    ) -> None:
         """Initialize the base compiler exception.
 
         Args:
@@ -40,7 +47,7 @@ class CompilerError(Exception):
             **kwargs: Values to inject into predefined error templates.
         """
         _load_error_templates()
-        template = _ERROR_TEMPLATES.get(self.__class__.__name__)
+        template = _ERROR_TEMPLATES.get(self.__class__.__name__) or _ERROR_TEMPLATES.get("SwitcherooError")
         if template and kwargs and not message:
             try:
                 message = template.format(**kwargs)
@@ -66,8 +73,7 @@ class CompilerError(Exception):
         super().__init__(full_message)
 
 
-class SwitcherooError(CompilerError):
-    """Legacy base class, mapped to CompilerError."""
+SwitcherooError = CompilerError
 
 
 class FrontendBoundaryViolationError(CompilerError):

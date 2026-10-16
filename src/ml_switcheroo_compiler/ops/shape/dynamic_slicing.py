@@ -1,17 +1,16 @@
-"""Module dynamic_slicing.py."""
+"""Shape operations for Tensor Anys."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Shape operations for Tensor Anys."""
 import builtins
 from collections.abc import Sequence
+from typing import cast
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
@@ -22,7 +21,7 @@ def dynamic_slice(
     input: Tensor,
     start_indices: Sequence[Tensor],
     slice_sizes: Sequence[int],
-):
+) -> EagerValue:
     """Slice the input tensor dynamically using start indices and slice sizes.
 
     Args:
@@ -37,12 +36,12 @@ def dynamic_slice(
         starts = []
         for s in start_indices:
             if hasattr(s, "data"):
-                starts.append(int(s.data))
+                starts.append(int(cast(int, s.data)))
             else:
                 starts.append(int(s))
         starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
         idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
-        data = input.data[idx]
+        data = cast(EagerTensorProtocol, input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input, *start_indices]
     if len(input.shape) > 0 and len(slice_sizes) != len(input.shape):
@@ -57,7 +56,7 @@ def dynamic_slice(
     )
 
 
-def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]):
+def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> EagerValue:
     """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:
@@ -79,7 +78,7 @@ def dynamic_update_slice(
     operand: Tensor,
     update: Tensor,
     start_indices: Sequence[Tensor],
-):
+) -> EagerValue:
     """Update a slice of an array at dynamically computed start indices.
 
     Args:
@@ -106,7 +105,7 @@ class DynamicSlice(OpDef):
 
     op_name = "DynamicSlice"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -116,8 +115,8 @@ class DynamicSlice(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        slice_sizes = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
-        return tuple(slice_sizes)
+        slice_sizes = args[2] if len(args) > BINARY_OP_ARITY else kwargs["slice_sizes"]
+        return tuple(getattr(slice_sizes, "__iter__")())
 
 
 @register_op("DynamicUpdateSlice")
@@ -128,11 +127,11 @@ class DynamicUpdateSlice(OpDef):
 
     def infer_shape(
         self,
-        x,
-        update,
-        start_indices,
-        **kwargs,
-    ):
+        x: EagerTensorProtocol,
+        update: EagerTensorProtocol,
+        start_indices: EagerTensorProtocol,
+        **kwargs: EagerValue,
+    ) -> EagerValue:
         """Infer shape.
 
         Args:

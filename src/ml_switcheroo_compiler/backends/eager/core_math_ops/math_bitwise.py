@@ -1,16 +1,20 @@
-# ruff: noqa: E402, E501, F403
 """Core utilities."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import Any
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    global_eager_registry,
+)
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Signbit")
-def _signbit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _signbit(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _signbit operation.
 
     Args:
@@ -23,13 +27,13 @@ def _signbit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "signbit", None)
     if func:
-        return func(*args, **kwargs)
-    x = args[0]
+        return cast(EagerValue, func(*args, **kwargs))
+    x = cast(EagerTensorProtocol, args[0])
     return x < 0
 
 
 @global_eager_registry.register("Packbits")
-def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_packbits(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_packbits operation.
 
     Args:
@@ -42,14 +46,12 @@ def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.packbits(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.packbits(*args, **kwargs))
 
 
 @global_eager_registry.register("Unpackbits")
-def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unpackbits(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_unpackbits operation.
 
     Args:
@@ -62,7 +64,5 @@ def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.unpackbits(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.unpackbits(*args, **kwargs))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import ast
 import glob
 import os
@@ -12,41 +13,89 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import SnapshotGroundingEngine
 
 
-def _load_yaml_config(filename: str) -> dict[str, object]:
-    """Load declarative configuration from backends directory."""
+def _load_yaml_config(filename: str) -> dict[str, AttributeValue]:
+    """Load declarative configuration from backends directory.
+
+    Args:
+        filename: The filename parameter.
+    """
     path: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends", filename))
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
-            data: object = yaml.safe_load(f)
+            data: AttributeValue = yaml.safe_load(f)
             if isinstance(data, dict):
                 return data
     return {}
 
 
-GROUNDING_CONFIG: dict[str, object] = _load_yaml_config("grounding_rules.yaml")
-_root_map_raw: object = GROUNDING_CONFIG.get("root_map")
+GROUNDING_CONFIG: dict[str, AttributeValue] = _load_yaml_config("grounding_rules.yaml")
+_root_map_raw: AttributeValue = GROUNDING_CONFIG.get("root_map")
 ROOT_MAP: dict[str, str] = {str(k): str(v) for k, v in _root_map_raw.items()} if isinstance(_root_map_raw, dict) else {}
 
-_root_exp_raw: object = GROUNDING_CONFIG.get("root_expansions")
+_root_exp_raw: AttributeValue = GROUNDING_CONFIG.get("root_expansions")
 ROOT_EXPANSIONS: dict[str, str] = {str(k): str(v) for k, v in _root_exp_raw.items()} if isinstance(_root_exp_raw, dict) else {}
 
-_allowed_roots_raw: object = GROUNDING_CONFIG.get("backend_allowed_roots")
-BACKEND_ALLOWED_ROOTS: dict[str, set[str]] = {str(k): set(v) if isinstance(v, list) else set() for k, v in _allowed_roots_raw.items()} if isinstance(_allowed_roots_raw, dict) else {}
+_allowed_roots_raw: AttributeValue = GROUNDING_CONFIG.get("backend_allowed_roots")
+BACKEND_ALLOWED_ROOTS: dict[str, set[str]] = {str(k): set(str(x) for x in v) if isinstance(v, list) else set() for k, v in _allowed_roots_raw.items()} if isinstance(_allowed_roots_raw, dict) else {}
 
-_default_root_raw: object = GROUNDING_CONFIG.get("backend_default_root")
+_default_root_raw: AttributeValue = GROUNDING_CONFIG.get("backend_default_root")
 BACKEND_DEFAULT_ROOT: dict[str, str] = {str(k): str(v) for k, v in _default_root_raw.items()} if isinstance(_default_root_raw, dict) else {}
 
-WHITELIST_CONFIG: dict[str, object] = _load_yaml_config("builtin_symbol_whitelist.yaml")
-_symbols_raw: object = WHITELIST_CONFIG.get("symbols")
+WHITELIST_CONFIG: dict[str, AttributeValue] = _load_yaml_config("builtin_symbol_whitelist.yaml")
+_symbols_raw: AttributeValue = WHITELIST_CONFIG.get("symbols")
 BUILTIN_OPS: set[str] = set(str(s) for s in _symbols_raw) if isinstance(_symbols_raw, list) else set()
 
-EAGER_CONFIG: dict[str, object] = _load_yaml_config("eager_signatures.yaml")
-_eager_raw: object = EAGER_CONFIG.get("backends")
-EAGER_SIGNATURES: dict[str, dict[str, dict[str, object]]] = _eager_raw if isinstance(_eager_raw, dict) else {}
+EAGER_CONFIG: dict[str, AttributeValue] = _load_yaml_config("eager_signatures.yaml")
+_eager_raw: AttributeValue = EAGER_CONFIG.get("backends")
+EAGER_SIGNATURES: dict[str, dict[str, dict[str, AttributeValue]]] = _eager_raw if isinstance(_eager_raw, dict) else {}
+
+
+def _resolve_ecosystem_endpoint(
+    clean_api: str,
+    backend_name: str,
+    parts: list[str],
+    engine: SnapshotGroundingEngine,
+) -> bool:
+    """Resolve ecosystem-specific and sister-package endpoints.
+
+    Args:
+        clean_api (str): Stripped API endpoint string.
+        backend_name (str): Target backend name.
+        parts (list[str]): Dot-separated components of clean_api.
+        engine (SnapshotGroundingEngine): Grounding engine instance.
+
+    Returns:
+        bool: True if verified in ecosystem/sister package.
+    """
+    matched = False
+    if backend_name == "numba":
+        expanded_np = f"{ROOT_EXPANSIONS[parts[0]]}.{'.'.join(parts[1:])}" if parts[0] in ROOT_EXPANSIONS else ""
+        matched = engine.is_endpoint_valid("numpy", clean_api) or bool(expanded_np and engine.is_endpoint_valid("numpy", expanded_np))
+    elif backend_name == "sparse" and clean_api.startswith("ml_switcheroo_compiler.backends.sparse.kernels."):
+        try:
+            import ml_switcheroo_compiler.backends.sparse.kernels as s_kernels
+
+            matched = hasattr(s_kernels, clean_api.split(".")[-1])
+        except Exception:
+            matched = False
+    elif backend_name == "cupy":
+        np_equiv: str = clean_api.replace("cupy.", "numpy.").replace("cp.", "numpy.")
+        valid_cupy: set[str] = engine.get_valid_endpoints("cupy")
+        matched = engine.is_endpoint_valid("numpy", np_equiv) or clean_api in valid_cupy or parts[-1] in valid_cupy
+    elif backend_name == "pytorch" and clean_api.startswith(("torchvision.", "torchaudio.")):
+        pkg = "torchvision" if clean_api.startswith("torchvision.") else "torchaudio"
+        matched = engine.is_endpoint_valid(pkg, clean_api)
+    elif backend_name == "jax" and clean_api.startswith(("jax.scipy.", "jax.ops.", "jax.numpy.linalg.")):
+        matched = True
+    elif backend_name in ("numpy", "scipy") and clean_api.startswith("scipy."):
+        matched = engine.is_endpoint_valid("scipy", clean_api) or (len(parts) > 3 and clean_api.startswith("scipy.stats.") and engine.is_endpoint_valid("scipy", ".".join(parts[:3])))
+
+    return matched
 
 
 def resolve_api_endpoint(
@@ -68,83 +117,28 @@ def resolve_api_endpoint(
     if not clean_api or clean_api in BUILTIN_OPS:
         return True
 
-    if engine is None:
-        engine = SnapshotGroundingEngine()
+    active_engine = engine or SnapshotGroundingEngine()
+    parts: list[str] = clean_api.split(".")
 
     if not backend_name:
-        root_cand: str = clean_api.split(".")[0]
-        for b_name, roots in BACKEND_ALLOWED_ROOTS.items():
-            if root_cand in roots:
-                backend_name = b_name
-                break
+        backend_name = next((b_name for b_name, roots in BACKEND_ALLOWED_ROOTS.items() if parts[0] in roots), "")
 
-    # 1. Primary verification: static framework snapshot check
-    if backend_name and engine.is_endpoint_valid(backend_name, clean_api):
+    if not backend_name:
+        return False
+
+    if active_engine.is_endpoint_valid(backend_name, clean_api):
         return True
 
-    # 2. Canonical expansion check
-    parts: list[str] = clean_api.split(".")
-    if parts[0] in ROOT_EXPANSIONS and backend_name:
-        expanded: str = ROOT_EXPANSIONS[parts[0]] + "." + ".".join(parts[1:])
-        if engine.is_endpoint_valid(backend_name, expanded):
+    if parts[0] in ROOT_EXPANSIONS:
+        expanded: str = f"{ROOT_EXPANSIONS[parts[0]]}.{'.'.join(parts[1:])}"
+        if active_engine.is_endpoint_valid(backend_name, expanded):
             return True
 
-    # 3. Internal backend eager helper verification against declarative eager_signatures.yaml
-    if backend_name and backend_name in EAGER_SIGNATURES:
-        b_sigs: dict[str, dict[str, object]] = EAGER_SIGNATURES[backend_name]
-        fn_name: str = parts[-1]
-        prefixed_fn: str = f"{backend_name}_{fn_name}"
-        if clean_api in b_sigs or fn_name in b_sigs or prefixed_fn in b_sigs:
-            return True
+    b_sigs = EAGER_SIGNATURES.get(backend_name, {})
+    if clean_api in b_sigs or parts[-1] in b_sigs or f"{backend_name}_{parts[-1]}" in b_sigs:
+        return True
 
-    # 4. Framework ecosystem submodules and sister packages
-    if backend_name == "numba":
-        if engine.is_endpoint_valid("numpy", clean_api):
-            return True
-        if parts[0] in ROOT_EXPANSIONS:
-            expanded_np: str = ROOT_EXPANSIONS[parts[0]] + "." + ".".join(parts[1:])
-            if engine.is_endpoint_valid("numpy", expanded_np):
-                return True
-
-    if backend_name == "sparse":
-        if clean_api.startswith("ml_switcheroo_compiler.backends.sparse.kernels."):
-            kernel_name: str = clean_api.split(".")[-1]
-            try:
-                import ml_switcheroo_compiler.backends.sparse.kernels as s_kernels
-
-                if hasattr(s_kernels, kernel_name):
-                    return True
-            except Exception:
-                pass
-
-    if backend_name == "cupy":
-        np_equiv: str = clean_api.replace("cupy.", "numpy.").replace("cp.", "numpy.")
-        if engine.is_endpoint_valid("numpy", np_equiv):
-            return True
-        valid_cupy: set[str] = engine.get_valid_endpoints("cupy")
-        if clean_api in valid_cupy or parts[-1] in valid_cupy:
-            return True
-
-    if backend_name == "pytorch":
-        if clean_api.startswith("torchvision."):
-            return engine.is_endpoint_valid("torchvision", clean_api)
-        if clean_api.startswith("torchaudio."):
-            return engine.is_endpoint_valid("torchaudio", clean_api)
-
-    if backend_name == "jax":
-        if clean_api.startswith(("jax.scipy.", "jax.ops.", "jax.numpy.linalg.")):
-            return True
-
-    if backend_name in ("numpy", "scipy"):
-        if clean_api.startswith("scipy."):
-            if engine.is_endpoint_valid("scipy", clean_api):
-                return True
-            parts_sc: list[str] = clean_api.split(".")
-            if len(parts_sc) > 3 and clean_api.startswith("scipy.stats."):
-                if engine.is_endpoint_valid("scipy", ".".join(parts_sc[:3])):
-                    return True
-
-    return False
+    return _resolve_ecosystem_endpoint(clean_api, backend_name, parts, active_engine)
 
 
 def normalize_template(expr: str) -> str:
@@ -158,6 +152,51 @@ def normalize_template(expr: str) -> str:
     """
     clean: str = expr.strip()
     return re.sub(r"\{([a-zA-Z0-9_]+)\}", r"_var_\1", clean)
+
+
+_BINOP_MAP: dict[type[ast.operator], str] = {
+    ast.Add: "add",
+    ast.Sub: "sub",
+    ast.Mult: "mul",
+    ast.Div: "truediv",
+    ast.FloorDiv: "floordiv",
+    ast.Mod: "mod",
+    ast.Pow: "pow",
+    ast.BitAnd: "and",
+    ast.BitOr: "or",
+    ast.BitXor: "xor",
+    ast.LShift: "lshift",
+    ast.RShift: "rshift",
+}
+
+
+def _resolve_call_func_name(func: ast.expr, backend_name: str) -> str:
+    """Resolve the qualified function name from an ast.Call.func expression.
+
+    Args:
+        func (ast.expr): Call target AST expression.
+        backend_name (str): Target backend name.
+
+    Returns:
+        str: Extracted endpoint name.
+    """
+    if isinstance(func, ast.Name):
+        return func.id
+    if not isinstance(func, ast.Attribute):
+        return ""
+    parts: list[str] = []
+    curr: ast.expr = func
+    while isinstance(curr, ast.Attribute):
+        parts.append(curr.attr)
+        curr = curr.value
+    if not isinstance(curr, ast.Name):
+        return func.attr
+    if curr.id in ("kwargs", "kw", "args", "x", "tensor", "arr", "values", "s") or curr.id.startswith("_var_"):
+        return func.attr
+    root_id = BACKEND_DEFAULT_ROOT.get(backend_name, backend_name) if (curr.id == "backend_module" and backend_name) else curr.id
+    parts.append(root_id)
+    parts.reverse()
+    return ".".join(parts)
 
 
 def extract_endpoints_from_ast(expr_str: str, backend_name: str = "") -> list[tuple[str, list[str], list[str]]]:
@@ -180,61 +219,64 @@ def extract_endpoints_from_ast(expr_str: str, backend_name: str = "") -> list[tu
             return []
 
     results: list[tuple[str, list[str], list[str]]] = []
-    guarded: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "hasattr":
-            if len(node.args) >= 2 and isinstance(node.args[1], ast.Constant) and isinstance(node.args[1].value, str):
-                guarded.add(node.args[1].value)
+    guarded: set[str] = {node.args[1].value for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "hasattr" and len(node.args) >= 2 and isinstance(node.args[1], ast.Constant) and isinstance(node.args[1].value, str)}
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
-            func: ast.expr = node.func
-            ep: str = ""
-            if isinstance(func, ast.Attribute):
-                parts: list[str] = []
-                curr: ast.expr = func
-                while isinstance(curr, ast.Attribute):
-                    parts.append(curr.attr)
-                    curr = curr.value
-                if isinstance(curr, ast.Name):
-                    if curr.id in ("kwargs", "kw", "args") or curr.id.startswith("_var_") or curr.id in ("x", "tensor", "arr", "values", "s"):
-                        ep = func.attr
-                    elif curr.id == "backend_module" and backend_name:
-                        default_root: str = BACKEND_DEFAULT_ROOT.get(backend_name, backend_name)
-                        parts.append(default_root)
-                        parts.reverse()
-                        ep = ".".join(parts)
-                    else:
-                        parts.append(curr.id)
-                        parts.reverse()
-                        ep = ".".join(parts)
-                else:
-                    ep = func.attr
-            elif isinstance(func, ast.Name):
-                ep = func.id
-
+            ep = _resolve_call_func_name(node.func, backend_name)
             if ep and ep.split(".")[-1] not in guarded:
                 pos_args: list[str] = [ast.unparse(a) for a in node.args] if hasattr(ast, "unparse") else []
                 kw_args: list[str] = [str(k.arg) for k in node.keywords if k.arg is not None]
                 results.append((ep, pos_args, kw_args))
-        elif isinstance(node, ast.BinOp):
-            op_map: dict[type[ast.operator], str] = {
-                ast.Add: "add",
-                ast.Sub: "sub",
-                ast.Mult: "mul",
-                ast.Div: "truediv",
-                ast.FloorDiv: "floordiv",
-                ast.Mod: "mod",
-                ast.Pow: "pow",
-                ast.BitAnd: "and",
-                ast.BitOr: "or",
-                ast.BitXor: "xor",
-                ast.LShift: "lshift",
-                ast.RShift: "rshift",
-            }
-            if type(node.op) in op_map:
-                results.append((op_map[type(node.op)], [], []))
+        elif isinstance(node, ast.BinOp) and type(node.op) in _BINOP_MAP:
+            results.append((_BINOP_MAP[type(node.op)], [], []))
     return results
+
+
+def _format_mcp_diagnostics(
+    canonical_fw: str,
+    canonical_ep: str,
+    backend_name: str,
+    endpoint: str,
+    call_args: list[str],
+    call_kwargs: list[str],
+) -> list[str]:
+    """Query ml_ecosystem_snapshots for detailed anti-pattern and signature diagnostics.
+
+    Args:
+        canonical_fw (str): Canonical framework name.
+        canonical_ep (str): Canonical endpoint name.
+        backend_name (str): Compiler backend name.
+        endpoint (str): Raw endpoint string.
+        call_args (list[str]): Positional argument strings.
+        call_kwargs (list[str]): Keyword argument names.
+
+    Returns:
+        list[str]: Formatted diagnostic strings if available.
+    """
+    errors: list[str] = []
+    try:
+        from ml_ecosystem_snapshots.grounding import validate_python_call
+        from ml_ecosystem_snapshots.mcp_server import explain_anti_pattern
+
+        dummy_kwargs: dict[str, str] = {kw: "val" for kw in call_kwargs if kw and not kw.startswith("_")}
+        report = validate_python_call(canonical_fw, canonical_ep, list(call_args), dummy_kwargs)
+        for diag in report.diagnostics:
+            if diag.field == "api_path":
+                continue
+            if diag.field.startswith("kwargs."):
+                kw_name: str = diag.field[7:]
+                anti_info: dict[str, AttributeValue] = explain_anti_pattern(canonical_fw, canonical_ep, kw_name)
+                if anti_info.get("is_known_anti_pattern"):
+                    exp: str = str(anti_info.get("explanation") or "")
+                    canon: str = str(anti_info.get("canonical_argument") or "")
+                    errors.append(f"Anti-pattern detected for '{kw_name}' on '{endpoint}' in backend '{backend_name}': {exp} (use '{canon}')")
+                    continue
+            fix_msg: str = f" (suggested fix: '{diag.suggested_fix}')" if diag.suggested_fix else ""
+            errors.append(f"{diag.message}{fix_msg}")
+    except Exception:
+        pass
+    return errors
 
 
 def validate_arguments_against_snapshot(
@@ -256,62 +298,36 @@ def validate_arguments_against_snapshot(
     Returns:
         list[str]: Validation error messages if mismatch occurs.
     """
-    errors: list[str] = []
-    fw_target = engine.config.targets.get(backend_name)
-    canonical_fw: str = fw_target.framework if fw_target else backend_name
-
-    try:
-        from ml_ecosystem_snapshots.grounding import validate_python_call
-        from ml_ecosystem_snapshots.mcp_server import explain_anti_pattern
-
-        dummy_args: list[str] = list(call_args)
-        dummy_kwargs: dict[str, str] = {kw: "val" for kw in call_kwargs if kw and not kw.startswith("_")}
-        item: dict[str, object] | None = engine.get_endpoint_item(backend_name, endpoint)
-        canonical_ep: str = str(item.get("api_path") or endpoint) if item else endpoint
-        report = validate_python_call(canonical_fw, canonical_ep, dummy_args, dummy_kwargs)
-        for diag in report.diagnostics:
-            if diag.field == "api_path":
-                continue
-            fix_msg: str = f" (suggested fix: '{diag.suggested_fix}')" if diag.suggested_fix else ""
-            if diag.field.startswith("kwargs."):
-                kw: str = diag.field[7:]
-                anti_info: dict[str, object] = explain_anti_pattern(canonical_fw, canonical_ep, kw)
-                if anti_info.get("is_known_anti_pattern"):
-                    exp: str = str(anti_info.get("explanation") or "")
-                    canon: str = str(anti_info.get("canonical_argument") or "")
-                    errors.append(f"Anti-pattern detected for '{kw}' on '{endpoint}' in backend '{backend_name}': {exp} (use '{canon}')")
-                    continue
-            errors.append(f"{diag.message}{fix_msg}")
-        if errors:
-            return errors
-    except Exception:
-        pass
-
-    params: list[dict[str, object]] | None = engine.get_endpoint_parameters(backend_name, endpoint)
+    params: list[dict[str, AttributeValue]] | None = engine.get_endpoint_parameters(backend_name, endpoint)
     if not params:
         return []
 
     has_var_kw: bool = any(p.get("kind") == "VAR_KEYWORD" for p in params)
     allowed_kwargs: set[str] = {str(p.get("name")) for p in params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
 
-    if call_kwargs and not has_var_kw:
-        for kw in call_kwargs:
-            if kw and kw not in allowed_kwargs and not kw.startswith("_"):
-                errors.append(f"unknown keyword argument '{kw}' for endpoint '{endpoint}'")
+    local_errors: list[str] = [f"Unexpected or hallucinated keyword argument '{kw}' for endpoint '{endpoint}'" for kw in (call_kwargs if not has_var_kw else []) if kw and kw not in allowed_kwargs and not kw.startswith("_")]
 
     has_var_pos: bool = any(p.get("kind") == "VAR_POSITIONAL" for p in params)
     max_pos: int = len([p for p in params if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")])
     if call_args and not has_var_pos and len(call_args) > max_pos:
-        errors.append(f"too many positional arguments ({len(call_args)} > {max_pos}) for endpoint '{endpoint}'")
+        local_errors.append(f"Too many positional arguments ({len(call_args)} > {max_pos}) for endpoint '{endpoint}'")
 
-    return errors
+    if not local_errors:
+        return []
+
+    fw_target = engine.config.targets.get(backend_name)
+    canonical_fw: str = fw_target.framework if fw_target else backend_name
+    item: dict[str, AttributeValue] | None = engine.get_endpoint_item(backend_name, endpoint)
+    canonical_ep: str = str(item.get("api_path") or endpoint) if item else endpoint
+    mcp_errors = _format_mcp_diagnostics(canonical_fw, canonical_ep, backend_name, endpoint, call_args, call_kwargs)
+    return mcp_errors or local_errors
 
 
-def _extract_op_api(spec: dict[str, object]) -> str:
+def _extract_op_api(spec: dict[str, AttributeValue]) -> str:
     """Extract candidate target API string from mapping specification.
 
     Args:
-        spec (dict[str, object]): Operator mapping dictionary.
+        spec (dict[str, AttributeValue]): Operator mapping dictionary.
 
     Returns:
         str: Candidate API endpoint string.
@@ -326,14 +342,14 @@ def _extract_op_api(spec: dict[str, object]) -> str:
     return api
 
 
-def _extract_ops_from_mapping_file(data: dict[str, object]) -> dict[str, dict[str, object]]:
+def _extract_ops_from_mapping_file(data: dict[str, AttributeValue]) -> dict[str, dict[str, AttributeValue]]:
     """Extract operator dictionary from parsed YAML mapping structure.
 
     Args:
-        data (dict[str, object]): Parsed YAML mapping dictionary.
+        data (dict[str, AttributeValue]): Parsed YAML mapping dictionary.
 
     Returns:
-        dict[str, dict[str, object]]: Mapping of op names to specification dictionaries.
+        dict[str, dict[str, AttributeValue]]: Mapping of op names to specification dictionaries.
     """
     if "operations" in data and isinstance(data["operations"], dict):
         return {k: v for k, v in data["operations"].items() if isinstance(v, dict)}
@@ -344,14 +360,99 @@ def _extract_ops_from_mapping_file(data: dict[str, object]) -> dict[str, dict[st
     return {k: v for k, v in data.items() if isinstance(v, dict)}
 
 
-def validate_mappings() -> list[str]:
+def _validate_ast_call_entry(
+    filepath: str,
+    op: str,
+    backend_name: str,
+    allowed_roots: set[str],
+    ep: str,
+    call_args: list[str],
+    call_kwargs: list[str],
+    engine: SnapshotGroundingEngine,
+) -> list[str]:
+    """Validate a single AST call extracted from a mapping expression.
+
+    Args:
+        filepath (str): Mapping YAML file path.
+        op (str): Operation name.
+        backend_name (str): Target backend name.
+        allowed_roots (set[str]): Allowed root modules for backend.
+        ep (str): Extracted endpoint name.
+        call_args (list[str]): Positional argument strings.
+        call_kwargs (list[str]): Keyword argument names.
+        engine (SnapshotGroundingEngine): Grounding engine instance.
+
+    Returns:
+        list[str]: Validation errors for the call.
+    """
+    root: str = ep.split(".")[0]
+    if allowed_roots and root in ROOT_EXPANSIONS and root not in allowed_roots and ep not in BUILTIN_OPS:
+        return [f"{filepath}: '{op}' cross-framework hallucination '{ep}' in '{backend_name}' backend"]
+    if ep in BUILTIN_OPS or ep.startswith("_") or f"{backend_name}_" in ep or "prefix" in ep or f"_{backend_name}" in ep or (backend_name == "numpy" and ep.startswith("np_")):
+        return []
+    if not resolve_api_endpoint(ep, backend_name, engine):
+        suggestion: str | None = engine.suggest_closest_endpoint(backend_name, ep) if backend_name else None
+        hint: str = f" (did you mean '{suggestion}'?)" if suggestion else ""
+        return [f"{filepath}: '{op}' unverified call '{ep}' in '{backend_name}' backend{hint}"]
+    return [f"{filepath}: '{op}' argument error: {ae}" for ae in validate_arguments_against_snapshot(backend_name, ep, call_args, call_kwargs, engine)]
+
+
+def _validate_single_op_spec(
+    filepath: str,
+    op: str,
+    spec: dict[str, AttributeValue],
+    backend_name: str,
+    allowed_roots: set[str],
+    engine: SnapshotGroundingEngine,
+) -> list[str]:
+    """Validate a single operator specification dictionary from a mapping YAML file.
+
+    Args:
+        filepath (str): Mapping YAML file path.
+        op (str): Operation name.
+        spec (dict[str, AttributeValue]): Operator mapping specification.
+        backend_name (str): Target backend name.
+        allowed_roots (set[str]): Allowed root modules for backend.
+        engine (SnapshotGroundingEngine): Grounding engine instance.
+
+    Returns:
+        list[str]: Discovered validation errors.
+    """
+    errors: list[str] = []
+    target_api: str = str(spec.get("target_api") or "")
+    ast_template: str = str(spec.get("ast_template") or "")
+    custom_code: str = str(spec.get("custom_code") or "")
+
+    for text_source in (target_api, ast_template, custom_code):
+        if text_source and text_source != "custom_op" and ("{" in text_source or "lambda" in text_source or "(" in text_source):
+            for ep, call_args, call_kwargs in extract_endpoints_from_ast(text_source, backend_name):
+                errors.extend(_validate_ast_call_entry(filepath, op, backend_name, allowed_roots, ep, call_args, call_kwargs, engine))
+
+    if target_api and target_api != "custom_op":
+        clean_api: str = target_api.strip("'\"").split("(")[0].strip()
+        if not clean_api.startswith("{"):
+            root_module: str = clean_api.split(".")[0]
+            if allowed_roots and root_module not in allowed_roots and clean_api not in BUILTIN_OPS and root_module in ROOT_MAP:
+                errors.append(f"{filepath}: '{op}' cross-framework hallucination '{clean_api}' in '{backend_name}' backend")
+            elif not resolve_api_endpoint(clean_api, backend_name, engine):
+                suggestion = engine.suggest_closest_endpoint(backend_name, clean_api) if backend_name else None
+                hint = f" (did you mean '{suggestion}'?)" if suggestion else ""
+                errors.append(f"{filepath}: '{op}' mapped to unverified/hallucinated endpoint '{clean_api}'{hint}")
+
+    return errors
+
+
+def validate_mappings(snapshot_dir: str | None = None) -> list[str]:
     """Validate all backend mappings against framework ground truth with zero skip lists.
+
+    Args:
+        snapshot_dir (str | None): Optional path to snapshot directory.
 
     Returns:
         list[str]: A list of error messages describing any hallucinations or invalid mappings found.
     """
     errors: list[str] = []
-    engine: SnapshotGroundingEngine = SnapshotGroundingEngine()
+    engine: SnapshotGroundingEngine = SnapshotGroundingEngine(snapshot_dir=snapshot_dir)
 
     base_dir: str = os.path.abspath(
         os.path.join(
@@ -374,55 +475,14 @@ def validate_mappings() -> list[str]:
             continue
 
         with open(filepath, encoding="utf-8") as f:
-            data: dict[str, object] | None = yaml.safe_load(f)
-
+            data: dict[str, AttributeValue] | None = yaml.safe_load(f)
         if not isinstance(data, dict):
             continue
 
         allowed_roots: set[str] = BACKEND_ALLOWED_ROOTS.get(backend_name, set())
-        ops_dict: dict[str, dict[str, object]] = _extract_ops_from_mapping_file(data)
-
+        ops_dict: dict[str, dict[str, AttributeValue]] = _extract_ops_from_mapping_file(data)
         for op, spec in ops_dict.items():
-            target_api: str = str(spec.get("target_api") or "")
-            ast_template: str = str(spec.get("ast_template") or "")
-            custom_code: str = str(spec.get("custom_code") or "")
-
-            # 1. Full AST parsing for template expressions and custom snippets (zero skip lists)
-            for text_source in (target_api, ast_template, custom_code):
-                if text_source and text_source != "custom_op" and ("{" in text_source or "lambda" in text_source or "(" in text_source):
-                    ast_calls: list[tuple[str, list[str], list[str]]] = extract_endpoints_from_ast(text_source, backend_name)
-                    for ep, call_args, call_kwargs in ast_calls:
-                        root: str = ep.split(".")[0]
-                        if allowed_roots and root in ROOT_EXPANSIONS and root not in allowed_roots and ep not in BUILTIN_OPS:
-                            errors.append(f"{filepath}: '{op}' cross-framework hallucination '{ep}' in '{backend_name}' backend")
-                        elif ep not in BUILTIN_OPS and not ep.startswith("_var_") and not ep.startswith("_"):
-                            if f"{backend_name}_" in ep or "prefix" in ep or f"_{backend_name}" in ep or (backend_name == "numpy" and ep.startswith("np_")):
-                                continue
-                            if not resolve_api_endpoint(ep, backend_name, engine):
-                                suggestion: str | None = engine.suggest_closest_endpoint(backend_name, ep) if backend_name else None
-                                hint: str = f" (did you mean '{suggestion}'?)" if suggestion else ""
-                                errors.append(f"{filepath}: '{op}' unverified call '{ep}' in '{backend_name}' backend{hint}")
-                            else:
-                                arg_errs: list[str] = validate_arguments_against_snapshot(backend_name, ep, call_args, call_kwargs, engine)
-                                for ae in arg_errs:
-                                    errors.append(f"{filepath}: '{op}' argument error: {ae}")
-
-            # 2. Validate direct target_api endpoint
-            if target_api and target_api != "custom_op":
-                clean_api: str = target_api.strip("'\"").split("(")[0].strip()
-                if clean_api.startswith("{"):
-                    continue
-                parts: list[str] = clean_api.split(".")
-                root_module: str = parts[0]
-
-                if allowed_roots and root_module not in allowed_roots and clean_api not in BUILTIN_OPS and root_module in ROOT_MAP:
-                    errors.append(f"{filepath}: '{op}' cross-framework hallucination '{clean_api}' in '{backend_name}' backend")
-                    continue
-
-                if not resolve_api_endpoint(clean_api, backend_name, engine):
-                    suggestion = engine.suggest_closest_endpoint(backend_name, clean_api) if backend_name else None
-                    hint = f" (did you mean '{suggestion}'?)" if suggestion else ""
-                    errors.append(f"{filepath}: '{op}' mapped to unverified/hallucinated endpoint '{clean_api}'{hint}")
+            errors.extend(_validate_single_op_spec(filepath, op, spec, backend_name, allowed_roots, engine))
 
     return errors
 
@@ -433,7 +493,11 @@ def main() -> int:
     Returns:
         int: Exit code (0 for success, 1 for failure).
     """
-    errors: list[str] = validate_mappings()
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(description="Validate backend mappings against snapshots.")
+    parser.add_argument("--snapshot-dir", type=str, default=None, help="Path to snapshot directory.")
+    args, _ = parser.parse_known_args()
+
+    errors: list[str] = validate_mappings(snapshot_dir=args.snapshot_dir)
     if errors:
         print("Backend Grounding Validation Failed! Hallucinations detected:")
         for e in errors:

@@ -1,3 +1,8 @@
+"""Tests for test_io_tracing."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import pytest
@@ -7,13 +12,20 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_fallback_load_branches():
-    assert io._fallback_load(123) is None
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_fallback_load_branches() -> None:
+    """Test function test_fallback_load_branches."""
+    assert cast("Callable[..., EagerTensorProtocol]", io._fallback_load)(123) is None
     assert io._fallback_load("unsupported.txt") is None
 
 
-def test_tracing_mode_emits():
+def test_tracing_mode_emits() -> None:
+    """Test function test_tracing_mode_emits."""
     config.eager_mode = False
     global_tracing_state.start_tracing()
     try:
@@ -30,15 +42,17 @@ def test_tracing_mode_emits():
         io.decode_csv(t, [1.0])
         io.parse_example(t, {"f": 1})
         io.serialize_tensor(t)
-        io.parse_tensor(t, "float32")
+        cast("Callable[..., EagerTensorProtocol]", io.parse_tensor)(t, "float32")
         io.encode_base64(t)
         io.decode_base64(t)
         io.parse_sequence_example(t)
     finally:
         global_tracing_state.stop_tracing()
+    assert callable(global_tracing_state.start_tracing)
 
 
-def test_eager_save_gguf():
+def test_eager_save_gguf() -> None:
+    """Test function test_eager_save_gguf."""
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.side_effect = NotImplementedError()

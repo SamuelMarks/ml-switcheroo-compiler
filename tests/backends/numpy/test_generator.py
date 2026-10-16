@@ -1,23 +1,35 @@
+"""Tests for test_generator."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_numpy_type_translator():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_numpy_type_translator() -> None:
+    """Test function test_numpy_type_translator."""
     assert NumpyTypeTranslator.get_fallback_prefix() == "np"
 
 
-def test_numpy_ast_visitor():
+def test_numpy_ast_visitor() -> None:
+    """Test function test_numpy_ast_visitor."""
     kwargs = {"equation": "ij,jk->ik", "dimension": 1, "other": "val"}
-    assert NumpyASTVisitor._format_kwargs(kwargs) == "other=val, axis=1"
+    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor._format_kwargs)(kwargs) == "other=val, axis=1"
 
     node = MagicMock(op_type="Parameter")
     node.id = "p1"
     assert NumpyASTVisitor.visit_Parameter(node, ["p1"]) == "p1 = None # Parameter"
 
-    assert NumpyASTVisitor.visit_Return(None, []) == "return None"
-    assert NumpyASTVisitor.visit_Return(None, ["v1"]) == "return v1"
-    assert NumpyASTVisitor.visit_Return(None, ["v1", "v2"]) == "return v1, v2"
+    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor.visit_Return)(None, []) == "return None"
+    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor.visit_Return)(None, ["v1"]) == "return v1"
+    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor.visit_Return)(None, ["v1", "v2"]) == "return v1, v2"
 
     node = MagicMock(op_type="Sum")
     assert NumpyASTVisitor.generic_visit(node, ["a"], dimension=1) == "np.sum(a, axis=1)"
@@ -25,7 +37,8 @@ def test_numpy_ast_visitor():
     assert NumpyASTVisitor.generic_visit(node, ["a"], keepdims=True) == "np.sum(a, keepdims=True)"
 
 
-def test_numpy_generator():
+def test_numpy_generator() -> None:
+    """Test function test_numpy_generator."""
     gen = NumpyGenerator(MagicMock(nodes=[]))
     assert gen.get_fallback_prefix() == "np"
     assert gen._get_backend_prefix() == "np"
@@ -48,7 +61,8 @@ def test_numpy_generator():
         gen.savez_compressed("file.npz", "arr")
 
 
-def test_numpy_generator_helpers():
+def test_numpy_generator_helpers() -> None:
+    """Test function test_numpy_generator_helpers."""
     gen = NumpyGenerator(MagicMock(nodes=[]))
     assert isinstance(gen.get_helper_functions(), list)
     assert NumpyGenerator.get_numpy_rng() is not None
@@ -58,7 +72,7 @@ def test_numpy_generator_helpers():
     assert res is not None
 
 
-def test_numpy_generator_aot_and_fallback_prefix():
+def test_numpy_generator_aot_and_fallback_prefix() -> None:
     """Test get_fallback_prefix and compile_aot in NumpyGenerator."""
     import numpy as np
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -95,13 +109,13 @@ def test_numpy_generator_aot_and_fallback_prefix():
     # Test passing raw numpy array
     res1 = fn_aot(np.array([1.0, 2.0]))
     assert isinstance(res1, Tensor)
-    np.testing.assert_array_equal(res1.data, np.array([1.0, 2.0]))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res1.data, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0]))
 
     # Test passing Tensor input
     t_in = Tensor(np.array([3.0]), TensorConfig((1,), DType.Float32, Device("cpu")))
     res2 = fn_aot(t_in)
     assert isinstance(res2, Tensor)
-    np.testing.assert_array_equal(res2.data, np.array([3.0]))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res2.data, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0]))
 
     # Test returning Tensor directly
     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y": t_in}):
@@ -122,12 +136,15 @@ def test_numpy_generator_aot_and_fallback_prefix():
     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y1": t_in, "y2": np.array([4.0])}):
         fn_multi = gen.compile_aot(g_multi)
         outs = fn_multi(t_in)
-        assert len(outs) == 2
-        assert outs[0] is t_in
-        assert isinstance(outs[1], Tensor)
+        assert cast("Callable[..., EagerTensorProtocol]", len)(outs) == 2
+        assert id(cast("EagerTensorProtocol", getattr(outs, "__getitem__")(0))) == id(t_in)
+        assert isinstance(cast("EagerTensorProtocol", getattr(outs, "__getitem__")(1)), Tensor)
 
     # 4. compile_aot with no outputs
     g_empty = LogicalGraph("g_empty")
     g_empty.outputs = []
     fn_empty = gen.compile_aot(g_empty)
     assert fn_empty() is None
+
+    assert NumpyGenerator.get_module() is np
+    assert hasattr(NumpyGenerator.get_scipy_module("special"), "erf")

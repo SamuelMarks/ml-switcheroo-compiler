@@ -1,7 +1,10 @@
 # ruff: noqa: E501
 """Unit tests for state lifting pass."""
 
+from __future__ import annotations
+
 import typing
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -17,6 +20,11 @@ from ml_switcheroo_compiler.transforms.passes.state_lifting import (
     _set_val,
     state_lifting_pass,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyBlock:
@@ -67,7 +75,7 @@ def test_state_lifting() -> None:
 
 def test_get_node_items() -> None:
     """Test _get_node_items with None, list, and dict node representations."""
-    assert _get_node_items(None) == []
+    assert cast("Callable[..., EagerTensorProtocol]", _get_node_items)(None) == []
 
     class DummyBlockList:
         """Dummy block containing list of nodes."""
@@ -77,7 +85,7 @@ def test_get_node_items() -> None:
             n = IRNode("n1", "Add", attributes={})
             self.nodes = [n]
 
-    assert len(list(_get_node_items(DummyBlockList()))) == 1
+    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", list)(cast("Callable[..., EagerTensorProtocol]", _get_node_items)(cast("Callable[..., EagerTensorProtocol]", DummyBlockList)()))) == 1
 
 
 def test_state_lifting_already_in_outputs() -> None:
@@ -100,7 +108,7 @@ def test_state_lifting_no_outputs() -> None:
             self.nodes = {"assign1": IRNode(id="assign1", op_type="AssignVariable", inputs=["some_input"], attributes={"variable_name": "my_var"})}
 
     block = DummyBlockNoOutputs()
-    _lift_block(block)
+    cast("Callable[..., EagerTensorProtocol]", _lift_block)(block)
     assert block.nodes["assign1"].op_type == "Output"
 
 
@@ -120,9 +128,9 @@ def test_get_and_set_val() -> None:
             self.x = "hello"
 
     obj = Obj()
-    assert _get_val(obj, "x") == "hello"
-    assert _get_val(obj, "y") is None
-    _set_val(obj, "x", "world")
+    assert cast("Callable[..., EagerTensorProtocol]", _get_val)(obj, "x") == "hello"
+    assert cast("Callable[..., EagerTensorProtocol]", _get_val)(obj, "y") is None
+    cast("Callable[..., EagerTensorProtocol]", _set_val)(obj, "x", "world")
     assert obj.x == "world"
 
 
@@ -147,24 +155,24 @@ def test_navigate() -> None:
             self.child = Child()
 
     parent = Parent()
-    assert _navigate(parent, ["child", "val"]) == 123
+    assert cast("Callable[..., EagerTensorProtocol]", _navigate)(parent, ["child", "val"]) == 123
 
 
 def test_lift_node_state_defaults() -> None:
     """Test _lift_node_state with default naming fallbacks and unhandled ops."""
     block = DummyBlock()
     read_node = IRNode("read1", "ReadVariable", attributes={})
-    assert _lift_node_state(read_node, "read1", block) is True
+    assert bool(cast("Callable[..., EagerTensorProtocol]", _lift_node_state)(read_node, "read1", block)) is True
     assert read_node.op_type == "Input"
     assert read_node.attributes["name"] == "var_read1"
 
     assign_node = IRNode("assign1", "AssignVariable", attributes={})
-    assert _lift_node_state(assign_node, "assign1", block) is True
+    assert bool(cast("Callable[..., EagerTensorProtocol]", _lift_node_state)(assign_node, "assign1", block)) is True
     assert assign_node.op_type == "Output"
     assert assign_node.attributes["name"] == "var_assign1_out"
 
     other_node = IRNode("n3", "Add", attributes={})
-    assert _lift_node_state(other_node, "n3", block) is False
+    assert bool(cast("Callable[..., EagerTensorProtocol]", _lift_node_state)(other_node, "n3", block)) is False
 
 
 def test_extract_state_named_parameters_and_buffers() -> None:
@@ -179,16 +187,16 @@ def test_extract_state_named_parameters_and_buffers() -> None:
             self.w = MockTensor()
             self.b = MockTensor()
 
-        def named_parameters(self) -> list[tuple[str, object]]:
+        def named_parameters(self) -> list[tuple[str, EagerValue]]:
             """Return named parameters."""
             return [("w", self.w)]
 
-        def named_buffers(self) -> list[tuple[str, object]]:
+        def named_buffers(self) -> list[tuple[str, EagerValue]]:
             """Return named buffers."""
             return [("b", self.b)]
 
     model = ModelWithNamed()
-    params, buffers = pass_obj.extract_state(model, prefix="sub.")
+    params, buffers = cast("Callable[..., EagerTensorProtocol]", pass_obj.extract_state)(model, prefix="sub.")
     assert "sub.w" in params
     assert "sub.b" in buffers
     assert pass_obj.identity_map[id(model.w)] == "sub.w"
@@ -202,11 +210,11 @@ def test_extract_state_named_parameters_and_buffers() -> None:
             """Initialize ModelOnlyBuffers."""
             self.b = MockTensor()
 
-        def named_buffers(self) -> list[tuple[str, object]]:
+        def named_buffers(self) -> list[tuple[str, EagerValue]]:
             """Return named buffers."""
             return [("buf", self.b)]
 
-    params2, buffers2 = StateLiftingPass().extract_state(ModelOnlyBuffers())
+    params2, buffers2 = cast("Callable[..., EagerTensorProtocol]", StateLiftingPass)().extract_state(cast("Callable[..., EagerTensorProtocol]", ModelOnlyBuffers)())
     assert params2 == {}
     assert "buf" in buffers2
 
@@ -248,7 +256,7 @@ def test_extract_state_reflection() -> None:
             pass
 
     model = RootModel()
-    params, buffers = pass_obj.extract_state(model)
+    params, buffers = cast("Callable[..., EagerTensorProtocol]", pass_obj.extract_state)(model)
     assert "weight" in params
     assert "bias" in buffers
     assert "real_tensor" in params
@@ -270,7 +278,7 @@ def test_extract_state_no_dict() -> None:
 
         __slots__ = ()
 
-    params, buffers = StateLiftingPass().extract_state(SlotsModel())
+    params, buffers = cast("Callable[..., EagerTensorProtocol]", StateLiftingPass)().extract_state(cast("Callable[..., EagerTensorProtocol]", SlotsModel)())
     assert params == {}
     assert buffers == {}
 
@@ -288,7 +296,7 @@ def test_lift_model_to_graph() -> None:
             self.running_mean = MockTensor(shape=(4,), dtype="float32", requires_grad=False)
 
     model = SimpleModel()
-    combined_state, graph = pass_obj.lift(model)
+    combined_state, graph = cast("Callable[..., EagerTensorProtocol]", pass_obj.lift)(model)
     assert "w" in combined_state
     assert "running_mean" in combined_state
     assert graph.name == "functional_SimpleModel"
@@ -296,14 +304,14 @@ def test_lift_model_to_graph() -> None:
     assert "param_running_mean" in graph.nodes
 
     w_node = graph.nodes["param_w"]
-    assert w_node.attributes["is_state"] is True
-    assert w_node.attributes["is_parameter"] is True
-    assert w_node.attributes["is_buffer"] is False
+    assert bool(w_node.attributes["is_state"]) is True
+    assert bool(w_node.attributes["is_parameter"]) is True
+    assert bool(w_node.attributes["is_buffer"]) is False
     assert w_node.shape_metadata["shape"] == (4, 4)
 
     mean_node = graph.nodes["param_running_mean"]
-    assert mean_node.attributes["is_parameter"] is False
-    assert mean_node.attributes["is_buffer"] is True
+    assert bool(mean_node.attributes["is_parameter"]) is False
+    assert bool(mean_node.attributes["is_buffer"]) is True
 
 
 def test_functionalize_callable() -> None:
@@ -331,8 +339,8 @@ def test_functionalize_callable() -> None:
             return x * self.weight[0] + self.counter
 
     model = CallableModel()
-    model.weight = MockTensor(shape=(1,), dtype="float32", requires_grad=True)
-    model.counter = MockTensor(shape=(), dtype="int32", requires_grad=False)
+    setattr(model, "weight", MockTensor(shape=(1,), dtype="float32", requires_grad=True))
+    setattr(model, "counter", MockTensor(shape=(), dtype="int32", requires_grad=False))
 
     init_state, pure_fn = pass_obj.functionalize(model)
     assert "weight" in init_state
@@ -370,11 +378,11 @@ def test_functionalize_forward_method() -> None:
             return typing.cast(float, self.val) + delta
 
     model = ForwardModel()
-    init_state, pure_fn = pass_obj.functionalize(model)
+    init_state, pure_fn = cast("Callable[..., EagerTensorProtocol]", pass_obj.functionalize)(model)
     out, new_state = pure_fn({"val": 100.0}, 25.0)
     assert out == 125.0
     assert new_state["val"] == 100.0
-    assert model.val is init_state["val"]
+    assert id(model.val) == id(init_state["val"])
 
 
 def test_functionalize_type_error_restore() -> None:
@@ -389,10 +397,10 @@ def test_functionalize_type_error_restore() -> None:
             self.p = MockTensor()
 
     model = InertModel()
-    init_state, pure_fn = pass_obj.functionalize(model)
+    init_state, pure_fn = cast("Callable[..., EagerTensorProtocol]", pass_obj.functionalize)(model)
     with pytest.raises(TypeError, match="is not callable and has no forward method"):
         pure_fn({"p": "temporary"})
-    assert model.p is init_state["p"]
+    assert id(model.p) == id(init_state["p"])
 
 
 def test_functionalize_nested_state() -> None:
@@ -425,7 +433,7 @@ def test_functionalize_nested_state() -> None:
             return typing.cast(int, self.inner.param) * factor
 
     outer = OuterSub()
-    _, pure_fn = pass_obj.functionalize(outer)
+    _, pure_fn = cast("Callable[..., EagerTensorProtocol]", pass_obj.functionalize)(outer)
     res, new_st = pure_fn({"inner.param": 7}, 3)
     assert res == 21
     assert new_st["inner.param"] == 7

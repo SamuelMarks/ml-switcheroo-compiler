@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
 import pytest
@@ -10,19 +10,22 @@ import pytest
 import ml_switcheroo_compiler.backends.eager.signal as signal_mod
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 class MockCpuResult:
     """Mock cpu container with numpy conversion."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize container.
 
         Args:
             arr (np.ndarray): Underlying array.
         """
-        self._arr: np.ndarray = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
 
-    def numpy(self) -> np.ndarray:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Convert to numpy array.
 
         Returns:
@@ -34,13 +37,13 @@ class MockCpuResult:
 class MockDetachResult:
     """Mock detach result providing cpu method."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize mock detach.
 
         Args:
             arr (np.ndarray): Underlying array.
         """
-        self._arr: np.ndarray = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
 
     def cpu(self) -> MockCpuResult:
         """Move to cpu.
@@ -54,13 +57,13 @@ class MockDetachResult:
 class MockTorchDetachOnly:
     """Mock object with detach method but no direct numpy attribute."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize mock.
 
         Args:
             arr (np.ndarray): Underlying array.
         """
-        self._arr: np.ndarray = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
 
     def detach(self) -> MockDetachResult:
         """Detach tensor.
@@ -74,15 +77,15 @@ class MockTorchDetachOnly:
 class MockHasNumpyOnly:
     """Mock object with only a numpy method."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize mock.
 
         Args:
             arr (np.ndarray): Underlying numpy array.
         """
-        self._arr: np.ndarray = arr
+        self._arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = arr
 
-    def numpy(self) -> np.ndarray:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Convert to numpy array.
 
         Returns:
@@ -94,7 +97,7 @@ class MockHasNumpyOnly:
 class MockBackendModule:
     """Mock backend module supporting array operations."""
 
-    def array(self, val: list[int] | np.ndarray, dtype: str | None = None) -> np.ndarray:
+    def array(self, val: list[int] | np.ndarray[tuple[int, ...], np.dtype[np.generic]], dtype: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Convert input to array.
 
         Args:
@@ -124,7 +127,7 @@ class MockOriginalTensor:
 class MockTorchStyleBackend:
     """Mock backend using dim and keepdim instead of axis and keepdims."""
 
-    def mean(self, x: np.ndarray, dim: tuple[int, ...], keepdim: bool = True) -> np.ndarray:
+    def mean(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute mean across dimensions.
 
         Args:
@@ -135,9 +138,9 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return np.mean(x, axis=dim, keepdims=keepdim)
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.mean)(x, axis=dim, keepdims=keepdim))
 
-    def var(self, x: np.ndarray, dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray:
+    def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
 
         Args:
@@ -150,7 +153,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return np.var(x, axis=dim, keepdims=keepdim, ddof=ddof)
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -164,7 +167,7 @@ class MockFailingAxisBackend:
         """
         self.fallback: MockTorchStyleBackend = fallback
 
-    def mean(self, x: np.ndarray, *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray:
+    def mean(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute mean or raise TypeError if axis in kwargs.
 
         Args:
@@ -180,11 +183,11 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = kwargs["dim"]  # type: ignore[assignment]
+        dim_val: tuple[int, ...] = cast("tuple[int, ...]", kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
-    def var(self, x: np.ndarray, *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray:
+    def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], *args: int, **kwargs: tuple[int, ...] | bool | int | str) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance or raise TypeError if axis in kwargs.
 
         Args:
@@ -200,7 +203,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = kwargs["dim"]  # type: ignore[assignment]
+        dim_val: tuple[int, ...] = cast("tuple[int, ...]", kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -209,7 +212,7 @@ class MockFailingAxisBackend:
 class MockMathBackend:
     """Mock backend providing elementwise mathematical operations."""
 
-    def add(self, a: np.ndarray, b: float | np.ndarray) -> np.ndarray:
+    def add(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Add two arrays or array and scalar.
 
         Args:
@@ -221,7 +224,7 @@ class MockMathBackend:
         """
         return np.add(a, b)
 
-    def subtract(self, a: np.ndarray, b: float | np.ndarray) -> np.ndarray:
+    def subtract(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Subtract two arrays or array and scalar.
 
         Args:
@@ -233,7 +236,7 @@ class MockMathBackend:
         """
         return np.subtract(a, b)
 
-    def multiply(self, a: np.ndarray, b: float | np.ndarray) -> np.ndarray:
+    def multiply(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Multiply two arrays or array and scalar.
 
         Args:
@@ -245,7 +248,7 @@ class MockMathBackend:
         """
         return np.multiply(a, b)
 
-    def divide(self, a: np.ndarray, b: float | np.ndarray) -> np.ndarray:
+    def divide(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: float | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Divide two arrays or array and scalar.
 
         Args:
@@ -257,7 +260,7 @@ class MockMathBackend:
         """
         return np.divide(a, b)
 
-    def sqrt(self, a: np.ndarray) -> np.ndarray:
+    def sqrt(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute square root.
 
         Args:
@@ -272,7 +275,7 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> Callable[..., np.ndarray]:
+    def __getattr__(self, name: str) -> Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Delegate to numpy module.
 
         Args:
@@ -281,14 +284,14 @@ class SignalBackendWrapper:
         Returns:
             Callable[..., np.ndarray]: Resolved callable attribute.
         """
-        return getattr(np, name)  # type: ignore[no-any-return]
+        return cast("Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
 
     def pad(
         self,
-        arr: np.ndarray,
+        arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
         pad_width: tuple[tuple[int, int], tuple[int, int], tuple[int, int], tuple[int, int]],
         mode: str = "reflect",
-    ) -> np.ndarray:
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Pad 4D array without relying on ufunc initial sentinel.
 
         Args:
@@ -309,7 +312,7 @@ class SignalBackendWrapper:
 class MockRandModuleWithUniformAndRand:
     """Mock random module having uniform and rand."""
 
-    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray:
+    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate uniform random values.
 
         Args:
@@ -320,7 +323,7 @@ class MockRandModuleWithUniformAndRand:
         """
         return np.ones(size)
 
-    def rand(self, *shape: int) -> np.ndarray:
+    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate random values.
 
         Args:
@@ -339,7 +342,7 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def __getattr__(self, name: str) -> Callable[..., np.ndarray]:
+    def __getattr__(self, name: str) -> Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Dynamically return callable only on second check.
 
         Args:
@@ -369,7 +372,7 @@ class MockBackendWithFallback:
 class MockSubRand:
     """Sub-module offering rand operation."""
 
-    def rand(self, *shape: int) -> np.ndarray:
+    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate random values.
 
         Args:
@@ -392,7 +395,7 @@ class MockBackendWithRandOnly:
 class MockBackendDirectRand:
     """Mock backend having rand directly."""
 
-    def rand(self, *shape: int) -> np.ndarray:
+    def rand(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate random array.
 
         Args:
@@ -407,7 +410,7 @@ class MockBackendDirectRand:
 class MockBackendDirectUniform:
     """Mock backend having uniform directly."""
 
-    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray:
+    def uniform(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate uniform array.
 
         Args:
@@ -422,7 +425,7 @@ class MockBackendDirectUniform:
 class MockSubRandn:
     """Sub-module offering randn operation."""
 
-    def randn(self, *shape: int) -> np.ndarray:
+    def randn(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate standard normal array.
 
         Args:
@@ -445,7 +448,7 @@ class MockBackendWithRandnOnly:
 class MockBackendDirectRandn:
     """Mock backend having randn directly."""
 
-    def randn(self, *shape: int) -> np.ndarray:
+    def randn(self, *shape: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate standard normal array.
 
         Args:
@@ -460,7 +463,7 @@ class MockBackendDirectRandn:
 class MockBackendDirectNormal:
     """Mock backend having normal directly."""
 
-    def normal(self, size: tuple[int, ...] = ()) -> np.ndarray:
+    def normal(self, size: tuple[int, ...] = ()) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Generate normal array.
 
         Args:
@@ -497,13 +500,13 @@ def test_signal_coverage() -> None:
     backend = SignalBackendWrapper()
 
     # 1. Gaussian kernel calculation
-    k = signal_mod._generate_gaussian_kernel(backend, (3, 3), (1.0, 1.0))
-    assert k.shape == (3, 3)
-    np.testing.assert_allclose(float(np.sum(k)), 1.0, atol=1e-5)
+    k = cast("Callable[..., EagerTensorProtocol]", signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
+    assert cast("EagerTensorProtocol", getattr(k, "shape")) == (3, 3)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", float)(cast("Callable[..., EagerTensorProtocol]", np.sum)(k)), 1.0, atol=1e-5)
 
     # 2. _apply_conv2d_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        signal_mod._apply_conv2d_batch(backend, np.ones((3, 3)), k, "reflect")
+        cast("Callable[..., EagerTensorProtocol]", signal_mod._apply_conv2d_batch)(backend, cast("Callable[..., EagerTensorProtocol]", np.ones)((3, 3)), k, "reflect")
 
     # 3. _get_blur_config with config_obj None and with dict
     cfg1 = signal_mod._get_blur_config({"kernel_size": (5, 5), "sigma": (2.0, 2.0), "data_format": "NCHW"}, None)
@@ -518,7 +521,7 @@ def test_signal_coverage() -> None:
     assert cfg2.data_format == "None"
 
     # Fallback when kwargs does not have get attribute
-    cfg_no_get = signal_mod._get_blur_config(None, None)  # type: ignore[arg-type]
+    cfg_no_get = cast("Callable[..., EagerTensorProtocol]", signal_mod._get_blur_config)(None, None)
     assert cfg_no_get.kernel_size == (3, 3)
     assert cfg_no_get.data_format is None
 
@@ -528,15 +531,15 @@ def test_signal_coverage() -> None:
 
     # 4. gaussian_blur_eager full execution
     imgs = np.ones((1, 2, 8, 8), dtype=np.float32)
-    blurred = signal_mod.gaussian_blur_eager(backend, imgs, custom_cfg)
-    assert blurred.shape == (1, 2, 8, 8)
+    blurred = cast("Callable[..., EagerTensorProtocol]", signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
+    assert cast("EagerTensorProtocol", getattr(blurred, "shape")) == (1, 2, 8, 8)
 
     # 5. _apply_median_filter_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        signal_mod._apply_median_filter_batch(backend, np.ones((2, 2)), (3, 3), "same")
+        cast("Callable[..., EagerTensorProtocol]", signal_mod._apply_median_filter_batch)(backend, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), (3, 3), "same")
 
     # 6. median_filter_eager with same padding and reflect padding
-    med_same = signal_mod.median_filter_eager(backend, imgs, (3, 3), padding="same")
-    assert med_same.shape == (1, 2, 8, 8)
-    med_reflect = signal_mod.median_filter_eager(backend, imgs, (3, 3), padding="reflect")
-    assert med_reflect.shape == (1, 2, 8, 8)
+    med_same = cast("Callable[..., EagerTensorProtocol]", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
+    assert cast("EagerTensorProtocol", getattr(med_same, "shape")) == (1, 2, 8, 8)
+    med_reflect = cast("Callable[..., EagerTensorProtocol]", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
+    assert cast("EagerTensorProtocol", getattr(med_reflect, "shape")) == (1, 2, 8, 8)

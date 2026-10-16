@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Callable
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.pure_python.eager import execute_op
 from ml_switcheroo_compiler.backends.pure_python.types import PurePythonTensor
 from ml_switcheroo_compiler.backends.registry import register_backend
@@ -85,7 +86,7 @@ class PurePythonGenerator(PythonStringGenerator):
     def _compile_aot_impl(
         self,
         graph: IRGraph,
-        **kwargs: object,
+        **kwargs: EagerValue,
     ) -> Callable[[PurePythonTensor], PurePythonTensor]:
         """Compile computation graph into an executable pure Python callable.
 

@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Passes package exposing middle-end graph transformation passes."""
 
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass

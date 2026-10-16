@@ -1,5 +1,9 @@
 """Tests for declarative dynamic operator shape inference and symbolic propagation."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -27,8 +31,13 @@ from ml_switcheroo_compiler.ops.shape_inference import (
 )
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_symbolic_dimension():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_symbolic_dimension() -> None:
     """Test symbolic dimension S behaviors."""
     s1 = S("batch")
     s2 = S("batch")
@@ -42,7 +51,7 @@ def test_symbolic_dimension():
     assert hash(s1) == hash(s2)
 
 
-def test_compute_contiguous_strides():
+def test_compute_contiguous_strides() -> None:
     """Test contiguous stride calculation."""
     assert compute_contiguous_strides(()) == ()
     assert compute_contiguous_strides((3,)) == (1,)
@@ -50,7 +59,7 @@ def test_compute_contiguous_strides():
     assert compute_contiguous_strides((S("batch"), 3, 4)) == (12, 4, 1)
 
 
-def test_broadcast_shapes_success():
+def test_broadcast_shapes_success() -> None:
     """Test multi-operand broadcasting with static and symbolic dimensions."""
     assert broadcast_shapes() == ()
     assert broadcast_shapes((2, 3)) == (2, 3)
@@ -66,7 +75,7 @@ def test_broadcast_shapes_success():
     assert broadcast_shapes((S("batch"), 3), (S("batch"), 1)) == (S("batch"), 3)
 
 
-def test_broadcast_shapes_mismatch():
+def test_broadcast_shapes_mismatch() -> None:
     """Test broadcast mismatch raises ValueError."""
     with pytest.raises(ValueError, match="Shape mismatch"):
         broadcast_shapes((2, 3), (2, 4))
@@ -75,7 +84,7 @@ def test_broadcast_shapes_mismatch():
         broadcast_shapes((S("batch"),), (S("seq"),))
 
 
-def test_infer_matmul_variants():
+def test_infer_matmul_variants() -> None:
     """Test 1D, 2D, and batched matrix multiplication with broadcasting."""
     # 1D @ 1D -> scalar
     assert infer_matmul((4,), (4,)) == ()
@@ -106,7 +115,7 @@ def test_infer_matmul_variants():
         infer_matmul((), (2, 3))
 
 
-def test_infer_dot_and_outer():
+def test_infer_dot_and_outer() -> None:
     """Test dot and outer product shape inference."""
     assert infer_dot((5,), (5,)) == ()
     with pytest.raises(ValueError, match="dimension mismatch"):
@@ -117,7 +126,7 @@ def test_infer_dot_and_outer():
     assert infer_outer((2, 3), (4, 5)) == (6, 20)
 
 
-def test_infer_conv():
+def test_infer_conv() -> None:
     """Test 1D, 2D, and 3D convolution shape inference."""
     # 2D Conv: (N, C_in, H, W) and (C_out, C_in, kH, kW)
     out2d = infer_conv((2, 3, 32, 32), (16, 3, 3, 3), stride=1, padding=1, dilation=1, spatial_dims=2)
@@ -140,7 +149,7 @@ def test_infer_conv():
         infer_conv((1, 1, 2, 2), (1, 1, 5, 5), stride=1, padding=0, spatial_dims=2)
 
 
-def test_infer_pool():
+def test_infer_pool() -> None:
     """Test 1D, 2D, and 3D pooling shape inference."""
     # 2D Pool: (N, C, H, W)
     out2d = infer_pool((2, 16, 32, 32), kernel_size=2, stride=2, padding=0, spatial_dims=2)
@@ -154,7 +163,7 @@ def test_infer_pool():
         infer_pool((2, 16), kernel_size=2)
 
 
-def test_infer_reshape():
+def test_infer_reshape() -> None:
     """Test reshape with dynamic -1 inference and compatibility checks."""
     assert infer_reshape((2, 3, 4), (6, -1)) == (6, 4)
     assert infer_reshape((2, 3, 4), (24,)) == (24,)
@@ -169,7 +178,7 @@ def test_infer_reshape():
         infer_reshape((2, 3), (7,))
 
 
-def test_infer_transpose():
+def test_infer_transpose() -> None:
     """Test transpose with axes permutation."""
     assert infer_transpose((2, 3, 4)) == (4, 3, 2)
     assert infer_transpose((2, 3, 4), axes=[1, 2, 0]) == (3, 4, 2)
@@ -179,7 +188,7 @@ def test_infer_transpose():
         infer_transpose((2, 3, 4), axes=[0, 1])
 
 
-def test_infer_squeeze_and_expand_dims():
+def test_infer_squeeze_and_expand_dims() -> None:
     """Test squeeze and expand_dims."""
     assert infer_squeeze((1, 2, 1, 3)) == (2, 3)
     assert infer_squeeze((1, 2, 1, 3), axis=0) == (2, 1, 3)
@@ -193,14 +202,14 @@ def test_infer_squeeze_and_expand_dims():
     assert infer_expand_dims((2, 3), axis=-1) == (2, 3, 1)
 
 
-def test_infer_flatten():
+def test_infer_flatten() -> None:
     """Test flatten along dimension ranges."""
     assert infer_flatten((2, 3, 4, 5), start_dim=1, end_dim=2) == (2, 12, 5)
     assert infer_flatten((2, 3, 4), start_dim=0, end_dim=-1) == (24,)
     assert infer_flatten(()) == ()
 
 
-def test_infer_split_concat_stack():
+def test_infer_split_concat_stack() -> None:
     """Test split, concat, and stack operations."""
     # Split
     splits = infer_split((6, 4), num_or_size_splits=3, axis=0)
@@ -231,7 +240,7 @@ def test_infer_split_concat_stack():
         infer_stack([(2, 3), (2, 4)])
 
 
-def test_infer_reduction():
+def test_infer_reduction() -> None:
     """Test reduction operations with axis and keepdims."""
     assert infer_reduction((2, 3, 4), axis=None, keepdims=False) == ()
     assert infer_reduction((2, 3, 4), axis=None, keepdims=True) == (1, 1, 1)
@@ -240,12 +249,12 @@ def test_infer_reduction():
     assert infer_reduction((2, 3, 4), axis=[0, 2], keepdims=False) == (3,)
 
 
-def test_dynamic_op_def_declarative_inference():
+def test_dynamic_op_def_declarative_inference() -> None:
     """Test that DynamicOpDef uses declarative signatures and raises explicit errors."""
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, _load_yaml_registry
 
     _load_yaml_registry()
-    _YAML_REGISTRY["CustomDynamicTestOp"] = {"category": "elementwise"}
+    getattr(_YAML_REGISTRY, "__setitem__")("CustomDynamicTestOp", {"category": "elementwise"})
     op_cls = get_op("CustomDynamicTestOp")
     op = op_cls()
 
@@ -260,7 +269,7 @@ def test_dynamic_op_def_declarative_inference():
         op.infer_shape((2, 3), (2, 4))
 
 
-def test_shape_inference_pass_with_strides_and_symbolic():
+def test_shape_inference_pass_with_strides_and_symbolic() -> None:
     """Test that shape_inference_pass correctly attaches shape_metadata and contiguous strides."""
     node_in1 = IRNode(id="in1", op_type="Input", inputs=[], attributes={}, shape_metadata=(S("batch"), 4))
     node_in2 = IRNode(id="in2", op_type="Input", inputs=[], attributes={}, shape_metadata=(S("batch"), 4))
@@ -274,7 +283,7 @@ def test_shape_inference_pass_with_strides_and_symbolic():
     assert graph.nodes["add"].attributes["strides"] == (4, 1)
 
 
-def test_load_shape_signatures_missing_file(monkeypatch):
+def test_load_shape_signatures_missing_file(monkeypatch: EagerTensorProtocol) -> None:
     """Test loading shape signatures when YAML file does not exist."""
     import ml_switcheroo_compiler.ops.shape_inference as si
 
@@ -285,12 +294,12 @@ def test_load_shape_signatures_missing_file(monkeypatch):
     monkeypatch.setattr(si, "_CACHED_SIGNATURES", None)
 
 
-def test_broadcast_shapes_none_and_edge_cases():
+def test_broadcast_shapes_none_and_edge_cases() -> None:
     """Test broadcasting with None inputs."""
-    assert broadcast_shapes(None, None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", broadcast_shapes)(None, None) == ()
 
 
-def test_conv_3d_and_symbolic():
+def test_conv_3d_and_symbolic() -> None:
     """Test 3D convolution and symbolic dimension propagation."""
     out3d = infer_conv(
         (1, 4, 10, 10, 10),
@@ -317,7 +326,7 @@ def test_conv_3d_and_symbolic():
     assert out_sym[3] == 10
 
 
-def test_pool_3d_and_symbolic():
+def test_pool_3d_and_symbolic() -> None:
     """Test 3D pooling and symbolic dimension propagation."""
     out3d = infer_pool(
         (1, 4, 16, 16, 16),
@@ -342,40 +351,40 @@ def test_pool_3d_and_symbolic():
     assert out_sym[3] == 8
 
 
-def test_reshape_other_prod_zero():
+def test_reshape_other_prod_zero() -> None:
     """Test reshape error when non -1 dimensions product is 0."""
     with pytest.raises(ValueError, match="Cannot reshape"):
         infer_reshape((2, 3), (0, -1))
 
 
-def test_squeeze_axis_out_of_range():
+def test_squeeze_axis_out_of_range() -> None:
     """Test squeeze error when axis is out of range."""
     with pytest.raises(ValueError, match="out of range"):
         infer_squeeze((1, 2, 3), axis=5)
 
 
-def test_flatten_with_symbolic():
+def test_flatten_with_symbolic() -> None:
     """Test flattening when tensor contains symbolic dimensions."""
     out = infer_flatten((2, S("H"), 4), start_dim=1, end_dim=2)
     assert out[0] == 2
     assert isinstance(out[1], S)
 
 
-def test_split_symbolic():
+def test_split_symbolic() -> None:
     """Test splitting tensor with symbolic dimension."""
     splits = infer_split((S("batch"), 4), num_or_size_splits=2, axis=0)
     assert len(splits) == 2
     assert isinstance(splits[0][0], S)
 
 
-def test_concat_symbolic():
+def test_concat_symbolic() -> None:
     """Test concatenating tensors with symbolic dimension."""
     out = infer_concat([(S("batch"), 4), (S("batch"), 4)], axis=0)
     assert isinstance(out[0], S)
     assert out[1] == 4
 
 
-def test_infer_op_shape_declarative_empty_and_branch_coverage():
+def test_infer_op_shape_declarative_empty_and_branch_coverage() -> None:
     """Test empty input handling across all declarative op categories."""
     assert infer_op_shape_declarative("Add") == ()
     assert infer_op_shape_declarative("ReduceSum") == ()
@@ -412,28 +421,34 @@ def test_infer_op_shape_declarative_empty_and_branch_coverage():
     assert infer_op_shape_declarative("NonExistentOp") == ()
 
 
-def test_infer_shape_input_extractors():
+def test_infer_shape_input_extractors() -> None:
     """Test infer_shape with objects having shape_metadata, shape, or tuples."""
 
     class DummyMeta:
-        def __init__(self, s):
+        """Test class DummyMeta."""
+
+        def __init__(self, s: EagerValue) -> None:
+            """Test function __init__."""
             self.shape_metadata = s
 
     class DummyShape:
-        def __init__(self, s):
+        """Test class DummyShape."""
+
+        def __init__(self, s: EagerValue) -> None:
+            """Test function __init__."""
             self.shape_metadata = None
             self.shape = s
 
     # Positional args
-    assert infer_shape("Add", DummyMeta((2, 3)), DummyShape((1, 3))) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", cast("Callable[..., EagerTensorProtocol]", DummyMeta)((2, 3)), cast("Callable[..., EagerTensorProtocol]", DummyShape)((1, 3))) == (2, 3)
     assert infer_shape("Add", (2, 3), [1, 3]) == (2, 3)
 
     # inputs kwarg
-    assert infer_shape("Add", inputs=[DummyMeta((2, 3)), DummyShape((1, 3))]) == (2, 3)
-    assert infer_shape("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", inputs=[cast("Callable[..., EagerTensorProtocol]", DummyMeta)((2, 3)), cast("Callable[..., EagerTensorProtocol]", DummyShape)((1, 3))]) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
 
 
-def test_coverage_gap_fillers():
+def test_coverage_gap_fillers() -> None:
     """Fill remaining branch coverage gaps in shape_inference.py."""
     # Line 129: compute_contiguous_strides with non-int in middle
     assert compute_contiguous_strides((3, S("batch"), 4)) == (4, 4, 1)

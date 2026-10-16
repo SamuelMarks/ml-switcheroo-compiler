@@ -1,5 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Activations and advanced NN operations."""
+
+from __future__ import annotations
+
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -8,7 +13,7 @@ from ml_switcheroo_compiler.ops.registry import get_op, register_op
 from ml_switcheroo_compiler.ops.shape.joining import concatenate
 
 
-def crelu(features, axis=-1, name=None):
+def crelu(features: EagerValue, axis: EagerValue = -1, name: EagerValue = None) -> EagerValue:
     """Compute Concatenated ReLU.
 
     Args:
@@ -23,10 +28,10 @@ def crelu(features, axis=-1, name=None):
 
     from ml_switcheroo_compiler.ops.binary import maximum
 
-    return maximum(concatenate([features, negative(features)], axis=axis), 0.0)
+    return maximum(concatenate([cast(Tensor, features), negative(features)], axis=cast("int", axis)), 0.0)
 
 
-def isotonic_regression(y, sample_weights=None, increasing=True, name=None):
+def isotonic_regression(y: EagerValue, sample_weights: EagerValue = None, increasing: EagerValue = True, name: EagerValue = None) -> EagerValue:
     """Solves isotonic regression problems.
 
     Args:
@@ -54,7 +59,7 @@ def isotonic_regression(y, sample_weights=None, increasing=True, name=None):
 __all__ = ["softplus", "softmax", "log_softmax", "sigmoid", "one_hot", "rrelu"]
 
 
-def softplus(x):
+def softplus(x: Tensor) -> Tensor:
     """Softplus activation.
 
     Args:
@@ -74,7 +79,7 @@ class Softmax(OpDef):
 
     op_name = "Softmax"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -95,7 +100,7 @@ class Softmax(OpDef):
         return res
 
 
-def softmax(x, axis: int = -1, *args, **kwargs):
+def softmax(x: EagerValue, axis: int = -1, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Softmax activation.
 
     Args:
@@ -115,7 +120,7 @@ def softmax(x, axis: int = -1, *args, **kwargs):
         return get_active_backend().execute_op("Softmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Softmax", [x], getattr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "Softmax", [cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
 
 
 @register_op("LogSoftmax")
@@ -124,7 +129,7 @@ class LogSoftmax(OpDef):
 
     op_name = "LogSoftmax"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -145,7 +150,7 @@ class LogSoftmax(OpDef):
         return res
 
 
-def log_softmax(x, axis: int = -1, *args, **kwargs):
+def log_softmax(x: EagerValue, axis: int = -1, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """LogSoftmax activation.
 
     Args:
@@ -165,7 +170,7 @@ def log_softmax(x, axis: int = -1, *args, **kwargs):
         return get_active_backend().execute_op("LogSoftmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "LogSoftmax", [x], getattr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "LogSoftmax", [cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
 
 
 @register_op("Sigmoid")
@@ -174,7 +179,7 @@ class Sigmoid(OpDef):
 
     op_name = "Sigmoid"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -195,7 +200,7 @@ class Sigmoid(OpDef):
         return res
 
 
-def sigmoid(x, *args, **kwargs):
+def sigmoid(x: Tensor | str, *args: int | float | str | None, **kwargs: int | float | str | None) -> Tensor:
     """Sigmoid activation.
 
     Args:
@@ -206,15 +211,17 @@ def sigmoid(x, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
+    from typing import cast
+
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("Sigmoid", x)
+        return cast(Tensor, get_active_backend().execute_op("Sigmoid", x))
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Sigmoid", [x], getattr(x, "shape_metadata", None), {})
+    return cast(Tensor, emit_ir_node(None, "Sigmoid", [str(x)], getattr(x, "shape_metadata", None), {}))
 
 
 @register_op("OneHot")
@@ -223,7 +230,7 @@ class OneHot(OpDef):
 
     op_name = "OneHot"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -242,10 +249,10 @@ class OneHot(OpDef):
         if axis == -1:
             return indices_shape + (depth,)
         else:
-            return indices_shape[:axis] + (depth,) + indices_shape[axis:]
+            return indices_shape[: int(cast(int, axis))] + (depth,) + indices_shape[int(cast(int, axis)) :]
 
 
-def one_hot(indices, depth: int, *args, **kwargs):
+def one_hot(indices: EagerValue, depth: int, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """OneHot encoding.
 
     Args:
@@ -272,7 +279,7 @@ def one_hot(indices, depth: int, *args, **kwargs):
     meta = copy.copy(getattr(indices, "shape_metadata", None))
     if meta is not None:
         meta.shape = shape
-    return emit_ir_node(None, "OneHot", [indices], meta, kwargs)
+    return emit_ir_node(None, "OneHot", [cast(str, indices)], meta, kwargs)
 
 
 @register_op("Rrelu")
@@ -281,7 +288,7 @@ class Rrelu(OpDef):
 
     op_name = "Rrelu"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -302,7 +309,7 @@ class Rrelu(OpDef):
         return res
 
 
-def rrelu(x, *args, **kwargs):
+def rrelu(x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Rrelu activation.
 
     Args:
@@ -321,7 +328,7 @@ def rrelu(x, *args, **kwargs):
         return get_active_backend().execute_op("Rrelu", x, *args, **kwargs)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Rrelu", [x], getattr(x, "shape_metadata", None), kwargs)
+    return emit_ir_node(None, "Rrelu", [cast(str, x)], getattr(x, "shape_metadata", None), kwargs)
 
 
 @register_op("HardSilu")
@@ -330,7 +337,7 @@ class HardSilu(OpDef):
 
     op_name = "HardSilu"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -350,7 +357,7 @@ class HardSwish(OpDef):
 
     op_name = "HardSwish"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -370,7 +377,7 @@ class Squareplus(OpDef):
 
     op_name = "Squareplus"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -384,7 +391,7 @@ class Squareplus(OpDef):
         return tuple(getattr(x, "shape", getattr(x, "shape_metadata", x if isinstance(x, (list, tuple)) else ())))
 
 
-def hard_silu(*args, **kwargs):
+def hard_silu(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Hard SiLU activation.
 
     Args:
@@ -399,7 +406,7 @@ def hard_silu(*args, **kwargs):
     return dispatch_op("HardSilu", *args, **kwargs)
 
 
-def hard_swish(*args, **kwargs):
+def hard_swish(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Hard Swish activation.
 
     Args:
@@ -414,7 +421,7 @@ def hard_swish(*args, **kwargs):
     return dispatch_op("HardSwish", *args, **kwargs)
 
 
-def mish(*args, **kwargs):
+def mish(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Mish activation.
 
     Args:
@@ -429,7 +436,7 @@ def mish(*args, **kwargs):
     return dispatch_op("Mish", *args, **kwargs)
 
 
-def squareplus(*args, **kwargs):
+def squareplus(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Squareplus activation.
 
     Args:

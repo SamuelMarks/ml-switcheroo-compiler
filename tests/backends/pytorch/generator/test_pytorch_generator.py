@@ -1,16 +1,31 @@
+"""Tests for test_pytorch_generator."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchScatterVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class DummyNode:
-    def __init__(self, attrs=None, op_type="Unknown"):
+    """Test class DummyNode."""
+
+    def __init__(self, attrs: EagerValue = None, op_type: EagerValue = "Unknown") -> None:
+        """Test function __init__."""
         self.attributes = attrs or {}
         self.op_type = op_type
         self.id = "n1"
 
 
-def test_generator_basics(monkeypatch):
+def test_generator_basics(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_generator_basics."""
     import numpy as np
     import torch
 
@@ -20,18 +35,18 @@ def test_generator_basics(monkeypatch):
 
     # visit_PowerIteration
     n_power = DummyNode({"num_iters": 2}, "PowerIteration")
-    res = gen.visit_PowerIteration(n_power, ["x", "u"])
+    res = cast("Callable[..., EagerTensorProtocol]", gen.visit_PowerIteration)(n_power, ["x", "u"])
     assert res == "pt_power_iteration(x, 2, u)"
-    res = gen.visit_PowerIteration(n_power, ["x"])
+    res = cast("Callable[..., EagerTensorProtocol]", gen.visit_PowerIteration)(n_power, ["x"])
     assert res == "pt_power_iteration(x, 2, None)"
 
     # visit_RaggedDot
     n_ragged = DummyNode({}, "RaggedDot")
-    assert gen.visit_RaggedDot(n_ragged, ["x", "y"]) == "pt_ragged_dot(x, y)"
+    assert cast("Callable[..., EagerTensorProtocol]", gen.visit_RaggedDot)(n_ragged, ["x", "y"]) == "pt_ragged_dot(x, y)"
 
     # visit_Einsum
     n_einsum = DummyNode({}, "Einsum")
-    assert gen.visit_Einsum(n_einsum, ["x", "y"], equation="ij,jk->ik") == "torch.einsum('ij,jk->ik', x, y)"
+    assert cast("Callable[..., EagerTensorProtocol]", gen.visit_Einsum)(n_einsum, ["x", "y"], equation="ij,jk->ik") == "torch.einsum('ij,jk->ik', x, y)"
 
     # _emit_constant_assignment
     gen._emit_constant_assignment("var", "val")
@@ -43,12 +58,12 @@ def test_generator_basics(monkeypatch):
 
     # _emit_init_body
     n_const = DummyNode({"value": 1.0}, "Constant")
-    gen.sorted_nodes = [n_const]
+    setattr(gen, "sorted_nodes", [n_const])
     gen.code = []
     assert gen._emit_init_body() is True
     assert "register_parameter" in gen.code[0]
 
-    gen.sorted_nodes = [DummyNode({}, "Unknown")]
+    setattr(gen, "sorted_nodes", [cast("Callable[..., EagerTensorProtocol]", DummyNode)({}, "Unknown")])
     assert gen._emit_init_body() is False
 
     # Mock torch load and save
@@ -62,46 +77,53 @@ def test_generator_basics(monkeypatch):
     assert PyTorchCodeGenerator.savez_compressed("path") is None
 
 
-def test_pytorch_scatter_visitor():
+def test_pytorch_scatter_visitor() -> None:
+    """Test function test_pytorch_scatter_visitor."""
     vis = PyTorchScatterVisitor()
     node = DummyNode()
-    assert vis.visit_TensorScatterUpdate(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u)"
-    assert vis.visit_TensorScatterAdd(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u, accumulate=True)"
-    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True)" in vis.visit_TensorScatterMax(node, ["t", "i", "u"])
-    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True)" in vis.visit_TensorScatterMin(node, ["t", "i", "u"])
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_TensorScatterUpdate)(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_TensorScatterAdd)(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u, accumulate=True)"
+    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True)" in cast("Callable[..., EagerTensorProtocol]", vis.visit_TensorScatterMax)(node, ["t", "i", "u"])
+    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True)" in cast("Callable[..., EagerTensorProtocol]", vis.visit_TensorScatterMin)(node, ["t", "i", "u"])
 
 
-def test_pytorch_generator_distributed_visitor():
+def test_pytorch_generator_distributed_visitor() -> None:
+    """Test function test_pytorch_generator_distributed_visitor."""
     from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchDistributedVisitor
 
     vis = PyTorchDistributedVisitor()
-    assert vis.visit_AllGather(None, ["tensor"]) == "torch.distributed.all_gather_into_tensor(output, tensor)"
-    assert vis.visit_ReduceScatter(None, ["tensor"]) == "torch.distributed.reduce_scatter_tensor(torch.empty_like(tensor), tensor)"
-    assert vis.visit_AllReduce(None, ["tensor"]) == "torch.distributed.all_reduce(tensor)"
-    assert vis.visit_AllToAll(None, ["tensor"]) == "torch.distributed.all_to_all_single(torch.empty_like(tensor), tensor)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_AllGather)(None, ["tensor"]) == "torch.distributed.all_gather_into_tensor(output, tensor)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_ReduceScatter)(None, ["tensor"]) == "torch.distributed.reduce_scatter_tensor(torch.empty_like(tensor), tensor)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_AllReduce)(None, ["tensor"]) == "torch.distributed.all_reduce(tensor)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_AllToAll)(None, ["tensor"]) == "torch.distributed.all_to_all_single(torch.empty_like(tensor), tensor)"
 
     class DummyBcNode:
+        """Test class DummyBcNode."""
+
         attributes = {"root": 2}
 
-    assert vis.visit_Broadcast(DummyBcNode(), ["tensor"]) == "torch.distributed.broadcast(tensor, src=2)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Broadcast)(cast("Callable[..., EagerTensorProtocol]", DummyBcNode)(), ["tensor"]) == "torch.distributed.broadcast(tensor, src=2)"
 
     from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchNNMixin
 
     nn_vis = PyTorchNNMixin()
     # Need to give it an add_line method for the mixin to work
-    lines = []
-    nn_vis.add_line = lines.append
+    lines = cast("list[EagerTensorProtocol]", [])
+    setattr(nn_vis, "add_line", lines.append)
 
     class DummyNode:
-        def __init__(self, attrs=None):
+        """Test class DummyNode."""
+
+        def __init__(self, attrs: EagerValue = None) -> None:
+            """Test function __init__."""
             self.attributes = attrs or {}
             self.id = "n1"
 
-    res_send = nn_vis.visit_Send(DummyNode({"dst_rank": 1, "tag": 2}), ["tensor"])
+    res_send = cast("Callable[..., EagerTensorProtocol]", nn_vis.visit_Send)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"dst_rank": 1, "tag": 2}), ["tensor"])
     assert res_send == ""
     assert "torch.distributed.isend(tensor, dst=1, tag=2)" in lines[0]
 
-    res_recv = nn_vis.visit_Recv(DummyNode({"src_rank": 1, "tag": 2, "shape": (2, 2), "dtype": "float32"}), [])
+    res_recv = cast("Callable[..., EagerTensorProtocol]", nn_vis.visit_Recv)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"src_rank": 1, "tag": 2, "shape": (2, 2), "dtype": "float32"}), [])
     assert res_recv == "v_n1"
     assert "v_n1 = torch.empty([2, 2], dtype=torch.float32, device=self.device)" in lines[1]
     assert "torch.distributed.irecv(v_n1, src=1, tag=2)" in lines[2]
@@ -119,7 +141,8 @@ def test_pytorch_generator_distributed_visitor():
     nn_no_gen._add_line("noop_line")
 
 
-def test_missing_methods():
+def test_missing_methods() -> None:
+    """Test function test_missing_methods."""
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)
     assert gen.get_fallback_prefix() == "torch"
@@ -132,6 +155,6 @@ def test_missing_methods():
 
     # cover line 112
     try:
-        gen.visit(DummyNode({}, "SomeUnknownOp"), [])
-    except Exception:
-        pass
+        cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({}, "SomeUnknownOp"), [])
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None

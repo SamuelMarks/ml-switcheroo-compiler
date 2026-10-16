@@ -1,4 +1,17 @@
-def test_loop_unrolling_missing_coverage():
+"""Tests for test_loop_unrolling_large_bounds."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_loop_unrolling_missing_coverage() -> None:
+    """Test function test_loop_unrolling_missing_coverage."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
@@ -8,10 +21,12 @@ def test_loop_unrolling_missing_coverage():
         assert _load_config() == {}
 
     class MockNode:
+        """Test class MockNode."""
+
         op_type = "Add"
         id = "mock"
 
-    assert detect_static_bound(MockNode(), []) is None
+    assert cast("Callable[..., EagerTensorProtocol]", detect_static_bound)(cast("Callable[..., EagerTensorProtocol]", MockNode)(), []) is None
 
     g = IRGraph()
     n1 = LogicalNode(id="n1", op_type="Add")
@@ -20,7 +35,8 @@ def test_loop_unrolling_missing_coverage():
     assert "n1" in unrolled_g.nodes
 
 
-def test_clone_subgraph_coverage():
+def test_clone_subgraph_coverage() -> None:
+    """Test function test_clone_subgraph_coverage."""
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
     from ml_switcheroo_compiler.transforms.passes.loop_unrolling import clone_subgraph
 

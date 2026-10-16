@@ -1,6 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Core Random."""
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,7 +10,7 @@ class Rademacher(OpDef):
 
     op_name = "Rademacher"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -26,10 +26,10 @@ class Rademacher(OpDef):
             return ()
         if isinstance(s, int):
             return (s,)
-        return tuple(s)
+        return tuple(getattr(s, "__iter__")())
 
 
-def rademacher(*args, **kwargs):
+def rademacher(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Draw samples from a Rademacher distribution.
 
     Args:

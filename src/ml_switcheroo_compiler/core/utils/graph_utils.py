@@ -1,8 +1,11 @@
-# ruff: noqa: E402, E501, F403
 """Graph utilities."""
 
+from __future__ import annotations
+
+from collections.abc import Iterable
+
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 
 class _TopologicalSorter:
@@ -17,7 +20,7 @@ class _TopologicalSorter:
         self.graph = graph
         self.visited: set[str] = set()
         self.temp_mark: set[str] = set()
-        self.sorted_nodes = []
+        self.sorted_nodes: list[LogicalNode] = []
 
     def visit(self, node_id: str) -> None:
         """Visit a node during sorting.
@@ -55,23 +58,23 @@ class _TopologicalSorter:
             self.temp_mark.remove(node_id)
             self.visited.add(node_id)
 
-    def sort(self):
+    def sort(self) -> list[LogicalNode]:
         """Perform the topological sort.
 
         Returns:
             list[object]: The sorted nodes.
         """
-        nodes_iterable = self.graph.nodes
+        nodes_iterable: Iterable[str | LogicalNode] = self.graph.nodes
         if isinstance(nodes_iterable, dict):
             nodes_iterable = list(nodes_iterable.keys())
         for n in nodes_iterable:
             node_id = getattr(n, "id", n) if not isinstance(n, str) else n
             if node_id not in self.visited:
-                self.visit(node_id)
+                getattr(self, "visit")(node_id)
         return self.sorted_nodes
 
 
-def topological_sort(graph: IRGraph):
+def topological_sort(graph: IRGraph) -> list[LogicalNode]:
     """Perform topological sort on a graph.
 
     Args:

@@ -1,17 +1,15 @@
-"""Module joining.py."""
+"""Shape operations for Tensor Anys."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Shape operations for Tensor Anys."""
 from collections.abc import Sequence
+from typing import Union, cast
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
@@ -20,7 +18,7 @@ from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def concatenate(tensors: Sequence[Tensor], axis: int = 0):
+def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> EagerValue:
     """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
@@ -58,7 +56,7 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0):
     )
 
 
-def stack(tensors: Sequence[Tensor], axis: int = 0):
+def stack(tensors: Sequence[Tensor], axis: int = 0) -> EagerValue:
     """Stack a sequence of tensors along a new dimension.
 
     Args:
@@ -110,7 +108,7 @@ def stack(tensors: Sequence[Tensor], axis: int = 0):
     )
 
 
-def vstack(tup: Sequence[Tensor]):
+def vstack(tup: Sequence[Tensor]) -> EagerValue:
     """Stack arrays in sequence vertically (row wise).
 
     Args:
@@ -122,13 +120,13 @@ def vstack(tup: Sequence[Tensor]):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Vstack", [t.data for t in tup])
-        return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Vstack").infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
+    return _emit_shape_node("Vstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
 
 
-def hstack(tup: Sequence[Tensor]):
+def hstack(tup: Sequence[Tensor]) -> EagerValue:
     """Stack arrays in sequence horizontally (column wise).
 
     Args:
@@ -140,13 +138,13 @@ def hstack(tup: Sequence[Tensor]):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Hstack", [t.data for t in tup])
-        return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Hstack").infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
+    return _emit_shape_node("Hstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
 
 
-def dstack(tup: Sequence[Tensor]):
+def dstack(tup: Sequence[Tensor]) -> EagerValue:
     """Stack arrays in sequence depth wise (along third axis).
 
     Args:
@@ -158,13 +156,13 @@ def dstack(tup: Sequence[Tensor]):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Dstack", [t.data for t in tup])
-        return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Dstack").infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
+    return _emit_shape_node("Dstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
 
 
-def append(arr, values, axis: int | None = None):
+def append(arr: EagerValue, values: EagerValue, axis: int | None = None) -> EagerValue:
     """Append values to the end of an array.
 
     Args:
@@ -181,7 +179,7 @@ def append(arr, values, axis: int | None = None):
         data = backend.execute_op("Append", getattr(arr, "data", arr), getattr(values, "data", values), axis=axis)
         arr_dtype = getattr(arr, "dtype", getattr(values, "dtype", "float32"))
         arr_device = getattr(arr, "device", None)
-        return Tensor(data, TensorConfig(data.shape, arr_dtype, arr_device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), arr_dtype, arr_device))
 
     arr_t = asarray(arr)
     values_t = asarray(values)
@@ -194,7 +192,7 @@ def append(arr, values, axis: int | None = None):
     return concatenate([arr_t, values_t], axis=axis)
 
 
-def column_stack(tup):
+def column_stack(tup: EagerValue) -> EagerValue:
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:
@@ -203,10 +201,10 @@ def column_stack(tup):
     Returns:
         Tensor: The array formed by stacking the given arrays.
     """
-    tensors = [asarray(t) for t in tup]
+    tensors = [asarray(t) for t in getattr(tup, "__iter__")()]
     arrays = []
     for a in tensors:
-        if len(a.shape) < MAGIC_VAL_2:
+        if len(a.shape) < MATRIX_RANK:
             arrays.append(reshape(a, (a.shape[0], 1)))
         else:
             arrays.append(a)

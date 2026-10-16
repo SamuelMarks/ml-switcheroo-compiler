@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import importlib
+import logging
 from collections.abc import Mapping, Sequence
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
 
 
-def _get_ak_module() -> object:
+def _get_ak_module() -> EagerValue:
     """Retrieve awkward module dynamically with fallback.
 
     Returns:
@@ -15,10 +20,10 @@ def _get_ak_module() -> object:
     try:
         return importlib.import_module("awkward")
     except Exception:
-        return importlib.import_module("numpy")
+        return _np_mod()
 
 
-def zeros(shape_or_cls: object, shape: tuple[int, ...] | None = None) -> object:
+def zeros(shape_or_cls: EagerValue, shape: tuple[int, ...] | None = None) -> EagerValue:
     """Create an Awkward/NumPy zero-filled array.
 
     Args:
@@ -29,15 +34,15 @@ def zeros(shape_or_cls: object, shape: tuple[int, ...] | None = None) -> object:
         object: Allocated zero-filled array.
     """
     actual_shape = shape_or_cls if shape is None and isinstance(shape_or_cls, tuple) else (shape or (0,))
-    numpy_mod = importlib.import_module("numpy")
+    numpy_mod = _np_mod()
     arr = numpy_mod.zeros(actual_shape, dtype=numpy_mod.float32)
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "Array"):
-        return ak_mod.Array(arr)
-    return arr
+        return cast(EagerValue, getattr(ak_mod, "Array")(arr))
+    return cast(EagerValue, arr)
 
 
-def array(data_or_cls: object, data: Sequence[object] | None = None, dtype: str | None = None) -> object:
+def array(data_or_cls: EagerValue, data: Sequence[EagerValue] | None = None, dtype: str | None = None) -> EagerValue:
     """Create an Awkward ragged or regular array from data.
 
     Args:
@@ -53,17 +58,17 @@ def array(data_or_cls: object, data: Sequence[object] | None = None, dtype: str 
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "Array"):
         try:
-            return ak_mod.Array(actual_data)
-        except Exception:
-            pass
-    numpy_mod = importlib.import_module("numpy")
+            return cast(EagerValue, getattr(ak_mod, "Array")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    numpy_mod = _np_mod()
     try:
-        return numpy_mod.array(actual_data)
+        return cast(EagerValue, numpy_mod.array(actual_data))
     except ValueError:
-        return numpy_mod.array(actual_data, dtype=object)
+        return cast(EagerValue, numpy_mod.array(actual_data, dtype=object))
 
 
-def asarray(data_or_cls: object, data: Sequence[object] | None = None) -> object:
+def asarray(data_or_cls: EagerValue, data: Sequence[EagerValue] | None = None) -> EagerValue:
     """Convert input to an Awkward array.
 
     Args:
@@ -77,18 +82,18 @@ def asarray(data_or_cls: object, data: Sequence[object] | None = None) -> object
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "Array"):
         try:
-            return ak_mod.Array(actual_data)
-        except Exception:
-            pass
-    numpy_mod = importlib.import_module("numpy")
-    return numpy_mod.asarray(actual_data)
+            return cast(EagerValue, getattr(ak_mod, "Array")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    numpy_mod = _np_mod()
+    return cast(EagerValue, numpy_mod.asarray(actual_data))
 
 
 def ragged_array(
-    data_or_cls: object,
-    data: Sequence[object] | None = None,
+    data_or_cls: EagerValue,
+    data: Sequence[EagerValue] | None = None,
     dtype: str | None = None,
-) -> object:
+) -> EagerValue:
     """Construct an Awkward array preserving ragged nested dimensions.
 
     Args:
@@ -104,21 +109,21 @@ def ragged_array(
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "Array"):
         try:
-            return ak_mod.Array(actual_data)
-        except Exception:
-            pass
-    numpy_mod = importlib.import_module("numpy")
+            return cast(EagerValue, getattr(ak_mod, "Array")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    numpy_mod = _np_mod()
     try:
-        return numpy_mod.array(actual_data)
+        return cast(EagerValue, numpy_mod.array(actual_data))
     except ValueError:
-        return numpy_mod.array(actual_data, dtype=object)
+        return cast(EagerValue, numpy_mod.array(actual_data, dtype=object))
 
 
 def record_array(
-    data_or_cls: object,
-    data: Mapping[str, object] | Sequence[object] | None = None,
+    data_or_cls: EagerValue,
+    data: Mapping[str, EagerValue] | Sequence[EagerValue] | None = None,
     with_name: str | None = None,
-) -> object:
+) -> EagerValue:
     """Construct a nested record or zipped structure.
 
     Args:
@@ -132,17 +137,17 @@ def record_array(
     actual_data = data_or_cls if data is None else data
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "zip") and isinstance(actual_data, Mapping):
-        return ak_mod.zip(dict(actual_data), with_name=with_name)
+        return cast(EagerValue, getattr(ak_mod, "zip")(dict(actual_data), with_name=with_name))
     if hasattr(ak_mod, "Array"):
-        return ak_mod.Array(actual_data)
+        return cast(EagerValue, getattr(ak_mod, "Array")(actual_data))
     return actual_data
 
 
 def flatten(
-    data_or_cls: object,
-    data: object = None,
+    data_or_cls: EagerValue,
+    data: EagerValue = None,
     axis: int = 1,
-) -> object:
+) -> EagerValue:
     """Flatten a variable-length ragged dimension.
 
     Args:
@@ -156,17 +161,17 @@ def flatten(
     actual_data = data_or_cls if data is None else data
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "flatten"):
-        return ak_mod.flatten(actual_data, axis=axis)
-    numpy_mod = importlib.import_module("numpy")
-    return numpy_mod.asarray(actual_data).flatten()
+        return cast(EagerValue, getattr(ak_mod, "flatten")(actual_data, axis=axis))
+    numpy_mod = _np_mod()
+    return cast(EagerValue, numpy_mod.asarray(actual_data).flatten())
 
 
 def unflatten(
-    data_or_cls: object,
-    data: object = None,
+    data_or_cls: EagerValue,
+    data: EagerValue = None,
     counts: Sequence[int] | None = None,
     axis: int = 0,
-) -> object:
+) -> EagerValue:
     """Unflatten a 1D sequence into ragged partitions given counts.
 
     Args:
@@ -183,19 +188,19 @@ def unflatten(
         actual_counts = counts
     else:
         actual_data = data_or_cls
-        actual_counts = counts if counts is not None else (data if isinstance(data, (list, tuple)) else None)
+        actual_counts = counts if counts is not None else (cast("Sequence[int]", data) if isinstance(data, (list, tuple)) else None)
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "unflatten") and actual_counts is not None:
-        return ak_mod.unflatten(actual_data, actual_counts, axis=axis)
+        return cast(EagerValue, getattr(ak_mod, "unflatten")(actual_data, actual_counts, axis=axis))
     return actual_data
 
 
 def with_field(
-    base_or_cls: object,
-    base: object = None,
-    what: object = None,
+    base_or_cls: EagerValue,
+    base: EagerValue = None,
+    what: EagerValue = None,
     where: str = "",
-) -> object:
+) -> EagerValue:
     """Add or replace a field within a nested record structure.
 
     Args:
@@ -215,7 +220,7 @@ def with_field(
         actual_what = what if what is not None else base
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "with_field"):
-        return ak_mod.with_field(actual_base, actual_what, where)
+        return cast(EagerValue, getattr(ak_mod, "with_field")(actual_base, actual_what, where))
     if isinstance(actual_base, dict):
         res = dict(actual_base)
         res[where] = actual_what
@@ -224,9 +229,9 @@ def with_field(
 
 
 def unzip(
-    data_or_cls: object,
-    data: object = None,
-) -> tuple[object, ...]:
+    data_or_cls: EagerValue,
+    data: EagerValue = None,
+) -> tuple[EagerValue, ...]:
     """Unzip a record array into individual field arrays.
 
     Args:
@@ -239,14 +244,14 @@ def unzip(
     actual_data = data_or_cls if data is None else data
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "unzip"):
-        unzipped = ak_mod.unzip(actual_data)
+        unzipped = getattr(ak_mod, "unzip")(actual_data)
         return tuple(unzipped)
     if isinstance(actual_data, dict):
         return tuple(actual_data.values())
     return (actual_data,)
 
 
-def item(data_or_cls: object, data: object = None) -> float:
+def item(data_or_cls: EagerValue, data: EagerValue = None) -> float:
     """Extract scalar item value from an Awkward array.
 
     Args:
@@ -258,7 +263,7 @@ def item(data_or_cls: object, data: object = None) -> float:
     """
     actual_data = data_or_cls if data is None else data
     if hasattr(actual_data, "to_list"):
-        val = actual_data.to_list()
+        val = getattr(actual_data, "to_list")()
         if isinstance(val, (list, tuple)) and val:
             first = val[0]
             if isinstance(first, (list, tuple)) and first:
@@ -266,16 +271,16 @@ def item(data_or_cls: object, data: object = None) -> float:
             return float(first)
         return float(val)
     if hasattr(actual_data, "item"):
-        return float(actual_data.item())
-    numpy_mod = importlib.import_module("numpy")
+        return float(getattr(actual_data, "item")())
+    numpy_mod = _np_mod()
     return float(numpy_mod.asarray(actual_data).item())
 
 
 def broadcast_ragged(
-    a_or_cls: object,
-    a: object = None,
-    b: object = None,
-) -> tuple[object, object]:
+    a_or_cls: EagerValue,
+    a: EagerValue = None,
+    b: EagerValue = None,
+) -> tuple[EagerValue, EagerValue]:
     """Broadcast two arrays across ragged dimensions without padding.
 
     Args:
@@ -296,10 +301,10 @@ def broadcast_ragged(
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "broadcast_arrays"):
         try:
-            res = ak_mod.broadcast_arrays(actual_a, actual_b)
+            res = getattr(ak_mod, "broadcast_arrays")(actual_a, actual_b)
             return (res[0], res[1])
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     if isinstance(actual_a, (int, float, bool)) and isinstance(actual_b, (list, tuple)):
         broadcasted_a = [[actual_a] * len(sub) if isinstance(sub, (list, tuple)) else actual_a for sub in actual_b]
@@ -311,7 +316,7 @@ def broadcast_ragged(
     return (actual_a, actual_b)
 
 
-def ragged_shape(data_or_cls: object, data: object = None) -> tuple[int | None, ...]:
+def ragged_shape(data_or_cls: EagerValue, data: EagerValue = None) -> tuple[int | None, ...]:
     """Infer the shape tuple of a regular or ragged array structure.
 
     Args:
@@ -323,7 +328,7 @@ def ragged_shape(data_or_cls: object, data: object = None) -> tuple[int | None, 
     """
     actual_data = data_or_cls if data is None else data
     if hasattr(actual_data, "shape"):
-        return tuple(int(d) for d in actual_data.shape)
+        return tuple(int(d) for d in getattr(getattr(actual_data, "shape"), "__iter__")())
     if isinstance(actual_data, (list, tuple)):
         outer_len = len(actual_data)
         if outer_len == 0:
@@ -340,7 +345,7 @@ def ragged_shape(data_or_cls: object, data: object = None) -> tuple[int | None, 
     return ()
 
 
-def is_ragged(data_or_cls: object, data: object = None) -> bool:
+def is_ragged(data_or_cls: EagerValue, data: EagerValue = None) -> bool:
     """Determine whether an array structure contains ragged variable-length dimensions.
 
     Args:
@@ -355,10 +360,10 @@ def is_ragged(data_or_cls: object, data: object = None) -> bool:
 
 
 def to_regular(
-    data_or_cls: object,
-    data: object = None,
-    fill_value: object = None,
-) -> object:
+    data_or_cls: EagerValue,
+    data: EagerValue = None,
+    fill_value: EagerValue = None,
+) -> EagerValue:
     """Convert ragged array to regular dense multidimensional structure.
 
     Args:
@@ -373,9 +378,9 @@ def to_regular(
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "to_regular"):
         try:
-            return ak_mod.to_regular(actual_data)
-        except Exception:
-            pass
+            return cast(EagerValue, getattr(ak_mod, "to_regular")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     if isinstance(actual_data, (list, tuple)):
         lengths = [len(sub) if isinstance(sub, (list, tuple)) else 1 for sub in actual_data]
@@ -387,14 +392,14 @@ def to_regular(
                 padded.append(list(sub) + [pad_val] * (max_len - len(sub)))
             else:
                 padded.append([sub] + [pad_val] * (max_len - 1))
-        numpy_mod = importlib.import_module("numpy")
-        return numpy_mod.asarray(padded)
+        numpy_mod = _np_mod()
+        return cast(EagerValue, numpy_mod.asarray(padded))
 
-    numpy_mod = importlib.import_module("numpy")
-    return numpy_mod.asarray(actual_data)
+    numpy_mod = _np_mod()
+    return cast(EagerValue, numpy_mod.asarray(actual_data))
 
 
-def from_regular(data_or_cls: object, data: object = None) -> object:
+def from_regular(data_or_cls: EagerValue, data: EagerValue = None) -> EagerValue:
     """Convert regular dense structure to Awkward representation.
 
     Args:
@@ -408,13 +413,13 @@ def from_regular(data_or_cls: object, data: object = None) -> object:
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "from_regular"):
         try:
-            return ak_mod.from_regular(actual_data)
-        except Exception:
-            pass
+            return cast(EagerValue, getattr(ak_mod, "from_regular")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return array(actual_data)
 
 
-def to_numpy(data_or_cls: object, data: object = None) -> object:
+def to_numpy(data_or_cls: EagerValue, data: EagerValue = None) -> EagerValue:
     """Convert Awkward structure to standard host NumPy ndarray.
 
     Args:
@@ -428,14 +433,14 @@ def to_numpy(data_or_cls: object, data: object = None) -> object:
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "to_numpy"):
         try:
-            return ak_mod.to_numpy(actual_data)
-        except Exception:
-            pass
-    numpy_mod = importlib.import_module("numpy")
-    return numpy_mod.asarray(actual_data)
+            return cast(EagerValue, getattr(ak_mod, "to_numpy")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    numpy_mod = _np_mod()
+    return cast(EagerValue, numpy_mod.asarray(actual_data))
 
 
-def from_numpy(data_or_cls: object, data: object = None) -> object:
+def from_numpy(data_or_cls: EagerValue, data: EagerValue = None) -> EagerValue:
     """Construct Awkward array from host NumPy ndarray.
 
     Args:
@@ -449,13 +454,13 @@ def from_numpy(data_or_cls: object, data: object = None) -> object:
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "from_numpy"):
         try:
-            return ak_mod.from_numpy(actual_data)
-        except Exception:
-            pass
+            return cast(EagerValue, getattr(ak_mod, "from_numpy")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return array(actual_data)
 
 
-def to_list(data_or_cls: object, data: object = None) -> list[object]:
+def to_list(data_or_cls: EagerValue, data: EagerValue = None) -> list[EagerValue]:
     """Convert Awkward array or structure to nested Python list.
 
     Args:
@@ -467,15 +472,15 @@ def to_list(data_or_cls: object, data: object = None) -> list[object]:
     """
     actual_data = data_or_cls if data is None else data
     if hasattr(actual_data, "to_list"):
-        return actual_data.to_list()
+        return cast(list[EagerValue], getattr(actual_data, "to_list")())
     if hasattr(actual_data, "tolist"):
-        return actual_data.tolist()
+        return cast(list[EagerValue], getattr(actual_data, "tolist")())
     if isinstance(actual_data, (list, tuple)):
         return list(actual_data)
     return [actual_data]
 
 
-def from_iter(data_or_cls: object, data: object = None) -> object:
+def from_iter(data_or_cls: EagerValue, data: EagerValue = None) -> EagerValue:
     """Construct Awkward array from an arbitrary Python iterable.
 
     Args:
@@ -489,13 +494,13 @@ def from_iter(data_or_cls: object, data: object = None) -> object:
     ak_mod = _get_ak_module()
     if hasattr(ak_mod, "from_iter"):
         try:
-            return ak_mod.from_iter(actual_data)
-        except Exception:
-            pass
+            return cast(EagerValue, getattr(ak_mod, "from_iter")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return array(actual_data)
 
 
-def get_layout(data_or_cls: object, data: object = None) -> object:
+def get_layout(data_or_cls: EagerValue, data: EagerValue = None) -> EagerValue:
     """Retrieve internal layout description of an Awkward structure.
 
     Args:
@@ -507,5 +512,5 @@ def get_layout(data_or_cls: object, data: object = None) -> object:
     """
     actual_data = data_or_cls if data is None else data
     if hasattr(actual_data, "layout"):
-        return actual_data.layout
-    return {"shape": ragged_shape(actual_data), "is_ragged": is_ragged(actual_data)}
+        return cast(EagerValue, getattr(actual_data, "layout"))
+    return cast("EagerValue", {"shape": ragged_shape(actual_data), "is_ragged": is_ragged(actual_data)})

@@ -1,11 +1,11 @@
 """Runtime orchestrator for cross-backend benchmarking and performance verification."""
 
+from __future__ import annotations
+
 import importlib
 import multiprocessing
 import pathlib
-from typing import Optional, Protocol, Union
-
-import numpy as np
+from typing import Optional, Protocol, Union, cast
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.benchmarks.config_models import (
@@ -14,10 +14,13 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
     ProfilerProfileModel,
     load_backend_profiles,
 )
+from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 ProfilerMetrics = dict[str, Union[list[float], float]]
+BenchmarkResult = tuple[str, Union[ProfilerMetrics, str]]
 
 
 class _ProfilerProtocol(Protocol):
@@ -26,30 +29,38 @@ class _ProfilerProtocol(Protocol):
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, EvalValue],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
     ) -> ProfilerMetrics:
-        """Profile a graph execution."""
+        """Profile a graph execution.
+
+        Args:
+            graph: The graph parameter.
+            inputs: The inputs parameter.
+            device: The device parameter.
+            num_iters: The num_iters parameter.
+            warmup_iters: The warmup_iters parameter.
+        """
         ...
 
 
 def _isolated_worker(
     profiler_cls_tuple: tuple[str, str],
     graph: IRGraph,
-    inputs: dict[str, np.ndarray],
+    inputs: dict[str, EvalValue],
     device: Optional[str],
     num_iters: int,
     warmup_iters: int,
-    output_queue: multiprocessing.Queue,
+    output_queue: multiprocessing.Queue[BenchmarkResult],
 ) -> None:
     """Execute profiling in an isolated process to prevent namespace pollution.
 
     Args:
         profiler_cls_tuple (tuple[str, str]): Module and class names for profiler.
         graph (IRGraph): Computational graph.
-        inputs (dict[str, np.ndarray]): Input arrays.
+        inputs (dict[str, EvalValue]): Input arrays.
         device (Optional[str]): Device identifier.
         num_iters (int): Measurement iteration count.
         warmup_iters (int): Warmup iteration count.
@@ -122,7 +133,7 @@ class BenchmarkOrchestrator:
             try:
                 mod = importlib.import_module(profile.profiler_module)
                 profiler_cls = getattr(mod, profile.profiler_class)
-                return profiler_cls()
+                return cast(_ProfilerProtocol, profiler_cls())
             except ImportError as err:
                 raise BackendNotSupportedError(f"Profiler for backend '{backend_name}' could not be imported: {err}") from err
 
@@ -132,7 +143,7 @@ class BenchmarkOrchestrator:
         self,
         graph: IRGraph,
         backend_name: str,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, EvalValue],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -142,7 +153,7 @@ class BenchmarkOrchestrator:
         Args:
             graph (IRGraph): The computation graph.
             backend_name (str): Target backend name.
-            inputs (dict[str, np.ndarray]): Inputs mapping.
+            inputs (dict[str, EvalValue]): Inputs mapping.
             device (Optional[str]): Device identifier.
             num_iters (int): Measurement iterations.
             warmup_iters (int): Warmup iterations.
@@ -162,7 +173,7 @@ class BenchmarkOrchestrator:
             spec = ("ml_switcheroo_compiler.backends.numpy.profiler", "NumpyProfiler")
 
         ctx = multiprocessing.get_context()
-        queue: multiprocessing.Queue = ctx.Queue()
+        queue: multiprocessing.Queue[BenchmarkResult] = ctx.Queue()
         proc = ctx.Process(
             target=_isolated_worker,
             args=(spec, graph, inputs, device, num_iters, warmup_iters, queue),
@@ -180,7 +191,7 @@ class BenchmarkOrchestrator:
         status, payload = queue.get()
         if status != "ok":
             raise RuntimeError(f"Isolated execution failed: {payload}")
-        return payload
+        return cast(ProfilerMetrics, payload)
 
     def _run_single(
         self,
@@ -216,11 +227,12 @@ class BenchmarkOrchestrator:
             raise BackendNotSupportedError(f"Backend '{backend_name}' is not registered.") from exc
 
         # Construct inputs from plan or graph declarations
-        inputs_dict: dict[str, np.ndarray] = {}
+        inputs_dict: dict[str, EvalValue] = {}
         input_names: list[str] = list(getattr(graph, "inputs", []))
         if not input_names:
             input_names = ["in_0"]
 
+        np_backend = BackendRegistry.get("numpy")
         for inp in input_names:
             node = graph.nodes.get(inp) if getattr(graph, "nodes", None) else None
             node_attrs = getattr(node, "attributes", {}) or {}
@@ -232,7 +244,13 @@ class BenchmarkOrchestrator:
             else:
                 extra_dims: list[int] = self.plan.input_shapes.get(inp, node_shape if node_shape else [10])
                 full_shape = (batch_size, *extra_dims)
-            inputs_dict[inp] = np.random.randn(*full_shape).astype(np.float32)
+            if hasattr(np_backend, "execute_op"):
+                inputs_dict[inp] = cast(
+                    EvalValue,
+                    np_backend.execute_op("Cast", np_backend.execute_op("Randn", *full_shape), dtype="float32"),
+                )
+            else:
+                inputs_dict[inp] = [0.0]
 
         should_isolate: bool = isolate if isolate is not None else getattr(self.plan, "isolate_process", False)
         if should_isolate:
@@ -296,15 +314,16 @@ class BenchmarkOrchestrator:
                         )
 
                     raw_latencies = metrics.get("latencies", [])
-                    latencies: np.ndarray = np.array(raw_latencies if isinstance(raw_latencies, list) else [0.0])
-                    mean_lat: float = float(np.mean(latencies)) if latencies.size > 0 else 0.0
+                    lat_list: list[float] = [float(x) for x in raw_latencies] if isinstance(raw_latencies, list) and raw_latencies else [0.0]
+                    stat_metrics = compute_statistical_metrics(lat_list)
+                    mean_lat: float = float(cast(float, stat_metrics["mean_ms"]))
 
                     peak_mem_raw = metrics.get("peak_memory_mb")
                     peak_mem: Optional[float] = float(peak_mem_raw) if isinstance(peak_mem_raw, (int, float)) else None
 
-                    p50: float = float(np.percentile(latencies, 50)) if latencies.size > 0 else 0.0
-                    p95: float = float(np.percentile(latencies, 95)) if latencies.size > 0 else 0.0
-                    p99: float = float(np.percentile(latencies, 99)) if latencies.size > 0 else 0.0
+                    p50: float = float(cast(float, stat_metrics["p50_ms"]))
+                    p95: float = float(cast(float, stat_metrics["p95_ms"]))
+                    p99: float = float(cast(float, stat_metrics["p99_ms"]))
 
                     throughput: float = (1000.0 / mean_lat) * batch_size if mean_lat > 0.0 else 0.0
 

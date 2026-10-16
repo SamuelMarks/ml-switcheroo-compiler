@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Optional, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -10,6 +11,11 @@ import pytest
 import ml_switcheroo_compiler.ops.eager_evaluator as eager_eval_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -47,7 +53,7 @@ def test_eager_evaluator_full_coverage() -> None:
             Returns:
                 Tensor | None: Result.
             """
-            return super().evaluate(ctx)  # type: ignore[return-value]
+            return cast("Optional[Tensor]", cast("EagerTensorProtocol", getattr(super(), "evaluate"))(ctx))
 
     dummy_ctx = eager_eval_mod.EvaluationContext(
         op_cls=OpDef,
@@ -116,16 +122,16 @@ def test_eager_evaluator_full_coverage() -> None:
     assert isinstance(strat_be, eager_eval_mod.BackendExecuteOpStrategy)
 
     t_in = Tensor(np.array([1.0, 2.0], dtype=np.float32), TensorConfig((2,), "float32", "cpu"))
-    packed_tuple = eager_eval_mod.EagerEvaluator._pack_outputs(
-        (np.array([1.0], dtype=np.float32), DummyWithoutShape()),
+    packed_tuple = cast("Callable[..., EagerTensorProtocol]", eager_eval_mod.EagerEvaluator._pack_outputs)(
+        (cast("Callable[..., EagerTensorProtocol]", np.array)([1.0], dtype=np.float32), cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()),
         t_in,
         "cpu",
     )
     assert isinstance(packed_tuple, tuple)
     assert len(packed_tuple) == 2
 
-    packed_single_noshape = eager_eval_mod.EagerEvaluator._pack_outputs(
-        DummyWithoutShape(),
+    packed_single_noshape = cast("Callable[..., EagerTensorProtocol]", eager_eval_mod.EagerEvaluator._pack_outputs)(
+        cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)(),
         t_in,
         "cpu",
     )

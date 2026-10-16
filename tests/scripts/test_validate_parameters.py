@@ -6,7 +6,7 @@ import os
 import runpy
 import sys
 import tempfile
-from typing import Any
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -22,6 +22,9 @@ from scripts.validate_parameters import (
     validate_backend_mappings_parameters,
     validate_op_definitions_parameters,
 )
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_normalize_code() -> None:
@@ -96,7 +99,7 @@ def test_validate_backend_mappings_parameters_synthetic() -> None:
 
         # 3. Spec not a dict, empty sources, invalid endpoint, and contract error
         f_mixed: str = os.path.join(torch_dir, "mixed.yaml")
-        mixed_data: dict[str, Any] = {
+        mixed_data: dict[str, EagerValue] = {
             "operations": {
                 "op_spec_not_dict": "invalid",
                 "op_empty_src": {"ast_template": "", "custom_code": ""},
@@ -127,7 +130,7 @@ def test_validate_backend_mappings_parameters_synthetic() -> None:
             assert all("torch.matmul" in e for e in errors)
 
             # Test with backend not in engine targets
-            mock_targets: dict[str, Any] = {"pytorch": MagicMock(status="missing_upstream")}
+            mock_targets: dict[str, EagerValue] = {"pytorch": MagicMock(status="missing_upstream")}
             with patch.object(engine.config, "targets", mock_targets):
                 errors_missing: list[str] = validate_backend_mappings_parameters(engine)
                 assert errors_missing == []
@@ -165,7 +168,7 @@ def test_validate_op_definitions_parameters_synthetic() -> None:
 
         # 3. Mixed variants with invalid specs, empty generator, invalid ep, error
         f_mixed: str = os.path.join(tmp_dir, "MixedOp.yaml")
-        mixed_data: dict[str, Any] = {
+        mixed_data: dict[str, EagerValue] = {
             "operation": "MixedOp",
             "variants": {
                 "pytorch": {
@@ -199,7 +202,7 @@ def test_validate_op_definitions_parameters_synthetic() -> None:
             assert "MixedOp.yaml [pytorch]" in errors[0]
 
             # With status missing_upstream
-            mock_targets: dict[str, Any] = {"pytorch": MagicMock(status="missing_upstream")}
+            mock_targets: dict[str, EagerValue] = {"pytorch": MagicMock(status="missing_upstream")}
             with patch.object(engine.config, "targets", mock_targets):
                 errors_missing: list[str] = validate_op_definitions_parameters(engine)
                 assert errors_missing == []
@@ -218,7 +221,7 @@ def test_main_success(capsys: pytest.CaptureFixture[str]) -> None:
         patch("sys.argv", ["validate_parameters.py", "--backend", "pytorch", "--strict"]),
     ):
         ret: int = main()
-        assert True
+        assert ret == 0
         captured = capsys.readouterr()
         assert "Parameter validation PASSED" in captured.out
 
@@ -231,7 +234,7 @@ def test_main_failure(capsys: pytest.CaptureFixture[str]) -> None:
         patch("sys.argv", ["validate_parameters.py"]),
     ):
         ret: int = main()
-        assert True
+        assert ret == 1
         captured = capsys.readouterr()
         assert "Parameter validation FAILED: 2 issues detected" in captured.out
         assert "mapping error 1" in captured.out

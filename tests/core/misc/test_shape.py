@@ -1,13 +1,16 @@
+"""Tests for test_shape."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import pytest
 
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.core.shape import _broadcast_dim, broadcast_shapes
 
-"Test module."
 
-
-def test_shape_coverage():
+def test_shape_coverage() -> None:
+    """Test function test_shape_coverage."""
     assert _broadcast_dim(2, 2, (2,), (2,)) == 2
     assert _broadcast_dim(1, 2, (1,), (2,)) == 2
     assert _broadcast_dim(2, 1, (2,), (1,)) == 2

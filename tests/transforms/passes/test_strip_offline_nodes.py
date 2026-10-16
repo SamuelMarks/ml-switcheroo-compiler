@@ -45,7 +45,7 @@ def test_strip_offline_diagnostic_nodes_rewiring() -> None:
     assert "relu0" in res.nodes
     assert res.nodes["relu0"].inputs == ["x"]
     assert "dot_output" in n_diag.attributes
-    assert "digraph G" in n_diag.attributes["dot_output"]
+    assert "digraph G" in getattr(n_diag.attributes, "__getitem__")("dot_output")
 
 
 def test_strip_offline_diagnostic_nodes_output_rewire() -> None:

@@ -1,8 +1,9 @@
-"""Module npz.py."""
-
-# ruff: noqa: E402, E501, F403
 """NPZ format serialization."""
 
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 from ml_switcheroo_compiler.serialization.utils import parse_npz
 
@@ -10,7 +11,7 @@ from ml_switcheroo_compiler.serialization.utils import parse_npz
 class NpzWeightFormat(WeightLoader, WeightSaver):
     """NPZ weight format handler."""
 
-    def load(self, filepath: str):
+    def load(self, filepath: str) -> dict[str, TensorLike]:
         """Load npz weights.
 
         Args:
@@ -24,7 +25,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         backend = registry.get_active_backend()
         if hasattr(backend, "load_npz"):
             try:
-                return backend.load_npz(filepath)
+                return cast("dict[str, TensorLike]", backend.load_npz(filepath))
             except Exception as e:
                 import warnings
 
@@ -32,7 +33,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
 
         return parse_npz(filepath)
 
-    def save(self, weights_np, filepath: str) -> None:
+    def save(self, weights_np: EagerValue, filepath: str) -> None:
         """Save npz weights.
 
         Args:
@@ -42,12 +43,11 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         Returns:
             tuple[int, ...]: Result.
         """
-        import numpy as np
-
         import ml_switcheroo_compiler.backends.registry as registry
 
         backend = registry.get_active_backend()
         if hasattr(backend, "save_npz"):
             backend.save_npz(weights_np, filepath)
             return
-        np.savez(filepath, **weights_np)
+        np_mod = registry.BackendRegistry.get("numpy").get_module()
+        np_mod.savez(filepath, **weights_np)

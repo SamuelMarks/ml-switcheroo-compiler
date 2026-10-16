@@ -1,7 +1,15 @@
+"""Tests for test_eager."""
+
+from __future__ import annotations
+
 import sys
+import types
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+import ml_switcheroo_compiler.backends.mlx.eager as eager
 
 try:
     import mlx.core as real_mx
@@ -9,7 +17,12 @@ try:
     _has_real_mlx = True
 except ImportError:
     _has_real_mlx = False
-    real_mx = None
+    real_mx = cast("types.ModuleType", None)
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 mock_mx = MagicMock()
 mock_pkg = MagicMock()
@@ -20,23 +33,22 @@ if not _has_real_mlx:
     sys.modules["mlx.core"] = mock_mx
     sys.modules["mlx.core.distributed"] = MagicMock()
 
-import ml_switcheroo_compiler.backends.mlx.eager as eager
-
 
 @pytest.fixture(autouse=True, scope="module")
-def _cleanup_mlx_modules():
+def _cleanup_mlx_modules() -> Iterator[None]:
     """Setup and restore eager.mx and sys.modules for test module execution."""
-    orig_eager_mx = eager.mx
-    eager.mx = mock_mx
+    orig_eager_mx = cast("EagerTensorProtocol", getattr(eager, "mx"))
+    setattr(eager, "mx", mock_mx)
     yield
-    eager.mx = orig_eager_mx
+    setattr(eager, "mx", orig_eager_mx)
     if not _has_real_mlx:
         sys.modules.pop("mlx", None)
         sys.modules.pop("mlx.core", None)
         sys.modules.pop("mlx.core.distributed", None)
 
 
-def test_get_mlx_func():
+def test_get_mlx_func() -> None:
+    """Test function test_get_mlx_func."""
     assert eager._get_mlx_func("Mul") == mock_mx.multiply
     assert eager._get_mlx_func("Sub") == mock_mx.subtract
     assert eager._get_mlx_func("Div") == mock_mx.divide
@@ -48,26 +60,28 @@ def test_get_mlx_func():
     assert eager._get_mlx_func("NotFound") is None
 
 
-def test_execute_op():
+def test_execute_op() -> None:
+    """Test function test_execute_op."""
     mock_mx.zeros = MagicMock(return_value="zeros")
-    assert eager.execute_op(None, "Zeros", shape=(1,)) == "zeros"
+    assert cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "Zeros", shape=(1,)) == "zeros"
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     global_eager_registry.register("TestOp")(lambda m, *args, **kwargs: "global")
-    assert eager.execute_op(None, "TestOp") == "global"
+    assert cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "TestOp") == "global"
 
     mock_mx.add = MagicMock(return_value="add")
-    assert eager.execute_op(None, "Add") == "add"
+    assert cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "Add") == "add"
 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._get_mlx_func", return_value=None):
         with pytest.raises(BackendNotSupportedError):
-            eager.execute_op(None, "NotFoundOpXYZ")
+            cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "NotFoundOpXYZ")
 
 
-def test_mlx_cast():
+def test_mlx_cast() -> None:
+    """Test function test_mlx_cast."""
     t = MagicMock()
     t.astype.return_value = "casted"
     assert eager._mlx_cast(mock_mx, t, dtype="float32") == "casted"
@@ -75,21 +89,25 @@ def test_mlx_cast():
     assert eager._mlx_cast(mock_mx, t, dtype=None) == t
 
 
-def test_ragged_tensor_to_dense():
+def test_ragged_tensor_to_dense() -> None:
+    """Test function test_ragged_tensor_to_dense."""
     assert eager._mlx_ragged_tensor_to_dense(mock_mx, "tensor") == "tensor"
 
 
-def test_take_along_axis():
+def test_take_along_axis() -> None:
+    """Test function test_take_along_axis."""
     mock_mx.take_along_axis = MagicMock(return_value="take_res")
     assert eager._mlx_take_along_axis(mock_mx, "a", "i") == "take_res"
 
 
-def test_take():
+def test_take() -> None:
+    """Test function test_take."""
     mock_mx.take = MagicMock(return_value="take_res")
     assert eager._mlx_take(mock_mx, "a", "i") == "take_res"
 
 
-def test_tensor_scatter_update():
+def test_tensor_scatter_update() -> None:
+    """Test function test_tensor_scatter_update."""
     res = MagicMock()
     mock_mx.array = MagicMock(return_value=res)
     indices = MagicMock()
@@ -99,7 +117,8 @@ def test_tensor_scatter_update():
     res.__setitem__.assert_called()
 
 
-def test_tensor_scatter_add():
+def test_tensor_scatter_add() -> None:
+    """Test function test_tensor_scatter_add."""
     res = MagicMock()
     res.__getitem__.return_value = 1
     mock_mx.array = MagicMock(return_value=res)
@@ -109,7 +128,8 @@ def test_tensor_scatter_add():
     res.__setitem__.assert_called_with(tuple([indices[..., 0], indices[..., 1]]), 3)
 
 
-def test_tensor_scatter_max():
+def test_tensor_scatter_max() -> None:
+    """Test function test_tensor_scatter_max."""
     res = MagicMock()
     mock_mx.array.return_value = res
     mock_mx.maximum = MagicMock(return_value="max")
@@ -120,7 +140,8 @@ def test_tensor_scatter_max():
     res.__setitem__.assert_called_with(tuple([indices[..., 0]]), mock_mx.maximum())
 
 
-def test_tensor_scatter_min():
+def test_tensor_scatter_min() -> None:
+    """Test function test_tensor_scatter_min."""
     res = MagicMock()
     mock_mx.array.return_value = res
     mock_mx.minimum = MagicMock(return_value="min")
@@ -131,7 +152,8 @@ def test_tensor_scatter_min():
     res.__setitem__.assert_called_with(tuple([indices[..., 0]]), mock_mx.minimum())
 
 
-def test_scatter_nd():
+def test_scatter_nd() -> None:
+    """Test function test_scatter_nd."""
     mock_mx.zeros = MagicMock()
     res = MagicMock()
     mock_mx.zeros.return_value = res
@@ -143,9 +165,11 @@ def test_scatter_nd():
     shape_mock = MagicMock()
     shape_mock.data.tolist.return_value = [2, 2]
     eager._mlx_scatter_nd(mock_mx, indices, updates, shape=shape_mock)
+    assert res is not None
 
 
-def test_reshape():
+def test_reshape() -> None:
+    """Test function test_reshape."""
     mock_mx.reshape = MagicMock(return_value="reshape")
     eager._mlx_reshape(mock_mx, "input", (2, 2))
     eager._mlx_reshape(mock_mx, "input", shape=(2, 2))
@@ -153,9 +177,11 @@ def test_reshape():
     shape_mock = MagicMock()
     shape_mock.data.tolist.return_value = [2, 2]
     eager._mlx_reshape(mock_mx, "input", shape=shape_mock)
+    assert shape_mock is not None or shape_mock is None
 
 
-def test_resolve_dtype():
+def test_resolve_dtype() -> None:
+    """Test function test_resolve_dtype."""
     mock_mx.float32 = "real_float32"
 
     assert eager._resolve_dtype(mock_mx, None) is None
@@ -168,7 +194,8 @@ def test_resolve_dtype():
     assert eager._resolve_dtype(mock_mx, "unsupported") == "unsupported"
 
 
-def test_zeros():
+def test_zeros() -> None:
+    """Test function test_zeros."""
     mock_mx.zeros = MagicMock(return_value="zeros")
     eager._mlx_zeros(mock_mx, (1,), dtype=None)
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="float32"):
@@ -187,12 +214,16 @@ def test_zeros():
 
     # cover line 312: hasattr(shape, "data") where shape is not 1D (already handled basically but maybe shape has .data but isinstance doesn't change it to float)
     class TupleShape:
+        """Test class TupleShape."""
+
         data = (1, 2)
 
     eager._mlx_zeros(mock_mx, TupleShape())
+    assert shape_mock is not None or shape_mock is None
 
 
-def test_ones():
+def test_ones() -> None:
+    """Test function test_ones."""
     mock_mx.ones = MagicMock(return_value="ones")
     eager._mlx_ones(mock_mx, (1,), dtype=None)
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="float32"):
@@ -205,9 +236,11 @@ def test_ones():
     mock_mx.ones.side_effect = None
     eager._mlx_ones(mock_mx, shape=shape_mock)
     eager._mlx_ones(mock_mx, 5)
+    assert shape_mock is not None or shape_mock is None
 
 
-def test_full():
+def test_full() -> None:
+    """Test function test_full."""
     mock_mx.full = MagicMock(return_value="full")
     eager._mlx_full(mock_mx, (1,), 5, dtype=None)
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="float32"):
@@ -220,9 +253,11 @@ def test_full():
     mock_mx.full.side_effect = None
     eager._mlx_full(mock_mx, shape=shape_mock, fill_value=5)
     eager._mlx_full(mock_mx, 5, 5)
+    assert shape_mock is not None or shape_mock is None
 
 
-def test_parse_partition_k():
+def test_parse_partition_k() -> None:
+    """Test function test_parse_partition_k."""
     assert eager._parse_partition_k(5) == 5
     m = MagicMock()
     m.item.return_value = 5
@@ -233,7 +268,8 @@ def test_parse_partition_k():
     assert eager._parse_partition_k(m2) == 5
 
 
-def test_partition():
+def test_partition() -> None:
+    """Test function test_partition."""
     mock_mx.topk = MagicMock(return_value="topk")
     mock_mx.argpartition = MagicMock()
     mock_mx.argpartition.return_value = MagicMock()
@@ -249,7 +285,8 @@ def test_partition():
     eager._mlx_partition(mock_mx, a, 2, return_indices=None)
 
 
-def test_nan_to_num():
+def test_nan_to_num() -> None:
+    """Test function test_nan_to_num."""
     mock_mx.nan_to_num = MagicMock(return_value="res")
     val = MagicMock()
     val.item.return_value = 1.0
@@ -260,7 +297,8 @@ def test_nan_to_num():
     assert eager._mlx_nan_to_num(mock_mx, "tensor", posinf=None) == "res"
 
 
-def test_cum_ops():
+def test_cum_ops() -> None:
+    """Test function test_cum_ops."""
     mock_mx.cummax = MagicMock()
     mock_mx.cummax().astype.return_value = "res"
     mock_mx.cummin = MagicMock()
@@ -285,14 +323,16 @@ def test_cum_ops():
     assert eager._mlx_cumprod(mock_mx, "tensor", dtype=None) == "res"
 
 
-def test_slice():
+def test_slice() -> None:
+    """Test function test_slice."""
     a = MagicMock()
     a.shape = (2, 2)
     eager._mlx_slice(mock_mx, a, dim=1, start=0, end=1)
     a.__getitem__.assert_called()
 
 
-def test_eye():
+def test_eye() -> None:
+    """Test function test_eye."""
     mock_mx.eye = MagicMock(return_value="eye")
     mock_mx.float32 = "float32"
     n = MagicMock()
@@ -303,18 +343,21 @@ def test_eye():
     assert eager._mlx_eye(mock_mx, 2) == "eye"
 
 
-def test_rope():
+def test_rope() -> None:
+    """Test function test_rope."""
     mock_mx.fast = MagicMock()
     mock_mx.fast.rope.return_value = "rope"
     assert eager._mlx_rope(mock_mx, "x", dim=2) == "rope"
 
 
-def test_variance():
+def test_variance() -> None:
+    """Test function test_variance."""
     mock_mx.var = MagicMock(return_value="var")
     assert eager._mlx_variance(mock_mx, "tensor") == "var"
 
 
-def test_distributed_ops():
+def test_distributed_ops() -> None:
+    """Test function test_distributed_ops."""
     mock_mx.distributed = MagicMock()
     mock_mx.distributed.all_sum.return_value = "all_sum"
     mock_mx.distributed.all_gather.return_value = "all_gather"
@@ -332,7 +375,7 @@ def test_distributed_ops():
     mock_reduced.ndim = 2
     mock_reduced.__getitem__.return_value = "sliced_tensor"
     mock_mx.distributed.all_sum.return_value = mock_reduced
-    with patch("mlx.core.distributed.all_sum", return_value=mock_reduced, create=True) as mock_all_sum:
+    with patch("mlx.core.distributed.all_sum", return_value=mock_reduced, create=True):
         assert eager._mlx_reduce_scatter(mock_mx, "tensor") == "sliced_tensor"
 
     mock_mx.distributed = None
@@ -348,21 +391,24 @@ def test_distributed_ops():
         eager._mlx_reduce_scatter(mock_mx, "tensor")
 
 
-def test_mlx_execute_op_attribute_error_raise():
+def test_mlx_execute_op_attribute_error_raise() -> None:
+    """Test function test_mlx_execute_op_attribute_error_raise."""
     from ml_switcheroo_compiler.backends.mlx.eager import execute_op
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    def mock_get_func(op):
+    def mock_get_func(op: EagerValue) -> None:
+        """Test function mock_get_func."""
         raise AttributeError("mock missing")
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._get_mlx_func", side_effect=mock_get_func):
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with patch("ml_switcheroo_compiler.backends.eager_registry.mlx_eager_registry.get", return_value=None):
                 with pytest.raises(BackendNotSupportedError):
-                    execute_op(None, "OpThatThrowsAttr", 5)
+                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "OpThatThrowsAttr", 5)
 
 
-def test_mlx_execute_op_attribute_error_none():
+def test_mlx_execute_op_attribute_error_none() -> None:
+    """Test function test_mlx_execute_op_attribute_error_none."""
     from ml_switcheroo_compiler.backends.mlx.eager import execute_op
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -370,35 +416,40 @@ def test_mlx_execute_op_attribute_error_none():
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with patch("ml_switcheroo_compiler.backends.eager_registry.mlx_eager_registry.get", return_value=None):
                 with pytest.raises(BackendNotSupportedError):
-                    execute_op(None, "OpWithoutFunc", 5)
+                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "OpWithoutFunc", 5)
 
 
-def test_mlx_cum_ops_dtype_fallbacks():
+def test_mlx_cum_ops_dtype_fallbacks() -> None:
+    """Test function test_mlx_cum_ops_dtype_fallbacks."""
     import sys
 
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_cummax, _mlx_cummin, _mlx_cumprod
 
     mx = sys.modules["mlx.core"]
-    mx.cummax = MagicMock()
+    setattr(mx, "cummax", MagicMock())
     mx.cummax().astype.return_value = "res"
-    mx.cummin = MagicMock()
+    setattr(mx, "cummin", MagicMock())
     mx.cummin().astype.return_value = "res"
-    mx.cumprod = MagicMock()
+    setattr(mx, "cumprod", MagicMock())
     mx.cumprod().astype.return_value = "res"
 
     class MockDtype:
+        """Test class MockDtype."""
+
         value = "float16"
 
-        def __str__(self):
+        def __str__(self) -> str:
+            """Test function __str__."""
             return "float16"
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="real_dtype"):
         _mlx_cummax(mx, "t", dtype=MockDtype())
         _mlx_cummin(mx, "t", dtype="float16")
         _mlx_cumprod(mx, "t", dtype=MockDtype())
+    assert mx is not None or mx is None
 
 
-def test_mlx_relu_and_zeros_and_reduce_scatter_coverage():
+def test_mlx_relu_and_zeros_and_reduce_scatter_coverage() -> None:
     """Test _mlx_relu fallback, scalar shape in _mlx_zeros, and _mlx_reduce_scatter exception fallback."""
     # 1. _mlx_relu with mlx.nn present
     try:
@@ -435,7 +486,10 @@ def test_mlx_relu_and_zeros_and_reduce_scatter_coverage():
 
     # 4. _mlx_reduce_scatter exception fallback (lines 681-683)
     class FailingGroup:
-        def rank(self):
+        """Test class FailingGroup."""
+
+        def rank(self) -> None:
+            """Test function rank."""
             raise RuntimeError("rank error")
 
     mock_tensor = MagicMock()

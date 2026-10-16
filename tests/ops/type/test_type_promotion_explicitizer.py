@@ -1,10 +1,20 @@
+"""Tests for test_type_promotion_explicitizer."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 # ruff: noqa: E501
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import _inject_cast_node, _needs_cast, type_promotion_explicitizer_pass
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_inject_cast_node():
+
+def test_inject_cast_node() -> None:
+    """Test function test_inject_cast_node."""
     graph = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     graph.nodes["n1"] = n1
@@ -14,7 +24,8 @@ def test_inject_cast_node():
     assert graph.nodes[new_id].attributes["dtype"] == "float32"
 
 
-def test_needs_cast():
+def test_needs_cast() -> None:
+    """Test function test_needs_cast."""
     from ml_switcheroo_compiler.core.config import config
 
     old_jax = config.jax_enable_x64
@@ -28,7 +39,8 @@ def test_needs_cast():
         config.jax_enable_x64 = old_jax
 
 
-def test_type_promotion_explicitizer_pass(mocker):
+def test_type_promotion_explicitizer_pass(mocker: EagerTensorProtocol) -> None:
+    """Test function test_type_promotion_explicitizer_pass."""
     mocker.patch("ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer.dtype_inference_pass")
     graph = LogicalGraph()
     n1 = LogicalNode("n1", "Input", attributes={"dtype": "int32"})

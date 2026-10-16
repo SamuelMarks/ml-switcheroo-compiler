@@ -25,4 +25,4 @@ def normal(
         Tensor: Result.
     """
     dtype = dtype or dtypes.DType.Float32
-    return _emit_random_node("RandomNormal", [key], shape, dtype)  # type: ignore[list-item]
+    return _emit_random_node("RandomNormal", [key], shape, dtype)

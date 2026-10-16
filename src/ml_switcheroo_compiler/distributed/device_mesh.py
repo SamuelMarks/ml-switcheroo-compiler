@@ -1,5 +1,7 @@
 """Apply logical hardware topology abstraction."""
 
+from __future__ import annotations
+
 import os
 from collections.abc import Sequence
 from typing import Optional
@@ -52,7 +54,7 @@ class DeviceMesh:
             self.devices = tuple(range(expected_devices))
 
     @classmethod
-    def from_yaml(cls, name: str = "default", yaml_path: Optional[str] = None) -> "DeviceMesh":
+    def from_yaml(cls, name: str = "default", yaml_path: Optional[str] = None) -> DeviceMesh:
         """Load a DeviceMesh configuration from a declarative YAML specification.
 
         Args:
@@ -158,11 +160,11 @@ class DeviceMesh:
 
         return self.get_rank(prev_coords), self.get_rank(next_coords)
 
-    def to_dict(self) -> dict[str, Sequence[object]]:
+    def to_dict(self) -> dict[str, Sequence[int | str]]:
         """Serialize DeviceMesh properties to dictionary.
 
         Returns:
-            dict[str, Sequence[object]]: Dictionary of shape, axis_names, and devices.
+            dict[str, Sequence[int | str]]: Dictionary of shape, axis_names, and devices.
         """
         return {
             "shape": self.shape,

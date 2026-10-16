@@ -1,10 +1,16 @@
-# ruff: noqa: E402, E501, F403
 """Assertion recording and evaluation."""
 
-_ASSERTIONS_LIST = []
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.registry import EagerValue
+
+_ASSERTIONS_LIST: list[tuple[EagerValue, str]] = []
 
 
-def record_assertion(condition, message: str = "") -> None:
+def record_assertion(condition: EagerValue, message: str = "") -> None:
     """Record an assertion for later evaluation.
 
     Args:
@@ -14,7 +20,7 @@ def record_assertion(condition, message: str = "") -> None:
     _ASSERTIONS_LIST.append((condition, message))
 
 
-def _is_iterable_non_string(c) -> bool:
+def _is_iterable_non_string(c: EagerValue) -> bool:
     """Check if a value is an iterable but not a string or bytes.
 
     Args:
@@ -26,7 +32,7 @@ def _is_iterable_non_string(c) -> bool:
     return hasattr(c, "__iter__") and not isinstance(c, (str, bytes))
 
 
-def _evaluate_iterable(c) -> bool:
+def _evaluate_iterable(c: EagerValue) -> bool:
     """Evaluate _evaluate_iterable operation.
 
     Args:
@@ -39,11 +45,11 @@ def _evaluate_iterable(c) -> bool:
         ValueError: An exception.
     """
     if _is_iterable_non_string(c):
-        return all(bool(x) for x in c)
+        return all(bool(x) for x in getattr(c, "__iter__")())
     raise ValueError(f"Could not evaluate boolean value of {type(c)}")
 
 
-def _evaluate_single_condition(cond) -> bool:
+def _evaluate_single_condition(cond: EagerValue) -> bool:
     """Evaluate _evaluate_single_condition operation.
 
     Args:
@@ -52,10 +58,10 @@ def _evaluate_single_condition(cond) -> bool:
     Returns:
         bool: Result.
     """
-    c = cond.numpy() if hasattr(cond, "numpy") else cond
+    c = getattr(cond, "numpy")() if hasattr(cond, "numpy") else cond
 
-    if hasattr(c, "all") and callable(c.all):
-        return bool(c.all())
+    if hasattr(c, "all") and callable(getattr(c, "all")):
+        return bool(getattr(c, "all")())
 
     try:
         return bool(c)

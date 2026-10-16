@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
@@ -20,6 +21,9 @@ from scripts.validate_backend_mappings import (
     validate_arguments_against_snapshot,
     validate_mappings,
 )
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_normalize_template() -> None:
@@ -148,7 +152,7 @@ def test_validate_mappings_with_temp_files() -> None:
         pytorch_mappings: str = os.path.join(pytorch_dir, "mappings")
         os.makedirs(pytorch_mappings)
 
-        mock_yaml: dict[str, object] = {
+        mock_yaml: dict[str, EagerValue] = {
             "good_op": {"target_api": "numpy.add"},
             "custom_op": {"target_api": "custom_op"},
             "lambda_op": {"target_api": "lambda x: x"},
@@ -170,7 +174,7 @@ def test_validate_mappings_with_temp_files() -> None:
         with open(filepath, "w", encoding="utf-8") as f:
             yaml.dump(mock_yaml, f)
 
-        py_yaml: dict[str, object] = {
+        py_yaml: dict[str, EagerValue] = {
             "bad_arg_op": {"ast_template": "torch.matmul(a, b, c, d, e, f, g)"},
         }
         py_filepath: str = os.path.join(pytorch_mappings, "py_ops.yaml")
@@ -191,7 +195,8 @@ def test_validate_mappings_with_temp_files() -> None:
 
         orig_relpath = os.path.relpath
 
-        def mock_relpath(path: str, start: object = None) -> str:
+        def mock_relpath(path: str, start: EagerValue = None) -> str:
+            """Test function mock_relpath."""
             return orig_relpath(path, d)
 
         with patch("glob.glob", side_effect=[[filepath, py_filepath, skip_file, ops_file, non_dict_file], [], []]), patch("os.path.relpath", side_effect=mock_relpath):

@@ -1,8 +1,13 @@
+"""Tests for test_sets."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.ops.unary.sets import Setdiff1d, Setxor1d, Union1d, UniqueAll, UniqueCounts, UniqueInverse, UniqueValues
 
 
-def test_sets_infer_shape():
+def test_sets_infer_shape() -> None:
+    """Test function test_sets_infer_shape."""
     assert Setdiff1d().infer_shape() == ()
     assert Setxor1d().infer_shape() == ()
     assert Union1d().infer_shape() == ()

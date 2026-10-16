@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """WGSL AST definitions for robust code generation conforming to WebGPU specifications."""
 
 import re
@@ -163,11 +162,17 @@ class WGSLRaw(WGSLNode):
         """
         self.code = code
 
-    def validate(self) -> None:  # noqa: C901
-        """Validate raw string node against WebGPU specifications.
+    def _validate_delimiters(self) -> None:
+        """Validate balanced delimiters in the raw WGSL code snippet.
+
+        Args:
+            self (WGSLRaw): The raw WGSL AST node instance.
+
+        Returns:
+            None: Validates delimiter balance in-place.
 
         Raises:
-            WGSLValidationError: If delimiters are unbalanced or WebGPU limits are violated.
+            WGSLValidationError: If any bracket, brace, or parenthesis is unbalanced.
         """
         pairs: dict[str, str] = {"(": ")", "{": "}", "[": "]"}
         stack: list[str] = []
@@ -180,6 +185,18 @@ class WGSLRaw(WGSLNode):
         if stack:
             raise WGSLValidationError(f"Unclosed delimiter '{stack[-1]}' in raw WGSL code")
 
+    def _validate_raw_attributes(self) -> None:
+        """Validate WebGPU workgroup, group, binding, and memory qualifiers in raw WGSL code.
+
+        Args:
+            self (WGSLRaw): The raw WGSL AST node instance.
+
+        Returns:
+            None: Validates attributes and qualifiers in-place.
+
+        Raises:
+            WGSLValidationError: If WebGPU workgroup, binding, or layout limits are violated.
+        """
         for match in WORKGROUP_SIZE_PATTERN.finditer(self.code):
             x = int(match.group(1))
             y = int(match.group(2)) if match.group(2) else 1
@@ -203,6 +220,15 @@ class WGSLRaw(WGSLNode):
             space = v_match.group(1)
             access = v_match.group(2)
             validate_memory_layout(space, access)
+
+    def validate(self) -> None:
+        """Validate raw string node against WebGPU specifications.
+
+        Raises:
+            WGSLValidationError: If delimiters are unbalanced or WebGPU limits are violated.
+        """
+        self._validate_delimiters()
+        self._validate_raw_attributes()
 
 
 class WGSLBinding(WGSLNode):
@@ -538,7 +564,89 @@ class WGSLEmitter:
         if isinstance(node, WGSLNode):
             node.validate()
 
-    def emit(self, node: Union[str, WGSLNode], validate: bool = True) -> str:  # noqa: C901, PLR0911, PLR0912
+    def _emit_block(
+        self,
+        header: str,
+        body: list[WGSLNode],
+        validate: bool,
+        indent_closing: bool = True,
+    ) -> str:
+        """Emit an indented WGSL block structure with header and body statements.
+
+        Args:
+            header (str): Opening line of the block (including opening brace).
+            body (list[WGSLNode]): Statements inside the block body.
+            validate (bool): Whether to validate child AST nodes during emission.
+            indent_closing (bool, optional): Whether to indent the closing brace. Defaults to True.
+
+        Returns:
+            str: Formatted multi-line WGSL block string.
+        """
+        lines: list[str] = [header]
+        self.indent += 2
+        for stmt in body:
+            lines.append(" " * self.indent + self.emit(stmt, validate=validate))
+        self.indent -= 2
+        closing_prefix: str = " " * self.indent if indent_closing else ""
+        lines.append(f"{closing_prefix}}}")
+        return "\n".join(lines)
+
+    def _emit_leaf_or_op(self, node: WGSLNode, validate: bool) -> Optional[str]:
+        """Emit WGSL code for leaf, binding, or operator AST nodes.
+
+        Args:
+            node (WGSLNode): The AST node to emit.
+            validate (bool): Whether to validate child AST nodes during emission.
+
+        Returns:
+            Optional[str]: Emitted WGSL string if the node is a leaf/op node, else None.
+        """
+        result: Optional[str] = None
+        if isinstance(node, WGSLRaw):
+            result = node.code
+        elif isinstance(node, WGSLBinding):
+            qual: str = f"<{node.address_space}, {node.access_mode}>" if node.access_mode else f"<{node.address_space}>"
+            result = f"@group({node.group}) @binding({node.binding}) var{qual} {node.name}: {node.type_str};"
+        elif isinstance(node, WGSLVar):
+            result = node.name
+        elif isinstance(node, WGSLIndex):
+            result = f"{node.buffer}[{self.emit(node.index, validate=validate)}]"
+        elif isinstance(node, WGSLBinaryOp):
+            result = f"{self.emit(node.left, validate=validate)} {node.op} {self.emit(node.right, validate=validate)}"
+        elif isinstance(node, WGSLUnaryOp):
+            result = f"{node.op}{self.emit(node.expr, validate=validate)}"
+        return result
+
+    def _emit_stmt_or_structure(self, node: WGSLNode, validate: bool) -> str:
+        """Emit WGSL code for assignment, declaration, control-flow, or function AST nodes.
+
+        Args:
+            node (WGSLNode): The statement or structural AST node to emit.
+            validate (bool): Whether to validate child AST nodes during emission.
+
+        Returns:
+            str: Emitted WGSL code string, or empty string if unhandled.
+        """
+        result: str = ""
+        if isinstance(node, WGSLAssign):
+            result = f"{self.emit(node.target, validate=validate)} = {self.emit(node.value, validate=validate)};"
+        elif isinstance(node, WGSLDecl):
+            type_str: str = f": {node.type_annotation}" if node.type_annotation else ""
+            val_str: str = f" = {self.emit(node.value, validate=validate)}" if node.value else ""
+            result = f"{node.kind} {node.name}{type_str}{val_str};"
+        elif isinstance(node, WGSLIf):
+            header: str = f"if ({self.emit(node.condition, validate=validate)}) {{"
+            result = self._emit_block(header, node.body, validate=validate, indent_closing=True)
+        elif isinstance(node, WGSLFor):
+            header = f"for ({self.emit(node.init, validate=validate)} {self.emit(node.cond, validate=validate)}; {self.emit(node.step, validate=validate)}) {{"
+            result = self._emit_block(header, node.body, validate=validate, indent_closing=True)
+        elif isinstance(node, WGSLFunction):
+            params_str: str = ", ".join(node.params)
+            block_str: str = self._emit_block(f"fn {node.name}({params_str}) {{", node.body, validate=validate, indent_closing=False)
+            result = "\n".join([*node.attrs, block_str])
+        return result
+
+    def emit(self, node: Union[str, WGSLNode], validate: bool = True) -> str:
         """Emit WGSL string for a node with specification validation.
 
         Args:
@@ -551,56 +659,8 @@ class WGSLEmitter:
         Raises:
             WGSLValidationError: If validate is True and node violates specifications.
         """
-        if validate and isinstance(node, WGSLNode):
-            node.validate()
-
         if isinstance(node, str):
             return node
-        if isinstance(node, WGSLRaw):
-            return node.code
-        if isinstance(node, WGSLBinding):
-            qual: str = f"<{node.address_space}, {node.access_mode}>" if node.access_mode else f"<{node.address_space}>"
-            return f"@group({node.group}) @binding({node.binding}) var{qual} {node.name}: {node.type_str};"
-        if isinstance(node, WGSLVar):
-            return node.name
-        elif isinstance(node, WGSLIndex):
-            return f"{node.buffer}[{self.emit(node.index, validate=validate)}]"
-        elif isinstance(node, WGSLBinaryOp):
-            return f"{self.emit(node.left, validate=validate)} {node.op} {self.emit(node.right, validate=validate)}"
-        elif isinstance(node, WGSLUnaryOp):
-            return f"{node.op}{self.emit(node.expr, validate=validate)}"
-        elif isinstance(node, WGSLAssign):
-            return f"{self.emit(node.target, validate=validate)} = {self.emit(node.value, validate=validate)};"
-        elif isinstance(node, WGSLDecl):
-            type_str: str = f": {node.type_annotation}" if node.type_annotation else ""
-            val_str: str = f" = {self.emit(node.value, validate=validate)}" if node.value else ""
-            return f"{node.kind} {node.name}{type_str}{val_str};"
-        elif isinstance(node, WGSLIf):
-            lines: list[str] = [f"if ({self.emit(node.condition, validate=validate)}) {{"]
-            self.indent += 2
-            for stmt in node.body:
-                lines.append(" " * self.indent + self.emit(stmt, validate=validate))
-            self.indent -= 2
-            lines.append(" " * self.indent + "}")
-            return "\n".join(lines)
-        elif isinstance(node, WGSLFor):
-            lines = [f"for ({self.emit(node.init, validate=validate)} {self.emit(node.cond, validate=validate)}; {self.emit(node.step, validate=validate)}) {{"]
-            self.indent += 2
-            for stmt in node.body:
-                lines.append(" " * self.indent + self.emit(stmt, validate=validate))
-            self.indent -= 2
-            lines.append(" " * self.indent + "}")
-            return "\n".join(lines)
-        elif isinstance(node, WGSLFunction):
-            lines = []
-            for attr in node.attrs:
-                lines.append(attr)
-            params_str: str = ", ".join(node.params)
-            lines.append(f"fn {node.name}({params_str}) {{")
-            self.indent += 2
-            for stmt in node.body:
-                lines.append(" " * self.indent + self.emit(stmt, validate=validate))
-            self.indent -= 2
-            lines.append("}")
-            return "\n".join(lines)
-        return ""
+        if validate:
+            node.validate()
+        return self._emit_leaf_or_op(node, validate=False) or self._emit_stmt_or_structure(node, validate=False)

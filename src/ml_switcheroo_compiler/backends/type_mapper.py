@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Type mapping utilities for backend generators."""
 
 from __future__ import annotations

@@ -50,7 +50,7 @@ def multivariate_normal(
         inputs.append(cov)
     return _emit_random_node(
         "MultivariateNormal",
-        inputs,  # type: ignore[arg-type]
+        inputs,
         out_shape,
         dtype,
         {"method": method},

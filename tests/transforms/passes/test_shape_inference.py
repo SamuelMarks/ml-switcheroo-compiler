@@ -1,7 +1,9 @@
 # ruff: noqa: E501
 """Tests for shape inference pass and dynamic runtime shape learning."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -16,6 +18,11 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import (
     _prepare_op_kwargs,
     shape_inference_pass,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_infer_constant_shape() -> None:
@@ -54,12 +61,12 @@ def test_infer_op_shape() -> None:
     class MockOp:
         """Mock op implementation."""
 
-        def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
             """Return static shape."""
             return (1, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp()):
-        assert _infer_op_shape(node1, shapes) == (1, 2)
+        assert cast("Callable[..., EagerTensorProtocol]", _infer_op_shape)(node1, shapes) == (1, 2)
 
 
 def test_determine_node_shape() -> None:
@@ -75,7 +82,7 @@ def test_determine_node_shape() -> None:
     class MockOp2:
         """Mock op that raises error."""
 
-        def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
             """Raise error."""
             raise ValueError("boom")
 
@@ -96,7 +103,7 @@ def test_shape_inference_pass() -> None:
     class MockOp3:
         """Mock op for pass execution."""
 
-        def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
             """Return static shape."""
             return (2, 2)
 
@@ -136,7 +143,7 @@ def test_shape_inference_valueerror_not_found(monkeypatch: pytest.MonkeyPatch) -
     """Verify operation not found ValueError fallback to shape_metadata."""
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args: Any, **kwargs: Any) -> None:
+    def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
         """Mock raising not found."""
         raise ValueError("Operation 'Foo' not found")
 
@@ -150,7 +157,7 @@ def test_shape_inference_valueerror_other(monkeypatch: pytest.MonkeyPatch) -> No
     """Verify unexpected ValueError raises CompilationError."""
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args: Any, **kwargs: Any) -> None:
+    def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
         """Mock raising other error."""
         raise ValueError("Some other error")
 
@@ -165,7 +172,7 @@ def test_shape_inference_keyerror_explicit(monkeypatch: pytest.MonkeyPatch) -> N
     """Verify explicit KeyError returns shape_metadata."""
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args: Any, **kwargs: Any) -> None:
+    def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
         """Mock raising KeyError."""
         raise KeyError("foo")
 
@@ -184,13 +191,13 @@ def test_annotate_learned_shapes_feedback_loop() -> None:
     graph = IRGraph(name="learned_test", nodes={"in1": node1, "add": node2}, outputs=["add"])
 
     # First annotation updates in1
-    modified = annotate_learned_shapes(graph, {"in1": (8, 16), "missing_node": (1, 2)})
-    assert modified is True
+    modified = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
+    assert bool(modified) is True
     assert graph.nodes["in1"].shape_metadata == (8, 16)
 
     # Subsequent annotation with identical shape does not modify
-    modified_again = annotate_learned_shapes(graph, {"in1": (8, 16)})
-    assert modified_again is False
+    modified_again = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, {"in1": (8, 16)})
+    assert bool(modified_again) is False
 
 
 def test_shape_learning_protocol_models_and_payload() -> None:
@@ -334,7 +341,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
     modified = annotate_learned_shapes(graph, packet_pass1)
     assert modified is True
     assert graph.nodes["inp"].shape_metadata == (8, 32)
-    assert graph.annotations["convergence_converged"] is True
+    assert bool(cast("EagerTensorProtocol", getattr(graph, "annotations"))["convergence_converged"]) is True
 
     # Multi-pass: second observation with different batch size
     packet_pass2 = RuntimeShapePacket(
@@ -355,7 +362,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
 
     # ShapeTracker telemetry resolution integration
     telemetry = {"inp": [16, 32], "add": [16, 32]}
-    resolved = ShapeTracker.update_from_feedback(telemetry)
+    resolved = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.update_from_feedback)(telemetry)
     assert resolved["inp"] == (16, 32)
     assert resolved["add"] == (16, 32)
 
@@ -369,13 +376,13 @@ def test_shape_inference_annotation_branches() -> None:
     graph = LogicalGraph(name="test_graph")
     node = LogicalNode(id="n1", op_type="Relu", shape_metadata=(4, 4))
     graph.nodes[node.id] = node
-    graph.annotations = "invalid_annotations"
-    res1 = annotate_learned_shapes(graph, {"n1": (4, 4)})
-    assert res1 is False
-    assert isinstance(graph.annotations, dict)
-    assert graph.annotations.get("convergence_converged") is True
-    res2 = annotate_learned_shapes(graph, None)
-    assert res2 is False
+    setattr(graph, "annotations", "invalid_annotations")
+    res1 = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, {"n1": (4, 4)})
+    assert bool(res1) is False
+    assert isinstance(cast("EagerTensorProtocol", getattr(graph, "annotations")), dict)
+    assert bool(cast("EagerTensorProtocol", getattr(graph, "annotations")).get("convergence_converged")) is True
+    res2 = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, None)
+    assert bool(res2) is False
 
 
 def test_shape_inference_pass_attribute_error_and_none_branches() -> None:
@@ -425,8 +432,8 @@ def test_normalize_shape_edge_cases() -> None:
     assert _normalize_shape_tuple([1, 2, 3]) == (1, 2, 3)
     assert _normalize_shape_tuple((4, 5)) == (4, 5)
     assert _normalize_shape_tuple(["invalid", "str"]) is None
-    assert _normalize_shape_tuple(12345) is None
-    assert _normalize_shape_tuple("not_a_list") is None
+    assert cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(12345) is None
+    assert cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)("not_a_list") is None
     assert _normalize_shape_tuple([object()]) is None
 
 

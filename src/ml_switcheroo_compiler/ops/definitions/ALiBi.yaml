@@ -2,24 +2,21 @@ operation: ALiBi
 description: Attention with Linear Biases (ALiBi) layer.
 std_args: []
 variants:
-  numpy: {}
+  numpy:
+    eager: ml_switcheroo_compiler.backends.numpy.eager.nn._np_alibi
+    supported: true
   cupy: {}
   dask: {}
   tensorflow: {}
   keras: {}
-  pytorch: {}
+  pytorch:
+    eager: ml_switcheroo_compiler.backends.eager.nn._alibi
+    supported: true
   jax: {}
   mlx: {}
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val
-  edge_wasm_simd:
-    template: unary
-    scalar_expr: in0_val
-    simd_expr: in0_val
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
+  llvm_cpp: {}
+  edge_wasm_simd: {}
+  edge_wgsl: {}
 signature:
   args: []
   input_tensors:

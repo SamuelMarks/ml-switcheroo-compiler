@@ -1,9 +1,10 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Implementations of functional optimizer update steps for various algorithms."""
 
 from dataclasses import dataclass
-from typing import Any, Optional  # noqa: F401
+from typing import Optional  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, divide, maximum, multiply, subtract
 from ml_switcheroo_compiler.ops.unary import abs as abs_op
@@ -545,7 +546,7 @@ class ApplyAdam(OpDef):
 
     op_name = "ApplyAdam"
 
-    def infer_shape(self, param, m, v, *args, **kwargs):
+    def infer_shape(self, param: EagerTensorProtocol, m: EagerTensorProtocol, v: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -567,7 +568,7 @@ class ApplyAdagrad(OpDef):
 
     op_name = "ApplyAdagrad"
 
-    def infer_shape(self, param, accum, *args, **kwargs):
+    def infer_shape(self, param: EagerTensorProtocol, accum: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -588,7 +589,7 @@ class ApplyFtrl(OpDef):
 
     op_name = "ApplyFtrl"
 
-    def infer_shape(self, param, accum, linear, *args, **kwargs):
+    def infer_shape(self, param: EagerTensorProtocol, accum: EagerTensorProtocol, linear: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -610,7 +611,7 @@ class ApplyRMSProp(OpDef):
 
     op_name = "ApplyRMSProp"
 
-    def infer_shape(self, param, ms, mom, *args, **kwargs):
+    def infer_shape(self, param: EagerTensorProtocol, ms: EagerTensorProtocol, mom: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -626,7 +627,7 @@ class ApplyRMSProp(OpDef):
         return getattr(param, "shape", ())
 
 
-def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float):
+def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> EagerValue:
     """Apply Adam update.
 
     Args:
@@ -647,7 +648,7 @@ def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float):
     return out, m, v
 
 
-def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float):
+def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> EagerValue:
     """Apply Adagrad update.
 
     Args:
@@ -666,7 +667,7 @@ def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float):
     return out, accum
 
 
-def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float):
+def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> EagerValue:
     """Apply FTRL update.
 
     Args:
@@ -686,7 +687,7 @@ def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: f
     return out, accum, linear
 
 
-def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float):
+def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> EagerValue:
     """Apply RMSProp update.
 
     Args:
@@ -712,7 +713,7 @@ class LionConfigOp(OpDef):
 
     op_name = "LionConfig"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -732,7 +733,7 @@ class AdamaxHyperparamsOp(OpDef):
 
     op_name = "AdamaxHyperparams"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

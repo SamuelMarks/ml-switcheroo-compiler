@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
-ArrayInput = Union[np.ndarray, Sequence[float], Sequence[int], float, int]
+ArrayInput = Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], Sequence[float], Sequence[int], float, int]
 
 
 @numpy_eager_registry.register("Pmean")
@@ -41,7 +41,7 @@ def _np_psum(
     backend_module: ModuleType,
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_psum operation.
 
     Args:
@@ -57,7 +57,7 @@ def _np_psum(
     if _tcp_dist_ctx.world_size > 1:
         tensor = backend_module.array(args[0])
         return _tcp_dist_ctx.all_reduce_ring(tensor, op_type="sum", backend_module=backend_module)
-    return backend_module.array(args[0])
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(args[0]))
 
 
 @numpy_eager_registry.register("ReducePrecision")
@@ -66,7 +66,7 @@ def _np_reduce_precision(
     x: ArrayInput,
     exponent_bits: int,
     mantissa_bits: int,
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Reduce the precision of a tensor to a specified number of exponent and mantissa bits.
 
     Args:
@@ -86,7 +86,7 @@ def _np_sparsereducemax(
     backend_module: ModuleType,
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement SparseReduceMax.
 
     Args:
@@ -97,4 +97,4 @@ def _np_sparsereducemax(
     Returns:
         np.ndarray: Result array.
     """
-    return backend_module.max(args[0], axis=-1)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.max(args[0], axis=-1))

@@ -1,17 +1,17 @@
-"""Module transform.py."""
-
-# ruff: noqa: E402, E501, F403
 """Linalg transform ops."""
+
+from typing import Callable, cast
 
 import ml_switcheroo_compiler.ops.binary as _math
 import ml_switcheroo_compiler.ops.shape.joining as _joining
 import ml_switcheroo_compiler.ops.shape.slicing as _slicing
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 from ml_switcheroo_compiler.ops.shape.frontend import reshape
 
 
-def hadamard_transform(x: Tensor, scale: float = 1.0):
+def hadamard_transform(x: Tensor, scale: float = 1.0) -> EagerValue:
     """Apply the Walsh-Hadamard Transform to the last dimension of the input tensor.
 
     Args:
@@ -35,10 +35,10 @@ def hadamard_transform(x: Tensor, scale: float = 1.0):
 
         stacked = _joining.concatenate([res_plus, res_minus], axis=-2)
 
-        res = reshape(stacked, list(res.shape[:-3]) + [-1])
+        res = reshape(cast("Tensor", stacked), list(res.shape[:-3]) + [-1])
         h *= 2
     if scale != 1.0:
-        res = _math.multiply(res, array([scale], dtype="float32"))
+        res = _math.multiply(res, cast("Callable[..., EagerTensorProtocol]", array)([scale], dtype="float32"))
     return res
 
 

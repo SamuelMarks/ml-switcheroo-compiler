@@ -1,13 +1,12 @@
-# ruff: noqa: E402, E501, F403
-# ruff: noqa: E402, E501, F403
 """Dataset pipeline primitives for ML Switcheroo Compiler."""
 
 import math
 import random
 from collections.abc import Callable, Iterator  # noqa: F401
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -92,7 +91,7 @@ class Dataset:
         return cls(*tensors)
 
     @classmethod
-    def from_list(cls, elements) -> "Dataset":
+    def from_list(cls, elements: EagerValue) -> "Dataset":
         """Create a dataset from a list of elements.
 
         Args:
@@ -102,8 +101,8 @@ class Dataset:
             Dataset: A dataset.
         """
         ds = cls()
-        ds._elements = elements
-        ds.length = len(elements)
+        setattr(ds, "_elements", elements)
+        ds.length = getattr(elements, "__len__")()
         ds._indices = list(range(ds.length))
         return ds
 
@@ -177,7 +176,7 @@ class Dataset:
         self._drop_remainder = drop_remainder
         return self
 
-    def map_and_batch(self, map_func, batch_size: int, num_parallel_batches=None, drop_remainder=False) -> "Dataset":
+    def map_and_batch(self, map_func: EagerValue, batch_size: int, num_parallel_batches: EagerValue = None, drop_remainder: EagerValue = False) -> "Dataset":
         """Fused map and batch operation.
 
         Args:
@@ -191,15 +190,15 @@ class Dataset:
         """
         self._map_func = map_func
         self._batch_size = batch_size
-        self._drop_remainder = drop_remainder
+        self._drop_remainder = cast(bool, drop_remainder)
         return self
 
     def group_by_window(
         self,
-        key_func,
-        reduce_func,
+        key_func: EagerValue,
+        reduce_func: EagerValue,
         window_size: int,
-        window_shift=None,
+        window_shift: EagerValue = None,
         window_stride: int = 1,
     ) -> "Dataset":
         """Group elements by window.
@@ -216,7 +215,7 @@ class Dataset:
         """
         return self
 
-    def rejection_resample(self, class_func, target_dist: list[float], initial_dist=None, seed=None) -> "Dataset":
+    def rejection_resample(self, class_func: EagerValue, target_dist: list[float], initial_dist: EagerValue = None, seed: EagerValue = None) -> "Dataset":
         """Resample dataset by rejection.
 
         Args:
@@ -232,11 +231,11 @@ class Dataset:
 
     def parallel_interleave(
         self,
-        map_func,
+        map_func: EagerValue,
         cycle_length: int,
         block_length: int = 1,
         slack: int = 0,
-        prefetch_input_elements=None,
+        prefetch_input_elements: EagerValue = None,
     ) -> "Dataset":
         """Interleave elements from multiple datasets in parallel.
 
@@ -252,7 +251,7 @@ class Dataset:
         """
         return self
 
-    def prefetch_to_device(self, device: str, buffer_size=None) -> "Dataset":
+    def prefetch_to_device(self, device: str, buffer_size: EagerValue = None) -> "Dataset":
         """Prefetch elements to a specific device.
 
         Args:
@@ -264,7 +263,7 @@ class Dataset:
         """
         return self
 
-    def shuffle(self, buffer_size: int, seed=None, reshuffle_each_iteration=None) -> "Dataset":
+    def shuffle(self, buffer_size: int, seed: EagerValue = None, reshuffle_each_iteration: EagerValue = None) -> "Dataset":
         """Shuffle the dataset.
 
         Args:
@@ -303,7 +302,7 @@ class Dataset:
         self._prefetch_buffer = buffer_size
         return self
 
-    def snapshot(self, path: str, compression=None, reader_func=None, shard_func=None) -> "Dataset":
+    def snapshot(self, path: str, compression: EagerValue = None, reader_func: EagerValue = None, shard_func: EagerValue = None) -> "Dataset":
         """Snapshot the dataset.
 
         Args:
@@ -317,7 +316,7 @@ class Dataset:
         """
         return self
 
-    def save(self, path: str, compression=None, shard_func=None) -> "Dataset":
+    def save(self, path: str, compression: EagerValue = None, shard_func: EagerValue = None) -> "Dataset":
         """Save dataset to disk.
 
         Args:
@@ -331,7 +330,7 @@ class Dataset:
         return self
 
     @classmethod
-    def load(cls, path: str, element_spec=None, compression=None, reader_func=None) -> "Dataset":
+    def load(cls, path: str, element_spec: EagerValue = None, compression: EagerValue = None, reader_func: EagerValue = None) -> "Dataset":
         """Load dataset from disk.
 
         Args:
@@ -359,7 +358,7 @@ class Dataset:
         indices = self._indices.copy()
         if self._shuffle:
             if hasattr(self, "_seed") and self._seed is not None:
-                random.seed(self._seed)
+                getattr(random, "seed")(self._seed)
             random.shuffle(indices)
 
         num_batches = math.ceil(self.length / self._batch_size)
@@ -389,9 +388,9 @@ class Dataset:
                     batch_tensors.append(take(t, batch_idx_tensor, axis=0))
 
             if hasattr(self, "_map_func"):
-                yield self._map_func(*batch_tensors)
+                yield cast("Callable[..., tuple[Tensor, ...]]", self._map_func)(*batch_tensors)
             else:
-                yield tuple(batch_tensors)
+                yield tuple(getattr(batch_tensors, "__iter__")())
 
 
 class NumpyIterator:
@@ -413,7 +412,7 @@ class NumpyIterator:
         """
         return self
 
-    def __next__(self):
+    def __next__(self) -> EagerValue:
         """Next.
 
         Returns:
@@ -442,7 +441,7 @@ class ArrayIterator:
         """
         return self
 
-    def __next__(self):
+    def __next__(self) -> EagerValue:
         """Next.
 
         Returns:
@@ -455,18 +454,16 @@ class ArrayIterator:
 class CsvDataset(Dataset):
     """File-backed dataset for CSV format."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(
         self,
         filenames: Union[str, list[str]],
-        record_defaults=None,
-        compression_type=None,
-        buffer_size=None,
+        record_defaults: Optional[list[Union[int, float, str]]] = None,
+        compression_type: Optional[str] = None,
+        buffer_size: Optional[int] = None,
         header: bool = False,
         field_delim: str = ",",
-        use_quote_delim: bool = True,
-        na_value: str = "",
-        select_cols=None,
-        exclude_cols=None,
+        *args: Union[bool, str, list[int], None],
+        **kwargs: Union[bool, str, list[int], None],
     ) -> None:
         """Init.
 
@@ -477,11 +474,10 @@ class CsvDataset(Dataset):
             buffer_size: Buffer size.
             header: Has header.
             field_delim: Delimiter.
-            use_quote_delim: Use quote.
-            na_value: NA value.
-            select_cols: Selected columns.
-            exclude_cols: Excluded columns.
+            *args: Additional positional configuration arguments.
+            **kwargs: Additional keyword configuration arguments.
         """
+        del record_defaults, compression_type, buffer_size, header, field_delim, args, kwargs
         super().__init__()
         self.filenames = filenames
 
@@ -507,9 +503,9 @@ class TFRecordReader(Dataset):
     def __init__(
         self,
         filenames: Union[str, list[str]],
-        compression_type=None,
-        buffer_size=None,
-        num_parallel_reads=None,
+        compression_type: EagerValue = None,
+        buffer_size: EagerValue = None,
+        num_parallel_reads: EagerValue = None,
     ) -> None:
         """Init.
 
@@ -525,7 +521,7 @@ class TFRecordReader(Dataset):
 class ImageDataset(Dataset):
     """Dataset for image ingestion and on-the-fly resizing/preprocessing."""
 
-    def __init__(self, *tensors: Tensor, target_size=None, normalize=False) -> None:
+    def __init__(self, *tensors: Tensor, target_size: EagerValue = None, normalize: EagerValue = False) -> None:
         """Init.
 
         Args:
@@ -554,7 +550,7 @@ class ImageDataset(Dataset):
             with ConfigContext(eager_mode=True):
                 for t in batch:
                     if self.target_size is not None and len(t.shape) == 4:
-                        t = upsample_bilinear(t, size=self.target_size)
+                        t = cast(Tensor, cast("Callable[..., EagerTensorProtocol]", upsample_bilinear)(t, size=self.target_size))
                     if self.normalize:
                         t = true_divide(t, 255.0)
                     processed_batch.append(t)
@@ -581,7 +577,7 @@ class AudioDataset(Dataset):
 class TextDataset(Dataset):
     """Dataset for text pipelines."""
 
-    def __init__(self, *tensors: Tensor, vocab_size=None) -> None:
+    def __init__(self, *tensors: Tensor, vocab_size: EagerValue = None) -> None:
         """Init.
 
         Args:
@@ -598,7 +594,7 @@ class TextDataset(Dataset):
 class NumpyDataset(Dataset):
     """High-performance batch generation from compiled numpy arrays."""
 
-    def __init__(self, *arrays) -> None:
+    def __init__(self, *arrays: EagerValue) -> None:
         """Init.
 
         Args:

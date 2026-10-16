@@ -1,5 +1,9 @@
 """Tests for higher-order derivatives, hvp_graph, and nth_order_grad."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -13,6 +17,11 @@ from ml_switcheroo_compiler.grad.api import (
     nth_order_grad,
     nth_order_grad_graph,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_hvp_graph_symbolic_lowering() -> None:
@@ -101,7 +110,7 @@ def test_hvp_api_delegation() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def scalar_quad(x: np.ndarray) -> object:
+        def scalar_quad(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
             """Quadratic polynomial.
 
             Args:
@@ -110,7 +119,7 @@ def test_hvp_api_delegation() -> None:
             Returns:
                 object: Quad form tensor.
             """
-            return x * x * 0.5
+            return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", 0.5)
 
         x_val = np.array([3.0, 4.0], dtype=np.float32)
         v_val = np.array([1.0, 1.0], dtype=np.float32)
@@ -119,5 +128,5 @@ def test_hvp_api_delegation() -> None:
         # H = [[1, 0], [0, 1]]
         # H · v = [1, 1]
         primal, hvp_res = hvp(scalar_quad, (x_val,), (v_val,))
-        assert np.allclose(getattr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
-        assert np.allclose(getattr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(getattr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(getattr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)

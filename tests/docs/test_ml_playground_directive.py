@@ -1,21 +1,29 @@
 """Tests for docs/ml_playground_directive.py."""
 
+from __future__ import annotations
+
+import importlib
 import os
 import sys
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 pytest.importorskip("docutils")
 
-from docutils import nodes  # type: ignore[import-untyped]
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../docs")))
+nodes = importlib.import_module("docutils.nodes")
+_directive_mod = importlib.import_module("ml_playground_directive")
+MLPlaygroundDirective = _directive_mod.MLPlaygroundDirective
+get_wheel_assets = _directive_mod.get_wheel_assets
+setup = _directive_mod.setup
 
-from ml_playground_directive import MLPlaygroundDirective, get_wheel_assets, setup
 
-
-def test_ml_playground_directive_run():
+def test_ml_playground_directive_run() -> None:
     """Test MLPlaygroundDirective.run()."""
     directive = MLPlaygroundDirective(
         name="ml-playground",
@@ -37,13 +45,13 @@ def test_ml_playground_directive_run():
     assert result[0]["format"] == "html"
 
 
-def test_get_wheel_assets_missing_dir():
+def test_get_wheel_assets_missing_dir() -> None:
     """Test get_wheel_assets when _static directory does not exist."""
     with mock.patch("os.path.isdir", return_value=False):
         assert get_wheel_assets() == []
 
 
-def test_get_wheel_assets_with_files(tmp_path):
+def test_get_wheel_assets_with_files(tmp_path: EagerTensorProtocol) -> None:
     """Test get_wheel_assets with mock directory and files."""
     test_dir = tmp_path / "_static"
     test_dir.mkdir()
@@ -57,7 +65,7 @@ def test_get_wheel_assets_with_files(tmp_path):
         assert (test_dir / "wheels.json").exists()
 
 
-def test_get_wheel_assets_os_error(tmp_path):
+def test_get_wheel_assets_os_error(tmp_path: EagerTensorProtocol) -> None:
     """Test get_wheel_assets handles OSError during manifest write."""
     test_dir = tmp_path / "_static"
     test_dir.mkdir()
@@ -68,7 +76,7 @@ def test_get_wheel_assets_os_error(tmp_path):
         assert assets == ["pkg-0.1.0-py3-none-any.whl"]
 
 
-def test_setup():
+def test_setup() -> None:
     """Test setup()."""
     app = mock.MagicMock()
     result = setup(app)

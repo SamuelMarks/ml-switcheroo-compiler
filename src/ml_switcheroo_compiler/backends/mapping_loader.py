@@ -1,20 +1,25 @@
 """Backend YAML Mapping Loader and Dynamic Eager Dispatch."""
 
+import logging
 import os
 from collections.abc import Sequence
-from typing import Optional
+from typing import TYPE_CHECKING, Callable, Optional, Union, cast
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class KwargTranslation(BaseModel):
     """Configuration for keyword argument translation between frameworks."""
 
     target_name: str
-    default_value: Optional[object] = None
+    default_value: Optional[AttributeValue] = None
 
 
 class OpMappingSchema(BaseModel):
@@ -27,7 +32,7 @@ class OpMappingSchema(BaseModel):
     kwarg_map: dict[str, Optional[str]] = Field(default_factory=dict)
     kwarg_translations: dict[str, str] = Field(default_factory=dict)
     dtype_overrides: dict[str, str] = Field(default_factory=dict)
-    default_kwargs: dict[str, object] = Field(default_factory=dict)
+    default_kwargs: dict[str, AttributeValue] = Field(default_factory=dict)
     supported_dtypes: Optional[list[str]] = None
     ast_template: Optional[str] = None
     custom_code: Optional[str] = None
@@ -44,7 +49,7 @@ class BackendMappingSchema(BaseModel):
 _MAPPING_CACHE: dict[str, BackendMappingSchema] = {}
 
 
-def _read_and_merge(path: str, target_dict: dict[str, object]) -> None:
+def _read_and_merge(path: str, target_dict: dict[str, AttributeValue]) -> None:
     """Read a YAML file and merge its operation specifications into target_dict.
 
     Args:
@@ -52,7 +57,7 @@ def _read_and_merge(path: str, target_dict: dict[str, object]) -> None:
         target_dict (dict[str, object]): Target dictionary to update.
     """
     with open(path, encoding="utf-8") as f:
-        data: dict[str, object] = yaml.safe_load(f) or {}
+        data: dict[str, AttributeValue] = yaml.safe_load(f) or {}
     if isinstance(data, dict):
         if "operation" in data and isinstance(data["operation"], str):
             target_dict[data["operation"]] = data
@@ -64,7 +69,7 @@ def _read_and_merge(path: str, target_dict: dict[str, object]) -> None:
                 target_dict.update(data)
 
 
-def _load_yaml_dir(yaml_dir: str, target_dict: dict[str, object]) -> None:
+def _load_yaml_dir(yaml_dir: str, target_dict: dict[str, AttributeValue]) -> None:
     """Load all yaml files in directory into target_dict.
 
     Args:
@@ -93,7 +98,7 @@ def load_backend_mappings(backend_name: str) -> BackendMappingSchema:
         return _MAPPING_CACHE[backend_name]
 
     base_dir: str = os.path.dirname(os.path.abspath(__file__))
-    operations_dict: dict[str, object] = {}
+    operations_dict: dict[str, AttributeValue] = {}
 
     _load_yaml_dir(os.path.join(base_dir, backend_name, "mappings"), operations_dict)
 
@@ -105,12 +110,12 @@ def load_backend_mappings(backend_name: str) -> BackendMappingSchema:
     if os.path.exists(eager_yaml_path):
         _read_and_merge(eager_yaml_path, operations_dict)
 
-    schema = BackendMappingSchema(backend_name=backend_name, operations=operations_dict)
+    schema = cast("Callable[..., BackendMappingSchema]", BackendMappingSchema)(backend_name=backend_name, operations=operations_dict)
     _MAPPING_CACHE[backend_name] = schema
     return schema
 
 
-def _resolve_custom_code(custom_code: str, backend_module: Optional[object]) -> Optional[object]:
+def _resolve_custom_code(custom_code: str, backend_module: Optional[AttributeValue]) -> Optional[AttributeValue]:
     """Evaluate custom code expression in a restricted namespace.
 
     Args:
@@ -120,21 +125,21 @@ def _resolve_custom_code(custom_code: str, backend_module: Optional[object]) -> 
     Returns:
         Optional[object]: Evaluated callable or None.
     """
-    local_env: dict[str, object] = {"backend_module": backend_module}
+    local_env: dict[str, AttributeValue] = {"backend_module": backend_module}
     if backend_module:
         for k in dir(backend_module):
             if not k.startswith("__"):
                 try:
                     local_env[k] = getattr(backend_module, k)
-                except Exception:
-                    pass
+                except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     try:
-        return eval(custom_code, local_env)  # noqa: S307
+        return eval(custom_code, local_env)
     except Exception:
         return None
 
 
-def _resolve_by_import(api_str: str) -> Optional[object]:
+def _resolve_by_import(api_str: str) -> Optional[AttributeValue]:
     """Import and traverse attribute chain.
 
     Args:
@@ -147,7 +152,7 @@ def _resolve_by_import(api_str: str) -> Optional[object]:
     try:
         import importlib
 
-        mod: object = importlib.import_module(parts[0])
+        mod: AttributeValue = importlib.import_module(parts[0])
         for p in parts[1:]:
             mod = getattr(mod, p)
         return mod
@@ -155,7 +160,7 @@ def _resolve_by_import(api_str: str) -> Optional[object]:
         return None
 
 
-def _resolve_from_backend_module(api_str: str, backend_module: object) -> Optional[object]:
+def _resolve_from_backend_module(api_str: str, backend_module: AttributeValue) -> Optional[AttributeValue]:
     """Traverse attribute chain on backend module.
 
     Args:
@@ -172,7 +177,7 @@ def _resolve_from_backend_module(api_str: str, backend_module: object) -> Option
         sub_parts = parts[1:]
     else:
         sub_parts = parts
-    curr: object = backend_module
+    curr: AttributeValue = backend_module
     for p in sub_parts:
         if hasattr(curr, p):
             curr = getattr(curr, p)
@@ -184,8 +189,8 @@ def _resolve_from_backend_module(api_str: str, backend_module: object) -> Option
 def resolve_target_api(
     api_str: str,
     custom_code: Optional[str] = None,
-    backend_module: Optional[object] = None,
-) -> Optional[object]:
+    backend_module: Optional[AttributeValue] = None,
+) -> Optional[AttributeValue]:
     """Resolve a target function reference from module path or custom code snippet.
 
     Args:
@@ -214,7 +219,7 @@ def resolve_target_api(
     return getattr(backend_module, api_str, None) if backend_module else None
 
 
-def translate_kwargs(kwarg_translations: dict[str, str], kwargs: dict[str, object]) -> dict[str, object]:
+def translate_kwargs(kwarg_translations: dict[str, str], kwargs: dict[str, AttributeValue]) -> dict[str, AttributeValue]:
     """Translate caller keyword arguments according to backend schema mapping.
 
     Args:
@@ -224,7 +229,7 @@ def translate_kwargs(kwarg_translations: dict[str, str], kwargs: dict[str, objec
     Returns:
         dict[str, object]: Keyword arguments mapped to target framework parameter names.
     """
-    translated: dict[str, object] = {}
+    translated: dict[str, AttributeValue] = {}
     for k, v in kwargs.items():
         target_k = kwarg_translations.get(k, k)
         translated[target_k] = v
@@ -234,10 +239,10 @@ def translate_kwargs(kwarg_translations: dict[str, str], kwargs: dict[str, objec
 def dispatch_eager_op(
     backend_name: str,
     op_type: str,
-    args: Sequence[object],
-    kwargs: dict[str, object],
-    backend_module: Optional[object] = None,
-) -> object:
+    args: Sequence[Union[AttributeValue, "EagerValue"]],
+    kwargs: dict[str, Union[AttributeValue, "EagerValue"]],
+    backend_module: Optional[Union[AttributeValue, "EagerValue"]] = None,
+) -> "EagerValue":
     """Dispatch an eager operation dynamically via declarative YAML mapping.
 
     Args:
@@ -248,7 +253,7 @@ def dispatch_eager_op(
         backend_module (Optional[object]): Module or mock to bind custom expressions.
 
     Returns:
-        object: Result of evaluating the mapped operation.
+        EagerValue: Result of evaluating the mapped operation.
 
     Raises:
         BackendNotSupportedError: If op_type is unmapped or cannot be resolved.
@@ -258,7 +263,7 @@ def dispatch_eager_op(
         raise BackendNotSupportedError(f"Operation '{op_type}' is not supported by {backend_name} eager backend.")
 
     op_spec = schema.operations[op_type]
-    func = resolve_target_api(op_spec.target_api, op_spec.custom_code, backend_module)
+    func = resolve_target_api(op_spec.target_api, op_spec.custom_code, cast(Optional[AttributeValue], backend_module))
     if func is None or not callable(func):
         raise BackendNotSupportedError(f"Operation '{op_type}' target API '{op_spec.target_api}' could not be resolved for {backend_name}.")
 
@@ -267,7 +272,7 @@ def dispatch_eager_op(
     for src_k, dst_k in kwarg_map.items():
         if dst_k and src_k not in kwarg_trans:
             kwarg_trans[src_k] = dst_k
-    translated_kwargs = translate_kwargs(kwarg_trans, kwargs)
+    translated_kwargs = translate_kwargs(kwarg_trans, cast(dict[str, AttributeValue], kwargs))
     default_kwargs = getattr(op_spec, "default_kwargs", {}) or {}
     for def_k, def_v in default_kwargs.items():
         if def_k not in translated_kwargs:
@@ -276,6 +281,6 @@ def dispatch_eager_op(
     if getattr(op_spec, "is_method", False) and len(args) > 0:
         method = getattr(args[0], op_spec.target_api, None)
         if method is not None and callable(method):
-            return method(*args[1:], **translated_kwargs)
+            return cast("EagerValue", method(*args[1:], **translated_kwargs))
 
-    return func(*args, **translated_kwargs)
+    return cast("EagerValue", func(*args, **translated_kwargs))

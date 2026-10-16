@@ -1,7 +1,9 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Reductions operations package."""
+
+from __future__ import annotations
+
+import typing
+from types import ModuleType
 
 import ml_switcheroo_compiler.ops.reductions.aggregations as _aggregations
 import ml_switcheroo_compiler.ops.reductions.boolean as _boolean
@@ -13,7 +15,7 @@ import ml_switcheroo_compiler.ops.reductions.frontend_utils as frontend_utils  #
 import ml_switcheroo_compiler.ops.reductions.nan as _nan
 import ml_switcheroo_compiler.ops.reductions.pooling as _pooling
 import ml_switcheroo_compiler.ops.stats.descriptive as _statistical
-from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.base import OpDef, get_op
 
 from .distributed import Pmean as Pmean
 from .distributed import Psum as Psum
@@ -39,7 +41,7 @@ from .frontend import unsorted_segment_prod as unsorted_segment_prod
 from .frontend import unsorted_segment_sqrt_n as unsorted_segment_sqrt_n
 from .frontend import unsorted_segment_sum as unsorted_segment_sum
 
-_ = _nan
+_: ModuleType = _nan
 _ = _pooling
 _ = _aggregations
 _ = _boolean
@@ -51,161 +53,161 @@ _ = _statistical
 try:
     sum = get_op("Sum")()
 except KeyError:
-    sum = None
+    sum = typing.cast(OpDef, None)
 try:
     prod = get_op("Prod")()
 except KeyError:
-    prod = None
+    prod = typing.cast(OpDef, None)
 try:
     mean = get_op("Mean")()
 except KeyError:
-    mean = None
+    mean = typing.cast(OpDef, None)
 try:
     variance = get_op("Variance")()
 except KeyError:
-    variance = None
+    variance = typing.cast(OpDef, None)
 try:
     std = get_op("Std")()
 except KeyError:
-    std = None
+    std = typing.cast(OpDef, None)
 try:
     max = get_op("Max")()
 except KeyError:
-    max = None
+    max = typing.cast(OpDef, None)
 try:
     min = get_op("Min")()
 except KeyError:
-    min = None
+    min = typing.cast(OpDef, None)
 try:
     argmax = get_op("Argmax")()
 except KeyError:
-    argmax = None
+    argmax = typing.cast(OpDef, None)
 try:
     argmin = get_op("Argmin")()
 except KeyError:
-    argmin = None
+    argmin = typing.cast(OpDef, None)
 try:
     all = get_op("All")()
 except KeyError:
-    all = None
+    all = typing.cast(OpDef, None)
 try:
     any = get_op("Any")()
 except KeyError:
-    any = None
+    any = typing.cast(OpDef, None)
 
 try:
     logsumexp = get_op("Logsumexp")()
 except KeyError:
-    logsumexp = None
+    logsumexp = typing.cast(OpDef, None)
 try:
     nanargmax = get_op("Nanargmax")()
 except KeyError:
-    nanargmax = None
+    nanargmax = typing.cast(OpDef, None)
 try:
     nanargmin = get_op("Nanargmin")()
 except KeyError:
-    nanargmin = None
+    nanargmin = typing.cast(OpDef, None)
 try:
     nancumprod = get_op("Nancumprod")()
 except KeyError:
-    nancumprod = None
+    nancumprod = typing.cast(OpDef, None)
 try:
     nancumsum = get_op("Nancumsum")()
 except KeyError:
-    nancumsum = None
+    nancumsum = typing.cast(OpDef, None)
 try:
     nanmax = get_op("Nanmax")()
 except KeyError:
-    nanmax = None
+    nanmax = typing.cast(OpDef, None)
 try:
     nanmean = get_op("Nanmean")()
 except KeyError:
-    nanmean = None
+    nanmean = typing.cast(OpDef, None)
 try:
     nanmedian = get_op("Nanmedian")()
 except KeyError:
-    nanmedian = None
+    nanmedian = typing.cast(OpDef, None)
 try:
     nanmin = get_op("Nanmin")()
 except KeyError:
-    nanmin = None
+    nanmin = typing.cast(OpDef, None)
 try:
     nanpercentile = get_op("Nanpercentile")()
 except KeyError:
-    nanpercentile = None
+    nanpercentile = typing.cast(OpDef, None)
 try:
     nanprod = get_op("Nanprod")()
 except KeyError:
-    nanprod = None
+    nanprod = typing.cast(OpDef, None)
 try:
     nanquantile = get_op("Nanquantile")()
 except KeyError:
-    nanquantile = None
+    nanquantile = typing.cast(OpDef, None)
 try:
     nanstd = get_op("Nanstd")()
 except KeyError:
-    nanstd = None
+    nanstd = typing.cast(OpDef, None)
 try:
     nansum = get_op("Nansum")()
 except KeyError:
-    nansum = None
+    nansum = typing.cast(OpDef, None)
 try:
     nanvar = get_op("Nanvar")()
 except KeyError:
-    nanvar = None
+    nanvar = typing.cast(OpDef, None)
 
 
 try:
     count_nonzero = get_op("CountNonzero")()
 except KeyError:
-    count_nonzero = None
+    count_nonzero = typing.cast(OpDef, None)
 try:
     norm = get_op("Norm")()
 except KeyError:
-    norm = None
+    norm = typing.cast(OpDef, None)
 try:
     cumsum = get_op("Cumsum")()
 except KeyError:
-    cumsum = None
+    cumsum = typing.cast(OpDef, None)
 
 try:
     cummax = get_op("Cummax")()
 except KeyError:
-    cummax = None
+    cummax = typing.cast(OpDef, None)
 try:
     cummin = get_op("Cummin")()
 except KeyError:
-    cummin = None
+    cummin = typing.cast(OpDef, None)
 
 try:
     cumprod = get_op("Cumprod")()
 except KeyError:
-    cumprod = None
+    cumprod = typing.cast(OpDef, None)
 
 
 try:
     logcumsumexp = get_op("Logcumsumexp")()
 except KeyError:
-    logcumsumexp = None
+    logcumsumexp = typing.cast(OpDef, None)
 
 
 try:
     accumulate_n = get_op("AccumulateN")()
 except KeyError:
-    accumulate_n = None
+    accumulate_n = typing.cast(OpDef, None)
 try:
     add_n = get_op("AddN")()
 except KeyError:
-    add_n = None
+    add_n = typing.cast(OpDef, None)
 try:
     cumulative_logsumexp = get_op("CumulativeLogsumexp")()
 except KeyError:
-    cumulative_logsumexp = None
+    cumulative_logsumexp = typing.cast(OpDef, None)
 try:
     reduce_euclidean_norm = get_op("ReduceEuclideanNorm")()
 except KeyError:
-    reduce_euclidean_norm = None
+    reduce_euclidean_norm = typing.cast(OpDef, None)
 try:
     reduce_logsumexp = get_op("Logsumexp")()
 except KeyError:
-    reduce_logsumexp = None
+    reduce_logsumexp = typing.cast(OpDef, None)

@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Graph Compilation and AST Processing for AutoGraph capabilities."""
 
 import functools  # noqa: F401
@@ -51,7 +50,7 @@ class LoopOptions:
         self._prev_options = global_tracing_state.current_loop_options
         global_tracing_state.current_loop_options = self
         if global_tracing_state.active_graph is not None:
-            global_tracing_state.active_graph.loop_options = self
+            setattr(global_tracing_state.active_graph, "loop_options", self)
             metadata = getattr(global_tracing_state.active_graph, "metadata", None)
             if isinstance(metadata, dict):
                 metadata["loop_options"] = self
@@ -72,7 +71,7 @@ class LoopOptions:
         """
         global_tracing_state.current_loop_options = self._prev_options
         if global_tracing_state.active_graph is not None:
-            global_tracing_state.active_graph.loop_options = self._prev_options
+            setattr(global_tracing_state.active_graph, "loop_options", self._prev_options)
             metadata = getattr(global_tracing_state.active_graph, "metadata", None)
             if isinstance(metadata, dict):
                 metadata["loop_options"] = self._prev_options
@@ -103,7 +102,7 @@ def set_loop_options(
     )
     if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
         global_tracing_state.current_loop_options = options
-        global_tracing_state.active_graph.loop_options = options
+        setattr(global_tracing_state.active_graph, "loop_options", options)
         metadata = getattr(global_tracing_state.active_graph, "metadata", None)
         if isinstance(metadata, dict):
             metadata["loop_options"] = options
@@ -129,8 +128,8 @@ def do_not_convert(func: Optional[F] = None) -> Union[F, Callable[[F], F]]:
         Returns:
             F: The original function with the skip flag attached.
         """
-        f._autograph_do_not_convert = True
-        f.__wrapped__ = f
+        setattr(f, "_autograph_do_not_convert", True)
+        setattr(f, "__wrapped__", f)
         return f
 
     if func is not None:

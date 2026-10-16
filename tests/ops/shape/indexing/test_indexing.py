@@ -1,3 +1,9 @@
+"""Tests for test_indexing."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -31,16 +37,25 @@ from ml_switcheroo_compiler.ops.shape.indexing import (
 )
 from ml_switcheroo_compiler.ops.shape.indexing import PutAlongAxis as PutAlongAxisClass
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class MockTensor:
-    def __init__(self, shape=()):
+    """Test class MockTensor."""
+
+    def __init__(self, shape: EagerValue = ()) -> None:
+        """Test function __init__."""
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
         self.data = [1, 2]
 
 
-def test_gather(mocker):
+def test_gather(mocker: EagerTensorProtocol) -> None:
+    """Test function test_gather."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     config.eager_mode = False
@@ -48,13 +63,14 @@ def test_gather(mocker):
     assert gather(t, 0, idx) == "gather"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.return_value = MockTensor((1, 3))
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "return_value", MockTensor((1, 3)))
     res = gather(t, 0, idx)
-    assert res.config.shape == (1, 3)
+    assert cast("EagerTensorProtocol", getattr(res, "config")).shape == (1, 3)
 
 
-def test_gather_nd(mocker):
+def test_gather_nd(mocker: EagerTensorProtocol) -> None:
+    """Test function test_gather_nd."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     config.eager_mode = False
@@ -62,12 +78,13 @@ def test_gather_nd(mocker):
     assert gather_nd(t, idx) == "gather_nd"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.return_value = MockTensor((1,))
-    assert gather_nd(t, idx).config.shape == (1,)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "return_value", MockTensor((1,)))
+    assert cast("EagerTensorProtocol", getattr(gather_nd(t, idx), "config")).shape == (1,)
 
 
-def test_take(mocker):
+def test_take(mocker: EagerTensorProtocol) -> None:
+    """Test function test_take."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     config.eager_mode = False
@@ -75,20 +92,22 @@ def test_take(mocker):
     assert take(t, idx) == "take"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.return_value = MockTensor((1,))
-    assert take(t, idx).config.shape == (1,)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "return_value", MockTensor((1,)))
+    assert cast("EagerTensorProtocol", getattr(take(t, idx), "config")).shape == (1,)
 
 
-def test_take_along_axis(mocker):
+def test_take_along_axis(mocker: EagerTensorProtocol) -> None:
+    """Test function test_take_along_axis."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
+    setattr(mock_backend.execute_op, "return_value", "res")
     assert take_along_axis(t, idx, 0) == "res"
 
 
-def test_searchsorted(mocker):
+def test_searchsorted(mocker: EagerTensorProtocol) -> None:
+    """Test function test_searchsorted."""
     a = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     v = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     config.eager_mode = False
@@ -96,12 +115,13 @@ def test_searchsorted(mocker):
     assert searchsorted(a, v) == "searchsorted"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.return_value = MockTensor((1,))
-    assert searchsorted(a, v).config.shape == (1,)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "return_value", MockTensor((1,)))
+    assert cast("EagerTensorProtocol", getattr(searchsorted(a, v), "config")).shape == (1,)
 
 
-def test_where(mocker):
+def test_where(mocker: EagerTensorProtocol) -> None:
+    """Test function test_where."""
     c = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "bool", "cpu"))
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
@@ -109,12 +129,13 @@ def test_where(mocker):
     assert where(c, t, t) == "where"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.return_value = MockTensor((2, 3))
-    assert where(c, t, t).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "return_value", MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(where(c, t, t), "config")).shape == (2, 3)
 
 
-def test_select(mocker):
+def test_select(mocker: EagerTensorProtocol) -> None:
+    """Test function test_select."""
     c = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "bool", "cpu"))
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
@@ -122,7 +143,8 @@ def test_select(mocker):
     assert select(c, t, t) == "where"
 
 
-def test_boolean_mask(mocker):
+def test_boolean_mask(mocker: EagerTensorProtocol) -> None:
+    """Test function test_boolean_mask."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     c = Tensor(MockTensor((2,)).data, TensorConfig((2,), "bool", "cpu"))
     config.eager_mode = False
@@ -130,24 +152,26 @@ def test_boolean_mask(mocker):
     assert boolean_mask(t, c) == "mask"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.return_value = MockTensor((2, 3))
-    assert boolean_mask(t, c).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "return_value", MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(boolean_mask(t, c), "config")).shape == (2, 3)
 
 
-def test_invert_permutation(mocker):
+def test_invert_permutation(mocker: EagerTensorProtocol) -> None:
+    """Test function test_invert_permutation."""
     t = Tensor(MockTensor((2,)).data, TensorConfig((2,), "int32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.shape.indexing._emit_shape_node", return_value="invert")
     assert invert_permutation(t) == "invert"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.return_value = MockTensor((2,))
-    assert invert_permutation(t).config.shape == (2,)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "return_value", MockTensor((2,)))
+    assert cast("EagerTensorProtocol", getattr(invert_permutation(t), "config")).shape == (2,)
 
 
-def test_put_along_axis(mocker):
+def test_put_along_axis(mocker: EagerTensorProtocol) -> None:
+    """Test function test_put_along_axis."""
     arr = Tensor(MockTensor((2,)).data, TensorConfig((2,), "float32", "cpu"))
     idx = Tensor(MockTensor((1,)).data, TensorConfig((1,), "int32", "cpu"))
     val = Tensor(MockTensor((1,)).data, TensorConfig((1,), "float32", "cpu"))
@@ -156,35 +180,36 @@ def test_put_along_axis(mocker):
     assert put_along_axis(arr, idx, val, 0) == "put"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    mock_backend.execute_op.return_value = MockTensor((2,))
-    assert put_along_axis(arr, idx, val, 0).config.shape == (2,)
+    setattr(mock_backend.execute_op, "return_value", MockTensor((2,)))
+    assert cast("EagerTensorProtocol", getattr(put_along_axis(arr, idx, val, 0), "config")).shape == (2,)
 
 
-def test_classes_infer_shape():
+def test_classes_infer_shape() -> None:
+    """Test function test_classes_infer_shape."""
     assert Extract().infer_shape() == (None,)
-    assert DynamicPartition().infer_shape(None, None, 2) == ()
-    assert DynamicStitch().infer_shape(None, None) == ()
-    assert TensorScatterSub().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
-    assert ExtractVolumePatches().infer_shape(None, [1], [1], "VALID") == ()
-    assert UnravelIndex().infer_shape(None, None) == ()
-    assert DynamicSliceInDim().infer_shape(MockTensor((2, 3)), None, 1, axis=0) == (1, 3)
-    assert DynamicSliceInDim().infer_shape(None, None, 1) == ()
-    assert DynamicUpdateSliceInDim().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
-    assert DynamicIndexInDim().infer_shape(MockTensor((2, 3)), None, axis=0, keepdims=True) == (1, 3)
-    assert DynamicIndexInDim().infer_shape(MockTensor((2, 3)), None, axis=0, keepdims=False) == (3,)
-    assert DynamicIndexInDim().infer_shape(None, None) == ()
-    assert DynamicUpdateIndexInDim().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicPartition)().infer_shape(None, None, 2) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicStitch)().infer_shape(None, None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", TensorScatterSub)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", ExtractVolumePatches)().infer_shape(None, [1], [1], "VALID") == ()
+    assert cast("Callable[..., EagerTensorProtocol]", UnravelIndex)().infer_shape(None, None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicSliceInDim)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, 1, axis=0) == (1, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicSliceInDim)().infer_shape(None, None, 1) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicUpdateSliceInDim)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicIndexInDim)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, axis=0, keepdims=True) == (1, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicIndexInDim)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, axis=0, keepdims=False) == (3,)
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicIndexInDim)().infer_shape(None, None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", DynamicUpdateIndexInDim)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None) == (2, 3)
     spec = IndexSpec(0, 2, 1, axis=0)
-    assert SliceInDim().infer_shape(MockTensor((4, 3)), spec) == (2, 3)
-    assert SliceInDim().infer_shape(None, spec) == ()
-    assert ScatterApply().infer_shape(MockTensor((2, 3)), None, None, None) == (2, 3)
-    assert ScatterMax().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
-    assert ScatterMin().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
-    assert ScatterMul().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
-    assert PutAlongAxisClass().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", SliceInDim)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((4, 3)), spec) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", SliceInDim)().infer_shape(None, spec) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", ScatterApply)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", ScatterMax)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", ScatterMin)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", ScatterMul)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", PutAlongAxisClass)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3)), None, None) == (2, 3)
 
 
-def test_indexing_exact_shapes(mocker) -> None:
+def test_indexing_exact_shapes(mocker: EagerTensorProtocol) -> None:
     """Verify exact output shapes for take_along_axis, gather_nd, take, where, and classes.
 
     Args:
@@ -199,7 +224,8 @@ def test_indexing_exact_shapes(mocker) -> None:
 
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+        """Test function mock_emit."""
         captured_shapes[op_name] = shape
         return op_name
 
@@ -233,23 +259,23 @@ def test_indexing_exact_shapes(mocker) -> None:
 
     # 5. ExtractVolumePatches
     vol_in = MockTensor((1, 10, 10, 10, 3))
-    vol_out = ExtractVolumePatches().infer_shape(vol_in, [1, 3, 3, 3, 1], [1, 1, 1, 1, 1], "VALID")
+    vol_out = cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", ExtractVolumePatches)().infer_shape)(vol_in, [1, 3, 3, 3, 1], [1, 1, 1, 1, 1], "VALID")
     assert vol_out == (1, 8, 8, 8, 81)
 
     # 6. DynamicPartition with valid tensor shapes
     part_data = MockTensor((10, 4))
     part_ids = MockTensor((10,))
-    p_shapes = DynamicPartition().infer_shape(part_data, part_ids, 3)
-    assert len(p_shapes) == 3
-    assert p_shapes[0] == (None, 4)
+    p_shapes = cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", DynamicPartition)().infer_shape)(part_data, part_ids, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(p_shapes) == 3
+    assert cast("EagerTensorProtocol", getattr(p_shapes, "__getitem__")(0)) == (None, 4)
 
     # 7. UnravelIndex
     flat_idx = MockTensor((15,))
-    unravelled = UnravelIndex().infer_shape(flat_idx, [3, 5])
+    unravelled = cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", UnravelIndex)().infer_shape)(flat_idx, [3, 5])
     assert unravelled == ((15,), (15,))
 
 
-def test_indexing_edge_cases(mocker) -> None:
+def test_indexing_edge_cases(mocker: EagerTensorProtocol) -> None:
     """Test edge cases and fallback branches in shape indexing operations.
 
     Args:
@@ -257,7 +283,8 @@ def test_indexing_edge_cases(mocker) -> None:
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+        """Test function mock_emit."""
         captured_shapes[op_name] = shape
         return op_name
 
@@ -292,18 +319,18 @@ def test_indexing_edge_cases(mocker) -> None:
     # 4. DynamicStitch infer_shape variations (indices, data)
     stitch = DynamicStitch()
     # len(d_shape) >= len(idx_shape)
-    res1 = stitch.infer_shape([MockTensor((2,))], [MockTensor((2, 3, 4))])
+    res1 = cast("Callable[..., EagerTensorProtocol]", stitch.infer_shape)([cast("Callable[..., EagerTensorProtocol]", MockTensor)((2,))], [cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3, 4))])
     assert res1 == (None, 3, 4)
     # len(d_shape) < len(idx_shape)
-    res2 = stitch.infer_shape([MockTensor((2, 3, 4))], [MockTensor((2,))])
+    res2 = cast("Callable[..., EagerTensorProtocol]", stitch.infer_shape)([cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3, 4))], [cast("Callable[..., EagerTensorProtocol]", MockTensor)((2,))])
     assert res2 == (None,)
     # elements without shape attribute
-    assert stitch.infer_shape([1], [1]) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", stitch.infer_shape)([1], [1]) == ()
 
     # 5. ExtractVolumePatches SAME padding and non-5D input
     evp = ExtractVolumePatches()
     vol_in = MockTensor((1, 10, 10, 10, 3))
-    res_same = evp.infer_shape(vol_in, [1, 3, 3, 3, 1], [1, 2, 2, 2, 1], "SAME")
+    res_same = cast("Callable[..., EagerTensorProtocol]", evp.infer_shape)(vol_in, [1, 3, 3, 3, 1], [1, 2, 2, 2, 1], "SAME")
     assert res_same == (1, 5, 5, 5, 81)
-    res_non_5d = evp.infer_shape(MockTensor((1, 10, 10, 3)), [1, 3, 3, 1], [1, 1, 1, 1], "VALID")
+    res_non_5d = cast("Callable[..., EagerTensorProtocol]", evp.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)((1, 10, 10, 3)), [1, 3, 3, 1], [1, 1, 1, 1], "VALID")
     assert res_non_5d == ()

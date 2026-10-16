@@ -1,5 +1,9 @@
 """Tests for eager math_misc stubs."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
@@ -18,6 +22,11 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_vecdot,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_np_vecdot() -> None:
     """Test _np_vecdot."""
@@ -34,7 +43,7 @@ def test_np_vecdot() -> None:
 def test_np_debuginfs() -> None:
     """Test _np_debuginfs."""
     x = np.array([1.0, 2.0])
-    assert np.array_equal(_np_debuginfs(np, x), x)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_debuginfs)(np, x), x)
     with pytest.raises(ValueError):
         _np_debuginfs(np, np.array([np.inf]))
 
@@ -42,15 +51,15 @@ def test_np_debuginfs() -> None:
 def test_np_debugnans() -> None:
     """Test _np_debugnans."""
     x = np.array([1.0, 2.0])
-    assert np.array_equal(_np_debugnans(np, x), x)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_debugnans)(np, x), x)
     with pytest.raises(ValueError):
         _np_debugnans(np, np.array([np.nan]))
 
 
 def test_np_tensor() -> None:
     """Test _np_tensor."""
-    assert np.array_equal(_np_tensor(np, [1, 2]), np.array([1, 2]))
-    assert np.array_equal(_np_tensor(np), np.array([]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_tensor)(np, [1, 2]), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_tensor)(np), cast("Callable[..., EagerTensorProtocol]", np.array)([]))
 
 
 def test_np_tensorarray() -> None:
@@ -64,19 +73,20 @@ def test_np_tensorarray() -> None:
     assert _np_tensorarrayread(np, arr, 2) == 100
 
     stacked = _np_tensorarraystack(np, [np.array([1]), np.array([2])])
-    assert np.array_equal(stacked, np.array([[1], [2]]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(stacked, cast("Callable[..., EagerTensorProtocol]", np.array)([[1], [2]]))
 
 
-def test_raw_and_switch_ops():
+def test_raw_and_switch_ops() -> None:
     # rawmerge
-    res1, i1 = _np_rawmerge(np, [np.array([1]), np.array([2])])
-    assert np.array_equal(res1, np.array([1]))
+    """Test function test_raw_and_switch_ops."""
+    res1, i1 = cast("Callable[..., EagerTensorProtocol]", _np_rawmerge)(np, [cast("Callable[..., EagerTensorProtocol]", np.array)([1]), cast("Callable[..., EagerTensorProtocol]", np.array)([2])])
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res1, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
     assert i1 == 0
 
-    res2, i2 = _np_rawmerge(np, np.array([1]))
-    assert np.array_equal(res2, np.array([1]))
+    res2, i2 = cast("Callable[..., EagerTensorProtocol]", _np_rawmerge)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res2, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
 
-    res3, i3 = _np_rawmerge(np)
+    res3, i3 = cast("Callable[..., EagerTensorProtocol]", _np_rawmerge)(np)
     assert res3 is None
     assert i3 == -1
 
@@ -85,33 +95,37 @@ def test_raw_and_switch_ops():
     assert _np_rawop(np) is None
 
     # rawswitch
-    out_f, out_t = _np_rawswitch(np, 42, False)
+    out_f, out_t = cast("Callable[..., EagerTensorProtocol]", _np_rawswitch)(np, 42, False)
     assert out_f == 42
     assert out_t is None
 
-    out_f, out_t = _np_rawswitch(np, 42, pred=True)
+    out_f, out_t = cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", _np_rawswitch)(np, 42, pred=True))
     assert out_f is None
     assert out_t == 42
 
     # switchop
-    out_f, out_t = _np_switchop(np, 42, False)
+    out_f, out_t = cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", _np_switchop)(np, 42, False))
     assert out_f == 42
 
-    out_f, out_t = _np_switchop(np, 42, pred=True)
+    out_f, out_t = cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", _np_switchop)(np, 42, pred=True))
     assert out_t == 42
 
 
-def test_scan_op():
-    fn = lambda a, b: a + b
+def test_scan_op() -> None:
+    """Test function test_scan_op."""
+
+    def fn(a: EagerValue, b: EagerValue) -> EagerValue:
+        return cast("EagerTensorProtocol", a) + cast("EagerTensorProtocol", b)
+
     elems = np.array([1, 2, 3])
 
     # With initial acc
     res = _np_scanop(np, fn, elems, 10)
-    assert np.array_equal(res, np.array([11, 13, 16]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, cast("Callable[..., EagerTensorProtocol]", np.array)([11, 13, 16]))
 
     # Without initial acc
     res2 = _np_scanop(np, fn, elems)
-    assert np.array_equal(res2, np.array([1, 3, 6]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res2, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 3, 6]))
 
     # None args
     assert _np_scanop(np) is None

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Callable, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 from . import eager, generator, types
 from .eager import execute_op
 from .generator import AwkwardGenerator
@@ -28,27 +32,27 @@ from .types import (
     zeros,
 )
 
-AwkwardGenerator.zeros = classmethod(zeros)
-AwkwardGenerator.array = classmethod(array)
-AwkwardGenerator.asarray = classmethod(asarray)
-AwkwardGenerator.ragged_array = classmethod(ragged_array)
-AwkwardGenerator.record_array = classmethod(record_array)
-AwkwardGenerator.flatten = classmethod(flatten)
-AwkwardGenerator.unflatten = classmethod(unflatten)
-AwkwardGenerator.with_field = classmethod(with_field)
-AwkwardGenerator.unzip = classmethod(unzip)
-AwkwardGenerator.item = classmethod(item)
-AwkwardGenerator.execute_op = classmethod(execute_op)
-AwkwardGenerator.broadcast_ragged = classmethod(broadcast_ragged)
-AwkwardGenerator.is_ragged = classmethod(is_ragged)
-AwkwardGenerator.ragged_shape = classmethod(ragged_shape)
-AwkwardGenerator.to_regular = classmethod(to_regular)
-AwkwardGenerator.from_regular = classmethod(from_regular)
-AwkwardGenerator.to_numpy = classmethod(to_numpy)
-AwkwardGenerator.from_numpy = classmethod(from_numpy)
-AwkwardGenerator.to_list = classmethod(to_list)
-AwkwardGenerator.from_iter = classmethod(from_iter)
-AwkwardGenerator.get_layout = classmethod(get_layout)
+type.__setattr__(AwkwardGenerator, "zeros", classmethod(zeros))
+type.__setattr__(AwkwardGenerator, "array", classmethod(array))
+type.__setattr__(AwkwardGenerator, "asarray", classmethod(asarray))
+type.__setattr__(AwkwardGenerator, "ragged_array", classmethod(ragged_array))
+type.__setattr__(AwkwardGenerator, "record_array", classmethod(record_array))
+type.__setattr__(AwkwardGenerator, "flatten", classmethod(flatten))
+type.__setattr__(AwkwardGenerator, "unflatten", classmethod(unflatten))
+type.__setattr__(AwkwardGenerator, "with_field", classmethod(with_field))
+type.__setattr__(AwkwardGenerator, "unzip", classmethod(unzip))
+type.__setattr__(AwkwardGenerator, "item", classmethod(item))
+type.__setattr__(AwkwardGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", classmethod)(execute_op))
+type.__setattr__(AwkwardGenerator, "broadcast_ragged", classmethod(broadcast_ragged))
+type.__setattr__(AwkwardGenerator, "is_ragged", classmethod(is_ragged))
+type.__setattr__(AwkwardGenerator, "ragged_shape", classmethod(ragged_shape))
+type.__setattr__(AwkwardGenerator, "to_regular", classmethod(to_regular))
+type.__setattr__(AwkwardGenerator, "from_regular", classmethod(from_regular))
+type.__setattr__(AwkwardGenerator, "to_numpy", classmethod(to_numpy))
+type.__setattr__(AwkwardGenerator, "from_numpy", classmethod(from_numpy))
+type.__setattr__(AwkwardGenerator, "to_list", classmethod(to_list))
+type.__setattr__(AwkwardGenerator, "from_iter", classmethod(from_iter))
+type.__setattr__(AwkwardGenerator, "get_layout", classmethod(get_layout))
 
 __all__ = [
     "AwkwardGenerator",

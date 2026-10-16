@@ -12,7 +12,11 @@ class ZerosModule(Protocol):
         self,
         shape: tuple[int, ...],
     ) -> Union[tuple[str, tuple[int, ...]], tuple[int, ...]]:
-        """Create zeros."""
+        """Create zeros.
+
+        Args:
+            shape: The shape parameter.
+        """
         ...
 
 
@@ -32,7 +36,12 @@ class ArrayModule(Protocol):
         list[int],
         list[float],
     ]:
-        """Create array."""
+        """Create array.
+
+        Args:
+            data: The data parameter.
+            dtype: The dtype parameter.
+        """
         ...
 
 
@@ -50,7 +59,11 @@ class AsArrayModule(Protocol):
         list[int],
         list[float],
     ]:
-        """Create asarray."""
+        """Create asarray.
+
+        Args:
+            data: The data parameter.
+        """
         ...
 
 

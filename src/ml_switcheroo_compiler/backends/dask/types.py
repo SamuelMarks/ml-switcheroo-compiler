@@ -1,15 +1,17 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
 
-from typing import Optional
+from types import ModuleType
+from typing import Optional, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 try:
     import dask.array as da
 except ImportError:
-    da = None
+    da = cast(ModuleType, None)
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     """Create a tensor of zeros.
 
     Args:
@@ -19,10 +21,10 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     Returns:
         object: The zeros tensor.
     """
-    return da.zeros(shape, chunks="auto")
+    return cast(EagerValue, getattr(da, "zeros")(shape, chunks="auto"))
 
 
-def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
+def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
     """Create a tensor from data.
 
     Args:
@@ -34,11 +36,11 @@ def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
         object: The array tensor.
     """
     if dtype is not None:
-        return da.array(data, dtype=getattr(dtype, "value", dtype))
-    return da.array(data)
+        return cast(EagerValue, getattr(da, "array")(data, dtype=getattr(dtype, "value", dtype)))
+    return cast(EagerValue, getattr(da, "array")(data))
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data: EagerValue) -> EagerValue:
     """Convert data to an array.
 
     Args:
@@ -48,10 +50,10 @@ def asarray(cls: type, data: object) -> object:
     Returns:
         object: The array tensor.
     """
-    return da.asarray(data)
+    return cast(EagerValue, getattr(da, "asarray")(data))
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data: EagerValue) -> float:
     """Get scalar item from tensor.
 
     Args:
@@ -61,4 +63,4 @@ def item(cls: type, data: object) -> float:
     Returns:
         float: The scalar value.
     """
-    return float(da.asarray(data).compute().item())
+    return float(getattr(da, "asarray")(data).compute().item())

@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module sparse_tensor.py."""
-
 """Sparse tensor representations."""
 
 from collections.abc import Sequence

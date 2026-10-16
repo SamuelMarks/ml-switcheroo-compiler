@@ -1,5 +1,7 @@
 """Tests for WGSL AST specification validation conforming to WebGPU standards."""
 
+from __future__ import annotations
+
 import pytest
 
 from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
@@ -198,8 +200,8 @@ def test_wgsl_node_recursive_validation() -> None:
         single_child=WGSLVar("var3"),
     )
     # Add non-node attribute and list with non-node items
-    valid_container.scalar_attr = 42
-    valid_container.mixed_list = ["string_item", 100]
+    setattr(valid_container, "scalar_attr", 42)
+    setattr(valid_container, "mixed_list", ["string_item", 100])
     valid_container.validate()
 
     invalid_container = ContainerNode(

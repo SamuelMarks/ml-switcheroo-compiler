@@ -1,9 +1,9 @@
-# ruff: noqa: E402, E501, F403
 """RNN operations."""
 
 from dataclasses import dataclass
-from typing import Any, Optional  # noqa: F401
+from typing import Callable, Optional, cast  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
@@ -75,7 +75,7 @@ class ScanConfig:
 
 
 def scan(
-    f,
+    f: Callable[..., EagerValue],
     init: tuple[Tensor, ...],
     xs: Tensor,
     config: Optional[ScanConfig] = None,
@@ -97,28 +97,28 @@ def scan(
         xs_unstacked = unstack(xs, axis=0)
 
         if conf.reverse:
-            xs_unstacked = list(reversed(xs_unstacked))
+            xs_unstacked = list(cast("Callable[..., EagerTensorProtocol]", reversed)(xs_unstacked))
 
         carry = init
         ys = []
 
-        for x in xs_unstacked:
-            carry, y = f(carry, x)
+        for x in getattr(xs_unstacked, "__iter__")():
+            carry, y = getattr(f(carry, x), "__iter__")()
             ys.append(y)
 
-        return carry, stack(ys, axis=0)
+        return cast(tuple[tuple[Tensor, ...], Tensor], (carry, stack(ys, axis=0)))
     else:
         if conf.reverse:
             xs = cf_reverse(xs, (0,))
 
-        carry, y = cf_scan(f, init, xs, conf.length)
+        carry, y = cast("Callable[..., tuple[tuple[Tensor, ...], Tensor]]", cf_scan)(f, init, xs, conf.length)
 
         return carry, y
 
 
 def bidirectional(
     inputs: BidirectionalInputs,
-    cell_fn,
+    cell_fn: EagerValue,
     config: Optional[BidirectionalConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
     """Bidirectional RNN wrapper.
@@ -134,14 +134,14 @@ def bidirectional(
             Merged output sequence, forward final states, backward final states.
     """
     conf = config if config is not None else BidirectionalConfig()
-    forward_out, forward_state = rnn(
+    forward_out, forward_state = cast("Callable[..., tuple[Tensor, tuple[Tensor, ...]]]", rnn)(
         inputs.forward_inputs,
         inputs.forward_initial_state,
         cell_fn,
         config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),
     )
 
-    backward_out, backward_state = rnn(
+    backward_out, backward_state = cast("Callable[..., tuple[Tensor, tuple[Tensor, ...]]]", rnn)(
         inputs.backward_inputs,
         inputs.backward_initial_state,
         cell_fn,
@@ -161,10 +161,10 @@ def bidirectional(
         # None
         merged_out = (forward_out, backward_out)
 
-    return merged_out, forward_state, backward_state
+    return cast(tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]], (merged_out, forward_state, backward_state))
 
 
-def _permute_time_major(inputs: Tensor):
+def _permute_time_major(inputs: Tensor) -> EagerValue:
     """Swap batch and time dimensions.
 
     Args:
@@ -181,7 +181,7 @@ def _permute_time_major(inputs: Tensor):
 def rnn(
     inputs: Tensor,
     initial_state: tuple[Tensor, ...],
-    cell_fn,
+    cell_fn: Callable[..., EagerValue],
     config: Optional[RNNConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
     """Define base recurrent loop evaluation.
@@ -197,9 +197,9 @@ def rnn(
     """
     conf = config if config is not None else RNNConfig()
     if not conf.time_major:
-        inputs = _permute_time_major(inputs)
+        inputs = cast(Tensor, _permute_time_major(inputs))
 
-    def scan_fn(carry: Tensor, x: Tensor):
+    def scan_fn(carry: Tensor, x: Tensor) -> EagerValue:
         """Evaluate scan_fn operation.
 
         Args:
@@ -209,7 +209,7 @@ def rnn(
         Returns:
             tuple: Result.
         """
-        out, new_carry = cell_fn(x, carry)
+        out, new_carry = getattr(cell_fn(x, carry), "__iter__")()
         return new_carry, out
 
     final_state, outputs = scan(
@@ -222,7 +222,7 @@ def rnn(
         outputs = outputs[-1] if conf.time_major else outputs[:, -1]
 
     if not conf.time_major:
-        outputs = _permute_time_major(outputs)
+        outputs = cast(Tensor, _permute_time_major(outputs))
 
     return outputs, final_state
 
@@ -230,7 +230,7 @@ def rnn(
 class RNNCellDeviceWrapper:
     """RNNCellDeviceWrapper."""
 
-    def __init__(self, cell, device, **kwargs) -> None:
+    def __init__(self, cell: EagerValue, device: EagerValue, **kwargs: EagerValue) -> None:
         """Init.
 
         Args:
@@ -241,7 +241,7 @@ class RNNCellDeviceWrapper:
         self._cell = cell
         self._device = device
 
-    def __call__(self, inputs, state, **kwargs):
+    def __call__(self, inputs: EagerValue, state: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Call.
 
         Args:
@@ -252,7 +252,7 @@ class RNNCellDeviceWrapper:
         Returns:
         tuple: Result.
         """
-        return self._cell(inputs, state, **kwargs)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs))
 
 
 @dataclass
@@ -274,9 +274,9 @@ class RNNCellDropoutWrapper:
 
     def __init__(
         self,
-        cell,
+        cell: EagerValue,
         config: Optional[DropoutWrapperConfig] = None,
-        **kwargs,
+        **kwargs: EagerValue,
     ) -> None:
         """Initialize the RNNCellDropoutWrapper.
 
@@ -288,7 +288,7 @@ class RNNCellDropoutWrapper:
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs) -> tuple[Tensor, tuple[Tensor, ...]]:
+    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: EagerValue) -> tuple[Tensor, tuple[Tensor, ...]]:
         """Run the cell with dropout.
 
         Args:
@@ -300,8 +300,8 @@ class RNNCellDropoutWrapper:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
         """
         if self._config.input_keep_prob < 1.0:
-            inputs = dropout(inputs, rate=1.0 - self._config.input_keep_prob)
-        out, new_state = self._cell(inputs, state, **kwargs)
+            inputs = cast(Tensor, dropout(inputs, rate=1.0 - self._config.input_keep_prob))
+        out, new_state = getattr(cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._config.output_keep_prob < 1.0:
             out = dropout(out, rate=1.0 - self._config.output_keep_prob)
         return out, new_state
@@ -310,7 +310,7 @@ class RNNCellDropoutWrapper:
 class RNNCellResidualWrapper:
     """RNNCellResidualWrapper."""
 
-    def __init__(self, cell, residual_fn=None, **kwargs) -> None:
+    def __init__(self, cell: EagerValue, residual_fn: EagerValue = None, **kwargs: EagerValue) -> None:
         """Init.
 
         Args:
@@ -321,7 +321,7 @@ class RNNCellResidualWrapper:
         self._cell = cell
         self._residual_fn = residual_fn
 
-    def __call__(self, inputs, state, **kwargs):
+    def __call__(self, inputs: EagerValue, state: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Call.
 
         Args:
@@ -332,9 +332,9 @@ class RNNCellResidualWrapper:
         Returns:
             tuple: Result.
         """
-        out, new_state = self._cell(inputs, state, **kwargs)
+        out, new_state = getattr(cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._residual_fn is not None:
-            out = self._residual_fn(inputs, out)
+            out = cast("Callable[..., EagerTensorProtocol]", self._residual_fn)(inputs, out)
         else:
             out = add(inputs, out)
         return out, new_state

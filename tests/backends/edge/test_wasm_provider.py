@@ -1,4 +1,9 @@
+"""Tests for test_wasm_provider."""
+
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 from unittest.mock import mock_open, patch
 
@@ -8,16 +13,22 @@ import yaml
 import ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider as provider
 from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_simd_op, get_wasm_simd_ops, get_wasm_template, load_yaml, load_yaml_dir
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 @pytest.fixture(autouse=True)
-def reset_wasm_templates():
+def reset_wasm_templates() -> Iterator[None]:
+    """Test function reset_wasm_templates."""
     old = provider._WASM_TEMPLATES
     provider._WASM_TEMPLATES = {}
     yield
     provider._WASM_TEMPLATES = old
 
 
-def test_wasm_provider_get_wasm_template_missing(mocker):
+def test_wasm_provider_get_wasm_template_missing(mocker: EagerTensorProtocol) -> None:
     """Test wasm provider."""
     # To test not res (line 31)
     provider._WASM_TEMPLATES = {"templates": {}}
@@ -28,7 +39,7 @@ def test_wasm_provider_get_wasm_template_missing(mocker):
     assert get_wasm_template("something") == {}
 
 
-def test_wasm_provider_get_js_orchestration_template(mocker):
+def test_wasm_provider_get_js_orchestration_template(mocker: EagerTensorProtocol) -> None:
     """Test js orch."""
     provider._WASM_TEMPLATES = {}
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.load_yaml_dir", return_value={"js_orchestration": {"my_template": "hello"}})
@@ -38,7 +49,7 @@ def test_wasm_provider_get_js_orchestration_template(mocker):
     assert get_js_orchestration_template("my_template") == ""
 
 
-def test_wasm_provider_get_cpp_helpers(mocker):
+def test_wasm_provider_get_cpp_helpers(mocker: EagerTensorProtocol) -> None:
     """Test cpp helpers."""
     provider._WASM_TEMPLATES = {}
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.load_yaml_dir", return_value={"cpp_helpers": ["help"]})
@@ -48,48 +59,54 @@ def test_wasm_provider_get_cpp_helpers(mocker):
     assert get_cpp_helpers() == []
 
 
-def test_load_yaml():
+def test_load_yaml() -> None:
+    """Test function test_load_yaml."""
     yaml_data = {"templates": {"test": {"body": "code"}}, "js_orchestration": {}, "cpp_helpers": []}
     with patch("builtins.open", mock_open(read_data=yaml.dump(yaml_data))):
         res = load_yaml("test.yaml")
-        assert res["templates"]["test"]["body"] == "code"
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("test")), "__getitem__")("body")) == "code"
 
 
-def test_load_yaml_dir(monkeypatch):
+def test_load_yaml_dir(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_load_yaml_dir."""
     mock_data1 = {"templates": {"t1": "string body", "t2": {"body": "dict body"}}}
     mock_data2 = {"templates": {"t3": ["list", "body"]}}
     mock_data3 = ["not", "a", "dict"]
 
-    def mock_glob(path):
+    def mock_glob(path: EagerValue) -> EagerValue:
+        """Test function mock_glob."""
         return ["file1.yaml", "file2.yaml", "file3.yaml"]
 
-    def mock_open_impl(file, *args, **kwargs):
+    def mock_open_impl(file: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Test function mock_open_impl."""
         if file == "file1.yaml":
-            return mock_open(read_data=yaml.dump(mock_data1))()
+            return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data1))())
         elif file == "file2.yaml":
-            return mock_open(read_data=yaml.dump(mock_data2))()
+            return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data2))())
         else:
-            return mock_open(read_data=yaml.dump(mock_data3))()
+            return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data3))())
 
     with patch("glob.glob", side_effect=mock_glob):
         with patch("pathlib.Path.is_dir", return_value=True):
             with patch("builtins.open", side_effect=mock_open_impl):
                 res = load_yaml_dir("mock_dir")
                 assert "t1" in res["templates"]
-                assert res["templates"]["t1"] == {"body": "string body"}
+                assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t1")) == {"body": "string body"}
                 assert "t2" in res["templates"]
-                assert res["templates"]["t2"] == {"body": "dict body"}
+                assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t2")) == {"body": "dict body"}
                 assert "t3" in res["templates"]
-                assert res["templates"]["t3"] == ["list", "body"]
+                assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t3")) == ["list", "body"]
 
 
-def test_load_yaml_dir_not_dir():
+def test_load_yaml_dir_not_dir() -> None:
+    """Test function test_load_yaml_dir_not_dir."""
     with patch("pathlib.Path.is_dir", return_value=False):
         res = load_yaml_dir("mock_dir")
         assert res == {"templates": {}}
 
 
-def test_get_wasm_template_empty_global(monkeypatch):
+def test_get_wasm_template_empty_global(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_get_wasm_template_empty_global."""
     provider._WASM_TEMPLATES = {}
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.load_yaml_dir", return_value={"templates": {"my_tpl": {"body": "success"}}}):
         assert get_wasm_template("my_tpl") == {"body": "success"}
@@ -97,8 +114,9 @@ def test_get_wasm_template_empty_global(monkeypatch):
     assert get_wasm_template("my_tpl") == {"body": "success"}
 
 
-def test_get_wasm_template_not_dict():
-    provider._WASM_TEMPLATES = {"templates": {"my_tpl": ["not", "dict"]}}
+def test_get_wasm_template_not_dict() -> None:
+    """Test function test_get_wasm_template_not_dict."""
+    setattr(provider, "_WASM_TEMPLATES", {"templates": {"my_tpl": ["not", "dict"]}})
     assert get_wasm_template("my_tpl") == {}
 
 
@@ -109,7 +127,7 @@ def test_wasm_simd_provider_branches(tmp_path: Path) -> None:
     orig_simd_ops = dict(wp._WASM_SIMD_OPS)
     try:
         wp._WASM_SIMD_OPS.clear()
-        non_existent = tmp_path / "does_not_exist.yaml"
+        tmp_path / "does_not_exist.yaml"
         with mock.patch.object(Path, "is_file", return_value=False):
             ops = get_wasm_simd_ops()
             assert isinstance(ops, dict)

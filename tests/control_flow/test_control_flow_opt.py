@@ -1,5 +1,7 @@
 """Tests for control flow optimizations: branch pruning, invariant hoisting, loop unrolling, and parallel scan."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.control_flow.cond import cond
 from ml_switcheroo_compiler.ops.control_flow.scan import scan
@@ -18,7 +20,7 @@ from ml_switcheroo_compiler.transforms.passes.parallel_scan import (
 )
 
 
-def test_evaluate_static_predicate():
+def test_evaluate_static_predicate() -> None:
     """Test static predicate evaluation."""
     g = IRGraph()
     # Missing node
@@ -51,7 +53,7 @@ def test_evaluate_static_predicate():
     assert evaluate_static_predicate(g, "ge") is False
 
 
-def test_branch_pruning_true():
+def test_branch_pruning_true() -> None:
     """Test pruning false branch when predicate is statically True."""
     g = IRGraph(name="test_cond_prune")
     g.nodes["pred"] = IRNode(id="pred", op_type="Constant", attributes={"value": True})
@@ -79,7 +81,7 @@ def test_branch_pruning_true():
     assert not any("f1" in nid for nid in opt.nodes)
 
 
-def test_branch_pruning_false():
+def test_branch_pruning_false() -> None:
     """Test pruning true branch when predicate is statically False."""
     g = IRGraph(name="test_cond_prune_false")
     g.nodes["pred"] = IRNode(id="pred", op_type="Constant", attributes={"value": False})
@@ -105,7 +107,7 @@ def test_branch_pruning_false():
     assert not any("t1" in nid for nid in opt.nodes)
 
 
-def test_invariant_hoisting():
+def test_invariant_hoisting() -> None:
     """Test hoisting common invariant computation from branches."""
     g = IRGraph(name="outer")
     g.nodes["ext_a"] = IRNode(id="ext_a", op_type="Input", inputs=[])
@@ -133,7 +135,7 @@ def test_invariant_hoisting():
     assert any("hoisted_add" in nid for nid in opt.nodes)
 
 
-def test_fori_loop_unrolling():
+def test_fori_loop_unrolling() -> None:
     """Test unrolling ForiLoop when upper and lower bounds are statically known."""
     body = IRGraph(name="body")
     body.inputs = ["iter_i", "acc"]
@@ -162,7 +164,7 @@ def test_fori_loop_unrolling():
     assert any("fori_iter2" in nid for nid in opt.nodes)
 
 
-def test_parallel_scan_pass():
+def test_parallel_scan_pass() -> None:
     """Test parallel scan optimization converting sequential scan into CumSum."""
     body = IRGraph(name="scan_body")
     body.inputs = ["carry", "x"]
@@ -190,7 +192,7 @@ def test_parallel_scan_pass():
     assert any(n.op_type == "CumSum" for n in opt.nodes.values())
 
 
-def test_control_flow_ops_exports():
+def test_control_flow_ops_exports() -> None:
     """Test dedicated module imports for control flow operators."""
     assert callable(cond)
     assert callable(while_loop)
@@ -199,7 +201,7 @@ def test_control_flow_ops_exports():
     assert detect_associative_reduction(None, {}) is None
 
 
-def test_control_flow_opt_exhaustive_branches():
+def test_control_flow_opt_exhaustive_branches() -> None:
     """Verify remaining branch edge cases in control_flow_opt."""
     g = IRGraph()
     # 1. Constant with string value (hasattr(val, 'item') is False)
@@ -244,7 +246,7 @@ def test_control_flow_opt_exhaustive_branches():
     assert "cond_diff" in opt_no_hoist.nodes
 
 
-def test_parallel_scan_exhaustive_branches():
+def test_parallel_scan_exhaustive_branches() -> None:
     """Verify remaining branch edge cases in parallel_scan."""
     from unittest.mock import patch
 

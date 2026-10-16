@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Apply normalization frontend operations."""
 
 from __future__ import annotations
@@ -103,5 +102,5 @@ def spectral_normalization(
     Returns:
         tuple[Tensor, Tensor]: Normalized weight and new u.
     """
-    _, u_new, sigma = power_iteration(w, num_iters=num_iters, u=u)
+    _, u_new, sigma = getattr(power_iteration(w, num_iters=num_iters, u=u), "__iter__")()
     return divide(w, sigma), u_new

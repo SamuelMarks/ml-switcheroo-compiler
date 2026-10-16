@@ -1,8 +1,11 @@
+"""Tests for test_linalg."""
+
 from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import _build_einsum_equation
 
 
 def test_build_einsum_equation_loop() -> None:
     # Need a batch dimension to hit loop inside _build_einsum_equation
+    """Test function test_build_einsum_equation_loop."""
     a_ndim = 3
     b_ndim = 3
     # batch = (0, 0), contracting = (2, 1)

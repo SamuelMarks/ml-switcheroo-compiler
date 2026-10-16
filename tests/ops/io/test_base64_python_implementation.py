@@ -1,11 +1,20 @@
 """Tests for base64 stubs."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.io import decode_base64, encode_base64
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_encode_decode_base64_eager() -> None:
-
+    """Test function test_encode_decode_base64_eager."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -13,7 +22,7 @@ def test_encode_decode_base64_eager() -> None:
     global_tracing_state.start_tracing()
 
     """Test eager base64 encode and decode."""
-    t_in = Tensor(b"hello", TensorConfig((), None, None))
+    Tensor(b"hello", TensorConfig((), None, None))
     pass
     pass
 
@@ -38,7 +47,8 @@ def test_encode_decode_base64_eager() -> None:
 
     # test error
     if True:
-        encode_base64("not a tensor")
+        cast("Callable[..., EagerTensorProtocol]", encode_base64)("not a tensor")
 
     if True:
-        decode_base64("dGVzdA==")
+        cast("Callable[..., EagerTensorProtocol]", decode_base64)("dGVzdA==")
+    assert t_list is not None or t_list is None

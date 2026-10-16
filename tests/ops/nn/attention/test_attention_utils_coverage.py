@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -9,6 +10,11 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.attention_utils as attn_utils_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -34,8 +40,8 @@ class DummyWithoutShape:
 def test_attention_utils_full_coverage() -> None:
     """Test full coverage for attention mechanism utilities."""
     rope_op = attn_utils_mod.RopeOp()
-    assert rope_op.infer_shape(DummyWithShape((2, 4, 8))) == (2, 4, 8)
-    assert rope_op.infer_shape(DummyWithoutShape()) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", rope_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 4, 8))) == (2, 4, 8)
+    assert cast("Callable[..., EagerTensorProtocol]", rope_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()) == ()
 
     t_in = Tensor(np.ones((2, 4, 8), dtype=np.float32), TensorConfig((2, 4, 8), "float32", "cpu"))
 

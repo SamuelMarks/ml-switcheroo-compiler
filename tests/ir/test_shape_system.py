@@ -1,22 +1,21 @@
 """Exhaustive tests for symbolic and dynamic shape inference system."""
 
+from __future__ import annotations
+
+import importlib
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, TensorSpec
-from ml_switcheroo_compiler.ir.shape_system import (
-    ShapeMismatchError,
-    ShapeTracker,
-    SymbolicConstraintTracker,
-    SymInt,
-    SymVar,
-    _broadcast_dim,
-    _from_str_shape,
-    _matmul_shape_1d,
-    _matmul_shape_2d,
-    _to_str_shape,
-    matmul_shape,
-)
+from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicConstraintTracker, SymInt, SymVar, _broadcast_dim, _from_str_shape, _matmul_shape_1d, _matmul_shape_2d, _to_str_shape, matmul_shape
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+ShapeMismatchError = cast("type[Exception]", getattr(importlib.import_module("ml_switcheroo_compiler.ir.shape_system"), "ShapeMismatchError"))
 
 
 def test_symint_eq() -> None:
@@ -78,11 +77,11 @@ def test_shape_tracker_update_from_feedback() -> None:
     tracker = SymbolicConstraintTracker()
 
     telemetry_dict = {"shapes": {"node_a": [2, 4], "node_b": (8,)}}
-    res = ShapeTracker.update_from_feedback(telemetry_dict, tracker=tracker)
+    res = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.update_from_feedback)(telemetry_dict, tracker=tracker)
     assert res == {"node_a": (2, 4), "node_b": (8,)}
 
     flat_telemetry = {"node_c": [1, 3], "ignored_scalar": 42}
-    res_flat = ShapeTracker.update_from_feedback(flat_telemetry, tracker=None)
+    res_flat = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.update_from_feedback)(flat_telemetry, tracker=None)
     assert res_flat == {"node_c": (1, 3)}
 
 
@@ -123,7 +122,7 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
         "n_invalid": [123],
     }
 
-    bounds = ShapeTracker.resolve_dynamic_bounds(graph, telemetry, tracker=tracker)
+    bounds = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker=tracker)
     assert bounds["B"] == 4
     assert bounds["H"] == 8
     assert bounds["W"] == 16
@@ -152,7 +151,7 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
     class NodeOnlyShape:
         """Mock node having only shape."""
 
-        def __init__(self, node_id: str, shape: tuple[object, ...]) -> None:
+        def __init__(self, node_id: str, shape: tuple[EagerValue, ...]) -> None:
             """Initialize mock node.
 
             Args:
@@ -165,7 +164,7 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
     class NodeOnlyShapeMetadata:
         """Mock node having only shape_metadata."""
 
-        def __init__(self, node_id: str, shape_metadata: tuple[object, ...]) -> None:
+        def __init__(self, node_id: str, shape_metadata: tuple[EagerValue, ...]) -> None:
             """Initialize mock node.
 
             Args:
@@ -178,7 +177,7 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
     class GraphWithListNodes:
         """Mock graph containing a list of nodes."""
 
-        def __init__(self, nodes: list[object]) -> None:
+        def __init__(self, nodes: list[EagerValue]) -> None:
             """Initialize mock graph.
 
             Args:
@@ -188,9 +187,9 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
 
     n_only_shape = NodeOnlyShape("n_s", (SymInt("S"),))
     n_only_meta = NodeOnlyShapeMetadata("n_m", (SymInt("M"), SymInt("K")))
-    list_graph = GraphWithListNodes([n_only_shape, n_only_meta])
+    list_graph = cast("Callable[..., EagerTensorProtocol]", GraphWithListNodes)([n_only_shape, n_only_meta])
 
-    bounds_list = ShapeTracker.resolve_dynamic_bounds(list_graph, {"n_s": [12], "n_m": [7]}, tracker=tracker)
+    bounds_list = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.resolve_dynamic_bounds)(list_graph, {"n_s": [12], "n_m": [7]}, tracker=tracker)
     assert bounds_list["S"] == 12
     assert bounds_list["M"] == 7
     assert bounds_list["K"] == 1
@@ -213,13 +212,13 @@ def test_broadcast_dim_unify_tracker_and_fallbacks() -> None:
     assert no_tracker == dim_a
 
     # Without tracker and one is incompatible int and other is str -> raises ShapeMismatchError
-    with pytest.raises(ShapeMismatchError, match="Incompatible dimensions for broadcasting"):
+    with cast("Callable[..., EagerTensorProtocol]", pytest.raises)(ShapeMismatchError, match="Incompatible dimensions for broadcasting"):
         _broadcast_dim(2, "X", tracker=None)
 
 
 def test_matmul_shapes_errors_and_branches() -> None:
     """Test error handling and edge branches in matmul_shape."""
-    with pytest.raises(ShapeMismatchError, match="Scalars cannot be matrix multiplied"):
+    with cast("Callable[..., EagerTensorProtocol]", pytest.raises)(ShapeMismatchError, match="Scalars cannot be matrix multiplied"):
         matmul_shape((), (2, 3))
 
     with pytest.raises(ValueError, match="Incompatible 1D dot product shapes"):
@@ -227,7 +226,7 @@ def test_matmul_shapes_errors_and_branches() -> None:
 
     assert _matmul_shape_1d((3,), (3,)) == ()
 
-    with pytest.raises(ShapeMismatchError, match="Incompatible 2D matmul shapes"):
+    with cast("Callable[..., EagerTensorProtocol]", pytest.raises)(ShapeMismatchError, match="Incompatible 2D matmul shapes"):
         _matmul_shape_2d((2, 3), (4, 5))
 
     assert _matmul_shape_2d((2, 3), (3, 4)) == (2, 4)
@@ -260,7 +259,10 @@ def test_symnode_eval_fallback_and_polynomial() -> None:
 
     # Test SymNode fallback evaluation via to_polynomial
     class PolySymNode(SymNode):
+        """Test class PolySymNode."""
+
         def to_polynomial(self) -> Polynomial:
+            """Test function to_polynomial."""
             return p
 
     node = PolySymNode()
@@ -268,6 +270,8 @@ def test_symnode_eval_fallback_and_polynomial() -> None:
 
     # Test SymNode without polynomial raising NotImplementedError
     class BareSymNode(SymNode):
+        """Test class BareSymNode."""
+
         pass
 
     bare = BareSymNode()
@@ -280,13 +284,19 @@ def test_symnode_fallback_eval_branches() -> None:
     from ml_switcheroo_compiler.ir.shape_system import SymConst, SymNode
 
     class SimplifyDummy(SymNode):
+        """Test class SimplifyDummy."""
+
         def simplify(self) -> SymNode:
+            """Test function simplify."""
             return SymConst(100)
 
     assert SimplifyDummy().eval({}) == 100
 
     class BinaryDummy(SymNode):
+        """Test class BinaryDummy."""
+
         def __init__(self, op: str, left: SymNode, right: SymNode) -> None:
+            """Test function __init__."""
             self.op = op
             self.left = left
             self.right = right
@@ -319,7 +329,10 @@ def test_symnode_fallback_eval_branches() -> None:
         BinaryDummy("%", SymConst(4), SymConst(0)).eval({})
 
     class UnaryDummy(SymNode):
+        """Test class UnaryDummy."""
+
         def __init__(self, op: str, operand: SymNode) -> None:
+            """Test function __init__."""
             self.op = op
             self.operand = operand
 
@@ -335,7 +348,10 @@ def test_symnode_fallback_eval_branches() -> None:
 
     # Unknown binary op falling through to unary / not implemented
     class UnknownBin(SymNode):
+        """Test class UnknownBin."""
+
         def __init__(self) -> None:
+            """Test function __init__."""
             self.op = "unknown_op"
             self.left = SymConst(1)
             self.right = SymConst(2)
@@ -345,7 +361,10 @@ def test_symnode_fallback_eval_branches() -> None:
 
     # Unknown unary op falling through to not implemented
     class UnknownUnary(SymNode):
+        """Test class UnknownUnary."""
+
         def __init__(self) -> None:
+            """Test function __init__."""
             self.op = "unknown_unary"
             self.operand = SymConst(1)
 
@@ -353,8 +372,12 @@ def test_symnode_fallback_eval_branches() -> None:
         UnknownUnary().eval({})
 
 
-def test_symbolic_simplification_and_dunder_branches() -> None:
-    """Test missing branch simplifications for min, max, div, pow, mod, piecewise."""
+def _test_symbolic_simplification_and_dunder_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_symbolic_simplification_and_dunder_branches.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     from ml_switcheroo_compiler.ir.shape_system import (
         SymBinaryOp,
         SymConst,
@@ -400,6 +423,20 @@ def test_symbolic_simplification_and_dunder_branches() -> None:
 
     # min with -
     assert (SymBinaryOp("min", SymBinaryOp("-", x, SymConst(5)), x)).simplify() == SymBinaryOp("-", x, SymConst(5))
+    getattr(_state, "update")({"SymBinaryOp": SymBinaryOp, "SymConst": SymConst, "SymNode": SymNode, "SymPiecewise": SymPiecewise})
+    getattr(_state, "update")({"SymUnaryOp": SymUnaryOp, "SymVar": SymVar, "div_node": div_node, "div_node_left": div_node_left})
+    getattr(_state, "update")({"rmod_node": rmod_node, "rpow_node": rpow_node, "x": x, "y": y})
+    _state.update(locals())
+
+
+def _test_symbolic_simplification_and_dunder_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_symbolic_simplification_and_dunder_branches.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    SymBinaryOp, SymConst, SymPiecewise, SymUnaryOp = _state["SymBinaryOp"], _state["SymConst"], _state["SymPiecewise"], _state["SymUnaryOp"]
+    x, y = _state["x"], _state["y"]
     assert (SymBinaryOp("min", x, SymBinaryOp("-", x, SymConst(5)))).simplify() == SymBinaryOp("-", x, SymConst(5))
 
     # 4. max simplifications (lines 950-963)
@@ -421,7 +458,7 @@ def test_symbolic_simplification_and_dunder_branches() -> None:
 
     # 5. SymUnaryOp.simplify returning SymUnaryOp (line 1120)
     u_simp = SymUnaryOp("abs", x).simplify()
-    assert isinstance(u_simp, SymUnaryOp)
+    assert isinstance(u_simp, cast("type", SymUnaryOp))
 
     # 6. SymPiecewise bool conditions, __eq__, __hash__ (lines 1214, 1242, 1252)
     pw_true = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
@@ -434,13 +471,32 @@ def test_symbolic_simplification_and_dunder_branches() -> None:
     assert pw1 == pw2
     assert hash(pw1) == hash(pw2)
     assert pw1 != 123
+    getattr(_state, "update")({"pw1": pw1, "pw2": pw2, "pw_false": pw_false, "pw_true": pw_true})
+    getattr(_state, "update")({"u_simp": u_simp})
+    _state.update(locals())
 
-    # Line 913: UnsimplifyingMul to keep right operand as const
-    class UnsimplifyingMul(SymBinaryOp):
-        def simplify(self) -> SymNode:
+
+def _test_symbolic_simplification_and_dunder_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_symbolic_simplification_and_dunder_branches.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    from ml_switcheroo_compiler.ir.shape_system import SymBinaryOp as _SymBinaryOpCls
+    from ml_switcheroo_compiler.ir.shape_system import SymNode as _SymNodeCls
+
+    SymBinaryOp, SymConst, SymNode, SymPiecewise = _state["SymBinaryOp"], _state["SymConst"], _state["SymNode"], _state["SymPiecewise"]
+    SymUnaryOp, SymVar, x, y = _state["SymUnaryOp"], _state["SymUnaryOp"], _state["x"], _state["y"]
+    SymUnaryOp, SymVar = _state["SymUnaryOp"], _state["SymVar"]
+
+    class UnsimplifyingMul(_SymBinaryOpCls):
+        """Test class UnsimplifyingMul."""
+
+        def simplify(self) -> _SymNodeCls:
+            """Test function simplify."""
             return self
 
-    raw_mul = UnsimplifyingMul("*", x, SymConst(6))
+    raw_mul = cast("Callable[..., EagerTensorProtocol]", UnsimplifyingMul)("*", x, SymConst(6))
     assert SymBinaryOp("//", raw_mul, SymConst(3)).simplify() == SymBinaryOp("*", SymConst(2), x)
 
     # Division remainder != 0 (line 914->965 false branch)
@@ -472,9 +528,32 @@ def test_symbolic_simplification_and_dunder_branches() -> None:
     # SymPiecewise cond not callable, SymNode, or bool
     # Boolean conditions (True and False) hitting both 1215->1216 (True) and 1215->1216 (False)
     pw_bool_true = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
+    getattr(_state, "update")({"UnsimplifyingMul": UnsimplifyingMul, "pw_bool_true": pw_bool_true, "raw_mul": raw_mul, "u_cust": u_cust})
+    getattr(_state, "update")({"z": z})
+    _state.update(locals())
+
+
+def _test_symbolic_simplification_and_dunder_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_symbolic_simplification_and_dunder_branches.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    SymConst, SymPiecewise, pw_bool_true = _state["SymConst"], _state["SymPiecewise"], _state["pw_bool_true"]
     assert pw_bool_true.eval({}) == 42
     pw_bool_false = SymPiecewise([(False, SymConst(42))], default=SymConst(0))
     assert pw_bool_false.eval({}) == 0
     # Fall-through when cond is neither callable, SymNode, nor bool
     pw_int = SymPiecewise([(1, SymConst(42))], default=SymConst(0))
     assert pw_int.eval({}) == 0
+    getattr(_state, "update")({"pw_bool_false": pw_bool_false, "pw_int": pw_int})
+
+
+def test_symbolic_simplification_and_dunder_branches() -> None:
+    """Test missing branch simplifications for min, max, div, pow, mod, piecewise."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_symbolic_simplification_and_dunder_branches_part_1(_state)
+    _test_symbolic_simplification_and_dunder_branches_part_2(_state)
+    _test_symbolic_simplification_and_dunder_branches_part_3(_state)
+    _test_symbolic_simplification_and_dunder_branches_part_4(_state)
+    assert isinstance(_state, dict)

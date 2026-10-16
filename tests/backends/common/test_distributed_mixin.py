@@ -1,20 +1,38 @@
+"""Tests for test_distributed_mixin."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.common.mixins.distributed import DistributedASTVisitor
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyGenerator:
-    def __init__(self, name):
-        self.__class__.__name__ = name
-        self.code = []
+    """Test class DummyGenerator."""
+
+    def __init__(self, name: EagerValue) -> None:
+        """Test function __init__."""
+        setattr(self.__class__, "__name__", name)
+        self.code = cast("list[EagerTensorProtocol]", [])
 
 
 class DummyNode:
-    def __init__(self, attrs=None, shape=None, dtype="float32"):
+    """Test class DummyNode."""
+
+    def __init__(self, attrs: EagerValue = None, shape: EagerValue = None, dtype: EagerValue = "float32") -> None:
+        """Test function __init__."""
         self.attributes = attrs or {}
         self.shape_metadata = shape or (1,)
         self.dtype = dtype
 
 
-def test_distributed_ast_visitor():
+def test_distributed_ast_visitor() -> None:
+    """Test function test_distributed_ast_visitor."""
     for name, expected_send, expected_recv in [
         ("NumpyGenerator", "_numpy_send(v0, target=1)", "_numpy_recv(source=1, shape=(1,), dtype='float32')"),
         ("PytorchCodeGenerator", "torch.distributed.isend(v0, dst=1)", "torch.distributed.irecv(src=1)"),
@@ -25,16 +43,16 @@ def test_distributed_ast_visitor():
         ("UnknownGenerator", "send(v0, target=1)", "recv(source=1)"),
     ]:
         gen = DummyGenerator(name)
-        visitor = DistributedASTVisitor(gen)
+        visitor = cast("Callable[..., EagerTensorProtocol]", DistributedASTVisitor)(gen)
 
         send_node = DummyNode({"target_stage": 1})
-        res_send = visitor.visit_Send(send_node, ["v0"])
+        res_send = cast("Callable[..., EagerTensorProtocol]", visitor.visit_Send)(send_node, ["v0"])
         assert res_send == expected_send
         assert len(gen.code) == 1
         assert "target" in gen.code[-1] or "stage" in gen.code[-1]
 
         recv_node = DummyNode({"source_stage": 1})
-        res_recv = visitor.visit_Recv(recv_node, [])
+        res_recv = cast("Callable[..., EagerTensorProtocol]", visitor.visit_Recv)(recv_node, [])
         assert res_recv == expected_recv
         assert len(gen.code) == 2
         assert "source" in gen.code[-1] or "stage" in gen.code[-1]

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Distributed configuration classes."""
 
 from __future__ import annotations

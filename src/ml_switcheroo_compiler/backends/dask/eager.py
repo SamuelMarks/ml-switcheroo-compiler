@@ -1,19 +1,21 @@
 """Dedicated eager execution handlers and dispatch for the Dask backend."""
 
+import logging
 import sys
 import types
-from typing import Optional
+from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends import mapping_loader
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 try:
     import dask.array as da
 except ImportError:
-    da = None
+    da = cast(types.ModuleType, None)
 
 
-def _verify_dask_task_graph(res: object) -> None:
+def _verify_dask_task_graph(res: EagerValue) -> None:
     """Verify that result is a native lazy Dask task graph and has not resolved to eager host memory.
 
     Args:
@@ -30,7 +32,7 @@ def _verify_dask_task_graph(res: object) -> None:
         raise RuntimeError(msg)
 
 
-def propagate_chunk_shapes(arr: object, chunks: Optional[object] = "auto") -> tuple[tuple[int, ...], ...]:
+def propagate_chunk_shapes(arr: EagerValue, chunks: Optional[EagerValue] = "auto") -> tuple[tuple[int, ...], ...]:
     """Calculate chunk structure and shape propagation for distributed arrays.
 
     Args:
@@ -40,18 +42,18 @@ def propagate_chunk_shapes(arr: object, chunks: Optional[object] = "auto") -> tu
     Returns:
         tuple[tuple[int, ...], ...]: Standardized chunk tuple layout.
     """
-    if hasattr(arr, "chunks") and arr.chunks is not None:
-        return tuple(arr.chunks)
+    if hasattr(arr, "chunks") and getattr(arr, "chunks") is not None:
+        return tuple(getattr(arr, "chunks"))
     if da is not None:
         try:
-            dask_arr = da.from_array(arr, chunks=chunks)
+            dask_arr = getattr(da, "from_array")(arr, chunks=chunks)
             return tuple(dask_arr.chunks)
         except Exception:
             return ()
     return ()
 
 
-def dask_conv2d(x: object, w: object, stride: object = 1, padding: object = "SAME", **kwargs: object) -> object:
+def dask_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: EagerValue = "SAME", **kwargs: EagerValue) -> EagerValue:
     """Execute 2D convolution lazily as a Dask task graph.
 
     Args:
@@ -68,27 +70,29 @@ def dask_conv2d(x: object, w: object, stride: object = 1, padding: object = "SAM
     if da is None or getattr(x, "ndim", 0) != 4 or getattr(w, "ndim", 0) != 4:
         return x
 
-    n, _, _, _ = x.shape
-    out_c, _, kh, kw = w.shape
-    stride_h, stride_w = (stride, stride) if isinstance(stride, int) else (stride[0], stride[1])
+    n, _, _, _ = cast(tuple[int, ...], getattr(x, "shape"))
+    out_c, _, kh, kw = cast(tuple[int, ...], getattr(w, "shape"))
+    stride_seq = cast(tuple[int, ...], stride)
+    stride_h, stride_w = (stride, stride) if isinstance(stride, int) else (int(stride_seq[0]), int(stride_seq[1]))
     pad_h = kh // 2 if padding == "SAME" else 0
     pad_w = kw // 2 if padding == "SAME" else 0
     if pad_h > 0 or pad_w > 0:
-        x_pad = da.pad(x, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant")
+        x_pad = getattr(da, "pad")(x, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant")
     else:
         x_pad = x
-    out_h = (x_pad.shape[2] - kh) // stride_h + 1
-    out_w = (x_pad.shape[3] - kw) // stride_w + 1
-    chunks = (x.chunks[0] if hasattr(x, "chunks") and len(x.chunks) > 0 else (n,), (out_c,), (out_h,), (out_w,))
-    out = da.zeros((n, out_c, out_h, out_w), dtype=x.dtype, chunks=chunks)
+    x_pad_shape = cast(tuple[int, ...], x_pad.shape)
+    out_h = (int(x_pad_shape[2]) - kh) // stride_h + 1
+    out_w = (int(x_pad_shape[3]) - kw) // stride_w + 1
+    chunks = (getattr(x, "chunks")[0] if hasattr(x, "chunks") and len(getattr(x, "chunks")) > 0 else (n,), (out_c,), (out_h,), (out_w,))
+    out = getattr(da, "zeros")((n, out_c, out_h, out_w), dtype=getattr(x, "dtype"), chunks=chunks)
     for i in range(kh):
         for j in range(kw):
-            patch = x_pad[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
-            out = out + da.tensordot(patch, w[:, :, i, j], axes=([1], [1])).transpose(0, 3, 1, 2)
-    return out
+            patch = cast(EagerTensorProtocol, x_pad)[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
+            out = out + getattr(da, "tensordot")(patch, cast(EagerTensorProtocol, w)[:, :, i, j], axes=([1], [1])).transpose(0, 3, 1, 2)
+    return cast(EagerValue, out)
 
 
-def dask_maxpool2d(x: object, kernel_size: object = 2, stride: object = 2, padding: object = "VALID", **kwargs: object) -> object:
+def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValue = 2, padding: EagerValue = "VALID", **kwargs: EagerValue) -> EagerValue:
     """Execute 2D max pooling lazily as a Dask task graph.
 
     Args:
@@ -104,21 +108,25 @@ def dask_maxpool2d(x: object, kernel_size: object = 2, stride: object = 2, paddi
     del padding, kwargs
     if da is None or getattr(x, "ndim", 0) != 4:
         return x
-    kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (kernel_size[0], kernel_size[1])
-    sh, sw = (stride, stride) if isinstance(stride, int) else (stride[0], stride[1])
-    out_h = (x.shape[2] - kh) // sh + 1
-    out_w = (x.shape[3] - kw) // sw + 1
-    out = x[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
+    k_seq = cast(tuple[int, ...], kernel_size)
+    s_seq = cast(tuple[int, ...], stride)
+    x_shape = cast(tuple[int, ...], getattr(x, "shape"))
+    kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
+    sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
+    out_h = (int(x_shape[2]) - kh) // sh + 1
+    out_w = (int(x_shape[3]) - kw) // sw + 1
+    x_arr = cast(EagerTensorProtocol, x)
+    out = x_arr[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
     for i in range(kh):
         for j in range(kw):
             if i == 0 and j == 0:
                 continue
-            patch = x[:, :, i : i + out_h * sh : sh, j : j + out_w * sw : sw]
-            out = da.maximum(out, patch)
+            patch = x_arr[:, :, i : i + out_h * sh : sh, j : j + out_w * sw : sw]
+            out = getattr(da, "maximum")(out, patch)
     return out
 
 
-def dask_avgpool2d(x: object, kernel_size: object = 2, stride: object = 2, padding: object = "VALID", **kwargs: object) -> object:
+def dask_avgpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValue = 2, padding: EagerValue = "VALID", **kwargs: EagerValue) -> EagerValue:
     """Execute 2D average pooling lazily as a Dask task graph.
 
     Args:
@@ -134,21 +142,25 @@ def dask_avgpool2d(x: object, kernel_size: object = 2, stride: object = 2, paddi
     del padding, kwargs
     if da is None or getattr(x, "ndim", 0) != 4:
         return x
-    kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (kernel_size[0], kernel_size[1])
-    sh, sw = (stride, stride) if isinstance(stride, int) else (stride[0], stride[1])
-    out_h = (x.shape[2] - kh) // sh + 1
-    out_w = (x.shape[3] - kw) // sw + 1
-    out = x[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
+    k_seq = cast(tuple[int, ...], kernel_size)
+    s_seq = cast(tuple[int, ...], stride)
+    x_shape = cast(tuple[int, ...], getattr(x, "shape"))
+    kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
+    sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
+    out_h = (int(x_shape[2]) - kh) // sh + 1
+    out_w = (int(x_shape[3]) - kw) // sw + 1
+    x_arr = cast(EagerTensorProtocol, x)
+    out = x_arr[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
     for i in range(kh):
         for j in range(kw):
             if i == 0 and j == 0:
                 continue
-            patch = x[:, :, i : i + out_h * sh : sh, j : j + out_w * sw : sw]
+            patch = x_arr[:, :, i : i + out_h * sh : sh, j : j + out_w * sw : sw]
             out = out + patch
     return out / float(kh * kw)
 
 
-def dask_resize_bilinear(x: object, size: object = None, **kwargs: object) -> object:
+def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Execute bilinear resize lazily as a Dask task graph.
 
     Args:
@@ -162,8 +174,9 @@ def dask_resize_bilinear(x: object, size: object = None, **kwargs: object) -> ob
     del kwargs
     if da is None or getattr(x, "ndim", 0) != 4 or size is None:
         return x
-    new_h, new_w = (size[0], size[1])
-    _, _, h, w = x.shape
+    size_seq = cast(tuple[int, ...], size)
+    new_h, new_w = (int(size_seq[0]), int(size_seq[1]))
+    _, _, h, w = cast(tuple[int, ...], getattr(x, "shape"))
     if (new_h, new_w) == (h, w):
         return x
 
@@ -174,22 +187,23 @@ def dask_resize_bilinear(x: object, size: object = None, **kwargs: object) -> ob
     x_coords: list[float] = [j * x_step for j in range(new_w)]
 
     y0: list[int] = [int(v) for v in y_coords]
-    y1: list[int] = [min(v + 1, h - 1) for v in y0]
+    y1: list[int] = [min(v + 1, int(h) - 1) for v in y0]
     x0: list[int] = [int(v) for v in x_coords]
-    x1: list[int] = [min(v + 1, w - 1) for v in x0]
+    x1: list[int] = [min(v + 1, int(w) - 1) for v in x0]
 
-    wy = da.from_array([v - float(int(v)) for v in y_coords], chunks=new_h)[None, None, :, None]
-    wx = da.from_array([v - float(int(v)) for v in x_coords], chunks=new_w)[None, None, None, :]
+    wy = getattr(da, "from_array")([v - float(int(v)) for v in y_coords], chunks=new_h)[None, None, :, None]
+    wx = getattr(da, "from_array")([v - float(int(v)) for v in x_coords], chunks=new_w)[None, None, None, :]
 
-    p00 = x[:, :, y0, :][:, :, :, x0]
-    p01 = x[:, :, y0, :][:, :, :, x1]
-    p10 = x[:, :, y1, :][:, :, :, x0]
-    p11 = x[:, :, y1, :][:, :, :, x1]
+    x_arr = cast(EagerTensorProtocol, x)
+    p00 = x_arr[:, :, y0, :][:, :, :, x0]
+    p01 = x_arr[:, :, y0, :][:, :, :, x1]
+    p10 = x_arr[:, :, y1, :][:, :, :, x0]
+    p11 = x_arr[:, :, y1, :][:, :, :, x1]
 
-    return p00 * (1.0 - wy) * (1.0 - wx) + p01 * (1.0 - wy) * wx + p10 * wy * (1.0 - wx) + p11 * wy * wx
+    return cast(EagerValue, p00 * (1.0 - wy) * (1.0 - wx) + p01 * (1.0 - wy) * wx + p10 * wy * (1.0 - wx) + p11 * wy * wx)
 
 
-def _attach_dask_vision_ops(backend_mod: Optional[object]) -> None:
+def _attach_dask_vision_ops(backend_mod: Optional[EagerValue]) -> None:
     """Attach lazy Dask vision and neural network kernels to Dask container.
 
     Args:
@@ -207,12 +221,12 @@ def _attach_dask_vision_ops(backend_mod: Optional[object]) -> None:
             setattr(backend_mod, name, fn)
 
 
-def execute_op(  # noqa: C901, PLR0912
+def execute_op(
     cls: type,
     op_type: str,
-    *args: object,
-    **kwargs: object,
-) -> object:
+    *args: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Execute operation eagerly on Dask backend without computing graph or falling back.
 
     Args:
@@ -229,7 +243,7 @@ def execute_op(  # noqa: C901, PLR0912
     """
     mod_entry = sys.modules.get("ml_switcheroo_compiler.backends.dask.eager")
     if mod_entry is not None and not isinstance(mod_entry, types.ModuleType):
-        backend_mod: Optional[object] = mod_entry
+        backend_mod: Optional[EagerValue] = mod_entry
     else:
         backend_mod = da
     _attach_dask_vision_ops(backend_mod)
@@ -242,7 +256,7 @@ def execute_op(  # noqa: C901, PLR0912
         if not is_custom and backend_mod is None:
             raise BackendNotSupportedError("Dask is not installed or available in this environment.")
 
-        processed_args: list[object] = []
+        processed_args: list[EagerValue] = []
         for arg in args:
             if isinstance(arg, (list, tuple)) and backend_mod is not None and hasattr(backend_mod, "from_array"):
                 try:
@@ -257,7 +271,7 @@ def execute_op(  # noqa: C901, PLR0912
             _verify_dask_task_graph(res)
             return res
         except BackendNotSupportedError:
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 

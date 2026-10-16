@@ -1,4 +1,9 @@
+"""Tests for test_random_stateless."""
+
+from __future__ import annotations
+
 import unittest.mock as mock
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -7,12 +12,19 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.random_stateless import Generator, stateless_split
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def create_eager_tensor(data):
-    return Tensor(data, TensorConfig(data.shape, DType.Float32, Device("cpu")))
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def test_random_stateless_missing():
+def create_eager_tensor(data: EagerValue) -> EagerValue:
+    """Test function create_eager_tensor."""
+    return cast("Callable[..., EagerTensorProtocol]", Tensor)(data, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(cast("EagerTensorProtocol", getattr(data, "shape")), DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
+
+
+def test_random_stateless_missing() -> None:
+    """Test function test_random_stateless_missing."""
     gen = Generator()
 
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):

@@ -6,6 +6,7 @@ import sys
 import time
 from typing import Callable, Optional, Union
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -23,7 +24,7 @@ def _get_process_memory_mb() -> float:
     return float(rusage) / 1024.0
 
 
-def _flatten_input_values(val: object) -> list[float]:
+def _flatten_input_values(val: EagerValue) -> list[float]:
     """Recursively flatten input values into a flat list of floats.
 
     Args:
@@ -39,8 +40,8 @@ def _flatten_input_values(val: object) -> list[float]:
         for elem in val:
             result.extend(_flatten_input_values(elem))
         return result
-    if hasattr(val, "tolist") and callable(val.tolist):
-        return _flatten_input_values(val.tolist())
+    if hasattr(val, "tolist") and callable(getattr(val, "tolist")):
+        return _flatten_input_values(getattr(val, "tolist")())
     return []
 
 
@@ -65,8 +66,8 @@ class CppProfiler:
     def _marshal_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
-    ) -> tuple[Optional[object], list[object]]:
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+    ) -> tuple[Optional[EagerValue], list[EagerValue]]:
         """Marshal input tensors into C-contiguous float buffers and ctypes pointer array.
 
         Args:
@@ -77,7 +78,7 @@ class CppProfiler:
             tuple[Optional[object], list[object]]: Ctypes pointers array and buffer handles.
         """
         c_in_ptrs: list[ctypes.c_void_p] = []
-        raw_in_buffers: list[object] = []
+        raw_in_buffers: list[EagerValue] = []
         in_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"] if getattr(graph, "nodes", None) else []
         for inp_node in in_nodes:
             val = inputs.get(inp_node.id)
@@ -85,7 +86,7 @@ class CppProfiler:
                 flat_vals = _flatten_input_values(val)
                 buf_len = max(1, len(flat_vals))
                 c_arr = (ctypes.c_float * buf_len)(*flat_vals)
-                raw_in_buffers.append(c_arr)
+                getattr(raw_in_buffers, "append")(c_arr)
                 c_in_ptrs.append(ctypes.cast(ctypes.cast(c_arr, ctypes.POINTER(ctypes.c_float)), ctypes.c_void_p))
 
         c_inputs = (ctypes.c_void_p * len(c_in_ptrs))(*c_in_ptrs) if c_in_ptrs else None
@@ -94,7 +95,7 @@ class CppProfiler:
     def _allocate_outputs(
         self,
         graph: IRGraph,
-    ) -> tuple[Optional[object], list[object]]:
+    ) -> tuple[Optional[EagerValue], list[EagerValue]]:
         """Allocate output float buffers and ctypes pointer array for graph outputs.
 
         Args:
@@ -104,7 +105,7 @@ class CppProfiler:
             tuple[Optional[object], list[object]]: Ctypes pointers array and buffer handles.
         """
         c_out_ptrs: list[ctypes.c_void_p] = []
-        raw_out_buffers: list[object] = []
+        raw_out_buffers: list[EagerValue] = []
         for out_name in getattr(graph, "outputs", []):
             out_node = graph.nodes.get(out_name) if getattr(graph, "nodes", None) else None
             shape = getattr(out_node, "shape_metadata", None) or (1,)
@@ -113,7 +114,7 @@ class CppProfiler:
                 if isinstance(d, int) and d > 0:
                     num_elem *= d
             buf = (ctypes.c_float * num_elem)()
-            raw_out_buffers.append(buf)
+            getattr(raw_out_buffers, "append")(buf)
             c_out_ptrs.append(ctypes.cast(ctypes.cast(buf, ctypes.POINTER(ctypes.c_float)), ctypes.c_void_p))
 
         c_outputs = (ctypes.c_void_p * len(c_out_ptrs))(*c_out_ptrs) if c_out_ptrs else None
@@ -122,7 +123,7 @@ class CppProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,

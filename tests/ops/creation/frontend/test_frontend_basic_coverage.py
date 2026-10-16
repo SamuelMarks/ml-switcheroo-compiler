@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -24,8 +24,13 @@ from ml_switcheroo_compiler.ops.creation.frontend_basic import (
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def _side_effect_type_error(obj: Any, dtype: Any = None) -> list[Any]:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def _side_effect_type_error(obj: EagerValue, dtype: EagerValue = None) -> list[EagerValue]:
     """Simulate backend array error when dtype is provided.
 
     Args:
@@ -40,7 +45,7 @@ def _side_effect_type_error(obj: Any, dtype: Any = None) -> list[Any]:
     return [obj]
 
 
-def _side_effect_value_error(obj: Any, dtype: Any = None) -> list[Any]:
+def _side_effect_value_error(obj: EagerValue, dtype: EagerValue = None) -> list[EagerValue]:
     """Simulate backend array error when dtype is missing.
 
     Args:
@@ -77,7 +82,7 @@ def test_frontend_basic_dtype_object_and_unknown() -> None:
 
         dtype = "int32"
 
-    assert _infer_dtype(DummyObj()) == DType.Int32
+    assert cast("Callable[..., EagerTensorProtocol]", _infer_dtype)(cast("Callable[..., EagerTensorProtocol]", DummyObj)()) == DType.Int32
 
 
 def test_frontend_basic_get_dtype_val() -> None:

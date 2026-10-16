@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Gradient computation and autodiff utilities."""
 
 from __future__ import annotations
@@ -9,13 +8,16 @@ import typing
 import uuid  # noqa: F401
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field  # noqa: F401
+from typing import cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: F401
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # noqa: F401
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function  # noqa: F401
 from ml_switcheroo_compiler.ops.registry import register_util
 from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
@@ -25,11 +27,11 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 
 from .custom_vjp_ops import custom_vjp
 from .options import GradOptions, JitOptions  # noqa: F401
-from .utils import _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _get_inputs_dict
+from .utils import GradValue, _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _get_inputs_dict
 
 
 @register_util("backward")
-def backward(tensor, *args, **kwargs) -> None:
+def backward(tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Triggers the reverse-mode auto-differentiation.
 
     Args:
@@ -85,7 +87,7 @@ def backward(tensor, *args, **kwargs) -> None:
     else:
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        outputs_dict = evaluate_graph(grad_graph, inputs_dict)
+        outputs_dict = evaluate_graph(grad_graph, cast("dict[str, EvalValue]", inputs_dict))
 
     # 9. Traverse the wrt list and assign computed gradient arrays to .grad attributes
     for i in range(len(wrt_ids)):
@@ -93,10 +95,10 @@ def backward(tensor, *args, **kwargs) -> None:
         if grad_node_id in outputs_dict:
             grad_val = outputs_dict[grad_node_id]
             t = wrt_tensors[i]
-            t.grad = grad_val
+            setattr(t, "grad", grad_val)
 
 
-def RegisterGradient(op_type: str) -> typing.Callable:
+def RegisterGradient(op_type: str) -> typing.Callable[..., GradValue]:
     """Register a custom gradient for an operation.
 
     Args:
@@ -105,10 +107,10 @@ def RegisterGradient(op_type: str) -> typing.Callable:
     Returns:
         Callable: The decorator function.
     """
-    return register_vjp(op_type)
+    return typing.cast("typing.Callable[..., GradValue]", register_vjp(op_type))
 
 
-def overwrite_with_gradient(tensor, gradient):
+def overwrite_with_gradient(tensor: EagerValue, gradient: EagerValue) -> EagerValue:
     """Overwrite the gradient of the tensor in the backward pass.
 
     During the forward pass, this returns the `tensor` unchanged.
@@ -122,7 +124,7 @@ def overwrite_with_gradient(tensor, gradient):
     """
 
     @custom_vjp
-    def _overwrite(t, g):
+    def _overwrite(t: EagerValue, g: EagerValue) -> EagerValue:
         """Overwrite the gradient during the backward pass.
 
         Args:
@@ -133,7 +135,7 @@ def overwrite_with_gradient(tensor, gradient):
         """
         return t
 
-    def _overwrite_fwd(t, g):
+    def _overwrite_fwd(t: EagerValue, g: EagerValue) -> EagerValue:
         """Forward pass for overwriting a gradient.
 
         Args:
@@ -145,7 +147,7 @@ def overwrite_with_gradient(tensor, gradient):
         """
         return t, g
 
-    def _overwrite_bwd(g, g_in):
+    def _overwrite_bwd(g: EagerValue, g_in: EagerValue) -> EagerValue:
         """Backward pass for overwriting a gradient.
 
         Args:
@@ -157,11 +159,11 @@ def overwrite_with_gradient(tensor, gradient):
         """
         return g, None
 
-    _overwrite.defvjp(_overwrite_fwd, _overwrite_bwd)
-    return _overwrite(tensor, gradient)
+    getattr(_overwrite, "defvjp")(_overwrite_fwd, _overwrite_bwd)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _overwrite)(tensor, gradient))
 
 
-def ir_grad(fun, options=None):
+def ir_grad(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
     """Return a gradient wrapper.
 
     Args:
@@ -171,9 +173,9 @@ def ir_grad(fun, options=None):
     Returns:
         Callable: The wrapper function.
     """
-    options = options or GradOptions()
+    options = cast(EagerValue, options or GradOptions())
 
-    def wrapped(*args, **kwargs):
+    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate wrapped operation.
 
         Args:
@@ -183,13 +185,16 @@ def ir_grad(fun, options=None):
         Returns:
             tuple[int, ...]: Result.
         """
-        _, grads = _compute_grad_and_value(fun, options, args)
-        return grads
+        _, grads = cast("Callable[..., EagerTensorProtocol]", _compute_grad_and_value)(fun, options, args)
+        return cast(EagerValue, grads)
 
     return wrapped
 
 
-def grad(fun, options=None):
+def grad(
+    fun: Callable[..., GradValue],
+    options: GradOptions | None = None,
+) -> Callable[..., GradValue]:
     """Return a gradient wrapper.
 
     Args:
@@ -201,7 +206,7 @@ def grad(fun, options=None):
     """
     options = options or GradOptions()
 
-    def wrapped(*args, **kwargs):
+    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate wrapped operation.
 
         Args:
@@ -213,13 +218,13 @@ def grad(fun, options=None):
         """
         val, grads = _compute_grad_and_value(fun, options, args)
         if options.has_aux:
-            return grads, val[1]
+            return grads, typing.cast(tuple[GradValue, GradValue], val)[1]
         return grads
 
     return wrapped
 
 
-def value_and_grad(fun, options=None):
+def value_and_grad(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
     """Return a gradient wrapper.
 
     Args:
@@ -229,9 +234,9 @@ def value_and_grad(fun, options=None):
     Returns:
         Callable: The wrapper function.
     """
-    options = options or GradOptions()
+    options = cast(EagerValue, options or GradOptions())
 
-    def wrapped(*args, **kwargs):
+    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate wrapped operation.
 
         Args:
@@ -241,15 +246,15 @@ def value_and_grad(fun, options=None):
         Returns:
             tuple[int, ...]: Result.
         """
-        val, grads = _compute_grad_and_value(fun, options, args)
-        if options.has_aux:
+        val, grads = cast("Callable[..., EagerTensorProtocol]", _compute_grad_and_value)(fun, options, args)
+        if getattr(options, "has_aux"):
             return val, grads
         return val, grads
 
     return wrapped
 
 
-def hook_gradient(tensor, hook):
+def hook_gradient(tensor: EagerValue, hook: Callable[..., EagerValue]) -> EagerValue:
     """Register a custom gradient hook on a tensor.
 
     During the forward pass, this returns the `tensor` unchanged.
@@ -265,7 +270,7 @@ def hook_gradient(tensor, hook):
     """
 
     @custom_vjp
-    def _hook_op(t):
+    def _hook_op(t: EagerValue) -> EagerValue:
         """Apply the hook op.
 
         Args:
@@ -276,7 +281,7 @@ def hook_gradient(tensor, hook):
         """
         return t
 
-    def _hook_fwd(t):
+    def _hook_fwd(t: EagerValue) -> EagerValue:
         """Forward pass for the hook.
 
         Args:
@@ -287,7 +292,7 @@ def hook_gradient(tensor, hook):
         """
         return t, t
 
-    def _hook_bwd(res, g_in):
+    def _hook_bwd(res: EagerValue, g_in: EagerValue) -> EagerValue:
         """Backward pass for the hook.
 
         Args:
@@ -302,24 +307,24 @@ def hook_gradient(tensor, hook):
             out_g = g_in
         return (out_g,)
 
-    _hook_op.defvjp(_hook_fwd, _hook_bwd)
-    return _hook_op(tensor)
+    getattr(_hook_op, "defvjp")(_hook_fwd, _hook_bwd)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _hook_op)(tensor))
 
 
 def jvp(
-    fun: Callable,
-    primals: Sequence[object],
-    tangents: Sequence[object],
-) -> tuple[object, object]:
+    fun: Callable[..., GradValue],
+    primals: Sequence[GradValue],
+    tangents: Sequence[GradValue],
+) -> tuple[GradValue, GradValue]:
     """Compute a Jacobian-vector product (forward pushforward).
 
     Args:
         fun (Callable): The function to differentiate.
-        primals (Sequence[object]): Primal point inputs.
-        tangents (Sequence[object]): Tangent vectors corresponding to primals.
+        primals (Sequence[GradValue]): Primal point inputs.
+        tangents (Sequence[GradValue]): Tangent vectors corresponding to primals.
 
     Returns:
-        tuple[object, object]: Tuple of (primal_out, tangent_out).
+        tuple[GradValue, GradValue]: Tuple of (primal_out, tangent_out).
     """
     primals_tuple = tuple(primals)
     tangents_tuple = tuple(tangents)
@@ -330,15 +335,15 @@ def jvp(
     for p, t in zip(primals_tuple, tangents_tuple):
         if hasattr(p, "__add__"):
             try:
-                perturbed.append(p + t * eps)
+                perturbed.append(typing.cast(EagerTensorProtocol, p) + typing.cast(EagerTensorProtocol, t) * eps)
             except Exception:
-                perturbed.append(p)
+                getattr(perturbed, "append")(p)
         else:
-            perturbed.append(p)
+            getattr(perturbed, "append")(p)
 
     out_eps = fun(*perturbed)
     try:
-        tangent_out = (out_eps - primal_out) / eps
+        tangent_out: GradValue = typing.cast(GradValue, (typing.cast(EagerTensorProtocol, out_eps) - typing.cast(EagerTensorProtocol, primal_out)) / eps)
     except Exception:
         tangent_out = primal_out
     return primal_out, tangent_out
@@ -382,13 +387,13 @@ def hvp_graph(
 
 
 def hvp(
-    fun: Callable,
-    primals: Sequence[object] | object,
-    tangents: Sequence[object] | object,
+    fun: Callable[..., GradValue],
+    primals: Sequence[GradValue] | GradValue,
+    tangents: Sequence[GradValue] | GradValue,
     has_aux: bool = False,
     mode: str = "forward-over-reverse",
     projected_tangents: Tensor | Sequence[Tensor] | None = None,
-) -> tuple[object, object]:
+) -> tuple[GradValue, GradValue]:
     """Compute a Hessian-vector product via symbolic graph transformation.
 
     Eliminates runtime function re-wrapping by delegating directly to symbolic
@@ -396,24 +401,27 @@ def hvp(
 
     Args:
         fun (Callable): Function to evaluate Hessian-vector product on.
-        primals (Sequence[object] | object): Primal evaluation inputs.
-        tangents (Sequence[object] | object): Tangent direction vectors.
+        primals (Sequence[GradValue] | GradValue): Primal evaluation inputs.
+        tangents (Sequence[GradValue] | GradValue): Tangent direction vectors.
         has_aux (bool): Whether fun returns auxiliary outputs.
         mode (str): Evaluation mode ('forward-over-reverse' or 'reverse-over-forward').
         projected_tangents (Optional[Union[Tensor, Sequence[Tensor]]]): Projected cotangents.
 
     Returns:
-        tuple[object, object]: Tuple of (fun(*primals), hvp_result).
+        tuple[GradValue, GradValue]: Tuple of (fun(*primals), hvp_result).
     """
     from .jvp_vjp import hvp as _jvp_vjp_hvp
 
-    return _jvp_vjp_hvp(
-        fun,
-        primals,
-        tangents,
-        has_aux=has_aux,
-        projected_tangents=projected_tangents,
-        mode=mode,
+    return cast(
+        tuple[GradValue, GradValue],
+        _jvp_vjp_hvp(
+            fun,
+            primals,
+            tangents,
+            has_aux=has_aux,
+            projected_tangents=projected_tangents,
+            mode=mode,
+        ),
     )
 
 
@@ -450,10 +458,10 @@ def nth_order_grad_graph(
 
 
 def nth_order_grad(
-    fun: Callable,
+    fun: Callable[..., GradValue],
     n: int = 1,
     options: GradOptions | None = None,
-) -> Callable:
+) -> Callable[..., GradValue]:
     """Return an N-th order gradient function via repeated symbolic differentiation.
 
     Args:

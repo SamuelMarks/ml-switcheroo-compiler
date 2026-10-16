@@ -1,12 +1,8 @@
-"""Module generic_utils.py."""
+"""Provide generic utilities."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Provide generic utilities."""
-
-
+# ruff: noqa: E402
 import os
 import random
 import sys
@@ -16,10 +12,21 @@ import typing  # noqa: F401
 import urllib.request
 import zipfile
 from dataclasses import dataclass, field
-from typing import Any
+from types import ModuleType
+from typing import cast
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core import config
-from ml_switcheroo_compiler.serialization import custom_object_scope, deserialize_keras_object, get_custom_objects, get_registered_name, get_registered_object, register_keras_serializable, serialize_keras_object
+from ml_switcheroo_compiler.utils.serialization_utils import (
+    CustomObjectScope,  # noqa: F401
+    custom_object_scope,  # noqa: F401
+    deserialize_object,  # noqa: F401
+    get_custom_objects,  # noqa: F401
+    get_registered_name,  # noqa: F401
+    get_registered_object,  # noqa: F401
+    register_serializable,  # noqa: F401
+    serialize_object,  # noqa: F401
+)
 
 
 @dataclass
@@ -64,7 +71,7 @@ class ProgbarConfig:
     width: int = 30
     verbose: int = 1
     interval: float = 0.05
-    stateful_metrics: Any | None = None
+    stateful_metrics: list[str] | tuple[str, ...] | set[str] | None = None
     unit_name: str = "step"
 
 
@@ -143,7 +150,7 @@ def get_file(
     Args:
         fname (str): The fname parameter.
         origin (str): The origin parameter.
-        config (Any): The config parameter.
+        config (dict | list | str | bool | None): The config parameter.
 
     Returns:
         str: Result.
@@ -155,7 +162,7 @@ def get_file(
     cache_dir = conf.cache_config.cache_dir
 
     if cache_dir is None:
-        cache_dir = os.path.join(os.path.expanduser("~"), ".keras")
+        cache_dir = os.path.join(os.path.expanduser("~"), ".ml_switcheroo")
 
     datadir = os.path.join(cache_dir, cache_subdir)
     os.makedirs(datadir, exist_ok=True)
@@ -197,8 +204,8 @@ class Progbar:
         """Initialize.
 
         Args:
-            target (Any): The target parameter.
-            config (Any): The config parameter.
+            target (dict | list | str | bool | None): The target parameter.
+            config (dict | list | str | bool | None): The config parameter.
         """
         conf = config if config is not None else ProgbarConfig()
 
@@ -206,8 +213,8 @@ class Progbar:
         self.config = conf
 
         self.stateful_metrics = set(conf.stateful_metrics) if conf.stateful_metrics else set()
-        self._values = {}
-        self._values_order = []
+        self._values: dict[str, list[float | int]] = {}
+        self._values_order: list[str] = []
         self._seen_so_far = 0
         self._last_update = 0.0
 
@@ -221,14 +228,14 @@ class Progbar:
             last_update=0.0,
         )
 
-    def _update_values(self, current: int, values) -> None:
+    def _update_values(self, current: int, values: EagerValue) -> None:
         """Evaluate _update_values operation.
 
         Args:
             current (int): The current parameter.
             values (list): The values parameter.
         """
-        for k, v in values:
+        for k, v in getattr(values, "__iter__")():
             if k not in self._values_order:
                 self._values_order.append(k)
             if k in self.stateful_metrics:
@@ -258,7 +265,7 @@ class Progbar:
 
         Args:
         current (int): The current parameter.
-        finalize (Any): The finalize parameter.
+        finalize (dict | list | str | bool | None): The finalize parameter.
 
         Returns:
         bool: Result.
@@ -290,13 +297,13 @@ class Progbar:
         """
         return f" - {current}/{self.target}" if self.target is not None else f" - {current}"
 
-    def update(self, current: int, values=None, finalize: bool | None = None) -> None:
+    def update(self, current: int, values: EagerValue = None, finalize: bool | None = None) -> None:
         """Update the progress bar.
 
         Args:
             current (int): The current parameter.
-            values (Any): The values parameter.
-            finalize (Any): The finalize parameter.
+            values (dict | list | str | bool | None): The values parameter.
+            finalize (dict | list | str | bool | None): The finalize parameter.
         """
         values = values or []
         self._update_values(current, values)
@@ -311,121 +318,34 @@ class Progbar:
                 print(self._format_info(current))
 
 
-class FeatureSpace:
-    """FeatureSpace utility class."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-        """
-        self.args = args
-        self.kwargs = kwargs
-
-
-class Config:
-    """Config utility class."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-        """
-        self.args = args
-        self.kwargs = kwargs
-
-
-class PyDataset:
-    """PyDataset utility class."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-        """
-        self.args = args
-        self.kwargs = kwargs
-
-
-class Sequence:
-    """Sequence utility class."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-        """
-        self.args = args
-        self.kwargs = kwargs
-
-
-from ml_switcheroo_compiler.utils.serialization_utils import (
-    CustomObjectScope,  # noqa: F401
-    custom_Any_scope,  # noqa: F401
-    custom_object_scope,  # noqa: F401, F811
-    deserialize_keras_Any,  # noqa: F401
-    deserialize_keras_object,  # noqa: F401, F811
-    deserialize_object,  # noqa: F401
-    get_custom_Anys,  # noqa: F401
-    get_custom_objects,  # noqa: F401, F811
-    get_registered_Any,  # noqa: F401
-    get_registered_name,  # noqa: F401, F811
-    get_registered_object,  # noqa: F401, F811
-    register_keras_serializable,  # noqa: F401, F811
-    register_serializable,  # noqa: F401
-    serialize_keras_Any,  # noqa: F401
-    serialize_keras_object,  # noqa: F401, F811
-    serialize_object,  # noqa: F401
-)
-
-
-def clear_session(*args: object, **kwargs: object) -> None:
-    """Clear the Keras session.
-
-    Args:
-        *args (object): Arguments.
-        **kwargs (object): Keyword arguments.
-    """
-    del args, kwargs
-    config.clear_cache()
-
-
-def disable_interactive_logging(*args: object, **kwargs: object) -> None:
+def disable_interactive_logging(*args: str | int | bool | None, **kwargs: str | int | bool | None) -> None:
     """Disable interactive logging.
 
     Args:
-        *args (object): Arguments.
-        **kwargs (object): Keyword arguments.
+        *args: Arguments.
+        **kwargs: Keyword arguments.
     """
     del args, kwargs
     config._state.env.interactive_logging = False
 
 
-def enable_interactive_logging(*args: object, **kwargs: object) -> None:
+def enable_interactive_logging(*args: str | int | bool | None, **kwargs: str | int | bool | None) -> None:
     """Enable interactive logging.
 
     Args:
-        *args (object): Arguments.
-        **kwargs (object): Keyword arguments.
+        *args: Arguments.
+        **kwargs: Keyword arguments.
     """
     del args, kwargs
     config._state.env.interactive_logging = True
 
 
-def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:
+def is_interactive_logging_enabled(*args: str | int | bool | None, **kwargs: str | int | bool | None) -> bool:
     """Check if interactive logging is enabled.
 
     Args:
-        *args (object): Arguments.
-        **kwargs (object): Keyword arguments.
+        *args: Arguments.
+        **kwargs: Keyword arguments.
 
     Returns:
         bool: Whether interactive logging is enabled.
@@ -434,12 +354,12 @@ def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:
     return getattr(config._state.env, "interactive_logging", False)
 
 
-def is_symbolic_tensor(*args: object, **kwargs: object) -> bool:
+def is_symbolic_tensor(*args: EagerValue, **kwargs: EagerValue) -> bool:
     """Check if an object is recognized as a compiler symbolic tensor.
 
     Args:
-        *args (object): Target object to check.
-        **kwargs (object): Keyword arguments.
+        *args: Target object to check.
+        **kwargs: Keyword arguments.
 
     Returns:
         bool: Whether the object is recognized as a compiler symbolic tensor.
@@ -448,31 +368,41 @@ def is_symbolic_tensor(*args: object, **kwargs: object) -> bool:
     if not args:
         return False
     x = args[0]
-    if hasattr(x, "_keras_history") or getattr(x, "is_keras_tensor", False):
-        return True
     type_name = type(x).__name__
-    return type_name in ("KerasTensor", "Tensor", "SymbolicTensor", "ProxyTensor")
+    return type_name in ("Tensor", "SymbolicTensor", "ProxyTensor")
 
 
-is_keras_tensor = is_symbolic_tensor
+_DTYPE_ALIASES: dict[str, str] = {
+    "float": "float32",
+    "float32": "float32",
+    "f4": "float32",
+    "double": "float64",
+    "float64": "float64",
+    "f8": "float64",
+    "int": "int32",
+    "int32": "int32",
+    "i4": "int32",
+    "int64": "int64",
+    "i8": "int64",
+    "bool": "bool",
+    "?": "bool",
+}
 
 
-def standardize_dtype(*args: object, **kwargs: object) -> str | None:  # noqa: C901, PLR0911
+def standardize_dtype(*args: EagerValue, **kwargs: EagerValue) -> str | None:
     """Standardize a data type specification into its canonical lowercase string name.
 
     Args:
-        *args (object): Data type object or string name.
-        **kwargs (object): Keyword arguments.
+        *args: Data type object or string name.
+        **kwargs: Keyword arguments.
 
     Returns:
         str | None: Canonical dtype string (e.g. 'float32', 'int64', 'bool') or None.
     """
     del kwargs
-    if not args:
+    if not args or args[0] is None:
         return None
     dtype = args[0]
-    if dtype is None:
-        return None
     if hasattr(dtype, "name"):
         return str(dtype.name).lower()
     val_str = str(dtype).lower()
@@ -480,17 +410,7 @@ def standardize_dtype(*args: object, **kwargs: object) -> str | None:  # noqa: C
         val_str = val_str[8:-2]
     if "numpy." in val_str:
         val_str = val_str.split("numpy.")[-1]
-    if val_str in ("float", "float32", "f4"):
-        return "float32"
-    if val_str in ("double", "float64", "f8"):
-        return "float64"
-    if val_str in ("int", "int32", "i4"):
-        return "int32"
-    if val_str in ("int64", "i8"):
-        return "int64"
-    if val_str in ("bool", "?"):
-        return "bool"
-    return val_str
+    return _DTYPE_ALIASES.get(val_str, val_str)
 
 
 class bounding_boxes:
@@ -498,12 +418,12 @@ class bounding_boxes:
 
     SUPPORTED_FORMATS: tuple[str, ...] = ("xyxy", "xywh", "yxyx", "center_xywh", "rel_xyxy")
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Initialize bounding boxes utility context.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args: Positional args.
+            **kwargs: Keyword args.
         """
         self.args = args
         self.kwargs = kwargs
@@ -522,29 +442,99 @@ class bounding_boxes:
             msg = f"Unsupported bounding box format '{box_format}'. Expected one of {cls.SUPPORTED_FORMATS}"
             raise ValueError(msg)
 
+    @staticmethod
+    def _unpack_to_xyxy(arr: EagerValue, source: str, src_lower: str, image_shape: tuple[int, int] | None) -> EagerValue:
+        """Unpack bounding box array from source format into (x1, y1, x2, y2) components.
+
+        Args:
+            arr: Input bounding box array.
+            source: Original source format string.
+            src_lower: Lowercase source format name.
+            image_shape: Optional (height, width) tuple for relative coordinates.
+
+        Returns:
+            tuple: Unpacked (x1, y1, x2, y2) coordinate arrays.
+
+        Raises:
+            ValueError: If relative coordinates are used without image_shape or format is unrecognized.
+        """
+        c0, c1, c2, c3 = cast(EagerTensorProtocol, arr)[..., 0], cast(EagerTensorProtocol, arr)[..., 1], cast(EagerTensorProtocol, arr)[..., 2], cast(EagerTensorProtocol, arr)[..., 3]
+        if src_lower == "xyxy":
+            return c0, c1, c2, c3
+        if src_lower == "xywh":
+            return c0, c1, c0 + c2, c1 + c3
+        if src_lower == "center_xywh":
+            return c0 - c2 / 2.0, c1 - c3 / 2.0, c0 + c2 / 2.0, c1 + c3 / 2.0
+        if src_lower == "yxyx":
+            return c1, c0, c3, c2
+        if src_lower == "rel_xyxy":
+            if image_shape is None:
+                msg = "image_shape (height, width) is required to convert from relative bounding box format."
+                raise ValueError(msg)
+            h_img, w_img = image_shape
+            return c0 * w_img, c1 * h_img, c2 * w_img, c3 * h_img
+        msg = f"Unrecognized source format '{source}'"
+        raise ValueError(msg)
+
+    @staticmethod
+    def _pack_from_xyxy(np: ModuleType, arr: EagerValue, coords: tuple[EagerTensorProtocol, ...], tgt_lower: str, image_shape: tuple[int, int] | None) -> EagerValue:
+        """Pack (x1, y1, x2, y2) coordinate arrays into the target bounding box format.
+
+        Args:
+            np: NumPy backend module.
+            arr: Original bounding box array fallback.
+            coords: Tuple of (x1, y1, x2, y2) coordinate arrays.
+            tgt_lower: Lowercase target format name.
+            image_shape: Optional (height, width) tuple for relative coordinates.
+
+        Returns:
+            Stacked bounding box array in target format.
+
+        Raises:
+            ValueError: If relative coordinates are requested without image_shape.
+        """
+        x1, y1, x2, y2 = coords
+        if tgt_lower == "xyxy":
+            return cast(EagerValue, np.stack([x1, y1, x2, y2], axis=-1))
+        if tgt_lower == "xywh":
+            return cast(EagerValue, np.stack([x1, y1, x2 - x1, y2 - y1], axis=-1))
+        if tgt_lower == "center_xywh":
+            return cast(EagerValue, np.stack([(x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1], axis=-1))
+        if tgt_lower == "yxyx":
+            return cast(EagerValue, np.stack([y1, x1, y2, x2], axis=-1))
+        if tgt_lower == "rel_xyxy":
+            if image_shape is None:
+                msg = "image_shape (height, width) is required to convert to relative bounding box format."
+                raise ValueError(msg)
+            h_img, w_img = image_shape
+            return cast(EagerValue, np.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1))
+        return arr
+
     @classmethod
-    def convert_format(  # noqa: C901, PLR0911, PLR0912
+    def convert_format(
         cls,
-        boxes: object,
+        boxes: EagerValue,
         source: str,
         target: str,
         image_shape: tuple[int, int] | None = None,
-    ) -> object:
+    ) -> EagerValue:
         """Convert bounding boxes between coordinate formats.
 
         Args:
-            boxes (object): Bounding box coordinates array or sequence of shape (..., 4).
+            boxes: Bounding box coordinates array or sequence of shape (..., 4).
             source (str): Source format name ('xyxy', 'xywh', 'center_xywh', etc.).
             target (str): Target format name ('xyxy', 'xywh', 'center_xywh', etc.).
             image_shape (tuple[int, int] | None): Optional (height, width) for relative coordinate scaling.
 
         Returns:
-            object: Converted bounding boxes array.
+            Tensor: Converted bounding boxes array.
 
         Raises:
             ValueError: If box shape or format is invalid.
         """
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+        np = BackendRegistry.get("numpy").get_module()
 
         cls.validate_format(source)
         cls.validate_format(target)
@@ -557,49 +547,7 @@ class bounding_boxes:
         src_lower = source.lower()
         tgt_lower = target.lower()
         if src_lower == tgt_lower:
-            return arr
+            return cast(EagerValue, arr)
 
-        if src_lower == "xyxy":
-            x1, y1, x2, y2 = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
-        elif src_lower == "xywh":
-            x1, y1, w, h = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
-            x2, y2 = x1 + w, y1 + h
-        elif src_lower == "center_xywh":
-            cx, cy, w, h = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
-            x1, y1 = cx - w / 2.0, cy - h / 2.0
-            x2, y2 = cx + w / 2.0, cy + h / 2.0
-        elif src_lower == "yxyx":
-            y1, x1, y2, x2 = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
-        elif src_lower == "rel_xyxy":
-            if image_shape is None:
-                msg = "image_shape (height, width) is required to convert from relative bounding box format."
-                raise ValueError(msg)
-            h_img, w_img = image_shape
-            x1 = arr[..., 0] * w_img
-            y1 = arr[..., 1] * h_img
-            x2 = arr[..., 2] * w_img
-            y2 = arr[..., 3] * h_img
-        else:
-            msg = f"Unrecognized source format '{source}'"
-            raise ValueError(msg)
-
-        if tgt_lower == "xyxy":
-            return np.stack([x1, y1, x2, y2], axis=-1)
-        if tgt_lower == "xywh":
-            return np.stack([x1, y1, x2 - x1, y2 - y1], axis=-1)
-        if tgt_lower == "center_xywh":
-            cx = (x1 + x2) / 2.0
-            cy = (y1 + y2) / 2.0
-            w = x2 - x1
-            h = y2 - y1
-            return np.stack([cx, cy, w, h], axis=-1)
-        if tgt_lower == "yxyx":
-            return np.stack([y1, x1, y2, x2], axis=-1)
-        if tgt_lower == "rel_xyxy":
-            if image_shape is None:
-                msg = "image_shape (height, width) is required to convert to relative bounding box format."
-                raise ValueError(msg)
-            h_img, w_img = image_shape
-            return np.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1)
-
-        return arr
+        coords = cls._unpack_to_xyxy(arr, source, src_lower, image_shape)
+        return cast(EagerValue, getattr(cls, "_pack_from_xyxy")(np, arr, coords, tgt_lower, image_shape))

@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Union, cast
+from types import ModuleType
+from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 from .vision_transforms import _apply_elastic_batch
 from .vision_utils import GeometricGridConfig, RandomCropConfig, TransformInterpolationConfig, _prepare_eager_transform
 
-VisionArray = Union[int, float, list, tuple, Any]
+VisionArray = EagerValue
 
 
 def _flip_horizontal(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -22,7 +25,7 @@ def _flip_horizontal(img: VisionArray, rng: VisionArray) -> VisionArray:
 
     Returns: VisionArray: The horizontally flipped image, or the original image.
     """
-    return cast(Any, img)[:, :, ::-1] if rng.random() > 0.5 else img
+    return cast(EagerTensorProtocol, img)[:, :, ::-1] if cast(ModuleType, rng).random() > 0.5 else img
 
 
 def _flip_vertical(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -34,7 +37,7 @@ def _flip_vertical(img: VisionArray, rng: VisionArray) -> VisionArray:
 
     Returns: VisionArray: The vertically flipped image, or the original image.
     """
-    return cast(Any, img)[:, ::-1, :] if rng.random() > 0.5 else img
+    return cast(EagerTensorProtocol, img)[:, ::-1, :] if cast(ModuleType, rng).random() > 0.5 else img
 
 
 def _flip_both(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -50,7 +53,21 @@ def _flip_both(img: VisionArray, rng: VisionArray) -> VisionArray:
     return _flip_vertical(img, rng)
 
 
-_FLIP_STRATEGIES = {
+def _identity_flip(img: VisionArray, rng: VisionArray) -> VisionArray:
+    """Return the image unchanged.
+
+    Args:
+        img: The input image array.
+        rng: The random number generator instance.
+
+    Returns:
+        VisionArray: The unchanged image.
+    """
+    del rng
+    return img
+
+
+_FLIP_STRATEGIES: dict[str, Callable[[VisionArray, VisionArray], VisionArray]] = {
     "horizontal": _flip_horizontal,
     "vertical": _flip_vertical,
     "horizontal_and_vertical": _flip_both,
@@ -72,11 +89,11 @@ def random_flip_eager(backend_module: VisionArray, images: VisionArray, mode: st
     data_format = None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
 
-    out = ctx.np_mod.copy(ctx.imgs)
-    strategy = _FLIP_STRATEGIES.get(mode, lambda img, rng: img)
+    out = getattr(ctx.np_mod, "copy")(ctx.imgs)
+    strategy = _FLIP_STRATEGIES.get(mode, _identity_flip)
 
     for i in range(ctx.B):
-        cast(Any, out)[i] = strategy(cast(Any, out)[i], ctx.rng)
+        cast(EagerTensorProtocol, out)[i] = strategy(cast(EagerTensorProtocol, out)[i], ctx.rng)
 
     out = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)
@@ -291,7 +308,7 @@ def _get_elastic_factor(rng: VisionArray, f: VisionArray) -> float:
         float: The sampled configuration parameter for elastic distortion.
     """
     if isinstance(f, (tuple, list)):
-        return float(rng.uniform(f[0], f[1]))
+        return float(cast(ModuleType, rng).uniform(f[0], f[1]))
     return float(cast(float, f))
 
 
@@ -322,10 +339,10 @@ def random_elastic_transform_eager(
         new_y=new_y,
         new_x=new_x,
         order=1 if str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear") == "bilinear" else 0,
-        fill_value=float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0),
+        fill_value=float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0)),
     )
     out = _apply_elastic_batch(ctx.np_mod, ctx.imgs, t_config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -365,9 +382,10 @@ def _get_shear_factor(rng: VisionArray, factor: VisionArray) -> float:
     Returns:
         float: The sampled shear magnitude.
     """
+    rng_mod = cast(ModuleType, rng)
     if isinstance(factor, (tuple, list)):
-        return float(rng.uniform(factor[0], factor[1]))
-    return float(rng.uniform(-factor, factor))
+        return float(rng_mod.uniform(factor[0], factor[1]))
+    return float(rng_mod.uniform(-cast(float, factor), factor))
 
 
 def _compute_shear_grid(np_mod: VisionArray, config: GeometricGridConfig) -> tuple[VisionArray, VisionArray]:
@@ -403,7 +421,7 @@ def random_zoom_eager(
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
     interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0)
+    fill_value = float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
     seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
     data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -416,10 +434,10 @@ def random_zoom_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,
+        data_format=cast("str", data_format),
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -443,7 +461,7 @@ def random_translation_eager(
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
     interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0)
+    fill_value = float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
     seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
     data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -454,10 +472,10 @@ def random_translation_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,
+        data_format=cast("str", data_format),
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -481,7 +499,7 @@ def random_shear_eager(
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
     interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0)
+    fill_value = float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
     seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
     data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -492,8 +510,8 @@ def random_shear_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,
+        data_format=cast("str", data_format),
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
     return _from_numpy_array(backend_module, out, "", images)

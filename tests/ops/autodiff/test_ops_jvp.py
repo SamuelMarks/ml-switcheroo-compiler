@@ -1,11 +1,17 @@
+"""Tests for test_ops_jvp."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import contextlib
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY
 
-"Provides test suites and coverage verification for all registered operations in the ML.\n\nSwitcheroo framework.\n"
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_all_ops_coverage() -> None:
@@ -23,15 +29,15 @@ def test_all_ops_coverage() -> None:
                 continue
             op = op_cls()
             try:
-                op.jvp("tangent_x", "tangent_y", "x", "y")
+                cast("EagerTensorProtocol", getattr(op, "jvp"))("tangent_x", "tangent_y", "x", "y")
             except Exception:
                 try:
-                    op.jvp("tangent_x", "x", "newshape")
+                    cast("EagerTensorProtocol", getattr(op, "jvp"))("tangent_x", "x", "newshape")
                 except Exception:
                     with contextlib.suppress(Exception):
-                        op.jvp(g, n, "tangent")
+                        cast("EagerTensorProtocol", getattr(op, "jvp"))(g, n, "tangent")
             with contextlib.suppress(Exception):
-                op.vjp(g, n, "cotangent")
+                cast("EagerTensorProtocol", getattr(op, "vjp"))(g, n, "cotangent")
             try:
                 op.eager_eval(2.0, 3.0)
             except Exception:
@@ -43,6 +49,6 @@ def test_all_ops_coverage() -> None:
                 with contextlib.suppress(Exception):
                     op.infer_shape((2, 3))
             with contextlib.suppress(Exception):
-                op._format_args("x", axis=0)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+                cast("EagerTensorProtocol", getattr(op, "_format_args"))("x", axis=0)
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

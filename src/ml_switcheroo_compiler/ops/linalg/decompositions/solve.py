@@ -1,22 +1,24 @@
-"""Module solve.py."""
+"""Core abstractions and logic definitions for solve.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import TYPE_CHECKING, cast
 
-"""Core abstractions and logic definitions for solve.py."""
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 @register_op("Solve")
 class Solve(OpDef):
     """Solve Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer solution shape for linear system AX = B.
 
         Args:
@@ -57,7 +59,7 @@ class Solve(OpDef):
 class SolveEx(OpDef):
     """SolveEx Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer solution and info shapes for SolveEx.
 
         Args:
@@ -95,7 +97,7 @@ class SolveEx(OpDef):
         return (sol_shape, info_shape)
 
 
-def solve(a: Tensor, b: Tensor):
+def solve(a: Tensor, b: Tensor) -> EagerValue:
     """Solves a linear matrix equation, or system of linear scalar equations.
 
     Args:
@@ -109,16 +111,19 @@ def solve(a: Tensor, b: Tensor):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op(
-            "Solve",
-            (a.data if hasattr(a, "device") else a),
-            (b.data if hasattr(b, "device") else b),
+        data = cast(
+            "TensorLike",
+            backend.execute_op(
+                "Solve",
+                (a.data if hasattr(a, "device") else a),
+                (b.data if hasattr(b, "device") else b),
+            ),
         )
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
 
 
-def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False):
+def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> EagerValue:
     """Solves a linear matrix equation with info tensor.
 
     Args:
@@ -133,11 +138,14 @@ def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sol, info = backend.execute_op(
-            "SolveEx",
-            (a.data if hasattr(a, "device") else a),
-            (b.data if hasattr(b, "device") else b),
-            check_errors=check_errors,
+        sol, info = cast(
+            "tuple[TensorLike, TensorLike]",
+            backend.execute_op(
+                "SolveEx",
+                (a.data if hasattr(a, "device") else a),
+                (b.data if hasattr(b, "device") else b),
+                check_errors=check_errors,
+            ),
         )
         return (
             Tensor(sol, TensorConfig(sol.shape, a.dtype, a.device)),
@@ -151,7 +159,7 @@ def solve_triangular(
     b: Tensor,
     lower: bool = False,
     unit_diagonal: bool = False,
-):
+) -> EagerValue:
     """Solves the equation `a x = b` for `x`, assuming `a` is a triangular matrix.
 
     Args:
@@ -167,13 +175,16 @@ def solve_triangular(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op(
-            "TriangularSolve",
-            a.data,
-            b.data,
-            lower=lower,
-            unit_diagonal=unit_diagonal,
-            adjoint=False,
+        data = cast(
+            "TensorLike",
+            backend.execute_op(
+                "TriangularSolve",
+                a.data,
+                b.data,
+                lower=lower,
+                unit_diagonal=unit_diagonal,
+                adjoint=False,
+            ),
         )
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node(

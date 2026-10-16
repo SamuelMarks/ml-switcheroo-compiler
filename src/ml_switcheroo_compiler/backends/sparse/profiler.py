@@ -1,16 +1,18 @@
 """Sparse backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+from typing import Callable, Union, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 try:
     import sparse
 except ImportError:
     sparse = None
-
-import numpy as np
 
 from ml_switcheroo_compiler.backends.sparse.types import (
     COOTensor,
@@ -18,6 +20,7 @@ from ml_switcheroo_compiler.backends.sparse.types import (
     CSRTensor,
 )
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -39,18 +42,18 @@ class SparseProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], np.ndarray, object]],
-    ) -> list[object]:
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue, EagerValue]],
+    ) -> list[EagerValue]:
         """Convert input structures into sparse or dense array representations.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], np.ndarray, object]]): Input structures.
+            inputs (dict[str, Union[list[float], list[list[float]], EagerValue, object]]): Input structures.
 
         Returns:
             list[object]: Topologically ordered list of input arrays.
         """
-        arr_dict: dict[str, object] = {}
+        arr_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             if isinstance(val, (COOTensor, CSRTensor, CSCTensor)):
                 arr_dict[k] = val
@@ -61,7 +64,7 @@ class SparseProfiler:
                     arr_dict[k] = COOTensor.from_dense(np.asarray(val.todense()))
                 else:
                     arr_dict[k] = val
-            elif isinstance(val, np.ndarray):
+            elif hasattr(val, "shape") and not isinstance(val, (list, tuple)):
                 arr_dict[k] = COOTensor.from_dense(val)
             elif isinstance(val, (list, tuple)):
                 np_arr = np.asarray(val, dtype=np.float32)
@@ -75,7 +78,7 @@ class SparseProfiler:
             return [arr_dict[k] for k in input_keys]
         return list(arr_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., object]]:
+    def _compile_graph(self, graph: IRGraph) -> Callable[..., EagerValue] | None:
         """Compile an IRGraph into an executable sparse function.
 
         Args:
@@ -88,7 +91,7 @@ class SparseProfiler:
 
         gen = SparseGenerator(graph)
         code: str = gen.generate()
-        ns: dict[str, object] = {}
+        ns: dict[str, EagerValue] = {}
         exec(code, ns)
         evaluate_fn = ns.get(gen._func_name)
         return evaluate_fn if callable(evaluate_fn) else None
@@ -96,8 +99,8 @@ class SparseProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], np.ndarray, object]],
-        device: Optional[str] = None,
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue, EagerValue]],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
     ) -> dict[str, Union[list[float], float]]:
@@ -105,7 +108,7 @@ class SparseProfiler:
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], np.ndarray, object]]): Named input structures.
+            inputs (dict[str, Union[list[float], list[list[float]], EagerValue, object]]): Named input structures.
             device (Optional[str]): Device target.
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
@@ -118,14 +121,14 @@ class SparseProfiler:
         sparse_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Optional[Callable[..., object]] = None
+        compiled_fn: Callable[..., EagerValue] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)
             except Exception:
                 compiled_fn = None
 
-        def _execute_step() -> object:
+        def _execute_step() -> EagerValue:
             """Execute a single evaluation step on sparse backend.
 
             Returns:
@@ -135,12 +138,12 @@ class SparseProfiler:
                 return compiled_fn(sparse_inputs)
 
             if not sparse_inputs:
-                return np.zeros((1,), dtype=np.float32)
+                return cast(EagerValue, np.zeros((1,), dtype=np.float32))
 
             accum = sparse_inputs[0]
             for t in sparse_inputs[1:]:
                 if hasattr(accum, "__add__"):
-                    accum = accum + t
+                    accum = cast(EagerTensorProtocol, accum) + cast(EagerTensorProtocol, t)
             return accum
 
         for _ in range(max(1, warmup_iters)):

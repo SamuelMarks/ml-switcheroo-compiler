@@ -1,9 +1,13 @@
+"""Tests for test_ad_state_lifting_integration."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
 
 
-def test_ad_state_lifting_integration():
+def test_ad_state_lifting_integration() -> None:
     """Verify that mutable state updates integrate securely into reverse-mode AD."""
     # Create a graph that reads state, computes loss, and assigns new state
     graph = IRGraph(name="test")
@@ -40,6 +44,6 @@ def test_ad_state_lifting_integration():
     # The gradient of Multiply(state_val, param) wrt param is state_val.
 
     # Find the output node in grad_graph
-    out_node_id = grad_graph.outputs[0]
+    grad_graph.outputs[0]
     # It should trace back to state_val
     assert any(n.id == "state_val" for n in grad_graph.nodes.values() if n.op_type == "Input")

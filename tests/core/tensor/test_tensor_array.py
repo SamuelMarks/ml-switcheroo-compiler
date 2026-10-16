@@ -1,10 +1,18 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_tensor_array():
+
+def test_tensor_array() -> None:
+    """Test function test_tensor_array."""
     ta = TensorArray(10, (2, 2), "float32")
     assert ta.size == 10
     assert ta.element_shape == (2, 2)
@@ -13,18 +21,23 @@ def test_tensor_array():
     import numpy as np
 
     class DummyData:
-        def __init__(self, val=0):
+        """Test class DummyData."""
+
+        def __init__(self, val: EagerValue = 0) -> None:
+            """Test function __init__."""
             self.id = "id"
             self.val = val
 
-        def __int__(self):
+        def __int__(self) -> EagerValue:
+            """Test function __int__."""
             return self.val
 
-        def __array__(self, dtype=None):
+        def __array__(self, dtype: EagerValue = None) -> EagerValue:
+            """Test function __array__."""
             return np.array(self.val)
 
     t_idx = Tensor(data="test", config=TensorConfig((1,), "int32", "cpu"))
-    t_idx._data = DummyData(0)
+    setattr(t_idx, "_data", DummyData(0))
 
     t_val = Tensor(data="val", config=TensorConfig((2, 2), "float32", "cpu"))
     t_val._data = np.ones((2, 2), dtype="float32")
@@ -56,5 +69,5 @@ def test_tensor_array():
     ta.write(t_idx_proxy, t_val_proxy)
     s = ta.stack()
 
-    assert len(state.global_tracing_state.active_graph.nodes) >= 3
+    assert len(cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "nodes"))) >= 3
     state.global_tracing_state.is_tracing = False

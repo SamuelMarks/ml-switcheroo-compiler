@@ -1,5 +1,4 @@
 """Auto-generated high-fidelity type stubs for sparse from live module introspection."""
-# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103
 
 from collections.abc import Sequence
 

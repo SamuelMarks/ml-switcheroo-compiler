@@ -1,5 +1,10 @@
+"""Tests for test_qr."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -8,50 +13,59 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.qr import Hessenberg, HouseholderProduct, Qdwh, Qr, Schur, Tridiagonal, hessenberg, householder_product, qdwh, qr, schur, tridiagonal
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_qr_dummy() -> None:
+    """Test function test_qr_dummy."""
     assert Qr().infer_shape() == ()
 
     class MockTensor:
+        """Test class MockTensor."""
+
         shape = (2, 4, 3)
 
     t = MockTensor()
-    assert Qr().infer_shape(t, mode="complete") == ((2, 4, 4), (2, 4, 3))
-    assert Qr().infer_shape(t, mode="r") == ((2, 3, 3),)
-    assert Qr().infer_shape(t, mode="reduced") == ((2, 4, 3), (2, 3, 3))
-    assert Hessenberg().infer_shape(t) == ((2, 4, 3), (2, 4, 3))
+    assert cast("Callable[..., EagerTensorProtocol]", Qr)().infer_shape(t, mode="complete") == ((2, 4, 4), (2, 4, 3))
+    assert cast("Callable[..., EagerTensorProtocol]", Qr)().infer_shape(t, mode="r") == ((2, 3, 3),)
+    assert cast("Callable[..., EagerTensorProtocol]", Qr)().infer_shape(t, mode="reduced") == ((2, 4, 3), (2, 3, 3))
+    assert cast("Callable[..., EagerTensorProtocol]", Hessenberg)().infer_shape(t) == ((2, 4, 3), (2, 4, 3))
     assert HouseholderProduct().infer_shape() == ()
-    assert HouseholderProduct().infer_shape(t) == (2, 4, 3)
-    assert Schur().infer_shape(t) == ((2, 4, 3), (2, 4, 3))
-    assert Tridiagonal().infer_shape(t) == ((2, 4), (2, 2), (2, 4, 3))
-    assert Qdwh().infer_shape(t) == ((2, 4, 3), (2, 4, 3), (2,), (2,))
+    assert cast("Callable[..., EagerTensorProtocol]", HouseholderProduct)().infer_shape(t) == (2, 4, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", Schur)().infer_shape(t) == ((2, 4, 3), (2, 4, 3))
+    assert cast("Callable[..., EagerTensorProtocol]", Tridiagonal)().infer_shape(t) == ((2, 4), (2, 2), (2, 4, 3))
+    assert cast("Callable[..., EagerTensorProtocol]", Qdwh)().infer_shape(t) == ((2, 4, 3), (2, 4, 3), (2,), (2,))
     t2 = MockTensor()
-    t2.shape = (2, 0)
-    assert Tridiagonal().infer_shape(t2) == ((2,), (2,), (2, 0))
+    setattr(t2, "shape", (2, 0))
+    assert cast("Callable[..., EagerTensorProtocol]", Tridiagonal)().infer_shape(t2) == ((2,), (2,), (2, 0))
 
 
 def test_qr_ops() -> None:
+    """Test function test_qr_ops."""
     input_data = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "float32", "cpu"))
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)))
-        (res1, res2) = qr(t)
+        (res1, res2) = cast("Callable[..., EagerTensorProtocol]", qr)(t)
         assert isinstance(res1, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)))
-        (res1, res2) = hessenberg(t)
+        (res1, res2) = cast("Callable[..., EagerTensorProtocol]", hessenberg)(t)
         assert isinstance(res1, Tensor)
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
         res = householder_product(t, t)
         assert isinstance(res, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)))
-        (res1, res2) = schur(t)
+        (res1, res2) = cast("Callable[..., EagerTensorProtocol]", schur)(t)
         assert isinstance(res1, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2,)), np.zeros((1,)), np.zeros((2, 2)))
-        (res1, res2, res3) = tridiagonal(t)
+        (res1, res2, res3) = cast("Callable[..., EagerTensorProtocol]", tridiagonal)(t)
         assert isinstance(res1, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)), np.zeros(()), np.zeros(()))
-        (res1, res2, res3, res4) = qdwh(t)
+        (res1, res2, res3, res4) = cast("Callable[..., EagerTensorProtocol]", qdwh)(t)
         assert isinstance(res1, Tensor)
     config.eager_mode = False
     qr_mod = sys.modules["ml_switcheroo_compiler.ops.linalg.decompositions.qr"]

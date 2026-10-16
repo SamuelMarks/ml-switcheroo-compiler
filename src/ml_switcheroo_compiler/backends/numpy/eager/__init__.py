@@ -1,63 +1,68 @@
-# ruff: noqa: E402, E501, F403
 """Numpy eager backend initialization."""
+
+from __future__ import annotations
 
 import re
 import typing
+from typing import cast
 
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.activation_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.array_manipulation  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.audio_features  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.control_flow  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.conv  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.distributed  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.fft_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.indexing  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.io_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.lookups  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.loss_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_advanced  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary  # noqa: F401  # noqa: F401  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_binary  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_fft  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_logical  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_logical_reductions  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_nan  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_reductions  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_scatter  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_special  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_stats  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_trig  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_unary  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.nn  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.nn_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.optimizers_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.random_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.reductions  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.search_sort_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.strings  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.variable_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_augmentation  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_bbox  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_color  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_common  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_filtering  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_filters  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_geometry  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.activation_ops
+import ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing
+import ml_switcheroo_compiler.backends.numpy.eager.array_manipulation
+import ml_switcheroo_compiler.backends.numpy.eager.audio_features
+import ml_switcheroo_compiler.backends.numpy.eager.control_flow
+import ml_switcheroo_compiler.backends.numpy.eager.conv
+import ml_switcheroo_compiler.backends.numpy.eager.distributed
+import ml_switcheroo_compiler.backends.numpy.eager.fft_ops
+import ml_switcheroo_compiler.backends.numpy.eager.indexing
+import ml_switcheroo_compiler.backends.numpy.eager.io_ops
+import ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced
+import ml_switcheroo_compiler.backends.numpy.eager.lookups
+import ml_switcheroo_compiler.backends.numpy.eager.loss_ops
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced
+import ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary
+import ml_switcheroo_compiler.backends.numpy.eager.math_binary
+import ml_switcheroo_compiler.backends.numpy.eager.math_fft
+import ml_switcheroo_compiler.backends.numpy.eager.math_logical
+import ml_switcheroo_compiler.backends.numpy.eager.math_logical_reductions
+import ml_switcheroo_compiler.backends.numpy.eager.math_nan
+import ml_switcheroo_compiler.backends.numpy.eager.math_reductions
+import ml_switcheroo_compiler.backends.numpy.eager.math_scatter
+import ml_switcheroo_compiler.backends.numpy.eager.math_special
+import ml_switcheroo_compiler.backends.numpy.eager.math_stats
+import ml_switcheroo_compiler.backends.numpy.eager.math_trig
+import ml_switcheroo_compiler.backends.numpy.eager.math_unary
+import ml_switcheroo_compiler.backends.numpy.eager.nn
+import ml_switcheroo_compiler.backends.numpy.eager.nn_ops
+import ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills
+import ml_switcheroo_compiler.backends.numpy.eager.optimizers_ops
+import ml_switcheroo_compiler.backends.numpy.eager.random_ops
+import ml_switcheroo_compiler.backends.numpy.eager.reductions
+import ml_switcheroo_compiler.backends.numpy.eager.search_sort_ops
+import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged
+import ml_switcheroo_compiler.backends.numpy.eager.strings
+import ml_switcheroo_compiler.backends.numpy.eager.variable_ops
+import ml_switcheroo_compiler.backends.numpy.eager.vision
+import ml_switcheroo_compiler.backends.numpy.eager.vision_augmentation
+import ml_switcheroo_compiler.backends.numpy.eager.vision_bbox
+import ml_switcheroo_compiler.backends.numpy.eager.vision_color
+import ml_switcheroo_compiler.backends.numpy.eager.vision_common
+import ml_switcheroo_compiler.backends.numpy.eager.vision_filtering
+import ml_switcheroo_compiler.backends.numpy.eager.vision_filters
+import ml_switcheroo_compiler.backends.numpy.eager.vision_geometry
+import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms
 import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F401
-from ml_switcheroo_compiler.backends.eager_registry import BackendArray, global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry, numpy_eager_registry
 
 
 def execute_op(
-    cls: type, op_type: str, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, BackendArray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, BackendArray]
-) -> typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, BackendArray]:
+    cls: type,
+    op_type: str,
+    *args: typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Evaluate execute_op operation.
 
     Args:
@@ -87,11 +92,35 @@ def execute_op(
 
         msg = f"Operation {op_type} is not implemented in interpreter."
         raise UnimplementedMathError(msg) from None
-    return func(*args, **kwargs)
+    return cast(typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], func(*args, **kwargs))
+
+
+@numpy_eager_registry.register("Clone")
+def clone_op(
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Clone an array using np.copy.
+
+    Args:
+        np_mod: The numpy module.
+        *args: Positional arguments (first argument is array to copy).
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        np.ndarray: Copied array.
+    """
+    del np_mod, kwargs
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "copy")(args[0]))
 
 
 @numpy_eager_registry.register("Repeat")
-def repeat(np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]) -> np.ndarray:
+def repeat(
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Repeat.
 
     Args:
@@ -102,11 +131,15 @@ def repeat(np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None],
     Returns:
             tuple[int, ...]: Result.
     """
-    return np_mod.repeat(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "repeat")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Searchsorted")
-def searchsorted(np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]) -> np.ndarray:
+def searchsorted(
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Searchsorted.
 
     Args:
@@ -117,18 +150,18 @@ def searchsorted(np_mod: typing.Union[str, int, float, list, tuple, dict, bool, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return np_mod.searchsorted(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "searchsorted")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Split")
 def split(
-    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None],
-    x: np.ndarray,
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     num_or_size_splits: typing.Union[int, list[int], tuple[int, ...]],
     axis: int = 0,
-    *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray],
-    **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray],
-) -> list[np.ndarray]:
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> list[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Split array.
 
     Args:
@@ -143,13 +176,17 @@ def split(
         List of output arrays.
     """
     split_fn = getattr(np_mod, "split", np.split)
-    return split_fn(x, num_or_size_splits, axis=axis)
+    return list(split_fn(x, num_or_size_splits, axis=axis))
 
 
 @numpy_eager_registry.register("Squeeze")
 def squeeze(
-    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], x: np.ndarray, axis: typing.Optional[int] = None, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
-) -> np.ndarray:
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    axis: typing.Optional[int] = None,
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Squeeze array.
 
     Args:
@@ -162,13 +199,17 @@ def squeeze(
     Returns:
         Squeezed array.
     """
-    return np_mod.squeeze(x, axis=axis)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "squeeze")(x, axis=axis))
 
 
 @numpy_eager_registry.register("Stack")
 def stack(
-    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], arrays: typing.Sequence[np.ndarray], axis: int = 0, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
-) -> np.ndarray:
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    arrays: typing.Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    axis: int = 0,
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Stack arrays.
 
     Args:
@@ -181,13 +222,17 @@ def stack(
     Returns:
         Stacked array.
     """
-    return np_mod.stack(arrays, axis=axis)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "stack")(arrays, axis=axis))
 
 
 @numpy_eager_registry.register("Unstack")
 def unstack(
-    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], x: np.ndarray, axis: int = 0, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
-) -> tuple[np.ndarray, ...]:
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    axis: int = 0,
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], ...]:
     """Unstack array.
 
     Args:
@@ -212,8 +257,12 @@ def unstack(
 
 @numpy_eager_registry.register("Equal")
 def equal(
-    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], x: np.ndarray, y: np.ndarray, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
-) -> typing.Union[np.ndarray, bool]:
+    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], bool]:
     """Check if x and y are equal.
 
     Args:
@@ -226,7 +275,7 @@ def equal(
     Returns: np.ndarray: A boolean array where x == y.
     """
     try:
-        return np_mod.equal(x, y)
+        return cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], bool], getattr(np_mod, "equal")(x, y))
     except Exception:
         # Fallback for incompatible types
-        return x == y
+        return cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], bool], x == y)

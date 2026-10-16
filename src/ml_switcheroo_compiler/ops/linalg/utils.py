@@ -1,16 +1,18 @@
-"""Module utils.py."""
+"""Core abstractions and logic definitions for utils.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Core abstractions and logic definitions for utils.py."""
 import uuid
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Callable, cast
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalNode
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
+
+from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
@@ -19,34 +21,36 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 def _build_linalg_output_tensors(
     out_ids: list[str],
-    out_shapes: Sequence[Sequence[Any]],
-    out_dtypes: Sequence[DType | str | Any],
-    device,
+    out_shapes: Sequence[Sequence[int | str | SymNode | SymInt | None]],
+    out_dtypes: Sequence[DType | str | None],
+    device: Device | str | None,
 ) -> list[Tensor]:
     """Evaluate _build_linalg_output_tensors operation.
 
     Args:
-        out_ids (Any): The out_ids parameter.
-        out_shapes (Any): The out_shapes parameter.
-        out_dtypes (Any): The out_dtypes parameter.
-        device (Any): The device parameter.
+        out_ids (list[str]): The out_ids parameter.
+        out_shapes (Sequence): The out_shapes parameter.
+        out_dtypes (Sequence): The out_dtypes parameter.
+        device: The device parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        list[Tensor]: Result.
     """
-    tensors = []
+    tensors: list[Tensor] = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
-        proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value if hasattr(dtype, "value") else dtype)
-        tensors.append(Tensor(proxy, TensorConfig(tuple(shape), dtype, device)))
+        dt = dtype or DType.Float32
+        clean_shape: tuple[int | str, ...] = tuple(int(s) if isinstance(s, int) else str(s) for s in shape)
+        proxy = ProxyTensor(id=out_id, shape=clean_shape, dtype=dt.value if isinstance(dt, DType) else str(dt))
+        tensors.append(Tensor(proxy, TensorConfig(clean_shape, dt, device)))
     return tensors
 
 
 def _emit_linalg_node(
     op_type: str,
-    inputs: Sequence[Tensor],
-    attrs,
-    out_shapes: Sequence[Sequence[Any]],
-    out_dtypes: Sequence[DType | str | Any],
+    inputs: Sequence[Tensor | EagerValue],
+    attrs: dict[str, EagerValue] | None,
+    out_shapes: Sequence[Sequence[int | str | SymNode | SymInt | None]],
+    out_dtypes: Sequence[DType | str | None],
 ) -> Tensor | tuple[Tensor, ...]:
     """Emit a linear algebra operation node to the tracing IR graph.
 
@@ -66,17 +70,21 @@ def _emit_linalg_node(
     if not global_tracing_state.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."
         raise RuntimeError(msg)
+
     out_ids = [str(uuid.uuid4()) for _ in out_shapes]
-    shape_meta = tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes)
+    shape_meta = cast(
+        "Sequence[int | str]",
+        tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes),
+    )
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
-    node = LogicalNode(
+    node = cast("Callable[..., LogicalNode]", LogicalNode)(
         id=out_ids[0],
         op_type=op_type,
         inputs=input_ids,
-        attributes=attrs,
+        attributes=cast("dict[str, AttributeValue]", attrs or {}),
         shape_metadata=shape_meta,
     )
     global_tracing_state.add_node(node)
-    device = inputs[0].device if inputs else "cpu"
+    device = getattr(inputs[0], "device", "cpu") if inputs else "cpu"
     tensors = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, device)
     return tensors[0] if len(tensors) == 1 else tuple(tensors)

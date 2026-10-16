@@ -1,7 +1,7 @@
 """Pydantic models and helpers for hardware generators (CUDA, ROCm, Metal, LLVM/C++)."""
 
 import os
-from typing import Optional, Union
+from typing import Callable, Optional, Union, cast
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -81,7 +81,7 @@ class HardwareTemplateConfig(BaseModel):
         if hasattr(self, key):
             val = getattr(self, key)
             if val is not None:
-                return val
+                return cast(Optional[Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, list[KernelParameterConfig]]], val)
         return default
 
     def __eq__(self, other: object) -> bool:
@@ -142,11 +142,11 @@ class HardwareTemplatesConfig(BaseModel):
         out: dict[str, TemplateEntryType] = {}
         for key, val in v.items():
             if isinstance(val, dict) and "body" in val:
-                out[str(key)] = HardwareTemplateConfig(**val)
+                out[str(key)] = cast("Callable[..., HardwareTemplateConfig]", HardwareTemplateConfig)(**val)
             elif isinstance(val, str):
                 out[str(key)] = HardwareTemplateConfig(body=val)
             else:
-                out[str(key)] = val
+                out[str(key)] = cast(TemplateEntryType, val)
         return out
 
 
@@ -455,8 +455,8 @@ def _resolve_pool_args(
     """
     op_type = getattr(node, "op_type", "").lower()
     in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
-    in0_shape = getattr(in0_node, "shape_metadata", None) or (1, 1, 1, 1)
-    out_shape = getattr(node, "shape_metadata", None) or in0_shape
+    in0_shape: tuple[int, ...] = getattr(in0_node, "shape_metadata", None) or (1, 1, 1, 1)
+    out_shape: tuple[int, ...] = getattr(node, "shape_metadata", None) or in0_shape
     n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
     c_dim = in0_shape[1] if len(in0_shape) > 1 else 1
 
@@ -467,9 +467,10 @@ def _resolve_pool_args(
         d_out = out_shape[2] if len(out_shape) > 2 else 1
         h_out = out_shape[3] if len(out_shape) > 3 else 1
         w_out = out_shape[4] if len(out_shape) > 4 else 1
-        kd = node.attributes.get("kernel_size", [2, 2, 2])[0] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
-        kh = node.attributes.get("kernel_size", [2, 2, 2])[1] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
-        kw = node.attributes.get("kernel_size", [2, 2, 2])[2] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
+        k_3d = cast(list[int], node.attributes.get("kernel_size", [2, 2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2, 2]
+        kd = k_3d[0]
+        kh = k_3d[1]
+        kw = k_3d[2]
         grid_x = f"({d_out} * {h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
         grid_y = str(c_dim)
         grid_z = str(n_dim)
@@ -494,8 +495,9 @@ def _resolve_pool_args(
     w_in = in0_shape[3] if len(in0_shape) > 3 else 1
     h_out = out_shape[2] if len(out_shape) > 2 else 1
     w_out = out_shape[3] if len(out_shape) > 3 else 1
-    kh = node.attributes.get("kernel_size", [2, 2])[0] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
-    kw = node.attributes.get("kernel_size", [2, 2])[1] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
+    k_2d = cast(list[int], node.attributes.get("kernel_size", [2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2]
+    kh = k_2d[0]
+    kw = k_2d[1]
     grid_x = f"({h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
     grid_y = str(c_dim)
     grid_z = str(n_dim)

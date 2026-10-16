@@ -6,6 +6,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_webgpu_while_loop() -> None:
+    """Test function test_webgpu_while_loop."""
     graph = IRGraph()
     graph.nodes["in0"] = IRNode(id="in0", op_type="Input", inputs=[])
     graph.nodes["in1"] = IRNode(id="in1", op_type="Input", inputs=[])
@@ -20,6 +21,7 @@ def test_webgpu_while_loop() -> None:
 
 
 def test_wasm_cond() -> None:
+    """Test function test_wasm_cond."""
     graph = IRGraph()
     graph.nodes["in0"] = IRNode(id="in0", op_type="Input", inputs=[])
     graph.nodes["cond"] = IRNode(id="cond", op_type="Cond", inputs=["in0"])
@@ -32,6 +34,7 @@ def test_wasm_cond() -> None:
 
 
 def test_webgpu_scan() -> None:
+    """Test function test_webgpu_scan."""
     graph = IRGraph()
     graph.nodes["in0"] = IRNode(id="in0", op_type="Input", inputs=[])
     graph.nodes["scan"] = IRNode(id="scan", op_type="Scan", inputs=["in0"])
@@ -43,6 +46,7 @@ def test_webgpu_scan() -> None:
 
 
 def test_wasm_scan() -> None:
+    """Test function test_wasm_scan."""
     graph = IRGraph()
     graph.nodes["in0"] = IRNode(id="in0", op_type="Input", inputs=[])
     graph.nodes["scan"] = IRNode(id="scan", op_type="Scan", inputs=["in0"])

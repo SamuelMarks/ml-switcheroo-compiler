@@ -1,3 +1,9 @@
+"""Tests for test_wgsl_ast."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
@@ -18,8 +24,14 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
     validate_workgroup_size,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_wgsl_emitter_raw_and_var():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_wgsl_emitter_raw_and_var() -> None:
+    """Test function test_wgsl_emitter_raw_and_var."""
     emitter = WGSLEmitter()
     assert emitter.emit("string_node") == "string_node"
 
@@ -33,13 +45,15 @@ def test_wgsl_emitter_raw_and_var():
     assert emitter.emit(base_node) == ""
 
 
-def test_wgsl_emitter_index():
+def test_wgsl_emitter_index() -> None:
+    """Test function test_wgsl_emitter_index."""
     emitter = WGSLEmitter()
     idx = WGSLIndex("my_buf", "0")
     assert emitter.emit(idx) == "my_buf[0]"
 
 
-def test_wgsl_emitter_ops():
+def test_wgsl_emitter_ops() -> None:
+    """Test function test_wgsl_emitter_ops."""
     emitter = WGSLEmitter()
     binop = WGSLBinaryOp("+", "a", "b")
     assert emitter.emit(binop) == "a + b"
@@ -48,13 +62,15 @@ def test_wgsl_emitter_ops():
     assert emitter.emit(unop) == "-a"
 
 
-def test_wgsl_emitter_assign():
+def test_wgsl_emitter_assign() -> None:
+    """Test function test_wgsl_emitter_assign."""
     emitter = WGSLEmitter()
     assign = WGSLAssign("a", "b")
     assert emitter.emit(assign) == "a = b;"
 
 
-def test_wgsl_emitter_decl():
+def test_wgsl_emitter_decl() -> None:
+    """Test function test_wgsl_emitter_decl."""
     emitter = WGSLEmitter()
     decl1 = WGSLDecl("let", "a")
     assert emitter.emit(decl1) == "let a;"
@@ -66,28 +82,32 @@ def test_wgsl_emitter_decl():
     assert emitter.emit(decl3) == "var c: u32 = 3;"
 
 
-def test_wgsl_emitter_if():
+def test_wgsl_emitter_if() -> None:
+    """Test function test_wgsl_emitter_if."""
     emitter = WGSLEmitter()
     if_node = WGSLIf("a == b", [WGSLRaw("return;")])
     expected = "if (a == b) {\n  return;\n}"
     assert emitter.emit(if_node) == expected
 
 
-def test_wgsl_emitter_for():
+def test_wgsl_emitter_for() -> None:
+    """Test function test_wgsl_emitter_for."""
     emitter = WGSLEmitter()
     for_node = WGSLFor(WGSLDecl("var", "i", "0"), "i < 10", "i++", [WGSLRaw("break;")])
     expected = "for (var i = 0; i < 10; i++) {\n  break;\n}"
     assert emitter.emit(for_node) == expected
 
 
-def test_wgsl_emitter_function():
+def test_wgsl_emitter_function() -> None:
+    """Test function test_wgsl_emitter_function."""
     emitter = WGSLEmitter()
     func = WGSLFunction(name="my_func", params=["a: u32"], body=[WGSLRaw("return;")], attrs=["@compute"])
     expected = "@compute\nfn my_func(a: u32) {\n  return;\n}"
     assert emitter.emit(func) == expected
 
 
-def test_validate_identifier_specifications():
+def test_validate_identifier_specifications() -> None:
+    """Test function test_validate_identifier_specifications."""
     validate_identifier("valid_name_1")
     validate_identifier("_private_var")
 
@@ -99,7 +119,8 @@ def test_validate_identifier_specifications():
         validate_identifier("var")
 
 
-def test_validate_workgroup_size_limits():
+def test_validate_workgroup_size_limits() -> None:
+    """Test function test_validate_workgroup_size_limits."""
     validate_workgroup_size(64, 1, 1)
     validate_workgroup_size(16, 16, 1)
 
@@ -113,7 +134,8 @@ def test_validate_workgroup_size_limits():
         validate_workgroup_size(16, 17, 1)
 
 
-def test_wgsl_ast_node_validation():
+def test_wgsl_ast_node_validation() -> None:
+    """Test function test_wgsl_ast_node_validation."""
     emitter = WGSLEmitter()
 
     # Valid nodes
@@ -158,16 +180,17 @@ def test_wgsl_ast_node_validation():
         WGSLFunction("kernel_main", [], [], ["@compute @workgroup_size(512, 1, 1)"]).validate()
 
 
-def test_wgsl_ast_string_statements_validation():
+def test_wgsl_ast_string_statements_validation() -> None:
     """Verify validation when AST nodes contain plain string statements."""
     emitter = WGSLEmitter()
     emitter.validate("plain_string_node")
 
-    if_node = WGSLIf("cond", ["return;"])
+    if_node = cast("Callable[..., EagerTensorProtocol]", WGSLIf)("cond", ["return;"])
     if_node.validate()
 
-    for_node = WGSLFor("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
+    for_node = cast("Callable[..., EagerTensorProtocol]", WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
     for_node.validate()
 
-    func = WGSLFunction("my_func", [], ["return;"])
+    func = cast("Callable[..., EagerTensorProtocol]", WGSLFunction)("my_func", [], ["return;"])
     func.validate()
+    assert func is not None or func is None

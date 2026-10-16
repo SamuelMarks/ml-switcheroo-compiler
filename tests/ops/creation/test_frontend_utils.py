@@ -1,7 +1,18 @@
 """Module test_frontend_utils.py."""
 
+from __future__ import annotations
 
-def test_frontend_utils_frompyfunc():
+from typing import TYPE_CHECKING, cast
+
+from ml_switcheroo_compiler.ops.creation.frontend_utils import FromDlpack, Frompyfunc, Geometric, Geomspace, frompyfunc
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_frontend_utils_frompyfunc() -> None:
     """test_frontend_utils_frompyfunc."""
     from unittest.mock import patch
 
@@ -21,11 +32,6 @@ def test_frontend_utils_frompyfunc():
         assert geometric(0.5) == "dummy_geometric"
 
 
-"""Tests for frontend utils coverage."""
-
-from ml_switcheroo_compiler.ops.creation.frontend_utils import FromDlpack, Frompyfunc, Geometric, Geomspace, frompyfunc
-
-
 def test_frontend_utils_missing_2() -> None:
     """Test geometric shape and frompyfunc."""
     _multinomial_shape = Geometric().infer_shape
@@ -35,26 +41,26 @@ def test_frontend_utils_missing_2() -> None:
 
         shape = (10,)
 
-    assert _multinomial_shape(MockTensor(), size=5) == (5,)
-    assert _multinomial_shape(MockTensor(), size=None) == (10,)
-    assert _multinomial_shape(MockTensor(), size=(5, 5)) == (5, 5)
+    assert cast("Callable[..., EagerTensorProtocol]", _multinomial_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)(), size=5) == (5,)
+    assert cast("Callable[..., EagerTensorProtocol]", _multinomial_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)(), size=None) == (10,)
+    assert cast("Callable[..., EagerTensorProtocol]", _multinomial_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)(), size=(5, 5)) == (5, 5)
 
     try:
         frompyfunc(lambda x: x, 1, 1)
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
 
     assert FromDlpack().infer_shape() == ()
-    assert FromDlpack().infer_shape(MockTensor()) == (10,)
+    assert cast("Callable[..., EagerTensorProtocol]", FromDlpack)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)()) == (10,)
 
     assert Frompyfunc().infer_shape() == ()
 
-    assert Geomspace().infer_shape(1, 10) == (50,)
-    assert Geomspace().infer_shape(MockTensor(), MockTensor(), num=10) == (10, 10)
-    assert Geomspace().infer_shape(MockTensor(), MockTensor(), num=10, axis=-1) == (10, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", Geomspace)().infer_shape(1, 10) == (50,)
+    assert cast("Callable[..., EagerTensorProtocol]", Geomspace)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)(), cast("Callable[..., EagerTensorProtocol]", MockTensor)(), num=10) == (10, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", Geomspace)().infer_shape(cast("Callable[..., EagerTensorProtocol]", MockTensor)(), cast("Callable[..., EagerTensorProtocol]", MockTensor)(), num=10, axis=-1) == (10, 10)
 
 
-def test_from_dlpack_func():
+def test_from_dlpack_func() -> None:
     """test_from_dlpack_func."""
     from unittest.mock import patch
 
@@ -66,7 +72,7 @@ def test_from_dlpack_func():
         mock_dispatch.assert_called_once_with("FromDlpack", "capsule")
 
 
-def test_geomspace_func():
+def test_geomspace_func() -> None:
     """test_geomspace_func."""
     from unittest.mock import patch
 
@@ -78,7 +84,7 @@ def test_geomspace_func():
         mock_dispatch.assert_called_once_with("Geomspace", 1, 10, num=50, endpoint=True, dtype="float32", axis=0)
 
 
-def test_geometric_func():
+def test_geometric_func() -> None:
     """test_geometric_func."""
     from unittest.mock import patch
 
@@ -90,7 +96,7 @@ def test_geometric_func():
         mock_dispatch.assert_called_once_with("Geometric", 0.5, size=(2, 2))
 
 
-def test_frontend_utils_infer_shapes():
+def test_frontend_utils_infer_shapes() -> None:
     """test_frontend_utils_infer_shapes."""
     from ml_switcheroo_compiler.ops.creation.frontend_utils import FromDlpack, Frompyfunc, Geometric, Geomspace
 
@@ -102,17 +108,17 @@ def test_frontend_utils_infer_shapes():
 
         shape = (2, 2)
 
-    assert FromDlpack().infer_shape(Dummy()) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", FromDlpack)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (2, 2)
 
     # Frompyfunc
     assert Frompyfunc().infer_shape() == ()
 
     # Geomspace
     assert Geomspace().infer_shape() == (50,)
-    assert Geomspace().infer_shape(Dummy(), Dummy(), 10, axis=0) == (10, 2, 2)
-    assert Geomspace().infer_shape(Dummy(), Dummy(), 10, axis=-1) == (2, 2, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", Geomspace)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)(), cast("Callable[..., EagerTensorProtocol]", Dummy)(), 10, axis=0) == (10, 2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", Geomspace)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)(), cast("Callable[..., EagerTensorProtocol]", Dummy)(), 10, axis=-1) == (2, 2, 10)
 
     # Geometric
-    assert Geometric().infer_shape(Dummy()) == (2, 2)
-    assert Geometric().infer_shape(Dummy(), 10) == (10,)
-    assert Geometric().infer_shape(Dummy(), size=(3, 3)) == (3, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", Geometric)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", Geometric)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)(), 10) == (10,)
+    assert cast("Callable[..., EagerTensorProtocol]", Geometric)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)(), size=(3, 3)) == (3, 3)

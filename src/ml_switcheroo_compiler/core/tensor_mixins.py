@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
 import uuid
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional  # noqa: F401
+from collections.abc import Callable, Iterator
+from typing import TYPE_CHECKING, Optional, cast  # noqa: F401
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -16,13 +16,19 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.ops.shape.indexing import ArrayAtIndexer
+    from ml_switcheroo_compiler.ir.shape_system import SymNode
 
-    from .tensor import Tensor
+    from .tensor import ArrayAtIndexer, Tensor
 
 
 class TensorPropertiesMixin:
     """Tensor properties mixin."""
+
+    _shape: tuple[int | str | SymNode, ...]
+    _dtype: DType
+    _device: Device
+    _requires_grad: bool
+    _data: EagerValue
 
     @property
     def ndim(self) -> int:
@@ -47,17 +53,17 @@ class TensorPropertiesMixin:
             if isinstance(s, str):
                 return None
             else:
-                prod *= s
+                prod *= int(cast(int, s))
         return prod
 
     @property
-    def shape(self) -> Sequence[int]:
+    def shape(self) -> tuple[int, ...]:
         """Get the shape of the tensor.
 
         Returns:
             Sequence[int]: The shape tuple of the tensor.
         """
-        return self._shape
+        return cast("tuple[int, ...]", self._shape)
 
     @property
     def dtype(self) -> DType:
@@ -87,7 +93,7 @@ class TensorPropertiesMixin:
         return self._requires_grad
 
     @property
-    def data(self):
+    def data(self) -> EagerValue:
         """Get the underlying data payload.
 
         Returns:
@@ -96,10 +102,19 @@ class TensorPropertiesMixin:
         return self._data
 
 
-class TensorConversionMixin:
+if TYPE_CHECKING:
+    _ConversionBase = TensorPropertiesMixin
+else:
+    _ConversionBase = object
+
+
+class TensorConversionMixin(_ConversionBase):
     """Tensor conversion mixin."""
 
-    def numpy(self):
+    if TYPE_CHECKING:
+        eval: Callable[[], Tensor]
+
+    def numpy(self) -> EagerValue:
         """Convert the tensor to a NumPy array.
 
         Returns:
@@ -112,7 +127,7 @@ class TensorConversionMixin:
         except Exception:
             return get_active_backend().asarray(self._data)
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype: DType | str | type | None = None) -> EagerValue:
         """Array.
 
         Args:
@@ -133,7 +148,7 @@ class TensorConversionMixin:
         try:
             return backend.array(data, dtype=dtype) if dtype is not None else backend.asarray(data)
         except Exception:
-            return backend.array(data.tolist() if hasattr(data, "tolist") else data, dtype=dtype)
+            return backend.array(getattr(data, "tolist")() if hasattr(data, "tolist") else data, dtype=dtype)
 
     def item(self) -> float:
         """Return the value of this tensor as a standard Python number.
@@ -196,9 +211,9 @@ class TensorConversionMixin:
         Returns:
             int: The computed result.
         """
-        return self.shape[0] if self.shape else 0
+        return int(self.shape[0]) if self.shape else 0
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Tensor]:
         """Iterate over the first dimension of the tensor.
 
         Yields:
@@ -214,13 +229,19 @@ class TensorConversionMixin:
         for i in range(shape[0]):
             from .tensor import Tensor, TensorConfig
 
-            yield Tensor(arr[i], TensorConfig(arr[i].shape, self.dtype, self.device))
+            yield Tensor(cast(EagerTensorProtocol, arr)[i], TensorConfig(getattr(cast(EagerTensorProtocol, arr)[i], "shape", ()), self.dtype, self.device))
 
 
-class TensorIndexingMixin:
+if TYPE_CHECKING:
+    _IndexingBase = TensorConversionMixin
+else:
+    _IndexingBase = object
+
+
+class TensorIndexingMixin(_IndexingBase):
     """Tensor indexing mixin."""
 
-    def __getitem__(self, key) -> Tensor:
+    def __getitem__(self, key: EagerValue) -> Tensor:
         """Retrieve elements from the tensor.
 
         Args:
@@ -235,12 +256,12 @@ class TensorIndexingMixin:
         """
         arr = self.__array__()
         if hasattr(key, "data"):
-            key = key.data
+            key = getattr(key, "data")
         elif isinstance(key, tuple):
             key = tuple(getattr(k, "data", k) for k in key)
 
         try:
-            res = arr[tuple(key) if isinstance(key, list) else key]
+            res = cast(EagerTensorProtocol, arr)[tuple(key) if isinstance(key, list) else key]
             res_shape = getattr(res, "shape", ())
         except IndexError as e:
             if config.eager_mode:
@@ -279,7 +300,7 @@ class TensorIndexingMixin:
 
         return Tensor(ProxyTensor(nid, (), self.dtype.value), TensorConfig((), self.dtype, self.device))
 
-    def __setitem__(self, key, value) -> None:
+    def __setitem__(self, key: EagerValue, value: EagerValue) -> None:
         """Set elements in the tensor (only supported in eager mode).
 
         Args:
@@ -291,7 +312,7 @@ class TensorIndexingMixin:
         """
         if config.eager_mode:
             val = getattr(value, "data", value)
-            self.data[key] = val
+            cast(EagerTensorProtocol, self.data)[key] = val
         else:
             msg = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."
             raise TypeError(msg)

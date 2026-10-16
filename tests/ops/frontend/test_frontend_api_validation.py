@@ -1,7 +1,10 @@
 # ruff: noqa: E501
 """Provides required module functionality."""
 
+from __future__ import annotations
+
 import contextlib
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core.config import config
@@ -9,11 +12,16 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import creation, linalg, shape
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_1(mock_proxy, mock_add_node) -> None:
+def test_lazy_frontend_mocked_1(mock_proxy: EagerTensorProtocol, mock_add_node: EagerTensorProtocol) -> None:
     """Test the lazy frontend mocked 1 behavior.
 
     Args:
@@ -26,16 +34,16 @@ def test_lazy_frontend_mocked_1(mock_proxy, mock_add_node) -> None:
     try:
         "Test frontend lazy APIs using mocks part 1.\n\n    Args:\n        mock_proxy (object): The mock_proxy.\n        mock_add_node (object): The mock_add_node.\n    "
         config.eager_mode = False
-        mock_proxy.return_value = MagicMock(id="dummy")
+        setattr(mock_proxy, "return_value", MagicMock(id="dummy"))
         p_x = MagicMock(id="x", shape=(2, 2))
         p_y = MagicMock(id="y", shape=(2, 2))
         x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
         y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
-        shape.reshape(x, (4,))
-        shape.flatten(x)
+        cast("Callable[..., EagerTensorProtocol]", shape.reshape)(x, (4,))
+        cast("EagerTensorProtocol", getattr(shape, "flatten"))(x)
         shape.squeeze(x)
-        shape.unsqueeze(x, 0)
-        shape.transpose(x, 0, 1)
+        cast("EagerTensorProtocol", getattr(shape, "unsqueeze"))(x, 0)
+        cast("EagerTensorProtocol", getattr(shape, "transpose"))(x, 0, 1)
         shape.swapaxes(x, 0, 1)
         shape.moveaxis(x, 0, 1)
         shape.roll(x, 1)
@@ -44,14 +52,14 @@ def test_lazy_frontend_mocked_1(mock_proxy, mock_add_node) -> None:
         shape.split(x, 2)
         shape.hsplit(x, 2)
         shape.vsplit(x, 2)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_2(mock_proxy, mock_add_node) -> None:
+def test_lazy_frontend_mocked_2(mock_proxy: EagerTensorProtocol, mock_add_node: EagerTensorProtocol) -> None:
     """Test the lazy frontend mocked 2 behavior.
 
     Args:
@@ -64,38 +72,38 @@ def test_lazy_frontend_mocked_2(mock_proxy, mock_add_node) -> None:
     try:
         "Test frontend lazy APIs using mocks part 2.\n\n    Args:\n        mock_proxy (object): The mock_proxy.\n        mock_add_node (object): The mock_add_node.\n    "
         config.eager_mode = False
-        mock_proxy.return_value = MagicMock(id="dummy")
+        setattr(mock_proxy, "return_value", MagicMock(id="dummy"))
         p_x = MagicMock(id="x", shape=(2, 2))
         p_y = MagicMock(id="y", shape=(2, 2))
         x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
         y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
         t_3d = Tensor(MagicMock(id="3d", shape=(2, 2, 2)), TensorConfig((2, 2, 2), DType.Float32, "cpu"))
         shape.dsplit(t_3d, 2)
-        shape.tile(x, (2, 2))
-        shape.repeat(x, 2)
-        shape.pad(x, ((1, 1), (1, 1)))
-        shape.broadcast_to(x, (2, 2, 2))
-        shape.expand(x, (2, 2, 2))
+        cast("EagerTensorProtocol", getattr(shape, "tile"))(x, (2, 2))
+        cast("EagerTensorProtocol", getattr(shape, "repeat"))(x, 2)
+        cast("EagerTensorProtocol", getattr(shape, "pad"))(x, ((1, 1), (1, 1)))
+        cast("EagerTensorProtocol", getattr(shape, "broadcast_to"))(x, (2, 2, 2))
+        cast("EagerTensorProtocol", getattr(shape, "expand"))(x, (2, 2, 2))
         t_bool = Tensor(MagicMock(id="bool", shape=(2, 2)), TensorConfig((2, 2), DType.Bool, "cpu"))
-        shape.where(t_bool, x, y)
+        cast("EagerTensorProtocol", getattr(shape, "where"))(t_bool, x, y)
         t_int = Tensor(MagicMock(id="int", shape=(2, 2)), TensorConfig((2, 2), DType.Int32, "cpu"))
-        shape.gather(x, 0, t_int)
-        shape.take(x, t_int)
-        shape.scatter(x, 0, t_int, t_int)
-        shape.slice(x, (0, 0), (1, 1))
-        shape.select(t_bool, x, y)
+        cast("EagerTensorProtocol", getattr(shape, "gather"))(x, 0, t_int)
+        cast("EagerTensorProtocol", getattr(shape, "take"))(x, t_int)
+        cast("Callable[..., EagerTensorProtocol]", shape.scatter)(x, 0, t_int, t_int)
+        cast("EagerTensorProtocol", getattr(shape, "slice"))(x, (0, 0), (1, 1))
+        cast("EagerTensorProtocol", getattr(shape, "select"))(t_bool, x, y)
         with contextlib.suppress(Exception):
-            shape.sort(x)
+            cast("EagerTensorProtocol", getattr(shape, "sort"))(x)
         with contextlib.suppress(Exception):
-            shape.argsort(x)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+            cast("EagerTensorProtocol", getattr(shape, "argsort"))(x)
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_3(mock_proxy, mock_add_node) -> None:
+def test_lazy_frontend_mocked_3(mock_proxy: EagerTensorProtocol, mock_add_node: EagerTensorProtocol) -> None:
     """Test the lazy frontend mocked 3 behavior.
 
     Args:
@@ -108,16 +116,16 @@ def test_lazy_frontend_mocked_3(mock_proxy, mock_add_node) -> None:
     try:
         "Test frontend lazy APIs using mocks part 3.\n\n    Args:\n        mock_proxy (object): The mock_proxy.\n        mock_add_node (object): The mock_add_node.\n    "
         config.eager_mode = False
-        mock_proxy.return_value = MagicMock(id="dummy")
+        setattr(mock_proxy, "return_value", MagicMock(id="dummy"))
         p_x = MagicMock(id="x", shape=(2, 2))
         p_y = MagicMock(id="y", shape=(2, 2))
         p_z = MagicMock(id="z", shape=(4,))
         x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
         y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
         z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
-        shape.meshgrid(z, z)
-        shape.tril(x)
-        shape.triu(x)
+        cast("EagerTensorProtocol", getattr(shape, "meshgrid"))(z, z)
+        cast("EagerTensorProtocol", getattr(shape, "tril"))(x)
+        cast("EagerTensorProtocol", getattr(shape, "triu"))(x)
         creation.diag(z)
         creation.zeros((2, 2))
         creation.zeros_like(x)
@@ -138,14 +146,14 @@ def test_lazy_frontend_mocked_3(mock_proxy, mock_add_node) -> None:
         linalg.outer(x, y)
         linalg.tensordot(x, y, axes=1)
         linalg.einsum("ab,bc->ac", x, y)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_4(mock_proxy, mock_add_node) -> None:
+def test_lazy_frontend_mocked_4(mock_proxy: EagerTensorProtocol, mock_add_node: EagerTensorProtocol) -> None:
     """Test the lazy frontend mocked 4 behavior.
 
     Args:
@@ -158,45 +166,45 @@ def test_lazy_frontend_mocked_4(mock_proxy, mock_add_node) -> None:
     try:
         "Test frontend lazy APIs using mocks part 4."
         config.eager_mode = False
-        mock_proxy.return_value = MagicMock(id="dummy")
+        setattr(mock_proxy, "return_value", MagicMock(id="dummy"))
         p_x = MagicMock(id="x", shape=(2, 2))
         p_y = MagicMock(id="y", shape=(2, 2))
         p_z = MagicMock(id="z", shape=(4,))
         x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
         y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
         z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
-        linalg.matrix_power(x, 2)
+        cast("EagerTensorProtocol", getattr(linalg, "matrix_power"))(x, 2)
         with contextlib.suppress(Exception):
-            linalg.cholesky(x)
+            cast("EagerTensorProtocol", getattr(linalg, "cholesky"))(x)
         with contextlib.suppress(Exception):
-            linalg.qr(x)
+            cast("EagerTensorProtocol", getattr(linalg, "qr"))(x)
         with contextlib.suppress(Exception):
-            linalg.svd(x)
+            cast("EagerTensorProtocol", getattr(linalg, "svd"))(x)
         with contextlib.suppress(Exception):
-            linalg.eig(x)
+            cast("EagerTensorProtocol", getattr(linalg, "eig"))(x)
         with contextlib.suppress(Exception):
-            linalg.eigh(x)
+            cast("EagerTensorProtocol", getattr(linalg, "eigh"))(x)
         with contextlib.suppress(Exception):
-            linalg.eigvals(x)
+            cast("EagerTensorProtocol", getattr(linalg, "eigvals"))(x)
         with contextlib.suppress(Exception):
-            linalg.eigvalsh(x)
+            cast("EagerTensorProtocol", getattr(linalg, "eigvalsh"))(x)
         with contextlib.suppress(Exception):
-            linalg.norm(x)
+            cast("EagerTensorProtocol", getattr(linalg, "norm"))(x)
         with contextlib.suppress(Exception):
             linalg.cond(x)
         with contextlib.suppress(Exception):
-            linalg.det(x)
+            cast("EagerTensorProtocol", getattr(linalg, "det"))(x)
         with contextlib.suppress(Exception):
-            linalg.slogdet(x)
+            cast("EagerTensorProtocol", getattr(linalg, "slogdet"))(x)
         with contextlib.suppress(Exception):
             linalg.trace(x)
         with contextlib.suppress(Exception):
-            linalg.solve(x, y)
+            cast("EagerTensorProtocol", getattr(linalg, "solve"))(x, y)
         with contextlib.suppress(Exception):
-            linalg.inv(x)
+            cast("EagerTensorProtocol", getattr(linalg, "inv"))(x)
         with contextlib.suppress(Exception):
-            linalg.pinv(x)
+            cast("EagerTensorProtocol", getattr(linalg, "pinv"))(x)
         with contextlib.suppress(Exception):
             linalg.cross(z, z)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

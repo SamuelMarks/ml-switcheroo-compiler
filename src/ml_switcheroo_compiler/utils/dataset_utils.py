@@ -1,21 +1,21 @@
-"""Module dataset_utils.py."""
+"""Dataset loading, batching, and sequence preprocessing utilities."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Core abstractions and logic definitions for dataset_utils.py."""
-
-
 import os
-from collections.abc import Iterator, Sequence  # noqa: F401
+import random
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import Callable, Union, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+DatasetElement = Union[int, float, str, bool, list[int], list[float], list[str], tuple[int, ...], tuple[float, ...]]
 
 
 @dataclass
 class TimeseriesConfig:
-    """TimeseriesConfig class."""
+    """Configuration for timeseries sliding-window extraction."""
 
     sequence_length: int
     sampling_rate: int
@@ -37,7 +37,7 @@ class BatchConfig:
 class IOConfig:
     """Configuration for file I/O operations."""
 
-    labels = "inferred"
+    labels: str | Sequence[int] = "inferred"
     label_mode: str = "int"
     class_names: Sequence[str] | None = None
     follow_links: bool = False
@@ -77,48 +77,40 @@ class DatasetConfig:
     loader: DataLoaderConfig = field(default_factory=DataLoaderConfig)
 
 
-if TYPE_CHECKING:
-    _ = None
-else:
-    _ = None
-
-
 class NumpyDataset:
-    """Provide a simple dataset iterator for numpy arrays."""
+    """Provide a simple dataset iterator for array or sequence data."""
 
     def __init__(
         self,
-        x,
-        y=None,
+        x: Iterable[DatasetElement] | DatasetElement,
+        y: Iterable[DatasetElement] | DatasetElement | None = None,
         config: BatchConfig | None = None,
     ) -> None:
-        """Initialize dataset.
+        """Initialize the dataset.
 
         Args:
-            x: Input data.
-            y: Target data.
-            config: Dataset configuration.
+            x (Iterable[DatasetElement] | DatasetElement): Input feature data.
+            y (Iterable[DatasetElement] | DatasetElement | None): Optional target data.
+            config (BatchConfig | None): Optional batching and shuffling configuration.
         """
         conf = config if config is not None else BatchConfig()
         self.x = list(x) if hasattr(x, "__iter__") else [x]
-        self.y = list(y) if hasattr(y, "__iter__") else [y] if y is not None else None
+        self.y = list(getattr(y, "__iter__")()) if hasattr(y, "__iter__") else [y] if y is not None else None
         self.batch_size = conf.batch_size
         self.shuffle = conf.shuffle
         self.seed = conf.seed
         self._indices = list(range(len(self.x)))
         if self.shuffle:
-            import random
-
             rng = random.Random(self.seed)
             rng.shuffle(self._indices)
 
     def __iter__(
         self,
-    ):
-        """Iterate over dataset.
+    ) -> Iterator[list[DatasetElement] | tuple[list[DatasetElement], list[DatasetElement]]]:
+        """Iterate over batches in the dataset.
 
-        Yields: Tensor: Yielded value.
-            Iterator: Result.
+        Yields:
+            list[DatasetElement] | tuple[list[DatasetElement], list[DatasetElement]]: Batch of inputs or (inputs, targets).
         """
         for i in range(0, len(self._indices), self.batch_size):
             batch_idx = self._indices[i : i + self.batch_size]
@@ -130,10 +122,10 @@ class NumpyDataset:
                 yield batch_x
 
     def __len__(self) -> int:
-        """Length of dataset.
+        """Return the number of batches in the dataset.
 
         Returns:
-        int: Result.
+            int: Total number of batches.
         """
         if len(self._indices) == 0:
             return 0
@@ -144,10 +136,11 @@ def _parse_class_names(directory: str, class_names: Sequence[str] | None) -> lis
     """Parse class labels from folder names.
 
     Args:
-        directory (str): The directory parameter.
-        class_names (object): The class_names parameter.
+        directory (str): Root directory path containing class subdirectories.
+        class_names (Sequence[str] | None): Optional explicit sequence of class names.
 
-    Yields: Tensor: Result.
+    Returns:
+        list[str]: Ordered list of class names.
     """
     if class_names is not None:
         return list(class_names)
@@ -155,37 +148,41 @@ def _parse_class_names(directory: str, class_names: Sequence[str] | None) -> lis
 
 
 def _is_valid_file(fname: str, class_dir: str, valid_exts: Sequence[str] | None) -> bool:
-    """Check if file is valid based on extension and symlink/readability.
+    """Check if a file is valid based on extension and existence.
 
     Args:
-        fname (str): The fname parameter.
-        class_dir (str): The class_dir parameter.
-        valid_exts (object): The valid_exts parameter.
+        fname (str): File name.
+        class_dir (str): Containing directory path.
+        valid_exts (Sequence[str] | None): Allowed file extensions.
 
     Returns:
-        bool: Result.
+        bool: True if the file matches valid extensions and exists on disk.
     """
     if valid_exts and not any(fname.endswith(ext) for ext in valid_exts):
         return False
-    # Add check for broken symlink or unreadable
     fpath = os.path.join(class_dir, fname)
     if not os.path.exists(fpath):
-        return False  # Broken symlink
+        return False
     return True
 
 
-def _walk_directory_and_filter(directory: str, class_names: list[str], valid_exts: Sequence[str] | None) -> tuple[list[str], list[int]]:
-    """Walk through the directory and filter files.
+def _walk_directory_and_filter(
+    directory: str,
+    class_names: list[str],
+    valid_exts: Sequence[str] | None,
+) -> tuple[list[str], list[int]]:
+    """Walk through class subdirectories and collect valid file paths and integer labels.
 
     Args:
-        directory (str): The directory parameter.
-        class_names (object): The class_names parameter.
-        valid_exts (object): The valid_exts parameter.
+        directory (str): Root directory path.
+        class_names (list[str]): Ordered list of class directory names.
+        valid_exts (Sequence[str] | None): Allowed file extensions.
 
-    Yields: Tensor: Result.
+    Returns:
+        tuple[list[str], list[int]]: Tuple of (file_paths, file_labels).
     """
-    file_paths = []
-    file_labels = []
+    file_paths: list[str] = []
+    file_labels: list[int] = []
     for i, class_name in enumerate(class_names):
         class_dir = os.path.join(directory, class_name)
         if not os.path.isdir(class_dir):
@@ -203,30 +200,29 @@ def _get_files_and_labels(
     class_names: Sequence[str] | None = None,
     valid_exts: Sequence[str] | None = None,
 ) -> tuple[list[str], list[int], list[str]]:
-    """Get files and labels from directory.
+    """Collect files, labels, and class names from a directory tree.
 
     Args:
-        directory (str): The directory parameter.
-        labels (object): The labels parameter.
-        class_names (object): The class_names parameter.
-        valid_exts (object): The valid_exts parameter.
+        directory (str): Root directory path.
+        labels (str | Sequence[int]): Label inference mode ('inferred') or explicit label sequence.
+        class_names (Sequence[str] | None): Optional explicit class names.
+        valid_exts (Sequence[str] | None): Allowed file extensions.
 
     Returns:
-        tuple: Result.
+        tuple[list[str], list[int], list[str]]: Tuple of (file_paths, file_labels, parsed_class_names).
 
     Raises:
-        ValueError: An exception.
+        ValueError: If the directory does not exist or explicit labels do not match file count.
     """
     directory = os.path.abspath(directory)
     if not os.path.exists(directory):
         raise ValueError(f"Directory {directory} does not exist.")
     parsed_class_names = _parse_class_names(directory, class_names)
     file_paths, file_labels = _walk_directory_and_filter(directory, parsed_class_names, valid_exts)
-    if labels != "inferred":
-        if not isinstance(labels, str):
-            if len(labels) != len(file_paths):
-                raise ValueError("Length of labels does not match number of files.")
-            file_labels = list(labels)
+    if labels != "inferred" and not isinstance(labels, str):
+        if len(labels) != len(file_paths):
+            raise ValueError("Length of labels does not match number of files.")
+        file_labels = list(labels)
     return file_paths, file_labels, parsed_class_names
 
 
@@ -237,18 +233,18 @@ def audio_dataset_from_directory(
     """Generate a dataset from audio files in a directory.
 
     Args:
-        directory (str): The directory parameter.
-        config (object): The config parameter.
+        directory (str): Root directory path.
+        config (DatasetConfig | None): Optional dataset configuration.
 
     Returns:
-        NumpyDataset: Result.
+        NumpyDataset: Constructed audio dataset.
     """
     conf = config if config is not None else DatasetConfig()
     labels = conf.io_config.labels
     class_names = conf.io_config.class_names
     batch_size = conf.batch_config.batch_size
     seed = conf.batch_config.seed
-    file_paths, file_labels, class_names = _get_files_and_labels(directory, labels, class_names, valid_exts=(".wav", ".mp3", ".flac"))
+    file_paths, file_labels, _ = _get_files_and_labels(directory, labels, class_names, valid_exts=(".wav", ".mp3", ".flac"))
     return NumpyDataset(
         file_paths,
         file_labels,
@@ -263,11 +259,11 @@ def image_dataset_from_directory(
     """Generate a dataset from image files in a directory.
 
     Args:
-        directory (str): The directory parameter.
-        config (object): The config parameter.
+        directory (str): Root directory path.
+        config (DatasetConfig | None): Optional dataset configuration.
 
     Returns:
-        NumpyDataset: Result.
+        NumpyDataset: Constructed image dataset.
     """
     conf = config if config is not None else DatasetConfig()
     labels = conf.io_config.labels
@@ -275,7 +271,7 @@ def image_dataset_from_directory(
     batch_size = conf.batch_config.batch_size
     shuffle = conf.batch_config.shuffle
     seed = conf.batch_config.seed
-    file_paths, file_labels, class_names = _get_files_and_labels(
+    file_paths, file_labels, _ = _get_files_and_labels(
         directory,
         labels,
         class_names,
@@ -295,11 +291,11 @@ def text_dataset_from_directory(
     """Generate a dataset from text files in a directory.
 
     Args:
-        directory (str): The directory parameter.
-        config (object): The config parameter.
+        directory (str): Root directory path.
+        config (DatasetConfig | None): Optional dataset configuration.
 
     Returns:
-        NumpyDataset: Result.
+        NumpyDataset: Constructed text dataset.
     """
     conf = config if config is not None else DatasetConfig()
     labels = conf.io_config.labels
@@ -307,8 +303,8 @@ def text_dataset_from_directory(
     batch_size = conf.batch_config.batch_size
     shuffle = conf.batch_config.shuffle
     seed = conf.batch_config.seed
-    file_paths, file_labels, class_names = _get_files_and_labels(directory, labels, class_names, valid_exts=(".txt",))
-    texts = []
+    file_paths, file_labels, _ = _get_files_and_labels(directory, labels, class_names, valid_exts=(".txt",))
+    texts: list[str] = []
     for fp in file_paths:
         with open(fp, encoding="utf-8") as f:
             texts.append(f.read())
@@ -319,13 +315,14 @@ def _get_timeseries_indices(
     data_len: int,
     config: dict[str, int | None],
 ) -> tuple[int, int, int]:
-    """Evaluate _get_timeseries_indices operation.
+    """Compute start, stop, and stride indices for timeseries windowing.
 
     Args:
-        data_len (int): The data_len parameter.
-        config (object): The config parameter.
+        data_len (int): Total length of the input timeseries.
+        config (dict[str, int | None]): Windowing parameters dictionary.
 
-    Yields: Tensor: Result.
+    Returns:
+        tuple[int, int, int]: Tuple of (start, stop, stride) indices.
     """
     start = 0 if config["start_index"] is None else config["start_index"]
     end = data_len if config["end_index"] is None else config["end_index"]
@@ -337,48 +334,49 @@ def _get_timeseries_indices(
 
 
 def _extract_timeseries_windows(
-    data,
-    targets,
+    data: Sequence[DatasetElement],
+    targets: Sequence[DatasetElement] | None,
     params: dict[str, int],
     bounds: tuple[int, int, int],
-):
-    """Evaluate _extract_timeseries_windows operation.
+) -> tuple[list[Sequence[DatasetElement]], list[DatasetElement] | None]:
+    """Extract sliding windows and optional aligned targets from a timeseries sequence.
 
     Args:
-        data (object): The data parameter.
-        targets (object): The targets parameter.
-        params (object): The params parameter.
-        bounds (object): The bounds parameter.
+        data (Sequence[DatasetElement]): Input sequence data.
+        targets (Sequence[DatasetElement] | None): Optional target values.
+        params (dict[str, int]): Dictionary containing 'sequence_length' and 'sampling_rate'.
+        bounds (tuple[int, int, int]): Tuple of (start, stop, stride) indices.
 
-    Yields: Tensor: Result.
+    Returns:
+        tuple[list[Sequence[DatasetElement]], list[DatasetElement] | None]: Extracted windows and targets.
     """
-    x = []
-    y = [] if targets is not None else None
+    x: list[Sequence[DatasetElement]] = []
+    y: list[DatasetElement] | None = [] if targets is not None else None
     start, stop, stride = bounds
     seq_len, samp_rate = params["sequence_length"], params["sampling_rate"]
     for i in range(start, stop, stride):
         x.append(data[i : i + seq_len * samp_rate : samp_rate])
-        if y is not None:
+        if y is not None and targets is not None:
             y.append(targets[i + seq_len * samp_rate - 1])
     return x, y
 
 
 def timeseries_dataset_from_array(
-    data,
-    targets,
+    data: Sequence[DatasetElement],
+    targets: Sequence[DatasetElement] | None,
     sequence_length: int,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
-    """Create a dataset of sliding windows over a timeseries provided as array.
+    """Create a dataset of sliding windows over a timeseries provided as an array or sequence.
 
     Args:
-        data (object): The data parameter.
-        targets (object): The targets parameter.
-        sequence_length (int): The sequence_length parameter.
-        config (object): The config parameter.
+        data (Sequence[DatasetElement]): Consecutive time steps data.
+        targets (Sequence[DatasetElement] | None): Optional target values corresponding to time steps.
+        sequence_length (int): Length of the output sequences.
+        config (DatasetConfig | None): Optional dataset configuration.
 
     Returns:
-        NumpyDataset: Result.
+        NumpyDataset: Constructed timeseries dataset.
     """
     conf = config if config is not None else DatasetConfig()
     sequence_stride = conf.loader.sequence_stride
@@ -399,27 +397,34 @@ def timeseries_dataset_from_array(
         {"sequence_length": sequence_length, "sampling_rate": sampling_rate},
         (start, stop, stride),
     )
-    return NumpyDataset(
-        x,
-        y,
-        config=BatchConfig(
-            batch_size=conf.batch_config.batch_size,
-            shuffle=conf.batch_config.shuffle,
-            seed=conf.batch_config.seed,
+    return cast(
+        NumpyDataset,
+        cast("Callable[..., EagerTensorProtocol]", NumpyDataset)(
+            x,
+            y,
+            config=BatchConfig(
+                batch_size=conf.batch_config.batch_size,
+                shuffle=conf.batch_config.shuffle,
+                seed=conf.batch_config.seed,
+            ),
         ),
     )
 
 
-def pack_x_y_sample_weight(x, y=None, sample_weight=None):
-    """Pack x, y, and sample_weight.
+def pack_x_y_sample_weight(
+    x: DatasetElement,
+    y: DatasetElement | None = None,
+    sample_weight: DatasetElement | None = None,
+) -> DatasetElement | tuple[DatasetElement, DatasetElement | None] | tuple[DatasetElement, DatasetElement | None, DatasetElement]:
+    """Pack x, y, and sample_weight into a single element or tuple.
 
     Args:
-        x: Input data.
-        y: Target data.
-        sample_weight: Sample weights.
+        x (DatasetElement): Input features.
+        y (DatasetElement | None): Optional target labels.
+        sample_weight (DatasetElement | None): Optional sample weights.
 
     Returns:
-        Packed output.
+        DatasetElement | tuple[DatasetElement, DatasetElement | None] | tuple[DatasetElement, DatasetElement | None, DatasetElement]: Packed structure.
     """
     if y is None and sample_weight is None:
         return x
@@ -429,71 +434,80 @@ def pack_x_y_sample_weight(x, y=None, sample_weight=None):
 
 
 def pad_sequences(
-    sequences,
+    sequences: Sequence[Sequence[int | float]],
     maxlen: int | None = None,
     dtype: str = "int32",
     padding: str = "pre",
     truncating: str = "pre",
-    value=0.0,
-):
+    value: int | float = 0.0,
+) -> list[list[int | float]]:
     """Pad sequences to the same length.
 
     Args:
-        sequences: List of lists of sequences.
-        maxlen: Maximum length of sequences.
-        dtype: Data type.
-        padding: Padding mode ('pre' or 'post').
-        truncating: Truncating mode ('pre' or 'post').
-        value: Padding value.
+        sequences (Sequence[Sequence[int | float]]): Sequence of variable-length sequences.
+        maxlen (int | None): Maximum length of all sequences.
+        dtype (str): Output data type identifier.
+        padding (str): Padding position ('pre' or 'post').
+        truncating (str): Truncating position ('pre' or 'post').
+        value (int | float): Padding value.
 
     Returns:
-        Padded sequences.
+        list[list[int | float]]: Padded list of sequences.
     """
+    _ = dtype
     if not sequences:
         return []
     if maxlen is None:
         maxlen = max(len(seq) for seq in sequences)
-    padded = []
+    padded: list[list[int | float]] = []
     for seq in sequences:
-        if len(seq) > maxlen:
+        seq_list = list(seq)
+        if len(seq_list) > maxlen:
             if truncating == "pre":
-                padded.append(seq[-maxlen:])
+                padded.append(seq_list[-maxlen:])
             else:
-                padded.append(seq[:maxlen])
-        elif len(seq) < maxlen:
-            pad_len = maxlen - len(seq)
+                padded.append(seq_list[:maxlen])
+        elif len(seq_list) < maxlen:
+            pad_len = maxlen - len(seq_list)
             pad_vals = [value] * pad_len
             if padding == "pre":
-                padded.append(pad_vals + seq)
+                padded.append(pad_vals + seq_list)
             else:
-                padded.append(seq + pad_vals)
+                padded.append(seq_list + pad_vals)
         else:
-            padded.append(seq.copy() if hasattr(seq, "copy") else list(seq))
+            padded.append(seq.copy() if hasattr(seq, "copy") else seq_list)
     return padded
 
 
-def split_dataset(dataset, left_size: float = 0.5, shuffle: bool = False):
-    """Split a dataset.
+def split_dataset(
+    dataset: NumpyDataset,
+    left_size: float = 0.5,
+    shuffle: bool = False,
+) -> tuple[NumpyDataset, NumpyDataset]:
+    """Split a dataset into two subsets.
 
     Args:
-        dataset: Dataset to split.
-        left_size: Size of the left split.
-        shuffle: Whether to shuffle before splitting.
+        dataset (NumpyDataset): Dataset to split.
+        left_size (float): Fraction of data in the left split.
+        shuffle (bool): Whether to shuffle before splitting.
 
     Returns:
-        Split dataset.
+        tuple[NumpyDataset, NumpyDataset]: Left and right dataset splits.
     """
+    _ = (left_size, shuffle)
     return dataset, dataset
 
 
-def unpack_x_y_sample_weight(data):
-    """Unpack x, y, and sample_weight.
+def unpack_x_y_sample_weight(
+    data: dict[str, DatasetElement | None] | tuple[DatasetElement | None, ...] | DatasetElement,
+) -> tuple[DatasetElement | tuple[DatasetElement | None, ...] | None, DatasetElement | None, DatasetElement | None]:
+    """Unpack x, y, and sample_weight from a packed batch.
 
     Args:
-        data: Packed data.
+        data (dict[str, DatasetElement | None] | tuple[DatasetElement | None, ...] | DatasetElement): Packed batch data.
 
     Returns:
-        Unpacked values.
+        tuple[DatasetElement | tuple[DatasetElement | None, ...] | None, DatasetElement | None, DatasetElement | None]: Tuple of (x, y, sample_weight).
     """
     if isinstance(data, dict):
         return data.get("x"), data.get("y"), data.get("sample_weight")

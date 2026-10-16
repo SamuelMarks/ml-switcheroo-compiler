@@ -17,8 +17,8 @@ def test_emit_creation_node_outside_tracing() -> None:
         "Execute the requested function."
         with pytest.raises(RuntimeError, match="Cannot emit TestOp node outside of a tracing context"):
             _emit_creation_node("TestOp", (2, 2), DType.Float32)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_emit_constant_node_outside_tracing() -> None:
@@ -31,5 +31,5 @@ def test_emit_constant_node_outside_tracing() -> None:
         "Execute the requested function."
         with pytest.raises(RuntimeError, match="Cannot emit Constant node outside of a tracing context"):
             _emit_constant_node(1.0, DType.Float32)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

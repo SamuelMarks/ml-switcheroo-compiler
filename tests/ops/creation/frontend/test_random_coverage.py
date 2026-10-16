@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -11,6 +12,9 @@ import ml_switcheroo_compiler.ops.creation.frontend_random as random_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
 
@@ -47,21 +51,21 @@ def test_frontend_random_coverage() -> None:
         with patch("ml_switcheroo_compiler.ops.creation.frontend_random.get_active_backend", return_value=mock_backend):
             # rand with default dtype/device and custom dtype/device
             r1 = random_mod.rand(2, 3)
-            assert r1.shape == (2, 3)
+            assert cast("EagerTensorProtocol", getattr(r1, "shape")) == (2, 3)
             r2 = random_mod.rand(2, 3, dtype=DType.Float64, device=Device("cpu"))
-            assert r2.dtype == DType.Float64
+            assert cast("EagerTensorProtocol", getattr(r2, "dtype")) == DType.Float64
 
             # randn
             rn1 = random_mod.randn(2, 3)
-            assert rn1.shape == (2, 3)
+            assert cast("EagerTensorProtocol", getattr(rn1, "shape")) == (2, 3)
             rn2 = random_mod.randn(2, 3, dtype=DType.Float64, device=Device("cpu"))
-            assert rn2.dtype == DType.Float64
+            assert cast("EagerTensorProtocol", getattr(rn2, "dtype")) == DType.Float64
 
             # randint
             ri1 = random_mod.randint(0, 10, (2, 3))
-            assert ri1.shape == (2, 3)
+            assert cast("EagerTensorProtocol", getattr(ri1, "shape")) == (2, 3)
             ri2 = random_mod.randint(0, 10, [2, 3], dtype=DType.Int32, device=Device("cpu"))
-            assert ri2.dtype == DType.Int32
+            assert cast("EagerTensorProtocol", getattr(ri2, "dtype")) == DType.Int32
 
             # manual_seed
             seed_val = random_mod.manual_seed(1234)

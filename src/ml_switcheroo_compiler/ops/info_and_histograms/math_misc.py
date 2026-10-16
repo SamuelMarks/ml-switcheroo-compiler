@@ -1,6 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Misc operations."""
 
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,7 +12,7 @@ class Gradient(OpDef):
 
     op_name = "Gradient"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -31,7 +33,7 @@ class I0(OpDef):
 
     op_name = "I0"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -52,7 +54,7 @@ class Interp(OpDef):
 
     op_name = "Interp"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -73,7 +75,7 @@ class Intersect1d(OpDef):
 
     op_name = "Intersect1d"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -92,7 +94,7 @@ class Kron(OpDef):
 
     op_name = "Kron"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -119,7 +121,7 @@ class Median(OpDef):
 
     op_name = "Median"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -138,7 +140,7 @@ class Median(OpDef):
             return (1,) if keepdims else ()
         if isinstance(axis, int):
             axis = [axis]
-        for ax in sorted(axis, reverse=True):
+        for ax in sorted(getattr(axis, "__iter__")(), reverse=True):
             if ax < len(shape):
                 if keepdims:
                     shape[ax] = 1
@@ -153,7 +155,7 @@ class Mish(OpDef):
 
     op_name = "Mish"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -174,7 +176,7 @@ class Modf(OpDef):
 
     op_name = "Modf"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -195,7 +197,7 @@ class Piecewise(OpDef):
 
     op_name = "Piecewise"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -216,7 +218,7 @@ class Rot90(OpDef):
 
     op_name = "Rot90"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -230,8 +232,9 @@ class Rot90(OpDef):
             return ()
         shape = list(getattr(args[0], "shape", ()))
         axes = kwargs.get("axes", (0, 1))
-        if len(axes) == 2 and axes[0] < len(shape) and axes[1] < len(shape):
-            shape[axes[0]], shape[axes[1]] = shape[axes[1]], shape[axes[0]]
+        if getattr(axes, "__len__")() == 2 and getattr(axes, "__getitem__")(0) < getattr(shape, "__len__")() and getattr(axes, "__getitem__")(1) < getattr(shape, "__len__")():
+            a0, a1 = int(getattr(axes, "__getitem__")(0)), int(getattr(axes, "__getitem__")(1))
+            shape[a0], shape[a1] = shape[a1], shape[a0]
         return tuple(shape)
 
 
@@ -241,7 +244,7 @@ class Trapezoid(OpDef):
 
     op_name = "Trapezoid"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -255,8 +258,8 @@ class Trapezoid(OpDef):
             return ()
         shape = list(getattr(args[0], "shape", ()))
         axis = kwargs.get("axis", -1)
-        if axis < len(shape):
-            shape.pop(axis)
+        if int(cast(int, axis)) < len(shape):
+            getattr(shape, "pop")(axis)
         return tuple(shape)
 
 
@@ -266,7 +269,7 @@ class Tri(OpDef):
 
     op_name = "Tri"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -287,7 +290,7 @@ class Tril(OpDef):
 
     op_name = "Tril"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -308,7 +311,7 @@ class TrimZeros(OpDef):
 
     op_name = "TrimZeros"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -327,7 +330,7 @@ class Triu(OpDef):
 
     op_name = "Triu"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -348,7 +351,7 @@ class Unwrap(OpDef):
 
     op_name = "Unwrap"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -369,7 +372,7 @@ class Vander(OpDef):
 
     op_name = "Vander"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -386,7 +389,7 @@ class Vander(OpDef):
         return (*x, N)
 
 
-def gradient(*args, **kwargs):
+def gradient(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the gradient of an N-dimensional array.
 
     Args:
@@ -401,7 +404,7 @@ def gradient(*args, **kwargs):
     return dispatch_op("Gradient", *args, **kwargs)
 
 
-def i0(*args, **kwargs):
+def i0(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Modify Bessel function of the first kind, order 0.
 
     Args:
@@ -416,7 +419,7 @@ def i0(*args, **kwargs):
     return dispatch_op("I0", *args, **kwargs)
 
 
-def interp(*args, **kwargs):
+def interp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """One-dimensional linear interpolation.
 
     Args:
@@ -431,7 +434,7 @@ def interp(*args, **kwargs):
     return dispatch_op("Interp", *args, **kwargs)
 
 
-def median(*args, **kwargs):
+def median(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate median operation.
 
     Args:
@@ -446,7 +449,7 @@ def median(*args, **kwargs):
     return dispatch_op("Median", *args, **kwargs)
 
 
-def modf(*args, **kwargs):
+def modf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the fractional and integral parts of an array, element-wise.
 
     Args:
@@ -461,7 +464,7 @@ def modf(*args, **kwargs):
     return dispatch_op("Modf", *args, **kwargs)
 
 
-def piecewise(*args, **kwargs):
+def piecewise(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate piecewise operation.
 
     Args:
@@ -476,7 +479,7 @@ def piecewise(*args, **kwargs):
     return dispatch_op("Piecewise", *args, **kwargs)
 
 
-def trapezoid(*args, **kwargs):
+def trapezoid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Integrate along the given axis using the composite trapezoidal rule.
 
     Args:
@@ -491,7 +494,7 @@ def trapezoid(*args, **kwargs):
     return dispatch_op("Trapezoid", *args, **kwargs)
 
 
-def kron(*args, **kwargs):
+def kron(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Kronecker product of two arrays.
 
     Args:
@@ -506,7 +509,7 @@ def kron(*args, **kwargs):
     return dispatch_op("Kron", *args, **kwargs)
 
 
-def rot90(*args, **kwargs):
+def rot90(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Rotate an array by 90 degrees in the plane specified by axes.
 
     Args:
@@ -521,7 +524,7 @@ def rot90(*args, **kwargs):
     return dispatch_op("Rot90", *args, **kwargs)
 
 
-def tri(*args, **kwargs):
+def tri(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Provide an array with ones at and below the given diagonal and zeros elsewhere.
 
     Args:
@@ -536,7 +539,7 @@ def tri(*args, **kwargs):
     return dispatch_op("Tri", *args, **kwargs)
 
 
-def tril(*args, **kwargs):
+def tril(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Lower triangle of an array.
 
     Args:
@@ -551,7 +554,7 @@ def tril(*args, **kwargs):
     return dispatch_op("Tril", *args, **kwargs)
 
 
-def trim_zeros(*args, **kwargs):
+def trim_zeros(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Trim the leading and/or trailing zeros from a 1-D array or sequence.
 
     Args:
@@ -566,7 +569,7 @@ def trim_zeros(*args, **kwargs):
     return dispatch_op("TrimZeros", *args, **kwargs)
 
 
-def triu(*args, **kwargs):
+def triu(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Upper triangle of an array.
 
     Args:
@@ -581,7 +584,7 @@ def triu(*args, **kwargs):
     return dispatch_op("Triu", *args, **kwargs)
 
 
-def vander(*args, **kwargs):
+def vander(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Generate a Vandermonde matrix.
 
     Args:
@@ -596,7 +599,7 @@ def vander(*args, **kwargs):
     return dispatch_op("Vander", *args, **kwargs)
 
 
-def intersect1d(*args, **kwargs):
+def intersect1d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Find the intersection of two arrays.
 
     Args:
@@ -611,7 +614,7 @@ def intersect1d(*args, **kwargs):
     return dispatch_op("Intersect1d", *args, **kwargs)
 
 
-def unwrap(*args, **kwargs):
+def unwrap(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Unwrap an array.
 
     Args:

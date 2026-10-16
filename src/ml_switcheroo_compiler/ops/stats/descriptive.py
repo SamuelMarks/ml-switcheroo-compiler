@@ -1,11 +1,10 @@
-"""Module descriptive.py."""
+"""Reductions."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import cast
 
-"""Reductions."""
-
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
@@ -28,7 +27,7 @@ class ApplyOverAxes(OpDef):
 
     op_name = "ApplyOverAxes"
 
-    def infer_shape(self, func=None, a=None, axes=None, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, func: EagerValue = None, a: EagerValue = None, axes: EagerValue = None, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape after reducing specified axes to size 1.
 
         Args:
@@ -44,19 +43,19 @@ class ApplyOverAxes(OpDef):
         if inp_a is None:
             return ()
 
-        def _get_shape(obj: object) -> tuple[int, ...]:
+        def _get_shape(obj: EagerValue) -> tuple[int, ...]:
             """Extract shape tuple from object.
 
             Args:
-                obj (object): Target tensor or shape.
+                obj: Target tensor or shape.
 
             Returns:
                 tuple[int, ...]: Extracted shape tuple.
             """
             if hasattr(obj, "shape"):
-                return tuple(int(d) for d in obj.shape)
+                return tuple(int(d) for d in getattr(getattr(obj, "shape"), "__iter__")())
             if hasattr(obj, "shape_metadata"):
-                sm = obj.shape_metadata
+                sm = getattr(obj, "shape_metadata")
                 if sm:
                     return tuple(int(d) for d in sm)
             if isinstance(obj, (list, tuple)):
@@ -66,7 +65,7 @@ class ApplyOverAxes(OpDef):
         shape = list(_get_shape(inp_a))
         ax = axes if axes is not None else kwargs.get("axes")
         if ax is not None and shape:
-            axes_list = [int(ax)] if isinstance(ax, int) else [int(x) for x in ax]
+            axes_list = [int(ax)] if isinstance(ax, int) else [int(x) for x in getattr(ax, "__iter__")()]
             for a_idx in axes_list:
                 norm_idx = a_idx + len(shape) if a_idx < 0 else a_idx
                 if 0 <= norm_idx < len(shape):
@@ -80,7 +79,7 @@ class Bincount(OpDef):
 
     op_name = "Bincount"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -136,7 +135,7 @@ class Corrcoef(OpDef):
     op_name = "Corrcoef"
     np_op_name = "corrcoef"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -156,7 +155,7 @@ class Correlate(OpDef):
     op_name = "Correlate"
     np_op_name = "correlate"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -176,7 +175,7 @@ class Cov(OpDef):
     op_name = "Cov"
     np_op_name = "cov"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -193,7 +192,7 @@ class Cov(OpDef):
 class TrapezoidalIntegral(OpDef):
     """TrapezoidalIntegral operation."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -204,8 +203,8 @@ class TrapezoidalIntegral(OpDef):
             tuple[int, ...]: Result.
         """
         y = args[0] if len(args) > 0 else kwargs.get("y")
-        shape = list(y)
-        axis = kwargs.get("axis", -1)
+        shape = list(getattr(y, "__iter__")())
+        axis = int(cast(int, kwargs.get("axis", -1)))
         if axis < 0:
             axis += len(shape)
         shape.pop(axis)
@@ -213,7 +212,7 @@ class TrapezoidalIntegral(OpDef):
 
 
 @dispatch_eager("TrapezoidalIntegral")
-def trapezoidal_integral(y: Tensor, x=None, dx=1.0, axis=-1):
+def trapezoidal_integral(y: Tensor, x: EagerValue = None, dx: EagerValue = 1.0, axis: EagerValue = -1) -> EagerValue:
     """Evaluate trapezoidal_integral operation.
 
     Args:
@@ -232,7 +231,7 @@ def trapezoidal_integral(y: Tensor, x=None, dx=1.0, axis=-1):
 class ConfusionMatrix(OpDef):
     """ConfusionMatrix operation."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -247,7 +246,7 @@ class ConfusionMatrix(OpDef):
 
 
 @dispatch_eager("ConfusionMatrix")
-def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights=None):
+def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights: EagerValue = None) -> EagerValue:
     """Evaluate confusion_matrix operation.
 
     Args:
@@ -262,7 +261,7 @@ def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weig
     return get_op("ConfusionMatrix")()(labels, predictions, num_classes=num_classes, weights=weights)
 
 
-def moments(x, axes=None, keepdims: bool = False):
+def moments(x: EagerValue, axes: EagerValue = None, keepdims: bool = False) -> EagerValue:
     """Compute the mean and variance of x.
 
     Args:
@@ -287,7 +286,7 @@ class Descriptive(OpDef):
 
     op_name = "Descriptive"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -297,9 +296,6 @@ class Descriptive(OpDef):
         Returns:
             tuple: Shape tuple.
         """
-        if not args:
-            return ()
-
         a = args[0]
         shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
         axis = kwargs.get("axis", None)
@@ -314,19 +310,19 @@ class Descriptive(OpDef):
 
         axes = (axis,) if isinstance(axis, int) else axis
         if keepdims:
-            out_shape = list(shape)
-            for d in axes:
-                out_shape[d] = 1
-            out_shape = tuple(out_shape)
+            out_shape_list = list(shape)
+            for d in getattr(axes, "__iter__")():
+                out_shape_list[d] = 1
+            out_shape = tuple(out_shape_list)
         else:
-            dim_indices = [d if d >= 0 else len(shape) + d for d in axes]
+            dim_indices = [d if d >= 0 else len(shape) + d for d in getattr(axes, "__iter__")()]
             out_shape = tuple(s for i, s in enumerate(shape) if i not in dim_indices)
 
         return (out_shape, out_shape, out_shape, out_shape)
 
 
 @dispatch_eager("Descriptive")
-def descriptive(a):
+def descriptive(a: EagerValue) -> EagerValue:
     """Provide function for descriptive.
 
     Args:
@@ -344,7 +340,7 @@ class Distributions(OpDef):
 
     op_name = "Distributions"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -354,19 +350,16 @@ class Distributions(OpDef):
         Returns:
             tuple: Shape tuple.
         """
-        if not args:
-            return ()
-
         a = args[0]
         shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
         sample_shape = kwargs.get("sample_shape", ())
         if isinstance(sample_shape, int):
             sample_shape = (sample_shape,)
-        return tuple(sample_shape) + shape
+        return tuple(getattr(sample_shape, "__iter__")()) + shape
 
 
 @dispatch_eager("Distributions")
-def distributions(a):
+def distributions(a: EagerValue) -> EagerValue:
     """Provide function for distributions.
 
     Args:

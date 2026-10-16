@@ -1,10 +1,13 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Ragged tensor operations for handling variable-length sequential data.
 
 This module provides operations for working with ragged tensors, which are
 tensors with non-uniform shapes across one or more dimensions.
 """
 
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -22,7 +25,7 @@ class RaggedGather(OpDef):
 
     op_name = "RaggedGather"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer output shape for RaggedGather.
 
         Args:
@@ -55,7 +58,7 @@ class RaggedTensorToDense(OpDef):
 
     op_name = "RaggedTensorToDense"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape when converting to a dense tensor.
 
         Args:
@@ -69,7 +72,7 @@ class RaggedTensorToDense(OpDef):
 
         target_shape = kwargs.get("shape")
         if target_shape is not None:
-            return tuple(target_shape)
+            return tuple(getattr(target_shape, "__iter__")())
         rt_input = args[0] if args else kwargs.get("rt_input")
         if rt_input is None:
             return ()
@@ -84,10 +87,10 @@ class RaggedTensorToDense(OpDef):
 
 def ragged_tensor_to_dense(
     rt_input: "Tensor",
-    default_value=None,
-    row_partition_tensors=None,
-    row_partition_types=None,
-    shape=None,
+    default_value: EagerValue = None,
+    row_partition_tensors: EagerValue = None,
+    row_partition_types: EagerValue = None,
+    shape: EagerValue = None,
 ) -> "Tensor":
     """Convert a ragged tensor representation into a regular dense tensor.
 
@@ -144,7 +147,7 @@ class RaggedAdd(OpDef):
 
     op_name = "RaggedAdd"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape for a ragged addition operation.
 
         Args:
@@ -170,7 +173,7 @@ class RaggedMatMul(OpDef):
 
     op_name = "RaggedMatMul"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape for a ragged matrix multiplication.
 
         Args:
@@ -204,7 +207,7 @@ class RaggedDynamicBroadcast(OpDef):
 
     op_name = "RaggedDynamicBroadcast"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape after a ragged dynamic broadcast.
 
         Args:
@@ -216,7 +219,7 @@ class RaggedDynamicBroadcast(OpDef):
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
         if shape is not None:
-            return tuple(shape)
+            return tuple(getattr(shape, "__iter__")())
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
@@ -233,7 +236,7 @@ class RaggedConstant(OpDef):
 
     op_name = "RaggedConstant"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape for a ragged constant operation.
 
         Args:
@@ -264,7 +267,7 @@ class RaggedCrossHashed(OpDef):
 
     op_name = "RaggedCrossHashed"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape for a ragged cross hashed operation.
 
         Args:
@@ -278,7 +281,7 @@ class RaggedCrossHashed(OpDef):
 
         inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not inputs and "inputs" in kwargs:
-            inputs = kwargs["inputs"]
+            inputs = cast(list[EagerTensorProtocol], kwargs["inputs"])
         if not inputs:
             return ()
         first = inputs[0]
@@ -297,7 +300,7 @@ class RaggedRange(OpDef):
 
     op_name = "RaggedRange"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape for a ragged range operation.
 
         Args:
@@ -327,7 +330,7 @@ class RaggedRowSplitsToSegmentIds(OpDef):
 
     op_name = "RaggedRowSplitsToSegmentIds"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape when converting row splits to segment IDs.
 
         Args:
@@ -352,7 +355,7 @@ class RaggedSegmentIdsToRowSplits(OpDef):
 
     op_name = "RaggedSegmentIdsToRowSplits"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape when converting segment IDs to row splits.
 
         Args:
@@ -380,7 +383,7 @@ class RaggedStack(OpDef):
 
     op_name = "RaggedStack"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape for a ragged stack operation.
 
         Args:
@@ -392,12 +395,12 @@ class RaggedStack(OpDef):
         """
         rt_inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not rt_inputs and "values" in kwargs:
-            rt_inputs = kwargs["values"]
+            rt_inputs = cast(list[EagerTensorProtocol], kwargs["values"])
         if not rt_inputs:
             return ()
         first = rt_inputs[0]
         f_shape = tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
-        axis = int(kwargs.get("axis", 0))
+        axis = int(cast(int, kwargs.get("axis", 0)))
         n = len(rt_inputs)
         s = list(f_shape)
         if axis < 0:
@@ -416,7 +419,7 @@ class RaggedStackDynamicPartitions(OpDef):
 
     op_name = "RaggedStackDynamicPartitions"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Calculate the output shape for a ragged stack dynamic partitions op.
 
         Args:
@@ -428,7 +431,7 @@ class RaggedStackDynamicPartitions(OpDef):
         """
         from ml_switcheroo_compiler.ir.shape_system import SymVar
 
-        num_partitions = int(kwargs.get("num_partitions", 2))
+        num_partitions = int(cast(int, kwargs.get("num_partitions", 2)))
         data = args[0] if args else kwargs.get("data")
         trailing = ()
         if data is not None:
@@ -465,7 +468,7 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer output shape for BooleanMask.
 
         Args:
@@ -497,7 +500,7 @@ class MapFlatValues(OpDef):
 
     op_name = "MapFlatValues"
 
-    def infer_shape(self, op=None, *args, **kwargs):
+    def infer_shape(self, op: EagerValue = None, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape for MapFlatValues operation.
 
         Args:

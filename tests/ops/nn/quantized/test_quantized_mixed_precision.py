@@ -1,10 +1,24 @@
+"""Tests for test_quantized_mixed_precision."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_quantized_ops():
+
+def _test_quantized_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_quantized_ops.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     import numpy as np
 
     import ml_switcheroo_compiler.ops.nn.quantized_ops as q_ops
@@ -15,8 +29,20 @@ def test_quantized_ops():
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    state.global_tracing_state.add_node = lambda node: None
+    setattr(state.global_tracing_state, "add_node", lambda node: None)
+    getattr(_state, "update")({"np": np, "orig": orig, "orig_add_node": orig_add_node, "orig_tracing": orig_tracing})
+    getattr(_state, "update")({"q_ops": q_ops, "state": state})
+    _state.update(locals())
 
+
+def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_quantized_ops.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    np, orig, orig_add_node, orig_tracing = _state["np"], _state["orig"], _state["orig_add_node"], _state["orig_tracing"]
+    q_ops, state = _state["q_ops"], _state["state"]
     try:
         t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
 
@@ -59,6 +85,8 @@ def test_quantized_ops():
                 q_ops.gather_qmm(t, qoc)
 
         class DummyShape:
+            """Test class DummyShape."""
+
             shape = (1, 2)
 
         assert q_ops.QuantizeOp().infer_shape(DummyShape()) == (1, 2)
@@ -71,6 +99,14 @@ def test_quantized_ops():
         assert q_ops.ComputeFloat8ScaleOp().infer_shape(DummyShape()) == (1, 2)
 
     finally:
-        config.eager_mode = orig
-        state.global_tracing_state.is_tracing = orig_tracing
-        state.global_tracing_state.add_node = orig_add_node
+        setattr(config, "eager_mode", orig)
+        setattr(state.global_tracing_state, "is_tracing", orig_tracing)
+        setattr(state.global_tracing_state, "add_node", orig_add_node)
+
+
+def test_quantized_ops() -> None:
+    """Test function test_quantized_ops."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_quantized_ops_part_1(_state)
+    _test_quantized_ops_part_2(_state)
+    assert isinstance(_state, dict)

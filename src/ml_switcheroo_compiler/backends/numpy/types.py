@@ -1,12 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
+
+from typing import Callable, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import generic_array
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def zeros(cls: type, shape: tuple[int, ...]):
+def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     """Create a tensor of zeros.
 
     Args:
@@ -18,7 +20,7 @@ def zeros(cls: type, shape: tuple[int, ...]):
     return np.zeros(shape)
 
 
-def array(cls: type, data, dtype=None):
+def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     """Create a tensor from data.
 
     Args:
@@ -28,10 +30,10 @@ def array(cls: type, data, dtype=None):
 
     Returns: np.ndarray: The array tensor.
     """
-    return generic_array(np, data, dtype)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(np, data, dtype))
 
 
-def asarray(cls: type, data):
+def asarray(cls: type, data: EagerValue) -> EagerValue:
     """Convert data to an array.
 
     Args:
@@ -43,7 +45,7 @@ def asarray(cls: type, data):
     return np.asarray(data)
 
 
-def item(cls: type, data) -> float:
+def item(cls: type, data: EagerValue) -> float:
     """Get scalar item from tensor.
 
     Args:
@@ -53,4 +55,4 @@ def item(cls: type, data) -> float:
     Returns:
         float: The scalar value.
     """
-    return np.asarray(data).item()
+    return cast(float, np.asarray(data).item())

@@ -1,9 +1,17 @@
+"""Tests for test_eager_isolation."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ml_switcheroo_compiler.core.config import config
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_eager_mode_isolation(monkeypatch):
+
+def test_eager_mode_isolation(monkeypatch: EagerTensorProtocol) -> None:
     """Test that when eager mode is on, we don't fall back to numpy inadvertently via AST."""
-
     cfg = config
 
     # Store old values

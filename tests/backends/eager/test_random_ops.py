@@ -1,20 +1,38 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+from unittest.mock import MagicMock
+
 from ml_switcheroo_compiler.backends.eager.random_ops import prng_key, rand, randint, randn, random_fold_in, random_split
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyBackend:
-    def __init__(self, use_random=False, use_method=False):
+    """Test class DummyBackend."""
+
+    def __init__(self, use_random: EagerValue = False, use_method: EagerValue = False) -> None:
+        """Test function __init__."""
         if use_random:
 
             class RandomMod:
-                def rand(self, *s):
+                """Test class RandomMod."""
+
+                def rand(self, *s: EagerValue) -> EagerValue:
+                    """Test function rand."""
                     return "rand"
 
-                def randn(self, *s):
+                def randn(self, *s: EagerValue) -> EagerValue:
+                    """Test function randn."""
                     return "randn"
 
-                def randint(self, l, h, size=None):
+                def randint(self, low: EagerValue, h: EagerValue, size: EagerValue = None) -> EagerValue:
+                    """Test function randint."""
                     return "randint"
 
             self.random = RandomMod()
@@ -22,14 +40,16 @@ class DummyBackend:
             self.rand = lambda *s: "rand_direct"
             self.randn = lambda *s: "randn_direct"
 
-        self.arrays = []
+        self.arrays = cast("list[EagerTensorProtocol]", [])
 
-    def array(self, data, dtype=None):
-        self.arrays.append((data, dtype))
+    def array(self, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        """Test function array."""
+        cast("Callable[..., EagerTensorProtocol]", self.arrays.append)((data, dtype))
         return "array_res"
 
 
-def test_random_ops():
+def test_random_ops() -> None:
+    """Test function test_random_ops."""
     bk_arr = DummyBackend()
     bk_no_arr = object()
 
@@ -42,7 +62,7 @@ def test_random_ops():
     assert len(bk_arr.arrays[-1][0]) == 2
 
     res2 = random_split(bk_no_arr, None, 2)
-    assert len(res2) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res2) == 2
 
     assert random_fold_in(bk_arr, [1, 2], 3) == "array_res"
     assert bk_arr.arrays[-1] == ([4, 2], "uint32")
@@ -58,6 +78,8 @@ def test_random_ops():
     import pytest
 
     class DummyFallback:
+        """Test class DummyFallback."""
+
         pass
 
     with pytest.raises(AttributeError):
@@ -75,48 +97,66 @@ def test_random_ops():
         randint(DummyFallback(), 0, 10, (2, 2))
 
 
-def test_rand_coverage_auto():
+def test_rand_coverage_auto() -> None:
+    """Test function test_rand_coverage_auto."""
+
     class ModUniform:
-        def uniform(self, size):
+        """Test class ModUniform."""
+
+        def uniform(self, size: EagerValue) -> EagerValue:
+            """Test function uniform."""
             return "uniform_" + str(size)
 
     assert rand(ModUniform(), shape=(2,)) == "uniform_(2,)"
 
     class ModRand:
+        """Test class ModRand."""
+
         class rand_mod:
+            """Test class rand_mod."""
+
             pass
 
         random = rand_mod()
 
-        def rand(self, *args):
+        def rand(self, *args: EagerValue) -> EagerValue:
+            """Test function rand."""
             return "rand_" + str(args)
 
     assert rand(ModRand(), shape=(2, 3)) == "rand_(2, 3)"
 
 
-def test_randn_coverage_auto():
+def test_randn_coverage_auto() -> None:
+    """Test function test_randn_coverage_auto."""
+
     class ModNormal:
-        def normal(self, size):
+        """Test class ModNormal."""
+
+        def normal(self, size: EagerValue) -> EagerValue:
+            """Test function normal."""
             return "normal_" + str(size)
 
     assert randn(ModNormal(), shape=(2,)) == "normal_(2,)"
 
     class ModRandn:
+        """Test class ModRandn."""
+
         class rand_mod:
+            """Test class rand_mod."""
+
             pass
 
         random = rand_mod()
 
-        def randn(self, *args):
+        def randn(self, *args: EagerValue) -> EagerValue:
+            """Test function randn."""
             return "randn_" + str(args)
 
     assert randn(ModRandn(), shape=(2, 3)) == "randn_(2, 3)"
 
 
-from unittest.mock import MagicMock
-
-
-def test_rand_uniform():
+def test_rand_uniform() -> None:
+    """Test function test_rand_uniform."""
     mod = MagicMock()
     mod.random = MagicMock()
     mod.random.uniform = MagicMock(return_value="uniform_val")
@@ -124,7 +164,8 @@ def test_rand_uniform():
     assert rand(mod, shape=(2, 2)) == "uniform_val"
 
 
-def test_randn_normal():
+def test_randn_normal() -> None:
+    """Test function test_randn_normal."""
     mod = MagicMock()
     mod.random = MagicMock()
     mod.random.normal = MagicMock(return_value="normal_val")

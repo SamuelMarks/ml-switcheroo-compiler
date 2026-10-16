@@ -1,5 +1,7 @@
 """Integration tests for SPMD multi-axis mesh partitioning and automated collective insertion."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.config_models import (
     DataParallelStrategyConfig,
@@ -69,8 +71,8 @@ def test_spmd_matmul_contracting_parallel_all_reduce() -> None:
     w = IRNode(id="w", op_type="Input")
     mm = IRNode(id="mm", op_type="MatMul", inputs=["x", "w"])
 
-    x.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=[None, "tp"])
-    w.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp", None])
+    setattr(x, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=[None, "tp"]))
+    setattr(w, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp", None]))
 
     graph.nodes = {"x": x, "w": w, "mm": mm}
     graph.outputs = ["mm"]
@@ -88,8 +90,8 @@ def test_spmd_matmul_contracting_parallel_reduce_scatter() -> None:
     w = IRNode(id="w", op_type="Input")
     mm = IRNode(id="mm", op_type="MatMul", inputs=["x", "w"], attributes={"requires_scatter": True})
 
-    x.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=[None, "tp"])
-    w.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp", None])
+    setattr(x, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=[None, "tp"]))
+    setattr(w, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp", None]))
 
     graph.nodes = {"x": x, "w": w, "mm": mm}
     graph.outputs = ["mm"]
@@ -106,7 +108,7 @@ def test_spmd_reduction_reduce_scatter() -> None:
     x = IRNode(id="x", op_type="Input")
     red = IRNode(id="red", op_type="ReduceSum", inputs=["x"], attributes={"axis": 1, "requires_reduce_scatter": True})
 
-    x.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=["dp", "tp"])
+    setattr(x, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["dp", "tp"]))
 
     graph.nodes = {"x": x, "red": red}
     graph.outputs = ["red"]
@@ -126,9 +128,9 @@ def test_spmd_multi_axis_dp_tp_propagation() -> None:
     add = IRNode(id="add", op_type="Add", inputs=["mm", "act"])
 
     # act is sharded along dp on batch (dim 0) and tp on row (dim 1)
-    act.sharding = SPMDShardingAnnotation(mesh="mesh_4x2", mesh_mapping=["dp", "tp"])
+    setattr(act, "sharding", SPMDShardingAnnotation(mesh="mesh_4x2", mesh_mapping=["dp", "tp"]))
     # weight is replicated along dp, row-parallel
-    weight.sharding = SPMDShardingAnnotation(mesh="mesh_4x2", mesh_mapping=[None, "tp"])
+    setattr(weight, "sharding", SPMDShardingAnnotation(mesh="mesh_4x2", mesh_mapping=[None, "tp"]))
 
     graph.nodes = {"act": act, "weight": weight, "mm": mm, "add": add}
     graph.outputs = ["add"]

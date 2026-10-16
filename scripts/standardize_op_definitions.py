@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Union
 
 import yaml
 
@@ -10,6 +11,17 @@ from ml_switcheroo_compiler.ops.config_models import (
     OperationDefinitionModel,
 )
 from ml_switcheroo_compiler.ops.shape_inference import load_shape_signatures
+
+OpYamlValue = Union[
+    str,
+    int,
+    float,
+    bool,
+    list["OpYamlValue"],
+    dict[str, "OpYamlValue"],
+    None,
+]
+OpYamlDict = dict[str, OpYamlValue]
 
 DEFS_DIR: str = "src/ml_switcheroo_compiler/ops/definitions"
 
@@ -63,20 +75,20 @@ ABSORBING_VALUES: dict[str, int | float] = {
 
 def build_signature_section(
     op_name: str,
-    raw_data: dict[str, str | int | float | bool | list | dict | None],
-) -> dict[str, str | int | float | bool | list | dict | None]:
+    raw_data: OpYamlDict,
+) -> OpYamlDict:
     """Build standardized declarative signature section for an operation.
 
     Args:
         op_name (str): The canonical name of the operation.
-        raw_data (dict[str, str | int | float | bool | list | dict | None]): Raw dictionary data of the op.
+        raw_data (OpYamlDict): Raw dictionary data of the op.
 
     Returns:
-        dict[str, str | int | float | bool | list | dict | None]: Validated signature section dictionary.
+        OpYamlDict: Validated signature section dictionary.
     """
     raw_std_args = raw_data.get("std_args")
-    args_list: list[dict[str, str | bool | None]] = []
-    input_tensors: list[str] = []
+    args_list: list[OpYamlValue] = []
+    input_tensors: list[OpYamlValue] = []
     has_variadic: bool = False
 
     if isinstance(raw_std_args, list):
@@ -85,7 +97,8 @@ def build_signature_section(
                 arg_name = str(item.get("name", "x"))
                 arg_type = str(item.get("type", "array"))
                 is_var = bool(item.get("is_variadic", False))
-                kind = item.get("kind", "positional_or_keyword")
+                raw_kind = item.get("kind", "positional_or_keyword")
+                kind = str(raw_kind) if raw_kind is not None else None
                 if is_var:
                     has_variadic = True
                 if "array" in arg_type or "tensor" in arg_type:
@@ -99,9 +112,9 @@ def build_signature_section(
                     }
                 )
     if not input_tensors:
-        input_tensors = ["x"] if not args_list else [str(a["name"]) for a in args_list]
+        input_tensors = ["x"] if not args_list else [str(a["name"]) for a in args_list if isinstance(a, dict)]
 
-    sig_dict: dict[str, str | int | float | bool | list | dict | None] = {
+    sig_dict: OpYamlDict = {
         "args": args_list,
         "input_tensors": input_tensors,
         "output_tensors": ["out"],
@@ -115,16 +128,16 @@ def build_signature_section(
 
 def build_dtype_rules_section(
     op_name: str,
-    raw_data: dict[str, str | int | float | bool | list | dict | None],
-) -> dict[str, str | list[str]]:
+    raw_data: OpYamlDict,
+) -> OpYamlDict:
     """Build standardized declarative dtype_rules section.
 
     Args:
         op_name (str): The canonical name of the operation.
-        raw_data (dict[str, str | int | float | bool | list | dict | None]): Raw dictionary data of the op.
+        raw_data (OpYamlDict): Raw dictionary data of the op.
 
     Returns:
-        dict[str, str | list[str]]: Validated dtype_rules section dictionary.
+        OpYamlDict: Validated dtype_rules section dictionary.
     """
     if op_name in {"Equal", "NotEqual", "Greater", "GreaterEqual", "Less", "LessEqual"}:
         out_inference = "bool"
@@ -136,12 +149,15 @@ def build_dtype_rules_section(
         out_inference = "target_dtype"
         promo = "cast"
     else:
-        out_inference = "promote(in0, in1)" if len(raw_data.get("std_args", [])) > 1 else "in0"
+        std_args = raw_data.get("std_args")
+        num_args = len(std_args) if isinstance(std_args, list) else 0
+        out_inference = "promote(in0, in1)" if num_args > 1 else "in0"
         promo = "standard"
 
+    allowed: list[OpYamlValue] = ["all"]
     return {
         "promotion_matrix": promo,
-        "allowed_input_dtypes": ["all"],
+        "allowed_input_dtypes": allowed,
         "output_dtype_inference": out_inference,
     }
 
@@ -149,7 +165,7 @@ def build_dtype_rules_section(
 def build_shape_signature_section(
     op_name: str,
     known_signatures: dict[str, dict[str, str]],
-) -> dict[str, str]:
+) -> OpYamlDict:
     """Build standardized declarative shape_signature section.
 
     Args:
@@ -157,7 +173,7 @@ def build_shape_signature_section(
         known_signatures (dict[str, dict[str, str]]): Loaded signatures from shape_signatures.yaml.
 
     Returns:
-        dict[str, str]: Validated shape_signature section dictionary.
+        OpYamlDict: Validated shape_signature section dictionary.
     """
     if op_name in known_signatures:
         entry = known_signatures[op_name]
@@ -187,14 +203,14 @@ def build_shape_signature_section(
     }
 
 
-def build_invariants_section(op_name: str) -> dict[str, bool | int | float | None]:
+def build_invariants_section(op_name: str) -> OpYamlDict:
     """Build standardized declarative invariants section.
 
     Args:
         op_name (str): The canonical name of the operation.
 
     Returns:
-        dict[str, bool | int | float | None]: Validated invariants section dictionary.
+        OpYamlDict: Validated invariants section dictionary.
     """
     return {
         "is_commutative": op_name in COMMUTATIVE_OPS,
@@ -207,27 +223,27 @@ def build_invariants_section(op_name: str) -> dict[str, bool | int | float | Non
 
 def build_autodiff_section(
     op_name: str,
-    raw_data: dict[str, str | int | float | bool | list | dict | None],
-) -> dict[str, str | list[str] | None]:
+    raw_data: OpYamlDict,
+) -> OpYamlDict:
     """Build standardized declarative autodiff section.
 
     Args:
         op_name (str): The canonical name of the operation.
-        raw_data (dict[str, str | int | float | bool | list | dict | None]): Raw dictionary data of the op.
+        raw_data (OpYamlDict): Raw dictionary data of the op.
 
     Returns:
-        dict[str, str | list[str] | None]: Validated autodiff section dictionary.
+        OpYamlDict: Validated autodiff section dictionary.
     """
     raw_ad = raw_data.get("autodiff")
-    vjp_val: list[str] | None = None
-    jvp_val: str | None = None
+    vjp_val: OpYamlValue = None
+    jvp_val: OpYamlValue = None
 
     if isinstance(raw_ad, dict):
         vjp_val = raw_ad.get("vjp")
         jvp_val = raw_ad.get("jvp")
     elif "vjp" in raw_data or "jvp" in raw_data:
-        vjp_val = raw_data.get("vjp")  # type: ignore[assignment]
-        jvp_val = raw_data.get("jvp")  # type: ignore[assignment]
+        vjp_val = raw_data.get("vjp")
+        jvp_val = raw_data.get("jvp")
 
     return {
         "vjp_rule_id": f"{op_name}_vjp",
@@ -239,20 +255,20 @@ def build_autodiff_section(
 
 def standardize_op_data(
     op_name: str,
-    data: dict[str, str | int | float | bool | list | dict | None],
+    data: OpYamlDict,
     known_signatures: dict[str, dict[str, str]],
-) -> dict[str, str | int | float | bool | list | dict | None]:
+) -> OpYamlDict:
     """Standardize single operation data dictionary with all required schema sections.
 
     Args:
         op_name (str): Operation identifier.
-        data (dict[str, str | int | float | bool | list | dict | None]): Raw operation dictionary.
+        data (OpYamlDict): Raw operation dictionary.
         known_signatures (dict[str, dict[str, str]]): Known shape signatures.
 
     Returns:
-        dict[str, str | int | float | bool | list | dict | None]: Enriched and validated operation dictionary.
+        OpYamlDict: Enriched and validated operation dictionary.
     """
-    res = dict(data)
+    res: OpYamlDict = dict(data)
     res["signature"] = build_signature_section(op_name, res)
     res["dtype_rules"] = build_dtype_rules_section(op_name, res)
     res["shape_signature"] = build_shape_signature_section(op_name, known_signatures)
@@ -271,7 +287,7 @@ def run_standardization() -> int:
         int: Total number of standardized files.
     """
     shape_sig_cfg = load_shape_signatures()
-    known_sigs: dict[str, dict[str, str]] = {name: {"pattern": op.pattern, "category": op.category} for name, op in shape_sig_cfg.operations.items()}
+    known_sigs: dict[str, dict[str, str]] = {name: {"pattern": op.pattern or "in0", "category": op.category or "elementwise"} for name, op in shape_sig_cfg.operations.items()}
 
     files = sorted(f for f in os.listdir(DEFS_DIR) if f.endswith(".yaml"))
     count = 0
@@ -292,7 +308,7 @@ def run_standardization() -> int:
             count += 1
         else:
             # Multi-op domain registry file
-            multi_res: dict[str, dict[str, str | int | float | bool | list | dict | None]] = {}
+            multi_res: dict[str, OpYamlDict] = {}
             for op_inner, data_inner in content.items():
                 if isinstance(data_inner, dict):
                     multi_res[op_inner] = standardize_op_data(op_inner, data_inner, known_sigs)

@@ -1,3 +1,5 @@
+"""Tests for test_einsum_frontend."""
+
 # ruff: noqa: E501
 import sys
 from unittest.mock import patch
@@ -10,6 +12,7 @@ from ml_switcheroo_compiler.ops.linalg.einsum_frontend import _get_remaining_dim
 
 
 def test_tensordot_eager_trace() -> None:
+    """Test function test_tensordot_eager_trace."""
     t = Tensor(np.zeros((2, 2)), TensorConfig((2, 2), "float32", "cpu"))
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
@@ -24,6 +27,7 @@ def test_tensordot_eager_trace() -> None:
 
 
 def test_tensordot_routing() -> None:
+    """Test function test_tensordot_routing."""
     t = Tensor(np.zeros((2, 2, 2)), TensorConfig((2, 2, 2), "float32", "cpu"))
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
@@ -33,6 +37,7 @@ def test_tensordot_routing() -> None:
 
 
 def test_einsum_eager_trace() -> None:
+    """Test function test_einsum_eager_trace."""
     t = Tensor(np.zeros((2, 2)), TensorConfig((2, 2), "float32", "cpu"))
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
@@ -47,12 +52,14 @@ def test_einsum_eager_trace() -> None:
 
 
 def test_helpers() -> None:
+    """Test function test_helpers."""
     assert _get_remaining_dims(3, [0], [1]) == [2]
     out_shape = _infer_dot_general_shape((2, 3, 4), (2, 4, 5), (((2,), (1,)), ((0,), (0,))))
     assert out_shape == (2, 3, 5)
 
 
 def test_generate_tensordot_einsum_strings_empty() -> None:
+    """Test function test_generate_tensordot_einsum_strings_empty."""
     from ml_switcheroo_compiler.ops.linalg.einsum_frontend import _generate_tensordot_einsum_strings
 
     assert _generate_tensordot_einsum_strings((), (), (), ()) == ("", "", "")

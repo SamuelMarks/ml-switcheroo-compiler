@@ -1,16 +1,12 @@
-"""Module einsum_frontend.py."""
+"""Core abstractions and logic definitions for einsum_frontend.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Core abstractions and logic definitions for einsum_frontend.py."""
-
-
 from collections.abc import Sequence
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .utils import _emit_linalg_node
@@ -86,7 +82,7 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     return a_str, b_str, out_str
 
 
-def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]):
+def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> EagerValue:
     """Evaluate _tensordot_einsum_routing operation.
 
     Args:
@@ -103,7 +99,7 @@ def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], S
     return einsum(eq, a, b)
 
 
-def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2):
+def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> EagerValue:
     """Compute the tensor dot product along specified axes.
 
     Args:
@@ -114,18 +110,18 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
     Returns:
         Tensor: Result.
     """
-    if isinstance(axes, tuple) and len(a.shape) > MAGIC_VAL_2 and len(b.shape) > MAGIC_VAL_2:
+    if isinstance(axes, tuple) and len(a.shape) > MATRIX_RANK and len(b.shape) > MATRIX_RANK:
         return _tensordot_einsum_routing(a, b, axes)
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
         data = backend.execute_op("Tensordot", a.data, b.data, axes=axes)
-        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), a.dtype, a.device))
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
-def einsum(equation: str, *operands: Tensor):
+def einsum(equation: str, *operands: Tensor) -> EagerValue:
     """Evaluate the Einstein summation convention on the operands.
 
     Args:
@@ -149,7 +145,7 @@ def einsum(equation: str, *operands: Tensor):
         dtype = getattr(first_op, "dtype", getattr(raw_operands[0], "dtype", "float32"))
         device = getattr(first_op, "device", "cpu")
 
-        return Tensor(data, TensorConfig(data.shape, dtype, device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), dtype, device))
     return _emit_linalg_node("Einsum", operands, {"equation": equation}, [()], [operands[0].dtype])
 
 

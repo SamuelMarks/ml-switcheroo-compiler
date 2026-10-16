@@ -1,15 +1,24 @@
+"""Tests for test_validate_rules."""
+
+from __future__ import annotations
+
 import os
 import runpy
 import sys
 import tempfile
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import yaml
 
 from scripts.validate_rules import main, validate_n_to_m
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_validate_n_to_m():
+
+def test_validate_n_to_m() -> None:
+    """Test function test_validate_n_to_m."""
     with tempfile.TemporaryDirectory() as d:
         # Create fake backend directories
         be1_dir = os.path.join(d, "backends", "be1")
@@ -37,14 +46,16 @@ def test_validate_n_to_m():
         assert "Rule 4" in errors[0]
 
 
-def test_main(capsys):
+def test_main(capsys: EagerTensorProtocol) -> None:
+    """Test function test_main."""
     with patch("scripts.validate_rules.validate_n_to_m", return_value=["err1", "err2"]):
         assert main() == 1
         captured = capsys.readouterr()
         assert "Found 2 operations violating" in captured.err
 
 
-def test_main_block(capsys):
+def test_main_block(capsys: EagerTensorProtocol) -> None:
+    """Test function test_main_block."""
     with patch.object(sys, "argv", ["validate_rules.py"]):
         with patch("glob.glob", return_value=[]):
             try:

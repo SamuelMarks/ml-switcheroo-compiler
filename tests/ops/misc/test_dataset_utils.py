@@ -1,6 +1,11 @@
+"""Tests for test_dataset_utils."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import os
 import tempfile
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -23,8 +28,14 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
     unpack_x_y_sample_weight,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_numpy_dataset():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_numpy_dataset() -> None:
+    """Test function test_numpy_dataset."""
     ds = NumpyDataset([1, 2, 3], config=BatchConfig(batch_size=2, shuffle=False))
     assert len(ds) == 2
     it = iter(ds)
@@ -43,7 +54,8 @@ def test_numpy_dataset():
     assert len(ds4) == 0
 
 
-def test_parse_class_names():
+def test_parse_class_names() -> None:
+    """Test function test_parse_class_names."""
     with tempfile.TemporaryDirectory() as td:
         os.mkdir(os.path.join(td, "c2"))
         os.mkdir(os.path.join(td, "c1"))
@@ -51,7 +63,8 @@ def test_parse_class_names():
         assert _parse_class_names(td, ["c3"]) == ["c3"]
 
 
-def test_is_valid_file():
+def test_is_valid_file() -> None:
+    """Test function test_is_valid_file."""
     with tempfile.TemporaryDirectory() as td:
         with open(os.path.join(td, "a.txt"), "w") as f:
             f.write("a")
@@ -60,7 +73,8 @@ def test_is_valid_file():
         assert not _is_valid_file("b.txt", td, (".txt",))
 
 
-def test_get_files_and_labels():
+def test_get_files_and_labels() -> None:
+    """Test function test_get_files_and_labels."""
     with tempfile.TemporaryDirectory() as td:
         os.mkdir(os.path.join(td, "c1"))
         with open(os.path.join(td, "not_dir"), "w") as f:
@@ -83,7 +97,8 @@ def test_get_files_and_labels():
         (paths, labels, names) = _get_files_and_labels(td, labels="not_inferred_str", class_names=["c1"], valid_exts=[".txt"])
 
 
-def test_dataset_from_directory():
+def test_dataset_from_directory() -> None:
+    """Test function test_dataset_from_directory."""
     with tempfile.TemporaryDirectory() as td:
         os.mkdir(os.path.join(td, "c1"))
         with open(os.path.join(td, "c1", "a.wav"), "w") as f:
@@ -100,7 +115,8 @@ def test_dataset_from_directory():
         assert len(ds3) == 1
 
 
-def test_timeseries():
+def test_timeseries() -> None:
+    """Test function test_timeseries."""
     assert _get_timeseries_indices(10, {"start_index": None, "end_index": None, "sequence_length": 2, "sampling_rate": 2, "sequence_stride": 1}) == (0, 7, 1)
     (x, y) = _extract_timeseries_windows([1, 2, 3, 4], [10, 20, 30, 40], {"sequence_length": 2, "sampling_rate": 1}, (0, 2, 1))
     assert x == [[1, 2], [2, 3]]
@@ -110,7 +126,8 @@ def test_timeseries():
     assert len(ds) > 0
 
 
-def test_pack_unpack():
+def test_pack_unpack() -> None:
+    """Test function test_pack_unpack."""
     assert pack_x_y_sample_weight(1) == 1
     assert pack_x_y_sample_weight(1, 2) == (1, 2)
     assert pack_x_y_sample_weight(1, 2, 3) == (1, 2, 3)
@@ -122,7 +139,8 @@ def test_pack_unpack():
     assert unpack_x_y_sample_weight(1) == (1, None, None)
 
 
-def test_pad_sequences():
+def test_pad_sequences() -> None:
+    """Test function test_pad_sequences."""
     assert pad_sequences([]) == []
     seqs = [[1, 2], [3]]
     res = pad_sequences(seqs)
@@ -137,5 +155,6 @@ def test_pad_sequences():
     assert res5 == [[1]]
 
 
-def test_split_dataset():
-    assert split_dataset("ds") == ("ds", "ds")
+def test_split_dataset() -> None:
+    """Test function test_split_dataset."""
+    assert cast("Callable[..., EagerTensorProtocol]", split_dataset)("ds") == ("ds", "ds")

@@ -5,8 +5,30 @@ import re
 import sys
 
 
+def _scan_file_for_np_refs(filepath: str) -> list[str]:
+    """Scan a single file for prohibited 'np.' references.
+
+    Args:
+        filepath (str): File path to inspect.
+
+    Returns:
+        list[str]: Detected violation strings.
+    """
+    hits: list[str] = []
+    with open(filepath, encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if line.strip().startswith("#"):
+                continue
+            code_line = line.split("#")[0].strip()
+            if re.search(r"\bnp\.", code_line):
+                if re.search(r"\w+\.numpy\(\)", code_line) or ("np.gradient" in code_line and "torch.gradient" in line):
+                    continue
+                hits.append(f"{filepath}:{i + 1}: {code_line}")
+    return hits
+
+
 def check_for_numpy_leaks(directory: str) -> list[str]:
-    """Check for numpy leaks in backends (excluding numpy backend and eager execution).
+    """Check for numpy leaks across the compiler codebase.
 
     Args:
         directory (str): The root directory to scan.
@@ -16,41 +38,25 @@ def check_for_numpy_leaks(directory: str) -> list[str]:
     """
     violations: list[str] = []
 
-    files_to_check: list[str] = glob.glob(directory + "/backends/**/*.py", recursive=True)
+    all_files: list[str] = glob.glob(f"{directory}/**/*.py", recursive=True)
+    import_pattern = re.compile(r"^\s*(import\s+numpy|from\s+numpy)\b")
 
-    # Explicitly check root level core tracing files
+    for filepath in sorted(set(all_files)):
+        if "backends/numpy" in filepath:
+            continue
+        with open(filepath, encoding="utf-8") as f:
+            for i, line in enumerate(f):
+                code_line: str = line.split("#")[0].strip()
+                if import_pattern.search(code_line):
+                    violations.append(f"{filepath}:{i + 1}: {code_line}")
+
+    files_to_check: list[str] = glob.glob(directory + "/backends/**/*.py", recursive=True)
     files_to_check.extend(glob.glob(f"{directory}/grad/**/*.py", recursive=True))
 
-    for filepath in set(files_to_check):
-        # Whitelisted directories/files
-        if "backends/numpy" in filepath or "backends/numba" in filepath or "backends/sparse" in filepath or "generator_mixins.py" in filepath or "distributed_webrtc" in filepath:
-            continue
-        if "backends/eager" in filepath:
-            # Eager evaluators are allowed to use numpy for unbacked/fallback math
-            continue
-
-        with open(filepath) as f:
-            for i, line in enumerate(f):
-                # Ignore comments
-                if line.strip().startswith("#"):
-                    continue
-
-                # Strip inline comments to prevent false positives
-                code_line: str = line.split("#")[0].strip()
-
-                has_import: bool = "import numpy" in code_line or "from numpy" in code_line
-                has_np: bool = bool(re.search(r"\bnp\.", code_line))
-
-                if has_import or has_np:
-                    # Ignore .numpy() attribute calls, common in PyTorch/TF tests
-                    if re.search(r"\w+\.numpy\(\)", code_line):
-                        continue
-
-                    # Ignore specific documented exceptions
-                    if "np.gradient" in code_line and "torch.gradient" in line:
-                        continue
-
-                    violations.append(f"{filepath}:{i + 1}: {code_line}")
+    exempt_dirs = ("backends/numpy", "backends/numba", "backends/sparse", "backends/eager", "distributed_webrtc")
+    for filepath in sorted(set(files_to_check)):
+        if not any(exempt in filepath for exempt in exempt_dirs):
+            violations.extend(_scan_file_for_np_refs(filepath))
 
     return violations
 
@@ -70,15 +76,17 @@ def check_for_architectural_imports(directory: str) -> list[str]:
     for d in ["core", "ir", "ops", "transforms"]:
         files_to_check.extend(glob.glob(directory + f"/{d}/**/*.py", recursive=True))
 
-    for filepath in set(files_to_check):
-        with open(filepath) as f:
+    import_stmt_pattern = re.compile(r"\b(?:from|import)\s+ml_switcheroo_compiler\.backends\b")
+
+    for filepath in sorted(set(files_to_check)):
+        with open(filepath, encoding="utf-8") as f:
             for i, line in enumerate(f):
                 if line.strip().startswith("#"):
                     continue
                 code_line: str = line.split("#")[0].strip()
 
                 # Check if it imports from ml_switcheroo_compiler.backends
-                if "ml_switcheroo_compiler.backends" in code_line:
+                if import_stmt_pattern.search(code_line):
                     # Allow registry
                     if "ml_switcheroo_compiler.backends.registry" in code_line:
                         continue

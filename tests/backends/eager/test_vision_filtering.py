@@ -1,3 +1,9 @@
+"""Tests for test_vision_filtering."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
@@ -22,37 +28,48 @@ from ml_switcheroo_compiler.backends.eager.vision_filtering import (
 )
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class DummyBackend:
+    """Test class DummyBackend."""
+
     @staticmethod
-    def asarray(x):
+    def asarray(x: EagerValue) -> EagerValue:
+        """Test function asarray."""
         return np.asarray(x)
 
 
-def test_vision_filtering_volume_patches():
+def test_vision_filtering_volume_patches() -> None:
     # Empty args
-    assert len(_extract_volume_patches(DummyBackend())) == 0
+    """Test function test_vision_filtering_volume_patches."""
+    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", _extract_volume_patches)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)())) == 0
 
     # 1D array - should just return array
     arr_1d = np.array([1, 2, 3])
-    assert np.array_equal(_extract_volume_patches(DummyBackend(), arr_1d), arr_1d)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _extract_volume_patches)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), arr_1d), arr_1d)
 
     # 5D array - normal case
     arr_5d = np.arange(32).reshape(1, 2, 2, 2, 4)
     patches = _extract_volume_patches(DummyBackend(), arr_5d, ksizes=[1, 1, 1, 1, 1], strides=[1, 1, 1, 1, 1])
-    assert patches.shape == (1, 2, 2, 2, 4, 1)
+    assert cast("EagerTensorProtocol", getattr(patches, "shape")) == (1, 2, 2, 2, 4, 1)
 
     # Invalid window size (ValueError caught)
     patches = _extract_volume_patches(DummyBackend(), arr_5d, ksizes=[1, 1, 1, 1, 5])
-    assert np.array_equal(patches, arr_5d)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(patches, arr_5d)
 
 
-def test_vision_filtering_box_coords():
+def test_vision_filtering_box_coords() -> None:
+    """Test function test_vision_filtering_box_coords."""
     coords = _get_box_coords(np, (10, 10, 5, 5), [0.0, 0.0, 1.0, 1.0])
     assert coords == ((0, 0), (9, 9))
 
 
-def test_vision_filtering_box_channels():
+def test_vision_filtering_box_channels() -> None:
+    """Test function test_vision_filtering_box_channels."""
     img = np.arange(100).reshape(10, 10)
     out = np.zeros((1, 5, 5))
     config = BBoxConfig(crop_size=(5, 5))
@@ -69,7 +86,8 @@ def test_vision_filtering_box_channels():
     _extract_box_channels(np, img_empty, out, (((0, 0), (9, 9)), 0), config)
 
 
-def test_vision_filtering_single_box():
+def test_vision_filtering_single_box() -> None:
+    """Test function test_vision_filtering_single_box."""
     imgs = [np.arange(100).reshape(10, 10)]
     bxs = [[0.0, 0.0, 1.0, 1.0]]
     bxs_idx = [0]
@@ -86,90 +104,95 @@ def test_vision_filtering_single_box():
     # Image < 2D
     imgs_1d = [np.array([1])]
     _extract_single_box(np, (imgs_1d, bxs, bxs_idx, out), 0, config)
+    assert out is not None
 
 
-def test_vision_filtering_boxes_batch():
+def test_vision_filtering_boxes_batch() -> None:
+    """Test function test_vision_filtering_boxes_batch."""
     imgs = np.arange(100).reshape(1, 10, 10, 1)
     bxs = np.array([[0.0, 0.0, 1.0, 1.0]])
     bxs_idx = np.array([0])
     config = BBoxConfig(crop_size=(5, 5))
 
     out = _extract_boxes_batch(np, imgs, bxs, bxs_idx, config)
-    assert out.shape == (1, 5, 5, 1)
+    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (1, 5, 5, 1)
 
     # scalar imgs
     imgs_scalar = np.array(0)
     out2 = _extract_boxes_batch(np, imgs_scalar, bxs, bxs_idx, config)
-    assert out2.shape == (1, 5, 5, 1)
+    assert cast("EagerTensorProtocol", getattr(out2, "shape")) == (1, 5, 5, 1)
 
-    res = _extract_boxes_tf(DummyBackend(), imgs, bxs, bxs_idx, config)
-    assert res.shape == (1, 5, 5, 1)
+    res = cast("Callable[..., EagerTensorProtocol]", _extract_boxes_tf)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), imgs, bxs, bxs_idx, config)
+    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 5, 5, 1)
 
-    res2 = extract_bounding_boxes_eager(DummyBackend(), imgs, bxs, bxs_idx, config)
-    assert res2.shape == (1, 5, 5, 1)
+    res2 = cast("Callable[..., EagerTensorProtocol]", extract_bounding_boxes_eager)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), imgs, bxs, bxs_idx, config)
+    assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (1, 5, 5, 1)
 
 
-def test_vision_filtering_xyxy_format():
+def test_vision_filtering_xyxy_format() -> None:
+    """Test function test_vision_filtering_xyxy_format."""
     boxes = np.array([[0, 0, 10, 10]])
 
-    assert np.array_equal(_to_xyxy_format(np, boxes, "xyxy"), boxes)
-    assert np.array_equal(_to_xyxy_format(np, boxes, "xyWH"), np.array([[0, 0, 10, 10]]))
-    assert np.array_equal(_to_xyxy_format(np, boxes, "cxcyWH"), np.array([[-5, -5, 5, 5]]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _to_xyxy_format)(np, boxes, "xyxy"), boxes)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _to_xyxy_format)(np, boxes, "xyWH"), cast("Callable[..., EagerTensorProtocol]", np.array)([[0, 0, 10, 10]]))
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _to_xyxy_format)(np, boxes, "cxcyWH"), cast("Callable[..., EagerTensorProtocol]", np.array)([[-5, -5, 5, 5]]))
 
     with pytest.raises(ValueError):
         _to_xyxy_format(np, boxes, "invalid")
 
 
-def test_vision_filtering_iou():
+def test_vision_filtering_iou() -> None:
+    """Test function test_vision_filtering_iou."""
     b1 = np.array([[0, 0, 10, 10]])
     b2 = np.array([[0, 0, 10, 10]])
 
     iou = _compute_iou(np, b1, b2)
-    assert np.allclose(iou, 1.0)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(iou, 1.0)
 
-    iou2 = iou_eager(DummyBackend(), b1, b2)
-    assert np.allclose(iou2, 1.0)
+    iou2 = cast("Callable[..., EagerTensorProtocol]", iou_eager)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), b1, b2)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(iou2, 1.0)
 
     # Empty
     iou3 = _compute_iou(np, np.empty((0, 4)), np.empty((0, 4)))
-    assert iou3.size == 0
+    assert cast("EagerTensorProtocol", getattr(iou3, "size")) == 0
 
 
-def test_vision_filtering_sort_and_nms():
+def test_vision_filtering_sort_and_nms() -> None:
+    """Test function test_vision_filtering_sort_and_nms."""
     boxes = np.array([[0, 0, 10, 10], [0, 0, 10, 10], [20, 20, 30, 30]])
     scores = np.array([0.9, 0.8, 0.95])
 
     b, s, i, o = _sort_boxes_by_score(np, boxes, scores, 0.85)
-    assert len(b) == 2
-    assert o[0] == 1  # 0.95 is max, which is index 1 of the filtered array (which had 0.9 and 0.95)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(b) == 2
+    assert cast("EagerTensorProtocol", getattr(o, "__getitem__")(0)) == 1  # 0.95 is max, which is index 1 of the filtered array (which had 0.9 and 0.95)
 
     # empty sort
     b2, s2, i2, o2 = _sort_boxes_by_score(np, np.array([]), np.array([]), 0.5)
-    assert len(b2) == 0
+    assert cast("Callable[..., EagerTensorProtocol]", len)(b2) == 0
 
     # NMS overlap
     ov = _compute_overlap(np, boxes, 0, [0, 1, 2])
-    assert len(ov) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(ov) == 2
 
     # suppression
     keep = _apply_suppression_threshold(np, boxes, [0, 1, 2], 2, 0.5)
-    assert len(keep) <= 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(keep) <= 2
 
     config = NMSConfig(max_output_size=2, iou_threshold=0.5, score_threshold=0.85)
     res_torch = _nms_torch(boxes, scores, config)
-    assert len(res_torch) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_torch) == 2
 
-    res_tf = _nms_tf(DummyBackend(), boxes, scores, config)
-    assert len(res_tf) == 2
+    res_tf = cast("Callable[..., EagerTensorProtocol]", _nms_tf)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), boxes, scores, config)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_tf) == 2
 
     # None config
-    res_tf2 = _nms_tf(DummyBackend(), boxes, scores, None)
-    assert len(res_tf2) > 0
+    res_tf2 = cast("Callable[..., EagerTensorProtocol]", _nms_tf)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), boxes, scores, None)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_tf2) > 0
 
     # Eager nms
-    res_eager = nms_eager(DummyBackend(), boxes, scores, config)
-    assert len(res_eager) == 2
+    res_eager = cast("Callable[..., EagerTensorProtocol]", nms_eager)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), boxes, scores, config)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_eager) == 2
 
     # Empty nms
     res_empty = _nms_torch(np.array([]), np.array([]), config)
-    assert len(res_empty) == 0
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_empty) == 0

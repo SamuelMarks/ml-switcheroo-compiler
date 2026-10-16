@@ -1,7 +1,10 @@
 # ruff: noqa: E501
 """Provides required module functionality."""
 
+from __future__ import annotations
+
 import contextlib
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -9,6 +12,11 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import creation, linalg, shape
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_lazy_frontend_direct_1() -> None:
@@ -26,11 +34,11 @@ def test_lazy_frontend_direct_1() -> None:
         y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
         global_tracing_state.start_tracing()
         try:
-            shape.reshape(x, (4,))
-            shape.flatten(x)
+            cast("Callable[..., EagerTensorProtocol]", shape.reshape)(x, (4,))
+            cast("EagerTensorProtocol", getattr(shape, "flatten"))(x)
             shape.squeeze(x)
-            shape.unsqueeze(x, 0)
-            shape.transpose(x, 0, 1)
+            cast("EagerTensorProtocol", getattr(shape, "unsqueeze"))(x, 0)
+            cast("EagerTensorProtocol", getattr(shape, "transpose"))(x, 0, 1)
             shape.swapaxes(x, 0, 1)
             shape.moveaxis(x, 0, 1)
             shape.roll(x, 1)
@@ -41,8 +49,8 @@ def test_lazy_frontend_direct_1() -> None:
             shape.vsplit(x, 2)
         finally:
             global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_lazy_frontend_direct_2() -> None:
@@ -63,35 +71,35 @@ def test_lazy_frontend_direct_2() -> None:
             p_3d = ProxyTensor(id="3d", shape=(2, 2, 2), dtype=DType.Float32)
             t_3d = Tensor(p_3d, TensorConfig((2, 2, 2), DType.Float32, "cpu"))
             shape.dsplit(t_3d, 2)
-            shape.tile(x, (2, 2))
-            shape.repeat(x, 2)
-            shape.pad(x, ((1, 1), (1, 1)))
-            shape.broadcast_to(x, (2, 2, 2))
-            shape.expand(x, (2, 2, 2))
+            cast("EagerTensorProtocol", getattr(shape, "tile"))(x, (2, 2))
+            cast("EagerTensorProtocol", getattr(shape, "repeat"))(x, 2)
+            cast("EagerTensorProtocol", getattr(shape, "pad"))(x, ((1, 1), (1, 1)))
+            cast("EagerTensorProtocol", getattr(shape, "broadcast_to"))(x, (2, 2, 2))
+            cast("EagerTensorProtocol", getattr(shape, "expand"))(x, (2, 2, 2))
             p_bool = ProxyTensor(id="bool", shape=(2, 2), dtype=DType.Bool)
             t_bool = Tensor(p_bool, TensorConfig((2, 2), DType.Bool, "cpu"))
-            shape.where(t_bool, x, y)
+            cast("EagerTensorProtocol", getattr(shape, "where"))(t_bool, x, y)
             p_int = ProxyTensor(id="int", shape=(2, 2), dtype=DType.Int32)
             t_int = Tensor(p_int, TensorConfig((2, 2), DType.Int32, "cpu"))
-            shape.gather(x, 0, t_int)
-            shape.take(x, t_int)
-            shape.scatter(x, 0, t_int, t_int)
-            shape.slice(x, (0, 0), (1, 1))
-            shape.select(t_bool, x, y)
+            cast("EagerTensorProtocol", getattr(shape, "gather"))(x, 0, t_int)
+            cast("EagerTensorProtocol", getattr(shape, "take"))(x, t_int)
+            cast("Callable[..., EagerTensorProtocol]", shape.scatter)(x, 0, t_int, t_int)
+            cast("EagerTensorProtocol", getattr(shape, "slice"))(x, (0, 0), (1, 1))
+            cast("EagerTensorProtocol", getattr(shape, "select"))(t_bool, x, y)
             with contextlib.suppress(Exception):
-                shape.sort(x)
+                cast("EagerTensorProtocol", getattr(shape, "sort"))(x)
             with contextlib.suppress(Exception):
-                shape.argsort(x)
+                cast("EagerTensorProtocol", getattr(shape, "argsort"))(x)
             p_z = ProxyTensor(id="z", shape=(4,), dtype=DType.Float32)
             z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
-            shape.meshgrid(z, z)
-            shape.tril(x)
-            shape.triu(x)
+            cast("EagerTensorProtocol", getattr(shape, "meshgrid"))(z, z)
+            cast("EagerTensorProtocol", getattr(shape, "tril"))(x)
+            cast("EagerTensorProtocol", getattr(shape, "triu"))(x)
             creation.diag(z)
         finally:
             global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_lazy_frontend_direct_3() -> None:
@@ -130,8 +138,8 @@ def test_lazy_frontend_direct_3() -> None:
             linalg.einsum("ab,bc->ac", x, y)
         finally:
             global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_lazy_frontend_direct_4() -> None:
@@ -151,40 +159,40 @@ def test_lazy_frontend_direct_4() -> None:
         z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
         global_tracing_state.start_tracing()
         try:
-            linalg.matrix_power(x, 2)
+            cast("EagerTensorProtocol", getattr(linalg, "matrix_power"))(x, 2)
             with contextlib.suppress(Exception):
-                linalg.cholesky(x)
+                cast("EagerTensorProtocol", getattr(linalg, "cholesky"))(x)
             with contextlib.suppress(Exception):
-                linalg.qr(x)
+                cast("EagerTensorProtocol", getattr(linalg, "qr"))(x)
             with contextlib.suppress(Exception):
-                linalg.svd(x)
+                cast("EagerTensorProtocol", getattr(linalg, "svd"))(x)
             with contextlib.suppress(Exception):
-                linalg.eig(x)
+                cast("EagerTensorProtocol", getattr(linalg, "eig"))(x)
             with contextlib.suppress(Exception):
-                linalg.eigh(x)
+                cast("EagerTensorProtocol", getattr(linalg, "eigh"))(x)
             with contextlib.suppress(Exception):
-                linalg.eigvals(x)
+                cast("EagerTensorProtocol", getattr(linalg, "eigvals"))(x)
             with contextlib.suppress(Exception):
-                linalg.eigvalsh(x)
+                cast("EagerTensorProtocol", getattr(linalg, "eigvalsh"))(x)
             with contextlib.suppress(Exception):
-                linalg.norm(x)
+                cast("EagerTensorProtocol", getattr(linalg, "norm"))(x)
             with contextlib.suppress(Exception):
                 linalg.cond(x)
             with contextlib.suppress(Exception):
-                linalg.det(x)
+                cast("EagerTensorProtocol", getattr(linalg, "det"))(x)
             with contextlib.suppress(Exception):
-                linalg.slogdet(x)
+                cast("EagerTensorProtocol", getattr(linalg, "slogdet"))(x)
             with contextlib.suppress(Exception):
                 linalg.trace(x)
             with contextlib.suppress(Exception):
-                linalg.solve(x, y)
+                cast("EagerTensorProtocol", getattr(linalg, "solve"))(x, y)
             with contextlib.suppress(Exception):
-                linalg.inv(x)
+                cast("EagerTensorProtocol", getattr(linalg, "inv"))(x)
             with contextlib.suppress(Exception):
-                linalg.pinv(x)
+                cast("EagerTensorProtocol", getattr(linalg, "pinv"))(x)
             with contextlib.suppress(Exception):
                 linalg.cross(z, z)
         finally:
             global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

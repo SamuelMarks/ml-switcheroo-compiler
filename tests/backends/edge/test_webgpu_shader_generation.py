@@ -1,3 +1,7 @@
+"""Tests for test_webgpu_shader_generation."""
+
+from __future__ import annotations
+
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
@@ -5,7 +9,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import SymInt
 
 
-def test_webgpu_missing_coverage():
+def test_webgpu_missing_coverage() -> None:
     """Test line coverage for WebGPU."""
     g = IRGraph()
     n_linear = IRNode(id="n_linear", op_type="Linear", inputs=["dummy"], shape_metadata=[2, 2])
@@ -36,12 +40,13 @@ def test_webgpu_missing_coverage():
             g2.nodes["dummy"] = n_dummy2
             g2.inputs = ["dummy"]
             g2.outputs = ["ar"]
-            g2.attributes = {"distributed": True}
+            setattr(g2, "attributes", {"distributed": True})
             gen2 = WebGPUCodeGenerator(g2)
             gen2.generate()
+    assert gen is not None
 
 
-def test_webgpu_attention_shared_memory_reduction():
+def test_webgpu_attention_shared_memory_reduction() -> None:
     """Test Multi-Head Attention WGSL compute shader with workgroup shared memory reduction."""
     g = IRGraph()
     q = IRNode(id="q", op_type="Input", inputs=[], shape_metadata=[8, 64])
@@ -63,7 +68,7 @@ def test_webgpu_attention_shared_memory_reduction():
     assert "scale" in shader_bundle
 
 
-def test_webgpu_pooling_and_gemm_visitors():
+def test_webgpu_pooling_and_gemm_visitors() -> None:
     """Test 2D Pooling and GEMM visitor methods."""
     g = IRGraph()
     gen = WebGPUCodeGenerator(g)
@@ -88,7 +93,7 @@ def test_webgpu_pooling_and_gemm_visitors():
     assert len(wgsl_bm) > 0
 
 
-def test_webgpu_shape_telemetry_symbolic():
+def test_webgpu_shape_telemetry_symbolic() -> None:
     """Test WebGPU shape telemetry resolving SymInt dimensions."""
     g = IRGraph()
     sym_b = SymInt("B")

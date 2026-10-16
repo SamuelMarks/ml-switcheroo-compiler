@@ -1,11 +1,6 @@
-"""Module linker.py."""
-
-from __future__ import annotations
-
-# ruff: noqa: E402, E501, F403
-
 """Provide utility functions for inspecting the call stack and retrieving source code."""
 
+from __future__ import annotations
 
 import inspect
 from typing import Optional  # noqa: F401

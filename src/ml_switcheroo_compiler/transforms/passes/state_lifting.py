@@ -1,11 +1,12 @@
-# ruff: noqa: E402, E501, F403
 """State Lifting Pass for functionalization of stateful OOP model representations."""
 
 import typing
 from collections.abc import Callable, Iterable
+from typing import cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -46,7 +47,7 @@ def _lift_node_state(node: LogicalNode, nid: str, block: LogicalGraph) -> bool:
         return True
 
     if node.op_type == "AssignVariable":
-        var_name: str = str(node.attributes.get("variable_name", f"var_{nid}"))
+        var_name = str(node.attributes.get("variable_name", f"var_{nid}"))
         node.op_type = "Output"
         node.attributes["name"] = f"{var_name}_out"
         node.attributes["is_state_update"] = True
@@ -78,28 +79,31 @@ def _lift_block(block: LogicalGraph) -> bool:
     return block_mod
 
 
-def _get_val(curr_obj: object, key: str) -> object:
+StateEntry = typing.Union[Tensor, int, float, str, bool, list["StateEntry"], tuple["StateEntry", ...], dict[str, "StateEntry"], None]
+
+
+def _get_val(curr_obj: EagerValue, key: str) -> StateEntry:
     """Retrieve value from dictionary or object attribute.
 
     Args:
-        curr_obj (object): Object or dictionary container.
+        curr_obj: Object or dictionary container.
         key (str): Attribute name or dictionary key.
 
     Returns:
-        object: Retrieved value or None.
+        StateEntry: Retrieved value or None.
     """
     if isinstance(curr_obj, dict):
         return curr_obj.get(key)
     return getattr(curr_obj, key, None)
 
 
-def _set_val(curr_obj: object, key: str, val: object) -> None:
+def _set_val(curr_obj: EagerValue, key: str, val: StateEntry) -> None:
     """Set value on dictionary or object attribute.
 
     Args:
-        curr_obj (object): Target container.
+        curr_obj: Target container.
         key (str): Key or attribute name.
-        val (object): Value to assign.
+        val (StateEntry): Value to assign.
     """
     if isinstance(curr_obj, dict):
         curr_obj[key] = val
@@ -107,15 +111,15 @@ def _set_val(curr_obj: object, key: str, val: object) -> None:
         setattr(curr_obj, key, val)
 
 
-def _navigate(curr_obj: object, parts: list[str]) -> object:
+def _navigate(curr_obj: EagerValue, parts: list[str]) -> EagerValue:
     """Traverse nested dictionary or object hierarchy along path parts.
 
     Args:
-        curr_obj (object): Root object.
+        curr_obj: Root object.
         parts (list[str]): Dot-separated path components.
 
     Returns:
-        object: Navigated nested object.
+        dict: Navigated nested object.
     """
     for p in parts:
         if isinstance(curr_obj, dict):
@@ -132,82 +136,100 @@ class StateLiftingPass:
         """Initialize StateLiftingPass."""
         self.identity_map: dict[int, str] = {}
 
-    def extract_state(self, module: object, prefix: str = "") -> tuple[dict[str, object], dict[str, object]]:  # noqa: C901, PLR0912
+    def _record_tensor_entry(
+        self,
+        name: str,
+        val: StateEntry,
+        params: dict[str, StateEntry],
+        buffers: dict[str, StateEntry],
+    ) -> None:
+        """Record a tensor-like entry into either params or buffers and update identity_map.
+
+        Args:
+            name (str): Fully qualified state entry name.
+            val (StateEntry): Tensor or array-like value.
+            params (dict[str, StateEntry]): Parameter dictionary to populate.
+            buffers (dict[str, StateEntry]): Buffer dictionary to populate.
+        """
+        if getattr(val, "requires_grad", True):
+            params[name] = val
+        else:
+            buffers[name] = val
+        self.identity_map[id(val)] = name
+
+    def _extract_attr_entry(
+        self,
+        full_name: str,
+        attr_val: StateEntry,
+        params: dict[str, StateEntry],
+        buffers: dict[str, StateEntry],
+    ) -> None:
+        """Extract state from a single reflected attribute value.
+
+        Args:
+            full_name (str): Qualified attribute name.
+            attr_val (StateEntry): Attribute value to inspect.
+            params (dict[str, StateEntry]): Parameter dictionary to populate.
+            buffers (dict[str, StateEntry]): Buffer dictionary to populate.
+        """
+        if isinstance(attr_val, Tensor) or hasattr(attr_val, "shape"):
+            self._record_tensor_entry(full_name, attr_val, params, buffers)
+        elif isinstance(attr_val, dict):
+            for k, v in attr_val.items():
+                if isinstance(v, Tensor) or hasattr(v, "shape"):
+                    self._record_tensor_entry(f"{full_name}.{k}", v, params, buffers)
+        elif hasattr(attr_val, "__dict__") and not callable(attr_val):
+            sub_p, sub_b = self.extract_state(attr_val, prefix=f"{full_name}.")
+            params.update(sub_p)
+            buffers.update(sub_b)
+
+    def extract_state(self, module: EagerValue, prefix: str = "") -> tuple[dict[str, StateEntry], dict[str, StateEntry]]:
         """Reliably extract parameters and buffers from stateful OOP model representations.
 
         Handles nested submodules, custom parameter dictionaries, and buffer assignments
         without breaking tensor identity.
 
         Args:
-            module (object): Stateful OOP model (e.g. PyTorch nn.Module or custom class).
+            module: Stateful OOP model (e.g. PyTorch nn.Module or custom class).
             prefix (str): Prefix path for nested submodules.
 
         Returns:
-            tuple[dict[str, object], dict[str, object]]: (params_dict, buffers_dict).
+            tuple[dict[str, StateEntry], dict[str, StateEntry]]: (params_dict, buffers_dict).
         """
-        params: dict[str, object] = {}
-        buffers: dict[str, object] = {}
+        params: dict[str, StateEntry] = {}
+        buffers: dict[str, StateEntry] = {}
 
-        # 1. Direct PyTorch-style named_parameters and named_buffers if available
-        if hasattr(module, "named_parameters") and callable(module.named_parameters):
-            for name, param in module.named_parameters():
+        if hasattr(module, "named_parameters") and callable(getattr(module, "named_parameters")):
+            for name, param in getattr(module, "named_parameters")():
                 full_name = f"{prefix}{name}" if prefix else name
                 params[full_name] = param
                 self.identity_map[id(param)] = full_name
 
-        if hasattr(module, "named_buffers") and callable(module.named_buffers):
-            for name, buf in module.named_buffers():
+        if hasattr(module, "named_buffers") and callable(getattr(module, "named_buffers")):
+            for name, buf in getattr(module, "named_buffers")():
                 full_name = f"{prefix}{name}" if prefix else name
                 buffers[full_name] = buf
                 self.identity_map[id(buf)] = full_name
 
-        if params or buffers:
+        if params or buffers or not hasattr(module, "__dict__"):
             return params, buffers
 
-        # 2. General reflection over object attributes
-        if hasattr(module, "__dict__"):
-            for attr_name, attr_val in module.__dict__.items():
-                if attr_name.startswith("_") and not attr_name.startswith("_buffers"):
-                    continue
-
-                full_name = f"{prefix}{attr_name}" if prefix else attr_name
-
-                # Check if attribute is tensor parameter or buffer
-                if isinstance(attr_val, Tensor) or hasattr(attr_val, "shape"):
-                    requires_grad = getattr(attr_val, "requires_grad", True)
-                    if requires_grad:
-                        params[full_name] = attr_val
-                    else:
-                        buffers[full_name] = attr_val
-                    self.identity_map[id(attr_val)] = full_name
-
-                # Check for nested parameter dictionaries
-                elif isinstance(attr_val, dict):
-                    for k, v in attr_val.items():
-                        nested_name = f"{full_name}.{k}"
-                        if isinstance(v, Tensor) or hasattr(v, "shape"):
-                            if getattr(v, "requires_grad", True):
-                                params[nested_name] = v
-                            else:
-                                buffers[nested_name] = v
-                            self.identity_map[id(v)] = nested_name
-
-                # Check for nested submodules
-                elif hasattr(attr_val, "__dict__") and not callable(attr_val):
-                    sub_p, sub_b = self.extract_state(attr_val, prefix=f"{full_name}.")
-                    params.update(sub_p)
-                    buffers.update(sub_b)
+        for attr_name, attr_val in module.__dict__.items():
+            if attr_name.startswith("_") and not attr_name.startswith("_buffers"):
+                continue
+            full_name = f"{prefix}{attr_name}" if prefix else attr_name
+            self._extract_attr_entry(full_name, attr_val, params, buffers)
 
         return params, buffers
 
-    def lift(self, module: object) -> tuple[dict[str, object], IRGraph]:
+    def lift(self, module: EagerValue) -> tuple[dict[str, StateEntry], IRGraph]:
         """Lift module parameters and buffers into an IRGraph with functional input nodes.
 
         Args:
-            module (object): Stateful model instance.
+            module: Stateful model instance.
 
         Returns:
-            tuple[dict[str, object], IRGraph]: Combined state dictionary and functional graph.
+            tuple[dict[str, StateEntry], IRGraph]: Combined state dictionary and functional graph.
         """
         params, buffers = self.extract_state(module)
         combined_state = {**params, **buffers}
@@ -238,21 +260,27 @@ class StateLiftingPass:
 
         return combined_state, graph
 
-    def functionalize(self, module: object) -> tuple[dict[str, object], Callable[..., tuple[object, dict[str, object]]]]:
+    def functionalize(self, module: Callable[..., EagerValue]) -> tuple[dict[str, StateEntry], Callable[..., tuple[StateEntry, dict[str, StateEntry]]]]:
         """Convert a stateful module into a pure function accepting and returning state.
 
         Args:
-            module (object): The stateful model module.
+            module: The stateful model module.
 
         Returns:
-            tuple[dict[str, object], Callable]: Initial state dictionary and pure function.
+            tuple[dict[str, StateEntry], Callable]: Initial state dictionary and pure function.
         """
         params, buffers = self.extract_state(module)
         current_state = {**params, **buffers}
 
-        def pure_fn(state: dict[str, object], *args: object, **kwargs: object) -> tuple[object, dict[str, object]]:
-            """Pure forward execution function with explicit state passing."""
-            backup: dict[str, object] = {}
+        def pure_fn(state: dict[str, StateEntry], *args: StateEntry, **kwargs: StateEntry) -> tuple[StateEntry, dict[str, StateEntry]]:
+            """Pure forward execution function with explicit state passing.
+
+            Args:
+                state: The state parameter.
+                *args: The args parameter.
+                **kwargs: The kwargs parameter.
+            """
+            backup: dict[str, StateEntry] = {}
             # Apply state to module
             for k, v in state.items():
                 parts = k.split(".")
@@ -264,19 +292,19 @@ class StateLiftingPass:
                 # Call module forward/__call__
                 if callable(module):
                     out = module(*args, **kwargs)
-                elif hasattr(module, "forward") and callable(module.forward):
-                    out = module.forward(*args, **kwargs)
+                elif hasattr(module, "forward") and callable(getattr(module, "forward")):
+                    out = getattr(module, "forward")(*args, **kwargs)
                 else:
                     raise TypeError(f"Module {type(module)} is not callable and has no forward method.")
 
                 # Capture updated state (buffers might have been mutated)
-                new_state: dict[str, object] = {}
+                new_state: dict[str, StateEntry] = {}
                 for k in state:
                     parts = k.split(".")
                     parent = _navigate(module, parts[:-1])
                     new_state[k] = _get_val(parent, parts[-1])
 
-                return out, new_state
+                return cast(tuple[StateEntry, dict[str, StateEntry]], (out, new_state))
             finally:
                 # Restore original attributes
                 for k, v in backup.items():

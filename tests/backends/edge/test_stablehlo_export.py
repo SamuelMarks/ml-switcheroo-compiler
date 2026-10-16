@@ -1,11 +1,20 @@
+"""Tests for test_stablehlo_export."""
+
+from __future__ import annotations
+
 import os
 import struct
+from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_export_mlirbc(tmp_path):
+
+def test_export_mlirbc(tmp_path: EagerTensorProtocol) -> None:
+    """Test function test_export_mlirbc."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input")
     g.nodes = {"n1": n1}
@@ -37,7 +46,8 @@ def test_export_mlirbc(tmp_path):
         assert b"stablehlo" in payload
         assert b"ml_switcheroo_compiler" in payload
 
-    def test_mlir_bytecode_encoder_coverage():
+    def test_mlir_bytecode_encoder_coverage() -> None:
+        """Test function test_mlir_bytecode_encoder_coverage."""
         from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncoder
 
         enc = MLIRBytecodeEncoder()

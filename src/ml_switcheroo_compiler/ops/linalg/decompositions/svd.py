@@ -1,22 +1,24 @@
-"""Module svd.py."""
+"""Core abstractions and logic definitions for svd.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import TYPE_CHECKING, cast
 
-"""Core abstractions and logic definitions for svd.py."""
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 @register_op("Svd")
 class Svd(OpDef):
     """Svd Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -48,7 +50,7 @@ def svd(
     input: Tensor,
     full_matrices: bool = True,
     compute_uv: bool = True,
-):
+) -> EagerValue:
     """Compute the Singular Value Decomposition (SVD) of a matrix.
 
     Args:
@@ -70,14 +72,15 @@ def svd(
             compute_uv=compute_uv,
         )
         if not compute_uv:
-            return Tensor(res, TensorConfig(res.shape, input.dtype, input.device))
-        u, s, vh = res
+            res_t = cast("TensorLike", res)
+            return Tensor(res_t, TensorConfig(res_t.shape, input.dtype, input.device))
+        u, s, vh = cast("tuple[TensorLike, TensorLike, TensorLike]", res)
         return (
             Tensor(u, TensorConfig(u.shape, input.dtype, input.device)),
             Tensor(s, TensorConfig(s.shape, input.dtype, input.device)),
             Tensor(vh, TensorConfig(vh.shape, input.dtype, input.device)),
         )
-    m, n = input.shape[-2], input.shape[-1]
+    m, n = int(input.shape[-2]), int(input.shape[-1])
     k = min(m, n)
     s_shape = input.shape[:-2] + (k,)
     if full_matrices:

@@ -1,10 +1,11 @@
-# ruff: noqa: E402, E501, F403
 """Configuration settings and context management for the ml-switcheroo compiler.
 
 This module provides the global `Config` singleton and context managers to temporarily
 modify configuration states such as eager execution and stream contexts. It allows users
 to dynamically adjust compiler behavior within specific execution scopes
 """
+
+from __future__ import annotations
 
 import copy
 import os
@@ -14,9 +15,13 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.registry import EagerValue
 
 
 @dataclass
@@ -38,8 +43,9 @@ class EnvironmentConfig:
     default_int_dtype: DType = DType.Int64
     default_device: Device = field(default_factory=lambda: Device(DeviceType.CPU, 0))
     jax_enable_x64: bool = False
-    layout_map = None
+    layout_map: EagerValue = None
     interactive_logging: bool = True
+    seed: typing.Optional[int] = None
 
 
 @dataclass
@@ -49,7 +55,7 @@ class ConfigState:
     execution: ExecutionConfig = field(default_factory=ExecutionConfig)
     env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
 
-    def clone(self) -> "ConfigState":
+    def clone(self) -> ConfigState:
         """Clone the configuration state.
 
         Returns:
@@ -199,7 +205,7 @@ class Config:
         self._state.execution.current_stream = value
 
     @property
-    def layout_map(self):
+    def layout_map(self) -> EagerValue:
         """Get the layout map.
 
         Returns: Tensor: The layout map.
@@ -207,7 +213,7 @@ class Config:
         return self._state.env.layout_map
 
     @layout_map.setter
-    def layout_map(self, value) -> None:
+    def layout_map(self, value: EagerValue) -> None:
         """Set the layout map.
 
         Args:
@@ -313,7 +319,7 @@ config = Config()
 
 
 @contextmanager
-def ConfigContext(**kwargs) -> Iterator[None]:
+def ConfigContext(**kwargs: EagerValue) -> Iterator[None]:
     """Provide context manager for temporarily overriding global configuration values.
 
     Args:
@@ -344,7 +350,7 @@ def ConfigContext(**kwargs) -> Iterator[None]:
         _config_state_var.reset(token)
 
 
-def EagerMode():
+def EagerMode() -> EagerValue:
     """Provide context manager to temporarily enable eager execution mode.
 
     Returns:
@@ -353,7 +359,7 @@ def EagerMode():
     return ConfigContext(eager_mode=True)
 
 
-def StreamContext(stream_name: str):
+def StreamContext(stream_name: str) -> EagerValue:
     """Provide context manager to temporarily switch the current execution stream.
 
     Args:

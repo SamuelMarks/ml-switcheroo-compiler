@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -12,6 +13,11 @@ from ml_switcheroo_compiler.ops.io.tf_io import (
     TFRecordWriter,
     read_tfrecords,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_tfrecord_writer_uncompressed() -> None:
@@ -29,7 +35,7 @@ def test_tfrecord_writer_uncompressed() -> None:
 
         with TFRecordWriter(rec_path) as writer:
             for rec in records_to_write:
-                writer.write(rec)
+                cast("Callable[..., EagerTensorProtocol]", writer.write)(rec)
 
         # Read back and verify exact byte equality
         loaded = read_tfrecords(rec_path)
@@ -136,7 +142,7 @@ def test_tfrecord_writer_edge_cases() -> None:
         # Write None record
         none_path = os.path.join(tmpdir, "none.tfrecord")
         with TFRecordWriter(none_path) as writer:
-            writer.write(None)
+            cast("Callable[..., EagerTensorProtocol]", writer.write)(None)
         records = read_tfrecords(none_path)
         assert records == [b""]
 
@@ -149,11 +155,14 @@ def test_tfrecord_writer_edge_cases() -> None:
 
         # ZLIB flush returns empty bytes (line 244 branch)
         class DummyCompressor:
+            """Test class DummyCompressor."""
+
             def flush(self) -> bytes:
+                """Test function flush."""
                 return b""
 
         zlib_empty_path = os.path.join(tmpdir, "zlib_empty.tfrecord")
         writer_zlib = TFRecordWriter(zlib_empty_path, TFRecordOptions("ZLIB"))
-        writer_zlib._compressor = DummyCompressor()
+        setattr(writer_zlib, "_compressor", DummyCompressor())
         writer_zlib.close()
         assert writer_zlib._closed

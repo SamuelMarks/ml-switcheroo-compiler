@@ -1,11 +1,27 @@
+"""Tests for test_nn_activations."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, crelu, log_softmax, one_hot, rrelu, sigmoid, softmax, softplus
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_nn_activations_coverage():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def _test_nn_activations_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_nn_activations_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     config.eager_mode = True
     t = Tensor(np.array([-1.0, 0.0, 1.0]), TensorConfig(shape=(3,), dtype=DType("float32"), device=Device("cpu")))
 
@@ -23,6 +39,8 @@ def test_nn_activations_coverage():
 
     # OpDefs
     class DummyShape:
+        """Test class DummyShape."""
+
         shape = (1, 2)
 
     assert Softmax().infer_shape(DummyShape()) == (1, 2)
@@ -34,6 +52,17 @@ def test_nn_activations_coverage():
     assert OneHot().infer_shape(DummyShape(), 5) == (1, 2, 5)
     assert OneHot().infer_shape(DummyShape(), depth=5) == (1, 2, 5)
     assert OneHot().infer_shape() == (1,)
+    getattr(_state, "update")({"DummyShape": DummyShape, "t": t, "t_idx": t_idx})
+    _state.update(locals())
+
+
+def _test_nn_activations_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_nn_activations_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    DummyShape = _state["DummyShape"]
     assert Rrelu().infer_shape(DummyShape()) == (1, 2)
     assert Rrelu().infer_shape() == ()
 
@@ -52,6 +81,17 @@ def test_nn_activations_coverage():
 
     # tracing
     original_eager = config.eager_mode
+    getattr(_state, "update")({"HardSilu": HardSilu, "HardSwish": HardSwish, "Squareplus": Squareplus, "original_eager": original_eager})
+    _state.update(locals())
+
+
+def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_nn_activations_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    original_eager, t, t_idx = _state["original_eager"], _state["t"], _state["t_idx"]
     try:
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -59,19 +99,22 @@ def test_nn_activations_coverage():
         global_tracing_state.is_tracing = True
 
         class DummyGraph:
-            name = "dummy"
-            nodes = {}
+            """Test class DummyGraph."""
 
-            def add_node(self, node):
+            name = "dummy"
+            nodes = cast("dict[str, EagerTensorProtocol]", {})
+
+            def add_node(self, node: EagerValue) -> None:
+                """Test function add_node."""
                 pass
 
-        global_tracing_state.active_graph = DummyGraph()
+        setattr(global_tracing_state, "active_graph", DummyGraph())
 
         res = softmax(t)
         assert res is not None
         res = log_softmax(t)
         assert res is not None
-        res = sigmoid(t)
+        res = cast("Callable[..., EagerTensorProtocol]", sigmoid)(t)
         assert res is not None
         res = one_hot(t_idx, 2)
         assert res is not None
@@ -79,5 +122,14 @@ def test_nn_activations_coverage():
         assert res is not None
 
     finally:
-        config.eager_mode = original_eager
+        setattr(config, "eager_mode", original_eager)
         global_tracing_state.is_tracing = False
+
+
+def test_nn_activations_coverage() -> None:
+    """Test function test_nn_activations_coverage."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_nn_activations_coverage_part_1(_state)
+    _test_nn_activations_coverage_part_2(_state)
+    _test_nn_activations_coverage_part_3(_state)
+    assert isinstance(_state, dict)

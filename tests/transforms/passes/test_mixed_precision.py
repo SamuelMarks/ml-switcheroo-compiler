@@ -1,8 +1,13 @@
+"""Tests for test_mixed_precision."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.mixed_precision import loss_scaling_pass, mixed_precision_pass
 
 
-def test_mixed_precision_pass():
+def test_mixed_precision_pass() -> None:
+    """Test function test_mixed_precision_pass."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="MatMul", attributes={"dtype": "float32"}, inputs=["in1", "in2"])
     n2 = IRNode(id="n2", op_type="Exp", attributes={"dtype": "float16"}, inputs=["n1"])
@@ -24,7 +29,8 @@ def test_mixed_precision_pass():
     assert g.nodes["n2"].inputs == ["n1_cast_float32"]
 
 
-def test_mixed_precision_no_change():
+def test_mixed_precision_no_change() -> None:
+    """Test function test_mixed_precision_no_change."""
     g = IRGraph()
     g.nodes["n1"] = IRNode(id="n1", op_type="Input", attributes={"dtype": "float16"})
     g.nodes["n2"] = IRNode(id="n2", op_type="MatMul", inputs=["n1"], attributes={"dtype": "float16"})
@@ -32,7 +38,8 @@ def test_mixed_precision_no_change():
     assert modified is False
 
 
-def test_loss_scaling_pass():
+def test_loss_scaling_pass() -> None:
+    """Test function test_loss_scaling_pass."""
     g = IRGraph()
     g.nodes["grad_in"] = IRNode(id="grad_in", op_type="Input", attributes={"is_grad": True})
     g.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["grad_in", "grad_in"])
@@ -53,17 +60,20 @@ def test_loss_scaling_pass():
     assert g.nodes["add_unscaled"].inputs == ["add", "loss_scale_inv_factor"]
 
 
-def test_loss_scaling_empty():
+def test_loss_scaling_empty() -> None:
+    """Test function test_loss_scaling_empty."""
     g = IRGraph()
     assert loss_scaling_pass(g) is False
 
 
-def test_mixed_precision_empty_graph():
+def test_mixed_precision_empty_graph() -> None:
+    """Test function test_mixed_precision_empty_graph."""
     g = IRGraph()
     assert mixed_precision_pass(g) is False
 
 
-def test_mixed_precision_pass_reuse_cast():
+def test_mixed_precision_pass_reuse_cast() -> None:
+    """Test function test_mixed_precision_pass_reuse_cast."""
     g = IRGraph()
     # n1 used by two FP16 ops
     n1 = IRNode(id="n1", op_type="Input", attributes={"dtype": "float32"})
@@ -78,7 +88,8 @@ def test_mixed_precision_pass_reuse_cast():
     assert "n1_cast_float16" in g.nodes
 
 
-def test_mixed_precision_pass_update_node_dtype():
+def test_mixed_precision_pass_update_node_dtype() -> None:
+    """Test function test_mixed_precision_pass_update_node_dtype."""
     g = IRGraph()
     # A node that is an FP16 op but its dtype is float32
     n1 = IRNode(id="n1", op_type="Input", attributes={"dtype": "float16"})
@@ -90,7 +101,8 @@ def test_mixed_precision_pass_update_node_dtype():
     assert g.nodes["n2"].attributes["dtype"] == "float16"
 
 
-def test_loss_scaling_pass_reuse_scale():
+def test_loss_scaling_pass_reuse_scale() -> None:
+    """Test function test_loss_scaling_pass_reuse_scale."""
     from ml_switcheroo_compiler.transforms.passes.mixed_precision import loss_scaling_pass
 
     g = IRGraph()
@@ -107,7 +119,8 @@ def test_loss_scaling_pass_reuse_scale():
     assert "loss_scale_inv_factor" in g.nodes
 
 
-def test_mixed_precision_pass_other_op():
+def test_mixed_precision_pass_other_op() -> None:
+    """Test function test_mixed_precision_pass_other_op."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Exp", attributes={"dtype": "float32"})  # In FP32_OPS, already float32, process returns False
     n2 = IRNode(id="n2", op_type="UnknownOp", inputs=["n1"], attributes={"dtype": "float32"})
@@ -116,7 +129,8 @@ def test_mixed_precision_pass_other_op():
     assert mixed_precision_pass(g) is False
 
 
-def test_loss_scaling_pass_nodes_exist():
+def test_loss_scaling_pass_nodes_exist() -> None:
+    """Test function test_loss_scaling_pass_nodes_exist."""
     from ml_switcheroo_compiler.transforms.passes.mixed_precision import loss_scaling_pass
 
     g = IRGraph()

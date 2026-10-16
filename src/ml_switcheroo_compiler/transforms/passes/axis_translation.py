@@ -1,9 +1,8 @@
-# ruff: noqa: E402, E501, F403
-"""Module axis_translation.py."""
-
 """Axis Translation pass for layout conversions."""
 
 import uuid
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
@@ -36,6 +35,7 @@ def axis_translation_pass(graph: IRGraph) -> bool:
 
                     # Estimate new shape metadata
                     orig_shape = graph.nodes[inp_id].shape_metadata if inp_id in graph.nodes else None
+                    new_meta: Optional[Sequence[Union[int, str]]]
                     if orig_shape and isinstance(orig_shape, (tuple, list)) and len(orig_shape) == 4:
                         new_shape = (orig_shape[0], orig_shape[2], orig_shape[3], orig_shape[1])
                         new_meta = new_shape

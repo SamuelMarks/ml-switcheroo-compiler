@@ -1,10 +1,8 @@
-"""Module frontend_stats.py."""
+"""Frontend reductions ops."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Frontend reductions ops."""
+from typing import Callable, cast
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -65,8 +63,8 @@ def approx_max_k(
         "recall_target": recall_target,
     }
 
-    val = _emit_reduction_node("ApproxMaxK", [operand], attributes, (), operand.dtype)
-    idx = _emit_reduction_node("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
+    val = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMaxK", [operand], attributes, (), operand.dtype)
+    idx = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
@@ -94,8 +92,8 @@ def approx_min_k(
         "recall_target": recall_target,
     }
 
-    val = _emit_reduction_node("ApproxMinK", [operand], attributes, (), operand.dtype)
-    idx = _emit_reduction_node("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
+    val = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMinK", [operand], attributes, (), operand.dtype)
+    idx = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
@@ -145,7 +143,7 @@ def corrcoef(
         [x, y] if y is not None else [x],
         {"rowvar": rowvar, "bias": bias, "ddof": ddof},
         (None, None),
-        "float32",
+        cast("DType", "float32"),
     )
 
 
@@ -165,7 +163,7 @@ def correlate(
     Returns:
         Tensor: Cross-correlation result.
     """
-    return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")
+    return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), cast("DType", "float32"))
 
 
 @dispatch_eager("Cov")
@@ -203,5 +201,5 @@ def cov(
         [m, y] if y is not None else [m],
         {"rowvar": rowvar, "bias": bias, "ddof": ddof, "fweights": fweights, "aweights": aweights},
         (None, None),
-        "float32",
+        cast("DType", "float32"),
     )

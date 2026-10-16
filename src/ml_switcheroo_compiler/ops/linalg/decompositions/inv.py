@@ -1,22 +1,24 @@
-"""Module inv.py."""
+"""Core abstractions and logic definitions for inv.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import TYPE_CHECKING, cast
 
-"""Core abstractions and logic definitions for inv.py."""
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 @register_op("Inv")
 class Inv(OpDef):
     """Inv Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer output shape for matrix inverse.
 
         Args:
@@ -37,7 +39,7 @@ class Inv(OpDef):
 class InvEx(OpDef):
     """InvEx Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer output shapes for InvEx matrix inverse with info.
 
         Args:
@@ -59,7 +61,7 @@ class InvEx(OpDef):
 class TriInv(OpDef):
     """TriInv Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer output shape for triangular matrix inverse.
 
         Args:
@@ -76,7 +78,7 @@ class TriInv(OpDef):
         return shape
 
 
-def inv(input: Tensor):
+def inv(input: Tensor) -> EagerValue:
     """Compute the multiplicative inverse of a square matrix.
 
     Args:
@@ -90,11 +92,12 @@ def inv(input: Tensor):
 
         backend = get_active_backend()
         data = backend.execute_op("Inv", input.data)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        arr = cast("TensorLike", backend.array(data))
+        return Tensor(arr, TensorConfig(arr.shape, input.dtype, input.device))
     return _emit_linalg_node("Inv", [input], {}, [input.shape], [input.dtype])
 
 
-def inv_ex(input: Tensor, check_errors: bool = False):
+def inv_ex(input: Tensor, check_errors: bool = False) -> EagerValue:
     """Compute the multiplicative inverse of a square matrix with info tensor.
 
     Args:
@@ -108,7 +111,7 @@ def inv_ex(input: Tensor, check_errors: bool = False):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        inv_out, info = backend.execute_op("InvEx", input.data, check_errors=check_errors)
+        inv_out, info = cast("tuple[TensorLike, TensorLike]", backend.execute_op("InvEx", input.data, check_errors=check_errors))
         return (
             Tensor(inv_out, TensorConfig(inv_out.shape, input.dtype, input.device)),
             Tensor(info, TensorConfig(info.shape, "int32", input.device)),
@@ -116,7 +119,7 @@ def inv_ex(input: Tensor, check_errors: bool = False):
     return _emit_linalg_node("InvEx", [input], {"check_errors": check_errors}, [input.shape, input.shape[:-2]], [input.dtype, "int32"])
 
 
-def pinv(input: Tensor, rcond: float = 1e-15):
+def pinv(input: Tensor, rcond: float = 1e-15) -> EagerValue:
     """Compute the Moore-Penrose pseudo-inverse of a matrix.
 
     Args:
@@ -130,12 +133,12 @@ def pinv(input: Tensor, rcond: float = 1e-15):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Pinv", input.data, rcond=rcond)
+        data = cast("TensorLike", backend.execute_op("Pinv", input.data, rcond=rcond))
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     return _emit_linalg_node("Pinv", [input], {"rcond": rcond}, [input.shape], [input.dtype])
 
 
-def tri_inv(a: Tensor, lower: bool = False):
+def tri_inv(a: Tensor, lower: bool = False) -> EagerValue:
     """Compute the inverse of a triangular matrix.
 
     Args:

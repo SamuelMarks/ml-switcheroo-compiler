@@ -1,12 +1,12 @@
-from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
-
-# ruff: noqa: E501
-"""Provides required module functionality."""
+"""Tests for test_autodiff_errors."""
 
 import pytest
 
+from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff import grad
+
+# ruff: noqa: E501
 
 
 def test_real_exception() -> None:
@@ -26,5 +26,5 @@ def test_real_exception() -> None:
         g.outputs = ["n2"]
         with pytest.raises(MissingJVPRuleError):
             grad(g, ["n1"], "n2")
-    except (NotImplementedError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (NotImplementedError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

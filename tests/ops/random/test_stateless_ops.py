@@ -1,3 +1,9 @@
+"""Tests for test_stateless_ops."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.random_stateless import (
@@ -24,9 +30,13 @@ from ml_switcheroo_compiler.ops.random_stateless import (
     stateless_truncated_normal,
 )
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_stateless_random_uniform(mocker):
+
+def test_stateless_random_uniform(mocker: EagerTensorProtocol) -> None:
     # We mock uniform, multiply, add, full to avoid needing backends
+    """Test function test_stateless_random_uniform."""
     mocker.patch("ml_switcheroo_compiler.random.continuous.uniform", return_value="unif")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
@@ -43,7 +53,8 @@ def test_stateless_random_uniform(mocker):
     assert res2 == "add"
 
 
-def test_stateless_random_normal(mocker):
+def test_stateless_random_normal(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_random_normal."""
     mocker.patch("ml_switcheroo_compiler.random.continuous.normal", return_value="norm")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
@@ -57,7 +68,8 @@ def test_stateless_random_normal(mocker):
     assert res2 == "add"
 
 
-def test_stateless_random_binomial(mocker):
+def test_stateless_random_binomial(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_random_binomial."""
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete.binomial", return_value="binom")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     res = stateless_random_binomial((2, 3), seed, 10.0, 0.5, "int32")
@@ -66,7 +78,8 @@ def test_stateless_random_binomial(mocker):
     assert res2 == "binom"
 
 
-def test_stateless_truncated_normal(mocker):
+def test_stateless_truncated_normal(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_truncated_normal."""
     mocker.patch("ml_switcheroo_compiler.random.continuous.truncated_normal", return_value="trunc")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
@@ -79,7 +92,8 @@ def test_stateless_truncated_normal(mocker):
     assert res2 == "add"
 
 
-def test_stateless_categorical(mocker):
+def test_stateless_categorical(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_categorical."""
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete.categorical", return_value="cat")
     mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="cast")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
@@ -95,28 +109,31 @@ def test_stateless_categorical(mocker):
     assert res3 == "cast"
 
 
-def test_stateless_gamma(mocker):
+def test_stateless_gamma(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_gamma."""
     mocker.patch("ml_switcheroo_compiler.random.continuous.gamma", return_value="gamma")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     alpha = Tensor(2.0, TensorConfig((), "float32", "cpu"))
     res = stateless_gamma((2, 3), seed, alpha, "float32")
     pass
-    res2 = stateless_gamma((2, 3), seed, alpha, DType("float32"))
-    pass
+    stateless_gamma((2, 3), seed, alpha, DType("float32"))
+    assert res is not None
 
 
-def test_stateless_beta(mocker):
+def test_stateless_beta(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_beta."""
     mocker.patch("ml_switcheroo_compiler.random.continuous.beta", return_value="beta")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     alpha = Tensor(2.0, TensorConfig((), "float32", "cpu"))
     beta_param = Tensor(3.0, TensorConfig((), "float32", "cpu"))
     res = stateless_beta((2, 3), seed, alpha, beta_param, "float32")
     pass
-    res2 = stateless_beta((2, 3), seed, alpha, beta_param, DType("float32"))
-    pass
+    stateless_beta((2, 3), seed, alpha, beta_param, DType("float32"))
+    assert res is not None
 
 
-def test_stateless_shuffle(mocker):
+def test_stateless_shuffle(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_shuffle."""
     mocker.patch("ml_switcheroo_compiler.random.transformations.shuffle", return_value="shuffle")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     x = Tensor([1, 2, 3], TensorConfig((3,), "int32", "cpu"))
@@ -124,20 +141,23 @@ def test_stateless_shuffle(mocker):
     assert res == "shuffle"
 
 
-def test_stateless_parameterized_truncated_normal():
+def test_stateless_parameterized_truncated_normal() -> None:
+    """Test function test_stateless_parameterized_truncated_normal."""
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     config = RandomGenerationConfig()
     res = stateless_parameterized_truncated_normal((2,), seed, config)
-    assert res.config.shape == (2,)
+    assert cast("EagerTensorProtocol", getattr(res, "config")).shape == (2,)
 
 
-def test_algorithms():
+def test_algorithms() -> None:
+    """Test function test_algorithms."""
     assert Algorithm.PHILOX == 1
     assert Algorithm.THREEFRY == 2
     assert Algorithm.AUTO_SELECT == 3
 
 
-def test_generator():
+def test_generator() -> None:
+    """Test function test_generator."""
     from ml_switcheroo_compiler.core.config import config
 
     orig = config.eager_mode
@@ -150,26 +170,28 @@ def test_generator():
         assert g2.state == "seed123"
 
         t_norm = g.normal((2,), NormalConfig(), "float32", "my_norm")
-        assert t_norm.shape == (2,)
+        assert cast("EagerTensorProtocol", getattr(t_norm, "shape")) == (2,)
 
         t_norm2 = g.normal((2,), None, "float32", "my_norm")
-        assert t_norm2.shape == (2,)
+        assert cast("EagerTensorProtocol", getattr(t_norm2, "shape")) == (2,)
 
         t_unif = g.uniform((3,), UniformConfig(), "int32", "my_unif")
-        assert t_unif.shape == (3,)
+        assert cast("EagerTensorProtocol", getattr(t_unif, "shape")) == (3,)
         t_unif2 = g.uniform((3,), None, "int32", "my_unif")
-        assert t_unif2.shape == (3,)
+        assert cast("EagerTensorProtocol", getattr(t_unif2, "shape")) == (3,)
     finally:
         config.eager_mode = orig
 
 
-def test_create_rng_state():
+def test_create_rng_state() -> None:
+    """Test function test_create_rng_state."""
     state = create_rng_state(42)
-    assert state.config.shape == (2,)
-    assert state.config.dtype == DType.Int64
+    assert cast("EagerTensorProtocol", getattr(state, "config")).shape == (2,)
+    assert cast("EagerTensorProtocol", getattr(state, "config")).dtype == DType.Int64
 
 
-def test_global_generator():
+def test_global_generator() -> None:
+    """Test function test_global_generator."""
     g = get_global_generator()
     assert isinstance(g, Generator)
 
@@ -181,29 +203,33 @@ def test_global_generator():
     assert isinstance(g3, Generator)
 
 
-def test_index_shuffle():
+def test_index_shuffle() -> None:
+    """Test function test_index_shuffle."""
     res = index_shuffle(1, "seed", 10)
     assert res == 1
 
 
-def test_stateless_fold_in():
+def test_stateless_fold_in() -> None:
+    """Test function test_stateless_fold_in."""
     res = stateless_fold_in("seed", "data")
     assert res == "seed"
 
 
-def test_stateless_split():
+def test_stateless_split() -> None:
+    """Test function test_stateless_split."""
     from ml_switcheroo_compiler.core.config import config
 
     orig = config.eager_mode
     config.eager_mode = True
     try:
         res = stateless_split("seed", 3)
-        assert res.shape == (3, 2)
+        assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 2)
     finally:
         config.eager_mode = orig
 
 
-def test_stateless_poisson(mocker):
+def test_stateless_poisson(mocker: EagerTensorProtocol) -> None:
+    """Test function test_stateless_poisson."""
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete.poisson", return_value="poisson")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     lam = Tensor(2.0, TensorConfig((), "float32", "cpu"))

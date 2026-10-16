@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import warnings
+from typing import TYPE_CHECKING
 
 import ml_switcheroo_compiler.ir.core as ir_core
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class _MockBackendModule:
@@ -21,7 +25,7 @@ class _MockBackendModule:
         """
         return ("zeros", shape)
 
-    def array(self, data: object, dtype: object = None) -> tuple[str, object, object]:
+    def array(self, data: EagerValue, dtype: EagerValue = None) -> tuple[str, EagerValue, EagerValue]:
         """Mock array.
 
         Args:
@@ -33,7 +37,7 @@ class _MockBackendModule:
         """
         return ("array", data, dtype)
 
-    def asarray(self, data: object) -> tuple[str, object]:
+    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
         """Mock asarray.
 
         Args:

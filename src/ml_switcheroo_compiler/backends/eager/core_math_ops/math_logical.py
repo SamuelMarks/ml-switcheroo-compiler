@@ -1,17 +1,23 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Core utilities."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 import typing  # noqa: F401
-from typing import Any
+from types import ModuleType
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    global_eager_registry,
+)
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("NanToNum")
-def _nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _nan_to_num(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _nan_to_num operation.
 
     Args:
@@ -28,17 +34,15 @@ def _nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     posinf = kwargs.get("posinf", None)
     neginf = kwargs.get("neginf", None)
     if hasattr(backend_module, "nan_to_num"):
-        return backend_module.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
-    import numpy as np
-
-    return np.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
+        return cast(EagerValue, cast(ModuleType, backend_module).nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf))
+    return cast(EagerValue, np.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf))
 
 
-_ACTIVE_AXIS_INDICES: dict[Any, int] = {}
+_ACTIVE_AXIS_INDICES: dict[EagerValue, int] = {}
 _INFEED_QUEUES: dict[str, AttributeValue] = {}
 
 
-def set_axis_index(axis: Any, index: int) -> None:
+def set_axis_index(axis: EagerValue, index: int) -> None:
     """Set active SPMD axis index for execution.
 
     Args:
@@ -53,7 +57,7 @@ def clear_axis_indices() -> None:
     _ACTIVE_AXIS_INDICES.clear()
 
 
-def register_infeed_queue(name: str, queue_or_iterator: Any) -> None:
+def register_infeed_queue(name: str, queue_or_iterator: EagerValue) -> None:
     """Register infeed data generator or queue.
 
     Args:
@@ -69,7 +73,7 @@ def clear_infeed_queues() -> None:
 
 
 @global_eager_registry.register("AxisIndex")
-def _axis_index(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _axis_index(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _axis_index operation.
 
     Args:
@@ -85,7 +89,7 @@ def _axis_index(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("DivideNoNan")
-def _divide_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _divide_no_nan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _divide_no_nan operation.
 
     Args:
@@ -96,17 +100,18 @@ def _divide_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
+    mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "divide_no_nan", None)
     if func2:
-        return func2(*args, **kwargs)
-    (x, y) = (args[0], args[1])
-    safe_y = backend_module.where(y == 0, 1.0, y)
-    return backend_module.where(y == 0, 0, x / safe_y)
+        return cast(EagerValue, func2(*args, **kwargs))
+    (x, y) = (cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]))
+    safe_y = mod.where(y.__eq__(0), 1.0, y)
+    return cast(EagerValue, mod.where(y.__eq__(0), 0, x / safe_y))
 
 
 @global_eager_registry.register("Finfo")
-def _finfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _finfo(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _finfo operation.
 
     Args:
@@ -117,11 +122,11 @@ def _finfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.finfo(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).finfo(*args, **kwargs))
 
 
 @global_eager_registry.register("Hardswish")
-def _hardswish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _hardswish(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _hardswish operation.
 
     Args:
@@ -132,12 +137,13 @@ def _hardswish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    x = args[0]
-    return x * backend_module.clip(x + 3, 0, 6) / 6
+    mod = cast(ModuleType, backend_module)
+    x = cast(EagerTensorProtocol, args[0])
+    return cast(EagerValue, x * mod.clip(x + 3, 0, 6) / 6)
 
 
 @global_eager_registry.register("Heaviside")
-def _heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _heaviside(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _heaviside operation.
 
     Args:
@@ -148,15 +154,16 @@ def _heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
+    mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "heaviside", None)
     if func:
-        return func(*args, **kwargs)
-    x, y = args[0], args[1]
-    return backend_module.where(x < 0, 0.0, backend_module.where(x > 0, 1.0, y))
+        return cast(EagerValue, func(*args, **kwargs))
+    x, y = cast(EagerTensorProtocol, args[0]), args[1]
+    return cast(EagerValue, mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y)))
 
 
 @global_eager_registry.register("Histogram")
-def _histogram(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _histogram(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _histogram operation.
 
     Args:
@@ -167,11 +174,11 @@ def _histogram(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.histogram(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).histogram(*args, **kwargs))
 
 
 @global_eager_registry.register("Histogram2D")
-def _histogram2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _histogram2d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _histogram2d operation.
 
     Args:
@@ -182,11 +189,11 @@ def _histogram2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.histogram2d(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).histogram2d(*args, **kwargs))
 
 
 @global_eager_registry.register("HistogramBinedges")
-def _histogrambinedges(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _histogrambinedges(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _histogrambinedges operation.
 
     Args:
@@ -197,11 +204,11 @@ def _histogrambinedges(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.histogram_bin_edges(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).histogram_bin_edges(*args, **kwargs))
 
 
 @global_eager_registry.register("HistogramDd")
-def _histogramdd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _histogramdd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _histogramdd operation.
 
     Args:
@@ -212,11 +219,11 @@ def _histogramdd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.histogramdd(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).histogramdd(*args, **kwargs))
 
 
 @global_eager_registry.register("Iinfo")
-def _iinfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _iinfo(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _iinfo operation.
 
     Args:
@@ -227,11 +234,11 @@ def _iinfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.iinfo(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).iinfo(*args, **kwargs))
 
 
 @global_eager_registry.register("Infeed")
-def _infeed(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _infeed(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _infeed operation.
 
     Args:
@@ -246,15 +253,15 @@ def _infeed(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if queue_name in _INFEED_QUEUES:
         it = _INFEED_QUEUES[queue_name]
         try:
-            val = next(it) if hasattr(it, "__next__") else it.pop(0)
-            return val
+            val = next(it) if hasattr(it, "__next__") else cast(ModuleType, it).pop(0)
+            return cast(EagerValue, val)
         except (StopIteration, IndexError):
             return 0
     return 0
 
 
 @global_eager_registry.register("Isclose")
-def _isclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isclose(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _isclose operation.
 
     Args:
@@ -265,11 +272,11 @@ def _isclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.isclose(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).isclose(*args, **kwargs))
 
 
 @global_eager_registry.register("Iscomplex")
-def _iscomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _iscomplex(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _iscomplex operation.
 
     Args:
@@ -282,14 +289,12 @@ def _iscomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "iscomplex", None)
     if func:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.iscomplex(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.iscomplex(*args, **kwargs))
 
 
 @global_eager_registry.register("Iscomplexobj")
-def _iscomplexobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _iscomplexobj(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _iscomplexobj operation.
 
     Args:
@@ -302,15 +307,13 @@ def _iscomplexobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "iscomplexobj", None)
     if func:
-        return func(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
     x = args[0]
-    import numpy as np
-
-    return np.iscomplexobj(x)
+    return cast(EagerValue, np.iscomplexobj(x))
 
 
 @global_eager_registry.register("Isnan")
-def _isnan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isnan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _isnan operation.
 
     Args:
@@ -321,11 +324,11 @@ def _isnan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.isnan(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).isnan(*args, **kwargs))
 
 
 @global_eager_registry.register("Isneginf")
-def _isneginf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isneginf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _isneginf operation.
 
     Args:
@@ -336,15 +339,16 @@ def _isneginf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
+    mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "isneginf", None)
     if func:
-        return func(*args, **kwargs)
-    x = args[0]
-    return backend_module.logical_and(backend_module.isinf(x), x < 0)
+        return cast(EagerValue, func(*args, **kwargs))
+    x = cast(EagerTensorProtocol, args[0])
+    return cast(EagerValue, mod.logical_and(mod.isinf(x), x < 0))
 
 
 @global_eager_registry.register("Isreal")
-def _isreal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isreal(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _isreal operation.
 
     Args:
@@ -357,14 +361,12 @@ def _isreal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "isreal", None)
     if func:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.isreal(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.isreal(*args, **kwargs))
 
 
 @global_eager_registry.register("Isrealobj")
-def _isrealobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isrealobj(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _isrealobj operation.
 
     Args:
@@ -377,15 +379,13 @@ def _isrealobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "isrealobj", None)
     if func:
-        return func(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
     x = args[0]
-    import numpy as np
-
-    return np.isrealobj(x)
+    return cast(EagerValue, np.isrealobj(x))
 
 
 @global_eager_registry.register("Isscalar")
-def _isscalar(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isscalar(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _isscalar operation.
 
     Args:
@@ -398,15 +398,13 @@ def _isscalar(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "isscalar", None)
     if func:
-        return func(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
     x = args[0]
-    import numpy as np
-
-    return np.isscalar(x)
+    return cast(EagerValue, np.isscalar(x))
 
 
 @global_eager_registry.register("Issubdtype")
-def _issubdtype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _issubdtype(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _issubdtype operation.
 
     Args:
@@ -417,13 +415,11 @@ def _issubdtype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    import numpy as np
-
-    return np.issubdtype(*args, **kwargs)
+    return cast(EagerValue, np.issubdtype(*args, **kwargs))
 
 
 @global_eager_registry.register("Kaiser")
-def _kaiser(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _kaiser(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _kaiser operation.
 
     Args:
@@ -434,13 +430,11 @@ def _kaiser(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    import numpy as np
-
-    return backend_module.array(np.kaiser(*args, **kwargs))
+    return cast(EagerValue, cast(ModuleType, backend_module).array(np.kaiser(*args, **kwargs)))
 
 
 @global_eager_registry.register("Mish")
-def _mish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _mish(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mish operation.
 
     Args:
@@ -451,12 +445,13 @@ def _mish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    x = args[0]
-    return x * backend_module.tanh(backend_module.log1p(backend_module.exp(x)))
+    mod = cast(ModuleType, backend_module)
+    x = cast(EagerTensorProtocol, args[0])
+    return cast(EagerValue, x * mod.tanh(mod.log1p(mod.exp(x))))
 
 
 @global_eager_registry.register("MultiplyNoNan")
-def _multiply_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _multiply_no_nan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _multiply_no_nan operation.
 
     Args:
@@ -467,16 +462,17 @@ def _multiply_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
+    mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "multiply_no_nan", None)
     if func2:
-        return func2(*args, **kwargs)
-    (x, y) = (args[0], args[1])
-    return backend_module.where(y == 0, 0, x * y)
+        return cast(EagerValue, func2(*args, **kwargs))
+    (x, y) = (cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]))
+    return cast(EagerValue, mod.where(y.__eq__(0), 0, x * y))
 
 
 @global_eager_registry.register("NpHeaviside")
-def _np_heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_heaviside(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_heaviside operation.
 
     Args:
@@ -487,15 +483,16 @@ def _np_heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
+    mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "heaviside", None)
     if func:
-        return func(*args, **kwargs)
-    x, y = args[0], args[1]
-    return backend_module.where(x < 0, 0.0, backend_module.where(x > 0, 1.0, y))
+        return cast(EagerValue, func(*args, **kwargs))
+    x, y = cast(EagerTensorProtocol, args[0]), args[1]
+    return cast(EagerValue, mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y)))
 
 
 @global_eager_registry.register("NpTakealongaxis")
-def _np_takealongaxis(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_takealongaxis(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_takealongaxis operation.
 
     Args:
@@ -506,11 +503,11 @@ def _np_takealongaxis(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.take_along_axis(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).take_along_axis(*args, **kwargs))
 
 
 @global_eager_registry.register("Piecewise")
-def _piecewise(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _piecewise(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _piecewise operation.
 
     Args:
@@ -521,7 +518,7 @@ def _piecewise(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.piecewise(*args, **kwargs)
+    return cast(EagerValue, cast(ModuleType, backend_module).piecewise(*args, **kwargs))
 
 
 from ml_switcheroo_ir import AttributeValue

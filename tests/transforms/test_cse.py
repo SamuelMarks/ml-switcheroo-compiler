@@ -1,10 +1,12 @@
 """Unit tests for Common Subexpression Elimination (CSE) pass."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.cse import cse_pass
 
 
-def test_cse_basic():
+def test_cse_basic() -> None:
     """Test CSE on a simple graph with redundant nodes."""
     graph = IRGraph()
     graph.nodes = {
@@ -24,7 +26,7 @@ def test_cse_basic():
     assert graph.nodes["n4"].inputs == ["n2", "n2"]
 
 
-def test_cse_different_attributes():
+def test_cse_different_attributes() -> None:
     """Test CSE respects node attributes."""
     graph = IRGraph()
     graph.nodes = {
@@ -39,7 +41,7 @@ def test_cse_different_attributes():
     assert "n3" in graph.nodes
 
 
-def test_cse_chained():
+def test_cse_chained() -> None:
     """Test CSE can eliminate chained redundant expressions."""
     graph = IRGraph()
     graph.nodes = {
@@ -58,7 +60,7 @@ def test_cse_chained():
     assert graph.nodes["n6"].inputs == ["n4", "n4"]
 
 
-def test_cse_no_op():
+def test_cse_no_op() -> None:
     """Test CSE does nothing on graph with no common subexpressions."""
     graph = IRGraph()
     graph.nodes = {

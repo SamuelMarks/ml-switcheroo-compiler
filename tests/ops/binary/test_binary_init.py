@@ -1,4 +1,10 @@
-def test_binary_init_funcs():
+"""Tests for test_binary_init."""
+
+from __future__ import annotations
+
+
+def test_binary_init_funcs() -> None:
+    """Test function test_binary_init_funcs."""
     from unittest.mock import patch
 
     import ml_switcheroo_compiler.ops.binary as binary
@@ -17,7 +23,8 @@ def test_binary_init_funcs():
         assert binary.view_as_real(1) == "res"
 
 
-def test_binary_init_missing():
+def test_binary_init_missing() -> None:
+    """Test function test_binary_init_missing."""
     import importlib
     from unittest.mock import patch
 

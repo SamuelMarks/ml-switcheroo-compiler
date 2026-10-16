@@ -1,23 +1,28 @@
-# ruff: noqa: E402, E501, F403
 """Eager evaluation logic."""
+
+from __future__ import annotations
 
 import abc
 import typing  # noqa: F401
 from dataclasses import dataclass
-from typing import Any  # noqa: F401
+from typing import cast
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
+
+EagerPayload = EagerValue
 
 
 @dataclass
 class EvaluationContext:
-    """Provide context Any for eager evaluation containing operation details."""
+    """Provide context for eager evaluation containing operation details."""
 
     op_cls: type
     op_type: str
-    args: list
-    kwargs: dict
+    args: list[EagerPayload]
+    kwargs: dict[str, EagerPayload]
     backend: type
 
 
@@ -25,14 +30,14 @@ class EvaluationStrategy(abc.ABC):
     """Define base evaluation strategy."""
 
     @abc.abstractmethod
-    def evaluate(self, ctx: EvaluationContext) -> object:
+    def evaluate(self, ctx: EvaluationContext) -> EagerPayload:
         """Evaluate operation within evaluation context.
 
         Args:
             ctx (EvaluationContext): The evaluation context.
 
         Returns:
-            object: Evaluated raw tensor or scalar data.
+            EagerPayload: Evaluated raw tensor or scalar data.
         """
         raise NotImplementedError
 
@@ -40,14 +45,14 @@ class EvaluationStrategy(abc.ABC):
 class CustomEagerEvalStrategy(EvaluationStrategy):
     """Strategy for custom eager evaluation."""
 
-    def evaluate(self, ctx: EvaluationContext) -> object:
+    def evaluate(self, ctx: EvaluationContext) -> EagerPayload:
         """Evaluate operation using custom eager execution logic.
 
         Args:
             ctx (EvaluationContext): Context.
 
         Returns:
-            object: Evaluated raw tensor or scalar data.
+            EagerPayload: Evaluated raw tensor or scalar data.
 
         Raises:
             NotImplementedError: If neither eager_eval nor forward is callable.
@@ -55,32 +60,32 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
         op_cls = ctx.op_cls
         op_inst = op_cls() if isinstance(op_cls, type) else op_cls
         if hasattr(op_inst, "eager_eval") and callable(op_inst.eager_eval):
-            return op_inst.eager_eval(*ctx.args, **ctx.kwargs)
+            return cast(EagerPayload, op_inst.eager_eval(*ctx.args, **ctx.kwargs))
         if hasattr(op_inst, "forward") and callable(op_inst.forward):
-            return op_inst.forward(*ctx.args, **ctx.kwargs)
+            return cast(EagerPayload, op_inst.forward(*ctx.args, **ctx.kwargs))
         raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
 
 
 class BackendExecuteOpStrategy(EvaluationStrategy):
     """Strategy for backend execution."""
 
-    def evaluate(self, ctx: EvaluationContext) -> object:
+    def evaluate(self, ctx: EvaluationContext) -> EagerPayload:
         """Evaluate operation via backend execute_op dispatch.
 
         Args:
             ctx (EvaluationContext): Context.
 
         Returns:
-            object: Evaluated raw tensor or scalar data.
+            EagerPayload: Evaluated raw tensor or scalar data.
         """
-        return ctx.backend.execute_op(ctx.op_type, *ctx.args, **ctx.kwargs)
+        return cast(EagerPayload, getattr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
 
 
 class EagerEvaluator:
     """Evaluate operations eagerly."""
 
     @staticmethod
-    def _get_strategy(op_cls) -> EvaluationStrategy:
+    def _get_strategy(op_cls: type) -> EvaluationStrategy:
         """Get the evaluation strategy for a given operation class.
 
         Args:
@@ -101,7 +106,11 @@ class EagerEvaluator:
         return BackendExecuteOpStrategy()
 
     @staticmethod
-    def _pack_outputs(res_data, first_tensor, device):
+    def _pack_outputs(
+        res_data: EagerPayload,
+        first_tensor: Tensor | None,
+        device: Device | str | None,
+    ) -> Tensor | tuple[Tensor, ...]:
         """Pack raw output data into Tensor Anys.
 
         Args:
@@ -116,7 +125,7 @@ class EagerEvaluator:
                 Tensor(
                     d,
                     TensorConfig(
-                        d.shape if hasattr(d, "shape") else (),
+                        cast(EagerTensorProtocol, d).shape if hasattr(d, "shape") else (),
                         resolve_dtype(d, first_tensor),
                         device,
                     ),
@@ -125,11 +134,11 @@ class EagerEvaluator:
             )
 
         dtype = resolve_dtype(res_data, first_tensor)
-        shape = res_data.shape if hasattr(res_data, "shape") else ()
+        shape = cast(EagerTensorProtocol, res_data).shape if hasattr(res_data, "shape") else ()
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod
-    def evaluate(op_type: str, *args, **kwargs):
+    def evaluate(op_type: str, *args: EagerValue, **kwargs: EagerValue) -> Tensor | tuple[Tensor, ...]:
         """Evaluate evaluate operation.
 
         Args:
@@ -145,9 +154,9 @@ class EagerEvaluator:
 
         backend = get_active_backend()
         op_cls = get_op(op_type)
-        raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
+        raw_args: list[EagerPayload] = [a.data if isinstance(a, Tensor) else a for a in args]
 
-        ctx = EvaluationContext(op_cls, op_type, raw_args, kwargs, backend)
+        ctx = EvaluationContext(op_cls, op_type, raw_args, dict(kwargs), backend)
         strategy = EagerEvaluator._get_strategy(op_cls)
         res_data = strategy.evaluate(ctx)
 

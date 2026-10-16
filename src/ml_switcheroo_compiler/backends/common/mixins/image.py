@@ -1,11 +1,8 @@
-"""Module image.py."""
+"""Provide mixin module."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-"""Provide mixin module."""
-
-
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
@@ -90,7 +87,7 @@ class ImageASTVisitor(CommonASTVisitor):
         batch_size = kwargs.get("batch_size", 1)
         return f"{pfx}_affine_generator({batch_size}, {', '.join(input_vars)})"
 
-    def visit_AffineGrid(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AffineGrid(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_AffineGrid operation.
 
         Args:
@@ -121,7 +118,7 @@ class ImageASTVisitor(CommonASTVisitor):
         interpolation = kwargs.get("interpolation", "nearest")
         return f"{pfx}_affine_transform({input_vars[0]}, {input_vars[1]}, interpolation='{interpolation}')"
 
-    def visit_AugMix(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AugMix(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_AugMix operation.
 
         Args:
@@ -135,7 +132,7 @@ class ImageASTVisitor(CommonASTVisitor):
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_augmix({input_vars[0]})"
 
-    def visit_AutoContrast(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AutoContrast(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_AutoContrast operation.
 
         Args:

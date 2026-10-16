@@ -1,19 +1,28 @@
 """Tests for extra."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_unary import _np_erf, _np_erfc, _np_erfinv, _np_exp2, _np_igamma, _np_igammac, _np_signbit
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyModule:
     """Module without asarray."""
 
-    def vectorize(self, f):
+    def vectorize(self, f: EagerValue) -> EagerValue:
         """Vectorize."""
 
-        def _f(x):
+        def _f(x: EagerValue) -> EagerValue:
             """F."""
-            return [f(i) for i in x]
+            return [cast("Callable[..., EagerTensorProtocol]", f)(i) for i in cast("EagerTensorProtocol", x)]
 
         return _f
 
@@ -30,8 +39,9 @@ def test_erf_erfc_no_asarray() -> None:
     assert res_erfc == 1.0
 
 
-def test_math_unary_missing():
+def test_math_unary_missing() -> None:
     # test scalar
+    """Test function test_math_unary_missing."""
     assert _np_erf(np, 0.0) == 0.0
     assert _np_erfc(np, 0.0) == 1.0
 
@@ -46,7 +56,7 @@ def test_math_unary_missing():
 
     # exp2 and signbit
     assert _np_exp2(np, 2.0) == 4.0
-    assert _np_signbit(np, -1.0) == True
+    assert _np_signbit(np, -1.0)
 
     # array inputs to hit vectorize
     assert _np_erf(np, np.array([0.0])) is not None
@@ -62,7 +72,7 @@ def test_math_unary_missing():
     assert _np_expm1(np, 0.0) == 0.0
     assert _np_log10(np, 1.0) == 0.0
     assert _np_log2(np, 1.0) == 0.0
-    assert _np_isinf(np, 0.0) == False
-    assert _np_isfinite(np, 0.0) == True
+    assert not _np_isinf(np, 0.0)
+    assert _np_isfinite(np, 0.0)
     assert _np_bitwise_not(np, np.array([1])) is not None
     assert _np_isnan(np, np.array([0.0])) is not None

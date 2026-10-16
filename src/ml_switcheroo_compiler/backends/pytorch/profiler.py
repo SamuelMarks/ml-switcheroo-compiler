@@ -1,12 +1,14 @@
 """PyTorch backend profiler for runtime execution and memory benchmarking."""
 
+import logging
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, cast
 
 import torch
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -40,7 +42,7 @@ class TorchGraphModule(torch.nn.Module):
         from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
         code: str = PyTorchCodeGenerator(graph).generate()
-        ns: dict[str, object] = {}
+        ns: dict[str, EagerValue] = {}
         exec(code, ns)
         model_cls = ns.get("CompiledModel")
         if model_cls is not None and isinstance(model_cls, type) and issubclass(model_cls, torch.nn.Module):
@@ -69,8 +71,8 @@ class TorchGraphModule(torch.nn.Module):
             res = self.model(*ordered)
             if isinstance(res, torch.Tensor) and self.graph.outputs:
                 return {self.graph.outputs[0]: res}
-            return res
-        return self.model(*args, **kwargs)
+            return cast(Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]], res)
+        return cast(Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]], self.model(*args, **kwargs))
 
 
 class PyTorchProfiler:
@@ -164,7 +166,7 @@ class PyTorchProfiler:
             try:
                 torch.cuda.reset_peak_memory_stats()
             except Exception:
-                pass
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     def _compile_module(
         self,
@@ -186,12 +188,12 @@ class PyTorchProfiler:
         compiled: torch.nn.Module = base_module
         if callable(getattr(torch, "compile", None)):
             try:
-                compiled = torch.compile(base_module)
+                compiled = cast(torch.nn.Module, torch.compile(base_module))
             except Exception:
                 compiled = base_module
         if compiled is base_module and hasattr(torch, "jit") and callable(getattr(torch.jit, "trace", None)) and input_list:
             try:
-                compiled = torch.jit.trace(base_module, tuple(input_list))
+                compiled = cast(Callable[..., torch.nn.Module], getattr(torch.jit, "trace"))(base_module, tuple(input_list))
             except Exception:
                 compiled = base_module
         return compiled
@@ -199,7 +201,7 @@ class PyTorchProfiler:
     def _measure_latencies(
         self,
         device: torch.device,
-        step_fn: Callable[[], object],
+        step_fn: Callable[[], EagerValue],
         num_iters: int,
     ) -> list[float]:
         """Measure execution latencies over multiple iterations with device sync.
@@ -218,13 +220,14 @@ class PyTorchProfiler:
             cuda_timed: bool = False
             if is_cuda and hasattr(torch.cuda, "Event"):
                 try:
-                    start_event = torch.cuda.Event(enable_timing=True)
-                    end_event = torch.cuda.Event(enable_timing=True)
-                    start_event.record()
+                    event_cls = getattr(torch.cuda, "Event")
+                    start_event = event_cls(enable_timing=True)
+                    end_event = event_cls(enable_timing=True)
+                    getattr(start_event, "record")()
                     _ = step_fn()
-                    end_event.record()
-                    end_event.synchronize()
-                    latencies.append(float(start_event.elapsed_time(end_event)))
+                    getattr(end_event, "record")()
+                    getattr(end_event, "synchronize")()
+                    latencies.append(float(getattr(start_event, "elapsed_time")(end_event)))
                     cuda_timed = True
                 except Exception:
                     cuda_timed = False
@@ -254,8 +257,8 @@ class PyTorchProfiler:
                     mps_mem = float(torch.mps.current_allocated_memory()) / (1024.0 * 1024.0)
                     if mps_mem > 0.0:
                         return mps_mem
-                except Exception:
-                    pass
+                except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return _get_process_memory_mb()
 
     def profile_graph(
@@ -293,7 +296,7 @@ class PyTorchProfiler:
                 Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]]: Single or collection of output tensors.
             """
             if has_ops and compiled_module is not None:
-                return compiled_module(*torch_input_list)
+                return cast(Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]], compiled_module(*torch_input_list))
             if not torch_input_list:
                 return torch.zeros((1,), device=torch_dev, dtype=torch.float32)
             accum = torch.zeros_like(torch_input_list[0])

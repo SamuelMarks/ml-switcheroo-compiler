@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Core abstractions and logic definitions for __init__.py."""
 
 import ml_switcheroo_compiler.ops.binary.special as _binary_special
@@ -85,7 +82,6 @@ frexp = get_op("Frexp")()
 
 atan2 = get_op("Atan2")()
 
-_ = _special
 logit = get_op("Logit")()
 mvlgamma = get_op("Mvlgamma")()
 nan_to_num = get_op("NanToNum")()

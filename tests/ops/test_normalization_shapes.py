@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.ir.shape_system import SymInt
 from ml_switcheroo_compiler.ops.normalization.basic import GroupMean, GroupNorm, GroupVariance
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_group_mean_shapes() -> None:
@@ -31,10 +38,10 @@ def test_group_mean_shapes() -> None:
     # Symbolic
     sym_n = SymInt("N")
     sym_g = SymInt("G")
-    res = gm.infer_shape((sym_n, 8, 5, 5), num_groups=sym_g)
+    res = cast("Callable[..., EagerTensorProtocol]", gm.infer_shape)((sym_n, 8, 5, 5), num_groups=sym_g)
     assert len(res) == 4
-    assert res[0] is sym_n
-    assert res[1] is sym_g
+    assert id(res[0]) == id(sym_n)
+    assert id(res[1]) == id(sym_g)
     assert res[2] == 1
     assert res[3] == 1
 
@@ -49,9 +56,9 @@ def test_group_variance_shapes() -> None:
 
     # Symbolic
     sym_n = SymInt("N")
-    res = gv.infer_shape((sym_n, 16, 8, 8), num_groups=4)
+    res = cast("Callable[..., EagerTensorProtocol]", gv.infer_shape)((sym_n, 16, 8, 8), num_groups=4)
     assert len(res) == 4
-    assert res[0] is sym_n
+    assert id(res[0]) == id(sym_n)
     assert res[1] == 4
 
 
@@ -63,4 +70,4 @@ def test_group_norm_shapes() -> None:
     assert gn.infer_shape(10) == (10,)
 
     sym_n = SymInt("N")
-    assert gn.infer_shape((sym_n, 8)) == (sym_n, 8)
+    assert cast("Callable[..., EagerTensorProtocol]", gn.infer_shape)((sym_n, 8)) == (sym_n, 8)

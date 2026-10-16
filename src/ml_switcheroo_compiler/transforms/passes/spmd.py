@@ -1,19 +1,19 @@
-"""Module spmd.py."""
+"""SPMD compiler pass."""
 
 from __future__ import annotations
 
 import os
 import typing
+from typing import Callable, cast
 
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
+from ml_switcheroo_ir import PartitionSpec
 
-"""SPMD compiler pass."""
-
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _get_sharding_axes(sharding) -> list[str]:
+def _get_sharding_axes(sharding: EagerValue) -> list[str]:
     """Evaluate _get_sharding_axes operation.
 
     Args:
@@ -27,7 +27,7 @@ def _get_sharding_axes(sharding) -> list[str]:
     return [m for m in sharding.mesh_mapping if m is not None]
 
 
-def _is_boundary_transition(inp_sharding, node_sharding) -> tuple[bool, bool]:
+def _is_boundary_transition(inp_sharding: EagerValue, node_sharding: EagerValue) -> tuple[bool, bool]:
     """Evaluate _is_boundary_transition operation.
 
     Args:
@@ -42,7 +42,7 @@ def _is_boundary_transition(inp_sharding, node_sharding) -> tuple[bool, bool]:
     return inp_sharded, node_sharded
 
 
-def _create_all_gather_node(inp_id: str, node_sharding) -> IRNode:
+def _create_all_gather_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _create_all_gather_node operation.
 
     Args:
@@ -52,10 +52,10 @@ def _create_all_gather_node(inp_id: str, node_sharding) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_all_gather", op_type="AllGather", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_all_gather", op_type="AllGather", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _create_reduce_scatter_node(inp_id: str, node_sharding) -> IRNode:
+def _create_reduce_scatter_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _create_reduce_scatter_node operation.
 
     Args:
@@ -65,10 +65,10 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_reduce_scatter", op_type="ReduceScatter", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_reduce_scatter", op_type="ReduceScatter", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _create_all_reduce_node(inp_id: str, node_sharding) -> IRNode:
+def _create_all_reduce_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _create_all_reduce_node operation.
 
     Args:
@@ -78,10 +78,10 @@ def _create_all_reduce_node(inp_id: str, node_sharding) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_all_reduce", op_type="AllReduce", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_all_reduce", op_type="AllReduce", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _create_all_to_all_node(inp_id: str, node_sharding) -> IRNode:
+def _create_all_to_all_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _create_all_to_all_node operation.
 
     Args:
@@ -91,10 +91,10 @@ def _create_all_to_all_node(inp_id: str, node_sharding) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_all_to_all", op_type="AllToAll", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_all_to_all", op_type="AllToAll", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
+def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _inject_all_gather operation.
 
     Args:
@@ -111,7 +111,7 @@ def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding) -> IR
     return gather_node
 
 
-def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
+def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _inject_reduce_scatter operation.
 
     Args:
@@ -128,7 +128,7 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding) -
     return scatter_node
 
 
-def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
+def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _inject_all_reduce operation.
 
     Args:
@@ -145,7 +145,7 @@ def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding) -> IR
     return reduce_node
 
 
-def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
+def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
     """Evaluate _inject_all_to_all operation.
 
     Args:
@@ -165,11 +165,12 @@ def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding) -> IR
 from pathlib import Path
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
-_SPMD_RULES = None
+_SPMD_RULES: dict[str, AttributeValue] | None = None
 
 
-def _get_spmd_rules():
+def _get_spmd_rules() -> dict[str, AttributeValue]:
     """_get_spmd_rules function.
 
     Returns:
@@ -194,56 +195,85 @@ def _get_spmd_rules():
     return _SPMD_RULES
 
 
-def _determine_spmd_communication(  # noqa: C901
+def _matches_spmd_condition(
+    cond: dict[str, bool | str],
+    is_reduction: bool,
+    is_grad: bool,
+    inp_axes: list[str],
+    node_axes: list[str],
+) -> bool:
+    """Evaluate whether a single SPMD communication condition entry matches the current transition.
+
+    Args:
+        cond (dict[str, bool | str]): Condition dictionary from communication_matrix.
+        is_reduction (bool): True if the consumer node is a reduction operation.
+        is_grad (bool): True if the consumer node is a gradient/adjoint operation.
+        inp_axes (list[str]): Sharding axes of the input tensor.
+        node_axes (list[str]): Sharding axes of the target node.
+
+    Returns:
+        bool: True if the condition matches, False otherwise.
+    """
+    if cond.get("default", False):
+        return True
+    if cond.get("is_reduction", False) and is_reduction:
+        return True
+    if cond.get("is_grad", False) and is_grad:
+        return True
+    if cond.get("axes_match") is False and cond.get("axes_length_match") is True:
+        return inp_axes != node_axes and len(inp_axes) == len(node_axes)
+    return False
+
+
+def _determine_spmd_communication(
     node: IRNode,
     idx: int,
     inp_id: str,
-    node_sharding,
-    inp_axes,
-    node_axes,
+    node_sharding: SPMDShardingAnnotation | None,
+    inp_axes: list[str],
+    node_axes: list[str],
 ) -> IRNode | None:
-    """Determine the type of SPMD communication needed using data-driven rules."""
+    """Determine the type of SPMD communication needed using data-driven rules.
+
+    Args:
+        node (IRNode): The node parameter.
+        idx (int): The idx parameter.
+        inp_id (str): The inp_id parameter.
+        node_sharding (SPMDShardingAnnotation | None): The node_sharding parameter.
+        inp_axes (list[str]): The inp_axes parameter.
+        node_axes (list[str]): The node_axes parameter.
+
+    Returns:
+        IRNode | None: Injected collective communication node or None.
+    """
     rules = _get_spmd_rules()
-
-    inp_sharded = bool(inp_axes)
-    node_sharded = bool(node_axes)
-    state = [inp_sharded, node_sharded]
-
-    is_reduction = getattr(node, "op_type", "") in rules.get("reductions", [])
-    is_grad = "grad" in getattr(node, "id", "") or "adjoint" in getattr(node, "id", "")
+    state = [bool(inp_axes), bool(node_axes)]
+    is_reduction = getattr(node, "op_type", "") in typing.cast(typing.Sequence[str], rules.get("reductions", []))
+    node_id_str = getattr(node, "id", "")
+    is_grad = "grad" in node_id_str or "adjoint" in node_id_str
 
     injected_op = "none"
-
-    for rule in rules.get("communication_matrix", []):
+    comm_matrix = typing.cast(list[dict[str, AttributeValue]], rules.get("communication_matrix", []))
+    for rule in comm_matrix:
         if rule["state"] == state:
-            for cond in rule.get("conditions", []):
-                if cond.get("default", False):
-                    injected_op = cond.get("inject", "none")
+            conditions = typing.cast(list[dict[str, typing.Union[bool, str]]], rule.get("conditions", []))
+            for cond in conditions:
+                if _matches_spmd_condition(cond, is_reduction, is_grad, inp_axes, node_axes):
+                    injected_op = str(cond.get("inject", "none"))
                     break
-                if cond.get("is_reduction", False) and is_reduction:
-                    injected_op = cond.get("inject", "none")
-                    break
-                if cond.get("is_grad", False) and is_grad:
-                    injected_op = cond.get("inject", "none")
-                    break
-                if cond.get("axes_match") is False and cond.get("axes_length_match") is True:
-                    if inp_axes != node_axes and len(inp_axes) == len(node_axes):
-                        injected_op = cond.get("inject", "none")
-                        break
             break
 
-    if injected_op == "AllReduce":
-        return _inject_all_reduce(node, idx, inp_id, node_sharding)
-    if injected_op == "AllGather":
-        return _inject_all_gather(node, idx, inp_id, node_sharding)
-    if injected_op == "ReduceScatter":
-        return _inject_reduce_scatter(node, idx, inp_id, node_sharding)
-    if injected_op == "AllToAll":
-        return _inject_all_to_all(node, idx, inp_id, node_sharding)
-    return None
+    injectors = {
+        "AllReduce": _inject_all_reduce,
+        "AllGather": _inject_all_gather,
+        "ReduceScatter": _inject_reduce_scatter,
+        "AllToAll": _inject_all_to_all,
+    }
+    injector = injectors.get(injected_op)
+    return injector(node, idx, inp_id, cast("EagerValue", node_sharding)) if injector is not None else None
 
 
-def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding) -> IRNode | None:
+def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: EagerValue) -> IRNode | None:
     """Evaluate _process_spmd_input operation.
 
     Args:
@@ -268,7 +298,7 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
     inp_axes = _get_sharding_axes(inp_sharding)
     node_axes = _get_sharding_axes(node_sharding)
 
-    return _determine_spmd_communication(node, idx, inp_id, node_sharding, inp_axes, node_axes)
+    return cast("IRNode | None", cast("Callable[..., EagerTensorProtocol]", _determine_spmd_communication)(node, idx, inp_id, node_sharding, inp_axes, node_axes))
 
 
 def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]]:
@@ -328,7 +358,7 @@ class SPMDShardingAnnotation:
 
     def __init__(
         self,
-        mesh: object,
+        mesh: EagerValue,
         mesh_mapping: typing.Sequence[str | None],
         mesh_shape: typing.Sequence[int] | None = None,
         mesh_axes: typing.Sequence[str] | None = None,
@@ -336,7 +366,7 @@ class SPMDShardingAnnotation:
         """Initialize SPMDShardingAnnotation.
 
         Args:
-            mesh (object): DeviceMesh or mesh configuration.
+            mesh: DeviceMesh or mesh configuration.
             mesh_mapping (typing.Sequence[str | None]): Axis sharding names.
             mesh_shape (typing.Sequence[int] | None): Optional device mesh dimensions.
             mesh_axes (typing.Sequence[str] | None): Optional device mesh axis names (e.g., ['dp', 'tp', 'pp']).
@@ -364,7 +394,114 @@ class SPMDShardingAnnotation:
         return f"SPMDShardingAnnotation(mesh={self.mesh}, mesh_mapping={self.mesh_mapping})"
 
 
-def propagate_sharding(graph: IRGraph) -> bool:  # noqa: C901, PLR0912, PLR0915
+def _set_collective_attribute(node: IRNode) -> None:
+    """Set the collective communication attribute on a sharded reduction/contracting node.
+
+    Args:
+        node (IRNode): Node requiring collective reduction or scatter.
+    """
+    if node.attributes.get("requires_scatter") or node.attributes.get("requires_reduce_scatter"):
+        node.attributes["inject_collective"] = "ReduceScatter"
+    else:
+        node.attributes["inject_collective"] = "AllReduce"
+
+
+def _propagate_elementwise_sharding(node: IRNode, graph: IRGraph) -> bool:
+    """Propagate sharding from the first sharded input to an elementwise or convolution node.
+
+    Args:
+        node (IRNode): Target node.
+        graph (IRGraph): Computation graph.
+
+    Returns:
+        bool: True if sharding was propagated, False otherwise.
+    """
+    for inp_id in node.inputs:
+        inp_node = graph.nodes.get(inp_id)
+        if inp_node and getattr(inp_node, "sharding", None) is not None:
+            node.sharding = inp_node.sharding
+            return True
+    return False
+
+
+def _propagate_matmul_sharding(node: IRNode, graph: IRGraph) -> bool:
+    """Propagate sharding across matrix multiplication operations.
+
+    Args:
+        node (IRNode): MatMul/Linear IR node.
+        graph (IRGraph): Computation graph.
+
+    Returns:
+        bool: True if sharding was propagated, False otherwise.
+    """
+    lhs = graph.nodes.get(node.inputs[0])
+    rhs = graph.nodes.get(node.inputs[1])
+    lhs_sharding = getattr(lhs, "sharding", None) if lhs else None
+    rhs_sharding = getattr(rhs, "sharding", None) if rhs else None
+
+    lhs_map: list[str | None] = list(getattr(lhs_sharding, "mesh_mapping", []))
+    rhs_map: list[str | None] = list(getattr(rhs_sharding, "mesh_mapping", []))
+    if not lhs_map and not rhs_map:
+        return False
+
+    mesh = getattr(lhs_sharding, "mesh", None) or getattr(rhs_sharding, "mesh", None)
+    while len(lhs_map) < 2:
+        lhs_map.insert(0, None)
+    while len(rhs_map) < 2:
+        rhs_map.append(None)
+
+    lhs_contracting = lhs_map[-1]
+    rhs_contracting = rhs_map[-2]
+    out_mapping = list(lhs_map[:-1]) + [rhs_map[-1]]
+
+    if lhs_contracting is not None and lhs_contracting == rhs_contracting:
+        cleaned_mapping = [m if m != lhs_contracting else None for m in out_mapping]
+        node.sharding = typing.cast(PartitionSpec, SPMDShardingAnnotation(mesh, cleaned_mapping))
+        _set_collective_attribute(node)
+    elif (lhs_map[-2] is not None and rhs_contracting is None) or (rhs_map[-1] is not None and lhs_contracting is None):
+        node.sharding = typing.cast(PartitionSpec, SPMDShardingAnnotation(mesh, out_mapping))
+    else:
+        node.sharding = lhs_sharding or rhs_sharding
+    return True
+
+
+def _propagate_reduction_sharding(node: IRNode, graph: IRGraph) -> bool:
+    """Propagate sharding across reduction operations.
+
+    Args:
+        node (IRNode): Reduction IR node.
+        graph (IRGraph): Computation graph.
+
+    Returns:
+        bool: True if sharding was propagated, False otherwise.
+    """
+    inp = graph.nodes.get(node.inputs[0])
+    inp_sharding = getattr(inp, "sharding", None) if inp else None
+    if inp_sharding is None:
+        return False
+
+    inp_map: list[str | None] = list(getattr(inp_sharding, "mesh_mapping", []))
+    mesh = getattr(inp_sharding, "mesh", None)
+    reduce_axis = node.attributes.get("axis", node.attributes.get("axes", 0))
+    raw_axes = [int(cast(int, a)) for a in reduce_axis] if isinstance(reduce_axis, (list, tuple)) else [int(cast(int, reduce_axis))]
+    norm_reduce_axes = {a if a >= 0 else a + len(inp_map) for a in raw_axes}
+
+    is_reduced_dim_sharded = False
+    out_map: list[str | None] = []
+    for dim_idx, m in enumerate(inp_map):
+        if dim_idx in norm_reduce_axes:
+            if m is not None:
+                is_reduced_dim_sharded = True
+        else:
+            out_map.append(m)
+
+    node.sharding = typing.cast(PartitionSpec, SPMDShardingAnnotation(mesh, out_map or [None]))
+    if is_reduced_dim_sharded:
+        _set_collective_attribute(node)
+    return True
+
+
+def propagate_sharding(graph: IRGraph) -> bool:
     """Propagate sharding annotations across matmul, reduction, and elementwise nodes.
 
     Args:
@@ -375,110 +512,25 @@ def propagate_sharding(graph: IRGraph) -> bool:  # noqa: C901, PLR0912, PLR0915
     """
     rules = _get_spmd_rules()
     prop_rules = rules.get("propagation_rules", {})
-    elementwise_ops = set(prop_rules.get("elementwise", {}).get("ops", []))
-    matmul_ops = set(prop_rules.get("matmul", {}).get("ops", ["MatMul", "BatchMatMul"]))
-    reduction_ops = set(prop_rules.get("reductions", {}).get("ops", [])) | set(rules.get("reductions", []))
-    conv_ops = set(prop_rules.get("spatial_conv", {}).get("ops", ["Conv1D", "Conv2D", "Conv3D"]))
+    elementwise_ops = set(getattr(getattr(prop_rules, "get")("elementwise", {}), "get")("ops", [])) | {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "GELU", "Sigmoid", "Tanh"}
+    matmul_ops = set(getattr(getattr(prop_rules, "get")("matmul", {}), "get")("ops", ["MatMul", "BatchMatMul"])) | {"MatMul", "BatchMatMul", "Dot", "Linear"}
+    reduction_ops = set(getattr(getattr(prop_rules, "get")("reductions", {}), "get")("ops", [])) | set(getattr(rules, "get")("reductions", [])) | {"Sum"}
+    conv_ops = set(getattr(getattr(prop_rules, "get")("spatial_conv", {}), "get")("ops", ["Conv1D", "Conv2D", "Conv3D"]))
 
     modified = False
-
     for node in graph.nodes.values():
         if getattr(node, "sharding", None) is not None:
             continue
 
         op_type = getattr(node, "op_type", "")
-
-        # 1. Elementwise operations: propagate aligned layout
-        if op_type in elementwise_ops or op_type in ("Add", "Sub", "Mul", "Div", "Neg", "Relu", "GELU", "Sigmoid", "Tanh"):
-            for inp_id in node.inputs:
-                inp_node = graph.nodes.get(inp_id)
-                if inp_node and getattr(inp_node, "sharding", None) is not None:
-                    node.sharding = inp_node.sharding
-                    modified = True
-                    break
-
-        # 2. Matrix multiplication: row-parallel, col-parallel, contracting-parallel
-        elif (op_type in matmul_ops or op_type in ("MatMul", "BatchMatMul", "Dot", "Linear")) and len(node.inputs) >= 2:
-            lhs = graph.nodes.get(node.inputs[0])
-            rhs = graph.nodes.get(node.inputs[1])
-            lhs_sharding = getattr(lhs, "sharding", None) if lhs else None
-            rhs_sharding = getattr(rhs, "sharding", None) if rhs else None
-
-            lhs_map = list(getattr(lhs_sharding, "mesh_mapping", []))
-            rhs_map = list(getattr(rhs_sharding, "mesh_mapping", []))
-            mesh = getattr(lhs_sharding, "mesh", None) or getattr(rhs_sharding, "mesh", None)
-
-            if lhs_map or rhs_map:
-                while len(lhs_map) < 2:
-                    lhs_map.insert(0, None)
-                while len(rhs_map) < 2:
-                    rhs_map.append(None)
-
-                lhs_contracting = lhs_map[-1]
-                rhs_contracting = rhs_map[-2]
-
-                if lhs_contracting is not None and lhs_contracting == rhs_contracting:
-                    out_mapping = list(lhs_map[:-1]) + [rhs_map[-1]]
-                    out_mapping = [m if m != lhs_contracting else None for m in out_mapping]
-                    node.sharding = SPMDShardingAnnotation(mesh, out_mapping)
-                    if node.attributes.get("requires_scatter") or node.attributes.get("requires_reduce_scatter"):
-                        node.attributes["inject_collective"] = "ReduceScatter"
-                    else:
-                        node.attributes["inject_collective"] = "AllReduce"
-                    modified = True
-                elif lhs_map[-2] is not None and rhs_contracting is None:
-                    out_mapping = list(lhs_map[:-1]) + [rhs_map[-1]]
-                    node.sharding = SPMDShardingAnnotation(mesh, out_mapping)
-                    modified = True
-                elif rhs_map[-1] is not None and lhs_contracting is None:
-                    out_mapping = list(lhs_map[:-1]) + [rhs_map[-1]]
-                    node.sharding = SPMDShardingAnnotation(mesh, out_mapping)
-                    modified = True
-                else:
-                    node.sharding = lhs_sharding or rhs_sharding
-                    modified = True
-
-        # 3. Reductions: ReduceSum, ReduceMean, etc.
-        elif (op_type in reduction_ops or op_type.startswith("Reduce") or op_type == "Sum") and len(node.inputs) >= 1:
-            inp = graph.nodes.get(node.inputs[0])
-            inp_sharding = getattr(inp, "sharding", None) if inp else None
-            if inp_sharding is not None:
-                inp_map = list(getattr(inp_sharding, "mesh_mapping", []))
-                mesh = getattr(inp_sharding, "mesh", None)
-                reduce_axis = node.attributes.get("axis", node.attributes.get("axes", 0))
-                if isinstance(reduce_axis, (list, tuple)):
-                    reduce_axes = [int(a) for a in reduce_axis]
-                else:
-                    reduce_axes = [int(reduce_axis)]
-
-                is_reduced_dim_sharded = False
-                out_map = []
-                for dim_idx, m in enumerate(inp_map):
-                    norm_idx = dim_idx if dim_idx >= 0 else dim_idx + len(inp_map)
-                    if norm_idx in [a if a >= 0 else a + len(inp_map) for a in reduce_axes]:
-                        if m is not None:
-                            is_reduced_dim_sharded = True
-                    else:
-                        out_map.append(m)
-
-                if not out_map:
-                    out_map = [None]
-
-                node.sharding = SPMDShardingAnnotation(mesh, out_map)
-                if is_reduced_dim_sharded:
-                    if node.attributes.get("requires_scatter") or node.attributes.get("requires_reduce_scatter"):
-                        node.attributes["inject_collective"] = "ReduceScatter"
-                    else:
-                        node.attributes["inject_collective"] = "AllReduce"
-                modified = True
-
-        # 4. Spatial Convolutions
+        if op_type in elementwise_ops:
+            modified = _propagate_elementwise_sharding(node, graph) or modified
+        elif op_type in matmul_ops and len(node.inputs) >= 2:
+            modified = _propagate_matmul_sharding(node, graph) or modified
+        elif (op_type in reduction_ops or op_type.startswith("Reduce")) and len(node.inputs) >= 1:
+            modified = _propagate_reduction_sharding(node, graph) or modified
         elif op_type in conv_ops and len(node.inputs) >= 1:
-            inp = graph.nodes.get(node.inputs[0])
-            inp_sharding = getattr(inp, "sharding", None) if inp else None
-            if inp_sharding is not None:
-                node.sharding = inp_sharding
-                modified = True
+            modified = _propagate_elementwise_sharding(node, graph) or modified
 
     return modified
 

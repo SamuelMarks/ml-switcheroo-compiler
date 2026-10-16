@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class _DummyGenerator:
@@ -27,7 +33,7 @@ class _DummyGenerator:
 class _MockArrayWithNumpy:
     """Mock object with numpy() method."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with numpy array.
 
         Args:
@@ -35,7 +41,7 @@ class _MockArrayWithNumpy:
         """
         self.arr = arr
 
-    def numpy(self) -> np.ndarray:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Return underlying numpy array.
 
         Returns:
@@ -47,7 +53,7 @@ class _MockArrayWithNumpy:
 class _MockDataWithNumpy:
     """Mock object with data.numpy() method."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with nested data object.
 
         Args:
@@ -102,9 +108,9 @@ class _MockBackendH5:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def load_h5(self, path: str) -> dict[str, np.ndarray]:
+    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load h5 mock weights.
 
         Args:
@@ -115,7 +121,7 @@ class _MockBackendH5:
         """
         return {"backend_key": np.array([42.0])}
 
-    def save_h5(self, weights: dict[str, np.ndarray], path: str) -> None:
+    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save h5 mock weights.
 
         Args:
@@ -130,9 +136,9 @@ class _MockBackendNPZ:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def save_npz(self, weights: dict[str, np.ndarray], path: str) -> None:
+    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save npz mock weights.
 
         Args:
@@ -141,7 +147,7 @@ class _MockBackendNPZ:
         """
         self.saved = (weights, path)
 
-    def load_npz(self, path: str) -> dict[str, np.ndarray]:
+    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load npz mock weights.
 
         Args:
@@ -156,7 +162,7 @@ class _MockBackendNPZ:
 class _MockBackendSafetensors:
     """Mock backend implementing custom from_buffer method."""
 
-    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> np.ndarray:
+    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Reconstruct array from buffer.
 
         Args:
@@ -194,7 +200,7 @@ def test_npz_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fmt.save(data, filepath)
     loaded = fmt.load(filepath)
     assert "w1" in loaded
-    np.testing.assert_array_equal(loaded["w1"], data["w1"])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(loaded["w1"], data["w1"])
 
     # Backend with save_npz and load_npz
     mock_b = _MockBackendNPZ()

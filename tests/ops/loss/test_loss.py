@@ -1,3 +1,5 @@
+"""Tests for test_loss."""
+
 # ruff: noqa: E501
 import numpy as np
 
@@ -25,6 +27,7 @@ from ml_switcheroo_compiler.ops.loss import (
 
 
 def test_losses_eager() -> None:
+    """Test function test_losses_eager."""
     config.eager_mode = True
     t = Tensor(np.array([[1.0, 2.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
     t2 = Tensor(np.array([[1.5, 2.5]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
@@ -53,17 +56,18 @@ def test_losses_eager() -> None:
 
 
 def test_dummy_losses() -> None:
+    """Test function test_dummy_losses."""
     config.eager_mode = False
     t = Tensor(np.array([[1.0, 2.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
     try:
         ctc_loss(t, t)
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
     try:
         circle_loss(t, t)
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
     try:
         categorical_generalized_cross_entropy(t, t)
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None

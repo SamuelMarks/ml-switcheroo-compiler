@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.common.mixins.variable import VariableASTVisitor
 from ml_switcheroo_compiler.ir.core import IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class _MockDimWithId:
@@ -56,7 +63,7 @@ class _MockGenerator:
 
 def test_variable_ast_visitor_exhaustive() -> None:
     """Verify VariableASTVisitor code generation methods."""
-    visitor = VariableASTVisitor(generator=_MockGenerator())
+    visitor = cast("Callable[..., EagerTensorProtocol]", VariableASTVisitor)(generator=cast("Callable[..., EagerTensorProtocol]", _MockGenerator)())
 
     node = IRNode("node_assign", "Assign")
     assign_str = visitor.visit_Assign(node, ["dest_var", "src_var"])

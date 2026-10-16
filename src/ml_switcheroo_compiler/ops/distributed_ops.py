@@ -1,14 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """Distributed operations."""
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def shard_tensor(tensor: Tensor, device_mesh, layout):
+def shard_tensor(tensor: Tensor, device_mesh: EagerValue, layout: EagerValue) -> EagerValue:
     """Shard a tensor across devices.
 
     Args:
@@ -37,7 +38,7 @@ class ShardTensor(OpDef):
 
     op_name = "ShardTensor"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -50,7 +51,7 @@ class ShardTensor(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def nccl_all_reduce(tensor: Tensor, op_type: str = "sum"):
+def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> EagerValue:
     """NCCL all-reduce.
 
     Args:
@@ -62,7 +63,7 @@ def nccl_all_reduce(tensor: Tensor, op_type: str = "sum"):
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("NcclAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
+        data = getattr(backend, "execute_op")("NcclAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
         return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("NcclAllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
@@ -73,7 +74,7 @@ class NcclAllReduce(OpDef):
 
     op_name = "NcclAllReduce"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -86,7 +87,7 @@ class NcclAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum"):
+def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> EagerValue:
     """Hierarchical copy all-reduce.
 
     Args:
@@ -98,7 +99,7 @@ def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum"):
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("HierarchicalCopyAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
+        data = getattr(backend, "execute_op")("HierarchicalCopyAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
         return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("HierarchicalCopyAllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
@@ -109,7 +110,7 @@ class HierarchicalCopyAllReduce(OpDef):
 
     op_name = "HierarchicalCopyAllReduce"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -122,7 +123,7 @@ class HierarchicalCopyAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def broadcast(tensor: Tensor, root_rank: int = 0):
+def broadcast(tensor: Tensor, root_rank: int = 0) -> EagerValue:
     """Broadcast.
 
     Args:
@@ -145,7 +146,7 @@ class Broadcast(OpDef):
 
     op_name = "Broadcast"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -158,7 +159,7 @@ class Broadcast(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_gather(tensor: Tensor, axis: int = 0):
+def all_gather(tensor: Tensor, axis: int = 0) -> EagerValue:
     """All-gather.
 
     Args:
@@ -181,7 +182,7 @@ class AllGather(OpDef):
 
     op_name = "AllGather"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -192,14 +193,14 @@ class AllGather(OpDef):
             tuple[int, ...]: Result.
         """
         shape = list(getattr(tensor, "shape", ()))
-        world_size = int(kwargs.get("world_size", kwargs.get("num_shards", 1)))
-        axis = int(kwargs.get("axis", 0))
+        world_size = int(cast(int, kwargs.get("world_size", kwargs.get("num_shards", 1))))
+        axis = int(cast(int, kwargs.get("axis", 0)))
         if shape and world_size > 1 and 0 <= axis < len(shape):
             shape[axis] = shape[axis] * world_size
         return tuple(shape)
 
 
-def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum"):
+def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> EagerValue:
     """Reduce.
 
     Args:
@@ -212,7 +213,7 @@ def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum"):
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op(
+        data = getattr(backend, "execute_op")(
             "Reduce",
             (tensor.data if type(tensor).__name__ == "Tensor" else tensor),
             root_rank=root_rank,
@@ -228,7 +229,7 @@ class Reduce(OpDef):
 
     op_name = "Reduce"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -241,7 +242,7 @@ class Reduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_reduce(tensor: Tensor, op_type: str = "sum"):
+def all_reduce(tensor: Tensor, op_type: str = "sum") -> EagerValue:
     """Provide generic SPMD AllReduce.
 
     Args:
@@ -253,7 +254,7 @@ def all_reduce(tensor: Tensor, op_type: str = "sum"):
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("AllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
+        data = getattr(backend, "execute_op")("AllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
         return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("AllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
@@ -264,7 +265,7 @@ class AllReduce(OpDef):
 
     op_name = "AllReduce"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -277,7 +278,7 @@ class AllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0):
+def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> EagerValue:
     """Provide generic SPMD ReduceScatter.
 
     Args:
@@ -290,7 +291,7 @@ def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0):
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("ReduceScatter", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type, axis=axis)
+        data = getattr(backend, "execute_op")("ReduceScatter", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type, axis=axis)
         return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("ReduceScatter", [tensor], {"op_type": op_type, "axis": axis}, tensor.shape, tensor.dtype)
 
@@ -301,7 +302,7 @@ class ReduceScatter(OpDef):
 
     op_name = "ReduceScatter"
 
-    def infer_shape(self, tensor, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -312,8 +313,8 @@ class ReduceScatter(OpDef):
             tuple[int, ...]: Result.
         """
         shape = list(getattr(tensor, "shape", ()))
-        world_size = int(kwargs.get("world_size", kwargs.get("num_shards", 1)))
-        axis = int(kwargs.get("axis", 0))
+        world_size = int(cast(int, kwargs.get("world_size", kwargs.get("num_shards", 1))))
+        axis = int(cast(int, kwargs.get("axis", 0)))
         if shape and world_size > 1 and 0 <= axis < len(shape):
             shape[axis] = shape[axis] // world_size
         return tuple(shape)
@@ -325,7 +326,7 @@ class AllToAll(OpDef):
 
     op_name = "AllToAll"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -352,7 +353,7 @@ class BroadcastArrays(OpDef):
 
     op_name = "BroadcastArrays"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -379,7 +380,7 @@ class BroadcastTo(OpDef):
 
     op_name = "BroadcastTo"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -408,7 +409,7 @@ class BroadcastToRank(OpDef):
 
     op_name = "BroadcastToRank"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -421,7 +422,7 @@ class BroadcastToRank(OpDef):
         rank = kwargs.get("rank", 1)
         if args and hasattr(args[0], "shape"):
             shape = args[0].shape
-            return (1,) * (rank - len(shape)) + shape if len(shape) < rank else shape
+            return (1,) * (int(cast(int, rank)) - len(shape)) + tuple(shape) if len(shape) < int(cast(int, rank)) else shape
         return ()
 
 
@@ -431,7 +432,7 @@ class BroadcastedIota(OpDef):
 
     op_name = "BroadcastedIota"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -458,7 +459,7 @@ class Pbroadcast(OpDef):
 
     op_name = "Pbroadcast"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -479,7 +480,7 @@ class Pbroadcast(OpDef):
         return res
 
 
-def all_to_all(*args, **kwargs):
+def all_to_all(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """AllToAll frontend.
 
     Args:
@@ -494,7 +495,7 @@ def all_to_all(*args, **kwargs):
     return _emit_shape_node("AllToAll", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_arrays(*args, **kwargs):
+def broadcast_arrays(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """BroadcastArrays frontend.
 
     Args:
@@ -509,7 +510,7 @@ def broadcast_arrays(*args, **kwargs):
     return _emit_shape_node("BroadcastArrays", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_to(*args, **kwargs):
+def broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """BroadcastTo frontend.
 
     Args:
@@ -524,7 +525,7 @@ def broadcast_to(*args, **kwargs):
     return _emit_shape_node("BroadcastTo", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_to_rank(*args, **kwargs):
+def broadcast_to_rank(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """BroadcastToRank frontend.
 
     Args:
@@ -539,7 +540,7 @@ def broadcast_to_rank(*args, **kwargs):
     return _emit_shape_node("BroadcastToRank", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcasted_iota(*args, **kwargs):
+def broadcasted_iota(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """BroadcastedIota frontend.
 
     Args:
@@ -554,7 +555,7 @@ def broadcasted_iota(*args, **kwargs):
     return _emit_shape_node("BroadcastedIota", list(args), kwargs, (), "int32")
 
 
-def pbroadcast(*args, **kwargs):
+def pbroadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Pbroadcast frontend.
 
     Args:
@@ -575,7 +576,7 @@ class Pmax(OpDef):
 
     op_name = "Pmax"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -595,7 +596,7 @@ class Pmin(OpDef):
 
     op_name = "Pmin"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -615,7 +616,7 @@ class Outfeed(OpDef):
 
     op_name = "Outfeed"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -634,7 +635,7 @@ class Pshuffle(OpDef):
 
     op_name = "Pshuffle"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -654,7 +655,7 @@ class Pswapaxes(OpDef):
 
     op_name = "Pswapaxes"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -668,8 +669,8 @@ class Pswapaxes(OpDef):
         shape = list(getattr(x, "shape", ()))
         if not shape:
             return ()
-        axis1 = int(kwargs.get("axis1", args[1] if len(args) > 1 else 0))
-        axis2 = int(kwargs.get("axis2", args[2] if len(args) > 2 else 1))
+        axis1 = int(cast(int, kwargs.get("axis1", args[1] if len(args) > 1 else 0)))
+        axis2 = int(cast(int, kwargs.get("axis2", args[2] if len(args) > 2 else 1)))
         if axis1 < 0:
             axis1 += len(shape)
         if axis2 < 0:
@@ -685,7 +686,7 @@ class Ppermute(OpDef):
 
     op_name = "Ppermute"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -705,7 +706,7 @@ class PsumScatter(OpDef):
 
     op_name = "PsumScatter"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -716,18 +717,18 @@ class PsumScatter(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        scatter_dimension = int(kwargs.get("scatter_dimension", 0))
+        scatter_dimension = int(cast(int, kwargs.get("scatter_dimension", 0)))
         world_size = kwargs.get("world_size")
         shape = list(getattr(x, "shape", ()))
         if shape and 0 <= scatter_dimension < len(shape):
             if world_size is not None and shape[scatter_dimension] is not None:
-                shape[scatter_dimension] = shape[scatter_dimension] // int(world_size)
+                shape[scatter_dimension] = shape[scatter_dimension] // int(cast(int, world_size))
             else:
                 shape[scatter_dimension] = None
         return tuple(shape)
 
 
-def outfeed(*args, **kwargs):
+def outfeed(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Write to the outfeed queue.
 
     Args:
@@ -742,7 +743,7 @@ def outfeed(*args, **kwargs):
     return dispatch_op("Outfeed", *args, **kwargs)
 
 
-def pmax(*args, **kwargs):
+def pmax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate pmax operation.
 
     Args:
@@ -757,7 +758,7 @@ def pmax(*args, **kwargs):
     return dispatch_op("Pmax", *args, **kwargs)
 
 
-def pmin(*args, **kwargs):
+def pmin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate pmin operation.
 
     Args:
@@ -772,7 +773,7 @@ def pmin(*args, **kwargs):
     return dispatch_op("Pmin", *args, **kwargs)
 
 
-def ppermute(*args, **kwargs):
+def ppermute(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Permute data across the mapped axis.
 
     Args:
@@ -787,7 +788,7 @@ def ppermute(*args, **kwargs):
     return dispatch_op("Ppermute", *args, **kwargs)
 
 
-def pshuffle(*args, **kwargs):
+def pshuffle(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Shuffle data across the mapped axis.
 
     Args:
@@ -802,7 +803,7 @@ def pshuffle(*args, **kwargs):
     return dispatch_op("Pshuffle", *args, **kwargs)
 
 
-def psum_scatter(*args, **kwargs):
+def psum_scatter(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Scatter sum across a mapped axis.
 
     Args:
@@ -817,7 +818,7 @@ def psum_scatter(*args, **kwargs):
     return dispatch_op("PsumScatter", *args, **kwargs)
 
 
-def pswapaxes(*args, **kwargs):
+def pswapaxes(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Swap axes of the data.
 
     Args:
@@ -838,7 +839,7 @@ class Send(OpDef):
 
     op_name = "Send"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -856,7 +857,7 @@ class Recv(OpDef):
 
     op_name = "Recv"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape based on expected kwargs.
 
         Args:
@@ -868,15 +869,28 @@ class Recv(OpDef):
         return kwargs.get("shape", ())
 
 
-def send(tensor, dst_rank: int, tag: int = 0):
-    """Send tensor to destination rank."""
+def send(tensor: EagerValue, dst_rank: int, tag: int = 0) -> EagerValue:
+    """Send tensor to destination rank.
+
+    Args:
+        tensor: The tensor parameter.
+        dst_rank: The dst_rank parameter.
+        tag: The tag parameter.
+    """
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
     return TracingNodeBuilder.emit_tracing_node("Send", tensor, dst_rank=dst_rank, tag=tag)
 
 
-def recv(shape, dtype: str, src_rank: int, tag: int = 0):
-    """Receive tensor from source rank."""
+def recv(shape: EagerValue, dtype: str, src_rank: int, tag: int = 0) -> EagerValue:
+    """Receive tensor from source rank.
+
+    Args:
+        shape: The shape parameter.
+        dtype: The dtype parameter.
+        src_rank: The src_rank parameter.
+        tag: The tag parameter.
+    """
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
     return TracingNodeBuilder.emit_tracing_node("Recv", shape=shape, dtype=dtype, src_rank=src_rank, tag=tag)

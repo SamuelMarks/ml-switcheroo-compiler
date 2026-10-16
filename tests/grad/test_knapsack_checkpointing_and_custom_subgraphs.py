@@ -1,6 +1,9 @@
 # mypy: disable-error-code="untyped-decorator"
 """Tests for knapsack memory scheduler and declarative custom gradient subgraphs."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import pytest
@@ -20,6 +23,11 @@ from ml_switcheroo_compiler.grad.checkpointing import (
 )
 from ml_switcheroo_compiler.grad.custom_vjp_ops import custom_vjp
 from ml_switcheroo_compiler.grad.jvp_vjp import custom_jvp
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_load_cost_models() -> None:
@@ -93,8 +101,8 @@ def test_custom_vjp_declarative_subgraph() -> None:
     bwd_g.nodes["scaled"] = LogicalNode(id="scaled", op_type="Mul", inputs=["cot", "x"])
     bwd_g.outputs = ["scaled"]
 
-    dummy_fn.defvjp_subgraph(bwd_g)
-    assert dummy_fn.bwd_subgraph == bwd_g
+    cast("EagerTensorProtocol", getattr(dummy_fn, "defvjp_subgraph"))(bwd_g)
+    assert cast("EagerTensorProtocol", getattr(dummy_fn, "bwd_subgraph")) == bwd_g
 
 
 def test_custom_jvp_declarative_subgraph() -> None:
@@ -154,9 +162,9 @@ def test_evaluate_node_costs_edge_cases() -> None:
         shape_metadata=(-1, "str_dim", 4),
         attributes={"dtype": "float64"},
     )
-    footprint, flop = _evaluate_node_costs(
+    footprint, flop = cast("Callable[..., EagerTensorProtocol]", _evaluate_node_costs)(
         node=node,
-        memory_sizes=None,  # type: ignore[arg-type]
+        memory_sizes=None,
         heavy_ops={"Conv"},
         light_ops={"Add"},
         heavy_cost=100,

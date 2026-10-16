@@ -1,11 +1,6 @@
-"""Module boolean.py."""
-
-from __future__ import annotations
-
-# ruff: noqa: E402, E501, F403
-
 """Reductions."""
 
+from __future__ import annotations
 
 from ml_switcheroo_compiler.ops.base import register_op
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp

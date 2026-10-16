@@ -1,3 +1,7 @@
+"""Tests for test_lstm."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import numpy as np
 
@@ -6,7 +10,8 @@ from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConf
 from ml_switcheroo_compiler.ops.nn.lstm import lstm_cell
 
 
-def test_lstm_coverage():
+def test_lstm_coverage() -> None:
+    """Test function test_lstm_coverage."""
     config.eager_mode = True
     t_in = Tensor(np.array([[1.0, 2.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
     t_h = Tensor(np.array([[1.0, 1.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))

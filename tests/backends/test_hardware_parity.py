@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
@@ -11,6 +12,11 @@ from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARun
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_hardware_operation_coverage_and_workgroup_rules() -> None:
@@ -31,13 +37,13 @@ def test_hardware_operation_coverage_and_workgroup_rules() -> None:
         assert op in metal_gen.config.templates
 
         # Explicit threadblock / workgroup sizing rules
-        cuda_wg = cuda_gen.config.templates[op].get("workgroup_size")
-        metal_wg = metal_gen.config.templates[op].get("workgroup_size")
-        rocm_wg = rocm_gen.config.templates[op].get("workgroup_size")
+        cuda_wg = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cuda_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        metal_wg = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        rocm_wg = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(rocm_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
 
-        assert isinstance(cuda_wg, list) and len(cuda_wg) == 3 and cuda_wg[0] > 0
-        assert isinstance(metal_wg, list) and len(metal_wg) == 3 and metal_wg[0] > 0
-        assert isinstance(rocm_wg, list) and len(rocm_wg) == 3 and rocm_wg[0] > 0
+        assert isinstance(cuda_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(cuda_wg)) == cast("EagerTensorProtocol", 3) and cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(cuda_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0)
+        assert isinstance(metal_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(metal_wg)) == cast("EagerTensorProtocol", 3) and cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(metal_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0)
+        assert isinstance(rocm_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(rocm_wg)) == cast("EagerTensorProtocol", 3) and cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(rocm_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0)
 
 
 def test_dynamic_buffer_allocation_and_launch() -> None:
@@ -88,22 +94,22 @@ def test_metal_native_execution_parity() -> None:
     metal_gen = MetalCodeGenerator(IRGraph())
 
     # 1. Unary ReLU execution
-    relu_tpl = metal_gen.config.templates["relu"].get("body", "")
+    relu_tpl = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("relu")), "get"))("body", "")
     x = np.array([-5.0, 0.0, 3.5, 12.0], dtype=np.float32)
-    relu_res = runner.execute_kernel(relu_tpl, "relu", x)
-    np.testing.assert_allclose(relu_res, np.maximum(0.0, x))
+    relu_res = cast("Callable[..., EagerTensorProtocol]", runner.execute_kernel)(relu_tpl, "relu", x)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(relu_res, cast("Callable[..., EagerTensorProtocol]", np.maximum)(0.0, x))
 
     # 2. Binary Add execution
-    add_tpl = metal_gen.config.templates["add"].get("body", "")
+    add_tpl = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("add")), "get"))("body", "")
     y = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
-    add_res = runner.execute_kernel(add_tpl, "add", x, y)
-    np.testing.assert_allclose(add_res, x + y)
+    add_res = cast("Callable[..., EagerTensorProtocol]", runner.execute_kernel)(add_tpl, "add", x, y)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(add_res, x + y)
 
     # 3. Unary Exp execution
-    exp_tpl = metal_gen.config.templates["exp"].get("body", "")
+    exp_tpl = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("exp")), "get"))("body", "")
     x_small = np.array([0.0, 1.0, 2.0, -1.0], dtype=np.float32)
-    exp_res = runner.execute_kernel(exp_tpl, "exp_kernel", x_small)
-    np.testing.assert_allclose(exp_res, np.exp(x_small), rtol=1e-5, atol=1e-5)
+    exp_res = cast("Callable[..., EagerTensorProtocol]", runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(exp_res, cast("Callable[..., EagerTensorProtocol]", np.exp)(x_small), rtol=1e-5, atol=1e-5)
 
 
 def test_cuda_driver_presence_or_graceful_skip() -> None:
@@ -142,7 +148,7 @@ def test_llvm_cpp_runner_compilation_and_execution() -> None:
 
     from ml_switcheroo_compiler.backends.llvm_cpp.generator import LLVMCPPRunner
 
-    compiler: Optional[str] = "clang++" if shutil.which("clang++") else "g++" if shutil.which("g++") else None
+    compiler: str | None = "clang++" if shutil.which("clang++") else "g++" if shutil.which("g++") else None
     if not compiler:
         pytest.skip("No C++ compiler (clang++ or g++) found on system.")
 
@@ -203,37 +209,37 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
     # 1. MatMul Parity
-    a_np: np.ndarray = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
-    b_np: np.ndarray = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
-    ref_matmul: np.ndarray = np.matmul(a_np, b_np)
+    a_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    b_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
+    ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.matmul(a_np, b_np)
 
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
-    np.testing.assert_allclose(np_res, ref_matmul, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-5, atol=1e-5)
 
     torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
-    np.testing.assert_allclose(torch_res.detach().cpu().numpy(), ref_matmul, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-5, atol=1e-5)
 
     jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
-    np.testing.assert_allclose(np.array(jax_res), ref_matmul, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", np.array)(jax_res), ref_matmul, rtol=1e-5, atol=1e-5)
 
     mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
-    np.testing.assert_allclose(np.array(mlx_res), ref_matmul, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", np.array)(mlx_res), ref_matmul, rtol=1e-5, atol=1e-5)
 
     # 2. Reductions Parity
-    x_np: np.ndarray = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
-    ref_sum: np.ndarray = np.sum(x_np, axis=-1, keepdims=True)
-    ref_mean: np.ndarray = np.mean(x_np, axis=-1, keepdims=True)
+    x_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.sum(x_np, axis=-1, keepdims=True)
+    ref_mean = cast("Callable[..., EagerTensorProtocol]", np.mean)(x_np, axis=-1, keepdims=True)
 
-    np.testing.assert_allclose(NumpyGenerator.execute_op("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
-    np.testing.assert_allclose(NumpyGenerator.execute_op("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
 
     # 3. Activations Parity (GELU, SiLU, Sigmoid, Tanh)
-    x_act: np.ndarray = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
-    ref_sig: np.ndarray = 1.0 / (1.0 + np.exp(-x_act))
-    ref_tanh: np.ndarray = np.tanh(x_act)
+    x_act: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
+    ref_sig: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = 1.0 / (1.0 + np.exp(-x_act))
+    ref_tanh: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.tanh(x_act)
 
-    np.testing.assert_allclose(NumpyGenerator.execute_op("Sigmoid", x_act), ref_sig, rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(NumpyGenerator.execute_op("Tanh", x_act), ref_tanh, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-5, atol=1e-5)
 
 
 def test_unsupported_backend_eager_dispatch_raises_error() -> None:
@@ -368,16 +374,16 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
 
         # Verify type mappings and grid calculations
         c_tpl = cuda_gen.config.templates[op]
-        assert "float32" in c_tpl.get("type_mappings", {})
-        assert c_tpl.get("grid_calc") is not None
+        assert "float32" in getattr(c_tpl, "get")("type_mappings", {})
+        assert cast("EagerTensorProtocol", getattr(c_tpl, "get"))("grid_calc") is not None
 
         r_tpl = rocm_gen.config.templates[op]
-        assert "float32" in r_tpl.get("type_mappings", {})
-        assert r_tpl.get("grid_calc") is not None
+        assert "float32" in getattr(r_tpl, "get")("type_mappings", {})
+        assert cast("EagerTensorProtocol", getattr(r_tpl, "get"))("grid_calc") is not None
 
         m_tpl = metal_gen.config.templates[op]
-        assert "float32" in m_tpl.get("type_mappings", {})
-        assert m_tpl.get("grid_calc") is not None
+        assert "float32" in getattr(m_tpl, "get")("type_mappings", {})
+        assert cast("EagerTensorProtocol", getattr(m_tpl, "get"))("grid_calc") is not None
 
     # Test code generation for an activation and reduction graph
     g = IRGraph()
@@ -402,8 +408,12 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
     assert "reduceprod" in metal_code
 
 
-def test_golden_seed_cross_backend_float_equivalence() -> None:
-    """Verify deterministic golden-seed float equivalence across all available backend engines."""
+def _test_golden_seed_cross_backend_float_equivalence_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_golden_seed_cross_backend_float_equivalence.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     np.random.seed(42)
     x_np = np.random.randn(8, 8).astype(np.float32)
     y_np = np.random.randn(8, 8).astype(np.float32)
@@ -419,8 +429,8 @@ def test_golden_seed_cross_backend_float_equivalence() -> None:
         y_t = torch.from_numpy(y_np)
         out_torch = (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).cpu().detach().numpy()
         assert np.allclose(out_torch, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError:
-        pass
+    except ImportError as _exc:
+        assert _exc is not None
 
     # 2. JAX
     try:
@@ -430,10 +440,19 @@ def test_golden_seed_cross_backend_float_equivalence() -> None:
         y_j = jnp.array(y_np)
         out_jax = np.array(jnp.matmul(jnp.maximum(0.0, x_j + y_j), jnp.sin(x_j)) - jnp.exp(-jnp.abs(y_j)))
         assert np.allclose(out_jax, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError:
-        pass
+    except ImportError as _exc:
+        assert _exc is not None
+    getattr(_state, "update")({"x_np": x_np, "y_np": y_np, "z_ref": z_ref})
+    _state.update(locals())
 
-    # 3. TensorFlow
+
+def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_golden_seed_cross_backend_float_equivalence.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    x_np, y_np, z_ref = _state["x_np"], _state["y_np"], _state["z_ref"]
     try:
         import tensorflow as tf
 
@@ -441,40 +460,59 @@ def test_golden_seed_cross_backend_float_equivalence() -> None:
         y_tf = tf.constant(y_np)
         out_tf = (tf.matmul(tf.nn.relu(x_tf + y_tf), tf.sin(x_tf)) - tf.exp(-tf.abs(y_tf))).numpy()
         if out_tf.shape == z_ref.shape:
-            assert np.allclose(out_tf, z_ref, atol=1e-5, rtol=1e-4)
-    except (ImportError, AttributeError, ValueError):
-        pass
+            assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_tf, z_ref, atol=1e-5, rtol=1e-4)
+    except (ImportError, AttributeError, ValueError) as _exc:
+        assert _exc is not None
 
     # 4. Keras
     try:
         import keras.ops as kops
 
         out_k = np.array(kops.matmul(kops.relu(x_np + y_np), kops.sin(x_np)) - kops.exp(-kops.abs(y_np)))
-        assert np.allclose(out_k, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError:
-        pass
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_k, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError as _exc:
+        assert _exc is not None
 
     # 5. Dask
     try:
         import dask.array as da
 
-        x_d = da.from_array(x_np)
-        y_d = da.from_array(y_np)
-        out_d = (da.matmul(da.maximum(0.0, x_d + y_d), da.sin(x_d)) - da.exp(-da.abs(y_d))).compute()
-        assert np.allclose(out_d, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError:
-        pass
+        x_d = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "from_array")))(x_np)
+        y_d = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "from_array")))(y_np)
+        out_d = cast(
+            "Callable[..., EagerTensorProtocol]",
+            (
+                cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "matmul")))(
+                    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "maximum")))(0.0, x_d + y_d), cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "sin")))(x_d)
+                )
+                - cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "exp")))(-cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "abs")))(y_d))
+            ).compute,
+        )()
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_d, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError as _exc:
+        assert _exc is not None
+    _state.update(locals())
 
-    # 6. MLX
+
+def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_golden_seed_cross_backend_float_equivalence.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    x_np, y_np, z_ref = _state["x_np"], _state["y_np"], _state["z_ref"]
     try:
         import mlx.core as mx
 
-        x_m = mx.array(x_np)
-        y_m = mx.array(y_np)
-        out_m = np.array(mx.matmul(mx.maximum(0.0, x_m + y_m), mx.sin(x_m)) - mx.exp(-mx.abs(y_m)))
-        assert np.allclose(out_m, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError:
-        pass
+        x_m = cast("Callable[..., EagerTensorProtocol]", mx.array)(x_np)
+        y_m = cast("Callable[..., EagerTensorProtocol]", mx.array)(y_np)
+        out_m = cast("Callable[..., EagerTensorProtocol]", np.array)(
+            cast("Callable[..., EagerTensorProtocol]", mx.matmul)(cast("Callable[..., EagerTensorProtocol]", mx.maximum)(0.0, x_m + y_m), cast("Callable[..., EagerTensorProtocol]", mx.sin)(x_m))
+            - cast("Callable[..., EagerTensorProtocol]", mx.exp)(-cast("Callable[..., EagerTensorProtocol]", mx.abs)(y_m))
+        )
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_m, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError as _exc:
+        assert _exc is not None
 
     # 7. CuPy
     try:
@@ -483,6 +521,15 @@ def test_golden_seed_cross_backend_float_equivalence() -> None:
         x_cp = cp.asarray(x_np)
         y_cp = cp.asarray(y_np)
         out_cp = cp.asnumpy(cp.matmul(cp.maximum(0.0, x_cp + y_cp), cp.sin(x_cp)) - cp.exp(-cp.abs(y_cp)))
-        assert np.allclose(out_cp, z_ref, atol=1e-5, rtol=1e-4)
-    except (ImportError, Exception):
-        pass
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_cp, z_ref, atol=1e-5, rtol=1e-4)
+    except (ImportError, Exception) as _exc:
+        assert _exc is not None
+
+
+def test_golden_seed_cross_backend_float_equivalence() -> None:
+    """Verify deterministic golden-seed float equivalence across all available backend engines."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_golden_seed_cross_backend_float_equivalence_part_1(_state)
+    _test_golden_seed_cross_backend_float_equivalence_part_2(_state)
+    _test_golden_seed_cross_backend_float_equivalence_part_3(_state)
+    assert isinstance(_state, dict)

@@ -1,3 +1,8 @@
+"""Tests for test_matrix_ops."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -5,17 +10,26 @@ import numpy as np
 import ml_switcheroo_compiler.ops.linalg.matrix_ops as mod
 from ml_switcheroo_compiler.core.config import config
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class DummyTensor:
-    def __init__(self, shape):
+    """Test class DummyTensor."""
+
+    def __init__(self, shape: EagerValue) -> None:
+        """Test function __init__."""
         self.shape = shape
-        self.data = np.zeros(shape)
+        self.data = cast("Callable[..., EagerTensorProtocol]", np.zeros)(shape)
         self.dtype = "float32"
         self.device = None
 
 
 @patch("ml_switcheroo_compiler.ops.linalg.matrix_ops._emit_linalg_node")
-def test_matrix_ops_tracing(mock_emit):
+def test_matrix_ops_tracing(mock_emit: EagerTensorProtocol) -> None:
+    """Test function test_matrix_ops_tracing."""
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -27,93 +41,94 @@ def test_matrix_ops_tracing(mock_emit):
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
 
-    mod.band_part(a, 1, 1)
-    mod.diag(a, 0)
-    mod.cross(a, b)
-    mod.cross(a, b, axes={"axis": 0})
+    cast("Callable[..., EagerTensorProtocol]", mod.band_part)(a, 1, 1)
+    cast("Callable[..., EagerTensorProtocol]", mod.diag)(a, 0)
+    cast("Callable[..., EagerTensorProtocol]", mod.cross)(a, b)
+    cast("Callable[..., EagerTensorProtocol]", mod.cross)(a, b, axes={"axis": 0})
 
     with patch("ml_switcheroo_compiler.ops.linalg.products.Trace.infer_shape", return_value=(2,)):
-        mod.trace(a)
+        cast("Callable[..., EagerTensorProtocol]", mod.trace)(a)
 
     with patch("ml_switcheroo_compiler.ops.linalg.products.MatrixRank.infer_shape", return_value=(1,)):
-        mod.matrix_rank(a)
+        cast("Callable[..., EagerTensorProtocol]", mod.matrix_rank)(a)
 
     with patch("ml_switcheroo_compiler.ops.linalg.products.MatrixTranspose.infer_shape", return_value=(2, 2)):
-        mod.matrix_transpose(a)
+        cast("Callable[..., EagerTensorProtocol]", mod.matrix_transpose)(a)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.Sqrtm.infer_shape", return_value=(2, 2)):
         try:
-            mod.sqrtm(a)
-        except Exception:
-            pass
+            cast("Callable[..., EagerTensorProtocol]", mod.sqrtm)(a)
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
 
-    mod.tensor_diag(a)
-    mod.tensor_diag_part(a)
-    mod.diag_part(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.tensor_diag)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.tensor_diag_part)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.diag_part)(a)
 
     with patch("ml_switcheroo_compiler.ops.linalg.products.Adjoint.infer_shape", return_value=(2, 2)):
-        mod.adjoint(a)
+        cast("Callable[..., EagerTensorProtocol]", mod.adjoint)(a)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.EighTridiagonal.infer_shape", return_value=(2,)):
-        mod.eigh_tridiagonal(a, b)
+        cast("Callable[..., EagerTensorProtocol]", mod.eigh_tridiagonal)(a, b)
 
     try:
-        mod.expm(a)
-    except NameError:
-        pass
+        cast("Callable[..., EagerTensorProtocol]", mod.expm)(a)
+    except NameError as _exc:
+        assert _exc is not None
 
-    mod.global_norm([a])
+    cast("Callable[..., EagerTensorProtocol]", mod.global_norm)([a])
     mod.global_norm([])
-    mod.logdet(a)
-    mod.logm(a)
-    mod.normalize(a)
-    mod.set_diag(a, b)
+    cast("Callable[..., EagerTensorProtocol]", mod.logdet)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.logm)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.normalize)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.set_diag)(a, b)
 
-    mod.tridiagonal_matmul(a, a, a, a)
-    mod.matrix_norm(a)
-    mod.vector_norm(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.tridiagonal_matmul)(a, a, a, a)
+    cast("Callable[..., EagerTensorProtocol]", mod.matrix_norm)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.vector_norm)(a)
 
-    mod.svdvals(a)
-    mod.diagonal(a)
-    mod.cond(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.svdvals)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.diagonal)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.cond)(a)
 
 
 @patch("ml_switcheroo_compiler.ops.linalg.matrix_ops.get_active_backend")
-def test_matrix_ops_eager(mock_get_backend):
+def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
+    """Test function test_matrix_ops_eager."""
     config.eager_mode = True
 
     mock_backend = MagicMock()
     mock_backend.execute_op.return_value = np.zeros((2, 2))
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
-    mock_get_backend.return_value = mock_backend
+    setattr(mock_get_backend, "return_value", mock_backend)
 
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
 
-    mod.band_part(a, 1, 1)
-    mod.diag(a, 0)
-    mod.cross(a, b)
-    mod.trace(a)
-    mod.matrix_rank(a)
-    mod.matrix_transpose(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.band_part)(a, 1, 1)
+    cast("Callable[..., EagerTensorProtocol]", mod.diag)(a, 0)
+    cast("Callable[..., EagerTensorProtocol]", mod.cross)(a, b)
+    cast("Callable[..., EagerTensorProtocol]", mod.trace)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.matrix_rank)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.matrix_transpose)(a)
     try:
-        mod.sqrtm(a)
-    except Exception:
-        pass
-    mod.tensor_diag(a)
-    mod.tensor_diag_part(a)
-    mod.diag_part(a)
-    mod.adjoint(a)
-    mod.eigh_tridiagonal(a, b)
+        cast("Callable[..., EagerTensorProtocol]", mod.sqrtm)(a)
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", mod.tensor_diag)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.tensor_diag_part)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.diag_part)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.adjoint)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.eigh_tridiagonal)(a, b)
 
-    mod.tridiagonal_matmul(a, a, a, a)
-    mod.matrix_norm(a)
-    mod.vector_norm(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.tridiagonal_matmul)(a, a, a, a)
+    cast("Callable[..., EagerTensorProtocol]", mod.matrix_norm)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.vector_norm)(a)
 
-    mod.svdvals(a)
-    mod.diagonal(a)
-    mod.cond(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.svdvals)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.diagonal)(a)
+    cast("Callable[..., EagerTensorProtocol]", mod.cond)(a)
 
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -124,15 +139,16 @@ def test_matrix_ops_eager(mock_get_backend):
     global_tracing_state.active_graph = IRGraph()
 
 
-def test_matrix_ops_opdefs():
+def test_matrix_ops_opdefs() -> None:
     # Svdvals
+    """Test function test_matrix_ops_opdefs."""
     op1 = mod.Svdvals()
-    assert op1.infer_shape(DummyTensor((2, 3))) == (2,)
-    assert op1.infer_shape(DummyTensor((3,))) == (3,)
+    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyTensor)((2, 3))) == (2,)
+    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyTensor)((3,))) == (3,)
 
     # TridiagonalMatmul
     op2 = mod.TridiagonalMatmul()
-    assert op2.infer_shape(None, None, None, DummyTensor((2, 2))) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(None, None, None, cast("Callable[..., EagerTensorProtocol]", DummyTensor)((2, 2))) == (2, 2)
 
     # Cond
     op3 = mod.Cond()

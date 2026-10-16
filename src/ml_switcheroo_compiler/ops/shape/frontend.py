@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 # pylint: disable=duplicate-code
 
 """Define shape, memory, and movement operations for Tensor Anys.
@@ -8,13 +7,18 @@ layouts, supporting both eager execution (using NumPy) and lazy execution (by tr
 and emitting logical nodes to a graph)
 """
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Callable, Union, cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def expand_dims(a, axis: int):
+def expand_dims(a: EagerValue, axis: int) -> EagerValue:
     """Expand dimensions.
 
     Args:
@@ -31,10 +35,10 @@ def expand_dims(a, axis: int):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("ExpandDims")().infer_shape(a, axis=axis)
-    return _emit_shape_node("ExpandDims", [a], {"axis": axis}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("ExpandDims", [a], {"axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def argwhere(a):
+def argwhere(a: EagerValue) -> EagerValue:
     """Find the indices of array elements that are non-zero, grouped by element.
 
     Args:
@@ -45,11 +49,11 @@ def argwhere(a):
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Argwhere", getattr(a, "data", a))
-        return Tensor(data, TensorConfig(data.shape, "int64", getattr(a, "device", None)))
-    return _emit_shape_node("Argwhere", [a], {}, (None, None), "int64")
+        return Tensor(data, TensorConfig(getattr(data, "shape"), "int64", getattr(a, "device", None)))
+    return _emit_shape_node("Argwhere", [a], {}, cast("Sequence[Union[int, str]]", (None, None)), "int64")
 
 
-def argpartition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
+def argpartition(a: EagerValue, kth: EagerValue, axis: int = -1, kind: str = "introselect", order: EagerValue = None) -> EagerValue:
     """Perform an indirect partition along the given axis.
 
     Args:
@@ -64,7 +68,7 @@ def argpartition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Argpartition", getattr(a, "data", a), kth, axis=axis, kind=kind, order=order)
-        return Tensor(data, TensorConfig(data.shape, "int64", getattr(a, "device", None)))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), "int64", getattr(a, "device", None)))
     return _emit_shape_node(
         "Argpartition",
         [a, kth],
@@ -74,7 +78,7 @@ def argpartition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
     )
 
 
-def partition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
+def partition(a: EagerValue, kth: EagerValue, axis: int = -1, kind: str = "introselect", order: EagerValue = None) -> EagerValue:
     """Return a partitioned copy of an array.
 
     Args:
@@ -91,7 +95,7 @@ def partition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
         data = get_active_backend().execute_op("Partition", getattr(a, "data", a), kth, axis=axis, kind=kind, order=order)
         return Tensor(
             data,
-            TensorConfig(data.shape, getattr(a, "dtype", "float32"), getattr(a, "device", None)),
+            TensorConfig(getattr(data, "shape"), getattr(a, "dtype", "float32"), getattr(a, "device", None)),
         )
 
     return _emit_shape_node(
@@ -103,7 +107,7 @@ def partition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
     )
 
 
-def compress(condition, a, axis=None, out=None):
+def compress(condition: EagerValue, a: EagerValue, axis: EagerValue = None, out: EagerValue = None) -> EagerValue:
     """Return selected slices of an array along given axis.
 
     Args:
@@ -119,19 +123,19 @@ def compress(condition, a, axis=None, out=None):
         data = get_active_backend().execute_op("Compress", condition, getattr(a, "data", a), axis=axis, out=out)
         return Tensor(
             data,
-            TensorConfig(data.shape, getattr(a, "dtype", "float32"), getattr(a, "device", None)),
+            TensorConfig(getattr(data, "shape"), getattr(a, "dtype", "float32"), getattr(a, "device", None)),
         )
 
     return _emit_shape_node(
         "Compress",
         [condition, a],
         {"axis": axis, "out": out},
-        (None,),
+        cast("Sequence[Union[int, str]]", (None,)),
         getattr(a, "dtype", "float32"),
     )
 
 
-def insert(arr, obj, values, axis=None):
+def insert(arr: EagerValue, obj: EagerValue, values: EagerValue, axis: EagerValue = None) -> EagerValue:
     """Insert values along the given axis before the given indices.
 
     Args:
@@ -149,10 +153,10 @@ def insert(arr, obj, values, axis=None):
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Insert")().infer_shape(arr, obj=obj, values=values, axis=axis)
-    return _emit_shape_node("Insert", [arr, values] if hasattr(values, "shape") else [arr], {"obj": obj, "axis": axis}, out_shape, getattr(arr, "dtype", "float32"))
+    return _emit_shape_node("Insert", [arr, values] if hasattr(values, "shape") else [arr], {"obj": obj, "axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(arr, "dtype", "float32"))
 
 
-def fill_diagonal(a, val, wrap: bool = False):
+def fill_diagonal(a: EagerValue, val: EagerValue, wrap: bool = False) -> EagerValue:
     """Fill the main diagonal of the given array of any dimensionality.
 
     Args:
@@ -169,10 +173,10 @@ def fill_diagonal(a, val, wrap: bool = False):
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("FillDiagonal")().infer_shape(a, val=val, wrap=wrap)
-    return _emit_shape_node("FillDiagonal", [a, val] if hasattr(val, "shape") else [a], {"val": val, "wrap": wrap}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("FillDiagonal", [a, val] if hasattr(val, "shape") else [a], {"val": val, "wrap": wrap}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def moveaxis(a, source, destination):
+def moveaxis(a: EagerValue, source: EagerValue, destination: EagerValue) -> EagerValue:
     """Move axes of a tensor.
 
     Args:
@@ -190,10 +194,10 @@ def moveaxis(a, source, destination):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Moveaxis")().infer_shape(a, source=source, destination=destination)
-    return _emit_shape_node("Moveaxis", [a], {"source": source, "destination": destination}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Moveaxis", [a], {"source": source, "destination": destination}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def permute(a, dims=None):
+def permute(a: Tensor, dims: tuple[int, ...] | list[int] | None = None) -> Tensor:
     """Permute dimensions of a tensor.
 
     Args:
@@ -210,10 +214,10 @@ def permute(a, dims=None):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Permute")().infer_shape(a, dims=dims)
-    return _emit_shape_node("Permute", [a], {"dims": dims}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Permute", [a], {"dims": dims}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def swapaxes(a, axis1: int, axis2: int):
+def swapaxes(a: EagerValue, axis1: int, axis2: int) -> EagerValue:
     """Interchange two axes of an array.
 
     Args:
@@ -231,10 +235,10 @@ def swapaxes(a, axis1: int, axis2: int):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Swapaxes")().infer_shape(a, axis1=axis1, axis2=axis2)
-    return _emit_shape_node("Swapaxes", [a], {"axis1": axis1, "axis2": axis2}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Swapaxes", [a], {"axis1": axis1, "axis2": axis2}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def roll(a, shift, axis=None):
+def roll(a: EagerValue, shift: EagerValue, axis: EagerValue = None) -> EagerValue:
     """Roll array elements along a given axis.
 
     Args:
@@ -252,10 +256,10 @@ def roll(a, shift, axis=None):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Roll")().infer_shape(a, shift=shift, axis=axis)
-    return _emit_shape_node("Roll", [a], {"shift": shift, "axis": axis}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Roll", [a], {"shift": shift, "axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def atleast_1d(a):
+def atleast_1d(a: EagerValue) -> EagerValue:
     """Atleast 1d.
 
     Args:
@@ -271,10 +275,10 @@ def atleast_1d(a):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Atleast1d")().infer_shape(a)
-    return _emit_shape_node("Atleast1d", [a], {}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Atleast1d", [a], {}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def atleast_2d(a):
+def atleast_2d(a: EagerValue) -> EagerValue:
     """Atleast 2d.
 
     Args:
@@ -290,10 +294,10 @@ def atleast_2d(a):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Atleast2d")().infer_shape(a)
-    return _emit_shape_node("Atleast2d", [a], {}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Atleast2d", [a], {}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def atleast_3d(a):
+def atleast_3d(a: EagerValue) -> EagerValue:
     """Atleast 3d.
 
     Args:
@@ -309,10 +313,10 @@ def atleast_3d(a):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Atleast3d")().infer_shape(a)
-    return _emit_shape_node("Atleast3d", [a], {}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Atleast3d", [a], {}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def _get_squeeze_shape(a, axis):
+def _get_squeeze_shape(a: Tensor, axis: int | tuple[int, ...] | list[int] | None) -> tuple[int, ...]:
     """Evaluate _get_squeeze_shape operation.
 
     Args:
@@ -330,7 +334,7 @@ def _get_squeeze_shape(a, axis):
     return tuple(shape[i] for i in range(len(shape)) if i not in n)
 
 
-def squeeze(a, axis=None):
+def squeeze(a: EagerValue, axis: EagerValue = None) -> EagerValue:
     """Squeeze dimensions of a tensor.
 
     Args:
@@ -345,11 +349,11 @@ def squeeze(a, axis=None):
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    shape_val = _get_squeeze_shape(a, axis)
+    shape_val = cast("Callable[..., Sequence[Union[int, str]]]", _get_squeeze_shape)(cast("Tensor", a), axis)
     return _emit_shape_node("Squeeze", [a], {"axis": axis}, shape_val, getattr(a, "dtype", "float32"))
 
 
-def diagflat(v, k: int = 0):
+def diagflat(v: EagerValue, k: int = 0) -> EagerValue:
     """Create a two-dimensional array with the flattened input as a diagonal.
 
     Args:
@@ -365,10 +369,10 @@ def diagflat(v, k: int = 0):
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Diagflat")().infer_shape(v, k=k)
-    return _emit_shape_node("Diagflat", [v], {"k": k}, out_shape, getattr(v, "dtype", "float32"))
+    return _emit_shape_node("Diagflat", [v], {"k": k}, cast("Sequence[Union[int, str]]", out_shape), getattr(v, "dtype", "float32"))
 
 
-def block(arrays):
+def block(arrays: EagerValue) -> EagerValue:
     """Assemble an nd-array from nested lists of blocks.
 
     Args:
@@ -383,10 +387,10 @@ def block(arrays):
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Block")().infer_shape(arrays)
-    return _emit_shape_node("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, out_shape, "float32")
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, cast("Sequence[Union[int, str]]", out_shape), "float32"))
 
 
-def delete(arr, obj, axis=None):
+def delete(arr: EagerValue, obj: EagerValue, axis: EagerValue = None) -> EagerValue:
     """Return a new array with sub-arrays along an axis deleted.
 
     Args:
@@ -403,10 +407,10 @@ def delete(arr, obj, axis=None):
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Delete")().infer_shape(arr, obj=obj, axis=axis)
-    return _emit_shape_node("Delete", [arr], {"obj": obj, "axis": axis}, out_shape, getattr(arr, "dtype", "float32"))
+    return _emit_shape_node("Delete", [arr], {"obj": obj, "axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(arr, "dtype", "float32"))
 
 
-def diag_indices(n: int, ndim: int = 2):
+def diag_indices(n: int, ndim: int = 2) -> EagerValue:
     """Return the indices to access the main diagonal of an array.
 
     Args:
@@ -420,13 +424,13 @@ def diag_indices(n: int, ndim: int = 2):
 
     if config.eager_mode:
         data = get_active_backend().execute_op("DiagIndices", n, ndim=ndim)
-        return tuple(Tensor(d, TensorConfig(getattr(d, "shape", (n,)), "int64", None)) for d in data)
+        return tuple(Tensor(d, TensorConfig(getattr(d, "shape", (n,)), "int64", None)) for d in getattr(data, "__iter__")())
     from ml_switcheroo_compiler.ops.base import get_op
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("DiagIndices")().infer_shape(n, ndim=ndim)
     t_n = Tensor(n, TensorConfig((), "int64", None))
-    node = _emit_shape_node("DiagIndices", [t_n], {"ndim": ndim}, out_shape, "int64")
+    node = _emit_shape_node("DiagIndices", [t_n], {"ndim": ndim}, cast("Sequence[Union[int, str]]", out_shape), "int64")
     out_tensors = []
     from ml_switcheroo_compiler.tracing import builder
 
@@ -438,7 +442,7 @@ def diag_indices(n: int, ndim: int = 2):
     return tuple(out_tensors)
 
 
-def diag_indices_from(arr):
+def diag_indices_from(arr: EagerValue) -> EagerValue:
     """Return the indices to access the main diagonal of an n-dimensional array.
 
     Args:
@@ -451,18 +455,18 @@ def diag_indices_from(arr):
 
     if config.eager_mode:
         data = get_active_backend().execute_op("DiagIndicesFrom", getattr(arr, "data", arr))
-        n = arr.shape[0] if hasattr(arr, "shape") and len(arr.shape) > 0 else 1
-        return tuple(Tensor(d, TensorConfig(getattr(d, "shape", (n,)), "int64", getattr(arr, "device", None))) for d in data)
+        n = getattr(arr, "shape")[0] if hasattr(arr, "shape") and len(getattr(arr, "shape")) > 0 else 1
+        return tuple(Tensor(d, TensorConfig(getattr(d, "shape", (n,)), "int64", getattr(arr, "device", None))) for d in getattr(data, "__iter__")())
     from ml_switcheroo_compiler.ops.base import get_op
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("DiagIndicesFrom")().infer_shape(arr)
-    node = _emit_shape_node("DiagIndicesFrom", [arr], {}, out_shape, "int64")
+    node = _emit_shape_node("DiagIndicesFrom", [arr], {}, cast("Sequence[Union[int, str]]", out_shape), "int64")
     out_tensors = []
     from ml_switcheroo_compiler.tracing import builder
 
-    n = arr.shape[0] if hasattr(arr, "shape") and len(arr.shape) > 0 else 1
-    ndim = len(arr.shape) if hasattr(arr, "shape") else 1
+    n = getattr(arr, "shape")[0] if hasattr(arr, "shape") and len(getattr(arr, "shape")) > 0 else 1
+    ndim = len(getattr(arr, "shape")) if hasattr(arr, "shape") else 1
     for i in range(ndim):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
         item_node._shape = (n,)
@@ -471,7 +475,7 @@ def diag_indices_from(arr):
     return tuple(out_tensors)
 
 
-def size(input, **kwargs):
+def size(input: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the number of elements in a tensor.
 
     Args:
@@ -487,10 +491,10 @@ def size(input, **kwargs):
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Size")().infer_shape(input, **kwargs)
-    return _emit_shape_node("Size", [input], kwargs, out_shape, "int32")
+    return _emit_shape_node("Size", [input], kwargs, cast("Sequence[Union[int, str]]", out_shape), "int32")
 
 
-def reshape(a, newshape):
+def reshape(a: Tensor, newshape: int | tuple[int, ...] | list[int]) -> Tensor:
     """Reshape a tensor.
 
     Args:
@@ -507,10 +511,10 @@ def reshape(a, newshape):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Reshape")().infer_shape(a, newshape=newshape)
-    return _emit_shape_node("Reshape", [a], {"newshape": newshape}, out_shape, getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Reshape", [a], {"newshape": newshape}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def flip(m, axis=None):
+def flip(m: Tensor, axis: int | tuple[int, ...] | list[int] | None = None) -> Tensor:
     """Reverse the order of elements in an array along the given axis.
 
     Args:
@@ -528,7 +532,7 @@ def flip(m, axis=None):
     return _emit_shape_node("Flip", [m], {"axis": axis}, getattr(m, "shape", ()), getattr(m, "dtype", "float32"))
 
 
-def fliplr(m):
+def fliplr(m: EagerValue) -> EagerValue:
     """Flip array in the left/right direction.
 
     Args:
@@ -545,7 +549,7 @@ def fliplr(m):
     return _emit_shape_node("Fliplr", [m], {}, getattr(m, "shape", ()), getattr(m, "dtype", "float32"))
 
 
-def flipud(m):
+def flipud(m: EagerValue) -> EagerValue:
     """Flip array in the up/down direction.
 
     Args:

@@ -1,22 +1,19 @@
 """Core Mixins."""
 
 import typing  # noqa: F401
-
-# ruff: noqa: E402, E501, F403
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.registry import EagerValue
     from ml_switcheroo_compiler.core.tensor import Tensor
-
-
-if TYPE_CHECKING:
-    pass
+    from ml_switcheroo_compiler.ops.base import OpDef
 
 
 class TensorArithmeticMixin:
     """Arithmetic mixin."""
 
-    def _get_op(self, name: str):
+    def _get_op(self, name: str) -> "OpDef":
         """Get the requested operation from the registry.
 
         Args:
@@ -28,7 +25,7 @@ class TensorArithmeticMixin:
 
         return get_op(name)()
 
-    def __add__(self, other) -> "Tensor":
+    def __add__(self, other: "EagerValue") -> "Tensor":
         """Add.
 
         Args:
@@ -37,9 +34,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Add")(self, other)
+        return self._get_op("Add")(cast("Tensor", self), other)
 
-    def __radd__(self, other) -> "Tensor":
+    def __radd__(self, other: "EagerValue") -> "Tensor":
         """Radd.
 
         Args:
@@ -48,9 +45,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Add")(other, self)
+        return self._get_op("Add")(other, cast("Tensor", self))
 
-    def __sub__(self, other) -> "Tensor":
+    def __sub__(self, other: "EagerValue") -> "Tensor":
         """Sub.
 
         Args:
@@ -59,9 +56,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Subtract")(self, other)
+        return self._get_op("Subtract")(cast("Tensor", self), other)
 
-    def __rsub__(self, other) -> "Tensor":
+    def __rsub__(self, other: "EagerValue") -> "Tensor":
         """Rsub.
 
         Args:
@@ -70,9 +67,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Subtract")(other, self)
+        return self._get_op("Subtract")(other, cast("Tensor", self))
 
-    def __mul__(self, other) -> "Tensor":
+    def __mul__(self, other: "EagerValue") -> "Tensor":
         """Mul.
 
         Args:
@@ -81,9 +78,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Multiply")(self, other)
+        return self._get_op("Multiply")(cast("Tensor", self), other)
 
-    def __rmul__(self, other) -> "Tensor":
+    def __rmul__(self, other: "EagerValue") -> "Tensor":
         """Rmul.
 
         Args:
@@ -92,9 +89,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Multiply")(other, self)
+        return self._get_op("Multiply")(other, cast("Tensor", self))
 
-    def __truediv__(self, other) -> "Tensor":
+    def __truediv__(self, other: "EagerValue") -> "Tensor":
         """Truediv.
 
         Args:
@@ -103,9 +100,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("TrueDivide")(self, other)
+        return self._get_op("TrueDivide")(cast("Tensor", self), other)
 
-    def __rtruediv__(self, other) -> "Tensor":
+    def __rtruediv__(self, other: "EagerValue") -> "Tensor":
         """Rtruediv.
 
         Args:
@@ -114,9 +111,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("TrueDivide")(other, self)
+        return self._get_op("TrueDivide")(other, cast("Tensor", self))
 
-    def __pow__(self, other) -> "Tensor":
+    def __pow__(self, other: "EagerValue") -> "Tensor":
         """Pow.
 
         Args:
@@ -125,9 +122,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Power")(self, other)
+        return self._get_op("Power")(cast("Tensor", self), other)
 
-    def __rpow__(self, other) -> "Tensor":
+    def __rpow__(self, other: "EagerValue") -> "Tensor":
         """Rpow.
 
         Args:
@@ -136,9 +133,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Power")(other, self)
+        return self._get_op("Power")(other, cast("Tensor", self))
 
-    def __floordiv__(self, other) -> "Tensor":
+    def __floordiv__(self, other: "EagerValue") -> "Tensor":
         """Floordiv.
 
         Args:
@@ -147,9 +144,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("FloorDivide")(self, other)
+        return self._get_op("FloorDivide")(cast("Tensor", self), other)
 
-    def __rfloordiv__(self, other) -> "Tensor":
+    def __rfloordiv__(self, other: "EagerValue") -> "Tensor":
         """Rfloordiv.
 
         Args:
@@ -158,9 +155,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("FloorDivide")(other, self)
+        return self._get_op("FloorDivide")(other, cast("Tensor", self))
 
-    def __mod__(self, other) -> "Tensor":
+    def __mod__(self, other: "EagerValue") -> "Tensor":
         """Mod.
 
         Args:
@@ -169,9 +166,9 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Mod")(self, other)
+        return self._get_op("Mod")(cast("Tensor", self), other)
 
-    def __rmod__(self, other) -> "Tensor":
+    def __rmod__(self, other: "EagerValue") -> "Tensor":
         """Rmod.
 
         Args:
@@ -180,13 +177,15 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Mod")(other, self)
+        return self._get_op("Mod")(other, cast("Tensor", self))
 
 
 class TensorBitwiseMixin:
     """Apply bitwise mixin."""
 
-    def __and__(self, other) -> "Tensor":
+    _get_op: Callable[[str], "OpDef"]
+
+    def __and__(self, other: "EagerValue") -> "Tensor":
         """And.
 
         Args:
@@ -195,9 +194,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("BitwiseAnd")(self, other)
+        return self._get_op("BitwiseAnd")(cast("Tensor", self), other)
 
-    def __rand__(self, other) -> "Tensor":
+    def __rand__(self, other: "EagerValue") -> "Tensor":
         """Rand.
 
         Args:
@@ -206,9 +205,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("BitwiseAnd")(other, self)
+        return self._get_op("BitwiseAnd")(other, cast("Tensor", self))
 
-    def __or__(self, other) -> "Tensor":
+    def __or__(self, other: "EagerValue") -> "Tensor":
         """Or.
 
         Args:
@@ -217,9 +216,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("BitwiseOr")(self, other)
+        return self._get_op("BitwiseOr")(cast("Tensor", self), other)
 
-    def __ror__(self, other) -> "Tensor":
+    def __ror__(self, other: "EagerValue") -> "Tensor":
         """Ror.
 
         Args:
@@ -228,9 +227,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("BitwiseOr")(other, self)
+        return self._get_op("BitwiseOr")(other, cast("Tensor", self))
 
-    def __xor__(self, other) -> "Tensor":
+    def __xor__(self, other: "EagerValue") -> "Tensor":
         """Xor.
 
         Args:
@@ -239,9 +238,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("BitwiseXor")(self, other)
+        return self._get_op("BitwiseXor")(cast("Tensor", self), other)
 
-    def __rxor__(self, other) -> "Tensor":
+    def __rxor__(self, other: "EagerValue") -> "Tensor":
         """Rxor.
 
         Args:
@@ -250,9 +249,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("BitwiseXor")(other, self)
+        return self._get_op("BitwiseXor")(other, cast("Tensor", self))
 
-    def __lshift__(self, other) -> "Tensor":
+    def __lshift__(self, other: "EagerValue") -> "Tensor":
         """Lshift.
 
         Args:
@@ -261,9 +260,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("LeftShift")(self, other)
+        return self._get_op("LeftShift")(cast("Tensor", self), other)
 
-    def __rlshift__(self, other) -> "Tensor":
+    def __rlshift__(self, other: "EagerValue") -> "Tensor":
         """Rlshift.
 
         Args:
@@ -272,9 +271,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("LeftShift")(other, self)
+        return self._get_op("LeftShift")(other, cast("Tensor", self))
 
-    def __rshift__(self, other) -> "Tensor":
+    def __rshift__(self, other: "EagerValue") -> "Tensor":
         """Rshift.
 
         Args:
@@ -283,9 +282,9 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("RightShift")(self, other)
+        return self._get_op("RightShift")(cast("Tensor", self), other)
 
-    def __rrshift__(self, other) -> "Tensor":
+    def __rrshift__(self, other: "EagerValue") -> "Tensor":
         """Rrshift.
 
         Args:
@@ -294,7 +293,7 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("RightShift")(other, self)
+        return self._get_op("RightShift")(other, cast("Tensor", self))
 
     def __neg__(self) -> "Tensor":
         """Neg.
@@ -302,7 +301,7 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Negative")(self)
+        return self._get_op("Negative")(cast("Tensor", self))
 
     def __pos__(self) -> "Tensor":
         """Pos.
@@ -310,7 +309,7 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Positive")(self)
+        return self._get_op("Positive")(cast("Tensor", self))
 
     def __abs__(self) -> "Tensor":
         """Abs.
@@ -318,7 +317,7 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Abs")(self)
+        return self._get_op("Abs")(cast("Tensor", self))
 
     def __invert__(self) -> "Tensor":
         """Invert.
@@ -326,13 +325,15 @@ class TensorBitwiseMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("BitwiseNot")(self)
+        return self._get_op("BitwiseNot")(cast("Tensor", self))
 
 
 class TensorLogicalMixin:
     """Apply logical mixin."""
 
-    def __lt__(self, other) -> "Tensor":
+    _get_op: Callable[[str], "OpDef"]
+
+    def __lt__(self, other: "EagerValue") -> "Tensor":
         """Lt.
 
         Args:
@@ -341,9 +342,9 @@ class TensorLogicalMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Less")(self, other)
+        return self._get_op("Less")(cast("Tensor", self), other)
 
-    def __gt__(self, other) -> "Tensor":
+    def __gt__(self, other: "EagerValue") -> "Tensor":
         """Gt.
 
         Args:
@@ -352,9 +353,9 @@ class TensorLogicalMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Greater")(self, other)
+        return self._get_op("Greater")(cast("Tensor", self), other)
 
-    def __le__(self, other) -> "Tensor":
+    def __le__(self, other: "EagerValue") -> "Tensor":
         """Le.
 
         Args:
@@ -363,9 +364,9 @@ class TensorLogicalMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("LessEqual")(self, other)
+        return self._get_op("LessEqual")(cast("Tensor", self), other)
 
-    def __ge__(self, other) -> "Tensor":
+    def __ge__(self, other: "EagerValue") -> "Tensor":
         """Ge.
 
         Args:
@@ -374,7 +375,7 @@ class TensorLogicalMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("GreaterEqual")(self, other)
+        return self._get_op("GreaterEqual")(cast("Tensor", self), other)
 
     def __hash__(self) -> int:
         """Evaluate __hash__ operation.
@@ -384,7 +385,7 @@ class TensorLogicalMixin:
         """
         return id(self)
 
-    def __eq__(self, other):
+    def _eq(self, other: "EagerValue") -> "Tensor":
         """Eq.
 
         Args:
@@ -393,9 +394,9 @@ class TensorLogicalMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Equal")(self, other)
+        return self._get_op("Equal")(cast("Tensor", self), other)
 
-    def __ne__(self, other):
+    def _ne(self, other: "EagerValue") -> "Tensor":
         """Ne.
 
         Args:
@@ -404,4 +405,8 @@ class TensorLogicalMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("NotEqual")(self, other)
+        return self._get_op("NotEqual")(cast("Tensor", self), other)
+
+
+setattr(TensorLogicalMixin, "__eq__", TensorLogicalMixin._eq)
+setattr(TensorLogicalMixin, "__ne__", TensorLogicalMixin._ne)

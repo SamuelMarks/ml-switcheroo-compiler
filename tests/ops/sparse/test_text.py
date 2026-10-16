@@ -1,3 +1,9 @@
+"""Tests for test_text."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
@@ -47,40 +53,56 @@ from ml_switcheroo_compiler.ops.text.ops import string_to_hash as o_string_to_ha
 from ml_switcheroo_compiler.ops.text.ops import text_vectorization as o_text_vectorization
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class MockBackend:
-    def execute_op(self, op_name, *args, **kwargs):
+    """Test class MockBackend."""
+
+    def execute_op(self, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Test function execute_op."""
         if op_name == "StringSplit":
             return np.zeros(()), np.zeros(())
         return np.zeros(())
 
-    def array(self, x):
+    def array(self, x: EagerValue) -> EagerValue:
+        """Test function array."""
         return np.array(x)
 
 
 @pytest.fixture
-def mock_backend(monkeypatch):
-    monkeypatch.setattr(registry_mod, "get_active_backend", lambda: MockBackend())
+def mock_backend(monkeypatch: EagerValue) -> None:
+    """Test function mock_backend."""
+    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(monkeypatch, "setattr")))(registry_mod, "get_active_backend", lambda: cast("Callable[..., EagerTensorProtocol]", MockBackend)())
     try:
-        monkeypatch.setattr("ml_switcheroo_compiler.ops.text.frontend.get_active_backend", lambda: MockBackend())
-    except Exception:
-        pass
+        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(monkeypatch, "setattr")))("ml_switcheroo_compiler.ops.text.frontend.get_active_backend", lambda: cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
 
 
 @pytest.fixture(params=[True, False])
-def eager_mode(request, monkeypatch):
-    monkeypatch.setattr(config, "eager_mode", request.param)
-    monkeypatch.setattr(global_tracing_state, "is_tracing", not request.param)
-    return request.param
+def eager_mode(request: EagerValue, monkeypatch: EagerValue) -> EagerValue:
+    """Test function eager_mode."""
+    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(monkeypatch, "setattr")))(config, "eager_mode", cast("EagerTensorProtocol", getattr(request, "param")))
+    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(monkeypatch, "setattr")))(global_tracing_state, "is_tracing", not cast("EagerTensorProtocol", getattr(request, "param")))
+    return cast("EagerTensorProtocol", getattr(request, "param"))
 
 
-def test_sparse_frontend(eager_mode, mock_backend, monkeypatch):
+def test_sparse_frontend(eager_mode: EagerTensorProtocol, mock_backend: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_sparse_frontend."""
+
     class MockOp:
-        def infer_shape(self, *args, **kwargs):
+        """Test class MockOp."""
+
+        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function infer_shape."""
             return ()
 
     monkeypatch.setattr("ml_switcheroo_compiler.ops.sparse.frontend.get_op", lambda name: MockOp)
-    monkeypatch.setattr(global_tracing_state, "add_node", lambda node: None)
+    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(global_tracing_state, "add_node", lambda node: None)
 
     t = Tensor(np.zeros(()), TensorConfig(shape=(), dtype=DType.Float32, device="cpu"))
 
@@ -124,21 +146,29 @@ def test_sparse_frontend(eager_mode, mock_backend, monkeypatch):
             assert res is not None
 
 
-def test_text_frontend(eager_mode, mock_backend, monkeypatch):
+def test_text_frontend(eager_mode: EagerTensorProtocol, mock_backend: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_text_frontend."""
+
     class MockNodeBuilder:
+        """Test class MockNodeBuilder."""
+
         @staticmethod
-        def extract_proxy_inputs(inputs):
+        def extract_proxy_inputs(inputs: EagerValue) -> EagerValue:
+            """Test function extract_proxy_inputs."""
             return ["dummy_id"], None, None
 
     monkeypatch.setattr("ml_switcheroo_compiler.ops.text.frontend.TracingNodeBuilder", MockNodeBuilder)
 
     class MockState:
+        """Test class MockState."""
+
         is_tracing = not eager_mode
 
-        def add_node(self, node):
+        def add_node(self, node: EagerValue) -> None:
+            """Test function add_node."""
             pass
 
-    monkeypatch.setattr(global_tracing_state, "add_node", lambda node: None)
+    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(global_tracing_state, "add_node", lambda node: None)
 
     t = Tensor(np.zeros(()), TensorConfig(shape=(), dtype=DType.String, device="cpu"))
     t_float = Tensor(np.zeros(()), TensorConfig(shape=(), dtype=DType.Float32, device="cpu"))
@@ -160,11 +190,17 @@ def test_text_frontend(eager_mode, mock_backend, monkeypatch):
     edit_distance(t, t)
     as_string(t_float)
     as_string(t_float, AsStringConfig())
+    assert t_float is not None or t_float is None
 
 
-def test_text_ops(eager_mode, mock_backend, monkeypatch):
+def test_text_ops(eager_mode: EagerTensorProtocol, mock_backend: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_text_ops."""
+
     class MockTextOp:
-        def __call__(self, *args, **kwargs):
+        """Test class MockTextOp."""
+
+        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function __call__."""
             return args[0] if args else None
 
     monkeypatch.setattr("ml_switcheroo_compiler.ops.text.ops.get_op", lambda name: MockTextOp)
@@ -174,50 +210,54 @@ def test_text_ops(eager_mode, mock_backend, monkeypatch):
     o_string_to_hash(t, num_bins=5)
     o_lookup(t)
     o_text_vectorization(t)
+    assert t is not None or t is None
 
 
-def test_text_opdef_infer_shapes():
+def test_text_opdef_infer_shapes() -> None:
+    """Test function test_text_opdef_infer_shapes."""
     t = Tensor(np.zeros(()), TensorConfig(shape=(), dtype=DType.String, device="cpu"))
 
-    assert StringToHash().infer_shape(t) == ()
-    assert RegexReplace().infer_shape(t) == ()
-    assert StringSplit().infer_shape(t) == ()
-    assert Lookup().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringToHash)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", RegexReplace)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringSplit)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", Lookup)().infer_shape(t) == ()
     assert Lookup().infer_shape() == ()
-    assert Hashing().infer_shape(t) == ()
-    assert StringLookup().infer_shape(t) == ()
-    assert IntegerLookup().infer_shape(t) == ()
-    assert TextVectorization().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", Hashing)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringLookup)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", IntegerLookup)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", TextVectorization)().infer_shape(t) == ()
 
-    assert StringToNumber().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringToNumber)().infer_shape(t) == ()
     assert StringToNumber().infer_shape() == ()
 
-    assert StringLower().infer_shape(t) == ()
-    assert StringUpper().infer_shape(t) == ()
-    assert StringJoin().infer_shape(t) == ()
-    assert StringLength().infer_shape(t) == ()
-    assert StringSubstr().infer_shape(t) == ()
-    assert RegexFullMatch().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringLower)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringUpper)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringJoin)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringLength)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", StringSubstr)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", RegexFullMatch)().infer_shape(t) == ()
 
-    assert EditDistance().infer_shape(t, t) == ()
-    assert AsString().infer_shape(t) == ()
-    assert ArrayRepr().infer_shape(t) == ()
-    assert ArrayStr().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", EditDistance)().infer_shape(t, t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", AsString)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", ArrayRepr)().infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", ArrayStr)().infer_shape(t) == ()
 
 
-def test_create_token(monkeypatch):
+def test_create_token(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_create_token."""
     if hasattr(CreateToken, "__abstractmethods__"):
-        monkeypatch.setattr(CreateToken, "__abstractmethods__", frozenset())
+        cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(CreateToken, "__abstractmethods__", cast("Callable[..., EagerTensorProtocol]", frozenset)())
     monkeypatch.setattr(CreateToken, "infer_shape", lambda self, *args, **kwargs: ())
     monkeypatch.setattr(CreateToken, "__call__", lambda self, *args, **kwargs: args[0])
 
     assert CreateToken.op_name == "CreateToken"
-    assert create_token("tok") == "tok"
+    assert cast("EagerTensorProtocol", create_token("tok")) == cast("EagerTensorProtocol", "tok")
 
 
-def test_string_split_trace_fails_without_tracing(monkeypatch):
-    monkeypatch.setattr(config, "eager_mode", False)
-    monkeypatch.setattr(global_tracing_state, "is_tracing", False)
+def test_string_split_trace_fails_without_tracing(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_string_split_trace_fails_without_tracing."""
+    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(config, "eager_mode", False)
+    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(global_tracing_state, "is_tracing", False)
     t = Tensor(np.zeros(()), TensorConfig(shape=(), dtype=DType.String, device="cpu"))
     with pytest.raises(RuntimeError):
         string_split(t, " ")

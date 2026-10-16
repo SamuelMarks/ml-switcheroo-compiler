@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import importlib
 import sys
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -17,12 +21,12 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "dask", None)
     monkeypatch.setitem(sys.modules, "dask.array", None)
     importlib.reload(dask_types)
-    assert dask_types.da is None
+    assert cast("EagerTensorProtocol", getattr(dask_types, "da")) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(dask_types)
-    assert dask_types.da is not None
+    assert cast("EagerTensorProtocol", getattr(dask_types, "da")) is not None
 
     z = dask_types.zeros(type, (2, 2))
     assert z is not None
@@ -67,7 +71,7 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
         """Mock mlx module with asarray function."""
 
         @staticmethod
-        def asarray(data: object) -> object:
+        def asarray(data: EagerValue) -> EagerValue:
             """Create asarray."""
             return np.array(data)
 
@@ -89,12 +93,12 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "keras", None)
     monkeypatch.setitem(sys.modules, "keras.ops", None)
     importlib.reload(keras_types)
-    assert keras_types.kops is None
+    assert cast("EagerTensorProtocol", getattr(keras_types, "kops")) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(keras_types)
-    assert keras_types.kops is not None
+    assert cast("EagerTensorProtocol", getattr(keras_types, "kops")) is not None
 
     z = keras_types.zeros(type, (2, 2))
     assert z is not None
@@ -110,7 +114,7 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
         """Mock kops with asarray method."""
 
         @staticmethod
-        def asarray(data: object) -> object:
+        def asarray(data: EagerValue) -> EagerValue:
             """Asarray."""
             return np.array(data)
 

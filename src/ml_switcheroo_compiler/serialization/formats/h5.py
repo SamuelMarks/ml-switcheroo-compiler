@@ -1,18 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """H5 format serialization."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from types import ModuleType
+from typing import TYPE_CHECKING, cast
 
-import numpy as np
-
+from ml_switcheroo_compiler.backends.registry import BackendRegistry
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
+h5py: ModuleType | None
 try:
-    import h5py
+    import h5py as _h5py
+
+    h5py = _h5py
 except ImportError:
-    h5py = None  # type: ignore[assignment]
+    h5py = None
 
 if TYPE_CHECKING:
     import h5py as h5py_types
@@ -21,14 +24,14 @@ if TYPE_CHECKING:
 class H5WeightFormat(WeightLoader, WeightSaver):
     """H5 weight format handler."""
 
-    def load(self, filepath: str) -> dict[str, np.ndarray]:
+    def load(self, filepath: str) -> dict[str, TensorLike]:
         """Load h5 weights.
 
         Args:
             filepath (str): The filepath parameter.
 
         Returns:
-            dict[str, np.ndarray]: Loaded weights dictionary.
+            dict[str, TensorLike]: Loaded weights dictionary.
 
         Raises:
             ImportError: If h5py is not installed.
@@ -37,12 +40,13 @@ class H5WeightFormat(WeightLoader, WeightSaver):
 
         backend = get_active_backend()
         if hasattr(backend, "load_h5"):
-            return backend.load_h5(filepath)
+            return cast(dict[str, TensorLike], backend.load_h5(filepath))
 
         if h5py is None:
             raise ImportError("h5py is required for H5 weight loading. Please install h5py.")
 
-        result: dict[str, np.ndarray] = {}
+        np_mod = BackendRegistry.get("numpy").get_module()
+        result: dict[str, TensorLike] = {}
         with h5py.File(filepath, "r") as f:
 
             def _visit(name: str, node: h5py_types.Group | h5py_types.Dataset) -> None:
@@ -53,16 +57,16 @@ class H5WeightFormat(WeightLoader, WeightSaver):
                     node (h5py_types.Group | h5py_types.Dataset): The node object.
                 """
                 if isinstance(node, h5py.Dataset):
-                    result[name] = np.asarray(node[()])
+                    result[name] = np_mod.asarray(node[()])
 
             f.visititems(_visit)
         return result
 
-    def save(self, weights_np: dict[str, np.ndarray], filepath: str) -> None:
+    def save(self, weights_np: dict[str, TensorLike], filepath: str) -> None:
         """Save h5 weights.
 
         Args:
-            weights_np (dict[str, np.ndarray]): The weights dictionary to save.
+            weights_np (dict[str, TensorLike]): The weights dictionary to save.
             filepath (str): The destination filepath.
 
         Raises:

@@ -1,9 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Text and Categorical operations."""
 
 import uuid
 from dataclasses import dataclass
-from typing import Any, Optional  # noqa: F401
+from typing import TYPE_CHECKING, Callable, Optional, cast  # noqa: F401
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.registry import EagerValue
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -27,7 +32,7 @@ class AsStringConfig:
     fill: str = ""
 
 
-def string_to_hash(input_tensor: Tensor, num_buckets: int):
+def string_to_hash(input_tensor: Tensor, num_buckets: int) -> EagerValue:
     """Hashes string tensors to integer buckets.
 
     Args:
@@ -40,9 +45,10 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringToHash", input_tensor.data, num_buckets=num_buckets)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "StringToHash",
@@ -53,7 +59,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int):
     )
 
 
-def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str):
+def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> EagerValue:
     """Replace matches of pattern in input_tensor with rewrite.
 
     Args:
@@ -67,9 +73,10 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "RegexReplace",
@@ -80,7 +87,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str):
     )
 
 
-def regex_full_match(input_tensor: Tensor, pattern: str):
+def regex_full_match(input_tensor: Tensor, pattern: str) -> EagerValue:
     """Check if each string fully matches the regex pattern.
 
     Args:
@@ -93,9 +100,10 @@ def regex_full_match(input_tensor: Tensor, pattern: str):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RegexFullMatch", input_tensor.data, pattern=pattern)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.Bool, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.Bool, input_tensor.device),
         )
     return _emit_shape_node(
         "RegexFullMatch",
@@ -106,7 +114,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str):
     )
 
 
-def string_join(inputs: list[Tensor], separator: str = ""):
+def string_join(inputs: list[Tensor], separator: str = "") -> EagerValue:
     """Join strings in a list of tensors.
 
     Args:
@@ -119,9 +127,10 @@ def string_join(inputs: list[Tensor], separator: str = ""):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringJoin", [t.data for t in inputs], separator=separator)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.String, inputs[0].device),
+            arr,
+            TensorConfig(arr.shape, DType.String, inputs[0].device),
         )
     return _emit_shape_node(
         "StringJoin",
@@ -132,7 +141,7 @@ def string_join(inputs: list[Tensor], separator: str = ""):
     )
 
 
-def string_length(input_tensor: Tensor):
+def string_length(input_tensor: Tensor) -> EagerValue:
     """Compute the length of each string.
 
     Args:
@@ -144,9 +153,10 @@ def string_length(input_tensor: Tensor):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringLength", input_tensor.data)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "StringLength",
@@ -157,7 +167,7 @@ def string_length(input_tensor: Tensor):
     )
 
 
-def string_substr(input_tensor: Tensor, pos: int, len: int):
+def string_substr(input_tensor: Tensor, pos: int, len: int) -> EagerValue:
     """Return substrings.
 
     Args:
@@ -171,9 +181,10 @@ def string_substr(input_tensor: Tensor, pos: int, len: int):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringSubstr", input_tensor.data, pos=pos, len=len)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringSubstr",
@@ -184,7 +195,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int):
     )
 
 
-def _string_split_eager(input_tensor: Tensor, delimiter: str):
+def _string_split_eager(input_tensor: Tensor, delimiter: str) -> EagerValue:
     """Evaluate _string_split_eager operation.
 
     Args:
@@ -195,20 +206,22 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str):
         tuple: Result.
     """
     backend = get_active_backend()
-    tokens, lengths = backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter)
+    tokens, lengths = cast("tuple[EagerValue, EagerValue]", backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
+    tokens_arr = cast("TensorLike", backend.array(tokens))
+    lengths_arr = cast("TensorLike", backend.array(lengths))
     return (
         Tensor(
-            backend.array(tokens),
-            TensorConfig(backend.array(tokens).shape, DType.String, input_tensor.device),
+            tokens_arr,
+            TensorConfig(tokens_arr.shape, DType.String, input_tensor.device),
         ),
         Tensor(
-            backend.array(lengths),
-            TensorConfig(backend.array(lengths).shape, DType.Int32, input_tensor.device),
+            lengths_arr,
+            TensorConfig(lengths_arr.shape, DType.Int32, input_tensor.device),
         ),
     )
 
 
-def _string_split_trace(input_tensor: Tensor, delimiter: str):
+def _string_split_trace(input_tensor: Tensor, delimiter: str) -> EagerValue:
     """Evaluate _string_split_trace operation.
 
     Args:
@@ -229,7 +242,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str):
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs((input_tensor,))
 
-    node = LogicalNode(
+    node = cast("Callable[..., LogicalNode]", LogicalNode)(
         id=out_id_tokens,
         op_type="StringSplit",
         inputs=input_ids,
@@ -247,7 +260,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str):
     )
 
 
-def string_split(input_tensor: Tensor, delimiter: str = " "):
+def string_split(input_tensor: Tensor, delimiter: str = " ") -> EagerValue:
     """Split string tensors into tokens.
 
     Args:
@@ -262,7 +275,7 @@ def string_split(input_tensor: Tensor, delimiter: str = " "):
     return _string_split_trace(input_tensor, delimiter)
 
 
-def lookup(input_tensor: Tensor, vocabulary: Tensor):
+def lookup(input_tensor: Tensor, vocabulary: Tensor) -> EagerValue:
     """Map tensor values to integer indices using a vocabulary.
 
     Args:
@@ -275,9 +288,10 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "Lookup",
@@ -288,7 +302,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor):
     )
 
 
-def text_vectorization(input_tensor: Tensor, **kwargs):
+def text_vectorization(input_tensor: Tensor, **kwargs: EagerValue) -> EagerValue:
     """Text vectorization.
 
     Args:
@@ -301,9 +315,10 @@ def text_vectorization(input_tensor: Tensor, **kwargs):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "TextVectorization",
@@ -314,7 +329,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs):
     )
 
 
-def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32):
+def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> EagerValue:
     """Parse numeric values from string tensors.
 
     Args:
@@ -327,9 +342,10 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, dtype, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, dtype, input_tensor.device),
         )
     return _emit_shape_node(
         "StringToNumber",
@@ -340,7 +356,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32):
     )
 
 
-def string_lower(input_tensor: Tensor):
+def string_lower(input_tensor: Tensor) -> EagerValue:
     """Convert string tensors to lowercase.
 
     Args:
@@ -352,9 +368,10 @@ def string_lower(input_tensor: Tensor):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringLower", input_tensor.data)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringLower",
@@ -365,7 +382,7 @@ def string_lower(input_tensor: Tensor):
     )
 
 
-def string_upper(input_tensor: Tensor):
+def string_upper(input_tensor: Tensor) -> EagerValue:
     """Convert string tensors to uppercase.
 
     Args:
@@ -377,9 +394,10 @@ def string_upper(input_tensor: Tensor):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringUpper", input_tensor.data)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringUpper",
@@ -390,7 +408,7 @@ def string_upper(input_tensor: Tensor):
     )
 
 
-def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True):
+def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> EagerValue:
     """Compute the Levenshtein distance between sequences.
 
     Args:
@@ -404,9 +422,10 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.Float32, hypothesis.device),
+            arr,
+            TensorConfig(arr.shape, DType.Float32, hypothesis.device),
         )
     return _emit_shape_node(
         "EditDistance",
@@ -417,7 +436,7 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True):
     )
 
 
-def _as_string_config_to_dict(conf: Optional[AsStringConfig]):
+def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> EagerValue:
     """Convert AsStringConfig to a dictionary.
 
     Args:
@@ -427,19 +446,22 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]):
             tuple[int, ...]: Result.
     """
     conf = conf if conf is not None else AsStringConfig()
-    return {
-        "precision": conf.precision,
-        "scientific": conf.scientific,
-        "shortest": conf.shortest,
-        "width": conf.width,
-        "fill": conf.fill,
-    }
+    return cast(
+        EagerValue,
+        {
+            "precision": conf.precision,
+            "scientific": conf.scientific,
+            "shortest": conf.shortest,
+            "width": conf.width,
+            "fill": conf.fill,
+        },
+    )
 
 
 def as_string(
     input_tensor: Tensor,
     config: Optional[AsStringConfig] = None,
-):
+) -> EagerValue:
     """Convert a numeric tensor to a string tensor.
 
     Args:
@@ -452,15 +474,19 @@ def as_string(
     kwargs = _as_string_config_to_dict(config)
     if global_config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("AsString", input_tensor.data, **kwargs)
+        data = backend.execute_op("AsString", input_tensor.data, **cast("dict[str, EagerValue]", kwargs))
+        arr = cast("TensorLike", backend.array(data))
         return Tensor(
-            backend.array(data),
-            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+            arr,
+            TensorConfig(arr.shape, DType.String, input_tensor.device),
         )
-    return _emit_shape_node(
-        "AsString",
-        [input_tensor],
-        kwargs,
-        input_tensor.shape,
-        DType.String,
+    return cast(
+        EagerValue,
+        cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)(
+            "AsString",
+            [input_tensor],
+            kwargs,
+            input_tensor.shape,
+            DType.String,
+        ),
     )

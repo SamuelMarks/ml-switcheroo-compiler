@@ -1,5 +1,8 @@
 """Tests for RCCL collective driver bindings for ROCm/HIP."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -17,6 +20,11 @@ from ml_switcheroo_compiler.backends.rocm.rccl_collectives import (
     RCCLDriver,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_rccl_constants() -> None:
@@ -230,8 +238,12 @@ def test_rccl_driver_exceptions_and_status_errors() -> None:
             driver.init_rank(2, b"x" * 128, 0)
 
 
-def test_rccl_driver_hip_rt_memory_and_streams() -> None:
-    """Verify hip_rt library discovery, hipMalloc, hipFree, hipMemcpy, and stream_synchronize."""
+def _test_rccl_driver_hip_rt_memory_and_streams_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_rccl_driver_hip_rt_memory_and_streams.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     import ctypes
 
     mock_rt = MagicMock()
@@ -244,7 +256,7 @@ def test_rccl_driver_hip_rt_memory_and_streams() -> None:
         assert driver.rccl_lib is mock_rccl
 
     # hipMalloc
-    def fake_hip_malloc_success(ptr_ref: object, size: int) -> int:
+    def fake_hip_malloc_success(ptr_ref: EagerValue, size: int) -> int:
         """Simulate successful hipMalloc.
 
         Args:
@@ -254,7 +266,7 @@ def test_rccl_driver_hip_rt_memory_and_streams() -> None:
         Returns:
             int: Return status code.
         """
-        ctypes.cast(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.value = 0x87654321
+        cast("Callable[..., EagerTensorProtocol]", ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x87654321)
         return 0
 
     mock_rt.hipMalloc = fake_hip_malloc_success
@@ -274,43 +286,76 @@ def test_rccl_driver_hip_rt_memory_and_streams() -> None:
 
     # hipMemcpy H2D
     arr = np.array([4.0, 5.0, 6.0], dtype=np.float32)
-    mock_rt.hipMemcpy.return_value = 0
-    mock_rt.hipMemcpy.side_effect = None
+    getattr(_state, "update")({"arr": arr, "ctypes": ctypes, "dev_ptr": dev_ptr, "driver": driver})
+    getattr(_state, "update")({"fake_hip_malloc_success": fake_hip_malloc_success, "mock_rccl": mock_rccl, "mock_rt": mock_rt})
+    _state.update(locals())
+
+
+def _test_rccl_driver_hip_rt_memory_and_streams_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_rccl_driver_hip_rt_memory_and_streams.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    arr, dev_ptr, driver, mock_rt = _state["arr"], _state["dev_ptr"], _state["driver"], _state["mock_rt"]
+    setattr(mock_rt.hipMemcpy, "return_value", 0)
+    setattr(mock_rt.hipMemcpy, "side_effect", None)
     driver.copy_host_to_device(arr, dev_ptr)
     assert mock_rt.hipMemcpy.called
 
     del mock_rt.hipMalloc
     host_buf_ptr = driver.allocate_buffer(arr.nbytes)
     real_buf = driver._allocated_buffers.pop(host_buf_ptr)
-    mock_rt.hipMemcpy.side_effect = RuntimeError("H2D failed")
+    setattr(mock_rt.hipMemcpy, "side_effect", RuntimeError("H2D failed"))
     driver.copy_host_to_device(arr, host_buf_ptr)
 
     # hipMemcpy D2H
     out_arr = np.zeros_like(arr)
-    mock_rt.hipMemcpy.side_effect = None
+    setattr(mock_rt.hipMemcpy, "side_effect", None)
     driver.copy_device_to_host(dev_ptr, out_arr)
     assert mock_rt.hipMemcpy.called
 
-    mock_rt.hipMemcpy.side_effect = RuntimeError("D2H failed")
+    setattr(mock_rt.hipMemcpy, "side_effect", RuntimeError("D2H failed"))
     driver.copy_device_to_host(host_buf_ptr, out_arr)
-    assert np.allclose(out_arr, arr)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_arr, arr)
     del real_buf
 
     # Restore hipMalloc with non-zero status branch (fails hipMalloc, falls back to host buffer)
-    mock_rt.hipMalloc = MagicMock(return_value=1)
+    setattr(mock_rt, "hipMalloc", MagicMock(return_value=1))
     fallback_buf = driver.allocate_buffer(64)
     assert fallback_buf in driver._allocated_buffers
 
     # stream_synchronize
-    mock_rt.hipStreamSynchronize.side_effect = None
-    mock_rt.hipStreamSynchronize.return_value = 0
+    setattr(mock_rt.hipStreamSynchronize, "side_effect", None)
+    setattr(mock_rt.hipStreamSynchronize, "return_value", 0)
+    getattr(_state, "update")({"fallback_buf": fallback_buf, "host_buf_ptr": host_buf_ptr, "out_arr": out_arr})
+    _state.update(locals())
+
+
+def _test_rccl_driver_hip_rt_memory_and_streams_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_rccl_driver_hip_rt_memory_and_streams.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    driver, mock_rt = _state["driver"], _state["mock_rt"]
     assert driver.stream_synchronize(None) == 0
     assert driver.stream_synchronize(888) == 0
 
-    mock_rt.hipStreamSynchronize.side_effect = RuntimeError("HIP Sync fail")
+    setattr(mock_rt.hipStreamSynchronize, "side_effect", RuntimeError("HIP Sync fail"))
     assert driver.stream_synchronize(888) == -1
 
     # hip_rt without stream synchronize
     mock_no_sync = MagicMock(spec=[])
-    driver.hip_rt = mock_no_sync
+    setattr(driver, "hip_rt", mock_no_sync)
     assert driver.stream_synchronize(888) == 0
+    getattr(_state, "update")({"mock_no_sync": mock_no_sync})
+
+
+def test_rccl_driver_hip_rt_memory_and_streams() -> None:
+    """Verify hip_rt library discovery, hipMalloc, hipFree, hipMemcpy, and stream_synchronize."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_rccl_driver_hip_rt_memory_and_streams_part_1(_state)
+    _test_rccl_driver_hip_rt_memory_and_streams_part_2(_state)
+    _test_rccl_driver_hip_rt_memory_and_streams_part_3(_state)
+    assert isinstance(_state, dict)

@@ -93,6 +93,7 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
     rules_dir_str = str(rules_dir)
 
     def mock_join(*args: str) -> str:
+        """Test function mock_join."""
         if "rules" in args:
             if args[-1] == "rules":
                 return rules_dir_str
@@ -100,11 +101,13 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
         return real_join(*args)
 
     def mock_isdir(path: str) -> bool:
+        """Test function mock_isdir."""
         if rules_dir_str in str(path) or str(path).endswith("rules"):
             return True
         return real_isdir(path)
 
     def mock_listdir(path: str) -> list[str]:
+        """Test function mock_listdir."""
         if rules_dir_str in str(path) or str(path).endswith("rules"):
             return ["ignored.txt", "valid.yaml", "only_ast.yaml", "only_ir.yaml", "non_dict.yaml", "broken.yaml"]
         return real_listdir(path)
@@ -117,6 +120,7 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
         assert "Cos" in cfg.ir_to_ast_ops
 
     def mock_isdir_false(path: str) -> bool:
+        """Test function mock_isdir_false."""
         if rules_dir_str in str(path) or "rules" in str(path):
             return False
         return real_isdir(path)

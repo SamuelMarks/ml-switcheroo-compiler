@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -7,6 +6,7 @@ import glob  # noqa: F401
 import os  # noqa: F401
 import shutil  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor  # noqa: F401
@@ -27,7 +27,7 @@ class Fromfile(OpDef):
 
     op_name = "Fromfile"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -52,7 +52,7 @@ class Fromstring(OpDef):
 
     op_name = "Fromstring"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -77,7 +77,7 @@ class Fromiter(OpDef):
 
     op_name = "Fromiter"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -102,7 +102,7 @@ class Fromfunction(OpDef):
 
     op_name = "Fromfunction"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -116,7 +116,7 @@ class Fromfunction(OpDef):
         return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
 
 
-def fromfile(file, dtype=float, count: int = -1, sep: str = "", offset: int = 0, *, like=None):
+def fromfile(file: EagerValue, dtype: EagerValue = float, count: int = -1, sep: str = "", offset: int = 0, *, like: EagerValue = None) -> EagerValue:
     """Construct an array from data in a text or binary file.
 
     Args:
@@ -139,7 +139,7 @@ def fromfile(file, dtype=float, count: int = -1, sep: str = "", offset: int = 0,
     return dispatch_op("Fromfile", file, dtype=dtype, count=count, sep=sep, offset=offset, like=like)
 
 
-def fromstring(string: str, dtype=float, count: int = -1, sep: str = "", *, like=None):
+def fromstring(string: str, dtype: EagerValue = float, count: int = -1, sep: str = "", *, like: EagerValue = None) -> EagerValue:
     """Provide a new 1-D array initialized from text data in a string.
 
     Args:
@@ -161,7 +161,7 @@ def fromstring(string: str, dtype=float, count: int = -1, sep: str = "", *, like
     return dispatch_op("Fromstring", string, dtype=dtype, count=count, sep=sep, like=like)
 
 
-def fromiter(iterable, dtype, count: int = -1, *, like=None):
+def fromiter(iterable: EagerValue, dtype: EagerValue, count: int = -1, *, like: EagerValue = None) -> EagerValue:
     """Create a new 1-dimensional array from an iterable Any.
 
     Args:
@@ -182,7 +182,7 @@ def fromiter(iterable, dtype, count: int = -1, *, like=None):
     return dispatch_op("Fromiter", iterable, dtype, count=count, like=like)
 
 
-def fromfunction(function, shape, *, dtype=float, like=None, **kwargs):
+def fromfunction(function: EagerValue, shape: EagerValue, *, dtype: EagerValue = float, like: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Construct an array by executing a function over each coordinate.
 
     Args:

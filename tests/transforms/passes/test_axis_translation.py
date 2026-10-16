@@ -1,16 +1,23 @@
 """Unit tests for Axis Translation pass."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_axis_translation_no_op():
+
+def test_axis_translation_no_op() -> None:
     """Test axis translation on an empty graph."""
     graph = IRGraph()
     assert axis_translation_pass(graph) is False
 
 
-def test_axis_translation_conv2d():
+def test_axis_translation_conv2d() -> None:
     """Test inserting Transpose nodes around Conv2D."""
     graph = IRGraph()
 
@@ -52,7 +59,7 @@ def test_axis_translation_conv2d():
     assert transp_out_node.attributes["axes"] == [0, 3, 1, 2]
 
 
-def test_axis_translation_conv2d_no_shape():
+def test_axis_translation_conv2d_no_shape() -> None:
     """Test inserting Transpose nodes around Conv2D when shape is None."""
     graph = IRGraph()
     inp = IRNode(id="inp_1", op_type="Input", shape_metadata=None)
@@ -72,13 +79,17 @@ def test_axis_translation_conv2d_no_shape():
     # Monkey patch uuid to force the dummy name
     original_uuid4 = uuid.uuid4
 
-    def mock_uuid4():
+    def mock_uuid4() -> EagerValue:
+        """Test function mock_uuid4."""
+
         class MockUUID:
+            """Test class MockUUID."""
+
             hex = "dummyxxx"
 
-        return MockUUID()
+        return cast("EagerTensorProtocol", MockUUID())
 
-    uuid.uuid4 = mock_uuid4
+    setattr(uuid, "uuid4", mock_uuid4)
     try:
         modified = axis_translation_pass(graph)
     finally:
@@ -89,7 +100,7 @@ def test_axis_translation_conv2d_no_shape():
     assert graph.nodes[conv.inputs[0]].op_type == "Transpose"
 
 
-def test_axis_translation_conv2d_already_nhwc():
+def test_axis_translation_conv2d_already_nhwc() -> None:
     """Test axis translation skips Conv2D if already NHWC."""
     graph = IRGraph()
     conv = IRNode(id="conv_1", op_type="Conv2D", inputs=[], attributes={"layout": "NHWC"})
@@ -98,7 +109,7 @@ def test_axis_translation_conv2d_already_nhwc():
     assert modified is False
 
 
-def test_axis_translation_conv2d_empty_inputs():
+def test_axis_translation_conv2d_empty_inputs() -> None:
     """Test Conv2D with layout NCHW but empty inputs."""
     graph = IRGraph()
     conv = IRNode(id="conv_1", op_type="Conv2D", inputs=[], attributes={"layout": "NCHW"})

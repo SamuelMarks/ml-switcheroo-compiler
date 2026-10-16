@@ -1,37 +1,48 @@
 """Test JAX backend edge cases coverage."""
 
+from __future__ import annotations
+
 import os
 import sys
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_jaxget_fallback_prefix():
+
+def test_jaxget_fallback_prefix() -> None:
+    """Test function test_jaxget_fallback_prefix."""
     gen = JAXCodeGenerator(LogicalGraph())
     assert gen.get_fallback_prefix() == "jnp"
 
 
-def test_jax_format_zeros_like():
+def test_jax_format_zeros_like() -> None:
+    """Test function test_jax_format_zeros_like."""
     gen = JAXCodeGenerator(LogicalGraph())
     assert gen._format_zeros_like("zeros", {}) == "jnp.zeros({shape})"
     assert gen._format_zeros_like("zeros", {"dtype": "float32"}) == "jnp.zeros({shape}), dtype='float32'"
 
 
-def test_jax_format_full():
+def test_jax_format_full() -> None:
+    """Test function test_jax_format_full."""
     gen = JAXCodeGenerator(LogicalGraph())
     assert gen._format_full({}) == "jnp.full({shape}, {fill_value})"
     assert gen._format_full({"dtype": "float32"}) == "jnp.full({shape}, {fill_value}), dtype='float32'"
 
 
-def test_jax_get_fallback_prefix():
+def test_jax_get_fallback_prefix() -> None:
+    """Test function test_jax_get_fallback_prefix."""
     gen = JAXCodeGenerator(LogicalGraph())
     assert gen.get_fallback_prefix() == "jnp"
 
 
-def test_jax_get_ops_map():
+def test_jax_get_ops_map() -> None:
+    """Test function test_jax_get_ops_map."""
     gen = JAXCodeGenerator(LogicalGraph())
     ops = gen.get_ops_map({"dtype": "float32"})
     assert "Zeros" in ops
@@ -39,20 +50,23 @@ def test_jax_get_ops_map():
     assert "Full" in ops
 
 
-def test_jax_emit_constant_assignment():
+def test_jax_emit_constant_assignment() -> None:
+    """Test function test_jax_emit_constant_assignment."""
     gen = JAXCodeGenerator(LogicalGraph())
     gen._emit_constant_assignment("var", "val")
     assert len(gen.code) == 1
     assert gen.code[0] == "var = jnp.array(val)"
 
 
-def test_jax_generate_file_header():
+def test_jax_generate_file_header() -> None:
+    """Test function test_jax_generate_file_header."""
     gen = JAXCodeGenerator(LogicalGraph())
     header = gen._generate_file_header()
     assert isinstance(header, list)
 
 
-def test_jax_resolve_imports():
+def test_jax_resolve_imports() -> None:
+    """Test function test_jax_resolve_imports."""
     gen = JAXCodeGenerator(LogicalGraph())
     # Should resolve templates
     imports = gen._resolve_imports()
@@ -60,7 +74,8 @@ def test_jax_resolve_imports():
     assert "import jax.numpy as jnp" in imports
 
 
-def test_jax_generate_function_signature():
+def test_jax_generate_function_signature() -> None:
+    """Test function test_jax_generate_function_signature."""
     gen = JAXCodeGenerator(LogicalGraph())
     gen._generate_function_signature()
     assert len(gen.code) == 1
@@ -68,7 +83,8 @@ def test_jax_generate_function_signature():
     assert gen.indent_level == 1
 
 
-def test_jax_save_load(tmp_path):
+def test_jax_save_load(tmp_path: EagerTensorProtocol) -> None:
+    """Test function test_jax_save_load."""
     mock_jax = MagicMock()
     mock_jnp = MagicMock()
     mock_jax.numpy = mock_jnp
@@ -84,7 +100,8 @@ def test_jax_save_load(tmp_path):
         mock_jnp.load.assert_called_once_with(filepath, allow_pickle=False, fix_imports=True, encoding="ASCII")
 
 
-def test_jax_savez(tmp_path):
+def test_jax_savez(tmp_path: EagerTensorProtocol) -> None:
+    """Test function test_jax_savez."""
     mock_jax = MagicMock()
     mock_jnp = MagicMock()
     mock_jax.numpy = mock_jnp
@@ -97,7 +114,8 @@ def test_jax_savez(tmp_path):
         mock_jnp.savez.assert_called_once_with(filepath, a=arr)
 
 
-def test_jax_savez_compressed(tmp_path):
+def test_jax_savez_compressed(tmp_path: EagerTensorProtocol) -> None:
+    """Test function test_jax_savez_compressed."""
     mock_jax = MagicMock()
     mock_jnp = MagicMock()
     mock_jax.numpy = mock_jnp

@@ -1,14 +1,26 @@
-def test_mapping_loader_dir_yaml(monkeypatch):
+"""Tests for test_mapping_loader_dir."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_mapping_loader_dir_yaml(monkeypatch: EagerTensorProtocol) -> None:
     """Test loading mappings from a directory of yaml files."""
     import os
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 
-    def mock_isdir(path):
+    def mock_isdir(path: EagerValue) -> EagerValue:
+        """Test function mock_isdir."""
         return True
 
-    def mock_listdir(path):
+    def mock_listdir(path: EagerValue) -> EagerValue:
+        """Test function mock_listdir."""
         return ["test.yaml"]
 
     mock_data = {"TestOp": {"target_api": "test_api"}}

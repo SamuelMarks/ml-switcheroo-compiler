@@ -1,4 +1,17 @@
-def test_checkpoint_grad():
+"""Tests for test_checkpoint_grad."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_checkpoint_grad() -> None:
+    """Test function test_checkpoint_grad."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.config import config
@@ -9,8 +22,9 @@ def test_checkpoint_grad():
     config.backend = "numpy"
     config.eager_mode = False
 
-    def my_fun(x):
-        return x * x * x
+    def my_fun(x: EagerValue) -> EagerValue:
+        """Test function my_fun."""
+        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     cp_fun = checkpoint(my_fun)
 
@@ -21,11 +35,11 @@ def test_checkpoint_grad():
 
     from ml_switcheroo_compiler.grad.jit import jit
 
-    jitted_std = jit(vg_std)
-    jitted_cp = jit(vg_cp)
+    jitted_std = cast("Callable[..., EagerTensorProtocol]", jit)(vg_std)
+    jitted_cp = cast("Callable[..., EagerTensorProtocol]", jit)(vg_cp)
 
     v1, g1 = jitted_std(x)
     v2, g2 = jitted_cp(x)
 
-    np.testing.assert_allclose(v1.numpy(), v2.numpy())
-    np.testing.assert_allclose(g1.numpy(), g2.numpy())
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(v1, "numpy")))(), cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(v2, "numpy")))())
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(g1, "numpy")))(), cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(g2, "numpy")))())

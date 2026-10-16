@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph
@@ -13,6 +15,11 @@ from ml_switcheroo_compiler.ops.control_flow_utils import (
     _get_tensor_ids,
     _wrap_proxy_inputs,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class _PayloadWithId:
@@ -38,11 +45,11 @@ def test_control_flow_utils_wrap_proxy_inputs_tuple() -> None:
     t2 = Tensor(np.array([3.0, 4.0], dtype=np.float32), cfg)
 
     nested_args = ((t1, t2), "non_tensor")
-    input_ids, proxy_args = _wrap_proxy_inputs(nested_args, graph)
+    input_ids, proxy_args = cast("Callable[..., EagerTensorProtocol]", _wrap_proxy_inputs)(nested_args, graph)
 
     assert len(input_ids) == 2
     assert isinstance(proxy_args[0], tuple)
-    assert proxy_args[1] == "non_tensor"
+    assert cast("EagerTensorProtocol", proxy_args[1]) == cast("EagerTensorProtocol", "non_tensor")
 
 
 def test_control_flow_utils_wrap_proxy_inputs_no_input_specs() -> None:
@@ -66,14 +73,14 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
 
     # Nested tensor unwrapping (cur.data is a Tensor)
     inner_payload = _PayloadWithId("inner_id_42")
-    inner_t = Tensor(inner_payload, cfg)
+    inner_t = cast("Callable[..., EagerTensorProtocol]", Tensor)(inner_payload, cfg)
     outer_t = Tensor(inner_t, cfg)
     ids_nested = _get_tensor_ids(outer_t)
     assert ids_nested == ["inner_id_42"]
 
     # Tensor where cur has no data.id but has id on Tensor
     t_no_id_payload = Tensor(np.array([1.0]), cfg)
-    t_no_id_payload.id = "tensor_attr_id"  # type: ignore[attr-defined]
+    setattr(t_no_id_payload, "id", "tensor_attr_id")
     assert _get_tensor_ids(t_no_id_payload) == ["tensor_attr_id"]
 
     # Tensor where cur has neither data.id nor id (generates uuid)
@@ -83,8 +90,8 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
     assert isinstance(ids_uuid[0], str)
 
     # list/tuple of tensors
-    t_a = Tensor(_PayloadWithId("a"), cfg)
-    t_b = Tensor(_PayloadWithId("b"), cfg)
+    t_a = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", _PayloadWithId)("a"), cfg)
+    t_b = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", _PayloadWithId)("b"), cfg)
     ids_list = _get_tensor_ids([t_a, (t_b,)])
     assert ids_list == ["a", "b"]
 

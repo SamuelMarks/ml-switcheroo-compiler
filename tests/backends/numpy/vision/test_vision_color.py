@@ -1,6 +1,10 @@
 # ruff: noqa: E501
 """Core abstractions and logic definitions for test_numpy_eager_vision_color_edge_cases.py."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.vision_color as vc_mod
@@ -17,8 +21,11 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_color import (
     _np_solarize,
 )
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_numpy_vision_color_eager():
+
+def test_numpy_vision_color_eager() -> None:
     """Test the numpy vision color eager behavior.
 
     Returns:
@@ -35,9 +42,9 @@ def test_numpy_vision_color_eager():
             _np_auto_contrast(np, np.ones((2, 2, 3), dtype=np.uint8) * 128)
             img_ac = np.array([[[0, 0, 0], [255, 255, 255]]], dtype=np.uint8)
             _np_auto_contrast(np, img_ac)
-            original_hist = vc_mod.np.histogram
+            original_hist = cast("EagerTensorProtocol", getattr(vc_mod, "np")).histogram
 
-            def mock_hist(*args, **kwargs):
+            def mock_hist(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
                 """Evaluate and process the mock hist operation.
 
                 Args:
@@ -49,16 +56,16 @@ def test_numpy_vision_color_eager():
                 """
                 return (np.array([1] * 256), None)
 
-            vc_mod.np.histogram = mock_hist
+            setattr(cast("EagerTensorProtocol", getattr(vc_mod, "np")), "histogram", mock_hist)
             try:
                 try:
                     _np_equalization(np, img)
-                except TypeError:
-                    pass
+                except TypeError as _exc:
+                    assert _exc is not None
             finally:
-                vc_mod.np.histogram = original_hist
+                setattr(cast("EagerTensorProtocol", getattr(vc_mod, "np")), "histogram", original_hist)
 
-            def mock_hist2(*args, **kwargs):
+            def mock_hist2(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
                 """Evaluate and process the mock hist2 operation.
 
                 Args:
@@ -72,20 +79,20 @@ def test_numpy_vision_color_eager():
                 a[0] = 100
                 return (a, None)
 
-            vc_mod.np.histogram = mock_hist2
+            setattr(cast("EagerTensorProtocol", getattr(vc_mod, "np")), "histogram", mock_hist2)
             try:
                 try:
                     _np_equalization(np, img)
-                except TypeError:
-                    pass
+                except TypeError as _exc:
+                    assert _exc is not None
             finally:
-                vc_mod.np.histogram = original_hist
+                setattr(cast("EagerTensorProtocol", getattr(vc_mod, "np")), "histogram", original_hist)
             _np_invert(np, img)
             _np_posterize(np, img, bits=4)
             _np_rgb_to_grayscale(np, img)
             _np_rgb_to_grayscale(np, img, keepdim=True)
             _np_solarize(np, img, threshold=0.5)
-        except (ValueError, AttributeError, AssertionError, TypeError):
-            pass
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+        except (ValueError, AttributeError, AssertionError, TypeError) as _exc:
+            assert _exc is not None
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

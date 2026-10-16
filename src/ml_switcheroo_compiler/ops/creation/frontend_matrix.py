@@ -1,17 +1,15 @@
-"""Module frontend_matrix.py."""
+"""Constants & Creation Operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Constants & Creation Operations."""
 import uuid
+from typing import Callable, Optional, cast
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -26,7 +24,7 @@ def eye(
     k: int = 0,
     dtype: DType | None = None,
     device: Device | None = None,
-):
+) -> EagerValue:
     """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
     Args:
@@ -60,7 +58,7 @@ def identity(
     n: int,
     dtype: DType | None = None,
     device: Device | None = None,
-):
+) -> EagerValue:
     """Return the 2-D identity matrix of shape `(n, n)`.
 
     Args:
@@ -74,7 +72,7 @@ def identity(
     return eye(n, n, 0, dtype, device)
 
 
-def _diag_eager(input: Tensor, diagonal: int, device, dtype):
+def _diag_eager(input: Tensor, diagonal: int, device: EagerValue, dtype: EagerValue) -> EagerValue:
     """Evaluate _diag_eager operation.
 
     Args:
@@ -87,13 +85,13 @@ def _diag_eager(input: Tensor, diagonal: int, device, dtype):
         Tensor: Result.
     """
     data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
-    shape = data.shape if hasattr(data, "shape") else ()
+    shape = getattr(data, "shape") if hasattr(data, "shape") else ()
     if dtype is None:
         dtype = getattr(data, "dtype", DType.Float32)
-    return Tensor(data, TensorConfig(shape, dtype, device))
+    return Tensor(data, cast("Callable[..., TensorConfig]", TensorConfig)(shape, cast("Optional[str]", dtype), device))
 
 
-def diag(input: Tensor, diagonal: int = 0):
+def diag(input: Tensor, diagonal: int = 0) -> EagerValue:
     """Return a 2-D square tensor with diagonal, or extracts diagonal.
 
     Args:
@@ -114,7 +112,7 @@ def diag(input: Tensor, diagonal: int = 0):
         return _diag_eager(input, diagonal, device, dtype)
 
     input_shape = getattr(input, "shape", ())
-    if len(input_shape) == MAGIC_VAL_2:
+    if len(input_shape) == MATRIX_RANK:
         n = min(input_shape) - abs(diagonal)
         shape = (max(0, n),)
     else:
@@ -125,7 +123,7 @@ def diag(input: Tensor, diagonal: int = 0):
         msg = "Cannot emit diag node outside of a tracing context."
         raise RuntimeError(msg)
     out_id = str(uuid.uuid4())
-    input_id = input.data.id if hasattr(input, "data") else getattr(input, "id", "const")
+    input_id = getattr(input.data, "id") if hasattr(input, "data") else getattr(input, "id", "const")
     node = LogicalNode(
         id=out_id,
         op_type="Diag",
@@ -137,6 +135,6 @@ def diag(input: Tensor, diagonal: int = 0):
     proxy = ProxyTensor(
         id=out_id,
         shape=shape,
-        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        dtype=getattr(dtype, "value") if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
     )
     return Tensor(proxy, TensorConfig(shape, dtype, device))

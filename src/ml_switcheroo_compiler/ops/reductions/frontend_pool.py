@@ -1,19 +1,21 @@
-"""Module frontend_pool.py."""
+"""Frontend reductions ops."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Frontend reductions ops."""
-
-
 import typing  # noqa: F401
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, cast
+
+from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.dtype import DType
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.registry import EagerValue
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .frontend_utils import _emit_reduction_node
@@ -23,16 +25,16 @@ from .frontend_utils import _emit_reduction_node
 class UnpoolOptions:
     """Options for unpooling."""
 
-    kernel_size: int | tuple
-    stride: int | tuple | None = None
-    padding: int | tuple = 0
-    output_size: Any | None = None
+    kernel_size: int | tuple[int, ...]
+    stride: int | tuple[int, ...] | None = None
+    padding: int | tuple[int, ...] = 0
+    output_size: tuple[int, ...] | list[int] | None = None
 
 
 def fractional_max_pool2d(
     operand: Tensor,
     output_size: tuple[int, int],
-):
+) -> EagerValue:
     """Fractional max pooling 2D.
 
     Args:
@@ -43,7 +45,7 @@ def fractional_max_pool2d(
         Tensor: The pooled tensor.
     """
     out_shape = list(operand.shape)
-    if len(out_shape) >= MAGIC_VAL_2:
+    if len(out_shape) >= MATRIX_RANK:
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
     return _emit_reduction_node(
@@ -58,7 +60,7 @@ def fractional_max_pool2d(
 def adaptive_avg_pool2d(
     operand: Tensor,
     output_size: tuple[int, int],
-):
+) -> EagerValue:
     """Adaptive average pooling 2D.
 
     Args:
@@ -69,7 +71,7 @@ def adaptive_avg_pool2d(
         Tensor: The pooled tensor.
     """
     out_shape = list(operand.shape)
-    if len(out_shape) >= MAGIC_VAL_2:
+    if len(out_shape) >= MATRIX_RANK:
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
 
@@ -94,7 +96,7 @@ def adaptive_avg_pool2d(
 def adaptive_max_pool2d(
     operand: Tensor,
     output_size: tuple[int, int],
-):
+) -> EagerValue:
     """Adaptive max pooling 2D.
 
     Args:
@@ -105,7 +107,7 @@ def adaptive_max_pool2d(
         Tensor: The pooled tensor.
     """
     out_shape = list(operand.shape)
-    if len(out_shape) >= MAGIC_VAL_2:
+    if len(out_shape) >= MATRIX_RANK:
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
 
@@ -130,7 +132,7 @@ def adaptive_max_pool2d(
 def unfold(
     operand: Tensor,
     kernel_size: tuple[int, int],
-):
+) -> EagerValue:
     """Unfold (Im2Col) operator.
 
     Args:
@@ -147,7 +149,7 @@ def fold(
     operand: Tensor,
     output_size: tuple[int, int],
     kernel_size: tuple[int, int],
-):
+) -> EagerValue:
     """Fold (Col2Im) operator.
 
     Args:
@@ -170,9 +172,9 @@ def fold(
 def fractional_max_pool3d(
     operand: Tensor,
     output_size: tuple[int, int, int],
-    output_ratio=None,
-    random_samples=None,
-):
+    output_ratio: EagerValue = None,
+    random_samples: EagerValue = None,
+) -> EagerValue:
     """Fractional max pooling 3D.
 
     Args:
@@ -192,28 +194,31 @@ def fractional_max_pool3d(
 
     if config.eager_mode:
         backend = get_active_backend()
-        data, indices = backend.execute_op(
-            "FractionalMaxPool3D",
-            operand.data,
-            output_size=output_size,
-            output_ratio=output_ratio,
-            random_samples=random_samples.data if random_samples is not None else None,
+        data, indices = cast(
+            "tuple[EagerValue, EagerValue]",
+            backend.execute_op(
+                "FractionalMaxPool3D",
+                operand.data,
+                output_size=output_size,
+                output_ratio=output_ratio,
+                random_samples=getattr(random_samples, "data") if random_samples is not None else None,
+            ),
         )
         return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))
 
     pooled = _emit_reduction_node(
         "FractionalMaxPool3D",
         [operand],
-        {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples},
+        cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
         tuple(out_shape),
         operand.dtype,
     )
     indices_tensor = _emit_reduction_node(
         "FractionalMaxPool3D_Indices",
         [operand],
-        {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples},
+        cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
         tuple(out_shape),
-        "int64",
+        cast("DType", "int64"),
     )
     return pooled, indices_tensor
 
@@ -221,7 +226,7 @@ def fractional_max_pool3d(
 def adaptive_avg_pool3d(
     operand: Tensor,
     output_size: tuple[int, int, int],
-):
+) -> EagerValue:
     """Adaptive average pooling 3D.
 
     Args:
@@ -279,11 +284,14 @@ def adaptive_max_pool3d(
     if config.eager_mode:
         backend = get_active_backend()
         if return_indices:
-            data, indices = backend.execute_op(
-                "AdaptiveMaxPool3D",
-                operand.data,
-                output_size=output_size,
-                return_indices=True,
+            data, indices = cast(
+                "tuple[EagerValue, EagerValue]",
+                backend.execute_op(
+                    "AdaptiveMaxPool3D",
+                    operand.data,
+                    output_size=output_size,
+                    return_indices=True,
+                ),
             )
             return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))
         else:
@@ -308,7 +316,7 @@ def adaptive_max_pool3d(
             [operand],
             {"output_size": output_size, "return_indices": return_indices},
             tuple(out_shape),
-            "int64",
+            cast("DType", "int64"),
         )
         return pooled, indices_tensor
     return pooled
@@ -318,7 +326,7 @@ def max_unpool1d(
     operand: Tensor,
     indices: Tensor,
     options: UnpoolOptions,
-):
+) -> EagerValue:
     """Max unpooling 1D.
 
     Args:
@@ -364,7 +372,7 @@ def max_unpool2d(
     operand: Tensor,
     indices: Tensor,
     options: UnpoolOptions,
-):
+) -> EagerValue:
     """Max unpooling 2D.
 
     Args:
@@ -411,7 +419,7 @@ def max_unpool3d(
     operand: Tensor,
     indices: Tensor,
     options: UnpoolOptions,
-):
+) -> EagerValue:
     """Max unpooling 3D.
 
     Args:

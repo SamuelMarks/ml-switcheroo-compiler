@@ -1,6 +1,9 @@
 """Tests for middle-end pass orchestration, operator fusion, and memory arena planning."""
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, cast
 
 import yaml
 
@@ -12,6 +15,9 @@ from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     NodePattern,
 )
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_memory_layouts_yaml_alignments() -> None:
@@ -62,14 +68,14 @@ def test_subgraph_pattern_matcher_wildcard_and_commutativity() -> None:
 
     cap_map: dict[str, str | IRNode] = {}
     assert match_pattern(graph, "add_node", p_add, cap_map)
-    assert cap_map["c0"].id == "c"
-    assert cap_map["c1"].id == "x"
+    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cap_map, "__getitem__")("c0")), "id")) == "c"
+    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cap_map, "__getitem__")("c1")), "id")) == "x"
 
     # Wildcard pattern
     p_wild = NodePattern(op_type="*", capture="any_op")
     cap_wild: dict[str, str | IRNode] = {}
     assert match_pattern(graph, "add_node", p_wild, cap_wild)
-    assert cap_wild["any_op"].id == "add_node"
+    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cap_wild, "__getitem__")("any_op")), "id")) == "add_node"
 
 
 def test_dynamic_buffer_allocation_symbolic_batch() -> None:
@@ -89,7 +95,7 @@ def test_dynamic_buffer_allocation_symbolic_batch() -> None:
     modified = alloc_pass.run(graph)
     assert modified is True
     assert "buffer_offset_symbolic" in n_in.attributes
-    assert "dynamic_memory_schema" in graph.attributes
+    assert "dynamic_memory_schema" in cast("EagerTensorProtocol", getattr(graph, "attributes"))
 
 
 def test_pass_manager_optimization_levels_and_fixpoint() -> None:

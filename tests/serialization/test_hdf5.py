@@ -1,14 +1,22 @@
 """Test HDF5 serialization format."""
 
+from __future__ import annotations
+
 import os
 import tempfile
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.serialization.formats.hdf5 import HDF5WeightLoader, HDF5WeightSaver
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_hdf5_save_and_load():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_hdf5_save_and_load() -> None:
     """Test saving and loading weights using HDF5 format."""
     weights = {
         "layer1/weight": np.random.rand(10, 10),
@@ -20,7 +28,7 @@ def test_hdf5_save_and_load():
         filepath = os.path.join(tmpdir, "model.h5")
 
         saver = HDF5WeightSaver()
-        saver.save(weights, filepath)
+        cast("Callable[..., EagerTensorProtocol]", saver.save)(weights, filepath)
 
         assert os.path.exists(filepath)
 
@@ -30,19 +38,19 @@ def test_hdf5_save_and_load():
         assert len(loaded_weights) == 3
         for k, v in weights.items():
             assert k in loaded_weights
-            np.testing.assert_allclose(loaded_weights[k], v)
+            cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(loaded_weights, "__getitem__")(k)), v)
 
 
-def test_hdf5_schema_validation():
+def test_hdf5_schema_validation() -> None:
     """Test schema validation for HDF5."""
     from ml_switcheroo_compiler.serialization.formats.hdf5 import WeightSchema
 
     # Should construct successfully
-    schema = WeightSchema(data={"a": np.array([1, 2, 3])})
+    schema = cast("Callable[..., EagerTensorProtocol]", WeightSchema)(data={"a": cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2, 3])})
     assert "a" in schema.data
 
 
-def test_hdf5_missing_h5py(monkeypatch):
+def test_hdf5_missing_h5py(monkeypatch: EagerTensorProtocol) -> None:
     """Test that HDF5WeightLoader and HDF5WeightSaver raise ImportError when h5py is None.
 
     Args:
@@ -59,10 +67,10 @@ def test_hdf5_missing_h5py(monkeypatch):
 
     saver = hdf5_mod.HDF5WeightSaver()
     with pytest.raises(ImportError, match="h5py is required for HDF5 weight saving"):
-        saver.save({"a": np.array([1])}, "dummy.h5")
+        cast("Callable[..., EagerTensorProtocol]", saver.save)({"a": cast("Callable[..., EagerTensorProtocol]", np.array)([1])}, "dummy.h5")
 
 
-def test_h5_and_hdf5_import_error_coverage(tmp_path) -> None:
+def test_h5_and_hdf5_import_error_coverage(tmp_path: EagerTensorProtocol) -> None:
     """Test fallback import branch when h5py is missing."""
     import importlib
     import sys

@@ -6,6 +6,8 @@ verifying compiler protocol compliance, syntax validation, and declarative execu
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
 from ml_switcheroo_compiler.backends.hardware_compilers import (
     ClangCompiler,
@@ -24,6 +26,11 @@ from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_hardware_compiler_protocol_conformance() -> None:
@@ -123,7 +130,7 @@ def test_advanced_hardware_kernel_patterns() -> None:
         g.nodes["p_op"] = node
         g.inputs = ["in0"]
         g.outputs = ["p_op"]
-        g.sorted_nodes = [in0, node]
+        setattr(g, "sorted_nodes", [in0, node])
 
         cuda_code = CudaCodeGenerator(g).generate()
         assert pattern in cuda_code or "kernel" in cuda_code
@@ -142,8 +149,12 @@ def test_advanced_hardware_kernel_patterns() -> None:
         assert ClangCompiler().validate_syntax(cpp_code)
 
 
-def test_all_registered_operations_hardware_codegen_parity() -> None:
-    """Test code generation for registered operations across CUDA, ROCm, Metal, and LLVM/C++."""
+def _test_all_registered_operations_hardware_codegen_parity_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_all_registered_operations_hardware_codegen_parity.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     supported_ops = [
         "Add",
         "Sub",
@@ -199,6 +210,19 @@ def test_all_registered_operations_hardware_codegen_parity() -> None:
     clang_comp = ClangCompiler()
 
     binary_ops = {"Add", "Sub", "Mul", "Div", "Pow", "Minimum", "Maximum", "MatMul", "BatchMatMul", "Einsum", "Conv2D", "Conv3D"}
+    getattr(_state, "update")({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp, "hip_comp": hip_comp})
+    getattr(_state, "update")({"metal_comp": metal_comp, "supported_ops": supported_ops})
+    _state.update(locals())
+
+
+def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_all_registered_operations_hardware_codegen_parity.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    binary_ops, clang_comp, cuda_comp, hip_comp = _state["binary_ops"], _state["clang_comp"], _state["cuda_comp"], _state["hip_comp"]
+    metal_comp, supported_ops = _state["metal_comp"], _state["supported_ops"]
     for op_name in supported_ops:
         g = IRGraph(name=f"test_supp_{op_name}")
         in0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
@@ -206,15 +230,15 @@ def test_all_registered_operations_hardware_codegen_parity() -> None:
         if op_name in binary_ops:
             in1 = IRNode(id="in1", op_type="Input", shape_metadata=(4, 4))
             g.nodes["in1"] = in1
-            node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
+            node = cast("Callable[..., EagerTensorProtocol]", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
             g.inputs = ["in0", "in1"]
-            g.sorted_nodes = [in0, in1, node]
+            setattr(g, "sorted_nodes", [in0, in1, node])
         else:
-            node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+            node = cast("Callable[..., EagerTensorProtocol]", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
             g.inputs = ["in0"]
-            g.sorted_nodes = [in0, node]
-        g.nodes[node.id] = node
-        g.outputs = [node.id]
+            setattr(g, "sorted_nodes", [in0, node])
+        getattr(g.nodes, "__setitem__")(node.id, node)
+        setattr(g, "outputs", [node.id])
 
         cuda_src = CudaCodeGenerator(g).generate()
         assert cuda_comp.validate_syntax(cuda_src)
@@ -227,21 +251,39 @@ def test_all_registered_operations_hardware_codegen_parity() -> None:
 
         cpp_src = CppGenerator(g).generate()
         assert clang_comp.validate_syntax(cpp_src)
+    _state.update(locals())
 
+
+def _test_all_registered_operations_hardware_codegen_parity_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_all_registered_operations_hardware_codegen_parity.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     all_ops = list(_YAML_REGISTRY.keys())
     assert len(all_ops) >= 4000
-
     sample_ops = all_ops[::80]  # ~50 representative operations covering the spectrum
+    getattr(_state, "update")({"all_ops": all_ops, "sample_ops": sample_ops})
+    _state.update(locals())
 
+
+def _test_all_registered_operations_hardware_codegen_parity_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_all_registered_operations_hardware_codegen_parity.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    clang_comp, cuda_comp, hip_comp, metal_comp = _state["clang_comp"], _state["cuda_comp"], _state["hip_comp"], _state["metal_comp"]
+    sample_ops = _state["sample_ops"]
     for op_name in sample_ops:
         g = IRGraph(name=f"test_{op_name}")
         in0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
-        node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+        node = cast("Callable[..., EagerTensorProtocol]", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
         g.nodes["in0"] = in0
-        g.nodes[node.id] = node
+        getattr(g.nodes, "__setitem__")(node.id, node)
         g.inputs = ["in0"]
-        g.outputs = [node.id]
-        g.sorted_nodes = [in0, node]
+        setattr(g, "outputs", [node.id])
+        setattr(g, "sorted_nodes", [in0, node])
 
         # CUDA code generation and syntax validation
         try:
@@ -267,6 +309,16 @@ def test_all_registered_operations_hardware_codegen_parity() -> None:
         # LLVM/C++ code generation and syntax validation
         cpp_src = CppGenerator(g).generate()
         assert clang_comp.validate_syntax(cpp_src)
+
+
+def test_all_registered_operations_hardware_codegen_parity() -> None:
+    """Test code generation for registered operations across CUDA, ROCm, Metal, and LLVM/C++."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_all_registered_operations_hardware_codegen_parity_part_1(_state)
+    _test_all_registered_operations_hardware_codegen_parity_part_2(_state)
+    _test_all_registered_operations_hardware_codegen_parity_part_3(_state)
+    _test_all_registered_operations_hardware_codegen_parity_part_4(_state)
+    assert isinstance(_state, dict)
 
 
 def test_sass_and_rdna_assembly_compliance() -> None:

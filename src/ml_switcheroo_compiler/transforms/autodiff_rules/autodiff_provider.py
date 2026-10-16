@@ -1,11 +1,20 @@
 """Autodiff Provider for Data-Driven Rules."""
 
+from __future__ import annotations
+
+import logging
 import re
-from typing import Any, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, cast
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.grad.config_models import AutodiffRulesManifestModel
 
 
 def _split_nested_args(args_str: str) -> list[str]:
@@ -36,18 +45,18 @@ def _split_nested_args(args_str: str) -> list[str]:
 
 
 def _parse_args_and_attrs(
-    graph: Any,
+    graph: IRGraph,
     args: list[str],
-    node: Any,
-    cotangent: Optional[str] = None,
-    tangents: Optional[list[str]] = None,
+    node: IRNode,
+    cotangent: str | None = None,
+    tangents: list[str] | None = None,
 ) -> tuple[list[str], dict[str, AttributeValue]]:
     """Parse positional input expressions and keyword attribute definitions.
 
     Args:
-        graph (Any): The computation graph.
+        graph (IRGraph): The computation graph.
         args (list[str]): List of argument strings.
-        node (Any): The primal node.
+        node (IRNode): The primal node.
         cotangent (Optional[str]): Cotangent identifier.
         tangents (Optional[list[str]]): Tangent identifiers.
 
@@ -71,20 +80,20 @@ def _parse_args_and_attrs(
 
 
 def _build_parsed_call(
-    graph: Any,
+    graph: IRGraph,
     op: str,
     args: list[str],
-    node: Any,
-    cotangent: Optional[str] = None,
-    tangents: Optional[list[str]] = None,
+    node: IRNode,
+    cotangent: str | None = None,
+    tangents: list[str] | None = None,
 ) -> str:
     """Build an IR node for an invocation parsed from derivative expression rules.
 
     Args:
-        graph (Any): The computation graph.
+        graph (IRGraph): The computation graph.
         op (str): Name of the operator to construct.
         args (list[str]): Raw string arguments.
-        node (Any): The primal IR node.
+        node (IRNode): The primal IR node.
         cotangent (Optional[str]): The cotangent identifier.
         tangents (Optional[list[str]]): Tangent identifiers.
 
@@ -136,19 +145,53 @@ def _build_parsed_call(
     return emit_ir_node(graph, op, parsed_inputs, shape_meta, attributes=attrs or None)
 
 
-def _parse_expression(  # noqa: PLR0911
-    graph: Any,
+def _resolve_variable_ref(
     expr: str,
-    node: Any,
-    cotangent: Optional[str] = None,
-    tangents: Optional[list[str]] = None,
+    node: IRNode,
+    cotangent: str | None,
+    tangents: list[str] | None,
+) -> str:
+    """Resolve a variable placeholder or literal reference in an autodiff rule expression.
+
+    Args:
+        expr (str): Stripped variable reference string.
+        node (IRNode): The primal IR node being differentiated.
+        cotangent (str | None): The output cotangent ID for VJP.
+        tangents (list[str] | None): The input tangent IDs for JVP.
+
+    Returns:
+        str: Resolved node identifier or literal string.
+    """
+    if expr == "$cotangent":
+        assert cotangent is not None
+        return cotangent
+    if expr == "$output":
+        return getattr(node, "id", "")
+    if expr.startswith("$input["):
+        match = re.match(r"\$input\[(\d+)\]", expr)
+        assert match is not None
+        return str(node.inputs[int(match.group(1))])
+    if expr.startswith("$tangent["):
+        assert tangents is not None
+        match = re.match(r"\$tangent\[(\d+)\]", expr)
+        assert match is not None
+        return tangents[int(match.group(1))]
+    return expr
+
+
+def _parse_expression(
+    graph: IRGraph,
+    expr: str,
+    node: IRNode,
+    cotangent: str | None = None,
+    tangents: list[str] | None = None,
 ) -> str:
     """Parse a string expression into IR nodes.
 
     Args:
-        graph (Any): The computation graph being constructed.
+        graph (IRGraph): The computation graph being constructed.
         expr (str): String representation of the derivative expression.
-        node (Any): The primal IR node being differentiated.
+        node (IRNode): The primal IR node being differentiated.
         cotangent (Optional[str]): The output cotangent ID for VJP.
         tangents (Optional[list[str]]): The input tangent IDs for JVP.
 
@@ -160,19 +203,12 @@ def _parse_expression(  # noqa: PLR0911
         float(expr)
         return expr
     except ValueError:
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     if expr.startswith("- ") or (expr.startswith("-") and not expr.startswith("-=")):
         inner_str = expr[2:].strip() if expr.startswith("- ") else expr[1:].strip()
         inner_id = _parse_expression(graph, inner_str, node, cotangent, tangents)
         return emit_ir_node(graph, "Negative", [inner_id], getattr(node, "shape_metadata", None))
-
-    if expr == "$cotangent":
-        assert cotangent is not None
-        return cotangent
-
-    if expr == "$output":
-        return getattr(node, "id", "")
 
     m = re.match(r"^([A-Za-z0-9_]+)\((.*)\)$", expr)
     if m:
@@ -180,54 +216,52 @@ def _parse_expression(  # noqa: PLR0911
         args = _split_nested_args(m.group(2))
         return _build_parsed_call(graph, op, args, node, cotangent, tangents)
 
-    if expr.startswith("$input["):
-        idx = int(re.match(r"\$input\[(\d+)\]", expr).group(1))
-        return node.inputs[idx]
-    if expr.startswith("$tangent["):
-        assert tangents is not None
-        idx = int(re.match(r"\$tangent\[(\d+)\]", expr).group(1))
-        return tangents[idx]
-
-    return expr
+    return _resolve_variable_ref(expr, node, cotangent, tangents)
 
 
-def _fallback_finite_difference_jvp(graph, node, tangents) -> str:
-    """Implement a generic finite difference fallback for JVP."""
+def _fallback_finite_difference_jvp(graph: EagerValue, node: EagerValue, tangents: EagerValue) -> str:
+    """Implement a generic finite difference fallback for JVP.
+
+    Args:
+        graph: The graph parameter.
+        node: The node parameter.
+        tangents: The tangents parameter.
+    """
     # JVP ~ (f(x + epsilon * t) - f(x - epsilon * t)) / (2 * epsilon)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    epsilon = emit_ir_node(graph, "Constant", [], None, attributes={"value": 1e-4})
-    two_eps = emit_ir_node(graph, "Constant", [], None, attributes={"value": 2e-4})
+    epsilon = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Constant", [], None, attributes={"value": 1e-4})
+    two_eps = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Constant", [], None, attributes={"value": 2e-4})
 
     pos_inputs = []
     neg_inputs = []
 
     tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
-    for _idx, (inp, tang) in enumerate(zip(node.inputs, tangents_list)):
-        eps_t = emit_ir_node(graph, "Multiply", [epsilon, tang], getattr(graph.nodes.get(inp), "shape_metadata", None))
-        pos_inputs.append(emit_ir_node(graph, "Add", [inp, eps_t], getattr(graph.nodes.get(inp), "shape_metadata", None)))
-        neg_inputs.append(emit_ir_node(graph, "Subtract", [inp, eps_t], getattr(graph.nodes.get(inp), "shape_metadata", None)))
+    for _idx, (inp, tang) in enumerate(zip(getattr(node, "inputs"), tangents_list)):
+        eps_t = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Multiply", [epsilon, tang], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None))
+        pos_inputs.append(emit_ir_node(cast("Optional[LogicalGraph]", graph), "Add", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
+        neg_inputs.append(emit_ir_node(cast("Optional[LogicalGraph]", graph), "Subtract", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
 
-    for i in range(len(tangents_list), len(node.inputs)):
-        pos_inputs.append(node.inputs[i])
-        neg_inputs.append(node.inputs[i])
+    for i in range(len(tangents_list), len(getattr(node, "inputs"))):
+        pos_inputs.append(getattr(node, "inputs")[i])
+        neg_inputs.append(getattr(node, "inputs")[i])
 
-    f_pos = emit_ir_node(graph, node.op_type, pos_inputs, getattr(node, "shape_metadata", None), attributes=node.attributes)
-    f_neg = emit_ir_node(graph, node.op_type, neg_inputs, getattr(node, "shape_metadata", None), attributes=node.attributes)
+    f_pos = emit_ir_node(cast("Optional[LogicalGraph]", graph), getattr(node, "op_type"), pos_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
+    f_neg = emit_ir_node(cast("Optional[LogicalGraph]", graph), getattr(node, "op_type"), neg_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
 
-    diff = emit_ir_node(graph, "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
-    return emit_ir_node(graph, "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
-
-
-_MANIFEST_MODEL_CACHE: Optional[Any] = None
-_MODULAR_RULES_CACHE: Optional[dict[str, dict[str, AttributeValue]]] = None
+    diff = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
+    return emit_ir_node(cast("Optional[LogicalGraph]", graph), "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
 
 
-def _get_autodiff_manifest() -> Optional[Any]:
+_MANIFEST_MODEL_CACHE: AutodiffRulesManifestModel | None = None
+_MODULAR_RULES_CACHE: dict[str, dict[str, AttributeValue]] | None = None
+
+
+def _get_autodiff_manifest() -> AutodiffRulesManifestModel | None:
     """Retrieve cached AutodiffRulesManifestModel parsed from autodiff_rules.yaml.
 
     Returns:
-        Optional[Any]: Validated AutodiffRulesManifestModel instance or None.
+        Optional[AutodiffRulesManifestModel]: Validated AutodiffRulesManifestModel instance or None.
     """
     global _MANIFEST_MODEL_CACHE
     if _MANIFEST_MODEL_CACHE is not None:
@@ -246,8 +280,8 @@ def _get_autodiff_manifest() -> Optional[Any]:
                 data = yaml.safe_load(f) or {}
             _MANIFEST_MODEL_CACHE = AutodiffRulesManifestModel.model_validate(data)
             return _MANIFEST_MODEL_CACHE
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
 
 
@@ -283,43 +317,66 @@ def _get_modular_rules() -> dict[str, dict[str, AttributeValue]]:
                         combined["jvp_rules"].update(content["jvp_rules"])
                     if "vjp_rules" in content and isinstance(content["vjp_rules"], dict):
                         combined["vjp_rules"].update(content["vjp_rules"])
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     _MODULAR_RULES_CACHE = combined
     return combined
 
 
-def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, AttributeValue]]:  # noqa: C901, PLR0911, PLR0912
-    """Load autodiff rule from typed manifest model, modular files, registry or YAML files.
+def _lookup_manifest_rule(op_type: str, rule_type: str) -> dict[str, AttributeValue] | None:
+    """Look up autodiff rule in the typed manifest model.
 
     Args:
         op_type (str): Name of the operation.
         rule_type (str): 'vjp' or 'jvp'.
 
     Returns:
-        Optional[dict[str, AttributeValue]]: Rule dictionary if found, else None.
+        dict[str, AttributeValue] | None: Rule dictionary if found, else None.
     """
-    # 1. Primary: Strongly typed AutodiffRulesManifestModel
     manifest = _get_autodiff_manifest()
-    if manifest is not None:
-        rules_dict = manifest.vjp_rules if rule_type == "vjp" else manifest.jvp_rules
-        for candidate in (op_type, op_type.capitalize(), op_type.lower()):
-            if candidate in rules_dict:
-                rule_obj = rules_dict[candidate]
-                if rule_type == "vjp" and rule_obj.vjp:
-                    return {"vjp": rule_obj.vjp if isinstance(rule_obj.vjp, list) else [rule_obj.vjp]}
-                if rule_type == "jvp" and rule_obj.jvp:
-                    return {"jvp": rule_obj.jvp}
+    if manifest is None:
+        return None
+    rules_dict = manifest.vjp_rules if rule_type == "vjp" else manifest.jvp_rules
+    for candidate in (op_type, op_type.capitalize(), op_type.lower()):
+        if candidate in rules_dict:
+            rule_obj = rules_dict[candidate]
+            if rule_type == "vjp" and rule_obj.vjp:
+                return {"vjp": rule_obj.vjp if isinstance(rule_obj.vjp, list) else [rule_obj.vjp]}
+            if rule_type == "jvp" and rule_obj.jvp:
+                return {"jvp": rule_obj.jvp}
+    return None
 
-    # 2. Modular derivative files
+
+def _lookup_modular_rule(op_type: str, rule_type: str) -> dict[str, AttributeValue] | None:
+    """Look up autodiff rule in modular derivative YAML caches.
+
+    Args:
+        op_type (str): Name of the operation.
+        rule_type (str): 'vjp' or 'jvp'.
+
+    Returns:
+        dict[str, AttributeValue] | None: Rule dictionary if found, else None.
+    """
     modular = _get_modular_rules()
     target_section = "vjp_rules" if rule_type == "vjp" else "jvp_rules"
+    section_map = modular.get(target_section, {})
     for candidate in (op_type, op_type.capitalize(), op_type.lower()):
-        if candidate in modular.get(target_section, {}):
-            entry = modular[target_section][candidate]
-            if isinstance(entry, dict):
-                return entry
+        entry = section_map.get(candidate)
+        if isinstance(entry, dict):
+            return entry
+    return None
 
+
+def _lookup_primitive_registry_rule(op_type: str, rule_type: str) -> dict[str, AttributeValue] | None:
+    """Look up autodiff rule in primitive VJP/JVP registries or OPS_REGISTRY.
+
+    Args:
+        op_type (str): Name of the operation.
+        rule_type (str): 'vjp' or 'jvp'.
+
+    Returns:
+        dict[str, AttributeValue] | None: Rule dictionary if found, else None.
+    """
     if rule_type == "vjp":
         from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import load_primitive_vjp_rules
 
@@ -341,12 +398,64 @@ def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Attr
     if isinstance(op_def, dict):
         ad_rules = op_def.get("autodiff", {})
         if isinstance(ad_rules, dict) and rule_type in ad_rules:
-            return ad_rules
+            return cast("dict[str, AttributeValue]", ad_rules)
+    return None
 
-    return _load_rule_from_yaml_files(op_type, rule_type)
+
+def _load_autodiff_rule(op_type: str, rule_type: str) -> dict[str, AttributeValue] | None:
+    """Load autodiff rule from typed manifest model, modular files, registry or YAML files.
+
+    Args:
+        op_type (str): Name of the operation.
+        rule_type (str): 'vjp' or 'jvp'.
+
+    Returns:
+        Optional[dict[str, AttributeValue]]: Rule dictionary if found, else None.
+    """
+    return _lookup_manifest_rule(op_type, rule_type) or _lookup_modular_rule(op_type, rule_type) or _lookup_primitive_registry_rule(op_type, rule_type) or _load_rule_from_yaml_files(op_type, rule_type)
 
 
-def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> Optional[dict[str, AttributeValue]]:  # noqa: C901, PLR0912
+def _read_yaml_dict(file_path: str) -> dict[str, AttributeValue]:
+    """Read a YAML file and return its contents if it is a dictionary.
+
+    Args:
+        file_path (str): Path to the YAML file.
+
+    Returns:
+        dict[str, AttributeValue]: Parsed dictionary or empty dict if not found or invalid.
+    """
+    import os
+
+    import yaml
+
+    if not os.path.exists(file_path):
+        return {}
+    with open(file_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def _find_candidate_in_dict(
+    data: dict[str, AttributeValue],
+    candidates: tuple[str, ...],
+) -> dict[str, AttributeValue] | None:
+    """Find the first matching candidate key in a dictionary.
+
+    Args:
+        data (dict[str, AttributeValue]): Dictionary to search.
+        candidates (tuple[str, ...]): Ordered candidate keys.
+
+    Returns:
+        dict[str, AttributeValue] | None: Matched rule dictionary or None.
+    """
+    for name in candidates:
+        val = data.get(name)
+        if isinstance(val, dict):
+            return {str(k): v for k, v in val.items()}
+    return None
+
+
+def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> dict[str, AttributeValue] | None:
     """Load autodiff rule from fallback filesystem YAML files.
 
     Args:
@@ -358,57 +467,44 @@ def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> Optional[dict[st
     """
     import os
 
-    import yaml
+    base_dir = os.path.dirname(__file__)
+    candidates = (op_type, op_type.lower(), op_type.capitalize())
 
-    rule_file = os.path.join(os.path.dirname(__file__), f"{rule_type}_rules.yaml")
-    if os.path.exists(rule_file):
-        with open(rule_file) as f:
-            data = yaml.safe_load(f) or {}
-            if isinstance(data, dict):
-                for candidate in (op_type, op_type.lower(), op_type.capitalize()):
-                    if candidate in data:
-                        return data[candidate]
+    rule_data = _read_yaml_dict(os.path.join(base_dir, f"{rule_type}_rules.yaml"))
+    found = _find_candidate_in_dict(rule_data, candidates)
+    if found is not None:
+        return found
 
-    for candidate in (op_type, op_type.lower(), op_type.capitalize()):
-        yaml_path = os.path.join(os.path.dirname(__file__), "rules", f"{candidate}.yaml")
-        if os.path.exists(yaml_path):
-            with open(yaml_path) as f:
-                data = yaml.safe_load(f) or {}
-                if isinstance(data, dict):
-                    for name in (op_type, op_type.lower(), op_type.capitalize()):
-                        if name in data:
-                            return data[name]
+    for candidate in candidates:
+        cand_data = _read_yaml_dict(os.path.join(base_dir, "rules", f"{candidate}.yaml"))
+        found = _find_candidate_in_dict(cand_data, candidates)
+        if found is not None:
+            return found
 
-    manifest_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "autodiff_rules.yaml"))
-    if os.path.exists(manifest_path):
-        with open(manifest_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-            target_section = "vjp_rules" if rule_type == "vjp" else "jvp_rules"
-            if isinstance(data, dict) and target_section in data and isinstance(data[target_section], dict):
-                for candidate in (op_type, op_type.capitalize(), op_type.lower()):
-                    if candidate in data[target_section]:
-                        rule_entry = data[target_section][candidate]
-                        if isinstance(rule_entry, dict):
-                            return rule_entry
+    manifest_data = _read_yaml_dict(os.path.abspath(os.path.join(base_dir, "..", "autodiff_rules.yaml")))
+    target_section = "vjp_rules" if rule_type == "vjp" else "jvp_rules"
+    section_dict = manifest_data.get(target_section)
+    if isinstance(section_dict, dict):
+        found = _find_candidate_in_dict(section_dict, (op_type, op_type.capitalize(), op_type.lower()))
+        if found is not None:
+            return found
 
-    legacy_path = os.path.join(os.path.dirname(__file__), "autodiff_rules.yaml")
-    if os.path.exists(legacy_path):
-        with open(legacy_path) as f:
-            data = yaml.safe_load(f) or {}
-            if isinstance(data, dict) and op_type in data:
-                return data[op_type]
+    legacy_data = _read_yaml_dict(os.path.join(base_dir, "autodiff_rules.yaml"))
+    legacy_val = legacy_data.get(op_type)
+    if isinstance(legacy_val, dict):
+        return {str(k): v for k, v in legacy_val.items()}
 
     return None
 
 
-def get_vjp_from_data(op_type: str) -> Any:
+def get_vjp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, str], tuple[str, ...]] | None:
     """Get VJP handler from data-driven rules.
 
     Args:
         op_type (str): Operation identifier.
 
     Returns:
-        Any: Evaluator callable or None.
+        Callable[[IRGraph, IRNode, str], tuple[str, ...]] | None: Evaluator callable or None.
     """
     ad_rules = _load_autodiff_rule(op_type, "vjp")
     if not ad_rules or "vjp" not in ad_rules or not ad_rules["vjp"]:
@@ -416,31 +512,31 @@ def get_vjp_from_data(op_type: str) -> Any:
 
     vjp_exprs = ad_rules["vjp"]
 
-    def data_vjp(graph: Any, node: Any, cotangent: str) -> Any:
+    def data_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, ...]:
         """data_vjp function.
 
         Args:
-            graph (object): The graph parameter.
-            node (object): The node parameter.
-            cotangent (object): The cotangent parameter.
+            graph (IRGraph): The graph parameter.
+            node (IRNode): The node parameter.
+            cotangent (str): The cotangent parameter.
 
         Returns:
-            object: Result.
+            tuple[str, ...]: Result.
         """
-        adjs = [_parse_expression(graph, expr, node, cotangent=cotangent) for expr in vjp_exprs]
+        adjs = [_parse_expression(graph, expr, node, cotangent=cotangent) for expr in getattr(vjp_exprs, "__iter__")()]
         return tuple(adjs)
 
     return data_vjp
 
 
-def get_jvp_from_data(op_type: str) -> Any:
+def get_jvp_from_data(op_type: str) -> Callable[..., str]:
     """Get JVP handler from data-driven rules.
 
     Args:
         op_type (str): Operation identifier.
 
     Returns:
-        Any: Evaluator callable.
+        Callable[..., str]: Evaluator callable.
     """
     ad_rules = _load_autodiff_rule(op_type, "jvp")
     if not ad_rules or "jvp" not in ad_rules or not ad_rules["jvp"]:
@@ -448,7 +544,7 @@ def get_jvp_from_data(op_type: str) -> Any:
 
     jvp_expr = ad_rules["jvp"]
 
-    def data_jvp(graph, node, tangents) -> str:
+    def data_jvp(graph: EagerValue, node: EagerValue, tangents: EagerValue) -> str:
         """data_jvp function.
 
         Args:
@@ -460,6 +556,6 @@ def get_jvp_from_data(op_type: str) -> Any:
             object: Result.
         """
         tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
-        return _parse_expression(graph, jvp_expr, node, tangents=tangents_list)
+        return _parse_expression(cast("LogicalGraph", graph), cast("str", jvp_expr), cast("LogicalNode", node), tangents=tangents_list)
 
     return data_jvp

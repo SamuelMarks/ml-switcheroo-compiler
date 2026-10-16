@@ -1,10 +1,19 @@
 """Tests for symbolic JVP/VJP adjoint duality validation."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.grad.testing import check_jvp_vjp_duality
 from ml_switcheroo_compiler.ops import linalg
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_jvp_vjp_duality_linear_ops() -> None:
@@ -15,7 +24,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def matmul_fn(x: np.ndarray, y: np.ndarray) -> object:
+        def matmul_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], y: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
             """Matrix multiplication wrapper.
 
             Args:
@@ -25,13 +34,13 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             Returns:
                 object: Product matrix.
             """
-            return linalg.matmul(x, y)
+            return cast("Callable[..., EagerTensorProtocol]", linalg.matmul)(x, y)
 
         x_val = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         y_val = np.array([[0.5, -1.0], [1.5, 2.0]], dtype=np.float32)
         check_jvp_vjp_duality(matmul_fn, (x_val, y_val))
 
-        def scale_fn(x: np.ndarray) -> object:
+        def scale_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
             """Scaling operation.
 
             Args:
@@ -40,9 +49,10 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             Returns:
                 object: Scaled matrix.
             """
-            return x * 2.5
+            return cast("EagerValue", cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.5))
 
         check_jvp_vjp_duality(scale_fn, (x_val,))
+    assert callable(test_jvp_vjp_duality_linear_ops)
 
 
 def test_jvp_vjp_duality_transcendental_ops() -> None:
@@ -53,7 +63,7 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def poly_fn(x: np.ndarray) -> object:
+        def poly_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
             """Polynomial composite function.
 
             Args:
@@ -62,10 +72,11 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
             Returns:
                 object: Evaluated array.
             """
-            return x * x * x - x * x * 2.0 + x * 0.5
+            return (((cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)) - ((cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", 2.0))) + (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 0.5))
 
         arr = np.array([0.2, -0.5, 0.8, -1.2], dtype=np.float32)
         check_jvp_vjp_duality(poly_fn, (arr,))
+    assert callable(test_jvp_vjp_duality_transcendental_ops)
 
 
 def test_jvp_vjp_duality_reductions() -> None:
@@ -76,7 +87,7 @@ def test_jvp_vjp_duality_reductions() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def linear_comb_fn(x: np.ndarray) -> object:
+        def linear_comb_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
             """Linear combination function.
 
             Args:
@@ -85,10 +96,11 @@ def test_jvp_vjp_duality_reductions() -> None:
             Returns:
                 object: Linear combination.
             """
-            return x * 1.5 + x * 0.75
+            return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 1.5)) + (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 0.75))
 
         arr = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         check_jvp_vjp_duality(linear_comb_fn, (arr,))
+    assert callable(test_jvp_vjp_duality_reductions)
 
 
 def test_jvp_vjp_duality_failure_raises() -> None:
@@ -99,7 +111,7 @@ def test_jvp_vjp_duality_failure_raises() -> None:
     """
     with ConfigContext(eager_mode=True):
 
-        def simple_fn(x: np.ndarray) -> object:
+        def simple_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> EagerValue:
             """Simple multiplication.
 
             Args:
@@ -108,12 +120,13 @@ def test_jvp_vjp_duality_failure_raises() -> None:
             Returns:
                 object: Scaled array.
             """
-            return x * 2.0
+            return cast("EagerValue", cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0))
 
         arr = np.array([1.0, 2.0], dtype=np.float32)
         tan = np.array([0.5, 0.5], dtype=np.float32)
         cot = np.array([1.0, 1.0], dtype=np.float32)
         check_jvp_vjp_duality(simple_fn, (arr,), tangents=(tan,), cotangents=cot)
+    assert callable(test_jvp_vjp_duality_failure_raises)
 
 
 def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
@@ -129,7 +142,7 @@ def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
         # 1. Primal as a Tensor with tangents=None (hits line 153)
         t = Tensor(np.array([2.0, 3.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
 
-        def double_fn(x: Tensor) -> object:
+        def double_fn(x: Tensor) -> EagerValue:
             """Double the input tensor.
 
             Args:
@@ -173,7 +186,7 @@ def test_check_numerical_grads_coverage() -> None:
     check_numerical_grads(square_fn, (3.0,))
 
     # 2. Tensor input
-    def tensor_scale_fn(x: Tensor) -> object:
+    def tensor_scale_fn(x: Tensor) -> EagerValue:
         """Scale tensor input.
 
         Args:

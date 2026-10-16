@@ -1,5 +1,3 @@
-# ruff: noqa: E402, E501, F403
-
 """Type promotion rules for ml-switcheroo."""
 
 import os
@@ -171,6 +169,9 @@ _PROMOTION_TABLE = {
 }
 
 
+_PROMOTION_LATTICE = _PROMOTION_TABLE
+
+
 def _load_declarative_promotion_lattice() -> None:
     """Load declarative type promotion rules from YAML and update promotion table."""
     yaml_path = os.path.join(os.path.dirname(__file__), "..", "ops", "type_promotion_rules.yaml")
@@ -228,22 +229,13 @@ def promote_types(dtype1: DType, dtype2: DType) -> DType:
     Raises:
         DTypePromotionError: An exception.
     """
-    if dtype1 == dtype2:
+    if dtype1 == dtype2 and type(dtype1) is not str and type(dtype2) is not str:
         return _clamp_x64(dtype1)
 
-    # Order doesn't matter for promotion
-    res = _PROMOTION_TABLE.get((dtype1, dtype2))
-    if res is None:
-        res = _PROMOTION_TABLE.get((dtype2, dtype1))
-
+    res = None if (type(dtype1) is str or type(dtype2) is str) else (_PROMOTION_TABLE.get((dtype1, dtype2)) or _PROMOTION_TABLE.get((dtype2, dtype1)))
     if res is None:
         msg = f"Cannot promote types: {dtype1} and {dtype2}"
         raise DTypePromotionError(msg)
 
-    # Preserve exact input type object if equal (for custom dtype instances)
-    if res == dtype1:
-        res = dtype1
-    elif res == dtype2:
-        res = dtype2
-
+    res = dtype1 if res == dtype1 else (dtype2 if res == dtype2 else res)
     return _clamp_x64(res)

@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -6,8 +5,8 @@ from __future__ import annotations
 import glob
 import os
 import shutil
-from typing import Any
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
-def read_file(filename: str | Tensor, name=None):
+def read_file(filename: str | Tensor, name: EagerValue = None) -> EagerValue:
     """Read file.
 
     Args:
@@ -38,23 +37,25 @@ def read_file(filename: str | Tensor, name=None):
     return _emit_shape_node("ReadFile", [filename], {"name": name}, getattr(filename, "shape", ()), getattr(filename, "dtype", "float32"))
 
 
-def write_file(filename: str | Tensor, contents: Tensor, name=None) -> Any:
+def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None) -> Tensor | None:
     """Write file.
 
     Args:
-        filename (Any): The filename parameter.
+        filename (str | Tensor): The filename parameter.
         contents (Tensor): The contents parameter.
-        name (str): The name parameter.
+        name (str | None): The name parameter.
 
     Returns:
-        Any: Result.
+        Tensor | None: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
+        from typing import cast
+
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("WriteFile", filename, contents, name=name)
+        return cast("Tensor | None", get_active_backend().execute_op("WriteFile", filename, contents, name=name))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")
@@ -116,7 +117,7 @@ class ReadFile(OpDef):
 
     op_name = "ReadFile"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -143,7 +144,7 @@ class WriteFile(OpDef):
 
     op_name = "WriteFile"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

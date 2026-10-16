@@ -1,66 +1,98 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array, _jax_from_numpy, _mlx_from_numpy, _to_channels_last, _to_numpy_array, _torch_from_numpy
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyNp:
-    def asarray(self, x):
+    """Test class DummyNp."""
+
+    def asarray(self, x: EagerValue) -> EagerValue:
+        """Test function asarray."""
         return "np_asarray_res"
 
-    def array(self, out, dtype=None):
+    def array(self, out: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        """Test function array."""
         if dtype:
             return f"np_array_res_{dtype}"
         return "np_array_res"
 
 
 class DummyTensorWithNumpy:
-    def numpy(self):
+    """Test class DummyTensorWithNumpy."""
+
+    def numpy(self) -> EagerValue:
+        """Test function numpy."""
         return "numpy_res"
 
 
 class DummyTensorTorch:
-    def detach(self):
+    """Test class DummyTensorTorch."""
+
+    def detach(self) -> EagerValue:
+        """Test function detach."""
+
         class Cpu:
-            def cpu(self):
+            """Test class Cpu."""
+
+            def cpu(self) -> EagerValue:
+                """Test function cpu."""
+
                 class Numpy:
-                    def numpy(self):
+                    """Test class Numpy."""
+
+                    def numpy(self) -> EagerValue:
+                        """Test function numpy."""
                         return "torch_numpy_res"
 
-                return Numpy()
+                return cast("EagerTensorProtocol", Numpy())
 
-        return Cpu()
+        return cast("EagerTensorProtocol", Cpu())
 
 
 class DummyOriginal:
+    """Test class DummyOriginal."""
+
     dtype = "float32"
 
 
-def test_to_numpy_array():
+def test_to_numpy_array() -> None:
+    """Test function test_to_numpy_array."""
     np_mod = DummyNp()
 
     t1 = DummyTensorWithNumpy()
-    assert _to_numpy_array(np_mod, t1, "test") == "numpy_res"
+    assert cast("Callable[..., EagerTensorProtocol]", _to_numpy_array)(np_mod, t1, "test") == "numpy_res"
 
     t2 = DummyTensorTorch()
-    assert _to_numpy_array(np_mod, t2, "torch") == "torch_numpy_res"
+    assert cast("Callable[..., EagerTensorProtocol]", _to_numpy_array)(np_mod, t2, "torch") == "torch_numpy_res"
 
-    assert _to_numpy_array(np_mod, "other", "test") == "np_asarray_res"
+    assert cast("Callable[..., EagerTensorProtocol]", _to_numpy_array)(np_mod, "other", "test") == "np_asarray_res"
 
 
-def test_from_numpy_array():
+def test_from_numpy_array() -> None:
+    """Test function test_from_numpy_array."""
     backend = DummyNp()
 
-    assert _from_numpy_array(backend, "out", "torch") == "out"
-    assert _from_numpy_array(backend, "out", "mlx.core") == "out"
-    assert _from_numpy_array(backend, "out", "jax.numpy") == "out"
+    assert cast("Callable[..., EagerTensorProtocol]", _from_numpy_array)(backend, "out", "torch") == "out"
+    assert cast("Callable[..., EagerTensorProtocol]", _from_numpy_array)(backend, "out", "mlx.core") == "out"
+    assert cast("Callable[..., EagerTensorProtocol]", _from_numpy_array)(backend, "out", "jax.numpy") == "out"
 
-    assert _from_numpy_array(backend, "out", "other") == "np_array_res"
+    assert cast("Callable[..., EagerTensorProtocol]", _from_numpy_array)(backend, "out", "other") == "np_array_res"
 
     orig = DummyOriginal()
-    assert _from_numpy_array(backend, "out", "other", orig) == "np_array_res_float32"
+    assert cast("Callable[..., EagerTensorProtocol]", _from_numpy_array)(backend, "out", "other", orig) == "np_array_res_float32"
 
 
-def test_other_utils():
+def test_other_utils() -> None:
+    """Test function test_other_utils."""
     assert _torch_from_numpy("out") == "out"
     assert _mlx_from_numpy("out") == "out"
     assert _jax_from_numpy("out") == "out"

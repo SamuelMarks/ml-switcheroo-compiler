@@ -1,11 +1,17 @@
-# ruff: noqa: E402, E501, F403
 """Utilities for parsing stringified indexing keys in NumPy backend."""
 
+from __future__ import annotations
+
 import ast
-from typing import Callable  # noqa: F401
+from typing import (
+    Callable,  # noqa: F401
+    cast,
+)
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def _eval_constant(node: ast.AST):
+def _eval_constant(node: ast.AST) -> EagerValue:
     """Evaluate _eval_constant operation.
 
     Args:
@@ -19,7 +25,7 @@ def _eval_constant(node: ast.AST):
     return getattr(node, "value", None)
 
 
-def _eval_slice_call(node: ast.AST, _eval_fn) -> slice:
+def _eval_slice_call(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> slice:
     """Evaluate _eval_slice_call operation.
 
     Args:
@@ -32,7 +38,7 @@ def _eval_slice_call(node: ast.AST, _eval_fn) -> slice:
     return slice(*[_eval_fn(a) for a in getattr(node, "args", [])])
 
 
-def _eval_array_call(node: ast.AST, _eval_fn):
+def _eval_array_call(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> EagerValue:
     """Evaluate _eval_array_call operation.
 
     Args:
@@ -62,7 +68,7 @@ def _is_np_array_call(node: ast.AST) -> bool:
     return False
 
 
-def _eval_call(node: ast.AST, _eval_fn):
+def _eval_call(node: ast.AST, _eval_fn: EagerValue) -> EagerValue:
     """Evaluate _eval_call operation.
 
     Args:
@@ -75,15 +81,15 @@ def _eval_call(node: ast.AST, _eval_fn):
     func = getattr(node, "func", None)
     if isinstance(func, ast.Name):
         if getattr(func, "id", "") == "slice":
-            return _eval_slice_call(node, _eval_fn)
+            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _eval_slice_call)(node, _eval_fn))
         if getattr(func, "id", "") == "array":
-            return _eval_array_call(node, _eval_fn)
+            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _eval_array_call)(node, _eval_fn))
     if _is_np_array_call(node):
-        return _eval_array_call(node, _eval_fn)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _eval_array_call)(node, _eval_fn))
     raise ValueError("Unsupported Call")
 
 
-def _eval_name(node: ast.AST):
+def _eval_name(node: ast.AST) -> EagerValue:
     """Evaluate _eval_name operation.
 
     Args:
@@ -100,7 +106,7 @@ def _eval_name(node: ast.AST):
     raise ValueError("Unsupported Name")
 
 
-def _eval_unary_op(node: ast.AST, _eval_fn):
+def _eval_unary_op(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> EagerValue:
     """Evaluate _eval_unary_op operation.
 
     Args:
@@ -117,23 +123,26 @@ def _eval_unary_op(node: ast.AST, _eval_fn):
     raise ValueError("Unsupported UnaryOp")
 
 
-def _get_node_evaluators():
+def _get_node_evaluators() -> dict[type[ast.AST], Callable[..., EagerValue]]:
     """Get the dictionary mapping AST node types to evaluation functions.
 
     Returns:
         A dictionary mapping AST node types to their corresponding evaluation functions.
     """
-    return {
-        ast.Constant: lambda n, e: _eval_constant(n),
-        ast.Tuple: lambda n, e: tuple[object, ...](e(elt) for elt in getattr(n, "elts", [])),
-        ast.List: lambda n, e: list[object](e(elt) for elt in getattr(n, "elts", [])),
-        ast.Call: _eval_call,
-        ast.Name: lambda n, e: _eval_name(n),
-        ast.UnaryOp: _eval_unary_op,
-    }
+    return cast(
+        dict[type[ast.AST], Callable[..., EagerValue]],
+        {
+            ast.Constant: lambda n, e: _eval_constant(n),
+            ast.Tuple: lambda n, e: tuple[object, ...](e(elt) for elt in getattr(n, "elts", [])),
+            ast.List: lambda n, e: list[object](e(elt) for elt in getattr(n, "elts", [])),
+            ast.Call: _eval_call,
+            ast.Name: lambda n, e: _eval_name(n),
+            ast.UnaryOp: _eval_unary_op,
+        },
+    )
 
 
-def _safe_parse_key(key_str: str):
+def _safe_parse_key(key_str: str) -> EagerValue:
     """Safely parse a stringified indexing key.
 
     Args:
@@ -145,7 +154,7 @@ def _safe_parse_key(key_str: str):
     tree = ast.parse(key_str, mode="eval").body
     evaluators = _get_node_evaluators()
 
-    def _eval(node: ast.AST):
+    def _eval(node: ast.AST) -> EagerValue:
         """Evaluate _eval operation.
 
         Args:

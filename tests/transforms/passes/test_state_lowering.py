@@ -1,8 +1,13 @@
+"""Tests for test_state_lowering."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.state_lowering import state_lowering_pass
 
 
-def test_state_lowering_pass():
+def test_state_lowering_pass() -> None:
+    """Test function test_state_lowering_pass."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", attributes={"is_state": True, "name": "var_a"})
     n2 = IRNode(id="n2", op_type="Output", attributes={"is_state": True})
@@ -29,12 +34,14 @@ def test_state_lowering_pass():
     assert modified_again is False
 
 
-def test_state_lowering_empty_graph():
+def test_state_lowering_empty_graph() -> None:
+    """Test function test_state_lowering_empty_graph."""
     g = IRGraph()
     assert state_lowering_pass(g) is False
 
 
-def test_state_lowering_output_with_name():
+def test_state_lowering_output_with_name() -> None:
+    """Test function test_state_lowering_output_with_name."""
     g = IRGraph()
     n2 = IRNode(id="n2", op_type="Output", attributes={"is_state": True, "name": "var_b"})
     g.nodes["n2"] = n2
@@ -47,7 +54,8 @@ def test_state_lowering_output_with_name():
     assert "name" not in n2.attributes
 
 
-def test_state_lowering_input_without_name():
+def test_state_lowering_input_without_name() -> None:
+    """Test function test_state_lowering_input_without_name."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", attributes={"is_state": True})
     g.nodes["n1"] = n1

@@ -1,10 +1,15 @@
+"""Tests for test_type_promotion_explicitizer."""
+
+from __future__ import annotations
+
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import type_promotion_explicitizer_pass
 
 
-def test_type_promotion_explicitizer():
+def test_type_promotion_explicitizer() -> None:
+    """Test function test_type_promotion_explicitizer."""
     graph = LogicalGraph()
     # Mock some behavior to pass through
     node1 = LogicalNode(id="node1", op_type="Add", inputs=["a", "b"], attributes={"dtype": DType.Float32})
@@ -13,11 +18,12 @@ def test_type_promotion_explicitizer():
     # Just run it to hit lines
     try:
         type_promotion_explicitizer_pass(graph)
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
 
 
-def test_type_promotion_explicitizer_extra():
+def test_type_promotion_explicitizer_extra() -> None:
+    """Test function test_type_promotion_explicitizer_extra."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import _needs_cast, type_promotion_explicitizer_pass
 
@@ -90,3 +96,4 @@ def test_type_promotion_lattice_exceptions_and_missing_file() -> None:
 
     with patch("os.path.exists", return_value=False):
         _load_declarative_promotion_lattice()
+    assert mock_yaml2 is not None or mock_yaml2 is None

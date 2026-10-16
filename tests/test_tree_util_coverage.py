@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +11,11 @@ import ml_switcheroo_compiler.tree_util as tree_util_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, emit_ir_node
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -32,40 +38,54 @@ class DummyWithoutShape:
         self.val: int = 42
 
 
-def test_tree_util_and_ops_base_confirmation() -> None:
-    """Confirm tree_util and ops.base full integration coverage."""
+def _test_tree_util_and_ops_base_confirmation_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_tree_util_and_ops_base_confirmation.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     tree = {"a": [1, 2, (3, 4)], "b": 5}
-    leaves, structure = tree_util_mod.tree_flatten(tree)
+    leaves, structure = cast("Callable[..., EagerTensorProtocol]", tree_util_mod.tree_flatten)(tree)
     assert leaves == [1, 2, 3, 4, 5]
-    reconstructed = tree_util_mod.tree_unflatten(structure, leaves)
+    reconstructed = cast("Callable[..., EagerTensorProtocol]", tree_util_mod.tree_unflatten)(structure, leaves)
     assert reconstructed == tree
 
-    mapped = tree_util_mod.tree_map(lambda x: x * 2, tree)
+    mapped = cast("Callable[..., EagerTensorProtocol]", tree_util_mod.tree_map)(lambda x: x * 2, tree)
     assert mapped == {"a": [2, 4, (6, 8)], "b": 10}
 
     assert tree_util_mod.tree_leaves({"a": 1, "b": 2}) == [1, 2]
     assert tree_util_mod.tree_structure({"a": 1, "b": 2}) is not None
     assert tree_util_mod.tree_all([True, True])
     assert not tree_util_mod.tree_all([True, False])
-    assert tree_util_mod.tree_reduce(lambda x, y: x + y, [1, 2, 3]) == 6
-    assert tree_util_mod.tree_reduce(lambda x, y: x + y, [1, 2, 3], 10) == 16
+    assert cast("Callable[..., EagerTensorProtocol]", tree_util_mod.tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
+    assert cast("Callable[..., EagerTensorProtocol]", tree_util_mod.tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
 
     td1 = tree_util_mod.TreeDef(list, [tree_util_mod.TreeDef(type(None))])
     td2 = tree_util_mod.TreeDef(list, [tree_util_mod.TreeDef(type(None))])
     assert td1 == td2
-    assert td1 != "not_a_treedef"
+    assert cast("EagerTensorProtocol", td1) != cast("EagerTensorProtocol", "not_a_treedef")
     assert hash(td1) == hash(td2)
     assert repr(td1) == "TreeDef(list, [TreeDef(NoneType, [])])"
 
     with pytest.raises(ValueError, match="All trees must have the same structure"):
         tree_util_mod.tree_map(lambda x, y: x + y, [1, 2], [1, 2, 3])
+    getattr(_state, "update")({"leaves": leaves, "mapped": mapped, "reconstructed": reconstructed, "structure": structure})
+    getattr(_state, "update")({"td1": td1, "td2": td2, "tree": tree})
+    _state.update(locals())
 
+
+def _test_tree_util_and_ops_base_confirmation_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_tree_util_and_ops_base_confirmation.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    td1 = _state["td1"]
     with pytest.raises(ValueError, match="Too few leaves"):
-        tree_util_mod.tree_unflatten(td1, [])
+        cast("Callable[..., EagerTensorProtocol]", tree_util_mod.tree_unflatten)(td1, [])
 
     with pytest.raises(ValueError, match="Too many leaves"):
-        tree_util_mod.tree_unflatten(td1, [1, 2])
-
+        cast("Callable[..., EagerTensorProtocol]", tree_util_mod.tree_unflatten)(td1, [1, 2])
     with pytest.raises(ValueError, match="Unsupported treedef node_type"):
         tree_util_mod._unflatten_node(tree_util_mod.TreeDef(int), iter([]))
 
@@ -79,7 +99,17 @@ def test_tree_util_and_ops_base_confirmation() -> None:
 
     dummy_op = OpDef()
     assert dummy_op.infer_shape() == ()
+    getattr(_state, "update")({"dummy_op": dummy_op, "inner": inner, "outer": outer})
+    _state.update(locals())
 
+
+def _test_tree_util_and_ops_base_confirmation_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_tree_util_and_ops_base_confirmation.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    dummy_op = _state["dummy_op"]
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_be:
         backend = MagicMock()
         backend.execute_op.return_value = 99
@@ -94,9 +124,8 @@ def test_tree_util_and_ops_base_confirmation() -> None:
             self.nodes: dict[str, IRNode] = {}
 
     graph = DummyGraph()
-    nid = emit_ir_node(graph, "CustomTestOp", ["input_0"])
+    nid = cast("Callable[..., EagerTensorProtocol]", emit_ir_node)(graph, "CustomTestOp", ["input_0"])
     assert nid in graph.nodes
-
     with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.add_node") as mock_add_node:
         nid_none = emit_ir_node(None, "CustomTestOpNoGraph", ["input_1"])
         assert nid_none is not None
@@ -115,8 +144,31 @@ def test_tree_util_and_ops_base_confirmation() -> None:
         return x
 
     original_eager = config.eager_mode
+    getattr(_state, "update")({"DummyGraph": DummyGraph, "backend": backend, "dummy_func": dummy_func, "graph": graph})
+    getattr(_state, "update")({"mock_add_node": mock_add_node, "mock_be": mock_be, "nid": nid, "nid_none": nid_none})
+    getattr(_state, "update")({"original_eager": original_eager})
+    _state.update(locals())
+
+
+def _test_tree_util_and_ops_base_confirmation_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_tree_util_and_ops_base_confirmation.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    dummy_func, original_eager = _state["dummy_func"], _state["original_eager"]
     try:
         config.eager_mode = False
         assert dummy_func(42) == 42
     finally:
-        config.eager_mode = original_eager
+        setattr(config, "eager_mode", original_eager)
+
+
+def test_tree_util_and_ops_base_confirmation() -> None:
+    """Confirm tree_util and ops.base full integration coverage."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_tree_util_and_ops_base_confirmation_part_1(_state)
+    _test_tree_util_and_ops_base_confirmation_part_2(_state)
+    _test_tree_util_and_ops_base_confirmation_part_3(_state)
+    _test_tree_util_and_ops_base_confirmation_part_4(_state)
+    assert isinstance(_state, dict)

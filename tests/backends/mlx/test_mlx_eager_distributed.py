@@ -1,8 +1,17 @@
+"""Tests for test_mlx_eager_distributed."""
+
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_mlx_eager_distributed_all_reduce_fallback():
+
+def test_mlx_eager_distributed_all_reduce_fallback() -> None:
+    """Test function test_mlx_eager_distributed_all_reduce_fallback."""
     mock_mx = MagicMock()
     mock_tensor = MagicMock()
     mock_tensor.tolist.return_value = [1.0]
@@ -12,10 +21,11 @@ def test_mlx_eager_distributed_all_reduce_fallback():
 
         with patch("builtins.hasattr", return_value=False):
             res = _mlx_all_reduce(mock_mx, mock_tensor)
-            assert res.tolist() == [1.0]
+            assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [1.0]
 
 
-def test_mlx_eager_distributed_all_gather_fallback():
+def test_mlx_eager_distributed_all_gather_fallback() -> None:
+    """Test function test_mlx_eager_distributed_all_gather_fallback."""
     mock_mx = MagicMock()
     mock_tensor = MagicMock()
     mock_gathered = MagicMock()
@@ -27,11 +37,12 @@ def test_mlx_eager_distributed_all_gather_fallback():
 
         with patch("builtins.hasattr", return_value=False):
             res = _mlx_all_gather(mock_mx, mock_tensor)
-            assert res.shape == (1, 1)
+            assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1)
             mock_mx.expand_dims.assert_called_once_with(mock_tensor, axis=0)
 
 
-def test_mlx_eager_distributed_all_to_all():
+def test_mlx_eager_distributed_all_to_all() -> None:
+    """Test function test_mlx_eager_distributed_all_to_all."""
     mock_mx = MagicMock()
     mock_tensor = MagicMock()
     mock_dist = MagicMock()

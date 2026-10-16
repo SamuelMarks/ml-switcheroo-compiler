@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Protocol, Union
+from typing import Protocol, Union, cast
 
 import numpy as np
 
@@ -22,7 +22,7 @@ class RandomDistributionConfig(Protocol):
 class LookupTableProtocol(Protocol):
     """Protocol for table objects supporting lookup."""
 
-    def lookup(self, keys: np.ndarray) -> np.ndarray:
+    def lookup(self, keys: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Lookup keys in table.
 
         Args:
@@ -39,7 +39,7 @@ def _np_normal(
     backend_module: ModuleType,
     shape: Union[tuple[int, ...], list[int], int],
     **kwargs: Union[str, float, int, RandomDistributionConfig, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate normal distribution random sampling.
 
     Args:
@@ -54,7 +54,7 @@ def _np_normal(
     config = kwargs.get("config")
     mean = getattr(config, "mean", 0.0) if config else 0.0
     stddev = getattr(config, "stddev", 1.0) if config else 1.0
-    return np.random.normal(loc=mean, scale=stddev, size=shape).astype(dtype)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("Uniform")
@@ -62,7 +62,7 @@ def _np_uniform(
     backend_module: ModuleType,
     shape: Union[tuple[int, ...], list[int], int],
     **kwargs: Union[str, float, int, RandomDistributionConfig, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate uniform distribution random sampling.
 
     Args:
@@ -81,15 +81,15 @@ def _np_uniform(
     maxval = getattr(config, "maxval", 1.0) if config else 1.0
     if maxval is None:
         maxval = 1.0
-    return np.random.uniform(low=minval, high=maxval, size=shape).astype(dtype)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("StatelessSplit")
 def _np_stateless_split(
     backend_module: ModuleType,
-    seed: Union[np.ndarray, list[Union[int, str]], int, str],
+    seed: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[Union[int, str]], int, str],
     **kwargs: Union[int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate stateless PRNG key split.
 
     Args:
@@ -120,10 +120,10 @@ def _np_stateless_split(
 @numpy_eager_registry.register("Lookup")
 def _np_lookup(
     backend_module: ModuleType,
-    table: Union[dict[Union[int, str], Union[int, float]], LookupTableProtocol, np.ndarray, int],
-    keys: Union[np.ndarray, list[Union[int, str]], int, str],
+    table: Union[dict[Union[int, str], Union[int, float]], LookupTableProtocol, np.ndarray[tuple[int, ...], np.dtype[np.generic]], int],
+    keys: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[Union[int, str]], int, str],
     **kwargs: Union[int, float, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate lookup table query on keys.
 
     Args:
@@ -139,7 +139,7 @@ def _np_lookup(
     arr = np.asarray(keys)
     default_value = kwargs.get("default_value", 0)
     if isinstance(table, dict):
-        return np.vectorize(lambda k: table.get(k, default_value))(arr)
+        return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.vectorize(lambda k: table.get(k, default_value))(arr))
     if hasattr(table, "lookup"):
         return table.lookup(arr)
     return np.full_like(arr, default_value, dtype=np.int32)

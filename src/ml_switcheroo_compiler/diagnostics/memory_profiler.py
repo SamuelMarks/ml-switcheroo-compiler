@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Memory profiling module."""
 
 from __future__ import annotations

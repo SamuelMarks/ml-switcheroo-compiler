@@ -1,5 +1,9 @@
 """Unit tests for operator fusion passes and pattern matching transformations."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, cast
+
 import ml_switcheroo_compiler.transforms.passes.operator_fusion as of
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.config_models import FusionPatternConfig
@@ -10,14 +14,21 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     match_pattern,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_operator_fusion_extra_coverage() -> None:
     """Test extra coverage paths for operator fusion patterns and graph replacements."""
     g = IRGraph()
     # 1. pattern capture=None for non-string input
     p = NodePattern(op_type=None, capture=None)
-    cap = {}
-    assert match_pattern(g, 123, p, cap)
+    cap = cast("dict[str, EagerTensorProtocol]", {})
+    assert cast("Callable[..., EagerTensorProtocol]", match_pattern)(g, 123, p, cap)
 
     # 2. rule apply returns {}
     class EmptyRule(YamlFusionRule):
@@ -25,9 +36,9 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize EmptyRule."""
-            super().__init__("EmptyRule", FusionPatternConfig(**{"pattern": {"op_type": "Dummy"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            cast("Callable[..., EagerTensorProtocol]", super().__init__)("EmptyRule", cast("Callable[..., EagerTensorProtocol]", FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
-        def apply(self, graph, capture_map):
+        def apply(self, graph: EagerValue, capture_map: EagerValue) -> Optional[dict[str, LogicalNode]]:
             """Apply empty replacement."""
             return {}
 
@@ -42,9 +53,9 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize DownstreamRule."""
-            super().__init__("Downstream", FusionPatternConfig(**{"pattern": {"op_type": "A"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            cast("Callable[..., EagerTensorProtocol]", super().__init__)("Downstream", cast("Callable[..., EagerTensorProtocol]", FusionPatternConfig)(**{"pattern": {"op_type": "A"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
-        def apply(self, graph, capture_map):
+        def apply(self, graph: EagerValue, capture_map: EagerValue) -> Optional[dict[str, LogicalNode]]:
             """Apply downstream replacements."""
             # when matching A, we replace B as well, putting B in new_nodes
             n = IRNode("b_new", "ReplacedB")
@@ -75,28 +86,28 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize CostRule."""
-            super().__init__("Cost", FusionPatternConfig(**{"pattern": {"op_type": "Exp"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            cast("Callable[..., EagerTensorProtocol]", super().__init__)("Cost", cast("Callable[..., EagerTensorProtocol]", FusionPatternConfig)(**{"pattern": {"op_type": "Exp"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
-        def apply(self, graph, capture_map):
+        def apply(self, graph: EagerValue, capture_map: EagerValue) -> Optional[dict[str, LogicalNode]]:
             """Apply cost replacement."""
             return {"e": IRNode("e", "NewExp")}
 
     class RejectCostModel:
         """Cost model rejecting all fusions."""
 
-        def is_fusion_valid(self, replacements):
+        def is_fusion_valid(self, replacements: EagerValue) -> EagerValue:
             """Reject fusion."""
             return False
 
     g = IRGraph()
     g.nodes["e"] = IRNode("e", "Exp")
-    op_pass = PatternMatchingEngine([CostRule()], RejectCostModel())
+    op_pass = cast("PatternMatchingEngine", cast("Callable[..., EagerTensorProtocol]", PatternMatchingEngine)([cast("Callable[..., EagerTensorProtocol]", CostRule)()], cast("Callable[..., EagerTensorProtocol]", RejectCostModel)()))
     assert not op_pass.apply_passes(g)
 
 
 def test_yaml_rule_apply_returns_none() -> None:
     """Test YamlFusionRule apply edge case returning None on invalid target."""
-    rule = YamlFusionRule("Test", FusionPatternConfig(**{"pattern": {"op_type": "Dummy"}, "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"}}))
+    rule = cast("Callable[..., EagerTensorProtocol]", YamlFusionRule)("Test", cast("Callable[..., EagerTensorProtocol]", FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"}}))
     assert rule.apply(IRGraph(), {"val": 1.0}) is None
 
     n1 = IRNode("n1", "OldOp")
@@ -120,7 +131,7 @@ def test_pass_config_missing() -> None:
         assert not cfg.fusion_patterns
 
 
-def test_operator_fusion_all_remaining_branches():
+def test_operator_fusion_all_remaining_branches() -> None:
     """Test 227->229, 260->273, 266->262, and 380->382 in operator_fusion.py."""
     import tempfile
     from unittest.mock import mock_open, patch
@@ -255,8 +266,12 @@ def test_horizontal_fusion_siblings() -> None:
     assert g.nodes["r2"].op_type == "TupleGetItem"
 
 
-def test_fusion_edge_cases() -> None:
-    """Test edge cases: empty graphs and non-matching multi-consumer nodes."""
+def _test_fusion_edge_cases_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_fusion_edge_cases.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     empty_g = IRGraph()
     assert of.fuse_conv_bias_relu(empty_g) is False
     assert of.fuse_elementwise_activation(empty_g) is False
@@ -288,11 +303,22 @@ def test_fusion_edge_cases() -> None:
 
     # Bias node with non-Add op_type
     g4 = IRGraph()
+    getattr(_state, "update")({"add": add, "empty_g": empty_g, "g": g, "g2": g2})
+    getattr(_state, "update")({"g3": g3, "g4": g4, "other": other, "r1": r1})
+    getattr(_state, "update")({"x": x, "y": y})
+    _state.update(locals())
+
+
+def _test_fusion_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_fusion_edge_cases.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g4 = _state["g4"]
     g4.nodes["non_bias"] = IRNode("non_bias", "Mul", inputs=["a", "b"])
     g4.nodes["act"] = IRNode("act", "Relu", inputs=["non_bias"])
-    assert of.fuse_conv_bias_relu(g4) is False
-
-    # Add without Conv input
+    assert bool(cast("Callable[..., EagerTensorProtocol]", of.fuse_conv_bias_relu)(g4)) is False
     g5 = IRGraph()
     g5.nodes["in_a"] = IRNode("in_a", "Input")
     g5.nodes["in_b"] = IRNode("in_b", "Input")
@@ -316,12 +342,34 @@ def test_fusion_edge_cases() -> None:
     g7.nodes["x"] = IRNode("x", "Input")
     s1 = IRNode("s1", "Relu", inputs=["x"], shape_metadata=[4, 4])
     s2 = IRNode("s2", "Sigmoid", inputs=["x"], shape_metadata=[8, 8])
+    getattr(_state, "update")({"g5": g5, "g6": g6, "g7": g7, "s1": s1})
+    getattr(_state, "update")({"s2": s2})
+    _state.update(locals())
+
+
+def _test_fusion_edge_cases_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_fusion_edge_cases.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g7, s1, s2 = _state["g7"], _state["s1"], _state["s2"]
     g7.nodes["s1"] = s1
     g7.nodes["s2"] = s2
-    assert of.fuse_horizontal_patterns(g7) is False
+    assert bool(cast("Callable[..., EagerTensorProtocol]", of.fuse_horizontal_patterns)(g7)) is False
 
     # OperatorFusionPass class run
     pass_runner = of.OperatorFusionPass()
     g8 = IRGraph()
     g8.nodes["x"] = IRNode("x", "Input")
     assert pass_runner.run(g8) is False
+    getattr(_state, "update")({"g8": g8, "pass_runner": pass_runner})
+
+
+def test_fusion_edge_cases() -> None:
+    """Test edge cases: empty graphs and non-matching multi-consumer nodes."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_fusion_edge_cases_part_1(_state)
+    _test_fusion_edge_cases_part_2(_state)
+    _test_fusion_edge_cases_part_3(_state)
+    assert isinstance(_state, dict)

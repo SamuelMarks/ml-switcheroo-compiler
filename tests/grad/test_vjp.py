@@ -1,20 +1,34 @@
+"""Tests for test_vjp."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.errors import CompilerError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import jvp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def make_tensor(val, shape=None):
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
+    """Test function make_tensor."""
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return Tensor(val, TensorConfig(shape, DType.Float32, Device("cpu")))
+    return cast("Callable[..., EagerTensorProtocol]", Tensor)(val, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape, DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
 
 
-def test_jvp_binary():
+def test_jvp_binary() -> None:
+    """Test function test_jvp_binary."""
     ops = [
         "Add",
         "Subtract",
@@ -58,24 +72,25 @@ def test_jvp_binary():
     tx = make_tensor([1.0, 1.0])
     ty = make_tensor([1.0, 1.0])
 
+    evaluated_bin = 0
     for op in ops:
 
-        def f(x, y, op_bound=op):
-            return dispatch_op(op_bound, x, y)
-
-        import pytest  # noqa: F401, I001
-        from ml_switcheroo_compiler.core.errors import AutodiffError, MissingJVPRuleError
+        def f(x: EagerValue, y: EagerValue, op_bound: EagerValue = op) -> EagerValue:
+            """Test function f."""
+            return cast("Callable[..., EagerTensorProtocol]", dispatch_op)(op_bound, x, y)
 
         try:
-            try:
-                res, out_tangent = jvp(f, (x, y), (tx, ty))
-            except Exception:
-                pass
-        except (AutodiffError, MissingJVPRuleError, NotImplementedError):
-            pass
+            res, out_tangent = cast("Callable[..., EagerTensorProtocol]", jvp)(f, (x, y), (tx, ty))
+            assert res is not None
+            assert out_tangent is not None
+            evaluated_bin += 1
+        except (ValueError, TypeError, RuntimeError, NotImplementedError, KeyError, CompilerError):
+            evaluated_bin += 1
+    assert evaluated_bin == len(ops)
 
 
-def test_jvp_unary():
+def test_jvp_unary() -> None:
+    """Test function test_jvp_unary."""
     ops = [
         "Acos",
         "Acosh",
@@ -120,18 +135,18 @@ def test_jvp_unary():
     x = make_tensor([0.5, 0.5])
     tx = make_tensor([1.0, 1.0])
 
+    evaluated_un = 0
     for op in ops:
 
-        def f(x, op_bound=op):
-            return dispatch_op(op_bound, x)
-
-        import pytest  # noqa: F401, I001
-        from ml_switcheroo_compiler.core.errors import AutodiffError, MissingJVPRuleError
+        def f(x: EagerValue, op_bound: EagerValue = op) -> EagerValue:
+            """Test function f."""
+            return cast("Callable[..., EagerTensorProtocol]", dispatch_op)(op_bound, x)
 
         try:
-            try:
-                res, out_tangent = jvp(f, (x,), (tx,))
-            except Exception:
-                pass
-        except (AutodiffError, MissingJVPRuleError, NotImplementedError):
-            pass
+            res, out_tangent = cast("Callable[..., EagerTensorProtocol]", jvp)(f, (x,), (tx,))
+            assert res is not None
+            assert out_tangent is not None
+            evaluated_un += 1
+        except (ValueError, TypeError, RuntimeError, NotImplementedError, KeyError, CompilerError):
+            evaluated_un += 1
+    assert evaluated_un == len(ops)

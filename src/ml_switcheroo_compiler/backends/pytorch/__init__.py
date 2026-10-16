@@ -1,8 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Pytorch Code Generator Package."""
 
 import importlib.util
 import sys
+from typing import Callable, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 try:
     _has_pkg = importlib.util.find_spec("torch") is not None
@@ -16,8 +18,8 @@ from .eager import execute_op
 from .generator import PyTorchCodeGenerator
 from .types import array, asarray, item, zeros
 
-PyTorchCodeGenerator.zeros = classmethod(zeros)
-PyTorchCodeGenerator.array = classmethod(array)
-PyTorchCodeGenerator.asarray = classmethod(asarray)
-PyTorchCodeGenerator.item = classmethod(item)
-PyTorchCodeGenerator.execute_op = classmethod(execute_op)
+type.__setattr__(PyTorchCodeGenerator, "zeros", classmethod(zeros))
+type.__setattr__(PyTorchCodeGenerator, "array", classmethod(array))
+type.__setattr__(PyTorchCodeGenerator, "asarray", classmethod(asarray))
+type.__setattr__(PyTorchCodeGenerator, "item", classmethod(item))
+type.__setattr__(PyTorchCodeGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", classmethod)(execute_op))

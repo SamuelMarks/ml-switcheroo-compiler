@@ -1,9 +1,15 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Core abstractions and logic definitions for generator.py."""
+
+from __future__ import annotations
+
+from typing import cast
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 
 from .mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXShapeOpsVisitor, MLXVisionVisitor
 
@@ -122,7 +128,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         )
 
     @classmethod
-    def save_gguf(cls, file: str, arrays, metadata=None) -> None:
+    def save_gguf(cls, file: str, arrays: EagerValue, metadata: EagerValue = None) -> None:
         """Save a dictionary of arrays to GGUF format.
 
         Args:
@@ -132,15 +138,15 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if hasattr(mx, "save_gguf"):
+        save_fn = getattr(mx, "save_gguf", None)
+        if save_fn is not None:
             try:
-                mx.save_gguf(file, arrays, metadata or {})
+                save_fn(file, arrays, metadata or {})
             except TypeError:
-                save_args: list[object] = [file, arrays]
-                mx.save_gguf(*save_args)  # type: ignore[call-arg]
+                save_fn(file, arrays)
 
     @classmethod
-    def set_default_stream(cls, stream) -> None:
+    def set_default_stream(cls, stream: EagerValue) -> None:
         """Set the default stream.
 
         Args:
@@ -149,7 +155,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         import mlx.core as mx
 
         if hasattr(mx, "set_default_stream"):
-            mx.set_default_stream(stream)
+            getattr(mx, "set_default_stream")(stream)
 
     @classmethod
     def set_memory_limit(cls, limit: int) -> None:
@@ -221,7 +227,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         return res
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII"):
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
         """Load.
 
         Args:
@@ -239,7 +245,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         return mx.load(filepath)
 
     @classmethod
-    def save(cls: type, file: str, arr, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -250,10 +256,10 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        mx.save(file, arr)
+        getattr(mx, "save")(file, arr)
 
     @classmethod
-    def savez(cls: type, file: str, *args, **kwds) -> None:
+    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Savez.
 
         Args:
@@ -263,12 +269,12 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        data: dict = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
-        mx.save_safetensors(file, data)
+        getattr(mx, "save_safetensors")(file, data)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args, **kwds) -> None:
+    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Savez compressed.
 
         Args:
@@ -278,12 +284,12 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        data: dict = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         # MLX doesn't have a specific compressed method, safetensors is efficient
-        mx.save_safetensors(file, data)
+        getattr(mx, "save_safetensors")(file, data)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into an ahead-of-time (AOT) callable using mx.compile.
 
         Args:
@@ -298,7 +304,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         try:
             import mlx.core as mx
 
-            scope: dict[str, object] = {}
+            scope: dict[str, EagerValue] = {}
             exec(self.generate(), scope)
             model_cls = scope.get("CompiledModel")
             if model_cls is None or not callable(model_cls):
@@ -306,9 +312,9 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
             model_instance = model_cls()
             shapeless = bool(kwargs.get("shapeless", False))
-            compiled_fn = mx.compile(model_instance, shapeless=shapeless)
+            compiled_fn = getattr(mx, "compile")(model_instance, shapeless=shapeless)
 
-            def aot_mlx_runner(*w_args: object, **w_kwargs: object) -> object:
+            def aot_mlx_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
                 """Execute AOT compiled MLX graph function.
 
                 Args:
@@ -318,14 +324,14 @@ class MLXCodeGenerator(ClassBasedGenerator):
                 Returns:
                     object: Computed outputs.
                 """
-                mlx_args = [mx.array(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return compiled_fn(*mlx_args, **w_kwargs)
+                mlx_args = [getattr(mx, "array")(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return cast(EagerValue, compiled_fn(*mlx_args, **w_kwargs))
 
             return aot_mlx_runner
         except Exception:
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-            def fallback_forward(*fn_args: object) -> object:
+            def fallback_forward(*fn_args: EagerValue) -> EagerValue:
                 """Execute interpreter graph evaluation fallback.
 
                 Args:
@@ -335,17 +341,17 @@ class MLXCodeGenerator(ClassBasedGenerator):
                     object: Evaluated output tensors.
                 """
                 input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
-                inputs: dict[str, object] = {}
+                inputs: dict[str, EagerValue] = {}
                 for i, inp_node in enumerate(input_nodes):
                     if i < len(fn_args):
                         arg_val = fn_args[i]
                         inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-                evaluated = evaluate_graph(graph, inputs=inputs)
+                evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
                 if hasattr(graph, "outputs") and graph.outputs:
                     if len(graph.outputs) == 1:
-                        return evaluated.get(graph.outputs[0])
+                        return cast(EagerValue, evaluated.get(graph.outputs[0]))
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return evaluated
+                return cast(EagerValue, evaluated)
 
             return fallback_forward
 

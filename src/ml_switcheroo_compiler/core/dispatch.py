@@ -1,11 +1,13 @@
-# ruff: noqa: E402, E501, F403
 """Dispatch utilities for the ml-switcheroo compiler."""
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from collections.abc import Sequence
+from typing import Union, cast
+
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
 
 
-def dispatch(module_name: str, func_name: str, *args, **kwargs):
+def dispatch(module_name: str, func_name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Dynamically dispatch a function to the active backend.
 
     Args:
@@ -24,7 +26,7 @@ def dispatch(module_name: str, func_name: str, *args, **kwargs):
         if hasattr(backend.module, module_name):
             submodule = getattr(backend.module, module_name)
             if hasattr(submodule, func_name):
-                return getattr(submodule, func_name)(*args, **kwargs)
+                return cast(EagerValue, getattr(submodule, func_name)(*args, **kwargs))
         raise ValueError(f"{func_name} is not supported in the active backend.")
     from ml_switcheroo_compiler.ops.registry import get_op
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -35,4 +37,4 @@ def dispatch(module_name: str, func_name: str, *args, **kwargs):
     except Exception:
         out_shape = ()
     out_dtype = getattr(args[0], "dtype", "float32") if args else "float32"
-    return _emit_shape_node(func_name, list(args), kwargs, out_shape, out_dtype)
+    return _emit_shape_node(func_name, list(args), kwargs, cast("Sequence[Union[int, str]]", out_shape), out_dtype)

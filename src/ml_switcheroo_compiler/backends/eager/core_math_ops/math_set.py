@@ -1,16 +1,16 @@
-# ruff: noqa: E402, E501, F403
 """math_set module."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import Any
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Intersect1d")
-def _intersect1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _intersect1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _intersect1d operation.
 
     Args:
@@ -21,11 +21,11 @@ def _intersect1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.intersect1d(*args, **kwargs)
+    return cast(EagerValue, getattr(backend_module, "intersect1d")(*args, **kwargs))
 
 
 @global_eager_registry.register("Union1d")
-def _np_union1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_union1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_union1d operation.
 
     Args:
@@ -38,14 +38,12 @@ def _np_union1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.union1d(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.union1d(*args, **kwargs))
 
 
 @global_eager_registry.register("Unique")
-def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unique(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_unique operation.
 
     Args:
@@ -58,14 +56,12 @@ def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.unique(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.unique(*args, **kwargs))
 
 
 @global_eager_registry.register("UniqueAll")
-def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_uniqueall(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_uniqueall operation.
 
     Args:
@@ -78,9 +74,7 @@ def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
+        return cast(EagerValue, func(*args, **kwargs))
     arr = np.asarray(args[0]).flatten()
     values, indices = np.unique(arr, return_index=True)
     val_to_idx = {v: i for i, v in enumerate(values.tolist())}
@@ -93,7 +87,7 @@ def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("UniqueCounts")
-def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_uniquecounts(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_uniquecounts operation.
 
     Args:
@@ -106,12 +100,10 @@ def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
+        return cast(EagerValue, func(*args, **kwargs))
     arr = np.asarray(args[0]).flatten()
     values = np.unique(arr)
-    counts_map: dict[Any, int] = {}
+    counts_map: dict[EagerValue, int] = {}
     for elem in arr.tolist():
         counts_map[elem] = counts_map.get(elem, 0) + 1
     counts = np.array([counts_map[v] for v in values.tolist()], dtype=np.intp)
@@ -119,7 +111,7 @@ def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("UniqueValues")
-def _np_uniquevalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_uniquevalues(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_uniquevalues operation.
 
     Args:
@@ -132,7 +124,5 @@ def _np_uniquevalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.unique(args[0])
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.unique(args[0]))

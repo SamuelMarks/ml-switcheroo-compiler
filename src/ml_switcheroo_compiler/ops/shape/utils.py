@@ -1,21 +1,19 @@
-"""Module utils.py."""
+"""Utility functions for shape ops."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Utility functions for shape ops."""
-
-
 # pylint: disable=duplicate-code
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Callable, cast
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.registry import register_util
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
@@ -24,11 +22,11 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 @register_util("_emit_shape_node")
 def _emit_shape_node(
     op_type: str,
-    inputs: Sequence[object],
-    attrs,
-    out_shape,
-    out_dtype: DType,
-):
+    inputs: Sequence[Tensor | TensorLike | bytes | EagerValue],
+    attrs: Mapping[str, EagerValue] | None,
+    out_shape: Sequence[int | str],
+    out_dtype: DType | str | None,
+) -> Tensor:
     """Emit a logical shape node to the tracer and returns a new Tensor.
 
     Args:
@@ -45,20 +43,20 @@ def _emit_shape_node(
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
 
-    node = LogicalNode(
+    node = cast("Callable[..., LogicalNode]", LogicalNode)(
         id=out_id,
         op_type=op_type,
         inputs=input_ids,
-        attributes=attrs,
+        attributes=cast("dict[str, AttributeValue]", attrs or {}),
         shape_metadata=out_shape,
     )
     global_tracing_state.add_node(node)
 
-    dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
+    dtype_val = out_dtype.value if isinstance(out_dtype, DType) else str(out_dtype or "float32")
 
-    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
+    proxy = ProxyTensor(id=out_id, shape=tuple(out_shape), dtype=dtype_val)
     device = getattr(inputs[0], "device", config.default_device) if len(inputs) > 0 else config.default_device
-    return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))
+    return Tensor(proxy, TensorConfig(tuple(out_shape), out_dtype, device))
 
 
 def compute_reduction_shape(x_shape: tuple[int, ...], axes: tuple[int, ...], keepdims: bool) -> tuple[int, ...]:

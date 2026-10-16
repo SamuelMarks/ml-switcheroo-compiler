@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Provide utilities for debugging tensor shapes and visualizing logical IR graphs.
 
 This module includes functions to trace model execution shapes into Markdown tables, as
@@ -61,7 +60,7 @@ def debug_shapes(
 
         out = model_func(dummy_input)
         if hasattr(out, "shape"):
-            res += row_fmt.format(name="output", shape=out.shape, dtype="float64")
+            res += row_fmt.format(name="output", shape=getattr(out, "shape"), dtype="float64")
         else:
             res += row_fmt.format(name="output", shape="unknown", dtype="float64")
     except RuntimeError:

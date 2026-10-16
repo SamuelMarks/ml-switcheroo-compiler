@@ -1,6 +1,9 @@
 """Exhaustive unit tests for generalized hardware backend emitters (CUDA, ROCm, Metal) and runner dispatch."""
 
+from __future__ import annotations
+
 import ctypes
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,6 +17,11 @@ from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, Meta
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_calculate_hardware_launch_config() -> None:
@@ -42,7 +50,7 @@ def test_calculate_hardware_launch_config() -> None:
     assert g3[2] >= 1
 
     # 4D with symbolic / string dim handling
-    b4, g4 = calculate_hardware_launch_config(["batch", 3, 32, 32])
+    b4, g4 = cast("Callable[..., EagerTensorProtocol]", calculate_hardware_launch_config)(["batch", 3, 32, 32])
     assert b4[0] == 16
     assert g4[0] == 2
 
@@ -51,28 +59,28 @@ def test_generate_nd_coordinate_offset_logic() -> None:
     """Verify N-dimensional coordinate-to-linear-offset index calculation generation for CUDA, ROCm and Metal."""
     # 1D contiguous
     lines_1d = generate_nd_coordinate_offset_logic((100,), language="cuda")
-    assert any("offset = idx" in l for l in lines_1d)
+    assert any("offset = idx" in ln for ln in lines_1d)
 
     # 1D strided
     lines_1d_s = generate_nd_coordinate_offset_logic((100,), strides=[4], language="metal")
-    assert any("offset = idx * 4" in l for l in lines_1d_s)
+    assert any("offset = idx * 4" in ln for ln in lines_1d_s)
 
     # 2D contiguous
     lines_2d = generate_nd_coordinate_offset_logic((10, 20), language="cuda")
-    assert any("rem_idx" in l for l in lines_2d)
-    assert any("c_idx_1 = rem_idx % 20" in l for l in lines_2d)
+    assert any("rem_idx" in ln for ln in lines_2d)
+    assert any("c_idx_1 = rem_idx % 20" in ln for ln in lines_2d)
 
     # 3D with explicit strides
     lines_3d = generate_nd_coordinate_offset_logic((2, 4, 8), strides=[32, 8, 1], language="hip")
-    assert any("offset = (c_idx_0 * 32) + (c_idx_1 * 8) + c_idx_2" in l for l in lines_3d)
+    assert any("offset = (c_idx_0 * 32) + (c_idx_1 * 8) + c_idx_2" in ln for ln in lines_3d)
 
     # Zero stride / broadcast dim handling
     lines_bcast = generate_nd_coordinate_offset_logic((2, 4), strides=[0, 1], language="cuda")
-    assert any("offset = c_idx_1" in l for l in lines_bcast)
+    assert any("offset = c_idx_1" in ln for ln in lines_bcast)
 
     # Invalid non-integer shape elements fallback to 1
-    lines_invalid = generate_nd_coordinate_offset_logic(("invalid", None), language="cuda")
-    assert any("rem_idx" in l for l in lines_invalid)
+    lines_invalid = cast("Callable[..., EagerTensorProtocol]", generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
+    assert any("rem_idx" in ln for ln in lines_invalid)
 
 
 def test_cuda_generator_emits_nd_index_helpers() -> None:
@@ -111,7 +119,7 @@ def test_metal_generator_emits_nd_index_helpers() -> None:
     assert "inline int coords_to_offset_nd" in code
 
 
-def _mock_device_count(ptr: object) -> int:
+def _mock_device_count(ptr: EagerValue) -> int:
     """Mock device count setter for ctypes pointer.
 
     Args:
@@ -120,7 +128,7 @@ def _mock_device_count(ptr: object) -> int:
     Returns:
         int: Return code 0.
     """
-    getattr(ptr, "_obj", ptr).value = 1
+    setattr(getattr(ptr, "_obj", ptr), "value", 1)
     return 0
 
 

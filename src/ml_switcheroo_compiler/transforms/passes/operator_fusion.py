@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
 import glob
+import logging
 import os
-from typing import Union
+from typing import Callable, Union, cast
 
 import yaml
 
@@ -208,7 +208,7 @@ class PatternMatchingEngine:
         for rule in self.rules:
             capture_map: dict[str, str | IRNode] = {}
             if match_pattern(graph, node_id, rule.pattern, capture_map):
-                replacements: dict[str, IRNode] | None = rule.apply(graph, capture_map)
+                replacements: dict[str, IRNode] | None = getattr(rule, "apply")(graph, capture_map)
                 if replacements:
                     if self.cost_model and not self.cost_model.is_fusion_valid(replacements):
                         continue
@@ -219,7 +219,30 @@ class PatternMatchingEngine:
                     return True
         return False
 
-    def apply_passes(self, graph: IRGraph) -> bool:  # noqa: C901, PLR0912
+    @staticmethod
+    def _rewire_replaced_ids(
+        graph: IRGraph,
+        new_nodes: dict[str, IRNode],
+        id_map: dict[str, str],
+    ) -> None:
+        """Update node inputs and graph I/O references using the replaced node ID map.
+
+        Args:
+            graph (IRGraph): The target IRGraph being mutated.
+            new_nodes (dict[str, IRNode]): Updated dictionary of IRNodes.
+            id_map (dict[str, str]): Mapping from old node IDs to fused node IDs.
+        """
+        for n in new_nodes.values():
+            n.inputs = [id_map.get(in_id, in_id) for in_id in n.inputs]
+
+        if hasattr(graph, "inputs"):
+            graph.inputs = [id_map.get(in_id, in_id) for in_id in graph.inputs]
+        graph.outputs = [id_map.get(out_id, out_id) for out_id in graph.outputs]
+
+        graph.nodes.clear()
+        graph.nodes.update(new_nodes)
+
+    def apply_passes(self, graph: IRGraph) -> bool:
         """Apply the pattern matching rules to the graph.
 
         Args:
@@ -233,29 +256,13 @@ class PatternMatchingEngine:
         id_map: dict[str, str] = {}
 
         for node_id, node in graph.nodes.items():
-            matched_rule: bool = self._try_match_rules(graph, node_id, new_nodes, id_map)
-            if matched_rule:
+            if self._try_match_rules(graph, node_id, new_nodes, id_map):
                 optimized = True
-            else:
-                if node_id not in new_nodes:
-                    new_nodes[node_id] = node
+            elif node_id not in new_nodes:
+                new_nodes[node_id] = node
 
         if optimized:
-            for n in new_nodes.values():
-                for i, in_id in enumerate(n.inputs):
-                    if in_id in id_map:
-                        n.inputs[i] = id_map[in_id]
-
-            if hasattr(graph, "inputs"):
-                for i, in_id in enumerate(graph.inputs):
-                    if in_id in id_map:
-                        graph.inputs[i] = id_map[in_id]
-            for i, out_id in enumerate(graph.outputs):
-                if out_id in id_map:
-                    graph.outputs[i] = id_map[out_id]
-
-            graph.nodes.clear()
-            graph.nodes.update(new_nodes)
+            self._rewire_replaced_ids(graph, new_nodes, id_map)
         return optimized
 
 
@@ -290,7 +297,72 @@ def _load_pass_config() -> PassConfig:
     )
 
 
-def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRule]:  # noqa: C901, PLR0912
+def _load_yaml_fusion_dir(patterns_dir: str) -> list[FusionRule]:
+    """Load declarative YAML fusion rules from a directory.
+
+    Args:
+        patterns_dir (str): Directory containing fusion pattern YAML files.
+
+    Returns:
+        list[FusionRule]: List of parsed YamlFusionRule instances.
+    """
+    rules: list[FusionRule] = []
+    if not os.path.isdir(patterns_dir):
+        return rules
+
+    for yf in sorted(glob.glob(os.path.join(patterns_dir, "*.yaml"))):
+        try:
+            with open(yf) as f:
+                data = yaml.safe_load(f)
+            if isinstance(data, dict):
+                for rule_name, rule_data in data.items():
+                    if isinstance(rule_data, dict) and "pattern" in rule_data and "replacement" in rule_data:
+                        rules.append(YamlFusionRule(rule_name, FusionPatternConfig(**rule_data)))
+        except Exception:
+            continue
+    return rules
+
+
+def _load_global_fusion_patterns(global_yaml: str) -> list[FusionRule]:
+    """Load global declarative target fusion rules from fusion_patterns.yaml.
+
+    Args:
+        global_yaml (str): Path to the global fusion_patterns.yaml file.
+
+    Returns:
+        list[FusionRule]: List of parsed DeclarativeTargetFusionRule instances.
+    """
+    rules: list[FusionRule] = []
+    if not os.path.exists(global_yaml):
+        return rules
+
+    try:
+        with open(global_yaml) as f:
+            g_data = yaml.safe_load(f)
+        if isinstance(g_data, dict) and isinstance(g_data.get("patterns"), list):
+            for pat in g_data["patterns"]:
+                targets = pat.get("target", [])
+                if targets:
+                    curr_pat = NodePattern(
+                        op_type=targets[-1],
+                        capture="root",
+                        commutative=bool(pat.get("commutative", False)),
+                        wildcard=bool(pat.get("wildcard", False)),
+                        broadcast_dims=bool(pat.get("broadcast_dims", False)),
+                    )
+                    rules.append(
+                        DeclarativeTargetFusionRule(
+                            str(pat.get("name", "pattern")),
+                            curr_pat,
+                            str(pat.get("fused_op", "FusedOp")),
+                        )
+                    )
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    return rules
+
+
+def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRule]:
     """Automatically discover and load all fusion pattern YAMLs from fusion_patterns directory.
 
     Args:
@@ -299,49 +371,13 @@ def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRul
     Returns:
         list[FusionRule]: Loaded fusion rules from declarative pattern files.
     """
-    rules: list[FusionRule] = []
     load_defaults = patterns_dir is None
-    if patterns_dir is None:
-        patterns_dir = os.path.join(os.path.dirname(__file__), "fusion_patterns")
-    if os.path.isdir(patterns_dir):
-        yaml_files = sorted(glob.glob(os.path.join(patterns_dir, "*.yaml")))
-        for yf in yaml_files:
-            try:
-                with open(yf) as f:
-                    data = yaml.safe_load(f)
-                    if isinstance(data, dict):
-                        for rule_name, rule_data in data.items():
-                            if isinstance(rule_data, dict) and "pattern" in rule_data and "replacement" in rule_data:
-                                p_config = FusionPatternConfig(**rule_data)
-                                rules.append(YamlFusionRule(rule_name, p_config))
-            except Exception:
-                continue
+    resolved_dir = patterns_dir or os.path.join(os.path.dirname(__file__), "fusion_patterns")
+    rules = _load_yaml_fusion_dir(resolved_dir)
 
     if load_defaults:
         global_yaml = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fusion_patterns.yaml")
-        if os.path.exists(global_yaml):
-            try:
-                with open(global_yaml) as f:
-                    g_data = yaml.safe_load(f)
-                    if isinstance(g_data, dict) and "patterns" in g_data:
-                        for pat in g_data["patterns"]:
-                            rule_name = str(pat.get("name", "pattern"))
-                            fused_op = str(pat.get("fused_op", "FusedOp"))
-                            commutative = bool(pat.get("commutative", False))
-                            wildcard = bool(pat.get("wildcard", False))
-                            broadcast_dims = bool(pat.get("broadcast_dims", False))
-                            targets = pat.get("target", [])
-                            if targets:
-                                curr_pat = NodePattern(
-                                    op_type=targets[-1],
-                                    capture="root",
-                                    commutative=commutative,
-                                    wildcard=wildcard,
-                                    broadcast_dims=broadcast_dims,
-                                )
-                                rules.append(DeclarativeTargetFusionRule(rule_name, curr_pat, fused_op))
-            except Exception:
-                pass
+        rules.extend(_load_global_fusion_patterns(global_yaml))
 
     return rules
 
@@ -464,9 +500,9 @@ class MemoryAwareCostModel:
             return True
 
         if "max_fusion_memory_bytes" in self.config:
-            max_memory: int = int(self.config["max_fusion_memory_bytes"])
+            max_memory: int = int(cast(int, self.config["max_fusion_memory_bytes"]))
         elif "compute_intensity_metrics" in self.config and isinstance(self.config["compute_intensity_metrics"], dict):
-            max_memory = int(self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512))
+            max_memory = int(cast(int, self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512)))
         else:
             max_memory = 1024 * 1024 * 512
 
@@ -486,7 +522,7 @@ class MemoryAwareCostModel:
                 dtype: str = str(node.attributes.get("dtype", "float32"))
                 dtype_size: int = 4
                 if isinstance(memory_sizes, dict):
-                    dtype_size = int(memory_sizes.get(dtype, 4))
+                    dtype_size = int(cast(int, memory_sizes.get(dtype, 4)))
                 total_mem += elements * dtype_size
 
         return bool(total_mem <= max_memory)
@@ -514,7 +550,28 @@ ELEMENTWISE_OPS: set[str] = {
 }
 
 
-def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:  # noqa: C901, PLR0911, PLR0912
+_SCALAR_EXPR_TEMPLATES: dict[str, str] = {
+    "add": "({a} + {b})",
+    "sub": "({a} - {b})",
+    "mul": "({a} * {b})",
+    "div": "({a} / {b})",
+    "truedivide": "({a} / {b})",
+    "relu": "fmaxf(0.0f, {a})",
+    "sigmoid": "(1.0f / (1.0f + expf(-{a})))",
+    "neg": "(-{a})",
+    "abs": "fabsf({a})",
+    "exp": "expf({a})",
+    "log": "logf({a})",
+    "sqrt": "sqrtf({a})",
+    "tanh": "tanhf({a})",
+    "gelu": "(0.5f * {a} * (1.0f + tanhf(0.79788456f * ({a} + 0.044715f * {a} * {a} * {a}))))",
+    "silu": "({a} / (1.0f + expf(-{a})))",
+    "maximum": "fmaxf({a}, {b})",
+    "minimum": "fminf({a}, {b})",
+}
+
+
+def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:
     """Generate scalar expression snippet for an elementwise op.
 
     Args:
@@ -524,46 +581,28 @@ def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:  # noq
     Returns:
         str: C/C++ style scalar expression.
     """
-    op = op_type.lower()
     a = args[0] if args else "0.0f"
     b = args[1] if len(args) > 1 else "0.0f"
-
-    if op == "add":
-        return f"({a} + {b})"
-    if op == "sub":
-        return f"({a} - {b})"
-    if op == "mul":
-        return f"({a} * {b})"
-    if op in ("div", "truedivide"):
-        return f"({a} / {b})"
-    if op == "relu":
-        return f"fmaxf(0.0f, {a})"
-    if op == "sigmoid":
-        return f"(1.0f / (1.0f + expf(-{a})))"
-    if op == "neg":
-        return f"(-{a})"
-    if op == "abs":
-        return f"fabsf({a})"
-    if op == "exp":
-        return f"expf({a})"
-    if op == "log":
-        return f"logf({a})"
-    if op == "sqrt":
-        return f"sqrtf({a})"
-    if op == "tanh":
-        return f"tanhf({a})"
-    if op == "gelu":
-        return f"(0.5f * {a} * (1.0f + tanhf(0.79788456f * ({a} + 0.044715f * {a} * {a} * {a}))))"
-    if op == "silu":
-        return f"({a} / (1.0f + expf(-{a})))"
-    if op == "maximum":
-        return f"fmaxf({a}, {b})"
-    if op == "minimum":
-        return f"fminf({a}, {b})"
-    return a
+    template = _SCALAR_EXPR_TEMPLATES.get(op_type.lower())
+    return template.format(a=a, b=b) if template is not None else a
 
 
-def _fuse_single_edge(  # noqa: PLR0912
+def _extract_node_ops_and_expr(node: IRNode) -> tuple[list[str], str]:
+    """Extract the list of fused ops and scalar expression for an elementwise or fused node.
+
+    Args:
+        node (IRNode): Elementwise or FusedElementwise IR node.
+
+    Returns:
+        tuple[list[str], str]: List of constituent op names and scalar C expression string.
+    """
+    if node.op_type == "FusedElementwise":
+        return list(getattr(node.attributes.get("fused_ops", []), "__iter__")()), str(node.attributes.get("scalar_expr", "0.0f"))
+    args = [f"in_{k}" for k in range(len(node.inputs))]
+    return [node.op_type], _get_scalar_expression_snippet(node.op_type, args)
+
+
+def _fuse_single_edge(
     graph: IRGraph,
     node: IRNode,
     inp_id: str,
@@ -579,43 +618,19 @@ def _fuse_single_edge(  # noqa: PLR0912
         inp_index (int): Input slot index being replaced.
         producer (IRNode): Producer node being inlined.
     """
-    fused_ops: list[str] = []
-    if producer.op_type == "FusedElementwise":
-        fused_ops.extend(producer.attributes.get("fused_ops", []))
-        p_expr: str = str(producer.attributes.get("scalar_expr", "0.0f"))
-    else:
-        fused_ops.append(producer.op_type)
-        p_args = [f"in_{k}" for k in range(len(producer.inputs))]
-        p_expr = _get_scalar_expression_snippet(producer.op_type, p_args)
+    p_ops, p_expr = _extract_node_ops_and_expr(producer)
+    n_ops, n_expr = _extract_node_ops_and_expr(node)
+    fused_ops = p_ops + n_ops
 
-    if node.op_type == "FusedElementwise":
-        fused_ops.extend(node.attributes.get("fused_ops", []))
-        n_expr: str = str(node.attributes.get("scalar_expr", "0.0f"))
-    else:
-        fused_ops.append(node.op_type)
-        n_args = [f"in_{k}" for k in range(len(node.inputs))]
-        n_expr = _get_scalar_expression_snippet(node.op_type, n_args)
-
-    new_inputs: list[str] = []
-    for idx_in, inp in enumerate(node.inputs):
-        if idx_in == inp_index:
-            new_inputs.extend(producer.inputs)
-        else:
-            new_inputs.append(inp)
-
-    unique_inputs: list[str] = []
-    for inp in new_inputs:
-        if inp not in unique_inputs:
-            unique_inputs.append(inp)
+    new_inputs = list(node.inputs[:inp_index]) + list(producer.inputs) + list(node.inputs[inp_index + 1 :])
+    unique_inputs: list[str] = list(dict.fromkeys(new_inputs))
 
     for k, p_in in enumerate(producer.inputs):
         p_expr = p_expr.replace(f"in_{k}", f"in{unique_inputs.index(p_in)}")
 
     for idx_in, inp in enumerate(node.inputs):
-        if idx_in == inp_index:
-            n_expr = n_expr.replace(f"in_{idx_in}", p_expr)
-        else:
-            n_expr = n_expr.replace(f"in_{idx_in}", f"in{unique_inputs.index(inp)}")
+        replacement = p_expr if idx_in == inp_index else f"in{unique_inputs.index(inp)}"
+        n_expr = n_expr.replace(f"in_{idx_in}", replacement)
 
     fused_node = IRNode(
         id=node.id,
@@ -632,7 +647,66 @@ def _fuse_single_edge(  # noqa: PLR0912
     graph.nodes[node.id] = fused_node
 
 
-def fuse_elementwise_clusters(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
+def _count_consumers(graph: IRGraph) -> dict[str, int]:
+    """Compute the number of downstream consumers for each node in the graph.
+
+    Args:
+        graph (IRGraph): The IR computation graph.
+
+    Returns:
+        dict[str, int]: Mapping from node ID to consumer reference count.
+    """
+    consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
+    for node in graph.nodes.values():
+        for inp in getattr(node, "inputs", []):
+            if inp in consumer_counts:
+                consumer_counts[inp] += 1
+    for out_id in getattr(graph, "outputs", []):
+        if out_id in consumer_counts:
+            consumer_counts[out_id] += 1
+    return consumer_counts
+
+
+def _is_fusable_elementwise_node(node: IRNode | None) -> bool:
+    """Check whether a node is an elementwise or FusedElementwise operation.
+
+    Args:
+        node (IRNode | None): Node to check.
+
+    Returns:
+        bool: True if the node can participate in elementwise cluster fusion.
+    """
+    return node is not None and (node.op_type in ELEMENTWISE_OPS or node.op_type == "FusedElementwise")
+
+
+def _try_fuse_cluster_step(graph: IRGraph, consumer_counts: dict[str, int]) -> bool:
+    """Perform a single elementwise cluster fusion step if a valid edge exists.
+
+    Args:
+        graph (IRGraph): The computation graph to mutate.
+        consumer_counts (dict[str, int]): Reference counts per node ID.
+
+    Returns:
+        bool: True if a producer-consumer pair was fused, False otherwise.
+    """
+    for node in list(graph.nodes.values()):
+        if not _is_fusable_elementwise_node(node):
+            continue
+        for i, inp_id in enumerate(list(node.inputs)):
+            producer = graph.nodes.get(inp_id)
+            if not _is_fusable_elementwise_node(producer) or consumer_counts.get(inp_id, 0) != 1:
+                continue
+            assert producer is not None
+            p_shape = getattr(producer, "shape_metadata", None)
+            n_shape = getattr(node, "shape_metadata", None)
+            if p_shape and n_shape and p_shape != n_shape:
+                continue
+            _fuse_single_edge(graph, node, inp_id, i, producer)
+            return True
+    return False
+
+
+def fuse_elementwise_clusters(graph: IRGraph) -> bool:
     """Fuse elementwise DAG clusters into composite FusedElementwise IR nodes.
 
     Args:
@@ -645,47 +719,82 @@ def fuse_elementwise_clusters(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
         return False
 
     modified: bool = False
-    changed: bool = True
-
-    while changed:
-        changed = False
-        consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
-        for node in graph.nodes.values():
-            for inp in getattr(node, "inputs", []):
-                if inp in consumer_counts:
-                    consumer_counts[inp] += 1
-        for out_id in getattr(graph, "outputs", []):
-            if out_id in consumer_counts:
-                consumer_counts[out_id] += 1
-
-        for node in list(graph.nodes.values()):
-            if node.op_type not in ELEMENTWISE_OPS and node.op_type != "FusedElementwise":
-                continue
-
-            for i, inp_id in enumerate(list(node.inputs)):
-                producer = graph.nodes.get(inp_id)
-                if producer is None:
-                    continue
-                if producer.op_type not in ELEMENTWISE_OPS and producer.op_type != "FusedElementwise":
-                    continue
-                if consumer_counts.get(inp_id, 0) != 1:
-                    continue
-                p_shape = getattr(producer, "shape_metadata", None)
-                n_shape = getattr(node, "shape_metadata", None)
-                if p_shape and n_shape and p_shape != n_shape:
-                    continue
-
-                _fuse_single_edge(graph, node, inp_id, i, producer)
-                changed = True
-                modified = True
-                break
-            if changed:
-                break
+    while _try_fuse_cluster_step(graph, _count_consumers(graph)):
+        modified = True
 
     return modified
 
 
-def fuse_conv_bias_relu(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
+def _find_conv_and_bias_inputs(
+    graph: IRGraph,
+    bias_node: IRNode,
+) -> tuple[str | None, str | None]:
+    """Identify the convolution input ID and bias tensor ID from a binary Add/BiasAdd node.
+
+    Args:
+        graph (IRGraph): The computation graph.
+        bias_node (IRNode): The binary Add or BiasAdd node.
+
+    Returns:
+        tuple[str | None, str | None]: (conv_node_id, bias_value_id) or (None, None).
+    """
+    for b_in in bias_node.inputs:
+        cand = graph.nodes.get(b_in)
+        if cand is not None and cand.op_type in ("Conv2D", "Conv", "Conv3D"):
+            remaining = [x for x in bias_node.inputs if x != b_in]
+            return b_in, (remaining[0] if remaining else None)
+    return None, None
+
+
+def _try_fuse_conv_bias_act_node(
+    graph: IRGraph,
+    act_node: IRNode,
+    consumer_counts: dict[str, int],
+) -> bool:
+    """Try fusing a single activation node with its preceding BiasAdd and Conv nodes.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        act_node (IRNode): Candidate activation node.
+        consumer_counts (dict[str, int]): Consumer counts map.
+
+    Returns:
+        bool: True if the Conv+Bias+Activation chain was fused, False otherwise.
+    """
+    if act_node.op_type not in ("Relu", "Gelu", "Silu", "Sigmoid", "Tanh") or len(act_node.inputs) != 1:
+        return False
+
+    bias_id = act_node.inputs[0]
+    bias_node = graph.nodes.get(bias_id)
+    if bias_node is None or bias_node.op_type not in ("Add", "BiasAdd") or len(bias_node.inputs) != 2:
+        return False
+    if consumer_counts.get(bias_id, 0) != 1:
+        return False
+
+    conv_id, bias_val_id = _find_conv_and_bias_inputs(graph, bias_node)
+    if conv_id is None or bias_val_id is None or consumer_counts.get(conv_id, 0) != 1:
+        return False
+
+    conv_node = graph.nodes[conv_id]
+    fused_attrs = dict(conv_node.attributes)
+    fused_attrs["activation"] = act_node.op_type
+    fused_attrs["has_bias"] = True
+
+    fused_node = IRNode(
+        id=act_node.id,
+        op_type=f"Fused{conv_node.op_type}Bias{act_node.op_type}",
+        inputs=list(conv_node.inputs) + [bias_val_id],
+        shape_metadata=act_node.shape_metadata,
+    )
+    fused_node.attributes = fused_attrs
+
+    del graph.nodes[conv_id]
+    del graph.nodes[bias_id]
+    graph.nodes[act_node.id] = fused_node
+    return True
+
+
+def fuse_conv_bias_relu(graph: IRGraph) -> bool:
     """Fuse Conv2D/Conv + Add/BiasAdd + Relu/Activation sequences into FusedConv2DBiasRelu nodes.
 
     Args:
@@ -702,69 +811,55 @@ def fuse_conv_bias_relu(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
 
     while changed:
         changed = False
-        consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
-        for node in graph.nodes.values():
-            for inp in getattr(node, "inputs", []):
-                if inp in consumer_counts:
-                    consumer_counts[inp] += 1
-        for out_id in getattr(graph, "outputs", []):
-            if out_id in consumer_counts:
-                consumer_counts[out_id] += 1
-
-        for _act_id, act_node in list(graph.nodes.items()):
-            if act_node.op_type not in ("Relu", "Gelu", "Silu", "Sigmoid", "Tanh") or len(act_node.inputs) != 1:
-                continue
-
-            bias_id: str = act_node.inputs[0]
-            bias_node: IRNode | None = graph.nodes.get(bias_id)
-            if bias_node is None or bias_node.op_type not in ("Add", "BiasAdd") or len(bias_node.inputs) != 2:
-                continue
-            if consumer_counts.get(bias_id, 0) != 1:
-                continue
-
-            conv_id: str | None = None
-            bias_val_id: str | None = None
-            for b_in in bias_node.inputs:
-                cand = graph.nodes.get(b_in)
-                if cand is not None and cand.op_type in ("Conv2D", "Conv", "Conv3D"):
-                    conv_id = b_in
-                    remaining = [x for x in bias_node.inputs if x != b_in]
-                    if remaining:
-                        bias_val_id = remaining[0]
-                    break
-
-            if conv_id is None or bias_val_id is None:
-                continue
-
-            conv_node: IRNode = graph.nodes[conv_id]
-            if consumer_counts.get(conv_id, 0) != 1:
-                continue
-
-            fused_op_name = f"Fused{conv_node.op_type}Bias{act_node.op_type}"
-            fused_inputs = list(conv_node.inputs) + [bias_val_id]
-            fused_attrs = dict(conv_node.attributes)
-            fused_attrs["activation"] = act_node.op_type
-            fused_attrs["has_bias"] = True
-
-            fused_node = IRNode(
-                id=act_node.id,
-                op_type=fused_op_name,
-                inputs=fused_inputs,
-                shape_metadata=act_node.shape_metadata,
-            )
-            fused_node.attributes = fused_attrs
-
-            del graph.nodes[conv_id]
-            del graph.nodes[bias_id]
-            graph.nodes[act_node.id] = fused_node
-            changed = True
-            modified = True
-            break
+        consumer_counts = _count_consumers(graph)
+        for act_node in list(graph.nodes.values()):
+            if _try_fuse_conv_bias_act_node(graph, act_node, consumer_counts):
+                changed = True
+                modified = True
+                break
 
     return modified
 
 
-def fuse_elementwise_activation(graph: IRGraph) -> bool:  # noqa: C901
+def _try_fuse_elem_act_node(
+    graph: IRGraph,
+    act_node: IRNode,
+    consumer_counts: dict[str, int],
+) -> bool:
+    """Try fusing a single activation node with its preceding single-consumer elementwise node.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        act_node (IRNode): Candidate activation node.
+        consumer_counts (dict[str, int]): Consumer counts map.
+
+    Returns:
+        bool: True if fused, False otherwise.
+    """
+    if act_node.op_type not in ("Relu", "Gelu", "Silu", "Sigmoid", "Tanh") or len(act_node.inputs) != 1:
+        return False
+
+    elem_id = act_node.inputs[0]
+    elem_node = graph.nodes.get(elem_id)
+    if elem_node is None or elem_node.op_type not in ELEMENTWISE_OPS or consumer_counts.get(elem_id, 0) != 1:
+        return False
+
+    fused_node = IRNode(
+        id=act_node.id,
+        op_type=f"{elem_node.op_type}{act_node.op_type}",
+        inputs=list(elem_node.inputs),
+        shape_metadata=act_node.shape_metadata,
+    )
+    fused_node.attributes = {
+        "fused_ops": [elem_node.op_type, act_node.op_type],
+        "activation": act_node.op_type,
+    }
+    del graph.nodes[elem_id]
+    graph.nodes[act_node.id] = fused_node
+    return True
+
+
+def fuse_elementwise_activation(graph: IRGraph) -> bool:
     """Fuse elementwise operations followed by single-consumer activations into fused nodes.
 
     Args:
@@ -781,42 +876,12 @@ def fuse_elementwise_activation(graph: IRGraph) -> bool:  # noqa: C901
 
     while changed:
         changed = False
-        consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
-        for node in graph.nodes.values():
-            for inp in getattr(node, "inputs", []):
-                if inp in consumer_counts:
-                    consumer_counts[inp] += 1
-        for out_id in getattr(graph, "outputs", []):
-            if out_id in consumer_counts:
-                consumer_counts[out_id] += 1
-
-        for _act_id, act_node in list(graph.nodes.items()):
-            if act_node.op_type not in ("Relu", "Gelu", "Silu", "Sigmoid", "Tanh") or len(act_node.inputs) != 1:
-                continue
-
-            elem_id: str = act_node.inputs[0]
-            elem_node: IRNode | None = graph.nodes.get(elem_id)
-            if elem_node is None or elem_node.op_type not in ELEMENTWISE_OPS:
-                continue
-            if consumer_counts.get(elem_id, 0) != 1:
-                continue
-
-            fused_op_name = f"{elem_node.op_type}{act_node.op_type}"
-            fused_node = IRNode(
-                id=act_node.id,
-                op_type=fused_op_name,
-                inputs=list(elem_node.inputs),
-                shape_metadata=act_node.shape_metadata,
-            )
-            fused_node.attributes = {
-                "fused_ops": [elem_node.op_type, act_node.op_type],
-                "activation": act_node.op_type,
-            }
-            del graph.nodes[elem_id]
-            graph.nodes[act_node.id] = fused_node
-            changed = True
-            modified = True
-            break
+        consumer_counts = _count_consumers(graph)
+        for act_node in list(graph.nodes.values()):
+            if _try_fuse_elem_act_node(graph, act_node, consumer_counts):
+                changed = True
+                modified = True
+                break
 
     return modified
 
@@ -949,7 +1014,7 @@ def operator_fusion_pass(graph: IRGraph) -> bool:
 
     engine: PatternMatchingEngine = PatternMatchingEngine(
         rules,
-        MemoryAwareCostModel(cost_model_config) if cost_model_config else None,
+        cast("Callable[..., MemoryAwareCostModel]", MemoryAwareCostModel)(cost_model_config) if cost_model_config else None,
     )
     pattern_modified: bool = engine.apply_passes(graph)
     if pattern_modified:

@@ -1,5 +1,8 @@
 """Tests for operation utilities."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -17,22 +20,27 @@ from ml_switcheroo_compiler.utils.operation_utils import (
     get_source_inputs,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_get_source_inputs() -> None:
     """Test coverage."""
-    # 1. No _keras_history
+    # 1. No _lineage_history
     tensor = MagicMock(spec=[])
     assert get_source_inputs(tensor) == [tensor]
 
-    # 2. _keras_history but no inputs
+    # 2. _lineage_history but no inputs
     tensor2 = MagicMock()
-    tensor2._keras_history.node.operation.inputs = []
+    tensor2._lineage_history.node.operation.inputs = []
     assert get_source_inputs(tensor2) == [tensor2]
 
-    # 3. _keras_history with inputs
+    # 3. _lineage_history with inputs
     tensor3 = MagicMock()
     inp1 = MagicMock(spec=[])
-    tensor3._keras_history.node.operation.inputs = [inp1]
+    tensor3._lineage_history.node.operation.inputs = [inp1]
     assert get_source_inputs(tensor3) == [inp1]
 
 
@@ -52,9 +60,9 @@ def test_shape_inference_strategy_base() -> None:
     class DummyStrategy(ShapeInferenceStrategy):
         """Dummy strategy."""
 
-        def __call__(self, *args, **kwargs):
+        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int | None, ...] | list[tuple[int | None, ...]] | None:
             """Test function."""
-            return super().__call__(*args, **kwargs)
+            return cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", cast("Callable[..., EagerTensorProtocol]", super().__call__)(*args, **kwargs))
 
     strategy = DummyStrategy()
     assert strategy((1,), (), {}) is None

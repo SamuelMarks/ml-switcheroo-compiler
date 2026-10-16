@@ -1,13 +1,13 @@
-"""Module slicing.py."""
+"""Shape operations for Tensor Anys."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Shape operations for Tensor Anys."""
 import builtins
 import math
 from collections.abc import Sequence
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.config import config
@@ -23,7 +23,7 @@ def slice(
     start: int | None = None,
     end: int | None = None,
     step: int = 1,
-):
+) -> EagerValue:
     """Slice the input tensor along a specific dimension.
 
     Args:
@@ -39,7 +39,7 @@ def slice(
     if config.eager_mode:
         sl = [builtins.slice(None)] * len(input.shape)
         sl[axis] = builtins.slice(start, end, step)
-        data = input.data[tuple(sl)]
+        data = cast(EagerTensorProtocol, input.data)[tuple(sl)]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -81,7 +81,7 @@ def strided_slice(
     begin: Sequence[int],
     end: Sequence[int],
     strides: Sequence[int],
-):
+) -> EagerValue:
     """Extract a strided slice from the input tensor.
 
     Args:
@@ -95,7 +95,7 @@ def strided_slice(
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
-        data = input.data[idx]
+        data = cast(EagerTensorProtocol, input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -127,7 +127,7 @@ def strided_slice(
 class Slice(OpDef):
     """Slice operator definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -144,7 +144,7 @@ class Slice(OpDef):
 class StridedSlice(OpDef):
     """StridedSlice operator definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape for StridedSlice.
 
         Args:
@@ -164,7 +164,7 @@ class Choose(OpDef):
     op_name = "Choose"
     np_op_name = "choose"
 
-    def infer_shape(self, a, choices, out=None, mode: str = "raise", **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, choices: EagerTensorProtocol, out: EagerValue = None, mode: str = "raise", **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -186,7 +186,7 @@ class IndexInDim(OpDef):
 
     op_name = "IndexInDim"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -198,7 +198,7 @@ class IndexInDim(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         index = args[1] if len(args) > 1 else kwargs.get("index", kwargs.get("indices"))
-        axis = int(kwargs.get("axis", 0))
+        axis = int(cast(int, kwargs.get("axis", 0)))
         keepdims = bool(kwargs.get("keepdims", True))
         raw_shape = getattr(operand, "shape", getattr(operand, "shape_metadata", operand if isinstance(operand, (list, tuple)) else ()))
         shape = list(int(d) for d in raw_shape)
@@ -227,7 +227,7 @@ class UpdateSlice(OpDef):
 
     op_name = "UpdateSlice"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -244,7 +244,7 @@ class UpdateSlice(OpDef):
         return tuple(int(d) for d in raw)
 
 
-def index_in_dim(*args, **kwargs):
+def index_in_dim(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the index in a dimension.
 
     Args:
@@ -259,7 +259,7 @@ def index_in_dim(*args, **kwargs):
     return dispatch_op("IndexInDim", *args, **kwargs)
 
 
-def update_slice(*args, **kwargs):
+def update_slice(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Update a slice.
 
     Args:

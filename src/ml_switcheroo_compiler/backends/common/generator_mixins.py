@@ -1,5 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Provide mixin module."""
+
+from typing import Callable, cast
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
@@ -22,10 +23,10 @@ def get_shared_ast_visitors(generator: BaseGenerator) -> list[CommonASTVisitor]:
         list[CommonASTVisitor]: A list of instantiated AST visitors.
     """
     return [
-        ImageASTVisitor(generator=generator),
-        ControlFlowASTVisitor(generator=generator),
-        ArrayASTVisitor(generator=generator),
-        VariableASTVisitor(generator=generator),
-        LinearAlgebraASTVisitor(generator=generator),
+        cast("Callable[..., CommonASTVisitor]", ImageASTVisitor)(generator=generator),
+        cast("Callable[..., CommonASTVisitor]", ControlFlowASTVisitor)(generator=generator),
+        cast("Callable[..., CommonASTVisitor]", ArrayASTVisitor)(generator=generator),
+        cast("Callable[..., CommonASTVisitor]", VariableASTVisitor)(generator=generator),
+        cast("Callable[..., CommonASTVisitor]", LinearAlgebraASTVisitor)(generator=generator),
         DistributedASTVisitor(generator=generator),
     ]

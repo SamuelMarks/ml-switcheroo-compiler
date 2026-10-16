@@ -1,8 +1,6 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
+"""Neural network operations and layers for the ML Switcheroo compiler."""
 
 # auto-generate-all
-"""Neural network operations and layers for the ML Switcheroo compiler."""
 
 from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d  # noqa: F401
 
@@ -13,6 +11,7 @@ from .conv_lstm import conv3d_lstm_cell as conv3d_lstm_cell
 from .gru import gru as gru
 from .gru import gru_cell as gru_cell
 from .lstm import lstm_cell as lstm_cell
+from .normalization import Normalization as Normalization
 from .pooling import avg_pool as avg_pool
 from .pooling import avg_pool1d as avg_pool1d
 from .pooling import avg_pool2d as avg_pool2d

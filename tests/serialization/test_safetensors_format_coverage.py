@@ -6,12 +6,18 @@ import json
 import struct
 from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class _DummyGenerator:
@@ -29,7 +35,7 @@ class _DummyGenerator:
 class _MockArrayWithNumpy:
     """Mock object with numpy() method."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with numpy array.
 
         Args:
@@ -37,7 +43,7 @@ class _MockArrayWithNumpy:
         """
         self.arr = arr
 
-    def numpy(self) -> np.ndarray:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Return underlying numpy array.
 
         Returns:
@@ -49,7 +55,7 @@ class _MockArrayWithNumpy:
 class _MockDataWithNumpy:
     """Mock object with data.numpy() method."""
 
-    def __init__(self, arr: np.ndarray) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with nested data object.
 
         Args:
@@ -104,9 +110,9 @@ class _MockBackendH5:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def load_h5(self, path: str) -> dict[str, np.ndarray]:
+    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load h5 mock weights.
 
         Args:
@@ -117,7 +123,7 @@ class _MockBackendH5:
         """
         return {"backend_key": np.array([42.0])}
 
-    def save_h5(self, weights: dict[str, np.ndarray], path: str) -> None:
+    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save h5 mock weights.
 
         Args:
@@ -132,9 +138,9 @@ class _MockBackendNPZ:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def save_npz(self, weights: dict[str, np.ndarray], path: str) -> None:
+    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save npz mock weights.
 
         Args:
@@ -143,7 +149,7 @@ class _MockBackendNPZ:
         """
         self.saved = (weights, path)
 
-    def load_npz(self, path: str) -> dict[str, np.ndarray]:
+    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load npz mock weights.
 
         Args:
@@ -158,7 +164,7 @@ class _MockBackendNPZ:
 class _MockBackendSafetensors:
     """Mock backend implementing custom from_buffer method."""
 
-    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> np.ndarray:
+    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Reconstruct array from buffer.
 
         Args:
@@ -199,19 +205,19 @@ def test_safetensors_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
         "w1": np.array([1.0, 2.0], dtype=np.float32),
         "w2": np.array([10, 20], dtype=np.int32),
     }
-    fmt.save(data, filepath)
+    cast("Callable[..., EagerTensorProtocol]", fmt.save)(data, filepath)
 
     # 2. Load without backend from_buffer hook (raw buffer dict returned)
     monkeypatch.setattr(registry, "get_active_backend", lambda: _PlainBackend())
     loaded_plain = fmt.load(filepath)
     assert "w1" in loaded_plain
-    assert "buffer" in loaded_plain["w1"]
+    assert "buffer" in getattr(loaded_plain, "__getitem__")("w1")
 
     # 3. Load with backend from_buffer hook
     monkeypatch.setattr(registry, "get_active_backend", lambda: _MockBackendSafetensors())
     loaded_hook = fmt.load(filepath)
     assert "w1" in loaded_hook
-    np.testing.assert_allclose(loaded_hook["w1"], data["w1"])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(loaded_hook, "__getitem__")("w1")), cast("EagerTensorProtocol", getattr(data, "__getitem__")("w1")))
 
     # 4. Empty / corrupted file (< 8 bytes)
     empty_file = str(tmp_path / "empty.safetensors")

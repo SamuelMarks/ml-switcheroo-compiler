@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import pytest
@@ -10,6 +11,11 @@ import pytest
 import ml_switcheroo_compiler.ops.export as export_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -90,20 +96,20 @@ def test_export_to_dot_full_coverage(tmp_path: pytest.TempPathFactory) -> None:
             """
             self.id: str = node_id
 
-    t_arr = Tensor(MockProxy("node_2"), TensorConfig((1,), "float32", "cpu"))
-    t_untracked = Tensor(MockProxy("missing_node"), TensorConfig((1,), "float32", "cpu"))
-    t_no_id = Tensor(DummyWithoutShape(), TensorConfig((1,), "float32", "cpu"))
+    t_arr = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", MockProxy)("node_2"), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((1,), "float32", "cpu"))
+    t_untracked = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", MockProxy)("missing_node"), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((1,), "float32", "cpu"))
+    t_no_id = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((1,), "float32", "cpu"))
 
     with patch.object(global_tracing_state, "active_graph", graph):
         str_io = io.StringIO()
-        export_mod.export_to_dot(str_io, t_arr, t_untracked, t_no_id)
+        cast("Callable[..., EagerTensorProtocol]", export_mod.export_to_dot)(str_io, t_arr, t_untracked, t_no_id)
         dot_str = str_io.getvalue()
         assert "digraph G {" in dot_str
         assert '"node_2"' in dot_str
         assert '"node_1"' in dot_str
 
-        file_path = str(tmp_path / "out.dot")
-        export_mod.export_to_dot(file_path, t_arr)
+        file_path = cast("Callable[..., EagerTensorProtocol]", str)(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "out.dot"))
+        cast("Callable[..., EagerTensorProtocol]", export_mod.export_to_dot)(file_path, t_arr)
         with open(file_path, encoding="utf-8") as f:
             content = f.read()
             assert "digraph G {" in content

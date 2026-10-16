@@ -1,11 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """Core abstractions and logic definitions for utils.py."""
 
 import typing  # noqa: F401
-from typing import Any, Optional  # noqa: F401
+from typing import (
+    Optional,  # noqa: F401
+    cast,
+)
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
-def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
+def _to_numpy_array(np_mod: EagerValue, x: EagerValue, name: str) -> EagerValue:
     """Convert tensor to numpy array.
 
     Args:
@@ -17,13 +21,13 @@ def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
             object: Result.
     """
     if hasattr(x, "numpy"):
-        return x.numpy()
+        return cast(EagerValue, getattr(x, "numpy")())
     if name == "torch" and hasattr(x, "detach"):
-        return x.detach().cpu().numpy()
-    return np_mod.asarray(x)
+        return cast(EagerValue, getattr(x, "detach")().cpu().numpy())
+    return cast(EagerValue, getattr(np_mod, "asarray")(x))
 
 
-def _from_numpy_array(backend_module: object, out: object, name: str, original_tensor: Optional[object] = None) -> object:
+def _from_numpy_array(backend_module: EagerValue, out: EagerValue, name: str, original_tensor: Optional[EagerValue] = None) -> EagerValue:
     """Convert numpy array back to backend tensor.
 
     Args:
@@ -42,11 +46,11 @@ def _from_numpy_array(backend_module: object, out: object, name: str, original_t
     if name == "jax.numpy":
         return _jax_from_numpy(out, original_tensor)
     if original_tensor is not None:
-        return backend_module.array(out, dtype=original_tensor.dtype)
-    return backend_module.array(out)
+        return cast(EagerValue, getattr(backend_module, "array")(out, dtype=getattr(original_tensor, "dtype")))
+    return cast(EagerValue, getattr(backend_module, "array")(out))
 
 
-def _torch_from_numpy(out: object, original_tensor: Optional[object] = None) -> object:
+def _torch_from_numpy(out: EagerValue, original_tensor: Optional[EagerValue] = None) -> EagerValue:
     """Convert to torch tensor.
 
     Args:
@@ -59,7 +63,7 @@ def _torch_from_numpy(out: object, original_tensor: Optional[object] = None) -> 
     return out
 
 
-def _mlx_from_numpy(out: object, original_tensor: Optional[object] = None) -> object:
+def _mlx_from_numpy(out: EagerValue, original_tensor: Optional[EagerValue] = None) -> EagerValue:
     """Convert to mlx tensor.
 
     Args:
@@ -72,7 +76,7 @@ def _mlx_from_numpy(out: object, original_tensor: Optional[object] = None) -> ob
     return out
 
 
-def _jax_from_numpy(out: object, original_tensor: Optional[object] = None) -> object:
+def _jax_from_numpy(out: EagerValue, original_tensor: Optional[EagerValue] = None) -> EagerValue:
     """Convert to jax tensor.
 
     Args:
@@ -85,7 +89,7 @@ def _jax_from_numpy(out: object, original_tensor: Optional[object] = None) -> ob
     return out
 
 
-def _to_channels_last(np_mod: object, imgs: object, data_format: Optional[str]) -> object:
+def _to_channels_last(np_mod: EagerValue, imgs: EagerValue, data_format: Optional[str]) -> EagerValue:
     """Transpose images from channels_first to channels_last if needed.
 
     Args:
@@ -99,7 +103,7 @@ def _to_channels_last(np_mod: object, imgs: object, data_format: Optional[str]) 
     return imgs
 
 
-def _from_channels_last(np_mod: object, out: object, data_format: Optional[str]) -> object:
+def _from_channels_last(np_mod: EagerValue, out: EagerValue, data_format: Optional[str]) -> EagerValue:
     """Transpose images from channels_last to channels_first if needed.
 
     Args:

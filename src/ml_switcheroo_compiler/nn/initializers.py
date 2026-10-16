@@ -1,188 +1,318 @@
-# ruff: noqa: E402, E501, F403
-"""Neural network modules and layers."""
+"""Neural network parameter initializers."""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Callable, Sequence
+from typing import Union, cast
 
 import ml_switcheroo_compiler.core.dtype as dtypes
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.configs import InitializerConfig
 
-DEFAULT_SCALE = 0.01
-DEFAULT_STDDEV = 0.01
+InitializerFn = Callable[[Union[Tensor, int, None], tuple[int, ...], Union[dtypes.DType, str, None]], Tensor]
 
 
-def zeros(key, shape, dtype=None):
-    """Initialize an array with all zeros.
-
-    Args:
-        key (object): The PRNG key.
-        shape (object): The target shape.
-        dtype (object): The target data type.
-
-    Returns: Tensor: The computed result.
-    """
-    return ops.zeros(shape, dtype=dtype or dtypes.DType.Float32)
-
-
-def ones(key, shape, dtype=None):
-    """Initialize an array with all ones.
+def _resolve_dtype(
+    dtype: dtypes.DType | str | None,
+    default: dtypes.DType | str = dtypes.DType.Float32,
+) -> dtypes.DType:
+    """Resolve an optional dtype specification into a canonical DType enum.
 
     Args:
-        key (object): The PRNG key.
-        shape (object): The target shape.
-        dtype (object): The target data type.
+        dtype (dtypes.DType | str | None): Optional requested data type.
+        default (dtypes.DType | str): Default data type fallback.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        dtypes.DType: Resolved canonical DType enum.
     """
-    return ops.ones(shape, dtype=dtype or dtypes.DType.Float32)
+    target = dtype if dtype is not None else default
+    return dtypes.DType(target) if isinstance(target, str) else target
 
 
-def constant(value, dtype=None):
-    """Return an initializer that generates arrays filled with a constant value.
+def _compute_fans(
+    shape: Sequence[int],
+    in_axis: int = -2,
+    out_axis: int = -1,
+) -> tuple[int, int]:
+    """Compute fan-in and fan-out dimensions for a weight tensor shape.
 
     Args:
-        value (object): The value parameter for the operation.
-        dtype (object): The target data type.
+        shape (Sequence[int]): Tensor shape sequence.
+        in_axis (int): Input feature dimension axis.
+        out_axis (int): Output feature dimension axis.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        tuple[int, int]: Tuple of (fan_in, fan_out).
+    """
+    ndim = len(shape)
+    if ndim == 0:
+        return 1, 1
+    if ndim == 1:
+        return shape[0], shape[0]
+    norm_in = in_axis % ndim
+    norm_out = out_axis % ndim
+    receptive_field_size = 1
+    for idx, dim in enumerate(shape):
+        if idx not in (norm_in, norm_out):
+            receptive_field_size *= dim
+    fan_in = shape[norm_in] * receptive_field_size
+    fan_out = shape[norm_out] * receptive_field_size
+    return max(1, fan_in), max(1, fan_out)
+
+
+def zeros(
+    key: Tensor | int | None,
+    shape: tuple[int, ...],
+    dtype: dtypes.DType | str | None = dtypes.DType.Float32,
+) -> Tensor:
+    """Initialize a tensor filled with zeros.
+
+    Args:
+        key (Tensor | int | None): PRNG key or seed (unused for deterministic zeros).
+        shape (tuple[int, ...]): Output tensor shape.
+        dtype (dtypes.DType | str | None): Output tensor data type.
+
+    Returns:
+        Tensor: Zero-initialized tensor.
+    """
+    _ = key
+    return ops.zeros(shape, dtype=_resolve_dtype(dtype))
+
+
+def ones(
+    key: Tensor | int | None,
+    shape: tuple[int, ...],
+    dtype: dtypes.DType | str | None = dtypes.DType.Float32,
+) -> Tensor:
+    """Initialize a tensor filled with ones.
+
+    Args:
+        key (Tensor | int | None): PRNG key or seed (unused for deterministic ones).
+        shape (tuple[int, ...]): Output tensor shape.
+        dtype (dtypes.DType | str | None): Output tensor data type.
+
+    Returns:
+        Tensor: One-initialized tensor.
+    """
+    _ = key
+    return ops.ones(shape, dtype=_resolve_dtype(dtype))
+
+
+def constant(
+    value: float | int,
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build an initializer that fills a tensor with a constant scalar value.
+
+    Args:
+        value (float | int): Constant fill value.
+        dtype (dtypes.DType | str): Default data type.
+
+    Returns:
+        InitializerFn: Initializer callable.
     """
 
-    def init(key, shape, dtype=dtype):
-        """Initialize the tensor.
+    def init(
+        key: Tensor | int | None,
+        shape: tuple[int, ...],
+        init_dtype: dtypes.DType | str | None = None,
+    ) -> Tensor:
+        """Initialize tensor with the configured constant value.
 
         Args:
-            key (object): The random key.
-            shape (object): The shape of the tensor.
-            dtype (object): The data type.
+            key (Tensor | int | None): PRNG key or seed.
+            shape (tuple[int, ...]): Output tensor shape.
+            init_dtype (dtypes.DType | str | None): Optional override data type.
 
-        Returns: Tensor: The initialized tensor.
+        Returns:
+            Tensor: Constant-initialized tensor.
         """
-        return ops.full(shape, value, dtype=dtype or dtypes.DType.Float32)
+        _ = key
+        return ops.full(shape, value, dtype=_resolve_dtype(init_dtype, dtype))
 
     return init
 
 
-def uniform(scale=DEFAULT_SCALE, dtype=None):
-    """Return an initializer that generates arrays from a uniform distribution.
+def uniform(
+    scale: float = 1e-2,
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build an initializer sampling uniformly in [0, scale).
 
     Args:
-        scale (object): The scale parameter for the operation.
-        dtype (object): The target data type.
+        scale (float): Upper bound of the uniform interval [0, scale).
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Initializer callable.
     """
 
-    def init(key, shape, dtype=dtype):
-        """Initialize the tensor.
+    def init(
+        key: Tensor | int | None,
+        shape: tuple[int, ...],
+        init_dtype: dtypes.DType | str | None = None,
+    ) -> Tensor:
+        """Sample uniform random values scaled by scale.
 
         Args:
-            key (object): The random key.
-            shape (object): The shape of the tensor.
-            dtype (object): The data type.
+            key (Tensor | int | None): PRNG key or seed.
+            shape (tuple[int, ...]): Output tensor shape.
+            init_dtype (dtypes.DType | str | None): Optional override data type.
 
-        Returns: Tensor: The initialized tensor.
+        Returns:
+            Tensor: Uniformly initialized tensor.
         """
-        return zeros(key, shape, dtype)
+        _ = key
+        dt = _resolve_dtype(init_dtype, dtype)
+        return ops.scalar_mul(ops.rand(*shape, dtype=dt), float(scale))
 
     return init
 
 
-def normal(stddev=DEFAULT_STDDEV, dtype=None):
-    """Return an initializer that generates arrays from a normal distribution.
+def normal(
+    stddev: float = 1e-2,
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build an initializer sampling from a zero-mean normal distribution.
 
     Args:
-        stddev (object): The stddev parameter for the operation.
-        dtype (object): The target data type.
+        stddev (float): Standard deviation of the normal distribution.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Initializer callable.
     """
 
-    def init(key, shape, dtype=dtype):
-        """Initialize the tensor.
+    def init(
+        key: Tensor | int | None,
+        shape: tuple[int, ...],
+        init_dtype: dtypes.DType | str | None = None,
+    ) -> Tensor:
+        """Sample normal random values scaled by stddev.
 
         Args:
-            key (object): The random key.
-            shape (object): The shape of the tensor.
-            dtype (object): The data type.
+            key (Tensor | int | None): PRNG key or seed.
+            shape (tuple[int, ...]): Output tensor shape.
+            init_dtype (dtypes.DType | str | None): Optional override data type.
 
-        Returns: Tensor: The initialized tensor.
+        Returns:
+            Tensor: Normally initialized tensor.
         """
-        return zeros(key, shape, dtype)
+        _ = key
+        dt = _resolve_dtype(init_dtype, dtype)
+        return ops.scalar_mul(ops.randn(*shape, dtype=dt), float(stddev))
 
     return init
 
 
 def truncated_normal(
-    stddev=DEFAULT_STDDEV,
-    dtype=None,
-    lower=-2.0,
-    upper=2.0,
-):
-    """Return an initializer that generates arrays from a truncated normal distribution.
+    stddev: float = 1e-2,
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+    lower: float = -2.0,
+    upper: float = 2.0,
+) -> InitializerFn:
+    """Build an initializer sampling from a truncated normal distribution.
 
     Args:
-        stddev (object): The stddev parameter for the operation.
-        dtype (object): The target data type.
-        lower (object): The lower parameter for the operation.
-        upper (object): The upper parameter for the operation.
+        stddev (float): Standard deviation before or after truncation scaling.
+        dtype (dtypes.DType | str): Default data type.
+        lower (float): Lower truncation bound in standard deviations.
+        upper (float): Upper truncation bound in standard deviations.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Initializer callable.
     """
 
-    def init(key, shape, dtype=dtype):
-        """Initialize the tensor.
+    def init(
+        key: Tensor | int | None,
+        shape: tuple[int, ...],
+        init_dtype: dtypes.DType | str | None = None,
+    ) -> Tensor:
+        """Sample truncated normal values within [lower * stddev, upper * stddev].
 
         Args:
-            key (object): The random key.
-            shape (object): The shape of the tensor.
-            dtype (object): The data type.
+            key (Tensor | int | None): PRNG key or seed.
+            shape (tuple[int, ...]): Output tensor shape.
+            init_dtype (dtypes.DType | str | None): Optional override data type.
 
-        Returns: Tensor: The initialized tensor.
+        Returns:
+            Tensor: Truncated-normal initialized tensor.
         """
-        return zeros(key, shape, dtype)
+        _ = key
+        dt = _resolve_dtype(init_dtype, dtype)
+        clipped = ops.clip(ops.randn(*shape, dtype=dt), float(lower), float(upper))
+        return ops.scalar_mul(clipped, float(stddev))
 
     return init
 
 
-def variance_scaling(config: InitializerConfig):
-    """Return an initializer that scales its variance based on weight shape.
+def variance_scaling(config: InitializerConfig) -> InitializerFn:
+    """Build a variance-scaling initializer adapting scale to weight fan-in/fan-out.
 
     Args:
-        config (InitializerConfig): The configuration for the initializer.
+        config (InitializerConfig): Variance scaling configuration parameters.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Initializer callable.
     """
 
-    def init(key, shape, dtype=None):
-        """Initialize the instance.
+    def init(
+        key: Tensor | int | None,
+        shape: tuple[int, ...],
+        init_dtype: dtypes.DType | str | None = None,
+    ) -> Tensor:
+        """Initialize tensor according to variance scaling rules.
 
         Args:
-            key (object): The key parameter.
-            shape (object): The shape parameter.
-            dtype (object): The dtype parameter.
+            key (Tensor | int | None): PRNG key or seed.
+            shape (tuple[int, ...]): Output tensor shape.
+            init_dtype (dtypes.DType | str | None): Optional override data type.
 
-        Returns: Tensor: The inferred shape or computed result.
+        Returns:
+            Tensor: Variance-scaled initialized tensor.
         """
-        if dtype is None:
-            dtype = config.dtype
-        return zeros(key, shape, dtype)
+        dt = cast("Callable[..., dtypes.DType]", _resolve_dtype)(init_dtype, config.dtype)
+        fan_in, fan_out = _compute_fans(shape, cast("int", config.in_axis), cast("int", config.out_axis))
+        if config.mode == "fan_in":
+            denom = float(fan_in)
+        elif config.mode == "fan_out":
+            denom = float(fan_out)
+        else:
+            denom = (float(fan_in) + float(fan_out)) / 2.0
+        variance = float(config.scale) / max(1.0, denom)
+
+        if config.distribution == "truncated_normal":
+            stddev = math.sqrt(variance) / 0.87962566103423978
+            return truncated_normal(stddev=stddev, dtype=dt)(key, shape, dt)
+        if config.distribution == "normal":
+            stddev = math.sqrt(variance)
+            return normal(stddev=stddev, dtype=dt)(key, shape, dt)
+        limit = math.sqrt(3.0 * variance)
+        unit = ops.rand(*shape, dtype=dt)
+        centered = ops.subtract(ops.scalar_mul(unit, 2.0), ops.ones(shape, dtype=dt))
+        return ops.scalar_mul(centered, limit)
 
     return init
 
 
 def glorot_uniform(
-    in_axis=-2,
-    out_axis=-1,
-    batch_axis=(),
-    dtype=None,
-):
-    """Return an initializer for the Glorot (Xavier) uniform initialization.
+    in_axis: int = -2,
+    out_axis: int = -1,
+    batch_axis: tuple[int, ...] = (),
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build a Glorot (Xavier) uniform initializer.
 
     Args:
-        in_axis (object): The in_axis parameter for the operation.
-        out_axis (object): The out_axis parameter for the operation.
-        batch_axis (object): The batch_axis parameter for the operation.
-        dtype (object): The target data type.
+        in_axis (int): Input dimension axis.
+        out_axis (int): Output dimension axis.
+        batch_axis (tuple[int, ...]): Batch axes.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Glorot uniform initializer callable.
     """
     return variance_scaling(
         InitializerConfig(
@@ -192,26 +322,31 @@ def glorot_uniform(
             in_axis=in_axis,
             out_axis=out_axis,
             batch_axis=batch_axis,
-            dtype=dtype,
+            dtype=_resolve_dtype(dtype),
         )
     )
 
 
+glorot = glorot_uniform
+xavier_uniform = glorot_uniform
+
+
 def glorot_normal(
-    in_axis=-2,
-    out_axis=-1,
-    batch_axis=(),
-    dtype=None,
-):
-    """Return an initializer for the Glorot (Xavier) normal initialization.
+    in_axis: int = -2,
+    out_axis: int = -1,
+    batch_axis: tuple[int, ...] = (),
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build a Glorot (Xavier) normal initializer.
 
     Args:
-        in_axis (object): The in_axis parameter for the operation.
-        out_axis (object): The out_axis parameter for the operation.
-        batch_axis (object): The batch_axis parameter for the operation.
-        dtype (object): The target data type.
+        in_axis (int): Input dimension axis.
+        out_axis (int): Output dimension axis.
+        batch_axis (tuple[int, ...]): Batch axes.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Glorot normal initializer callable.
     """
     return variance_scaling(
         InitializerConfig(
@@ -221,26 +356,30 @@ def glorot_normal(
             in_axis=in_axis,
             out_axis=out_axis,
             batch_axis=batch_axis,
-            dtype=dtype,
+            dtype=_resolve_dtype(dtype),
         )
     )
 
 
+xavier_normal = glorot_normal
+
+
 def lecun_uniform(
-    in_axis=-2,
-    out_axis=-1,
-    batch_axis=(),
-    dtype=None,
-):
-    """Return an initializer for the LeCun uniform initialization.
+    in_axis: int = -2,
+    out_axis: int = -1,
+    batch_axis: tuple[int, ...] = (),
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build a LeCun uniform initializer.
 
     Args:
-        in_axis (object): The in_axis parameter for the operation.
-        out_axis (object): The out_axis parameter for the operation.
-        batch_axis (object): The batch_axis parameter for the operation.
-        dtype (object): The target data type.
+        in_axis (int): Input dimension axis.
+        out_axis (int): Output dimension axis.
+        batch_axis (tuple[int, ...]): Batch axes.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: LeCun uniform initializer callable.
     """
     return variance_scaling(
         InitializerConfig(
@@ -250,26 +389,27 @@ def lecun_uniform(
             in_axis=in_axis,
             out_axis=out_axis,
             batch_axis=batch_axis,
-            dtype=dtype,
+            dtype=_resolve_dtype(dtype),
         )
     )
 
 
 def lecun_normal(
-    in_axis=-2,
-    out_axis=-1,
-    batch_axis=(),
-    dtype=None,
-):
-    """Return an initializer for the LeCun normal initialization.
+    in_axis: int = -2,
+    out_axis: int = -1,
+    batch_axis: tuple[int, ...] = (),
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build a LeCun normal initializer.
 
     Args:
-        in_axis (object): The in_axis parameter for the operation.
-        out_axis (object): The out_axis parameter for the operation.
-        batch_axis (object): The batch_axis parameter for the operation.
-        dtype (object): The target data type.
+        in_axis (int): Input dimension axis.
+        out_axis (int): Output dimension axis.
+        batch_axis (tuple[int, ...]): Batch axes.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: LeCun normal initializer callable.
     """
     return variance_scaling(
         InitializerConfig(
@@ -279,26 +419,27 @@ def lecun_normal(
             in_axis=in_axis,
             out_axis=out_axis,
             batch_axis=batch_axis,
-            dtype=dtype,
+            dtype=_resolve_dtype(dtype),
         )
     )
 
 
 def he_uniform(
-    in_axis=-2,
-    out_axis=-1,
-    batch_axis=(),
-    dtype=None,
-):
-    """Return an initializer for the He (Kaiming) uniform initialization.
+    in_axis: int = -2,
+    out_axis: int = -1,
+    batch_axis: tuple[int, ...] = (),
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build a He (Kaiming) uniform initializer.
 
     Args:
-        in_axis (object): The in_axis parameter for the operation.
-        out_axis (object): The out_axis parameter for the operation.
-        batch_axis (object): The batch_axis parameter for the operation.
-        dtype (object): The target data type.
+        in_axis (int): Input dimension axis.
+        out_axis (int): Output dimension axis.
+        batch_axis (tuple[int, ...]): Batch axes.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: He uniform initializer callable.
     """
     return variance_scaling(
         InitializerConfig(
@@ -308,26 +449,30 @@ def he_uniform(
             in_axis=in_axis,
             out_axis=out_axis,
             batch_axis=batch_axis,
-            dtype=dtype,
+            dtype=_resolve_dtype(dtype),
         )
     )
 
 
+kaiming_uniform = he_uniform
+
+
 def he_normal(
-    in_axis=-2,
-    out_axis=-1,
-    batch_axis=(),
-    dtype=None,
-):
-    """Return an initializer for the He (Kaiming) normal initialization.
+    in_axis: int = -2,
+    out_axis: int = -1,
+    batch_axis: tuple[int, ...] = (),
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build a He (Kaiming) normal initializer.
 
     Args:
-        in_axis (object): The in_axis parameter for the operation.
-        out_axis (object): The out_axis parameter for the operation.
-        batch_axis (object): The batch_axis parameter for the operation.
-        dtype (object): The target data type.
+        in_axis (int): Input dimension axis.
+        out_axis (int): Output dimension axis.
+        batch_axis (tuple[int, ...]): Batch axes.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: He normal initializer callable.
     """
     return variance_scaling(
         InitializerConfig(
@@ -337,62 +482,75 @@ def he_normal(
             in_axis=in_axis,
             out_axis=out_axis,
             batch_axis=batch_axis,
-            dtype=dtype,
+            dtype=_resolve_dtype(dtype),
         )
     )
 
 
-def orthogonal(scale=1.0, column_axis=-1, dtype=None):
-    """Return an initializer that generates orthogonally initialized weight arrays.
+kaiming_normal = he_normal
+
+
+def orthogonal(
+    scale: float = 1.0,
+    column_axis: int = -1,
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build an orthogonal matrix initializer via QR decomposition.
 
     Args:
-        scale (object): The scale parameter for the operation.
-        column_axis (object): The column_axis parameter for the operation.
-        dtype (object): The target data type.
+        scale (float): Multiplicative scale factor applied to the orthogonal matrix.
+        column_axis (int): Axis corresponding to the columns of the orthogonal matrix.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Orthogonal initializer callable.
     """
 
-    def init(key, shape, dtype=dtype):
-        """Initialize the tensor.
+    def init(
+        key: Tensor | int | None,
+        shape: tuple[int, ...],
+        init_dtype: dtypes.DType | str | None = None,
+    ) -> Tensor:
+        """Generate an orthogonal or semi-orthogonal tensor via QR decomposition.
 
         Args:
-            key (object): The random key.
-            shape (object): The shape of the tensor.
-            dtype (object): The data type.
+            key (Tensor | int | None): PRNG key or seed.
+            shape (tuple[int, ...]): Output tensor shape.
+            init_dtype (dtypes.DType | str | None): Optional override data type.
 
-        Returns: Tensor: The initialized tensor.
+        Returns:
+            Tensor: Orthogonally initialized tensor.
         """
-        return zeros(key, shape, dtype)
+        dt = _resolve_dtype(init_dtype, dtype)
+        if len(shape) < 2:
+            return normal(stddev=scale, dtype=dt)(key, shape, dt)
+        col_ax = column_axis % len(shape)
+        cols = shape[col_ax]
+        rows = 1
+        for idx, dim in enumerate(shape):
+            if idx != col_ax:
+                rows *= dim
+        flat_matrix = ops.randn(max(rows, cols), min(rows, cols), dtype=dt)
+        q_mat, _ = cast(Callable[..., Sequence[Tensor]], getattr(ops, "qr"))(flat_matrix)
+        reshaped = getattr(ops, "reshape")(q_mat, shape)
+        return ops.scalar_mul(reshaped, float(scale))
 
     return init
 
 
 def delta_orthogonal(
-    scale=1.0,
-    column_axis=-1,
-    dtype=None,
-):
-    """Return an initializer that generates delta orthogonal arrays (useful for CNNs).
+    scale: float = 1.0,
+    column_axis: int = -1,
+    dtype: dtypes.DType | str = dtypes.DType.Float32,
+) -> InitializerFn:
+    """Build a delta-orthogonal initializer for convolutional kernels.
 
     Args:
-        scale (object): The scale parameter for the operation.
-        column_axis (object): The column_axis parameter for the operation.
-        dtype (object): The target data type.
+        scale (float): Multiplicative scale factor.
+        column_axis (int): Column axis of the orthogonal submatrix.
+        dtype (dtypes.DType | str): Default data type.
 
-    Returns: Tensor: The computed result.
+    Returns:
+        InitializerFn: Delta-orthogonal initializer callable.
     """
-
-    def init(key, shape, dtype=dtype):
-        """Initialize the tensor.
-
-        Args:
-            key (object): The random key.
-            shape (object): The shape of the tensor.
-            dtype (object): The data type.
-
-        Returns: Tensor: The initialized tensor.
-        """
-        return zeros(key, shape, dtype)
-
-    return init
+    return orthogonal(scale=scale, column_axis=column_axis, dtype=dtype)

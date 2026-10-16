@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import importlib
+import logging
 from collections.abc import Sequence
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
 
 
-def _get_dpnp_module() -> object:
+def _get_dpnp_module() -> EagerValue:
     """Retrieve dpnp module dynamically with fallback to numpy.
 
     Returns:
@@ -15,14 +20,14 @@ def _get_dpnp_module() -> object:
     try:
         return importlib.import_module("dpnp")
     except Exception:
-        return importlib.import_module("numpy")
+        return _np_mod()
 
 
 def _resolve_allocation_kwargs(
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> dict[str, object]:
+    sycl_queue: EagerValue | None = None,
+) -> dict[str, EagerValue]:
     """Build keyword arguments for DPNP SYCL allocation when supported.
 
     Args:
@@ -33,7 +38,7 @@ def _resolve_allocation_kwargs(
     Returns:
         dict[str, object]: Keyword arguments suitable for DPNP creation routines.
     """
-    kwargs: dict[str, object] = {}
+    kwargs: dict[str, EagerValue] = {}
     if sycl_queue is not None:
         kwargs["sycl_queue"] = sycl_queue
     elif device != "auto":
@@ -45,13 +50,13 @@ def _resolve_allocation_kwargs(
 
 
 def zeros(
-    shape_or_cls: object,
+    shape_or_cls: EagerValue,
     shape: tuple[int, ...] | None = None,
     dtype: str | None = None,
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> object:
+    sycl_queue: EagerValue | None = None,
+) -> EagerValue:
     """Create a DPNP array of zeros on SYCL target device with USM buffer.
 
     Args:
@@ -70,20 +75,20 @@ def zeros(
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
     kwargs["dtype"] = getattr(dpnp_mod, str(dtype)) if dtype and hasattr(dpnp_mod, str(dtype)) else getattr(dpnp_mod, "float32", float)
     try:
-        return dpnp_mod.zeros(actual_shape, **kwargs)
+        return cast(EagerValue, getattr(dpnp_mod, "zeros")(actual_shape, **kwargs))
     except TypeError:
         # Fallback when dpnp_mod is reference numpy without usm_type/device kwargs
-        return dpnp_mod.zeros(actual_shape, dtype=kwargs.get("dtype", float))
+        return cast(EagerValue, getattr(dpnp_mod, "zeros")(actual_shape, dtype=kwargs.get("dtype", float)))
 
 
 def ones(
-    shape_or_cls: object,
+    shape_or_cls: EagerValue,
     shape: tuple[int, ...] | None = None,
     dtype: str | None = None,
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> object:
+    sycl_queue: EagerValue | None = None,
+) -> EagerValue:
     """Create a DPNP array of ones on SYCL target device with USM buffer.
 
     Args:
@@ -102,19 +107,19 @@ def ones(
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
     kwargs["dtype"] = getattr(dpnp_mod, str(dtype)) if dtype and hasattr(dpnp_mod, str(dtype)) else getattr(dpnp_mod, "float32", float)
     try:
-        return dpnp_mod.ones(actual_shape, **kwargs)
+        return cast(EagerValue, getattr(dpnp_mod, "ones")(actual_shape, **kwargs))
     except TypeError:
-        return dpnp_mod.ones(actual_shape, dtype=kwargs.get("dtype", float))
+        return cast(EagerValue, getattr(dpnp_mod, "ones")(actual_shape, dtype=kwargs.get("dtype", float)))
 
 
 def empty(
-    shape_or_cls: object,
+    shape_or_cls: EagerValue,
     shape: tuple[int, ...] | None = None,
     dtype: str | None = None,
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> object:
+    sycl_queue: EagerValue | None = None,
+) -> EagerValue:
     """Allocate an uninitialized DPNP array on SYCL device.
 
     Args:
@@ -133,20 +138,20 @@ def empty(
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
     kwargs["dtype"] = getattr(dpnp_mod, str(dtype)) if dtype and hasattr(dpnp_mod, str(dtype)) else getattr(dpnp_mod, "float32", float)
     try:
-        return dpnp_mod.empty(actual_shape, **kwargs)
+        return cast(EagerValue, getattr(dpnp_mod, "empty")(actual_shape, **kwargs))
     except TypeError:
-        return dpnp_mod.empty(actual_shape, dtype=kwargs.get("dtype", float))
+        return cast(EagerValue, getattr(dpnp_mod, "empty")(actual_shape, dtype=kwargs.get("dtype", float)))
 
 
 def full(
-    shape_or_cls: object,
-    fill_value_or_shape: object = None,
-    fill_value: object = None,
+    shape_or_cls: EagerValue,
+    fill_value_or_shape: EagerValue = None,
+    fill_value: EagerValue = None,
     dtype: str | None = None,
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> object:
+    sycl_queue: EagerValue | None = None,
+) -> EagerValue:
     """Create a DPNP array filled with scalar value on SYCL target device.
 
     Args:
@@ -173,19 +178,19 @@ def full(
     if dtype is not None and hasattr(dpnp_mod, str(dtype)):
         kwargs["dtype"] = getattr(dpnp_mod, str(dtype))
     try:
-        return dpnp_mod.full(actual_shape, actual_val, **kwargs)
+        return cast(EagerValue, getattr(dpnp_mod, "full")(actual_shape, actual_val, **kwargs))
     except TypeError:
-        return dpnp_mod.full(actual_shape, actual_val, dtype=kwargs.get("dtype", None))
+        return cast(EagerValue, getattr(dpnp_mod, "full")(actual_shape, actual_val, dtype=kwargs.get("dtype", None)))
 
 
 def array(
-    data_or_cls: object,
+    data_or_cls: EagerValue,
     data: Sequence[float] | None = None,
     dtype: str | None = None,
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> object:
+    sycl_queue: EagerValue | None = None,
+) -> EagerValue:
     """Create a DPNP array from data sequence in SYCL USM memory.
 
     Args:
@@ -205,19 +210,19 @@ def array(
     if dtype is not None and hasattr(dpnp_mod, str(dtype)):
         kwargs["dtype"] = getattr(dpnp_mod, str(dtype))
     try:
-        return dpnp_mod.array(actual_data, **kwargs)
+        return cast(EagerValue, getattr(dpnp_mod, "array")(actual_data, **kwargs))
     except TypeError:
-        return dpnp_mod.array(actual_data, dtype=kwargs.get("dtype", None))
+        return cast(EagerValue, getattr(dpnp_mod, "array")(actual_data, dtype=kwargs.get("dtype", None)))
 
 
 def asarray(
-    data_or_cls: object,
+    data_or_cls: EagerValue,
     data: Sequence[float] | None = None,
     dtype: str | None = None,
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> object:
+    sycl_queue: EagerValue | None = None,
+) -> EagerValue:
     """Convert input sequence or array to DPNP USM format.
 
     Args:
@@ -237,12 +242,12 @@ def asarray(
     if dtype is not None and hasattr(dpnp_mod, str(dtype)):
         kwargs["dtype"] = getattr(dpnp_mod, str(dtype))
     try:
-        return dpnp_mod.asarray(actual_data, **kwargs)
+        return cast(EagerValue, getattr(dpnp_mod, "asarray")(actual_data, **kwargs))
     except TypeError:
-        return dpnp_mod.asarray(actual_data, dtype=kwargs.get("dtype", None))
+        return cast(EagerValue, getattr(dpnp_mod, "asarray")(actual_data, dtype=kwargs.get("dtype", None)))
 
 
-def asnumpy(data_or_cls: object, data: object = None) -> object:
+def asnumpy(data_or_cls: EagerValue, data: EagerValue = None) -> EagerValue:
     """Transfer DPNP USM array back to host NumPy ndarray.
 
     Args:
@@ -256,17 +261,17 @@ def asnumpy(data_or_cls: object, data: object = None) -> object:
     dpnp_mod = _get_dpnp_module()
     if hasattr(dpnp_mod, "asnumpy"):
         try:
-            return dpnp_mod.asnumpy(actual_data)
-        except Exception:
-            pass
+            return cast(EagerValue, getattr(dpnp_mod, "asnumpy")(actual_data))
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if hasattr(actual_data, "asnumpy"):
-        return actual_data.asnumpy()
+        return cast(EagerValue, getattr(actual_data, "asnumpy")())
 
-    numpy_mod = importlib.import_module("numpy")
-    return numpy_mod.asarray(actual_data)
+    numpy_mod = _np_mod()
+    return cast(EagerValue, numpy_mod.asarray(actual_data))
 
 
-def to_numpy(data_or_cls: object, data: object = None) -> object:
+def to_numpy(data_or_cls: EagerValue, data: EagerValue = None) -> EagerValue:
     """Convert DPNP array to host NumPy array (alias for asnumpy).
 
     Args:
@@ -280,12 +285,12 @@ def to_numpy(data_or_cls: object, data: object = None) -> object:
 
 
 def from_numpy(
-    data_or_cls: object,
-    data: object = None,
+    data_or_cls: EagerValue,
+    data: EagerValue = None,
     device: str = "auto",
     usm_type: str = "device",
-    sycl_queue: object | None = None,
-) -> object:
+    sycl_queue: EagerValue | None = None,
+) -> EagerValue:
     """Transfer host NumPy array to DPNP SYCL USM buffer.
 
     Args:
@@ -302,7 +307,7 @@ def from_numpy(
     return array(actual_data, device=device, usm_type=usm_type, sycl_queue=sycl_queue)
 
 
-def get_device(data_or_cls: object, data: object = None) -> str:
+def get_device(data_or_cls: EagerValue, data: EagerValue = None) -> str:
     """Inspect the device of a DPNP array buffer.
 
     Args:
@@ -314,13 +319,13 @@ def get_device(data_or_cls: object, data: object = None) -> str:
     """
     actual_data = data_or_cls if data is None else data
     if hasattr(actual_data, "device"):
-        return str(actual_data.device)
+        return str(getattr(actual_data, "device"))
     if hasattr(actual_data, "sycl_device"):
-        return str(actual_data.sycl_device)
+        return str(getattr(actual_data, "sycl_device"))
     return "cpu"
 
 
-def get_usm_type(data_or_cls: object, data: object = None) -> str | None:
+def get_usm_type(data_or_cls: EagerValue, data: EagerValue = None) -> str | None:
     """Inspect the USM allocation type of a DPNP array buffer.
 
     Args:
@@ -332,11 +337,11 @@ def get_usm_type(data_or_cls: object, data: object = None) -> str | None:
     """
     actual_data = data_or_cls if data is None else data
     if hasattr(actual_data, "usm_type"):
-        return str(actual_data.usm_type)
+        return str(getattr(actual_data, "usm_type"))
     return None
 
 
-def is_sycl_array(data_or_cls: object, data: object = None) -> bool:
+def is_sycl_array(data_or_cls: EagerValue, data: EagerValue = None) -> bool:
     """Determine whether an object is a DPNP/SYCL array buffer.
 
     Args:
@@ -350,7 +355,7 @@ def is_sycl_array(data_or_cls: object, data: object = None) -> bool:
     return bool(hasattr(actual_data, "usm_type") or hasattr(actual_data, "sycl_queue") or hasattr(actual_data, "sycl_device"))
 
 
-def item(data_or_cls: object, data: object = None) -> float:
+def item(data_or_cls: EagerValue, data: EagerValue = None) -> float:
     """Extract scalar item value from single-element tensor.
 
     Args:
@@ -362,6 +367,6 @@ def item(data_or_cls: object, data: object = None) -> float:
     """
     actual_data = data_or_cls if data is None else data
     if hasattr(actual_data, "item"):
-        return float(actual_data.item())
-    numpy_mod = importlib.import_module("numpy")
+        return float(getattr(actual_data, "item")())
+    numpy_mod = _np_mod()
     return float(numpy_mod.asarray(actual_data).item())

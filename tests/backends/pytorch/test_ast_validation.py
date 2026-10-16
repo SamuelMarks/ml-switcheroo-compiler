@@ -1,10 +1,19 @@
+"""Tests for test_ast_validation."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_pytorch_generator_no_numpy_crashes():
+
+def test_pytorch_generator_no_numpy_crashes() -> None:
     """Dynamically execute the PyTorchCodeGenerator AST to ensure no NameErrors."""
     graph = IRGraph()
     # Mocking some basic nodes
@@ -15,7 +24,7 @@ def test_pytorch_generator_no_numpy_crashes():
     prefix_str = "\n".join(prefix_lines)
 
     # We will execute the prefix in a dictionary
-    exec_globals = {}
+    exec_globals = cast("dict[str, EagerTensorProtocol]", {})
     try:
         exec(prefix_str, exec_globals)
     except NameError as e:

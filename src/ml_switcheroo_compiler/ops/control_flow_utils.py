@@ -1,9 +1,3 @@
-"""Module control_flow_utils.py."""
-
-from __future__ import annotations
-
-# ruff: noqa: E402, E501, F403
-
 """Provide higher-order control flow primitives for tracing and eager execution.
 
 This module implements functional control flow operators such as conditional branching,
@@ -12,19 +6,24 @@ operators support both eager execution (using NumPy/Python loops) and tracing in
 intermediate representation (IR) graph for compilation
 """
 
+from __future__ import annotations
 
 import uuid
-from typing import Any, Callable
+from typing import Callable, cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import TensorSpec
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
 
-def _wrap_proxy_inputs(args, subgraph):
+def _wrap_proxy_inputs(
+    args: tuple[Tensor | tuple[Tensor, ...] | int | float | bool | None, ...],
+    subgraph: LogicalGraph,
+) -> tuple[list[str], list[Tensor | tuple[Tensor, ...] | int | float | bool | None]]:
     """Evaluate _wrap_proxy_inputs operation.
 
     Args:
@@ -34,13 +33,15 @@ def _wrap_proxy_inputs(args, subgraph):
     Returns:
             tuple[int, ...]: Result.
     """
-    proxy_args = []
-    input_ids = []
+    proxy_args: list[Tensor | tuple[Tensor, ...] | int | float | bool | None] = []
+    input_ids: list[str] = []
     for _i, arg in enumerate(args):
         if isinstance(arg, tuple):
+            from typing import cast
+
             sub_ids, sub_args = _wrap_proxy_inputs(arg, subgraph)
             input_ids.extend(sub_ids)
-            proxy_args.append(tuple(sub_args))
+            proxy_args.append(cast("tuple[Tensor, ...]", tuple(sub_args)))
         elif isinstance(arg, Tensor):
             in_id = str(uuid.uuid4())
             node = LogicalNode(
@@ -62,7 +63,7 @@ def _wrap_proxy_inputs(args, subgraph):
     return input_ids, proxy_args
 
 
-def _get_tensor_ids(obj) -> list[str]:
+def _get_tensor_ids(obj: EagerValue) -> list[str]:
     """Evaluate _get_tensor_ids operation.
 
     Args:
@@ -77,9 +78,9 @@ def _get_tensor_ids(obj) -> list[str]:
     if isinstance(obj, Tensor):
         cur = obj
         while isinstance(cur, Tensor) and isinstance(getattr(cur, "data", None), Tensor):
-            cur = cur.data
+            cur = cast(Tensor, cur.data)
         if hasattr(cur, "data") and hasattr(cur.data, "id"):
-            return [str(cur.data.id)]
+            return [str(getattr(cur.data, "id"))]
         if hasattr(cur, "id"):
             return [str(cur.id)]
         return [str(uuid.uuid4())]
@@ -93,11 +94,11 @@ def _get_tensor_ids(obj) -> list[str]:
     raise TypeError(msg)
 
 
-def _process_trace_outputs(out: Any, subgraph: LogicalGraph) -> str:
+def _process_trace_outputs(out: Tensor | tuple[Tensor, ...] | list[Tensor], subgraph: LogicalGraph) -> str:
     """Evaluate _process_trace_outputs operation.
 
     Args:
-        out (Any): The out parameter.
+        out: The out parameter.
         subgraph (LogicalGraph): The subgraph parameter.
 
     Returns:
@@ -113,10 +114,10 @@ def _process_trace_outputs(out: Any, subgraph: LogicalGraph) -> str:
     )
     subgraph.nodes[out_node.id] = out_node
     subgraph.outputs = [out_node.id]
-    return out_node.id
+    return str(out_node.id)
 
 
-def _trace_function(func: Callable[..., Any], args: tuple[Tensor, ...], name: str) -> LogicalGraph:
+def _trace_function(func: Callable[..., Tensor | tuple[Tensor, ...] | list[Tensor]], args: tuple[Tensor, ...], name: str) -> LogicalGraph:
     """Trace a Python function's execution into a LogicalGraph.
 
     Args:
@@ -134,7 +135,7 @@ def _trace_function(func: Callable[..., Any], args: tuple[Tensor, ...], name: st
     prev_eager = compiler_config.eager_mode
 
     compiler_config.eager_mode = False
-    increment_trace_count(func)
+    cast("Callable[..., EagerTensorProtocol]", increment_trace_count)(func)
 
     subgraph = global_tracing_state.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)
@@ -149,6 +150,6 @@ def _trace_function(func: Callable[..., Any], args: tuple[Tensor, ...], name: st
         global_tracing_state.is_tracing = is_tracing
         compiler_config.eager_mode = prev_eager
 
-    subgraph.id = name
+    setattr(subgraph, "id", name)
     subgraph.outputs = [out_node_id]
     return subgraph

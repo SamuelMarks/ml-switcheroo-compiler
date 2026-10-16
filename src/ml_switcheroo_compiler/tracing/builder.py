@@ -1,10 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Tracing node builder module."""
 
+from __future__ import annotations
+
 import uuid
+from collections.abc import Sequence
+from typing import Callable, cast
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape_inference import infer_shape
 from ml_switcheroo_compiler.ops.type_inference import resolve_output_dtype_and_device
@@ -16,12 +20,12 @@ class TracingNodeBuilder:
     """Build tracing nodes."""
 
     @staticmethod
-    def create_constant_node(val, shape) -> str:
+    def create_constant_node(val: EagerValue, shape: Sequence[int | str]) -> str:
         """Create a constant node in the active tracing graph.
 
         Args:
-            val (object): The constant scalar or array value.
-            shape (tuple): The shape of the constant tensor.
+            val (EagerValue): The constant scalar or array value.
+            shape (Sequence[int | str]): The shape of the constant tensor.
 
         Returns:
             str: The unique identifier of the created node.
@@ -37,17 +41,17 @@ class TracingNodeBuilder:
         return out_id
 
     @staticmethod
-    def extract_from_tensor(a) -> tuple[str, tuple]:
+    def extract_from_tensor(a: Tensor) -> tuple[str, tuple[int | str, ...]]:
         """Extract the node identifier and shape metadata from a tensor or proxy.
 
         Args:
-            a (object): The input tensor, proxy tensor, or raw array.
+            a (Tensor): The input tensor, proxy tensor, or raw array.
 
         Returns:
             tuple: A tuple containing the node ID and its shape.
         """
         if hasattr(a.data, "id"):
-            return a.data.id, a.shape
+            return getattr(a.data, "id"), a.shape
         data_id = id(a.data)
         if hasattr(global_tracing_state, "constant_cache") and data_id in global_tracing_state.constant_cache:
             return global_tracing_state.constant_cache[data_id], a.shape
@@ -58,25 +62,26 @@ class TracingNodeBuilder:
         return out_id, a.shape
 
     @staticmethod
-    def extract_from_constant(a):
+    def extract_from_constant(a: EagerValue | ProxyTensor) -> tuple[str | list[str], tuple[int | str, ...] | list[tuple[int | str, ...]]]:
         """Extract the node identifier and shape metadata from a constant value.
 
         Args:
-            a (object): The constant scalar, list, or array value.
+            a (EagerValue | ProxyTensor): The constant scalar, list, or array value.
 
         Returns:
             tuple: A tuple containing the node ID and its shape.
         """
         if isinstance(a, (list, tuple)) and any(type(x).__name__ in ("ProxyTensor", "Tensor") for x in a):
-            ids, shapes = [], []
+            ids: list[str] = []
+            shapes: list[tuple[int | str, ...]] = []
             for x in a:
                 if type(x).__name__ == "ProxyTensor":
-                    ids.append(x.id)
-                    shapes.append(x.shape)
+                    ids.append(cast("ProxyTensor", x).id)
+                    shapes.append(cast("ProxyTensor", x).shape)
                 else:
                     oid, oshape = TracingNodeBuilder.extract_from_constant(x)
-                    ids.append(oid)
-                    shapes.append(oshape)
+                    ids.append(cast("str", oid))
+                    shapes.append(cast("tuple[int | str, ...]", oshape))
             return ids, shapes
 
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -89,25 +94,29 @@ class TracingNodeBuilder:
         return out_id, shape
 
     @staticmethod
-    def extract_proxy_inputs(args):
+    def extract_proxy_inputs(
+        args: Sequence[EagerValue | ProxyTensor],
+    ) -> tuple[list[str | list[str]], list[tuple[int | str, ...] | list[tuple[int | str, ...]]], Tensor | None]:
         """Extract proxy node IDs and shapes from a list of arguments.
 
         Args:
-            args (tuple[object, ...]): The positional arguments.
+            args (Sequence[EagerValue | ProxyTensor]): The positional arguments.
 
         Returns:
-            tuple: A tuple containing lists of node IDs, shapes, and the first tensor found.
+            tuple[list, list, Tensor | None]: A tuple containing lists of node IDs, shapes, and the first tensor found.
         """
-        input_ids = []
-        shapes = []
-        first_tensor = None
+        input_ids: list[str | list[str]] = []
+        shapes: list[tuple[int | str, ...] | list[tuple[int | str, ...]]] = []
+        first_tensor: Tensor | None = None
 
         for a in args:
+            out_id: str | list[str]
+            shape: tuple[int | str, ...] | list[tuple[int | str, ...]]
             if isinstance(a, Tensor):
                 first_tensor = a if first_tensor is None else first_tensor
                 out_id, shape = TracingNodeBuilder.extract_from_tensor(a)
             elif hasattr(a, "id"):
-                out_id, shape = a.id, getattr(a, "shape", ())
+                out_id, shape = getattr(a, "id"), getattr(a, "shape", ())
             else:
                 out_id, shape = TracingNodeBuilder.extract_from_constant(a)
 
@@ -117,14 +126,19 @@ class TracingNodeBuilder:
         return input_ids, shapes, first_tensor
 
     @staticmethod
-    def create_tracing_logical_node(op_type: str, input_ids: list[str], kwargs, out_shape) -> str:
+    def create_tracing_logical_node(
+        op_type: str,
+        input_ids: list[str],
+        kwargs: dict[str, EagerValue],
+        out_shape: Sequence[int | str],
+    ) -> str:
         """Create and add a new logical node to the active tracing graph.
 
         Args:
             op_type (str): The type of the operation.
             input_ids (list[str]): The input node IDs.
             kwargs (dict): The attributes for the node.
-            out_shape (tuple): The output shape metadata.
+            out_shape (Sequence[int | str]): The output shape metadata.
 
         Returns:
             str: The unique identifier of the created node.
@@ -141,7 +155,7 @@ class TracingNodeBuilder:
         return out_id
 
     @staticmethod
-    def emit_tracing_node(op_type: str, *args, **kwargs):
+    def emit_tracing_node(op_type: str, *args: EagerValue | ProxyTensor, **kwargs: EagerValue) -> Tensor:
         """Emit a new tracing node and return its corresponding tensor.
 
         Args:
@@ -153,13 +167,13 @@ class TracingNodeBuilder:
         """
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 
-        out_shape = infer_shape(op_type, *shapes, **kwargs)
+        out_shape = cast("Callable[..., EagerTensorProtocol]", infer_shape)(op_type, *shapes, **kwargs)
         if out_shape is None:
             out_shape = ()
         out_dtype, device = resolve_output_dtype_and_device(first_tensor, kwargs)
 
-        out_id = TracingNodeBuilder.create_tracing_logical_node(op_type, input_ids, kwargs, out_shape)
+        out_id = getattr(TracingNodeBuilder, "create_tracing_logical_node")(op_type, input_ids, kwargs, out_shape)
 
         dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype)
-        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
-        return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))
+        proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
+        return Tensor(proxy, cast("Callable[..., TensorConfig]", TensorConfig)(out_shape, out_dtype, device))

@@ -14,6 +14,7 @@ from ml_ecosystem_snapshots.stubs import (
     _sanitize_default,
     validate_pyi_stub,
 )
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
     SnapshotGroundingEngine,
@@ -207,6 +208,27 @@ OP_SIGNATURES: dict[str, str] = {
 }
 
 
+def _validate_annot_ast(ann: ast.AST, cleaned: str) -> str:
+    """Validate an annotation AST subtree against SAFE_TYPES.
+
+    Args:
+        ann (ast.AST): Parsed annotation AST node.
+        cleaned (str): Cleaned annotation string.
+
+    Returns:
+        str: Validated type string or 'Tensor'.
+    """
+    allowed_names = SAFE_TYPES | {"Optional", "Union", "Sequence"}
+    for node in ast.walk(ann):
+        if isinstance(node, ast.Name) and node.id not in allowed_names:
+            return "Tensor"
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value if node.value in SAFE_TYPES else "Tensor"
+        if not isinstance(node, (ast.Name, ast.Constant, ast.Subscript, ast.Index, ast.Load)):
+            return "Tensor"
+    return cleaned
+
+
 def _clean_type_annotation(raw_annot: str | None) -> str:
     """Normalize snapshot raw annotations into valid Python type stubs.
 
@@ -219,47 +241,34 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
     if not raw_annot or raw_annot == "None":
         return "Tensor"
 
-    cleaned: str = raw_annot.strip().strip("'\"").replace("array_like", "Tensor")
-    cleaned = cleaned.replace("`np._NoValue`", "None")
-
-    if any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "|"]):
-        return "Tensor"
-
-    if " or " in cleaned or " and " in cleaned or (" " in cleaned and "[" not in cleaned):
+    cleaned: str = raw_annot.strip().strip("'\"").replace("array_like", "Tensor").replace("`np._NoValue`", "None")
+    if any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "|"]) or " or " in cleaned or " and " in cleaned or (" " in cleaned and "[" not in cleaned):
         return "Tensor"
 
     try:
-        parsed: ast.AST = ast.parse(f"x: {cleaned}")
-        ann = parsed.body[0].annotation  # type: ignore[attr-defined]
-        for node in ast.walk(ann):
-            if isinstance(node, ast.Name):
-                if node.id not in SAFE_TYPES and node.id not in {"Optional", "Union", "Sequence"}:
-                    return "Tensor"
-            elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-                if node.value in SAFE_TYPES:
-                    return node.value
-                return "Tensor"
-            elif not isinstance(node, (ast.Name, ast.Constant, ast.Subscript, ast.Index, ast.Load)):
-                return "Tensor"
-        return cleaned
+        parsed = ast.parse(f"x: {cleaned}")
+        stmt = parsed.body[0]
+        if isinstance(stmt, ast.AnnAssign):
+            return _validate_annot_ast(stmt.annotation, cleaned)
+        return "Tensor"
     except Exception:
         return "Tensor"
 
 
 def format_params_via_ecosystem(
-    params: list[dict[str, object]],
+    params: list[dict[str, AttributeValue]],
     has_varargs: bool = False,
 ) -> str:
     """Format parameter definitions utilizing ml-ecosystem-snapshots stub formatter.
 
     Args:
-        params (list[dict[str, object]]): List of parameter dictionaries.
+        params (list[dict[str, AttributeValue]]): List of parameter dictionaries.
         has_varargs (bool): Whether to append generic *args if not present. Defaults to False.
 
     Returns:
         str: Comma-separated signature parameter string.
     """
-    clean_params: list[dict[str, object]] = []
+    clean_params: list[dict[str, AttributeValue]] = []
     for p in params:
         if isinstance(p, dict) and p.get("name"):
             clean_params.append(
@@ -270,14 +279,14 @@ def format_params_via_ecosystem(
                     "default": p.get("default"),
                 }
             )
-    return _format_param_list(clean_params, has_varargs=has_varargs)
+    return str(_format_param_list(clean_params, has_varargs=has_varargs))
 
 
-def _format_param_stub(param: dict[str, object]) -> str | None:
+def _format_param_stub(param: dict[str, AttributeValue]) -> str | None:
     """Format a snapshot param dictionary into a valid Python stub parameter.
 
     Args:
-        param (dict[str, object]): Parameter dictionary from snapshot.
+        param (dict[str, AttributeValue]): Parameter dictionary from snapshot.
 
     Returns:
         Optional[str]: Formatted parameter string or None if invalid.
@@ -292,7 +301,7 @@ def _format_param_stub(param: dict[str, object]) -> str | None:
     raw_annot: str | None = str(param.get("annotation") or "") if param.get("annotation") else None
     typ: str = _clean_type_annotation(raw_annot)
 
-    default_val: object | None = param.get("default")
+    default_val: AttributeValue = param.get("default")
     has_default: bool = default_val is not None
 
     if kind == "VAR_POSITIONAL":
@@ -305,11 +314,74 @@ def _format_param_stub(param: dict[str, object]) -> str | None:
     return f"{name}: {typ}"
 
 
-def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_path: str) -> int:
+def _partition_item_params(params_data: AttributeValue) -> list[str]:
+    """Partition and order formatted parameter strings from a snapshot params list.
+
+    Args:
+        params_data (AttributeValue): Raw params list from snapshot item.
+
+    Returns:
+        list[str]: Ordered parameter signature strings.
+    """
+    pos_args: list[str] = []
+    var_pos: str | None = None
+    kw_only: list[str] = []
+    var_kw: str | None = None
+
+    for p in params_data if isinstance(params_data, list) else []:
+        if not isinstance(p, dict):
+            continue
+        formatted = _format_param_stub(p)
+        if not formatted:
+            continue
+        kind = str(p.get("kind") or "")
+        if kind == "VAR_POSITIONAL":
+            var_pos = formatted
+        elif kind == "VAR_KEYWORD":
+            var_kw = formatted
+        elif kind == "KEYWORD_ONLY":
+            kw_only.append(formatted)
+        else:
+            pos_args.append(formatted)
+
+    param_strs: list[str] = [p for p in pos_args if not p.endswith("= ...")] + [p for p in pos_args if p.endswith("= ...")]
+    if var_pos:
+        param_strs.append(var_pos)
+    elif kw_only:
+        param_strs.append("*")
+    param_strs.extend(kw_only)
+    if var_kw:
+        param_strs.append(var_kw)
+    return param_strs or ["*args: Tensor", "**kwargs: Tensor"]
+
+
+def _format_snapshot_item_stub(item: dict[str, AttributeValue], seen_funcs: set[str]) -> str | None:
+    """Format a single snapshot item dictionary into a stub function line.
+
+    Args:
+        item (dict[str, AttributeValue]): Snapshot item dictionary.
+        seen_funcs (set[str]): Set of already emitted function names.
+
+    Returns:
+        str | None: Formatted stub line or None if skipped.
+    """
+    name: str = str(item.get("name") or "")
+    item_kind = str(item.get("kind") or "")
+    if not name.isidentifier() or keyword.iskeyword(name) or name.startswith("_") or name in seen_funcs or (item_kind and item_kind != "function"):
+        return None
+
+    param_strs = _partition_item_params(item.get("params", []))
+    raw_ret = item.get("returns")
+    ret_type: str = raw_ret if (isinstance(raw_ret, str) and raw_ret.isidentifier() and raw_ret in SAFE_TYPES) else "Tensor"
+    seen_funcs.add(name)
+    return f"def {name}({', '.join(param_strs)}) -> {ret_type}: ..."
+
+
+def _generate_stubs_from_snapshot(data: dict[str, AttributeValue], be_name: str, out_path: str) -> int:
     """Generate high-fidelity stubs from snapshot JSON data.
 
     Args:
-        data (dict[str, object]): Parsed snapshot JSON data.
+        data (dict[str, AttributeValue]): Parsed snapshot JSON data.
         be_name (str): Backend name.
         out_path (str): Destination .pyi file path.
 
@@ -325,69 +397,15 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
     ] + list(TENSOR_CLASS_STUB)
 
     categories = data.get("categories", {})
-    if not isinstance(categories, dict):
-        categories = {}
     seen_funcs: set[str] = {"Tensor", "Optional", "Union", "Sequence"}
 
-    for _, items in categories.items():
-        if not isinstance(items, list):
-            continue
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            name: str = str(item.get("name") or "")
-            if not name.isidentifier() or keyword.iskeyword(name) or name.startswith("_") or name in seen_funcs:
-                continue
-
-            item_kind = str(item.get("kind") or "")
-            if item_kind and item_kind != "function":
-                continue
-
-            params_data = item.get("params", [])
-            pos_args: list[str] = []
-            var_pos: str | None = None
-            kw_only: list[str] = []
-            var_kw: str | None = None
-
-            if isinstance(params_data, list):
-                for p in params_data:
-                    if not isinstance(p, dict):
-                        continue
-                    kind = str(p.get("kind") or "")
-                    formatted = _format_param_stub(p)
-                    if not formatted:
-                        continue
-                    if kind == "VAR_POSITIONAL":
-                        var_pos = formatted
-                    elif kind == "VAR_KEYWORD":
-                        var_kw = formatted
-                    elif kind == "KEYWORD_ONLY":
-                        kw_only.append(formatted)
-                    else:
-                        pos_args.append(formatted)
-
-            pos_no_default: list[str] = [p for p in pos_args if not p.endswith("= ...")]
-            pos_with_default: list[str] = [p for p in pos_args if p.endswith("= ...")]
-            param_strs: list[str] = pos_no_default + pos_with_default
-            if var_pos:
-                param_strs.append(var_pos)
-            elif kw_only:
-                param_strs.append("*")
-            param_strs.extend(kw_only)
-            if var_kw:
-                param_strs.append(var_kw)
-
-            if not param_strs:
-                param_strs = ["*args: Tensor", "**kwargs: Tensor"]
-
-            ret_type: str = "Tensor"
-            raw_ret = item.get("returns")
-            if isinstance(raw_ret, str) and raw_ret.isidentifier() and raw_ret in SAFE_TYPES:
-                ret_type = raw_ret
-
-            params_joined = ", ".join(param_strs)
-            lines.append(f"def {name}({params_joined}) -> {ret_type}: ...")
-            seen_funcs.add(name)
+    if isinstance(categories, dict):
+        for items in categories.values():
+            for item in items if isinstance(items, list) else []:
+                if isinstance(item, dict):
+                    stub_line = _format_snapshot_item_stub(item, seen_funcs)
+                    if stub_line is not None:
+                        lines.append(stub_line)
 
     lines.append("def __getattr__(name: str) -> Tensor: ...")
 
@@ -397,6 +415,50 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
         f.write(stub_content)
 
     return len(seen_funcs) - 4
+
+
+def _format_live_attr_stub(mod: AttributeValue, attr: str) -> str | None:
+    """Format a live module attribute into a stub function line.
+
+    Args:
+        mod (AttributeValue): Imported module object.
+        attr (str): Attribute name on module.
+
+    Returns:
+        str | None: Stub line or None if not callable.
+    """
+    try:
+        obj = getattr(mod, attr)
+        if not callable(obj):
+            return None
+        sig = inspect.signature(obj)
+        pos_args: list[str] = []
+        var_pos: str | None = None
+        kw_only: list[str] = []
+        var_kw: str | None = None
+
+        for p in sig.parameters.values():
+            default_str = " = ..." if p.default is not inspect.Parameter.empty else ""
+            if p.kind == inspect.Parameter.VAR_POSITIONAL:
+                var_pos = f"*{p.name}: Tensor"
+            elif p.kind == inspect.Parameter.VAR_KEYWORD:
+                var_kw = f"**{p.name}: Tensor"
+            elif p.kind == inspect.Parameter.KEYWORD_ONLY:
+                kw_only.append(f"{p.name}: Tensor{default_str}")
+            else:
+                pos_args.append(f"{p.name}: Tensor{default_str}")
+
+        param_strs = list(pos_args)
+        if var_pos:
+            param_strs.append(var_pos)
+        elif kw_only:
+            param_strs.append("*")
+        param_strs.extend(kw_only)
+        if var_kw:
+            param_strs.append(var_kw)
+        return f"def {attr}({', '.join(param_strs)}) -> Tensor: ..."
+    except Exception:
+        return f"def {attr}(*args: Tensor, **kwargs: Tensor) -> Tensor: ..."
 
 
 def _generate_stubs_from_live_module(fw_name: str | tuple[str, ...], be_name: str, out_path: str) -> int:
@@ -429,57 +491,19 @@ def _generate_stubs_from_live_module(fw_name: str | tuple[str, ...], be_name: st
         for attr in sorted(dir(mod)):
             if attr.startswith("_") or not attr.isidentifier() or keyword.iskeyword(attr) or attr in seen_funcs:
                 continue
-            try:
-                obj = getattr(mod, attr)
-                if not callable(obj):
-                    continue
-                sig = inspect.signature(obj)
-                pos_args = []
-                var_pos = None
-                kw_only = []
-                var_kw = None
-
-                for p in sig.parameters.values():
-                    p_name = p.name
-                    default_str = " = ..." if p.default is not inspect.Parameter.empty else ""
-                    if p.kind == inspect.Parameter.VAR_POSITIONAL:
-                        var_pos = f"*{p_name}: Tensor"
-                    elif p.kind == inspect.Parameter.VAR_KEYWORD:
-                        var_kw = f"**{p_name}: Tensor"
-                    elif p.kind == inspect.Parameter.KEYWORD_ONLY:
-                        kw_only.append(f"{p_name}: Tensor{default_str}")
-                    else:
-                        pos_args.append(f"{p_name}: Tensor{default_str}")
-
-                param_strs = list(pos_args)
-                if var_pos:
-                    param_strs.append(var_pos)
-                elif kw_only:
-                    param_strs.append("*")
-                param_strs.extend(kw_only)
-                if var_kw:
-                    param_strs.append(var_kw)
-
-                joined = ", ".join(param_strs)
-                lines.append(f"def {attr}({joined}) -> Tensor: ...")
+            stub_line = _format_live_attr_stub(mod, attr)
+            if stub_line is not None:
+                lines.append(stub_line)
                 seen_funcs.add(attr)
-            except Exception:
-                lines.append(f"def {attr}(*args: Tensor, **kwargs: Tensor) -> Tensor: ...")
-                seen_funcs.add(attr)
-
-    if len(seen_funcs) <= 2:
-        lines.append("def __getattr__(name: str) -> Tensor: ...")
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines) + "\n")
-        return 0
 
     lines.append("def __getattr__(name: str) -> Tensor: ...")
     stub_content = "\n".join(lines) + "\n"
-    validate_pyi_stub(stub_content)
+    if len(seen_funcs) > 2:
+        validate_pyi_stub(stub_content)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(stub_content)
 
-    return len(seen_funcs) - 2
+    return max(0, len(seen_funcs) - 2)
 
 
 def _generate_fallback_backend_stubs(be_name: str, out_path: str) -> int:
@@ -514,6 +538,63 @@ def _generate_fallback_backend_stubs(be_name: str, out_path: str) -> int:
     return len(CORE_OPS)
 
 
+def _load_snapshot_json_file(path: str) -> dict[str, AttributeValue]:
+    """Load a JSON or gzipped JSON snapshot file.
+
+    Args:
+        path (str): File path to load.
+
+    Returns:
+        dict[str, AttributeValue]: Parsed JSON dictionary.
+    """
+    if path.endswith(".gz"):
+        import gzip
+
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            data = json.load(f)
+            return dict(data) if isinstance(data, dict) else {}
+    with open(path, encoding="utf-8") as f:
+        data = json.loads(f.read())
+        return dict(data) if isinstance(data, dict) else {}
+
+
+def _try_generate_from_snapshot_files(
+    engine: SnapshotGroundingEngine,
+    snapshot_dir: str,
+    be_name: str,
+    fw: str | tuple[str, ...],
+    stub_path: str,
+) -> int:
+    """Attempt stub generation from engine snapshot path or latest matching file in snapshot_dir.
+
+    Args:
+        engine (SnapshotGroundingEngine): Grounding engine instance.
+        snapshot_dir (str): Snapshot directory path.
+        be_name (str): Backend name.
+        fw (str | tuple[str, ...]): Framework name(s).
+        stub_path (str): Output stub file path.
+
+    Returns:
+        int: Number of generated stubs, or 0 if unavailable.
+    """
+    snapshot_file: str | None = engine.get_snapshot_path(be_name)
+    if snapshot_file and os.path.exists(snapshot_file):
+        try:
+            return _generate_stubs_from_snapshot(_load_snapshot_json_file(snapshot_file), be_name, stub_path)
+        except Exception:
+            pass
+
+    if os.path.isdir(snapshot_dir):
+        snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith((".json", ".json.gz"))]
+        if snapshot_files:
+            try:
+                latest_path = os.path.join(snapshot_dir, sorted(snapshot_files)[-1])
+                return _generate_stubs_from_snapshot(_load_snapshot_json_file(latest_path), be_name, stub_path)
+            except Exception:
+                pass
+    return 0
+
+
 def generate_stubs(
     snapshot_dir: str | None = None,
     out_base_dir: str = "src/ml_switcheroo_compiler/backends",
@@ -543,48 +624,12 @@ def generate_stubs(
                 f.write(f'"""{be_name} backend module."""\n\nfrom __future__ import annotations\n')
 
         stub_path: str = os.path.join(be_dir, "snapshot_stubs.pyi")
-        count: int = 0
-
-        snapshot_file: str | None = engine.get_snapshot_path(be_name)
-        if snapshot_file and os.path.exists(snapshot_file):
-            try:
-                if snapshot_file.endswith(".gz"):
-                    import gzip
-
-                    with gzip.open(snapshot_file, "rt", encoding="utf-8") as f:
-                        data = json.load(f)
-                else:
-                    with open(snapshot_file, encoding="utf-8") as f:
-                        data = json.loads(f.read())
-                count = _generate_stubs_from_snapshot(data, be_name, stub_path)
-            except Exception:
-                count = 0
-
-        if count == 0 and snapshot_dir and os.path.isdir(snapshot_dir):
-            snapshot_files: list[str] = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and (f.endswith(".json") or f.endswith(".json.gz"))]
-            if snapshot_files:
-                latest_file = sorted(snapshot_files)[-1]
-                try:
-                    latest_path = os.path.join(snapshot_dir, latest_file)
-                    if latest_path.endswith(".gz"):
-                        import gzip
-
-                        with gzip.open(latest_path, "rt", encoding="utf-8") as f:
-                            data = json.load(f)
-                    else:
-                        with open(latest_path, encoding="utf-8") as f:
-                            data = json.loads(f.read())
-                    count = _generate_stubs_from_snapshot(data, be_name, stub_path)
-                except Exception:
-                    count = 0
-
+        count = _try_generate_from_snapshot_files(engine, snapshot_dir, be_name, fw, stub_path)
         if count == 0:
             count = _generate_stubs_from_live_module(fw, be_name, stub_path)
-
         if count == 0:
             count = _generate_fallback_backend_stubs(be_name, stub_path)
 
-        # We no longer copy snapshot_stubs.pyi to stub.pyi to avoid duplicate code warnings.
         if os.path.exists(stub_path):
             print(f"Generated {stub_path} ({count} stubs).")
 

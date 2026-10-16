@@ -1,14 +1,13 @@
-"""Module indexing.py."""
+"""Shape operations for Tensor Anys."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Shape operations for Tensor Anys."""
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Union, cast
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -33,7 +32,7 @@ class IndexSpec:
     axis: int = 0
 
 
-def gather(input: Tensor, axis: int, index: Tensor):
+def gather(input: Tensor, axis: int, index: Tensor) -> EagerValue:
     """Gather values along an axis specified by axis using index tensor.
 
     Args:
@@ -52,7 +51,7 @@ def gather(input: Tensor, axis: int, index: Tensor):
             (index.data if type(index).__name__ == "Tensor" else index),
             axis=axis,
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input, index]
     out_shape = index.shape if getattr(index, "shape", None) else inputs[0].shape
     return _emit_shape_node(
@@ -64,7 +63,7 @@ def gather(input: Tensor, axis: int, index: Tensor):
     )
 
 
-def gather_nd(input: Tensor, indices: Tensor):
+def gather_nd(input: Tensor, indices: Tensor) -> EagerValue:
     """Gather slices from input tensor using multi-dimensional indices.
 
     Args:
@@ -82,7 +81,7 @@ def gather_nd(input: Tensor, indices: Tensor):
             (input.data if type(input).__name__ == "Tensor" else input),
             (indices.data if type(indices).__name__ == "Tensor" else indices),
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input, indices]
     in_shape = getattr(input, "shape", ())
     idx_shape = getattr(indices, "shape", ())
@@ -100,7 +99,7 @@ def gather_nd(input: Tensor, indices: Tensor):
     )
 
 
-def take(input: Tensor, indices: Tensor, axis: int | None = None):
+def take(input: Tensor, indices: Tensor, axis: int | None = None) -> EagerValue:
     """Take elements from the input tensor at the specified flat indices.
 
     Args:
@@ -119,7 +118,7 @@ def take(input: Tensor, indices: Tensor, axis: int | None = None):
             (indices.data if type(indices).__name__ == "Tensor" else indices),
             axis=axis,
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input, indices]
     in_shape = getattr(input, "shape", ())
     idx_shape = getattr(indices, "shape", ())
@@ -141,7 +140,7 @@ def take(input: Tensor, indices: Tensor, axis: int | None = None):
     )
 
 
-def take_along_axis(arr, indices, axis: int):
+def take_along_axis(arr: EagerValue, indices: EagerValue, axis: int) -> EagerValue:
     """Take values from the input array along a specified axis using 1D indices.
 
     Args:
@@ -154,13 +153,13 @@ def take_along_axis(arr, indices, axis: int):
     backend = get_active_backend()
     return backend.execute_op(
         "TakeAlongAxis",
-        ((arr.data if type(arr).__name__ == "Tensor" else arr) if hasattr(arr, "device") else arr),
-        ((indices.data if type(indices).__name__ == "Tensor" else indices) if hasattr(indices, "device") else indices),
+        ((getattr(arr, "data") if type(arr).__name__ == "Tensor" else arr) if hasattr(arr, "device") else arr),
+        ((getattr(indices, "data") if type(indices).__name__ == "Tensor" else indices) if hasattr(indices, "device") else indices),
         axis=axis,
     )
 
 
-def searchsorted(a: Tensor, v: Tensor, side: str = "left"):
+def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> EagerValue:
     """Find indices where elements should be inserted to maintain order.
 
     Args:
@@ -182,7 +181,7 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left"):
             side=side,
         )
 
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, a.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, a.device))
 
     inputs = [a, v]
     attributes = {"side": side}
@@ -190,7 +189,7 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left"):
     return _emit_shape_node("SearchSorted", inputs, attributes, v.shape, DType.Int32)
 
 
-def where(condition: Tensor, input: Tensor, other: Tensor):
+def where(condition: Tensor, input: Tensor, other: Tensor) -> EagerValue:
     """Select elements from input or other based on condition.
 
     Args:
@@ -210,7 +209,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor):
             (input.data if type(input).__name__ == "Tensor" else input),
             (other.data if type(other).__name__ == "Tensor" else other),
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [condition, input, other]
     from ml_switcheroo_compiler.ops.shape_inference import broadcast_shapes
 
@@ -225,12 +224,12 @@ def where(condition: Tensor, input: Tensor, other: Tensor):
         "Where",
         inputs,
         {},
-        out_shape,
+        cast("Sequence[Union[int, str]]", out_shape),
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
 
 
-def select(pred: Tensor, on_true: Tensor, on_false: Tensor):
+def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> EagerValue:
     """Select elements from on_true or on_false based on pred.
 
     Args:
@@ -244,7 +243,7 @@ def select(pred: Tensor, on_true: Tensor, on_false: Tensor):
     return where(pred, on_true, on_false)
 
 
-def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None):
+def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> EagerValue:
     """Apply boolean mask to tensor.
 
     Args:
@@ -266,7 +265,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None):
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+            TensorConfig(getattr(backend.array(data), "shape"), tensor.dtype, tensor.device),
         )
     inputs = [tensor, mask]
     attributes = {"axis": axis}
@@ -275,12 +274,12 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None):
         "BooleanMask",
         inputs,
         attributes,
-        out_shape,
+        cast("Sequence[Union[int, str]]", out_shape),
         tensor.dtype,
     )
 
 
-def invert_permutation(x: Tensor):
+def invert_permutation(x: Tensor) -> EagerValue:
     """Compute the inverse permutation of a tensor.
 
     Args:
@@ -294,7 +293,7 @@ def invert_permutation(x: Tensor):
         data = backend.execute_op("InvertPermutation", (x.data if type(x).__name__ == "Tensor" else x))
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, x.dtype, x.device),
+            TensorConfig(getattr(backend.array(data), "shape"), x.dtype, x.device),
         )
     inputs = [x]
     out_shape = x.shape
@@ -313,7 +312,7 @@ class Extract(OpDef):
 
     op_name = "Extract"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -333,7 +332,7 @@ class DynamicPartition(OpDef):
 
     op_name = "DynamicPartition"
 
-    def infer_shape(self, data, partitions, num_partitions: int, **kwargs):
+    def infer_shape(self, data: EagerTensorProtocol, partitions: EagerTensorProtocol, num_partitions: int, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the dynamic partition operation.
 
         Args:
@@ -359,7 +358,7 @@ class DynamicStitch(OpDef):
 
     op_name = "DynamicStitch"
 
-    def infer_shape(self, indices, data, **kwargs):
+    def infer_shape(self, indices: EagerTensorProtocol, data: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the dynamic stitch operation.
 
         Args:
@@ -388,7 +387,7 @@ class TensorScatterSub(OpDef):
 
     op_name = "TensorScatterSub"
 
-    def infer_shape(self, tensor, indices, updates, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the tensor scatter sub operation.
 
         Args:
@@ -408,7 +407,7 @@ class ExtractVolumePatches(OpDef):
 
     op_name = "ExtractVolumePatches"
 
-    def infer_shape(self, input, ksizes: list[int], strides: list[int], padding: str, **kwargs):
+    def infer_shape(self, input: EagerTensorProtocol, ksizes: list[int], strides: list[int], padding: str, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the extract volume patches operation.
 
         Args:
@@ -423,7 +422,7 @@ class ExtractVolumePatches(OpDef):
         """
         if input is None or not hasattr(input, "shape"):
             return ()
-        in_shape = getattr(input, "shape", ())
+        in_shape: tuple[int, ...] = getattr(input, "shape", ())
         if len(in_shape) == 5:
             b, d, h, w, c = in_shape
             kd = ksizes[1] if len(ksizes) > 1 else 1
@@ -450,7 +449,7 @@ class UnravelIndex(OpDef):
 
     op_name = "UnravelIndex"
 
-    def infer_shape(self, indices, dims, **kwargs):
+    def infer_shape(self, indices: EagerTensorProtocol, dims: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the unravel index operation.
 
         Args:
@@ -475,7 +474,7 @@ class DynamicSliceInDim(OpDef):
 
     op_name = "DynamicSliceInDim"
 
-    def infer_shape(self, operand, start_index, slice_size: int, axis: int = 0, **kwargs):
+    def infer_shape(self, operand: EagerTensorProtocol, start_index: EagerTensorProtocol, slice_size: int, axis: int = 0, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the dynamic slice in axis operation.
 
         Args:
@@ -500,7 +499,7 @@ class DynamicUpdateSliceInDim(OpDef):
 
     op_name = "DynamicUpdateSliceInDim"
 
-    def infer_shape(self, operand, update, start_index, axis: int = 0, **kwargs):
+    def infer_shape(self, operand: EagerTensorProtocol, update: EagerTensorProtocol, start_index: EagerTensorProtocol, axis: int = 0, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the dynamic update slice in axis operation.
 
         Args:
@@ -522,7 +521,7 @@ class DynamicIndexInDim(OpDef):
 
     op_name = "DynamicIndexInDim"
 
-    def infer_shape(self, operand, index, axis: int = 0, keepdims: bool = True, **kwargs):
+    def infer_shape(self, operand: EagerTensorProtocol, index: EagerTensorProtocol, axis: int = 0, keepdims: bool = True, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the dynamic index in axis operation.
 
         Args:
@@ -550,7 +549,7 @@ class DynamicUpdateIndexInDim(OpDef):
 
     op_name = "DynamicUpdateIndexInDim"
 
-    def infer_shape(self, operand, update, index, axis: int = 0, **kwargs):
+    def infer_shape(self, operand: EagerTensorProtocol, update: EagerTensorProtocol, index: EagerTensorProtocol, axis: int = 0, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the dynamic update index in axis operation.
 
         Args:
@@ -574,10 +573,10 @@ class SliceInDim(OpDef):
 
     def infer_shape(
         self,
-        operand,
+        operand: EagerTensorProtocol,
         spec: IndexSpec,
-        **kwargs,
-    ):
+        **kwargs: EagerValue,
+    ) -> EagerValue:
         """Infers the output shape for the slice in axis operation.
 
         Args:
@@ -599,7 +598,7 @@ class ScatterApply(OpDef):
 
     op_name = "ScatterApply"
 
-    def infer_shape(self, tensor, indices, updates, func, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, func: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the scatter apply operation.
 
         Args:
@@ -620,7 +619,7 @@ class ScatterMax(OpDef):
 
     op_name = "ScatterMax"
 
-    def infer_shape(self, tensor, indices, updates, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the scatter max operation.
 
         Args:
@@ -640,7 +639,7 @@ class ScatterMin(OpDef):
 
     op_name = "ScatterMin"
 
-    def infer_shape(self, tensor, indices, updates, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the scatter min operation.
 
         Args:
@@ -660,7 +659,7 @@ class ScatterMul(OpDef):
 
     op_name = "ScatterMul"
 
-    def infer_shape(self, tensor, indices, updates, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the scatter mul operation.
 
         Args:
@@ -680,7 +679,7 @@ class PutAlongAxis(OpDef):
 
     op_name = "PutAlongAxis"
 
-    def infer_shape(self, arr, indices, values, **kwargs):
+    def infer_shape(self, arr: EagerTensorProtocol, indices: EagerTensorProtocol, values: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the put along axis operation.
 
         Args:
@@ -694,7 +693,7 @@ class PutAlongAxis(OpDef):
         return getattr(arr, "shape", ())
 
 
-def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int):
+def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> EagerValue:
     """Put values into array along axis at given indices.
 
     Args:

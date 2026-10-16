@@ -1,15 +1,18 @@
 """CuPy backend profiler for runtime execution and memory benchmarking."""
 
+import logging
 import resource
 import sys
 import time
-from typing import Optional, Union
+from collections.abc import Callable
+from typing import Optional, Union, cast
 
 try:
     import cupy as cp
 except ImportError:
     cp = None
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -63,8 +66,8 @@ def _get_cupy_peak_memory_mb() -> float:
                 if isinstance(total_b, (int, float)) and isinstance(free_b, (int, float)):
                     used_b = total_b - free_b
                     peak_mem = float(used_b / (1024.0 * 1024.0))
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if peak_mem <= 0.0:
         if hasattr(cp, "get_default_memory_pool"):
             try:
@@ -86,15 +89,97 @@ class CupyProfiler:
         if hasattr(cp, "cuda") and hasattr(cp.cuda, "Stream") and hasattr(cp.cuda.Stream, "null"):
             try:
                 cp.cuda.Stream.null.synchronize()
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         if hasattr(cp, "cuda") and hasattr(cp.cuda, "Device"):
             try:
                 cp.cuda.Device().synchronize()
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-    def profile_graph(  # noqa: C901, PLR0912
+    def _prepare_cupy_inputs(
+        self,
+        inputs: dict[str, Union[list[float], list[list[float]], "cp.ndarray"]],
+    ) -> tuple[dict[str, "cp.ndarray"], list["cp.ndarray"]]:
+        """Convert input dictionary values into CuPy float32 arrays.
+
+        Args:
+            inputs (dict[str, Union[list[float], list[list[float]], cp.ndarray]]): Raw input buffers.
+
+        Returns:
+            tuple[dict[str, cp.ndarray], list[cp.ndarray]]: Dictionary and list of CuPy arrays.
+        """
+        cp_inputs_dict: dict[str, cp.ndarray] = {}
+        for k, val in inputs.items():
+            if isinstance(val, cp.ndarray):
+                cp_inputs_dict[k] = val
+            else:
+                cp_inputs_dict[k] = cp.asarray(val, dtype=cp.float32)
+        return cp_inputs_dict, list(cp_inputs_dict.values())
+
+    def _measure_single_step_ms(
+        self,
+        step_fn: EagerValue,
+        has_cuda_events: bool,
+    ) -> float:
+        """Measure execution time of a single step in milliseconds using CUDA events or host timer.
+
+        Args:
+            step_fn (EagerValue): Zero-argument callable executing the graph step.
+            has_cuda_events (bool): Whether CuPy CUDA Event timing is available.
+
+        Returns:
+            float: Elapsed step duration in milliseconds.
+        """
+        if has_cuda_events:
+            try:
+                start_event = cp.cuda.Event()
+                end_event = cp.cuda.Event()
+                start_event.record()
+                _ = cast(Callable[..., EagerValue], step_fn)()
+                end_event.record()
+                end_event.synchronize()
+                return float(cp.cuda.get_elapsed_time(start_event, end_event))
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+        self._sync()
+        start = time.perf_counter()
+        _ = cast(Callable[..., EagerValue], step_fn)()
+        self._sync()
+        end = time.perf_counter()
+        return (end - start) * 1000.0
+
+    def _summarize_latencies(
+        self,
+        latencies: list[float],
+        warmup_iters: int,
+    ) -> dict[str, Union[list[float], float]]:
+        """Compute latency percentiles and peak memory metrics from collected samples.
+
+        Args:
+            latencies (list[float]): Recorded iteration latencies in milliseconds.
+            warmup_iters (int): Number of warmup iterations executed.
+
+        Returns:
+            dict[str, Union[list[float], float]]: Aggregated profiling metrics dictionary.
+        """
+        sorted_lat: list[float] = sorted(latencies) if latencies else [0.0]
+        mean_lat: float = float(sum(latencies) / len(latencies)) if latencies else 0.0
+        p50_lat: float = float(sorted_lat[int(len(sorted_lat) * 0.50)])
+        p95_lat: float = float(sorted_lat[min(len(sorted_lat) - 1, int(len(sorted_lat) * 0.95))])
+        p99_lat: float = float(sorted_lat[min(len(sorted_lat) - 1, int(len(sorted_lat) * 0.99))])
+        return {
+            "latencies": latencies,
+            "latency_ms": mean_lat,
+            "mean_latency_ms": mean_lat,
+            "p50_latency_ms": p50_lat,
+            "p95_latency_ms": p95_lat,
+            "p99_latency_ms": p99_lat,
+            "peak_memory_mb": _get_cupy_peak_memory_mb(),
+            "warmup_iterations": max(1, warmup_iters),
+        }
+
+    def profile_graph(
         self,
         graph: IRGraph,
         inputs: dict[str, Union[list[float], list[list[float]], "cp.ndarray"]],
@@ -128,15 +213,7 @@ class CupyProfiler:
             }
 
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
-
-        cp_inputs_dict: dict[str, cp.ndarray] = {}
-        for k, val in inputs.items():
-            if isinstance(val, cp.ndarray):
-                cp_inputs_dict[k] = val
-            else:
-                cp_inputs_dict[k] = cp.asarray(val, dtype=cp.float32)
-
-        cp_input_list: list[cp.ndarray] = list(cp_inputs_dict.values())
+        cp_inputs_dict, cp_input_list = self._prepare_cupy_inputs(inputs)
 
         def _execute_step() -> Union[cp.ndarray, dict[str, cp.ndarray]]:
             """Execute a single forward evaluation step.
@@ -156,46 +233,10 @@ class CupyProfiler:
                 accum = cp.add(accum, t)
             return accum
 
-        # Warmup loop
         for _ in range(max(1, warmup_iters)):
             _ = _execute_step()
             self._sync()
 
-        has_cuda_events: bool = bool(cp is not None and hasattr(cp, "cuda") and hasattr(cp.cuda, "Event") and hasattr(cp.cuda, "get_elapsed_time"))
-        latencies: list[float] = []
-        for _ in range(max(1, num_iters)):
-            if has_cuda_events:
-                try:
-                    start_event = cp.cuda.Event()
-                    end_event = cp.cuda.Event()
-                    start_event.record()
-                    _ = _execute_step()
-                    end_event.record()
-                    end_event.synchronize()
-                    elapsed_ms = float(cp.cuda.get_elapsed_time(start_event, end_event))
-                    latencies.append(elapsed_ms)
-                    continue
-                except Exception:
-                    pass
-            self._sync()
-            start = time.perf_counter()
-            _ = _execute_step()
-            self._sync()
-            end = time.perf_counter()
-            latencies.append((end - start) * 1000.0)
-
-        sorted_lat: list[float] = sorted(latencies) if latencies else [0.0]
-        mean_lat: float = float(sum(latencies) / len(latencies)) if latencies else 0.0
-        p50_lat: float = float(sorted_lat[int(len(sorted_lat) * 0.50)])
-        p95_lat: float = float(sorted_lat[min(len(sorted_lat) - 1, int(len(sorted_lat) * 0.95))])
-        p99_lat: float = float(sorted_lat[min(len(sorted_lat) - 1, int(len(sorted_lat) * 0.99))])
-        return {
-            "latencies": latencies,
-            "latency_ms": mean_lat,
-            "mean_latency_ms": mean_lat,
-            "p50_latency_ms": p50_lat,
-            "p95_latency_ms": p95_lat,
-            "p99_latency_ms": p99_lat,
-            "peak_memory_mb": _get_cupy_peak_memory_mb(),
-            "warmup_iterations": max(1, warmup_iters),
-        }
+        has_cuda_events: bool = bool(hasattr(cp, "cuda") and hasattr(cp.cuda, "Event") and hasattr(cp.cuda, "get_elapsed_time"))
+        latencies: list[float] = [self._measure_single_step_ms(_execute_step, has_cuda_events) for _ in range(max(1, num_iters))]
+        return self._summarize_latencies(latencies, warmup_iters)

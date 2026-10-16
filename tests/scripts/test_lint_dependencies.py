@@ -16,7 +16,7 @@ def test_check_dependencies_clean() -> None:
         os.makedirs(core_dir)
         clean_file: str = os.path.join(core_dir, "clean.py")
         with open(clean_file, "w", encoding="utf-8") as f:
-            f.write("import os\nimport sys\nimport yaml\nimport numpy as np\n")
+            f.write("import os\nimport sys\nimport yaml\nimport pydantic\n")
 
         # non-python file skipped
         with open(os.path.join(core_dir, "notes.txt"), "w", encoding="utf-8") as f:
@@ -33,11 +33,12 @@ def test_check_dependencies_violations() -> None:
         os.makedirs(core_dir)
         bad_file: str = os.path.join(core_dir, "bad.py")
         with open(bad_file, "w", encoding="utf-8") as f:
-            f.write("import sklearn\nfrom scipy.optimize import minimize\n")
+            f.write("import sklearn\nimport numpy as np\nfrom scipy.optimize import minimize\n")
 
         violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) >= 2
+        assert len(violations) >= 3
         assert any("sklearn" in v for v in violations)
+        assert any("numpy" in v for v in violations)
         assert any("scipy" in v for v in violations)
 
 
@@ -49,6 +50,12 @@ def test_check_dependencies_backend_allowed() -> None:
         torch_file: str = os.path.join(pytorch_dir, "runner.py")
         with open(torch_file, "w", encoding="utf-8") as f:
             f.write("import torch\nfrom torch import nn\n")
+
+        numpy_dir: str = os.path.join(temp_dir, "backends", "numpy")
+        os.makedirs(numpy_dir)
+        np_file: str = os.path.join(numpy_dir, "runner.py")
+        with open(np_file, "w", encoding="utf-8") as f:
+            f.write("import numpy as np\nimport scipy.special\n")
 
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) == 0

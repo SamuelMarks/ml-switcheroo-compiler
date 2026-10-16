@@ -1,10 +1,11 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
 
 import torch
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-def zeros(cls: type, shape: tuple[int, ...]):
+
+def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     """Evaluate zeros operation.
 
     Args:
@@ -25,7 +26,7 @@ def zeros(cls: type, shape: tuple[int, ...]):
     return torch.zeros(shape)
 
 
-def array(cls: type, data, dtype=None):
+def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     """Evaluate array operation.
 
     Args:
@@ -53,7 +54,7 @@ def array(cls: type, data, dtype=None):
     return torch.tensor(data)
 
 
-def asarray(cls: type, data):
+def asarray(cls: type, data: EagerValue) -> EagerValue:
     """Evaluate asarray operation.
 
     Args:
@@ -74,7 +75,7 @@ def asarray(cls: type, data):
     return torch.as_tensor(data)
 
 
-def item(cls: type, data) -> float:
+def item(cls: type, data: EagerValue) -> float:
     """Evaluate item operation.
 
     Args:
@@ -92,4 +93,4 @@ def item(cls: type, data) -> float:
     Returns:
         float: Result.
     """
-    return torch.as_tensor(data).item()
+    return float(torch.as_tensor(data).item())

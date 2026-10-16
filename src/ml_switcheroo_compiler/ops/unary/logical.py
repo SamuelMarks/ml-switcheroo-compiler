@@ -1,10 +1,8 @@
-# ruff: noqa: E402, E501, F403
-"""Module logical.py."""
+"""Core abstractions and logic definitions for logical.py."""
 
 from __future__ import annotations
 
-"""Core abstractions and logic definitions for logical.py."""
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
@@ -94,7 +92,7 @@ class Packbits(OpDef):
 
     op_name = "Packbits"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -121,7 +119,7 @@ class Unpackbits(OpDef):
 
     op_name = "Unpackbits"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -193,7 +191,7 @@ class Iscomplexobj(OpDef):
     op_name = "Iscomplexobj"
     np_op_name = "iscomplexobj"
 
-    def infer_shape(self, x, **kwargs):
+    def infer_shape(self, x: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -203,6 +201,7 @@ class Iscomplexobj(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
+        del x, kwargs
         return ()
 
 
@@ -213,7 +212,7 @@ class Isrealobj(OpDef):
     op_name = "Isrealobj"
     np_op_name = "isrealobj"
 
-    def infer_shape(self, x, **kwargs):
+    def infer_shape(self, x: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -223,6 +222,7 @@ class Isrealobj(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
+        del x, kwargs
         return ()
 
 
@@ -233,7 +233,7 @@ class Issubdtype(OpDef):
     op_name = "Issubdtype"
     np_op_name = "issubdtype"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -252,7 +252,7 @@ class Isin(OpDef):
 
     op_name = "Isin"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -266,7 +266,7 @@ class Isin(OpDef):
         return tuple(getattr(element, "shape", getattr(element, "shape_metadata", element if isinstance(element, (list, tuple)) else ())))
 
 
-def _get_size_from_shape(obj) -> int | None:
+def _get_size_from_shape(obj: EagerValue) -> int | None:
     """Calculate the total number of elements from an Any's shape.
 
     Args:
@@ -298,7 +298,7 @@ class Ediff1d(OpDef):
     op_name = "Ediff1d"
     np_op_name = "ediff1d"
 
-    def infer_shape(self, *args, **kwargs):  # noqa: C901, PLR0912
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -331,7 +331,7 @@ class Ediff1d(OpDef):
         return (size,)
 
 
-def population_count(*args, **kwargs):
+def population_count(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Calculate element-wise population count (a.k.a. popcount, bitsum, bitcount).
 
     Args:
@@ -346,7 +346,7 @@ def population_count(*args, **kwargs):
     return dispatch_op("PopulationCount", *args, **kwargs)
 
 
-def isin(*args, **kwargs):
+def isin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Calculate element in test_elements, broadcasting over element only.
 
     Args:
@@ -361,7 +361,7 @@ def isin(*args, **kwargs):
     return dispatch_op("Isin", *args, **kwargs)
 
 
-def iscomplex(*args, **kwargs):
+def iscomplex(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return a bool array, where True if input element is complex.
 
     Args:
@@ -376,7 +376,7 @@ def iscomplex(*args, **kwargs):
     return dispatch_op("Iscomplex", *args, **kwargs)
 
 
-def iscomplexobj(*args, **kwargs):
+def iscomplexobj(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Check for a complex type or an array of complex numbers.
 
     Args:
@@ -391,7 +391,7 @@ def iscomplexobj(*args, **kwargs):
     return dispatch_op("Iscomplexobj", *args, **kwargs)
 
 
-def isreal(*args, **kwargs):
+def isreal(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return a bool array, where True if input element is real.
 
     Args:
@@ -406,7 +406,7 @@ def isreal(*args, **kwargs):
     return dispatch_op("Isreal", *args, **kwargs)
 
 
-def isrealobj(*args, **kwargs):
+def isrealobj(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return True if x is a not complex type or an array of complex numbers.
 
     Args:
@@ -421,7 +421,7 @@ def isrealobj(*args, **kwargs):
     return dispatch_op("Isrealobj", *args, **kwargs)
 
 
-def issubdtype(*args, **kwargs):
+def issubdtype(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return True if first argument is a typecode lower/equal in type hierarchy.
 
     Args:
@@ -436,7 +436,7 @@ def issubdtype(*args, **kwargs):
     return dispatch_op("Issubdtype", *args, **kwargs)
 
 
-def reduce_precision(*args, **kwargs):
+def reduce_precision(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Reduce precision operation.
 
     Args:

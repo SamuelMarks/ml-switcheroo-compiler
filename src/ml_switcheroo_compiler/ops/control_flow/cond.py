@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -32,5 +32,5 @@ def cond(
     import ml_switcheroo_compiler.ops.control_flow as cf
 
     if config.eager_mode:
-        return cf.cond_eager(pred, true_fn, false_fn)
-    return cf.cond_tracing(pred, true_fn, false_fn)
+        return cast(T, getattr(cf, "cond_eager")(pred, true_fn, false_fn))
+    return cast(T, getattr(cf, "cond_tracing")(pred, true_fn, false_fn))

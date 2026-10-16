@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -18,6 +19,11 @@ from ml_switcheroo_compiler.export.export_api import (
     validate_stablehlo_binary,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_cpp_compile_aot() -> None:
@@ -47,10 +53,10 @@ def test_webgpu_compile_aot() -> None:
     assert isinstance(bundle, dict)
     assert bundle["format"] == "webgpu_wgsl_bundle"
     assert bundle["status"] == "ready_to_dispatch"
-    assert "shaderCode" in bundle["code"]
+    assert "shaderCode" in getattr(bundle, "__getitem__")("code")
 
 
-def test_wasm_compile_aot(tmp_path) -> None:
+def test_wasm_compile_aot(tmp_path: EagerTensorProtocol) -> None:
     """Test WasmCodeGenerator compile_aot producing wasm artifacts."""
     g = IRGraph(name="test_aot_wasm")
     g.inputs = []
@@ -62,9 +68,9 @@ def test_wasm_compile_aot(tmp_path) -> None:
     try:
         res = gen.compile_aot(output_dir=str(tmp_path))
         assert isinstance(res, tuple)
-    except CompilationError:
+    except CompilationError as _exc:
         # Expected if neither emcc nor clang is installed in test container
-        pass
+        assert _exc is not None
 
 
 def test_compile_function_strict_diagnostics() -> None:
@@ -74,17 +80,18 @@ def test_compile_function_strict_diagnostics() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    def f(x):
+    def f(x: EagerValue) -> EagerValue:
+        """Test function f."""
         return x
 
     t = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
     c = compile_function(f, backend="non_existent_backend", strict=True)
     with pytest.raises(CompilationError) as exc_info:
-        c(t)
+        cast("Callable[..., EagerTensorProtocol]", c)(t)
     assert "Target backend 'non_existent_backend' not found" in str(exc_info.value)
 
 
-def test_binary_validation_utilities(tmp_path) -> None:
+def test_binary_validation_utilities(tmp_path: EagerTensorProtocol) -> None:
     """Test binary validation utilities for ONNX, StableHLO, and SavedModel."""
     # 1. Non-existent files
     assert validate_onnx_binary(str(tmp_path / "missing.onnx")) is False

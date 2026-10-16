@@ -1,10 +1,6 @@
-"""Module aggregations.py."""
+"""Reductions."""
 
 from __future__ import annotations
-
-# ruff: noqa: E402, E501, F403
-
-"""Reductions."""
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op

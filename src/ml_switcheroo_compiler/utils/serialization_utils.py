@@ -4,12 +4,26 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from types import TracebackType
-from typing import TypeVar
+from typing import Protocol, TypeVar, Union, cast, runtime_checkable
+
+from ml_switcheroo_ir import AttributeValue
 
 T = TypeVar("T")
 
-_GLOBAL_CUSTOM_OBJECTS: dict[str, type | Callable[..., object]] = {}
-_REGISTERED_NAMES: dict[type | Callable[..., object], str] = {}
+
+@runtime_checkable
+class ConfigurableProtocol(Protocol):
+    """Protocol for objects implementing get_config()."""
+
+    def get_config(self) -> dict[str, AttributeValue]:
+        """Return configuration dictionary."""
+        ...
+
+
+SerializableType = Union[type, Callable[..., Union[AttributeValue, ConfigurableProtocol]]]
+
+_GLOBAL_CUSTOM_OBJECTS: dict[str, SerializableType] = {}
+_REGISTERED_NAMES: dict[SerializableType, str] = {}
 
 
 class CustomObjectScope:
@@ -17,20 +31,20 @@ class CustomObjectScope:
 
     def __init__(
         self,
-        *args: dict[str, type | Callable[..., object]],
-        **kwargs: type | Callable[..., object],
+        *args: dict[str, SerializableType],
+        **kwargs: SerializableType,
     ) -> None:
         """Initialize CustomObjectScope with dictionary or kwargs of custom objects.
 
         Args:
-            *args (dict[str, type | Callable[..., object]]): Mapping dictionary of custom objects.
-            **kwargs (type | Callable[..., object]): Key-value pairs of custom objects.
+            *args (dict[str, SerializableType]): Mapping dictionary of custom objects.
+            **kwargs (SerializableType): Key-value pairs of custom objects.
         """
-        self.custom_objects: dict[str, type | Callable[..., object]] = {}
+        self.custom_objects: dict[str, SerializableType] = {}
         if args and isinstance(args[0], dict):
             self.custom_objects.update(args[0])
         self.custom_objects.update(kwargs)
-        self.backup: dict[str, type | Callable[..., object]] = {}
+        self.backup: dict[str, SerializableType] = {}
 
     def __enter__(self) -> CustomObjectScope:
         """Enter scope and merge custom objects into global registry.
@@ -60,14 +74,14 @@ class CustomObjectScope:
 
 
 def custom_object_scope(
-    *args: dict[str, type | Callable[..., object]],
-    **kwargs: type | Callable[..., object],
+    *args: dict[str, SerializableType],
+    **kwargs: SerializableType,
 ) -> CustomObjectScope:
     """Create a functional custom object scope context manager.
 
     Args:
-        *args (dict[str, type | Callable[..., object]]): Mapping dictionary of custom objects.
-        **kwargs (type | Callable[..., object]): Custom objects key-value pairs.
+        *args (dict[str, SerializableType]): Mapping dictionary of custom objects.
+        **kwargs (SerializableType): Custom objects key-value pairs.
 
     Returns:
         CustomObjectScope: The context manager instance.
@@ -75,20 +89,20 @@ def custom_object_scope(
     return CustomObjectScope(*args, **kwargs)
 
 
-def get_custom_objects() -> dict[str, type | Callable[..., object]]:
+def get_custom_objects() -> dict[str, SerializableType]:
     """Retrieve the global registry of custom objects.
 
     Returns:
-        dict[str, type | Callable[..., object]]: Dictionary of registered custom objects.
+        dict[str, SerializableType]: Dictionary of registered custom objects.
     """
     return _GLOBAL_CUSTOM_OBJECTS
 
 
-def get_registered_name(obj: type | Callable[..., object] | None = None) -> str:
+def get_registered_name(obj: SerializableType | None = None) -> str:
     """Get the registered serializable name of a class or function.
 
     Args:
-        obj (type | Callable[..., object] | None): Target class or function.
+        obj (SerializableType | None): Target class or function.
 
     Returns:
         str: Registered name string or empty string.
@@ -104,16 +118,16 @@ def get_registered_name(obj: type | Callable[..., object] | None = None) -> str:
 
 def get_registered_object(
     name: str | None = None,
-    custom_objects: dict[str, type | Callable[..., object]] | None = None,
-) -> type | Callable[..., object] | None:
+    custom_objects: dict[str, SerializableType] | None = None,
+) -> SerializableType | None:
     """Retrieve registered object by name from custom objects or global registry.
 
     Args:
         name (str | None): Identifier name of the object.
-        custom_objects (dict[str, type | Callable[..., object]] | None): Optional custom objects to search first.
+        custom_objects (dict[str, SerializableType] | None): Optional custom objects to search first.
 
     Returns:
-        type | Callable[..., object] | None: Found class/function or None.
+        SerializableType | None: Found class/function or None.
     """
     if not name:
         return None
@@ -147,31 +161,32 @@ def register_serializable(
         Returns:
             T: The original class or function.
         """
-        registered_name = name or getattr(cls_or_fn, "__name__", str(cls_or_fn))
+        registered_name = str(name or getattr(cls_or_fn, "__name__", str(cls_or_fn)))
         full_name = f"{package}>{registered_name}" if package else registered_name
-        _GLOBAL_CUSTOM_OBJECTS[registered_name] = cls_or_fn
-        _GLOBAL_CUSTOM_OBJECTS[full_name] = cls_or_fn
-        _REGISTERED_NAMES[cls_or_fn] = registered_name
+        serializable_obj = cast(SerializableType, cls_or_fn)
+        _GLOBAL_CUSTOM_OBJECTS[registered_name] = serializable_obj
+        _GLOBAL_CUSTOM_OBJECTS[full_name] = serializable_obj
+        _REGISTERED_NAMES[serializable_obj] = registered_name
         return cls_or_fn
 
     return decorator
 
 
 def serialize_object(
-    obj: object | None = None,
-) -> dict[str, object] | None:
+    obj: ConfigurableProtocol | AttributeValue | None = None,
+) -> dict[str, AttributeValue] | None:
     """Serialize a framework-agnostic object or layer into a configuration dictionary.
 
     Args:
-        obj (object | None): Object to serialize.
+        obj (ConfigurableProtocol | AttributeValue | None): Object to serialize.
 
     Returns:
-        dict[str, object] | None: Serialized dictionary or None.
+        dict[str, AttributeValue] | None: Serialized dictionary or None.
     """
     if obj is None:
         return None
     cls_name = get_registered_name(obj.__class__)
-    cfg: dict[str, object] = obj.get_config() if hasattr(obj, "get_config") else {}
+    cfg: dict[str, AttributeValue] = obj.get_config() if hasattr(obj, "get_config") else {}
     return {
         "class_name": cls_name,
         "config": cfg,
@@ -181,17 +196,17 @@ def serialize_object(
 
 
 def deserialize_object(
-    identifier: object | None = None,
-    custom_objects: dict[str, type | Callable[..., object]] | None = None,
-) -> object | None:
+    identifier: dict[str, AttributeValue] | ConfigurableProtocol | AttributeValue | None = None,
+    custom_objects: dict[str, SerializableType] | None = None,
+) -> ConfigurableProtocol | AttributeValue | None:
     """Deserialize a configuration dictionary back into an object instance.
 
     Args:
-        identifier (object | None): Serialized config dict or object.
-        custom_objects (dict[str, type | Callable[..., object]] | None): Optional custom objects map.
+        identifier (dict[str, AttributeValue] | ConfigurableProtocol | AttributeValue | None): Serialized config dict or object.
+        custom_objects (dict[str, SerializableType] | None): Optional custom objects map.
 
     Returns:
-        object | None: Deserialized object instance or original identifier.
+        ConfigurableProtocol | AttributeValue | None: Deserialized object instance or original identifier.
     """
     if identifier is None:
         return None
@@ -208,14 +223,3 @@ def deserialize_object(
         if isinstance(config_dict, dict):
             return cls_obj(**config_dict)
     return identifier
-
-
-# Backward compatibility aliases
-register_keras_serializable = register_serializable
-serialize_keras_object = serialize_object
-deserialize_keras_object = deserialize_object
-serialize_keras_Any = serialize_object
-deserialize_keras_Any = deserialize_object
-custom_Any_scope = custom_object_scope
-get_custom_Anys = get_custom_objects
-get_registered_Any = get_registered_object

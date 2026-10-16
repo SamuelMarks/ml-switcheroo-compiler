@@ -1,4 +1,10 @@
-def test_rematerialization_pass():
+"""Tests for test_rematerialization."""
+
+from __future__ import annotations
+
+
+def test_rematerialization_pass() -> None:
+    """Test function test_rematerialization_pass."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, rematerialization_pass
 
@@ -52,7 +58,8 @@ def test_rematerialization_pass():
     assert g.nodes["targ"].attributes.get("rematerialize") is True
 
 
-def test_rematerialization_pass_no_modify():
+def test_rematerialization_pass_no_modify() -> None:
+    """Test function test_rematerialization_pass_no_modify."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -68,7 +75,8 @@ def test_rematerialization_pass_no_modify():
         assert modified is False
 
 
-def test_rematerialization_clone_exists():
+def test_rematerialization_clone_exists() -> None:
+    """Test function test_rematerialization_clone_exists."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -99,7 +107,8 @@ def test_rematerialization_clone_exists():
     assert g.nodes["far_consumer"].inputs == ["targ_remat"]
 
 
-def test_load_rules_real():
+def test_load_rules_real() -> None:
+    """Test function test_load_rules_real."""
     from ml_switcheroo_compiler.transforms.passes.rematerialization import _load_rules
 
     rules = _load_rules()
@@ -107,7 +116,8 @@ def test_load_rules_real():
     assert "target_ops" in rules
 
 
-def test_rematerialization_branch_coverage():
+def test_rematerialization_branch_coverage() -> None:
+    """Test function test_rematerialization_branch_coverage."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode

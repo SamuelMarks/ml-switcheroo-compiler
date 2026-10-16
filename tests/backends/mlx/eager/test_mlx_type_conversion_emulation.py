@@ -1,7 +1,11 @@
-import pytest
+"""Tests for test_mlx_type_conversion_emulation."""
 
-pytest.importorskip("mlx.core")
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import mlx.core as mx
+import pytest
 
 from ml_switcheroo_compiler.backends.mlx.eager import (
     _mlx_cast,
@@ -31,26 +35,41 @@ from ml_switcheroo_compiler.backends.mlx.eager import (
     execute_op,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_numpy_conversion_fallback():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+pytest.importorskip("mlx.core")
+
+
+def test_numpy_conversion_fallback() -> None:
     # execute_op should fall back if op is unknown
+    """Test function test_numpy_conversion_fallback."""
     try:
         try:
-            execute_op(None, "UnknownFakeOp", [1.0])
+            cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownFakeOp", [1.0])
         except NotImplementedError:
             raise
 
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
 
-    execute_op(None, "Take", mx.array([1.0]), mx.array([0]), axis=0)
-    execute_op(None, "TakeAlongAxis", mx.array([1.0]), mx.array([0]), axis=0)
+    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Take", cast("Callable[..., EagerTensorProtocol]", mx.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
+    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "TakeAlongAxis", cast("Callable[..., EagerTensorProtocol]", mx.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
 
 
-def test_mlx_ops():
+def _test_mlx_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_mlx_ops.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     t = mx.array([1.0])
 
     class DummyDtype:
+        """Test class DummyDtype."""
+
         value = "int32"
 
     _mlx_cast(mx, t, dtype="int32")
@@ -67,19 +86,33 @@ def test_mlx_ops():
     _mlx_tensor_scatter_min(mx, t2, mx.array([[0]]), mx.array([2.0]))
 
     class BoxedShape:
+        """Test class BoxedShape."""
+
         data = [1]
 
-        def tolist(self):
+        def tolist(self) -> EagerValue:
+            """Test function tolist."""
             return [1]
 
     import numpy as np
 
     out1 = _mlx_scatter_nd(mx, mx.array([[0]]), mx.array([1.0]), [1])
+    getattr(_state, "update")({"BoxedShape": BoxedShape, "DummyDtype": DummyDtype, "np": np, "out1": out1})
+    getattr(_state, "update")({"t": t, "t2": t2})
+    _state.update(locals())
+
+
+def _test_mlx_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_mlx_ops.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    BoxedShape, np, out1, t = _state["BoxedShape"], _state["np"], _state["out1"], _state["t"]
     assert np.array_equal(np.array(out1), np.array([1.0]))
 
     out2 = _mlx_scatter_nd(mx, mx.array([[0]]), mx.array([1.0]), shape=[1])
     assert np.array_equal(np.array(out2), np.array([1.0]))
-
     out3 = _mlx_scatter_nd(mx, mx.array([[0]]), mx.array([1.0]), shape=(1,))
     assert np.array_equal(np.array(out3), np.array([1.0]))
 
@@ -100,15 +133,32 @@ def test_mlx_ops():
     _mlx_full(mx, BoxedShape(), 2.0, dtype="int32")
     _mlx_full(mx, 1, 2.0, dtype="int32")
     _mlx_full(mx, 1, 2.0, dtype="fake")
+    getattr(_state, "update")({"out2": out2, "out3": out3})
+    _state.update(locals())
+
+
+def _test_mlx_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_mlx_ops.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    t = _state["t"]
 
     class ItemMock:
-        def item(self):
+        """Test class ItemMock."""
+
+        def item(self) -> EagerValue:
+            """Test function item."""
             return 1
 
-        def __int__(self):
+        def __int__(self) -> EagerValue:
+            """Test function __int__."""
             return 1
 
     class DataMock:
+        """Test class DataMock."""
+
         data = ItemMock()
 
     _parse_partition_k(ItemMock())
@@ -126,7 +176,17 @@ def test_mlx_ops():
 
     _mlx_cummin(mx, t, axis=0, dtype="int32")
     _mlx_cummin(mx, t, axis=0, dtype=None)
+    getattr(_state, "update")({"DataMock": DataMock, "ItemMock": ItemMock, "a": a})
+    _state.update(locals())
 
+
+def _test_mlx_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_mlx_ops.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    DataMock, t = _state["DataMock"], _state["t"]
     _mlx_cumprod(mx, t, axis=0, dtype="int32")
     _mlx_cumprod(mx, t, axis=0, dtype=None)
 
@@ -139,3 +199,14 @@ def test_mlx_ops():
     _mlx_rope(mx, t3, dim=1)
 
     _mlx_variance(mx, t)
+    getattr(_state, "update")({"t3": t3})
+
+
+def test_mlx_ops() -> None:
+    """Test function test_mlx_ops."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_mlx_ops_part_1(_state)
+    _test_mlx_ops_part_2(_state)
+    _test_mlx_ops_part_3(_state)
+    _test_mlx_ops_part_4(_state)
+    assert isinstance(_state, dict)

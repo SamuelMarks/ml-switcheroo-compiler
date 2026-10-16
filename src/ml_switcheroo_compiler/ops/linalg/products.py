@@ -1,7 +1,9 @@
-# ruff: noqa: E402, E501, F403
 """Core abstractions and logic definitions for products.py."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -13,7 +15,7 @@ class BandPart(OpDef):
     Extracts a central band of a tensor.
     """
 
-    def infer_shape(self, input, **kwargs):
+    def infer_shape(self, input: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -33,7 +35,7 @@ class Diag(OpDef):
     Extracts a diagonal or constructs a diagonal array.
     """
 
-    def infer_shape(self, input, **kwargs):
+    def infer_shape(self, input: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -46,7 +48,7 @@ class Diag(OpDef):
         if isinstance(input, tuple):
             if len(input) == 1:
                 return (input[0], input[0])
-            elif len(input) >= MAGIC_VAL_2:
+            elif len(input) >= MATRIX_RANK:
                 return input[:-1]
         return None
 
@@ -58,7 +60,7 @@ class Matmul(OpDef):
     Computes the matrix product of two arrays
     """
 
-    def infer_shape(self, a, b, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -77,7 +79,7 @@ class Matmul(OpDef):
         return None
 
 
-def _has_valid_shape(obj) -> bool:
+def _has_valid_shape(obj: EagerValue) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
@@ -86,7 +88,7 @@ def _has_valid_shape(obj) -> bool:
     Returns:
         bool: Result.
     """
-    return hasattr(obj, "shape") and bool(obj.shape)
+    return hasattr(obj, "shape") and bool(getattr(obj, "shape"))
 
 
 @register_op("MatrixPower")
@@ -96,30 +98,17 @@ class MatrixPower(OpDef):
     Computes the matrix power of a square matrix.
     """
 
-    def infer_shape(self, a, **kwargs):
-        """Infer shape.
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+        """Infer the output shape of the MatrixPower operation.
 
         Args:
-            a (Any): The a parameter.
-            **kwargs (Any): Keyword args.
+            a: The input tensor.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: The inferred shape of the matrix power result.
         """
-        """Infer shape.
-
-        Args:
-            a: Arg.
-            **kwargs: Kwargs.
-        """
-        """Infer the output shape of the operation.
-
-        Args:
-            a (Any): The input tensor.
-            **kwargs (Any): Additional keyword arguments.
-
-        Returns: Tensor: The evaluated output resulting from this operation.
-        """
+        del kwargs
         if hasattr(a, "shape"):
             return a.shape
         return ()
@@ -131,7 +120,7 @@ class Trace(OpDef):
 
     op_name = "Trace"
 
-    def infer_shape(self, a, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -145,8 +134,8 @@ class Trace(OpDef):
         axis1 = kwargs.get("axis1", 0)
         axis2 = kwargs.get("axis2", 1)
         if len(shape) >= 2:
-            shape.pop(max(axis1, axis2))
-            shape.pop(min(axis1, axis2))
+            shape.pop(max(int(cast(int, axis1)), int(cast(int, axis2))))
+            shape.pop(min(int(cast(int, axis1)), int(cast(int, axis2))))
         return tuple(shape)
 
 
@@ -156,7 +145,7 @@ class MatrixRank(OpDef):
 
     op_name = "MatrixRank"
 
-    def infer_shape(self, a, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -179,7 +168,7 @@ class MatrixTranspose(OpDef):
 
     op_name = "MatrixTranspose"
 
-    def infer_shape(self, a, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -201,7 +190,7 @@ class Adjoint(OpDef):
 
     op_name = "Adjoint"
 
-    def infer_shape(self, matrix, **kwargs):
+    def infer_shape(self, matrix: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -223,7 +212,7 @@ class Diagonal(OpDef):
 
     op_name = "Diagonal"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -242,7 +231,7 @@ class EinsumPath(OpDef):
 
     op_name = "EinsumPath"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -262,7 +251,7 @@ class MultiDot(OpDef):
 
     op_name = "MultiDot"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

@@ -1,5 +1,7 @@
 """Tests for core intermediate representation (IR) schemas and utilities."""
 
+from __future__ import annotations
+
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import DType, TensorSpec
@@ -40,9 +42,9 @@ def test_clone_logical_node() -> None:
 
     # Test clone with minimal node (covering None defaults)
     node_min = LogicalNode(id="min1", op_type="min_op")
-    node_min.outputs = None  # type: ignore[assignment]
-    node_min.output_specs = None  # type: ignore[assignment]
-    node_min.subgraphs = None  # type: ignore[assignment]
+    setattr(node_min, "outputs", None)
+    setattr(node_min, "output_specs", None)
+    setattr(node_min, "subgraphs", None)
     cloned_min = clone_logical_node(node_min)
     assert cloned_min.id == "min1"
 

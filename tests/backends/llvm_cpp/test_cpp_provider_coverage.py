@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-import multiprocessing
 from typing import Callable, Union
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider as cpp_prov_mod
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 MetricsVal = Union[list[float], float]
 
-ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray], str, int, multiprocessing.Queue, None]
+ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, None]
 
 
 class MockSimpleProfiler:
@@ -22,7 +22,7 @@ class MockSimpleProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -169,7 +169,7 @@ class MockDeviceFailingProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
         *args: int,
         **kwargs: str | int | None,
     ) -> dict[str, MetricsVal]:

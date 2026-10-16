@@ -1,7 +1,11 @@
-# ruff: noqa: E402, E501, F403
 """Calculate loss functions."""
 
-from typing import Any, Optional, Union  # noqa: F401
+from typing import TYPE_CHECKING, Optional, Union, cast  # noqa: F401
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.registry import EagerValue
 
 from ml_switcheroo_compiler import ops
 
@@ -41,7 +45,7 @@ def dice_loss(
     y_pred: Tensor,
     axis: Optional[Union[tuple[int, ...], int]] = None,
     smooth: float = 1e-5,
-):
+) -> EagerValue:
     """Compute the Dice loss.
 
     Args:
@@ -64,7 +68,7 @@ def dice_loss(
     return subtract(1.0, dice_coeff)
 
 
-def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1):
+def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> EagerValue:
     """Evaluate categorical_generalized_cross_entropy operation.
 
     Args:
@@ -101,7 +105,7 @@ def _compute_circle_margins(margin: float) -> tuple[float, float, float, float]:
     return 1.0 + margin, -margin, 1.0 - margin, margin
 
 
-def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float):
+def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> EagerValue:
     """Compute the scaled logits for the positive and negative classes in circle loss.
 
     Args:
@@ -121,7 +125,7 @@ def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float):
     return logit_p, logit_n
 
 
-def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Tensor, mask_n: Tensor):
+def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Tensor, mask_n: Tensor) -> EagerValue:
     """Reduce the circle loss logits into the final scalar or per-sample loss.
 
     Args:
@@ -143,7 +147,7 @@ def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Ten
     return ops.log(ops.add(1.0, ops.exp(loss)))
 
 
-def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0):
+def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> EagerValue:
     """Evaluate circle_loss operation.
 
     Args:
@@ -157,11 +161,11 @@ def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: flo
     """
     mask_p = y_true
     mask_n = subtract(1.0, y_true)
-    logit_p, logit_n = _compute_circle_logits(y_pred, margin, gamma)
+    logit_p, logit_n = getattr(_compute_circle_logits(y_pred, margin, gamma), "__iter__")()
     return _compute_circle_loss_reduction(logit_p, logit_n, mask_p, mask_n)
 
 
-def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5):
+def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> EagerValue:
     """Compute the Tversky loss, a generalization of the Dice loss.
 
     Args:
@@ -181,7 +185,7 @@ def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float
     return subtract(1.0, true_divide(intersection, denom))
 
 
-def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool):
+def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> EagerValue:
     """Clip probabilities if from_logits is False.
 
     Args:
@@ -196,7 +200,7 @@ def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool):
     return y_pred
 
 
-def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool):
+def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> EagerValue:
     """Apply mathematical computation for BCE loss.
 
     Args:
@@ -228,7 +232,7 @@ def binary_crossentropy(
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
-):
+) -> EagerValue:
     """Compute the binary crossentropy loss.
 
     Args:
@@ -244,7 +248,7 @@ def binary_crossentropy(
     if label_smoothing > 0.0:
         y_true = add(multiply(y_true, 1.0 - label_smoothing), 0.5 * label_smoothing)
 
-    y_pred = _clip_and_convert_logits(y_pred, from_logits)
+    y_pred = cast(Tensor, _clip_and_convert_logits(y_pred, from_logits))
     bce = _compute_bce_loss(y_true, y_pred, from_logits)
 
     return op_mean(bce, axis=axis)
@@ -256,7 +260,7 @@ def categorical_crossentropy(
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
-):
+) -> EagerValue:
     """Compute the categorical crossentropy loss.
 
     Args:
@@ -277,7 +281,7 @@ def categorical_crossentropy(
         y_true = add(multiply(y_true, 1.0 - label_smoothing), smooth_val)
 
     if from_logits:
-        y_pred = log_softmax(y_pred, axis=axis)
+        y_pred = cast(Tensor, log_softmax(y_pred, axis=axis))
         return negative(op_sum(multiply(y_true, y_pred), axis=axis))
     else:
         y_pred = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
@@ -290,7 +294,7 @@ def sparse_categorical_crossentropy(
     from_logits: bool = False,
     ignore_class: Optional[int] = None,
     axis: int = -1,
-):
+) -> EagerValue:
     """Compute the sparse categorical crossentropy loss.
 
     Args:
@@ -305,11 +309,11 @@ def sparse_categorical_crossentropy(
     """
     num_classes = y_pred.shape[axis]
     y_true_one_hot = one_hot(y_true, num_classes, axis=axis)
-    loss = categorical_crossentropy(y_true_one_hot, y_pred, from_logits=from_logits, axis=axis)
+    loss = categorical_crossentropy(cast("Tensor", y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
 
     if ignore_class is not None:
         valid_mask = not_equal(y_true, ignore_class)
-        loss = where(valid_mask, loss, None)
+        loss = where(valid_mask, cast("Tensor", loss), cast("Tensor", None))
 
     return loss
 
@@ -348,7 +352,7 @@ class AdaptiveLogSoftmaxWithLoss(OpDef):
 
     op_name = "AdaptiveLogSoftmaxWithLoss"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape of the AdaptiveLogSoftmaxWithLoss operation.
 
         Args:
@@ -361,7 +365,7 @@ class AdaptiveLogSoftmaxWithLoss(OpDef):
         return (args[1].shape, ())
 
 
-def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cutoffs, add_cluster_prob: bool):
+def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cutoffs: EagerValue, add_cluster_prob: bool) -> EagerValue:
     """Emit a logical node representing the adaptive log softmax with loss computation during tracing.
 
     Args:
@@ -392,7 +396,7 @@ def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cut
     node = LogicalNode(
         id=out_id,
         op_type="AdaptiveLogSoftmaxWithLoss",
-        inputs=[input.data.id, target.data.id],
+        inputs=[getattr(input.data, "id"), getattr(target.data, "id")],
         shape_metadata=[target.shape, ()],
         attributes={"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob},
     )
@@ -410,9 +414,9 @@ def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cut
 def adaptive_log_softmax_with_loss(
     input: Tensor,
     target: Tensor,
-    cutoffs,
+    cutoffs: EagerValue,
     add_cluster_prob: bool = True,
-):
+) -> EagerValue:
     """Compute the adaptive log softmax and its corresponding loss.
 
     Args:
@@ -430,12 +434,15 @@ def adaptive_log_softmax_with_loss(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        out, loss = backend.execute_op(
-            "AdaptiveLogSoftmaxWithLoss",
-            input.data,
-            target.data,
-            cutoffs=cutoffs,
-            add_cluster_prob=add_cluster_prob,
+        out, loss = cast(
+            "tuple[EagerValue, EagerValue]",
+            backend.execute_op(
+                "AdaptiveLogSoftmaxWithLoss",
+                input.data,
+                target.data,
+                cutoffs=cutoffs,
+                add_cluster_prob=add_cluster_prob,
+            ),
         )
         return (
             Tensor(out, TensorConfig(target.shape, input.dtype, input.device)),
@@ -444,7 +451,7 @@ def adaptive_log_softmax_with_loss(
     return _emit_adaptive_log_softmax_with_loss_node(input, target, cutoffs, add_cluster_prob)
 
 
-def log_poisson_loss(targets, log_input, compute_full_loss=False, name=None):
+def log_poisson_loss(targets: EagerValue, log_input: EagerValue, compute_full_loss: EagerValue = False, name: EagerValue = None) -> EagerValue:
     """Compute log Poisson loss.
 
     Args:
@@ -455,10 +462,10 @@ def log_poisson_loss(targets, log_input, compute_full_loss=False, name=None):
 
     Returns: Tensor: The computed log Poisson loss.
     """
-    return Tensor(None, TensorConfig(targets.shape, "float32", "cpu"))
+    return Tensor(None, TensorConfig(getattr(targets, "shape"), "float32", "cpu"))
 
 
-def in_top_k(targets, predictions, k, name=None):
+def in_top_k(targets: EagerValue, predictions: EagerValue, k: EagerValue, name: EagerValue = None) -> EagerValue:
     """Says whether the targets are in the top K predictions.
 
     Args:
@@ -469,10 +476,10 @@ def in_top_k(targets, predictions, k, name=None):
 
     Returns: Tensor: A boolean tensor indicating if the targets are in the top K predictions.
     """
-    return Tensor(None, TensorConfig(targets.shape, "bool", "cpu"))
+    return Tensor(None, TensorConfig(getattr(targets, "shape"), "bool", "cpu"))
 
 
-def l2_loss(t, name=None):
+def l2_loss(t: EagerValue, name: EagerValue = None) -> EagerValue:
     """Compute half the L2 norm of a tensor without the sqrt.
 
     Args:
@@ -484,7 +491,7 @@ def l2_loss(t, name=None):
     return multiply(sum(multiply(t, t)), 0.5)
 
 
-def scale_regularization_loss(regularization_loss, name=None):
+def scale_regularization_loss(regularization_loss: EagerValue, name: EagerValue = None) -> EagerValue:
     """Scales the sum of the given regularization losses by number of replicas.
 
     Args:
@@ -511,7 +518,7 @@ class InTopK(OpDef):
 
     op_name = "InTopK"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape of the InTopK operation.
 
         Args:

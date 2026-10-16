@@ -1,8 +1,6 @@
-"""Module lookup.py."""
-
-# ruff: noqa: E402, E501, F403
 """Lookup and hash table ops."""
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
 
@@ -22,7 +20,7 @@ class MutableHashTable:
         self.value_dtype = value_dtype
         self.default_value = default_value
 
-    def lookup(self, keys: Tensor):
+    def lookup(self, keys: Tensor) -> EagerValue:
         """Lookup keys.
 
         Args:
@@ -65,7 +63,7 @@ class DenseHashTable:
         self.empty_key = empty_key
         self.deleted_key = deleted_key
 
-    def lookup(self, keys: Tensor):
+    def lookup(self, keys: Tensor) -> EagerValue:
         """Lookup keys.
 
         Args:

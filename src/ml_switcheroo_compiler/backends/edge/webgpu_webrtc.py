@@ -42,7 +42,13 @@ def emit_webrtc_init() -> str:
 
 
 def emit_webrtc_op(op_type: str, local_tensor_var: str, op_id: str) -> str:
-    """Emit WebRTC collective operation JavaScript string."""
+    """Emit WebRTC collective operation JavaScript string.
+
+    Args:
+        op_type: The op_type parameter.
+        local_tensor_var: The local_tensor_var parameter.
+        op_id: The op_id parameter.
+    """
     yaml_path = os.path.join(os.path.dirname(__file__), "../../distributed/webrtc_topology.yaml")
     if not os.path.exists(yaml_path):
         return ""

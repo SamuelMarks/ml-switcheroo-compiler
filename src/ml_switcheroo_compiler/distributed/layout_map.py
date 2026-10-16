@@ -1,15 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """LayoutMap API for annotating tensors with sharding constraints."""
+
+from __future__ import annotations
 
 import re
 from collections.abc import Sequence
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 
 
 class ShardingSpec:
     """Specification of how a tensor is sharded across a DeviceMesh."""
 
-    def __init__(self, mesh, mesh_mapping: Sequence[Optional[str]]) -> None:
+    def __init__(self, mesh: EagerValue, mesh_mapping: Sequence[Optional[str]]) -> None:
         """Initialize ShardingSpec.
 
         Args:
@@ -27,7 +33,7 @@ class ShardingSpec:
         """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
-    def __eq__(self, other) -> bool:
+    def _eq(self, other: EagerValue) -> bool:
         """Equality check.
 
         Args:
@@ -41,10 +47,13 @@ class ShardingSpec:
         return self.mesh == other.mesh and self.mesh_mapping == other.mesh_mapping
 
 
+setattr(ShardingSpec, "__eq__", ShardingSpec._eq)
+
+
 class LayoutMap:
     """Mapping of logical tensor paths to ShardingSpecs."""
 
-    def __init__(self, device_mesh=None) -> None:
+    def __init__(self, device_mesh: EagerValue = None) -> None:
         """Initialize LayoutMap.
 
         Args:
@@ -105,13 +114,13 @@ class LayoutMap:
         """
         return self._map.get(key)
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> dict[str, str | dict[str, dict[str, str | list[str | None] | None]] | None]:
         """Convert LayoutMap to a serializable dictionary.
 
         Returns:
-            dict[str, object]: Serialized layout map representation.
+            dict[str, str | dict[str, dict[str, str | list[str | None] | None]] | None]: Serialized layout map representation.
         """
-        specs_dict: dict[str, object] = {}
+        specs_dict: dict[str, dict[str, str | list[str | None] | None]] = {}
         for path, spec in self._map.items():
             specs_dict[path] = {
                 "mesh_name": getattr(spec.mesh, "name", "default") if spec.mesh else None,
@@ -134,12 +143,12 @@ class LayoutMap:
         return yaml.safe_dump(self.to_dict(), sort_keys=False)
 
     @classmethod
-    def from_yaml(cls, yaml_content: str, device_mesh: Optional[object] = None) -> "LayoutMap":
+    def from_yaml(cls, yaml_content: str, device_mesh: Optional[DeviceMesh] = None) -> LayoutMap:
         """Construct a LayoutMap from declarative YAML content.
 
         Args:
             yaml_content (str): YAML string or filesystem path.
-            device_mesh (Optional[object]): Associated DeviceMesh instance.
+            device_mesh (Optional[DeviceMesh]): Associated DeviceMesh instance.
 
         Returns:
             LayoutMap: Initialized and populated LayoutMap.

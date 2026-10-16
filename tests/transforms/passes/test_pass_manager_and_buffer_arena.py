@@ -1,7 +1,10 @@
 """Tests for pass manager lifecycle, buffer allocation gap reuse, and pattern discovery."""
 
+from __future__ import annotations
+
 import os
 import tempfile
+from typing import TYPE_CHECKING, cast
 
 import yaml
 
@@ -17,13 +20,21 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     _discover_fusion_patterns,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_pass_manager_coverage_branches():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_pass_manager_coverage_branches() -> None:
     """Test pass manager snapshot, restore, and config execution branches."""
 
     # 1. Graph with list nodes instead of dict
     class MockListGraph:
-        def __init__(self):
+        """Test class MockListGraph."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
             n = IRNode(id="n1", op_type="Input")
             n.shape_metadata = ()
             self.nodes = [n]
@@ -31,12 +42,12 @@ def test_pass_manager_coverage_branches():
             self.outputs = ["n1"]
 
     lg = MockListGraph()
-    snap = _snapshot_graph(lg)
+    snap = cast("Callable[..., EagerTensorProtocol]", _snapshot_graph)(lg)
     assert "n1" in snap["nodes"]
 
     # Restore onto list graph
     lg_target = MockListGraph()
-    _restore_graph(lg_target, snap)
+    cast("Callable[..., EagerTensorProtocol]", _restore_graph)(lg_target, snap)
     assert len(lg_target.nodes) == 1
 
     # 2. load_from_config with plain execution_order
@@ -69,7 +80,7 @@ def test_pass_manager_coverage_branches():
     assert "x" in res_g.nodes
 
 
-def test_buffer_allocation_gap_reuse():
+def test_buffer_allocation_gap_reuse() -> None:
     """Test calculate_arena_offsets finding gap between active blocks."""
     alloc_pass = BufferAllocationPass(alignment=16)
     g = IRGraph()
@@ -103,7 +114,7 @@ def test_buffer_allocation_gap_reuse():
         assert off % 16 == 0
 
 
-def test_discover_fusion_patterns_invalid_file():
+def test_discover_fusion_patterns_invalid_file() -> None:
     """Test error handling in pattern discovery when file is corrupt."""
     with tempfile.TemporaryDirectory() as tmpdir:
         bad_file = os.path.join(tmpdir, "bad.yaml")

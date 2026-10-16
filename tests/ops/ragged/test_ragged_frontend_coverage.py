@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -11,6 +12,11 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyWithShape:
@@ -59,7 +65,7 @@ def test_ragged_frontend_coverage() -> None:
             assert isinstance(ragged_fe_mod.ragged_range(0, 10, 2), Tensor)
             assert isinstance(ragged_fe_mod.ragged_row_splits_to_segment_ids(t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.ragged_segment_ids_to_row_splits(t_dummy), Tensor)
-            assert isinstance(ragged_fe_mod.ragged_stack([t_dummy, t_dummy]), Tensor)
+            assert isinstance(cast("Callable[..., EagerTensorProtocol]", ragged_fe_mod.ragged_stack)([t_dummy, t_dummy]), Tensor)
             assert isinstance(ragged_fe_mod.ragged_stack_dynamic_partitions(t_dummy, t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.ragged_gather(t_dummy, t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.ragged_tensor_to_dense(t_dummy), Tensor)
@@ -68,7 +74,7 @@ def test_ragged_frontend_coverage() -> None:
             assert isinstance(ragged_fe_mod.ragged_dynamic_broadcast(t_dummy, (2, 3)), Tensor)
             assert isinstance(ragged_fe_mod.ragged_dot(t_dummy, t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.boolean_mask(t_dummy, t_dummy), Tensor)
-            assert isinstance(ragged_fe_mod.map_flat_values(lambda x: x, t_dummy), Tensor)
+            assert isinstance(cast("Callable[..., EagerTensorProtocol]", ragged_fe_mod.map_flat_values)(lambda x: x, t_dummy), Tensor)
 
         # Non-eager mode
         config.eager_mode = False
@@ -76,7 +82,7 @@ def test_ragged_frontend_coverage() -> None:
         class MockRaggedOp:
             """Mock ragged op class for shape inference."""
 
-            def infer_shape(self, *args, **kwargs):
+            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
                 """Return mocked shape tuple.
 
                 Args:
@@ -91,9 +97,9 @@ def test_ragged_frontend_coverage() -> None:
         with patch("ml_switcheroo_compiler.ops.ragged.frontend.get_op", return_value=MockRaggedOp):
             with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node", return_value="emitted_ragged"):
                 res_graph = ragged_fe_mod.ragged_constant(t_dummy)
-                assert res_graph == "emitted_ragged"
+                assert cast("EagerTensorProtocol", res_graph) == cast("EagerTensorProtocol", "emitted_ragged")
 
                 res_graph_no_args = ragged_fe_mod._ragged_op("RaggedConstant")
-                assert res_graph_no_args == "emitted_ragged"
+                assert cast("EagerTensorProtocol", res_graph_no_args) == cast("EagerTensorProtocol", "emitted_ragged")
     finally:
         config.eager_mode = orig_eager

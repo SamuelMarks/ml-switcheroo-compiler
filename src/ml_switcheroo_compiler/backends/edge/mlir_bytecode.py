@@ -1,8 +1,10 @@
 """MLIR Bytecode Encoder."""
 
+from __future__ import annotations
+
 import os
 import struct
-from typing import Optional, Union
+from typing import Callable, Optional, Union, cast
 
 import yaml
 
@@ -25,7 +27,7 @@ class MLIRBytecodeEncoder:
         path: str = os.path.join(os.path.dirname(__file__), "mlir_spec.yaml")
         with open(path) as f:
             data: dict[str, Union[str, int, list[str], dict[str, int]]] = yaml.safe_load(f)
-            self.spec: MlirSpecConfig = MlirSpecConfig(**data)
+            self.spec: MlirSpecConfig = cast("Callable[..., MlirSpecConfig]", MlirSpecConfig)(**data)
 
         # Pre-seed dialects from spec
         for d in self.spec.default_dialects:
@@ -204,8 +206,8 @@ class MLIRBytecodeEncoder:
         for op in self.ops:
             # Op header: op_name_idx
             payload += self._encode_varint(self._add_string(str(op["name"])))
-            operand_ids: list[int] = list(op.get("operand_ssa_ids", []))
-            type_indices: list[int] = list(op.get("result_type_indices", []))
+            operand_ids: list[int] = list(getattr(op.get("operand_ssa_ids", []), "__iter__")())
+            type_indices: list[int] = list(getattr(op.get("result_type_indices", []), "__iter__")())
 
             # Operands count
             payload += self._encode_varint(len(operand_ids))

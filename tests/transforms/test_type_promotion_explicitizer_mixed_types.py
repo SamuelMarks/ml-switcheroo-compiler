@@ -1,11 +1,14 @@
 """Tests for type promotion explicitizer pass handling mixed types."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import _needs_cast, type_promotion_explicitizer_pass
 
 
-def test_type_promotion_explicitizer_mixed_types():
+def test_type_promotion_explicitizer_mixed_types() -> None:
+    """Test function test_type_promotion_explicitizer_mixed_types."""
     graph = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={"dtype": DType.Float32.value})
     n2 = IRNode(id="n2", op_type="Input", inputs=[], attributes={"dtype": DType.Float64.value})

@@ -1,18 +1,31 @@
+"""Tests for test_scatter."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.scatter import scatter, scatter_add, scatter_nd, tensor_scatter_add, tensor_scatter_max, tensor_scatter_min, tensor_scatter_update
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class MockTensor:
-    def __init__(self, shape=()):
+    """Test class MockTensor."""
+
+    def __init__(self, shape: EagerValue = ()) -> None:
+        """Test function __init__."""
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
         self.data = [1, 2]
 
 
-def test_scatter(mocker):
+def test_scatter(mocker: EagerTensorProtocol) -> None:
+    """Test function test_scatter."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -21,13 +34,14 @@ def test_scatter(mocker):
     assert scatter(t, 0, idx, src) == "scatter"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
     res = scatter(t, 0, idx, src)
-    assert res.config.shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(res, "config")).shape == (2, 3)
 
 
-def test_scatter_nd(mocker):
+def test_scatter_nd(mocker: EagerTensorProtocol) -> None:
+    """Test function test_scatter_nd."""
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
     config.eager_mode = False
@@ -35,12 +49,13 @@ def test_scatter_nd(mocker):
     assert scatter_nd(idx, src, (2, 3)) == "scatter_nd"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
-    assert scatter_nd(idx, src, (2, 3)).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(scatter_nd(idx, src, (2, 3)), "config")).shape == (2, 3)
 
 
-def test_scatter_add(mocker):
+def test_scatter_add(mocker: EagerTensorProtocol) -> None:
+    """Test function test_scatter_add."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -49,12 +64,13 @@ def test_scatter_add(mocker):
     assert scatter_add(t, 0, idx, src) == "scatter_add"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
-    assert scatter_add(t, 0, idx, src).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(scatter_add(t, 0, idx, src), "config")).shape == (2, 3)
 
 
-def test_tensor_scatter_update(mocker):
+def test_tensor_scatter_update(mocker: EagerTensorProtocol) -> None:
+    """Test function test_tensor_scatter_update."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -63,12 +79,13 @@ def test_tensor_scatter_update(mocker):
     assert tensor_scatter_update(t, idx, src) == "ts_update"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
-    assert tensor_scatter_update(t, idx, src).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(tensor_scatter_update(t, idx, src), "config")).shape == (2, 3)
 
 
-def test_tensor_scatter_max(mocker):
+def test_tensor_scatter_max(mocker: EagerTensorProtocol) -> None:
+    """Test function test_tensor_scatter_max."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -77,12 +94,13 @@ def test_tensor_scatter_max(mocker):
     assert tensor_scatter_max(t, idx, src) == "ts_max"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
-    assert tensor_scatter_max(t, idx, src).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(tensor_scatter_max(t, idx, src), "config")).shape == (2, 3)
 
 
-def test_tensor_scatter_min(mocker):
+def test_tensor_scatter_min(mocker: EagerTensorProtocol) -> None:
+    """Test function test_tensor_scatter_min."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -91,12 +109,13 @@ def test_tensor_scatter_min(mocker):
     assert tensor_scatter_min(t, idx, src) == "ts_min"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
-    assert tensor_scatter_min(t, idx, src).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(tensor_scatter_min(t, idx, src), "config")).shape == (2, 3)
 
 
-def test_tensor_scatter_add(mocker):
+def test_tensor_scatter_add(mocker: EagerTensorProtocol) -> None:
+    """Test function test_tensor_scatter_add."""
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -105,12 +124,12 @@ def test_tensor_scatter_add(mocker):
     assert tensor_scatter_add(t, idx, src) == "ts_add"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    mock_backend.execute_op.return_value = "res"
-    mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
-    assert tensor_scatter_add(t, idx, src).config.shape == (2, 3)
+    setattr(mock_backend.execute_op, "return_value", "res")
+    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert cast("EagerTensorProtocol", getattr(tensor_scatter_add(t, idx, src), "config")).shape == (2, 3)
 
 
-def test_scatter_exact_shape_deduction(mocker) -> None:
+def test_scatter_exact_shape_deduction(mocker: EagerTensorProtocol) -> None:
     """Verify that scatter and tensor_scatter operations deduce exact shapes in graph mode.
 
     Args:
@@ -118,7 +137,8 @@ def test_scatter_exact_shape_deduction(mocker) -> None:
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+        """Test function mock_emit."""
         captured_shapes[op_name] = shape
         return op_name
 

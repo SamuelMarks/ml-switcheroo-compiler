@@ -1,18 +1,22 @@
-# ruff: noqa: E402, E501, F403
 """Shared vision utilities and ops."""
 
+from __future__ import annotations
+
+from collections.abc import Callable
 from dataclasses import dataclass
+from types import ModuleType
+from typing import cast
 
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_crop_eager,
     random_translation_eager,
     random_zoom_eager,
 )
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("AugMix")
-def _np_augmix(backend_module, images, factor: float, **kwargs):
+def _np_augmix(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_augmix operation.
 
     Args:
@@ -28,7 +32,7 @@ def _np_augmix(backend_module, images, factor: float, **kwargs):
 
 
 @numpy_eager_registry.register("Cutmix")
-def _np_cutmix(backend_module, images1, images2, **kwargs):
+def _np_cutmix(backend_module: ModuleType, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_cutmix operation.
 
     Args:
@@ -44,7 +48,7 @@ def _np_cutmix(backend_module, images1, images2, **kwargs):
 
 
 @numpy_eager_registry.register("Mixup")
-def _np_mixup(backend_module, images1, images2, **kwargs):
+def _np_mixup(backend_module: ModuleType, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_mixup operation.
 
     Args:
@@ -60,7 +64,7 @@ def _np_mixup(backend_module, images1, images2, **kwargs):
 
 
 @numpy_eager_registry.register("RandAugment")
-def _np_rand_augment(backend_module, images, factor: float, **kwargs):
+def _np_rand_augment(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_rand_augment operation.
 
     Args:
@@ -76,7 +80,7 @@ def _np_rand_augment(backend_module, images, factor: float, **kwargs):
 
 
 @numpy_eager_registry.register("RandomColorJitter")
-def _np_random_color_jitter(backend_module, images, **kwargs):
+def _np_random_color_jitter(backend_module: ModuleType, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_random_color_jitter operation.
 
     Args:
@@ -91,7 +95,7 @@ def _np_random_color_jitter(backend_module, images, **kwargs):
 
 
 @numpy_eager_registry.register("RandomCrop")
-def _np_random_crop(backend_module, images, size, seed=None):
+def _np_random_crop(backend_module: ModuleType, images: EagerValue, size: EagerValue, seed: EagerValue = None) -> EagerValue:
     """Evaluate _np_random_crop operation.
 
     Args:
@@ -103,11 +107,11 @@ def _np_random_crop(backend_module, images, size, seed=None):
     Returns:
             tuple[int, ...]: Result.
     """
-    return random_crop_eager(backend_module, images, size, seed)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", random_crop_eager)(backend_module, images, size, seed))
 
 
 @numpy_eager_registry.register("RandomErasing")
-def _np_random_erasing(backend_module, images, factor: float, **kwargs):
+def _np_random_erasing(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_random_erasing operation.
 
     Args:
@@ -123,7 +127,7 @@ def _np_random_erasing(backend_module, images, factor: float, **kwargs):
 
 
 # @numpy_eager_registry.register("RandomFlip")
-def _np_flip_horizontal(img, rng):
+def _np_flip_horizontal(img: EagerValue, rng: EagerValue) -> EagerValue:
     """Flip an image horizontally with 50% probability.
 
     Args:
@@ -133,10 +137,10 @@ def _np_flip_horizontal(img, rng):
     Returns:
         The flipped or unchanged image array.
     """
-    return img[:, :, ::-1] if rng.random() > 0.5 else img
+    return cast(EagerTensorProtocol, img)[:, :, ::-1] if cast(ModuleType, rng).random() > 0.5 else img
 
 
-def _np_flip_vertical(img, rng):
+def _np_flip_vertical(img: EagerValue, rng: EagerValue) -> EagerValue:
     """Flip an image vertically with 50% probability.
 
     Args:
@@ -146,10 +150,10 @@ def _np_flip_vertical(img, rng):
     Returns:
         The flipped or unchanged image array.
     """
-    return img[:, ::-1, :] if rng.random() > 0.5 else img
+    return cast(EagerTensorProtocol, img)[:, ::-1, :] if cast(ModuleType, rng).random() > 0.5 else img
 
 
-def _np_flip_both(img, rng):
+def _np_flip_both(img: EagerValue, rng: EagerValue) -> EagerValue:
     """Flip an image both horizontally and vertically with 50% probability each.
 
     Args:
@@ -163,14 +167,14 @@ def _np_flip_both(img, rng):
     return _np_flip_vertical(img, rng)
 
 
-_NP_FLIP_STRATEGIES = {
+_NP_FLIP_STRATEGIES: dict[str, Callable[[EagerValue, EagerValue], EagerValue]] = {
     "horizontal": _np_flip_horizontal,
     "vertical": _np_flip_vertical,
     "horizontal_and_vertical": _np_flip_both,
 }
 
 
-def _np_random_flip(images, mode: str, seed=None):
+def _np_random_flip(images: EagerValue, mode: str, seed: EagerValue = None) -> EagerValue:
     """Evaluate _np_random_flip operation.
 
     Args:
@@ -185,20 +189,19 @@ def _np_random_flip(images, mode: str, seed=None):
 
     import numpy as np
 
-    rng = random.Random(seed)
+    rng = getattr(random, "Random")(seed)
 
     # Check if a single image
-    if len(images.shape) == 3:
-        strategy = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
-        return strategy(images, rng)
+    strategy: Callable[[EagerValue, EagerValue], EagerValue] = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
+    if len(getattr(images, "shape")) == 3:
+        return strategy(images, cast("EagerValue", rng))
 
-    out = np.copy(images)
-    strategy = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
+    out = getattr(np, "copy")(images)
 
     for i in range(out.shape[0]):
-        out[i] = strategy(out[i], rng)
+        out[i] = strategy(out[i], cast("EagerValue", rng))
 
-    return out
+    return cast(EagerValue, out)
 
 
 @dataclass
@@ -208,11 +211,11 @@ class RotationConfig:
     theta: float
     H: int
     W: int
-    x: object
-    y: object
+    x: EagerValue
+    y: EagerValue
 
 
-def _calculate_rotation_matrix(np, cfg: RotationConfig):
+def _calculate_rotation_matrix(np: ModuleType, cfg: RotationConfig) -> EagerValue:
     """Calculate rotation matrix coordinates.
 
     Args:
@@ -230,7 +233,13 @@ def _calculate_rotation_matrix(np, cfg: RotationConfig):
     return src_x, src_y
 
 
-def _nearest_interpolation(np, images, coords, shape, b_c):
+def _nearest_interpolation(
+    np: EagerValue,
+    images: EagerValue,
+    coords: tuple[EagerValue, EagerValue],
+    shape: tuple[int, int],
+    b_c: tuple[int, int],
+) -> EagerValue:
     """Nearest neighbor interpolation.
 
     Args:
@@ -246,26 +255,27 @@ def _nearest_interpolation(np, images, coords, shape, b_c):
     src_x, src_y = coords
     H, W = shape
     b, c = b_c
-    src_y_round = np.clip(np.round(src_y).astype(np.int32), 0, H - 1)
-    src_x_round = np.clip(np.round(src_x).astype(np.int32), 0, W - 1)
-    return images[b, src_y_round, src_x_round, c]
+    mod = cast(ModuleType, np)
+    src_y_round = mod.clip(mod.round(src_y).astype(mod.int32), 0, H - 1)
+    src_x_round = mod.clip(mod.round(src_x).astype(mod.int32), 0, W - 1)
+    return cast(EagerTensorProtocol, images)[b, src_y_round, src_x_round, c]
 
 
 @dataclass
 class InterpPixelsConfig:
     """InterpPixelsConfig class."""
 
-    images: object
-    y0: object
-    y1: object
-    x0: object
-    x1: object
+    images: EagerValue
+    y0: EagerValue
+    y1: EagerValue
+    x0: EagerValue
+    x1: EagerValue
     H: int
     W: int
-    b_c: tuple
+    b_c: tuple[EagerValue, ...]
 
 
-def _get_interp_pixels(np, cfg: InterpPixelsConfig):
+def _get_interp_pixels(np: ModuleType, cfg: InterpPixelsConfig) -> EagerValue:
     """Gather pixels.
 
     Args:
@@ -280,14 +290,17 @@ def _get_interp_pixels(np, cfg: InterpPixelsConfig):
     y1_c = np.clip(cfg.y1, 0, cfg.H - 1)
     x0_c = np.clip(cfg.x0, 0, cfg.W - 1)
     x1_c = np.clip(cfg.x1, 0, cfg.W - 1)
-    Ia = cfg.images[b, y0_c, x0_c, c]
-    Ib = cfg.images[b, y1_c, x0_c, c]
-    Ic = cfg.images[b, y0_c, x1_c, c]
-    Id = cfg.images[b, y1_c, x1_c, c]
+    Ia = cast(EagerTensorProtocol, cfg.images)[b, y0_c, x0_c, c]
+    Ib = cast(EagerTensorProtocol, cfg.images)[b, y1_c, x0_c, c]
+    Ic = cast(EagerTensorProtocol, cfg.images)[b, y0_c, x1_c, c]
+    Id = cast(EagerTensorProtocol, cfg.images)[b, y1_c, x1_c, c]
     return Ia, Ib, Ic, Id
 
 
-def _get_interp_weights(src_coords, bounds):
+def _get_interp_weights(
+    src_coords: tuple[EagerValue, EagerValue],
+    bounds: tuple[EagerValue, EagerValue, EagerValue, EagerValue],
+) -> tuple[EagerValue, EagerValue, EagerValue, EagerValue]:
     """Evaluate _get_interp_weights operation.
 
     Args:
@@ -297,8 +310,12 @@ def _get_interp_weights(src_coords, bounds):
     Returns:
         tuple: Result.
     """
-    src_y, src_x = src_coords
-    y0, y1, x0, x1 = bounds
+    src_y = cast(EagerTensorProtocol, src_coords[0])
+    src_x = cast(EagerTensorProtocol, src_coords[1])
+    y0 = cast(EagerTensorProtocol, bounds[0])
+    y1 = cast(EagerTensorProtocol, bounds[1])
+    x0 = cast(EagerTensorProtocol, bounds[2])
+    x1 = cast(EagerTensorProtocol, bounds[3])
     wa = (y1 - src_y) * (x1 - src_x)
     wb = (src_y - y0) * (x1 - src_x)
     wc = (y1 - src_y) * (src_x - x0)
@@ -306,7 +323,13 @@ def _get_interp_weights(src_coords, bounds):
     return wa, wb, wc, wd
 
 
-def _bilinear_interpolation(np, images, coords, shape, b_c):
+def _bilinear_interpolation(
+    np: EagerValue,
+    images: EagerValue,
+    coords: tuple[EagerValue, EagerValue],
+    shape: tuple[int, int],
+    b_c: tuple[int, int],
+) -> EagerValue:
     """Bilinear interpolation.
 
     Args:
@@ -319,29 +342,32 @@ def _bilinear_interpolation(np, images, coords, shape, b_c):
     Returns:
             tuple[int, ...]: Result.
     """
-    y0 = np.floor(coords[1]).astype(np.int32)
-    y1 = y0 + 1
-    x0 = np.floor(coords[0]).astype(np.int32)
-    x1 = x0 + 1
+    mod = cast(ModuleType, np)
+    y0: EagerTensorProtocol = mod.floor(coords[1]).astype(mod.int32)
+    y1: EagerTensorProtocol = y0 + 1
+    x0: EagerTensorProtocol = mod.floor(coords[0]).astype(mod.int32)
+    x1: EagerTensorProtocol = x0 + 1
 
     pixel_cfg = InterpPixelsConfig(images=images, y0=y0, y1=y1, x0=x0, x1=x1, H=shape[0], W=shape[1], b_c=b_c)
-    pixels = _get_interp_pixels(np, pixel_cfg)
+    pixels = _get_interp_pixels(mod, pixel_cfg)
     weights = _get_interp_weights((coords[1], coords[0]), (y0, y1, x0, x1))
 
-    return pixels[0] * weights[0] + pixels[1] * weights[1] + pixels[2] * weights[2] + pixels[3] * weights[3]
+    p0, p1, p2, p3 = getattr(pixels, "__iter__")()
+    w0, w1, w2, w3 = getattr(weights, "__iter__")()
+    return cast(EagerValue, p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3)
 
 
 @dataclass
 class AffineConfig:
     """Affine configuration."""
 
-    coords: tuple
-    shape: tuple
-    b_c: tuple
-    options: tuple
+    coords: tuple[EagerValue, ...]
+    shape: tuple[EagerValue, ...]
+    b_c: tuple[EagerValue, ...]
+    options: tuple[EagerValue, ...]
 
 
-def _apply_affine_grid(np, images, cfg: AffineConfig):
+def _apply_affine_grid(np: ModuleType, images: EagerValue, cfg: AffineConfig) -> EagerValue:
     """Apply affine grid sampling.
 
     Args:
@@ -353,30 +379,30 @@ def _apply_affine_grid(np, images, cfg: AffineConfig):
     """
     interpolation, fill_mode, fill_value, mask = cfg.options
     if interpolation == "nearest":
-        val = _nearest_interpolation(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val = cast("Callable[..., EagerValue]", _nearest_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
     else:
-        val = _bilinear_interpolation(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val = cast("Callable[..., EagerValue]", _bilinear_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
 
     if fill_mode == "constant":
-        val = np.where(mask, val, fill_value)
+        val = getattr(np, "where")(mask, val, fill_value)
 
-    return val.astype(images.dtype)
+    return cast(EagerValue, getattr(val, "astype")(getattr(images, "dtype")))
 
 
 @dataclass
 class BatchRotationConfig:
     """Batch rotation configuration."""
 
-    images: object
-    angles: object
+    images: EagerTensorProtocol
+    angles: EagerTensorProtocol
     H: int
     W: int
-    x: object
-    y: object
-    options: tuple
+    x: EagerValue
+    y: EagerValue
+    options: tuple[EagerValue, ...]
 
 
-def _process_batch_item(np, cfg: BatchRotationConfig, b: int, out) -> None:
+def _process_batch_item(np: ModuleType, cfg: BatchRotationConfig, b: int, out: EagerValue) -> None:
     """Process a single item in the batch.
 
     Args:
@@ -385,16 +411,16 @@ def _process_batch_item(np, cfg: BatchRotationConfig, b: int, out) -> None:
         b (int): The b parameter.
         out (object): The out parameter.
     """
-    rot_cfg = RotationConfig(theta=cfg.angles[b], H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
-    src_x, src_y = _calculate_rotation_matrix(np, rot_cfg)
+    rot_cfg = RotationConfig(theta=cast("float", cfg.angles[b]), H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
+    src_x, src_y = getattr(getattr(_calculate_rotation_matrix(np, rot_cfg), "__iter__")(), "__iter__")()
     mask = (src_x >= 0) & (src_x <= cfg.W - 1) & (src_y >= 0) & (src_y <= cfg.H - 1)
-    C = cfg.images.shape[3]
+    C = int(tuple(cfg.images.shape)[3])
     for c in range(C):
         aff_cfg = AffineConfig(coords=(src_x, src_y), shape=(cfg.H, cfg.W), b_c=(b, c), options=cfg.options + (mask,))
-        out[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
+        cast(EagerTensorProtocol, out)[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
 
 
-def _apply_rotation_batch(np, cfg: BatchRotationConfig):
+def _apply_rotation_batch(np: ModuleType, cfg: BatchRotationConfig) -> EagerValue:
     """Apply rotation to a batch of images.
 
     Args:
@@ -404,14 +430,16 @@ def _apply_rotation_batch(np, cfg: BatchRotationConfig):
     Returns:
             tuple[int, ...]: Result.
     """
-    B = cfg.images.shape[0]
+    B = int(tuple(cfg.images.shape)[0])
     out = np.zeros_like(cfg.images, dtype=cfg.images.dtype)
     for b in range(B):
         _process_batch_item(np, cfg, b, out)
-    return out
+    return cast(EagerValue, out)
 
 
-def _resolve_rotation_factor(factor):
+def _resolve_rotation_factor(
+    factor: float | tuple[float, float] | list[float],
+) -> tuple[float, float]:
     """Resolve rotation bounds.
 
     Args:
@@ -425,7 +453,7 @@ def _resolve_rotation_factor(factor):
     return -factor, factor
 
 
-def _create_rotation_mesh(np, H: int, W: int):
+def _create_rotation_mesh(np: ModuleType, H: int, W: int) -> EagerValue:
     """Create mesh grid for rotation.
 
     Args:
@@ -443,7 +471,7 @@ def _create_rotation_mesh(np, H: int, W: int):
 
 
 @numpy_eager_registry.register("RandomRotation")
-def _np_random_rotation(backend_module, images, **kwargs):
+def _np_random_rotation(backend_module: ModuleType, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_random_rotation operation.
 
     Args:
@@ -456,18 +484,18 @@ def _np_random_rotation(backend_module, images, **kwargs):
     """
     np = backend_module
     images = np.asarray(images)
-    rank = len(images.shape)
+    rank = len(getattr(images, "shape"))
     if rank == 3:
         images = np.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    B, H, W, _ = images.shape
+    B, H, W, _ = getattr(images, "shape")
 
     rng = np.random.default_rng(kwargs.get("seed", None))
-    angles = rng.uniform(*_resolve_rotation_factor(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
+    angles = rng.uniform(*cast("Callable[..., EagerTensorProtocol]", _resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
 
-    y, x = _create_rotation_mesh(np, H, W)
+    y, x = getattr(getattr(_create_rotation_mesh(np, H, W), "__iter__")(), "__iter__")()
 
     options = (
         kwargs.get("interpolation", "bilinear"),
@@ -475,14 +503,14 @@ def _np_random_rotation(backend_module, images, **kwargs):
         kwargs.get("fill_value", 0.0),
     )
 
-    batch_cfg = BatchRotationConfig(images=images, angles=angles, H=H, W=W, x=x, y=y, options=options)
+    batch_cfg = BatchRotationConfig(images=cast("EagerTensorProtocol", images), angles=angles, H=H, W=W, x=x, y=y, options=options)
     out = _apply_rotation_batch(np, batch_cfg)
 
-    return out[0] if rank == 3 else out
+    return getattr(out, "__getitem__")(0) if rank == 3 else out
 
 
 @numpy_eager_registry.register("RandomTranslation")
-def _np_random_translation(backend_module, images, height_factor, width_factor, **kwargs):
+def _np_random_translation(backend_module: ModuleType, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_random_translation operation.
 
     Args:
@@ -495,11 +523,11 @@ def _np_random_translation(backend_module, images, height_factor, width_factor, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return random_translation_eager(backend_module, images, height_factor, width_factor, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", random_translation_eager)(backend_module, images, height_factor, width_factor, **kwargs))
 
 
 @numpy_eager_registry.register("RandomZoom")
-def _np_random_zoom(backend_module, images, height_factor, width_factor=None, **kwargs):
+def _np_random_zoom(backend_module: ModuleType, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_random_zoom operation.
 
     Args:
@@ -512,7 +540,7 @@ def _np_random_zoom(backend_module, images, height_factor, width_factor=None, **
     Returns:
             tuple[int, ...]: Result.
     """
-    return random_zoom_eager(backend_module, images, height_factor, width_factor, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", random_zoom_eager)(backend_module, images, height_factor, width_factor, **kwargs))
 
 
 __all__ = [

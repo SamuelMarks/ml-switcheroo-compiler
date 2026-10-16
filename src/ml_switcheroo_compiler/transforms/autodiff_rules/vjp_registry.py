@@ -1,16 +1,22 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Provide a registry for Vector-Jacobian Product (VJP) rules used in reverse-mode automatic differentiation.
 
 This module allows registering and retrieving VJP functions for various mathematical
 operations, enabling the computation of gradients during the backward pass.
 """
 
+from __future__ import annotations
+
 import os
-from collections.abc import Callable
-from typing import Optional
+from collections.abc import Callable, Sequence
+from typing import Optional, Union
 
 import yaml
 from pydantic import BaseModel, Field
+
+from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+
+VJPRuleCallable = Callable[..., Sequence[Union[str, UnconnectedGradients, None]]]
 
 
 class VJPRuleModel(BaseModel):
@@ -61,27 +67,27 @@ def load_primitive_vjp_rules(path: Optional[str] = None) -> dict[str, VJPRuleMod
 
 
 # Registry mapping op_name to VJP function
-_VJP_REGISTRY: dict[str, Callable] = {}
+_VJP_REGISTRY: dict[str, VJPRuleCallable] = {}
 
 
-def register_vjp(op_name: str) -> Callable[[Callable], Callable]:
+def register_vjp(op_name: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
     """Register a Vector-Jacobian Product (VJP) rule for a specific operation.
 
     Args:
         op_name (str): The op_name parameter.
 
     Returns:
-        Callable[[Callable], Callable]: Decorator function.
+        Callable[[VJPRuleCallable], VJPRuleCallable]: Decorator function.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: VJPRuleCallable) -> VJPRuleCallable:
         """Evaluate decorator operation.
 
         Args:
-            func (Callable): The func parameter.
+            func (VJPRuleCallable): The func parameter.
 
         Returns:
-            Callable: Result.
+            VJPRuleCallable: Result.
         """
         if op_name in _VJP_REGISTRY:
             msg = f"VJP for operation '{op_name}' is already registered."
@@ -95,7 +101,7 @@ def register_vjp(op_name: str) -> Callable[[Callable], Callable]:
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data
 
 
-def get_vjp(op_name: str) -> Callable:
+def get_vjp(op_name: str) -> VJPRuleCallable:
     """Get the VJP rule.
 
     Args:

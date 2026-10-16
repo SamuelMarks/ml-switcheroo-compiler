@@ -1,90 +1,17 @@
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+"""Unit tests for quantized neural network operations."""
 
+from __future__ import annotations
 
-def test_quantized_ops_trace():
-    from unittest.mock import patch
-
-    import numpy as np
-
-    import ml_switcheroo_compiler.ops.nn.quantized_ops as q_ops
-
-    orig = config.eager_mode
-    config.eager_mode = False
-
-    try:
-        t = Tensor(np.array([[1.0, 2.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-
-        with patch("ml_switcheroo_compiler.ops.nn.quantized_ops._emit_shape_node", return_value=t), patch("ml_switcheroo_compiler.ops.nn.quantized_ops.linear", return_value=t), patch("ml_switcheroo_compiler.ops.nn.quantized_ops.gather", return_value=t):
-            q_ops.fake_quant_with_min_max_vars(t, t, t)
-
-            qp = q_ops.QuantizationParams()
-            q_ops.quantize_and_dequantize(t, t, t, qp)
-
-            q_ops.abs_max_quantize(t)
-
-            q_ops.compute_float8_amax_history(t, t)
-            q_ops.compute_float8_scale(t, t)
-
-            q_ops.quantize(t)
-
-            qc = q_ops.QuantizationConfig()
-            qoc = q_ops.QuantizedOpsConfig(weight=t, scales=t, biases=t, indices=t, q_config=qc)
-
-            q_ops.quantized_matmul(t, qoc)
-            q_ops.gather_qmm(t, qoc)
-
-            # Test infer_shapes
-            for op_class in [q_ops.QuantizeOp, q_ops.QuantizedMatmulOp, q_ops.GatherQMMOp, q_ops.FakeQuantWithMinMaxVarsOp, q_ops.QuantizeAndDequantizeOp, q_ops.AbsMaxQuantizeOp, q_ops.ComputeFloat8AmaxHistoryOp, q_ops.ComputeFloat8ScaleOp]:
-                op = op_class()
-                assert op.infer_shape(t) == (1, 2)
-
-            q_ops.quantized_linear(t, qoc)
-            q_ops.quantized_embedding(t, qoc)
-            q_ops.dequantize(t, t, t)
-            q_ops.quantized_conv(t, qoc)
-
-            # test QuantizationParams combinations
-            qoc_no_biases = q_ops.QuantizedOpsConfig(weight=t, scales=t, biases=None, indices=None, q_config=None)
-            q_ops.quantized_matmul(t, qoc_no_biases)
-            q_ops.gather_qmm(t, qoc_no_biases)
-            q_ops.quantized_linear(t, qoc_no_biases)
-            q_ops.dequantize(t, t, biases=None)
-            q_ops.quantized_conv(t, qoc_no_biases)
-
-            # Test params=None
-            q_ops.quantize_and_dequantize(t, t, t, params=None)
-
-    finally:
-        config.eager_mode = orig
-
+from typing import TYPE_CHECKING, cast
+from unittest.mock import patch
 
 import numpy as np
 
-from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.ops.nn.quantized_ops import QuantizedOpsConfig, quantized_conv
-
-
-def create_eager_tensor(data):
-    return Tensor(data, TensorConfig(data.shape, DType.Float32, Device("cpu")))
-
-
-def test_quantized_ops_missing():
-    input = create_eager_tensor(np.ones((1, 2, 2, 1)))
-    weight = create_eager_tensor(np.ones((2, 2, 1, 1)))
-    scales = create_eager_tensor(np.ones((1,)))
-    config = QuantizedOpsConfig(weight, scales, biases=None)
-
-    with ConfigContext(eager_mode=True):
-        res = quantized_conv(input, config)
-        assert isinstance(res, Tensor)
-        np.testing.assert_array_equal(res.numpy(), np.array([[[[4.0]]]]))
-
-
-from unittest.mock import patch
-
+import ml_switcheroo_compiler.ops.nn.quantized_ops as q_ops
+from ml_switcheroo_compiler.core.config import ConfigContext, config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.quantized_ops import (
     AbsMaxQuantizeOp,
     ComputeFloat8AmaxHistoryOp,
@@ -93,6 +20,7 @@ from ml_switcheroo_compiler.ops.nn.quantized_ops import (
     GatherQMMOp,
     QuantizeAndDequantizeOp,
     QuantizedMatmulOp,
+    QuantizedOpsConfig,
     QuantizeOp,
     abs_max_quantize,
     compute_float8_amax_history,
@@ -102,100 +30,143 @@ from ml_switcheroo_compiler.ops.nn.quantized_ops import (
     gather_qmm,
     quantize,
     quantize_and_dequantize,
+    quantized_conv,
     quantized_embedding,
     quantized_linear,
     quantized_matmul,
 )
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
-def test_quantized_ops_brute():
+def test_quantized_ops_trace() -> None:
+    """Test symbolic tracing and shape inference for all quantized operations."""
+    orig = config.eager_mode
+    config.eager_mode = False
+
+    try:
+        t = Tensor(np.array([[1.0, 2.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
+
+        with (
+            patch("ml_switcheroo_compiler.ops.nn.quantized_ops._emit_shape_node", return_value=t),
+            patch("ml_switcheroo_compiler.ops.nn.quantized_ops.linear", return_value=t),
+            patch("ml_switcheroo_compiler.ops.nn.quantized_ops.gather", return_value=t),
+        ):
+            assert fake_quant_with_min_max_vars(t, t, t) is t
+
+            qp = q_ops.QuantizationParams()
+            assert quantize_and_dequantize(t, t, t, qp) is t
+            assert abs_max_quantize(t) == (t, t)
+            assert compute_float8_amax_history(t, t) is t
+            assert compute_float8_scale(t, t) is t
+            assert quantize(t) == (t, t, t)
+
+            qc = q_ops.QuantizationConfig()
+            qoc = q_ops.QuantizedOpsConfig(weight=t, scales=t, biases=t, indices=t, q_config=qc)
+
+            assert quantized_matmul(t, qoc) is t
+            assert gather_qmm(t, qoc) is t
+
+            for op_class in [
+                QuantizeOp,
+                QuantizedMatmulOp,
+                GatherQMMOp,
+                FakeQuantWithMinMaxVarsOp,
+                QuantizeAndDequantizeOp,
+                AbsMaxQuantizeOp,
+                ComputeFloat8AmaxHistoryOp,
+                ComputeFloat8ScaleOp,
+            ]:
+                op = op_class()
+                assert op.infer_shape(t) == (1, 2)
+
+            assert quantized_linear(t, qoc) is not None
+            assert quantized_embedding(t, qoc) is not None
+            assert dequantize(t, t, t) is not None
+            assert quantized_conv(t, qoc) is not None
+
+            qoc_no_biases = q_ops.QuantizedOpsConfig(weight=t, scales=t, biases=None, indices=None, q_config=None)
+            assert quantized_matmul(t, qoc_no_biases) is t
+            assert gather_qmm(t, qoc_no_biases) is t
+            assert quantized_linear(t, qoc_no_biases) is not None
+            assert dequantize(t, t, biases=None) is not None
+            assert quantized_conv(t, qoc_no_biases) is not None
+            assert quantize_and_dequantize(t, t, t, params=None) is t
+    finally:
+        config.eager_mode = orig
+
+
+def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
+    """Create a CPU Float32 Tensor from a NumPy array.
+
+    Args:
+        data (np.ndarray): Input array.
+
+    Returns:
+        Tensor: Wrapped tensor.
+    """
+    return Tensor(data, TensorConfig(data.shape, DType.Float32, Device("cpu")))
+
+
+def test_quantized_ops_missing() -> None:
+    """Test eager quantized_conv execution."""
+    inp = create_eager_tensor(np.ones((1, 2, 2, 1)))
+    weight = create_eager_tensor(np.ones((2, 2, 1, 1)))
+    scales = create_eager_tensor(np.ones((1,)))
+    q_cfg = QuantizedOpsConfig(weight, scales, biases=None)
+
+    with ConfigContext(eager_mode=True):
+        res = quantized_conv(inp, q_cfg)
+        assert isinstance(res, Tensor)
+        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", res.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([[[[4.0]]]]))
+
+
+def test_quantized_ops_brute() -> None:
+    """Test eager and tracing execution of quantized operations."""
     config.backend = "numpy"
     config.eager_mode = True
 
-    t = Tensor(np.random.rand(4, 4).astype(np.float32), TensorConfig((4, 4), "float32", "cpu"))
-    s = Tensor(np.random.rand(1).astype(np.float32), TensorConfig((1,), "float32", "cpu"))
-    idx = Tensor(np.array([0, 1]).astype(np.int32), TensorConfig((2,), "int32", "cpu"))
+    t = Tensor(np.ones((4, 4), dtype=np.float32), TensorConfig((4, 4), "float32", "cpu"))
+    s = Tensor(np.ones((1,), dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
+    idx = Tensor(np.array([0, 1], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
 
-    fake_quant_with_min_max_vars(t, s, s)
-    quantize_and_dequantize(t, s, s)
-    abs_max_quantize(t)
-    compute_float8_amax_history(t, t)
-    compute_float8_scale(t, t)
-    quantize(t)
+    assert fake_quant_with_min_max_vars(t, s, s) is not None
+    assert quantize_and_dequantize(t, s, s) is not None
+    assert abs_max_quantize(t) is not None
+    assert compute_float8_amax_history(t, t) is not None
+    assert compute_float8_scale(t, t) is not None
+    assert quantize(t) is not None
 
     qconf = QuantizedOpsConfig(weight=t, scales=t, biases=t, indices=idx)
-    quantized_matmul(t, qconf)
-    gather_qmm(t, qconf)
-    quantized_linear(t, qconf)
-    try:
-        quantized_embedding(idx, qconf)
-    except Exception:
-        pass
-    try:
-        dequantize(t, t, t)
-    except Exception:
-        pass
-    try:
-        quantized_conv(t, qconf)
-    except Exception:
-        pass
+    assert quantized_matmul(t, qconf) is not None
+    assert gather_qmm(t, qconf) is not None
+    assert quantized_linear(t, qconf) is not None
+    assert quantized_embedding(idx, qconf) is not None
+    assert dequantize(t, t, t) is not None
 
-    # test eager mode off
     config.eager_mode = False
-    from ml_switcheroo_compiler.tracing.state import global_tracing_state
-
     global_tracing_state.is_tracing = True
-    with patch("ml_switcheroo_compiler.ops.nn.quantized_ops._emit_shape_node") as mock_emit:
-        mock_emit.return_value = t
-        try:
-            try:
-                fake_quant_with_min_max_vars(t, s, s)
-            except Exception:
-                pass
-            try:
-                quantize_and_dequantize(t, s, s)
-            except Exception:
-                pass
-            try:
-                abs_max_quantize(t)
-            except Exception:
-                pass
-            try:
-                compute_float8_amax_history(t, t)
-            except Exception:
-                pass
-            try:
-                compute_float8_scale(t, t)
-            except Exception:
-                pass
-            try:
-                quantize(t)
-            except Exception:
-                pass
-            try:
-                quantized_matmul(t, qconf)
-            except Exception:
-                pass
-            try:
-                gather_qmm(t, qconf)
-            except Exception:
-                pass
-            try:
-                dequantize(t, t, t)
-            except Exception:
-                pass
-            try:
-                quantized_conv(t, qconf)
-            except Exception:
-                pass
-
-            QuantizeOp().infer_shape(t)
-            QuantizedMatmulOp().infer_shape(t)
-            GatherQMMOp().infer_shape(t)
-            FakeQuantWithMinMaxVarsOp().infer_shape(t)
-            QuantizeAndDequantizeOp().infer_shape(t)
-            AbsMaxQuantizeOp().infer_shape(t)
-            ComputeFloat8AmaxHistoryOp().infer_shape(t)
-            ComputeFloat8ScaleOp().infer_shape(t)
-        finally:
-            global_tracing_state.is_tracing = False
+    try:
+        with patch("ml_switcheroo_compiler.ops.nn.quantized_ops._emit_shape_node", return_value=t):
+            assert fake_quant_with_min_max_vars(t, s, s) is t
+            assert quantize_and_dequantize(t, s, s) is t
+            assert abs_max_quantize(t) == (t, t)
+            assert compute_float8_amax_history(t, t) is t
+            assert compute_float8_scale(t, t) is t
+            assert quantize(t) == (t, t, t)
+            assert quantized_matmul(t, qconf) is t
+            assert gather_qmm(t, qconf) is t
+            assert QuantizeOp().infer_shape(t) == (4, 4)
+            assert QuantizedMatmulOp().infer_shape(t) == (4, 4)
+            assert GatherQMMOp().infer_shape(t) == (4, 4)
+            assert FakeQuantWithMinMaxVarsOp().infer_shape(t) == (4, 4)
+            assert QuantizeAndDequantizeOp().infer_shape(t) == (4, 4)
+            assert AbsMaxQuantizeOp().infer_shape(t) == (4, 4)
+            assert ComputeFloat8AmaxHistoryOp().infer_shape(t) == (4, 4)
+            assert ComputeFloat8ScaleOp().infer_shape(t) == (4, 4)
+    finally:
+        global_tracing_state.is_tracing = False

@@ -6,6 +6,7 @@ CUDA (nvcc), ROCm (hipcc), Apple Metal (xcrun metal), and LLVM/C++ (clang++).
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import subprocess
@@ -342,8 +343,8 @@ class CUDACompiler(BaseHardwareCompiler):
                     check=False,
                 )
                 return proc.returncode == 0
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             finally:
                 if os.path.exists(src_path):
                     os.unlink(src_path)
@@ -427,8 +428,8 @@ class HIPCompiler(BaseHardwareCompiler):
                     check=False,
                 )
                 return proc.returncode == 0
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             finally:
                 if os.path.exists(src_path):
                     os.unlink(src_path)
@@ -528,8 +529,8 @@ class MetalCompiler(BaseHardwareCompiler):
                     check=False,
                 )
                 return proc.returncode == 0
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             finally:
                 if os.path.exists(src_path):
                     os.unlink(src_path)
@@ -613,8 +614,8 @@ class ClangCompiler(BaseHardwareCompiler):
                     check=False,
                 )
                 return proc.returncode == 0
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             finally:
                 if os.path.exists(src_path):
                     os.unlink(src_path)

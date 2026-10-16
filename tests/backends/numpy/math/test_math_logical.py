@@ -1,5 +1,9 @@
 """Tests for numpy eager math logical ops."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
@@ -16,6 +20,11 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_logical import (
     _np_not_equal,
     _np_where,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_not_equal() -> None:
@@ -106,7 +115,7 @@ def test_where() -> None:
         None
     """
     res = _np_where(np, np.array([True, False]), 1, 0)
-    assert np.array_equal(res, [1, 0])
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, [1, 0])
 
 
 def test_assert() -> None:

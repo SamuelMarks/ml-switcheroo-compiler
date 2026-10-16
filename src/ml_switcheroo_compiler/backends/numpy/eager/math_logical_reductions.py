@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 
@@ -13,9 +13,9 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 @numpy_eager_registry.register("All")
 def _np_all(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, bool, None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, bool, None],
     **kwargs: Union[int, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_all operation.
 
     Args:
@@ -26,15 +26,15 @@ def _np_all(
     Returns:
         np.ndarray: Evaluated boolean reduction.
     """
-    return backend_module.all(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.all(*args, **kwargs))
 
 
 @numpy_eager_registry.register("CountNonzero")
 def _np_count_nonzero(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, bool, None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, bool, None],
     **kwargs: Union[int, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_count_nonzero operation.
 
     Args:
@@ -45,4 +45,4 @@ def _np_count_nonzero(
     Returns:
         np.ndarray: Count of non-zero elements.
     """
-    return backend_module.count_nonzero(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.count_nonzero(*args, **kwargs))

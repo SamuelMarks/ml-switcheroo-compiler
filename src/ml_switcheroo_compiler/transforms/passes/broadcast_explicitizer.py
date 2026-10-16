@@ -1,17 +1,16 @@
-# ruff: noqa: E402, E501, F403
-"""Module broadcast_explicitizer.py."""
-
-from collections.abc import Sequence  # noqa: F401
-from typing import Any, Callable, Optional, Union  # noqa: F401
-
 """Broadcast Explicitizer Pass."""
 
 import uuid
-from typing import Optional  # noqa: F811
+from collections.abc import Sequence  # noqa: F401
+from typing import (  # noqa: F401
+    Callable,
+    Optional,
+    Union,
+)
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.ops.base import get_op
@@ -75,7 +74,7 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
     except KeyError:
         return False
 
-    if len(node.inputs) != MAGIC_VAL_2:
+    if len(node.inputs) != BINARY_OP_ARITY:
         return False
 
     in1, in2 = node.inputs

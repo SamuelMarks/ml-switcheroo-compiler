@@ -1,3 +1,9 @@
+"""Tests for test_loss."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 import numpy as np
 
@@ -24,8 +30,14 @@ from ml_switcheroo_compiler.ops.nn.loss import (
     tversky_loss,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_loss_coverage():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_loss_coverage() -> None:
+    """Test function test_loss_coverage."""
     config.eager_mode = True
     t_true = Tensor(np.array([[1, 0]]), TensorConfig(shape=(1, 2), dtype=DType("int32"), device=Device("cpu")))
     t_pred = Tensor(np.array([[0.9, 0.1]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
@@ -34,10 +46,20 @@ def test_loss_coverage():
     assert categorical_generalized_cross_entropy(t_true, t_pred) is not None
     assert _compute_circle_margins(0.25) == (1.25, -0.25, 0.75, 0.25)
 
-    lp, ln = _compute_circle_logits(t_pred, 0.25, 256.0)
+    lp, ln = cast("Callable[..., EagerTensorProtocol]", _compute_circle_logits)(t_pred, 0.25, 256.0)
     assert lp is not None and ln is not None
 
-    assert _compute_circle_loss_reduction(lp, ln, t_true, Tensor(np.array([[0.0, 1.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))) is not None
+    assert (
+        cast("Callable[..., EagerTensorProtocol]", _compute_circle_loss_reduction)(
+            lp,
+            ln,
+            t_true,
+            cast("Callable[..., EagerTensorProtocol]", Tensor)(
+                cast("Callable[..., EagerTensorProtocol]", np.array)([[0.0, 1.0]]), cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape=(1, 2), dtype=cast("Callable[..., EagerTensorProtocol]", DType)("float32"), device=cast("Callable[..., EagerTensorProtocol]", Device)("cpu"))
+            ),
+        )
+        is not None
+    )
     assert circle_loss(t_true, t_pred) is not None
 
     assert tversky_loss(t_true, t_pred) is not None

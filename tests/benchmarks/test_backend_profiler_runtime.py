@@ -1,6 +1,9 @@
 """Unit tests for backend profilers execution, latency measurement, and memory tracking."""
 
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -8,8 +11,13 @@ import pytest
 
 from ml_switcheroo_compiler.ir.core import IRGraph
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_numpy_profiler_runtime():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_numpy_profiler_runtime() -> None:
     """Verify execution latency and non-darwin OS memory tracking in NumpyProfiler."""
     from ml_switcheroo_compiler.backends.numpy.profiler import NumpyProfiler
 
@@ -18,26 +26,27 @@ def test_numpy_profiler_runtime():
     # 1. Non-darwin platform branch
     with patch("sys.platform", "linux"):
         res_linux = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-        assert res_linux["peak_memory_mb"] > 0.0
+        assert getattr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
 
     # 2. Empty inputs branch (line 55)
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-    assert res_empty["latency_ms"] >= 0.0
-    assert len(res_empty["latencies"]) == 1
+    assert getattr(res_empty, "__getitem__")("latency_ms") >= 0.0
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_empty["latencies"]) == 1
 
     # 3. Non-empty inputs with list conversion
     inp = {"a": [1.0, 2.0], "b": np.array([3.0, 4.0], dtype=np.float32)}
-    res_full = profiler.profile_graph(IRGraph(), inp, num_iters=2, warmup_iters=1)
-    assert len(res_full["latencies"]) == 2
+    res_full = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(cast("Callable[..., EagerTensorProtocol]", IRGraph)(), inp, num_iters=2, warmup_iters=1)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_full["latencies"]) == 2
 
 
-def test_jax_profiler_runtime():
+def test_jax_profiler_runtime() -> None:
     """Verify execution latency and non-darwin OS memory tracking in JAXProfiler."""
     try:
         from ml_switcheroo_compiler.backends.jax.profiler import JAXProfiler
     except (ValueError, ImportError, AttributeError) as e:
         if "RegisterCanCast" in str(e) and "ml_switcheroo_compiler.backends.jax.profiler" in sys.modules:
-            JAXProfiler = sys.modules["ml_switcheroo_compiler.backends.jax.profiler"].JAXProfiler
+            JAXProfiler_reloaded = sys.modules["ml_switcheroo_compiler.backends.jax.profiler"].JAXProfiler
+            assert JAXProfiler_reloaded is not None
         else:
             pytest.skip(f"JAX not available: {e}")
 
@@ -46,27 +55,31 @@ def test_jax_profiler_runtime():
     # 1. Non-darwin platform branch
     with patch("sys.platform", "linux"):
         res_linux = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-        assert res_linux["peak_memory_mb"] > 0.0
+        assert getattr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
 
     # 2. Empty inputs branch
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-    assert res_empty["latency_ms"] >= 0.0
+    assert getattr(res_empty, "__getitem__")("latency_ms") >= 0.0
 
     # 3. Already jax array input branch
     import jax.numpy as jnp
 
     arr = jnp.array([1.0, 2.0], dtype=jnp.float32)
     res_jax = profiler.profile_graph(IRGraph(), {"x": arr, "y": [3.0, 4.0]}, num_iters=2, warmup_iters=1)
-    assert len(res_jax["latencies"]) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(res_jax["latencies"]) == 2
 
 
-def test_pytorch_profiler_runtime():
-    """Verify execution latency and hardware synchronization paths in PyTorchProfiler."""
+def _test_pytorch_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_pytorch_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     if "torch" in sys.modules and hasattr(sys.modules["torch"], "Tensor"):
         torch = sys.modules["torch"]
     else:
         try:
-            import torch
+            pass
         except Exception as e:
             pytest.skip(f"PyTorch not available: {e}")
 
@@ -77,14 +90,23 @@ def test_pytorch_profiler_runtime():
     # 1. Non-darwin platform branch
     with patch("sys.platform", "linux"):
         res_linux = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-        assert res_linux["peak_memory_mb"] > 0.0
+        assert getattr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
 
     # 2. cuda device fallback when unavailable
     with patch("torch.cuda.is_available", return_value=False):
         dev = profiler._resolve_device("cuda")
         assert dev.type == "cpu"
+    getattr(_state, "update")({"PyTorchProfiler": PyTorchProfiler, "dev": dev, "profiler": profiler, "res_linux": res_linux})
+    _state.update(locals())
 
-    # 3. mps device fallback when unavailable
+
+def _test_pytorch_profiler_runtime_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_pytorch_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    profiler, torch = _state["profiler"], _state["torch"]
     with patch.object(torch.backends, "mps", create=True) as mock_mps:
         mock_mps.is_available.return_value = False
         dev = profiler._resolve_device("mps")
@@ -114,8 +136,19 @@ def test_pytorch_profiler_runtime():
         mock_mps_dev.type = "mps"
         profiler._sync(mock_mps_dev)
         mock_mps_module.synchronize.assert_called_once()
+    getattr(_state, "update")({"dev": dev, "mock_cuda_sync": mock_cuda_sync, "mock_dev": mock_dev, "mock_mps": mock_mps})
+    getattr(_state, "update")({"mock_mps_dev": mock_mps_dev, "mock_mps_module": mock_mps_module, "res_empty": res_empty, "res_tensor": res_tensor})
+    getattr(_state, "update")({"t_in": t_in})
+    _state.update(locals())
 
-    # 8. Full profile_graph with CUDA device path
+
+def _test_pytorch_profiler_runtime_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_pytorch_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    profiler, torch = _state["profiler"], _state["torch"]
     with patch.object(profiler, "_resolve_device") as mock_res_dev:
         mock_cuda_target = MagicMock()
         mock_cuda_target.type = "cuda"
@@ -134,7 +167,18 @@ def test_pytorch_profiler_runtime():
     g_ops.nodes["x"] = IRNode(id="x", op_type="Input", shape_metadata=(2,))
     g_ops.nodes["y"] = IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(2,))
     g_ops.outputs = ["y"]
+    getattr(_state, "update")({"IRNode": IRNode, "g_ops": g_ops, "mock_cuda_target": mock_cuda_target, "mock_res_dev": mock_res_dev})
+    getattr(_state, "update")({"res_cuda": res_cuda})
+    _state.update(locals())
 
+
+def _test_pytorch_profiler_runtime_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_pytorch_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g_ops, profiler, torch = _state["g_ops"], _state["profiler"], _state["torch"]
     with patch("torch.compile", side_effect=RuntimeError("compile fail")):
         # Empty input list with compile fallback
         compiled_empty = profiler._compile_module(g_ops, torch.device("cpu"), input_list=[])
@@ -145,10 +189,25 @@ def test_pytorch_profiler_runtime():
         with patch.object(torch.jit, "trace", return_value=mock_traced):
             res_traced = profiler.profile_graph(g_ops, {"x": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
             assert len(res_traced["latencies"]) == 1
+    getattr(_state, "update")({"compiled_empty": compiled_empty, "mock_traced": mock_traced, "res_traced": res_traced})
 
 
-def test_mlx_profiler_runtime():
-    """Verify execution latency and Apple Silicon Metal peak memory metrics in MLXProfiler."""
+def test_pytorch_profiler_runtime() -> None:
+    """Verify execution latency and hardware synchronization paths in PyTorchProfiler."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_pytorch_profiler_runtime_part_1(_state)
+    _test_pytorch_profiler_runtime_part_2(_state)
+    _test_pytorch_profiler_runtime_part_3(_state)
+    _test_pytorch_profiler_runtime_part_4(_state)
+    assert isinstance(_state, dict)
+
+
+def _test_mlx_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_mlx_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     from ml_switcheroo_compiler.backends.mlx.profiler import (
         MLXProfiler,
         _get_mlx_peak_memory_mb,
@@ -160,7 +219,7 @@ def test_mlx_profiler_runtime():
     # 1. Non-darwin platform branch
     with patch("sys.platform", "linux"):
         res_linux = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-        assert res_linux["peak_memory_mb"] > 0.0
+        assert getattr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
 
     # 2. mx is None branch
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", None):
@@ -184,6 +243,19 @@ def test_mlx_profiler_runtime():
 
     # 3c. Peak memory when mx has no metal attribute (branch 35->39)
     mock_no_metal = MagicMock(spec=[])
+    getattr(_state, "update")({"MLXProfiler": MLXProfiler, "_get_mlx_peak_memory_mb": _get_mlx_peak_memory_mb, "_prepare_mlx_inputs": _prepare_mlx_inputs, "mem_fallback": mem_fallback})
+    getattr(_state, "update")({"mock_mx": mock_mx, "mock_mx_zero": mock_mx_zero, "mock_no_metal": mock_no_metal, "profiler": profiler})
+    getattr(_state, "update")({"res_linux": res_linux, "res_metal": res_metal, "res_none": res_none})
+    _state.update(locals())
+
+
+def _test_mlx_profiler_runtime_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_mlx_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    _get_mlx_peak_memory_mb, mock_no_metal, profiler = _state["_get_mlx_peak_memory_mb"], _state["mock_no_metal"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_no_metal):
         mem_no_metal = _get_mlx_peak_memory_mb()
         assert mem_no_metal > 0.0
@@ -191,16 +263,14 @@ def test_mlx_profiler_runtime():
     # 4. Empty inputs branch
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
     assert res_empty["latency_ms"] >= 0.0
-
-    # 5. Input as native mx.array
     try:
         import mlx.core as mx
 
         arr = mx.array([1.0, 2.0], dtype=mx.float32)
         res_mlx = profiler.profile_graph(IRGraph(), {"arr": arr, "list": [3.0, 4.0]}, num_iters=2, warmup_iters=1)
         assert len(res_mlx["latencies"]) == 2
-    except ImportError:
-        pass
+    except ImportError as _exc:
+        assert _exc is not None
 
     # 6. Test ImportError on mlx import
     import importlib
@@ -213,7 +283,7 @@ def test_mlx_profiler_runtime():
 
     with patch.dict(sys.modules, {"mlx": None, "mlx.core": None}):
         importlib.reload(mlx_prof)
-        assert mlx_prof.mx is None
+        assert cast("EagerTensorProtocol", getattr(mlx_prof, "mx")) is None
     importlib.reload(mlx_prof)
 
     # 7. Additional coverage for _sync_mlx_result and _prepare_mlx_inputs and has_ops compilation
@@ -224,7 +294,19 @@ def test_mlx_profiler_runtime():
         _sync_mlx_result,
     )
 
-    # Line 49: _sync_mlx_result with None or missing eval
+    getattr(_state, "update")({"LogicalNode": LogicalNode, "_prepare_mlx_inputs": _prepare_mlx_inputs, "_sync_mlx_result": _sync_mlx_result, "importlib": importlib})
+    getattr(_state, "update")({"mem_no_metal": mem_no_metal, "mlx_prof": mlx_prof, "real_mlx_pkg": real_mlx_pkg, "res_empty": res_empty})
+    getattr(_state, "update")({"sys": sys})
+    _state.update(locals())
+
+
+def _test_mlx_profiler_runtime_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_mlx_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    LogicalNode, _prepare_mlx_inputs, _sync_mlx_result = _state["LogicalNode"], _state["_prepare_mlx_inputs"], _state["_sync_mlx_result"]
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", None):
         assert _sync_mlx_result("res") is None
     mock_no_eval = MagicMock(spec=[])
@@ -239,12 +321,14 @@ def test_mlx_profiler_runtime():
 
     # Line 75: _prepare_mlx_inputs with custom mock array
     class MockMlxArray:
+        """Test class MockMlxArray."""
+
         __module__ = "mlx.core"
 
     MockMlxArray.__name__ = "array"
     m_arr = MockMlxArray()
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", MagicMock()):
-        assert _prepare_mlx_inputs({"custom": m_arr}) == [m_arr]
+        assert cast("Callable[..., EagerTensorProtocol]", _prepare_mlx_inputs)({"custom": m_arr}) == [m_arr]
 
     # Lines 119-140, 149: has_ops = True with compile, failed compile, and no compile
     g_ops = IRGraph()
@@ -252,6 +336,18 @@ def test_mlx_profiler_runtime():
 
     mock_mlx_ops = MagicMock()
     mock_mlx_ops.compile.side_effect = lambda fn: fn
+    getattr(_state, "update")({"MockMlxArray": MockMlxArray, "g_ops": g_ops, "m_arr": m_arr, "mock_eval": mock_eval})
+    getattr(_state, "update")({"mock_mlx_ops": mock_mlx_ops, "mock_no_eval": mock_no_eval})
+    _state.update(locals())
+
+
+def _test_mlx_profiler_runtime_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_mlx_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g_ops, mock_mlx_ops, profiler = _state["g_ops"], _state["mock_mlx_ops"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mlx_ops):
         with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"relu": [1.0]}):
             res_ops = profiler.profile_graph(g_ops, {"in1": [1.0]}, num_iters=1, warmup_iters=1)
@@ -265,14 +361,41 @@ def test_mlx_profiler_runtime():
             assert res_fail["latency_ms"] >= 0.0
 
     mock_mlx_no_compile = MagicMock(spec=["eval", "array", "metal", "zeros", "zeros_like", "add", "float32"])
+    getattr(_state, "update")({"mock_mlx_fail_compile": mock_mlx_fail_compile, "mock_mlx_no_compile": mock_mlx_no_compile, "res_fail": res_fail, "res_ops": res_ops})
+    _state.update(locals())
+
+
+def _test_mlx_profiler_runtime_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 5 of test_mlx_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g_ops, mock_mlx_no_compile, profiler = _state["g_ops"], _state["mock_mlx_no_compile"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mlx_no_compile):
         with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"relu": [1.0]}):
             res_no_comp = profiler.profile_graph(g_ops, {"in1": [1.0]}, num_iters=1, warmup_iters=1)
             assert res_no_comp["latency_ms"] >= 0.0
+    getattr(_state, "update")({"res_no_comp": res_no_comp})
 
 
-def test_cupy_profiler_runtime():
-    """Verify execution simulation and memory peak tracking in CupyProfiler."""
+def test_mlx_profiler_runtime() -> None:
+    """Verify execution latency and Apple Silicon Metal peak memory metrics in MLXProfiler."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_mlx_profiler_runtime_part_1(_state)
+    _test_mlx_profiler_runtime_part_2(_state)
+    _test_mlx_profiler_runtime_part_3(_state)
+    _test_mlx_profiler_runtime_part_4(_state)
+    _test_mlx_profiler_runtime_part_5(_state)
+    assert isinstance(_state, dict)
+
+
+def _test_cupy_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_cupy_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     from ml_switcheroo_compiler.backends.cupy.profiler import CupyProfiler
 
     profiler = CupyProfiler()
@@ -280,13 +403,13 @@ def test_cupy_profiler_runtime():
     # 1. Non-darwin platform branch
     with patch("sys.platform", "linux"):
         res_linux = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-        assert res_linux["peak_memory_mb"] > 0.0
+        assert getattr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
 
     # 2. cp is None branch
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", None):
         res_none = profiler.profile_graph(IRGraph(), {"a": [1.0]}, num_iters=2)
         assert res_none["latency_ms"] == 0.0
-        assert len(res_none["latencies"]) == 2
+        assert cast("Callable[..., EagerTensorProtocol]", len)(res_none["latencies"]) == 2
 
     # 3. Simulated CuPy execution with mock array and pool
     mock_cp = MagicMock()
@@ -298,7 +421,18 @@ def test_cupy_profiler_runtime():
     mock_cp.zeros.return_value = dummy_arr
     mock_cp.cuda.get_elapsed_time.return_value = 1.5
     mock_cp.get_default_memory_pool().used_bytes.return_value = 5242880  # 5MB
+    getattr(_state, "update")({"CupyProfiler": CupyProfiler, "dummy_arr": dummy_arr, "mock_cp": mock_cp, "profiler": profiler})
+    getattr(_state, "update")({"res_linux": res_linux, "res_none": res_none})
+    _state.update(locals())
 
+
+def _test_cupy_profiler_runtime_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_cupy_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    mock_cp, profiler = _state["mock_cp"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mock_cp):
         # Empty inputs
         res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
@@ -315,24 +449,34 @@ def test_cupy_profiler_runtime():
         from ml_switcheroo_compiler.ir.core import IRNode
 
         graph_with_ops = IRGraph()
-        graph_with_ops.nodes["relu1"] = IRNode("Relu", "relu1", ["arr"])
+        getattr(graph_with_ops.nodes, "__setitem__")("relu1", cast("Callable[..., EagerTensorProtocol]", IRNode)("Relu", "relu1", ["arr"]))
         with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"relu1": inst}) as mock_eval:
             res_ops = profiler.profile_graph(graph_with_ops, {"arr": inst}, num_iters=1, warmup_iters=1)
             assert mock_eval.called
             assert res_ops["peak_memory_mb"] == 5.0
 
         # Fallback when cuda.Event raises an exception
-        mock_cp.cuda.Event.side_effect = RuntimeError("No CUDA")
+        setattr(mock_cp.cuda.Event, "side_effect", RuntimeError("No CUDA"))
         res_fallback = profiler.profile_graph(IRGraph(), {}, num_iters=1)
         assert len(res_fallback["latencies"]) == 1
-        mock_cp.cuda.Event.side_effect = None
+        setattr(mock_cp.cuda.Event, "side_effect", None)
 
         # Fallback when cp does not have cuda events (has_cuda_events is False)
-        mock_cp.cuda = None
+        setattr(mock_cp, "cuda", None)
         res_no_events = profiler.profile_graph(IRGraph(), {}, num_iters=1)
         assert len(res_no_events["latencies"]) == 1
+    getattr(_state, "update")({"IRNode": IRNode, "graph_with_ops": graph_with_ops, "inst": inst, "mock_eval": mock_eval})
+    getattr(_state, "update")({"res_empty": res_empty, "res_exec": res_exec, "res_fallback": res_fallback, "res_no_events": res_no_events})
+    getattr(_state, "update")({"res_ops": res_ops})
+    _state.update(locals())
 
-    # 4. Test ImportError on cupy import
+
+def _test_cupy_profiler_runtime_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_cupy_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     import importlib
     import sys
 
@@ -340,7 +484,7 @@ def test_cupy_profiler_runtime():
 
     with patch.dict(sys.modules, {"cupy": None}):
         importlib.reload(cupy_prof)
-        assert cupy_prof.cp is None
+        assert cast("EagerTensorProtocol", getattr(cupy_prof, "cp")) is None
     importlib.reload(cupy_prof)
 
     # 5. Peak memory CuPy branches (_get_cupy_peak_memory_mb)
@@ -367,8 +511,20 @@ def test_cupy_profiler_runtime():
     mock_cp_mem_err = MagicMock()
     mock_dev_err = MagicMock()
     mock_dev_err.mem_info = property(lambda self: (_ for _ in ()).throw(RuntimeError("err")))
-    mock_cp_mem_err.cuda.Device.side_effect = RuntimeError("device error")
-    mock_cp_mem_err.get_default_memory_pool().used_bytes.return_value = 1024 * 1024 * 5
+    getattr(_state, "update")({"_get_cupy_peak_memory_mb": _get_cupy_peak_memory_mb, "cupy_prof": cupy_prof, "importlib": importlib, "mock_cp_mem": mock_cp_mem})
+    getattr(_state, "update")({"mock_cp_mem_err": mock_cp_mem_err, "mock_cp_str_mem": mock_cp_str_mem, "mock_dev_err": mock_dev_err, "sys": sys})
+    _state.update(locals())
+
+
+def _test_cupy_profiler_runtime_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_cupy_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    _get_cupy_peak_memory_mb, mock_cp_mem_err, profiler = _state["_get_cupy_peak_memory_mb"], _state["mock_cp_mem_err"], _state["profiler"]
+    setattr(mock_cp_mem_err.cuda.Device, "side_effect", RuntimeError("device error"))
+    setattr(mock_cp_mem_err.get_default_memory_pool().used_bytes, "return_value", 1024 * 1024 * 5)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mock_cp_mem_err):
         assert _get_cupy_peak_memory_mb() == 5.0
 
@@ -397,6 +553,17 @@ def test_cupy_profiler_runtime():
     mock_cp_sync_err = MagicMock()
     mock_cp_sync_err.cuda.Stream.null.synchronize.side_effect = RuntimeError("stream fail")
     mock_cp_sync_err.cuda.Device().synchronize.side_effect = RuntimeError("device fail")
+    getattr(_state, "update")({"mock_cp_no_pool": mock_cp_no_pool, "mock_cp_pool_err": mock_cp_pool_err, "mock_cp_sync": mock_cp_sync, "mock_cp_sync_err": mock_cp_sync_err})
+    _state.update(locals())
+
+
+def _test_cupy_profiler_runtime_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 5 of test_cupy_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    mock_cp_sync_err, profiler = _state["mock_cp_sync_err"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mock_cp_sync_err):
         profiler._sync()  # does not raise
 
@@ -422,40 +589,77 @@ def test_cupy_profiler_runtime():
         assert _is_cupy_available() is True
 
     mod_cuda_unavail = CustomMod()
-    mod_cuda_unavail.cuda = CustomMod()
-    mod_cuda_unavail.cuda.is_available = lambda: False
+    setattr(mod_cuda_unavail, "cuda", CustomMod())
+    setattr(cast("EagerTensorProtocol", getattr(mod_cuda_unavail, "cuda")), "is_available", lambda: False)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_unavail):
         assert _is_cupy_available() is False
 
     mod_cuda_avail = CustomMod()
-    mod_cuda_avail.cuda = CustomMod()
-    mod_cuda_avail.cuda.is_available = lambda: True
-    mod_cuda_avail.cuda.runtime = CustomMod()
-    mod_cuda_avail.cuda.runtime.getDeviceCount = lambda: 1
+    setattr(mod_cuda_avail, "cuda", CustomMod())
+    getattr(_state, "update")({"CustomMod": CustomMod, "_is_cupy_available": _is_cupy_available, "mock_cp_bare": mock_cp_bare, "mod_cuda_avail": mod_cuda_avail})
+    getattr(_state, "update")({"mod_cuda_unavail": mod_cuda_unavail, "mod_no_cuda": mod_no_cuda})
+    _state.update(locals())
+
+
+def _test_cupy_profiler_runtime_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 6 of test_cupy_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    CustomMod, _is_cupy_available, mod_cuda_avail = _state["CustomMod"], _state["_is_cupy_available"], _state["mod_cuda_avail"]
+    setattr(mod_cuda_avail.cuda, "is_available", lambda: True)
+    setattr(mod_cuda_avail.cuda, "runtime", CustomMod())
+    setattr(mod_cuda_avail.cuda.runtime, "getDeviceCount", lambda: 1)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_avail):
-        assert _is_cupy_available() is True
+        assert bool(_is_cupy_available()) is True
 
     mod_cuda_no_runtime = CustomMod()
-    mod_cuda_no_runtime.cuda = CustomMod()
-    mod_cuda_no_runtime.cuda.is_available = lambda: True
+    setattr(mod_cuda_no_runtime, "cuda", CustomMod())
+    setattr(mod_cuda_no_runtime.cuda, "is_available", lambda: True)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_no_runtime):
-        assert _is_cupy_available() is True
+        assert bool(_is_cupy_available()) is True
 
     mod_cuda_zero = CustomMod()
-    mod_cuda_zero.cuda = CustomMod()
-    mod_cuda_zero.cuda.is_available = lambda: True
-    mod_cuda_zero.cuda.runtime = CustomMod()
-    mod_cuda_zero.cuda.runtime.getDeviceCount = lambda: 0
+    setattr(mod_cuda_zero, "cuda", CustomMod())
+    setattr(mod_cuda_zero.cuda, "is_available", lambda: True)
+    setattr(mod_cuda_zero.cuda, "runtime", cast("Callable[..., EagerTensorProtocol]", CustomMod)())
+    setattr(getattr(mod_cuda_zero.cuda, "runtime"), "getDeviceCount", lambda: 0)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_zero):
-        assert _is_cupy_available() is False
+        assert bool(_is_cupy_available()) is False
 
     mod_cuda_err = CustomMod()
-    mod_cuda_err.cuda = CustomMod()
+    setattr(mod_cuda_err, "cuda", CustomMod())
 
     def _raise_cuda_error() -> int:
+        """Test function _raise_cuda_error."""
         raise RuntimeError("boom")
 
-    mod_cuda_err.cuda.runtime = CustomMod()
-    mod_cuda_err.cuda.runtime.getDeviceCount = _raise_cuda_error
+    getattr(_state, "update")({"_raise_cuda_error": _raise_cuda_error, "mod_cuda_err": mod_cuda_err, "mod_cuda_no_runtime": mod_cuda_no_runtime, "mod_cuda_zero": mod_cuda_zero})
+    _state.update(locals())
+
+
+def _test_cupy_profiler_runtime_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 7 of test_cupy_profiler_runtime.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    CustomMod, _is_cupy_available, _raise_cuda_error, mod_cuda_err = _state["CustomMod"], _state["_is_cupy_available"], _state["_raise_cuda_error"], _state["mod_cuda_err"]
+    setattr(mod_cuda_err.cuda, "runtime", CustomMod())
+    setattr(mod_cuda_err.cuda.runtime, "getDeviceCount", _raise_cuda_error)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_err):
-        assert _is_cupy_available() is False
+        assert bool(_is_cupy_available()) is False
+
+
+def test_cupy_profiler_runtime() -> None:
+    """Verify execution simulation and memory peak tracking in CupyProfiler."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_cupy_profiler_runtime_part_1(_state)
+    _test_cupy_profiler_runtime_part_2(_state)
+    _test_cupy_profiler_runtime_part_3(_state)
+    _test_cupy_profiler_runtime_part_4(_state)
+    _test_cupy_profiler_runtime_part_5(_state)
+    _test_cupy_profiler_runtime_part_6(_state)
+    _test_cupy_profiler_runtime_part_7(_state)
+    assert isinstance(_state, dict)

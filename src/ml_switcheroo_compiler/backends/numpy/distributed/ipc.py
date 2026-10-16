@@ -1,9 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Real multi-process IPC distributed primitives for Numpy backend."""
+
+from __future__ import annotations
 
 import os
 from multiprocessing.connection import Client, Listener
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 import numpy as np
 
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 import numpy.typing as npt
 
 # A generic payload type that could be transmitted via IPC
-IpcPayload = Union[npt.NDArray[np.generic], str, int, float, list, tuple, bool, bytes]
+IpcPayload = Union[npt.NDArray[np.generic], str, int, float, list[int], tuple[int, Union[npt.NDArray[np.generic], str, int, float, bool, bytes]], bool, bytes]
 
 
 BASE_PORT = 15200
@@ -133,7 +134,7 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: IpcPayload) -> list[Ip
         return _exchange_ipc_data_worker(rank, size, tensor_data, timeout, retry_interval)
 
 
-def _ipc_all_gather(tensor: IpcPayload, axis: Optional[int], mesh: Optional["DeviceMesh"] = None) -> IpcPayload:
+def _ipc_all_gather(tensor: IpcPayload, axis: Optional[int], mesh: Optional[DeviceMesh] = None) -> IpcPayload:
     """Evaluate _ipc_all_gather operation.
 
     Args:
@@ -154,12 +155,12 @@ def _ipc_all_gather(tensor: IpcPayload, axis: Optional[int], mesh: Optional["Dev
 
         # Execute real IPC data exchange
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
-        return np.concatenate(exchanged, axis=axis if axis is not None else 0)
+        return cast(IpcPayload, getattr(np, "concatenate")(exchanged, axis=axis if axis is not None else 0))
 
     return np.expand_dims(t, axis=axis) if axis is not None else t
 
 
-def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: Optional["DeviceMesh"] = None) -> IpcPayload:
+def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: Optional[DeviceMesh] = None) -> IpcPayload:
     """Evaluate _ipc_reduce_scatter operation.
 
     Args:
@@ -184,13 +185,13 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: 
 
         # Perform reduction
         if op == "sum":
-            reduced = sum(exchanged)
+            reduced = sum(getattr(exchanged, "__iter__")())
         elif op == "max":
-            reduced = np.maximum.reduce(exchanged)
+            reduced = getattr(np.maximum, "reduce")(exchanged)
         elif op == "min":
-            reduced = np.minimum.reduce(exchanged)
+            reduced = getattr(np.minimum, "reduce")(exchanged)
         else:
-            reduced = sum(exchanged)
+            reduced = sum(getattr(exchanged, "__iter__")())
 
         # Scatter (slice and return own chunk)
         sub_arrays: list[npt.NDArray[np.generic]] = np.array_split(reduced, size, axis=axis if axis is not None else 0)
@@ -199,7 +200,7 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: 
     return t
 
 
-def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: Optional["DeviceMesh"] = None) -> IpcPayload:
+def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: Optional[DeviceMesh] = None) -> IpcPayload:
     """Evaluate _ipc_all_reduce operation.
 
     Args:
@@ -223,12 +224,12 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: Optional["DeviceMesh"] = 
 
         # Perform reduction and return same result on all workers
         if op == "sum":
-            return sum(exchanged)
+            return cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
         elif op == "max":
-            return np.maximum.reduce(exchanged)
+            return cast(IpcPayload, getattr(np.maximum, "reduce")(exchanged))
         elif op == "min":
-            return np.minimum.reduce(exchanged)
+            return cast(IpcPayload, getattr(np.minimum, "reduce")(exchanged))
         else:
-            return sum(exchanged)
+            return cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
 
     return t

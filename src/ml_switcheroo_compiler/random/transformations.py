@@ -19,7 +19,7 @@ def shuffle(key: Tensor | str, x: Tensor, axis: int = 0) -> Tensor:
     """
     return _emit_random_node(
         "RandomShuffle",
-        [key, x],  # type: ignore[list-item]
+        [key, x],
         getattr(x, "shape", ()),
         getattr(x, "dtype", None),
         {"axis": axis},

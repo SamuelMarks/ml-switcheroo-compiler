@@ -1,3 +1,9 @@
+"""Tests for test_nn_attention."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
@@ -6,8 +12,14 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention, scaled_dot_product_attention
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_dot_product_attention_eager_branch():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_dot_product_attention_eager_branch() -> None:
+    """Test function test_dot_product_attention_eager_branch."""
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -25,12 +37,13 @@ def test_dot_product_attention_eager_branch():
     with pytest.MonkeyPatch.context() as m:
         m.setattr("ml_switcheroo_compiler.ops.nn.attention.get_active_backend", lambda: mock_b)
         res = scaled_dot_product_attention(q, k, v, sf)
-        assert res.shape == (2, 2)
+        assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
     config.eager_mode = False
 
 
-def test_dot_product_attention_trace_branch():
+def test_dot_product_attention_trace_branch() -> None:
+    """Test function test_dot_product_attention_trace_branch."""
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -41,19 +54,21 @@ def test_dot_product_attention_trace_branch():
     sf = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
 
     res = scaled_dot_product_attention(q, k, v, sf)
-    assert res.shape == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
-def test_dot_product_attention_infer_shape():
+def test_dot_product_attention_infer_shape() -> None:
+    """Test function test_dot_product_attention_infer_shape."""
     op = ScaledDotProductAttention()
     q = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     k = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     v = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     sf = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
-    assert op.infer_shape(q, k, v, sf) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(q, k, v, sf) == (2, 2)
 
 
-def test_quantized_trace():
+def test_quantized_trace() -> None:
+    """Test function test_quantized_trace."""
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -69,5 +84,5 @@ def test_quantized_trace():
 
     sf2 = Tensor(np.ones((1,)), TensorConfig((1,), DType.Float32, Device("cpu")))
     zp2 = Tensor(np.ones((1,)), TensorConfig((1,), DType.Float32, Device("cpu")))
-    res2 = fake_quantize_per_tensor_affine(q, sf2, zp2, quant_min=0, quant_max=255)
+    res2 = cast("Callable[..., EagerTensorProtocol]", fake_quantize_per_tensor_affine)(q, sf2, zp2, quant_min=0, quant_max=255)
     assert res2 is not None

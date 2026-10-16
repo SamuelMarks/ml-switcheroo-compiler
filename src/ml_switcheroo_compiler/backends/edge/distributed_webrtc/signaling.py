@@ -6,6 +6,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
 # In-memory store for WebRTC offers, answers, and ICE candidates
 _offers: dict[str, str] = {}
 _answers: dict[str, str] = {}
@@ -15,7 +17,7 @@ _candidates: dict[str, list[str]] = {}
 class SignalingHandler(BaseHTTPRequestHandler):
     """Simple HTTP signaling handler for WebRTC."""
 
-    def _send_json(self, status: int, data: object) -> None:
+    def _send_json(self, status: int, data: EagerValue) -> None:
         """Send a JSON response.
 
         Args:

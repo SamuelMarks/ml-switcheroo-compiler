@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Compiler for ml-switcheroo."""
 
 from ml_switcheroo_compiler import random as random

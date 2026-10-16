@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module visitor.py."""
-
 """Code generator visitor for traversing IR."""
 
 from typing import TYPE_CHECKING

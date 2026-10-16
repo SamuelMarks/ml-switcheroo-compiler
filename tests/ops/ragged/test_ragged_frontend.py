@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -30,6 +31,11 @@ from ml_switcheroo_compiler.ops.ragged.frontend import (
     ragged_tensor_to_dense,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def _make_dummy_tensor(shape: tuple[int, ...] = (2, 2)) -> Tensor:
     """Create a dummy tensor for testing.
@@ -52,7 +58,7 @@ def test_ragged_frontend_eager_dispatch() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2), dtype=np.float32)
 
-        assert ragged_constant([[1, 2], [3]]) is not None
+        assert cast("Callable[..., EagerTensorProtocol]", ragged_constant)([[1, 2], [3]]) is not None
         assert ragged_cross(t, t) is not None
         assert ragged_cross_hashed(t, t) is not None
         assert ragged_range(t) is not None
@@ -71,8 +77,8 @@ def test_ragged_frontend_eager_dispatch() -> None:
 
         # Test with no args in eager mode (hits args[0] else branch)
         res_no_args = _ragged_op("RaggedConstant")
-        assert res_no_args.dtype == "float32"
-        assert "cpu" in str(res_no_args.device)
+        assert cast("EagerTensorProtocol", getattr(res_no_args, "dtype")) == "float32"
+        assert "cpu" in str(cast("EagerTensorProtocol", getattr(res_no_args, "device")))
 
 
 def test_ragged_frontend_tracing_dispatch() -> None:
@@ -83,7 +89,7 @@ def test_ragged_frontend_tracing_dispatch() -> None:
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node") as mock_emit:
         mock_emit.return_value = t
 
-        assert ragged_constant([[1, 2], [3]]) is t
+        assert id(cast("Callable[..., EagerTensorProtocol]", ragged_constant)([[1, 2], [3]])) == id(t)
         assert ragged_cross(t, t) is t
         assert ragged_cross_hashed(t, t) is t
         assert ragged_range(t) is t

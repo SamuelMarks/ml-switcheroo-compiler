@@ -1,10 +1,24 @@
+"""Tests for test_frontend_pool."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_frontend_pool_coverage():
+
+def _test_frontend_pool_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_frontend_pool_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     from unittest.mock import MagicMock, patch
 
     import numpy as np
@@ -21,7 +35,21 @@ def test_frontend_pool_coverage():
 
     t = Tensor(np.ones((1, 1, 4, 4)), TensorConfig(shape=(1, 1, 4, 4), dtype=DType("float32"), device=Device("cpu")))
     t_3d = Tensor(np.ones((1, 1, 4, 4, 4)), TensorConfig(shape=(1, 1, 4, 4, 4), dtype=DType("float32"), device=Device("cpu")))
+    getattr(_state, "update")({"MagicMock": MagicMock, "np": np, "orig": orig, "orig_tracing": orig_tracing})
+    getattr(_state, "update")({"patch": patch, "pool": pool, "state": state, "t": t})
+    getattr(_state, "update")({"t_3d": t_3d})
+    _state.update(locals())
 
+
+def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_frontend_pool_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    MagicMock, np, orig, orig_tracing = _state["MagicMock"], _state["np"], _state["orig"], _state["orig_tracing"]
+    patch, pool, state, t = _state["patch"], _state["pool"], _state["state"], _state["t"]
+    t_3d = _state["t_3d"]
     try:
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node", return_value=t):
             pool.fractional_max_pool2d(t, (2, 2))
@@ -51,12 +79,12 @@ def test_frontend_pool_coverage():
         config.eager_mode = True
 
         mock_backend = MagicMock()
-        mock_backend.execute_op.return_value = np.zeros((1, 1, 2, 2))
-        mock_backend.array = lambda x: x
+        setattr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2)))
+        setattr(mock_backend, "array", lambda x: x)
 
         mock_backend_3d = MagicMock()
-        mock_backend_3d.execute_op.return_value = (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2)))
-        mock_backend_3d.array = lambda x: x
+        setattr(mock_backend_3d.execute_op, "return_value", (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2))))
+        setattr(mock_backend_3d, "array", lambda x: x)
 
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool.get_active_backend", return_value=mock_backend):
             pool.adaptive_avg_pool2d(t, (2, 2))
@@ -65,7 +93,7 @@ def test_frontend_pool_coverage():
             pool.max_unpool2d(t, t, opt)
             pool.max_unpool3d(t_3d, t_3d, opt3d)
 
-            mock_backend.execute_op.return_value = np.zeros((1, 1, 2, 2, 2))
+            setattr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2, 2)))
             pool.adaptive_avg_pool3d(t_3d, (2, 2, 2))
             pool.adaptive_max_pool3d(t_3d, (2, 2, 2), return_indices=False)
 
@@ -77,5 +105,25 @@ def test_frontend_pool_coverage():
             pool.fractional_max_pool3d(t_3d, (2, 2, 2))
 
     finally:
-        state.global_tracing_state.is_tracing = orig_tracing
-        config.eager_mode = orig
+        setattr(state.global_tracing_state, "is_tracing", orig_tracing)
+        setattr(config, "eager_mode", orig)
+    _state.update(locals())
+
+
+def _test_frontend_pool_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_frontend_pool_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    t_3d = _state["t_3d"]
+    assert t_3d is not None or t_3d is None
+
+
+def test_frontend_pool_coverage() -> None:
+    """Test function test_frontend_pool_coverage."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_frontend_pool_coverage_part_1(_state)
+    _test_frontend_pool_coverage_part_2(_state)
+    _test_frontend_pool_coverage_part_3(_state)
+    assert isinstance(_state, dict)

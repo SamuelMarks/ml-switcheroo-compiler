@@ -1,10 +1,12 @@
 """Edge backend profiler for runtime execution and memory benchmarking."""
 
+import logging
 import resource
 import sys
 import time
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue, evaluate_graph
@@ -57,8 +59,8 @@ class EdgeProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
-    ) -> list[object]:
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+    ) -> list[EagerValue]:
         """Convert input payloads into ordered buffer structures.
 
         Args:
@@ -77,7 +79,7 @@ class EdgeProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -99,9 +101,9 @@ class EdgeProfiler:
         edge_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        eval_inputs: dict[str, EvalValue] = {k: v for k, v in inputs.items()}  # type: ignore[misc]
+        eval_inputs = dict(inputs)
 
-        def _execute_step() -> object:
+        def _execute_step() -> EagerValue:
             """Execute a single evaluation step on edge target.
 
             Returns:
@@ -109,9 +111,9 @@ class EdgeProfiler:
             """
             if has_ops:
                 try:
-                    return evaluate_graph(graph, eval_inputs)
-                except Exception:
-                    pass
+                    return cast(EagerValue, evaluate_graph(graph, cast("dict[str, EvalValue]", eval_inputs)))
+                except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             return edge_inputs
 
         for _ in range(max(1, warmup_iters)):

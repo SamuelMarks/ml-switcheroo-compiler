@@ -1,10 +1,17 @@
 """Test test_poly_lower.py."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.poly_lower import polyfill_lowering_pass
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_in_top_k_lowering():
+
+def test_in_top_k_lowering() -> None:
     """Test test_in_top_k_lowering."""
     g = IRGraph()
     # Predictions: [batch, classes]
@@ -29,7 +36,7 @@ def test_in_top_k_lowering():
     assert "Equal" in op_types
 
 
-def test_ctc_greedy_decoder_lowering():
+def test_ctc_greedy_decoder_lowering() -> None:
     """Test test_ctc_greedy_decoder_lowering."""
     g = IRGraph()
     g.nodes["inputs"] = IRNode(id="inputs", op_type="Input", shape_metadata=(50, 10, 32))
@@ -50,7 +57,7 @@ def test_ctc_greedy_decoder_lowering():
     assert "LogicalAnd" in op_types
 
 
-def test_no_poly_lower():
+def test_no_poly_lower() -> None:
     """Test test_no_poly_lower."""
     g = IRGraph()
     n = IRNode(id="n1", op_type="Add", inputs=["inputs", "seq_len"])
@@ -59,7 +66,7 @@ def test_no_poly_lower():
     assert not modified
 
 
-def test_rest_poly_lowering():
+def test_rest_poly_lowering() -> None:
     """Test test_rest_poly_lowering."""
     g = IRGraph()
     n_iso = IRNode(id="iso", op_type="IsotonicRegression", inputs=[])
@@ -82,7 +89,8 @@ def test_rest_poly_lowering():
     assert g.nodes["ero"].op_type == "MinPool2D"
 
 
-def test_missing_yaml(monkeypatch):
+def test_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_missing_yaml."""
     import os
 
     import ml_switcheroo_compiler.transforms.passes.poly_lower as poly_lower
@@ -92,7 +100,8 @@ def test_missing_yaml(monkeypatch):
     assert not poly_lower.polyfill_lowering_pass(g)
 
 
-def test_poly_lower_edge_rules(monkeypatch):
+def test_poly_lower_edge_rules(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_poly_lower_edge_rules."""
     import ml_switcheroo_compiler.transforms.passes.poly_lower as poly_lower
 
     mock_rules = {

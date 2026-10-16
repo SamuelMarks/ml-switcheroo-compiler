@@ -7,6 +7,7 @@ from typing import Optional
 
 import libcst as cst
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -91,7 +92,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         """
         if isinstance(target.value, cst.Name) and target.value.value == "self":
             attr_name = target.attr.value
-            val: Optional[object] = None
+            val: Optional[EagerValue] = None
             if isinstance(node.value, cst.Integer):
                 val = int(node.value.value)
             elif isinstance(node.value, cst.Float):
@@ -284,7 +285,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self,
         args: Sequence[cst.Arg],
         inputs: list[str],
-        attributes: dict[str, object],
+        attributes: dict[str, EagerValue],
     ) -> None:
         """Parse positional, keyword, and varargs call arguments.
 
@@ -302,13 +303,13 @@ class ASTToIRVisitor(cst.CSTVisitor):
                 self._resolve_call_arg(arg.value, inputs)
             elif arg.keyword:
                 kw = arg.keyword.value
-                val: Optional[object] = None
+                val: Optional[EagerValue] = None
                 if isinstance(arg.value, cst.Integer):
                     val = int(arg.value.value)
                 elif isinstance(arg.value, cst.Float):
                     val = float(arg.value.value)
                 elif isinstance(arg.value, cst.SimpleString):
-                    val = arg.value.evaluated_value
+                    val = str(arg.value.evaluated_value)
                 elif isinstance(arg.value, cst.Name):
                     val = arg.value.value
                 attributes[kw] = val
@@ -337,7 +338,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self.current_id += 1
 
         inputs: list[str] = []
-        attributes: dict[str, object] = {}
+        attributes: dict[str, EagerValue] = {}
         if op_type == "ForeignCall":
             attributes["callee"] = full_name
 
@@ -448,7 +449,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        attributes: dict[str, object] = {
+        attributes: dict[str, EagerValue] = {
             "true_branch": true_branch,
             "false_branch": false_branch,
         }
@@ -483,7 +484,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        attributes: dict[str, object] = {
+        attributes: dict[str, EagerValue] = {
             "body_subgraph": body_subgraph,
         }
         ir_node: IRNode = IRNode(id=node_id, op_type="WhileLoop", inputs=inputs, attributes=attributes)
@@ -515,7 +516,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         node.body.visit(body_visitor)
         body_subgraph = body_visitor.graph
 
-        attributes: dict[str, object] = {
+        attributes: dict[str, EagerValue] = {
             "body_subgraph": body_subgraph,
             "target_var": target_name,
         }
@@ -546,7 +547,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        attributes: dict[str, object] = {
+        attributes: dict[str, EagerValue] = {
             "try_subgraph": try_subgraph,
             "fallback_subgraph": fallback_subgraph,
         }
@@ -579,7 +580,14 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self.last_node_id = node_id
 
     def visit_BinaryOperation(self, node: cst.BinaryOperation) -> bool:
-        """Visit binary operations."""
+        """Visit binary operations and emit corresponding binary IR nodes.
+
+        Args:
+            node (cst.BinaryOperation): The BinaryOperation CST node.
+
+        Returns:
+            bool: False to prevent redundant recursive traversal of children.
+        """
         op_map = {
             cst.Add: "Add",
             cst.Subtract: "Sub",
@@ -614,7 +622,11 @@ class ASTToIRVisitor(cst.CSTVisitor):
         return False
 
     def visit_Integer(self, node: cst.Integer) -> None:
-        """Visit Integer literal."""
+        """Visit Integer literal and emit a Constant IR node.
+
+        Args:
+            node (cst.Integer): The Integer CST node.
+        """
         node_id = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
         self.current_id += 1
 
@@ -623,7 +635,11 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self.last_node_id = node_id
 
     def visit_Float(self, node: cst.Float) -> None:
-        """Visit Float literal."""
+        """Visit Float literal and emit a Constant IR node.
+
+        Args:
+            node (cst.Float): The Float CST node.
+        """
         node_id = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
         self.current_id += 1
 
@@ -645,14 +661,14 @@ class ASTToIRVisitor(cst.CSTVisitor):
             inputs.append(self.var_table[node.value.value])
 
         op_type = "Slice"
-        attributes: dict[str, object] = {}
+        attributes: dict[str, EagerValue] = {}
 
         if node.slice and len(node.slice) == 1:
             slice_elem = node.slice[0].slice
             if isinstance(slice_elem, cst.Index):
                 if isinstance(slice_elem.value, cst.SimpleString):
                     op_type = "DictGet"
-                    attributes["key"] = slice_elem.value.evaluated_value
+                    attributes["key"] = str(slice_elem.value.evaluated_value)
                 elif isinstance(slice_elem.value, cst.Integer):
                     op_type = "GetItem"
                     attributes["index"] = int(slice_elem.value.value)

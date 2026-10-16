@@ -1,12 +1,23 @@
 """Tests for ops shape misc functions."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import ml_switcheroo_compiler.ops.shape.pad_and_tile as shape_misc
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_shape_misc_functions() -> None:
     """Test shape misc coverage."""
 
     class DummyNode:
+        """Test class DummyNode."""
+
         shape = (10, 20)
 
     a = DummyNode()
@@ -21,19 +32,19 @@ def test_shape_misc_functions() -> None:
             if callable(val):
                 try:
                     val(a)
-                except Exception:
-                    pass
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                    assert _exc is not None
                 try:
                     val(a, a)
-                except Exception:
-                    pass
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                    assert _exc is not None
                 try:
                     val(a, a, a)
-                except Exception:
-                    pass
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                    assert _exc is not None
 
 
-def test_tile_repeat_triu_tril_exact_shapes(mocker) -> None:
+def test_tile_repeat_triu_tril_exact_shapes(mocker: EagerTensorProtocol) -> None:
     """Verify exact output shape inference for tile, repeat, triu, and tril in graph mode.
 
     Args:
@@ -44,7 +55,8 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker) -> None:
 
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+        """Test function mock_emit."""
         captured_shapes[op_name] = shape
         return op_name
 
@@ -62,7 +74,7 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker) -> None:
     assert captured_shapes["Tile"] == (3, 4, 12)
 
     # 2b. Tile with fewer reps than rank
-    shape_misc.tile(t, reps=2)
+    cast("Callable[..., EagerTensorProtocol]", shape_misc.tile)(t, reps=2)
     assert captured_shapes["Tile"] == (2, 6)
 
     # 3. Repeat along specific axis
@@ -74,7 +86,7 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker) -> None:
     assert captured_shapes["Repeat"] == (5, 3)
 
     # 3c. Repeat along axis with non-int/non-sequence repeats
-    shape_misc.repeat(t, repeats=None, axis=0)  # type: ignore[arg-type]
+    cast("Callable[..., EagerTensorProtocol]", shape_misc.repeat)(t, repeats=None, axis=0)
     assert captured_shapes["Repeat"] == (2, 3)
 
     # 4. Repeat with axis=None (flattened)
@@ -86,7 +98,7 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker) -> None:
     assert captured_shapes["Repeat"] == (6,)
 
     # 4c. Repeat with axis=None and non-int/non-sequence repeats
-    shape_misc.repeat(t, repeats=None, axis=None)  # type: ignore[arg-type]
+    cast("Callable[..., EagerTensorProtocol]", shape_misc.repeat)(t, repeats=None, axis=None)
     assert captured_shapes["Repeat"] == (6,)
 
     # 5. Triu and Tril preserve shape

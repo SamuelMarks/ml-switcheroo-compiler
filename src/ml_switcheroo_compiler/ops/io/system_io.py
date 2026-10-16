@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -7,6 +6,7 @@ import glob  # noqa: F401
 import os  # noqa: F401
 import shutil  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor  # noqa: F401
@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
-def set_default_stream(stream) -> None:
+def set_default_stream(stream: EagerValue) -> None:
     """Set the default stream for the active backend.
 
     Args:

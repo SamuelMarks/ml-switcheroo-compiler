@@ -1,32 +1,44 @@
+"""Tests for test_frontend_random."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.creation.frontend_random import manual_seed, rand, randint, randn
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_frontend_random():
+
+def test_frontend_random() -> None:
+    """Test function test_frontend_random."""
     import ml_switcheroo_compiler.backends.registry as reg
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
 
     class DummyBackend:
-        def execute_op(self, op, *a, **k):
+        """Test class DummyBackend."""
+
+        def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
+            """Test function execute_op."""
             return op
 
     orig_reg_backend = getattr(reg, "_ACTIVE_BACKEND", None)
     has_reg_backend = hasattr(reg, "_ACTIVE_BACKEND")
-    reg._ACTIVE_BACKEND = DummyBackend()
+    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
     import ml_switcheroo_compiler.ops.creation.frontend_random as rand_mod
 
-    orig_rand_backend = rand_mod.get_active_backend
-    rand_mod.get_active_backend = lambda: DummyBackend()
+    orig_rand_backend = cast("EagerTensorProtocol", getattr(rand_mod, "get_active_backend"))
+    setattr(rand_mod, "get_active_backend", lambda: DummyBackend())
 
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
-    assert rand(1).data == "Rand"
-    assert randn(1).data == "Randn"
-    assert randint(0, 10, (1,)).data == "Randint"
+    assert cast("EagerTensorProtocol", getattr(rand(1), "data")) == "Rand"
+    assert cast("EagerTensorProtocol", getattr(randn(1), "data")) == "Randn"
+    assert cast("EagerTensorProtocol", getattr(randint(0, 10, (1,)), "data")) == "Randint"
 
     manual_seed(42)
 
@@ -45,7 +57,7 @@ def test_frontend_random():
 
     config.eager_mode = True
     if has_reg_backend:
-        reg._ACTIVE_BACKEND = orig_reg_backend
+        setattr(reg, "_ACTIVE_BACKEND", orig_reg_backend)
     else:
-        del reg._ACTIVE_BACKEND
-    rand_mod.get_active_backend = orig_rand_backend
+        delattr(reg, "_ACTIVE_BACKEND")
+    setattr(rand_mod, "get_active_backend", orig_rand_backend)

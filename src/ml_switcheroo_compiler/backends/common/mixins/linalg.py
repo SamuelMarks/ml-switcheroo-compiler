@@ -1,11 +1,10 @@
-"""Module linalg.py."""
+"""Provide mixin module."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-"""Provide mixin module."""
+from typing import cast
 
-
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
@@ -14,7 +13,7 @@ from .common import CommonASTVisitor
 class LinearAlgebraASTVisitor(CommonASTVisitor):
     """LinearAlgebra AST visitor."""
 
-    def visit_CholeskyVjp(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_CholeskyVjp(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_CholeskyVjp operation.
 
         Args:
@@ -32,7 +31,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         backend_name: str = pfx[:-1] if pfx.endswith(".") else pfx
         return f"_cholesky_vjp_eager({backend_name}, {input_vars[0]}, {input_vars[1]})"
 
-    def visit_LuVjp(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_LuVjp(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_LuVjp operation.
 
         Args:
@@ -82,7 +81,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         adjoint: bool = kwargs.get("adjoint", False)
         return f"{pfx}_banded_triangular_solve({input_vars[0]}, {input_vars[1]}, lower={lower}, adjoint={adjoint})"
 
-    def visit_GatherMm(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_GatherMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_GatherMm operation.
 
         Args:
@@ -95,12 +94,12 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """
         args_str: str = f"{input_vars[0]}, {input_vars[1]}"
         if "lhs_indices" in node.attributes:
-            args_str += f", lhs_indices={input_vars[int(node.attributes['lhs_indices'])]}"
+            args_str += f", lhs_indices={input_vars[int(cast(int, node.attributes['lhs_indices']))]}"
         if "rhs_indices" in node.attributes:
-            args_str += f", rhs_indices={input_vars[int(node.attributes['rhs_indices'])]}"
+            args_str += f", rhs_indices={input_vars[int(cast(int, node.attributes['rhs_indices']))]}"
         return f"{self.generator.get_fallback_prefix()}.gather_mm({args_str})"
 
-    def visit_SegmentedMm(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_SegmentedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_SegmentedMm operation.
 
         Args:
@@ -111,9 +110,9 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(node.attributes.get('segments', 2))]})"
+        return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(cast(int, node.attributes.get('segments', 2)))]})"
 
-    def visit_BlockMaskedMm(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_BlockMaskedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_BlockMaskedMm operation.
 
         Args:
@@ -129,7 +128,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         out: str = f"{self.generator.get_fallback_prefix()}.matmul({a}, {b})"
         return out
 
-    def visit_Quantize(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Quantize(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_Quantize operation.
 
         Args:
@@ -140,16 +139,16 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        group_size: int = int(node.attributes.get("group_size", 64))
-        bits: int = int(node.attributes.get("bits", 4))
-        idx: int = int(node.attributes.get("return_idx", 0))
+        group_size: int = int(cast(int, node.attributes.get("group_size", 64)))
+        bits: int = int(cast(int, node.attributes.get("bits", 4)))
+        idx: int = int(cast(int, node.attributes.get("return_idx", 0)))
         pfx: str = self.generator.get_fallback_prefix()
 
         if pfx in ("mlx", "mx"):
             return f"mx.quantize({input_vars[0]}, group_size={group_size}, bits={bits})[{idx}]"
         return f"{input_vars[0]}"
 
-    def visit_QuantizedMatmul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_QuantizedMatmul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_QuantizedMatmul operation.
 
         Args:
@@ -161,8 +160,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             str: Result.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
-        group_size: int = int(node.attributes.get("group_size", 64))
-        bits: int = int(node.attributes.get("bits", 4))
+        group_size: int = int(cast(int, node.attributes.get("group_size", 64)))
+        bits: int = int(cast(int, node.attributes.get("bits", 4)))
         pfx: str = self.generator.get_fallback_prefix()
 
         x: str = input_vars[0]
@@ -173,7 +172,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             return f"mx.quantized_matmul({x}, {w}, {scales}, {biases}, transpose={transpose}, group_size={group_size}, bits={bits})"
         return f"{pfx}.matmul({x}, {w}.T if {transpose} else {w})"
 
-    def visit_GatherQMM(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_GatherQMM(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_GatherQMM operation.
 
         Args:
@@ -185,8 +184,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             str: Result.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
-        group_size: int = int(node.attributes.get("group_size", 64))
-        bits: int = int(node.attributes.get("bits", 4))
+        group_size: int = int(cast(int, node.attributes.get("group_size", 64)))
+        bits: int = int(cast(int, node.attributes.get("bits", 4)))
         pfx: str = self.generator.get_fallback_prefix()
 
         x: str = input_vars[0]
@@ -198,7 +197,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             return f"mx.gather_qmm({x}, {w}, {scales}, {biases}, {indices}, transpose={transpose}, group_size={group_size}, bits={bits})"
         return f"{pfx}.matmul({x}, {w}[{indices}].T if {transpose} else {w}[{indices}])"
 
-    def visit_QrVjp(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_QrVjp(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_QrVjp operation.
 
         Args:

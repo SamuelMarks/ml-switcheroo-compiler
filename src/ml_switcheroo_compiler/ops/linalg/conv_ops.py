@@ -1,8 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Core abstractions and logic definitions for conv_ops.py."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from typing import Union
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
+from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg.products import _has_valid_shape
 
@@ -13,27 +15,19 @@ class ConvGeneralDilated(OpDef):
 
     op_name = "ConvGeneralDilated"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer the output shape for general N-dimensional dilated convolution.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        """Infer shape.
-
-        Args:
-            *args (Any): lhs, rhs, config.
+            *args: Positional arguments (lhs, rhs, config).
             **kwargs: Additional keyword arguments.
 
-        Returns: Tensor: The evaluated output resulting from this operation.
+        Returns:
+            tuple[int, ...]: The inferred output shape.
         """
         lhs = args[0] if len(args) > 0 else kwargs.get("lhs")
         rhs = args[1] if len(args) > 1 else kwargs.get("rhs")
-        config = args[2] if len(args) > MAGIC_VAL_2 else kwargs.get("config", None)
+        config: Union[OpArgValue, ConvConfig] = args[2] if len(args) > BINARY_OP_ARITY else kwargs.get("config", None)
         if config is None:
             config = ConvConfig(window_strides=[], padding=[])
         if not _has_valid_shape(lhs) or not _has_valid_shape(rhs):
@@ -75,7 +69,7 @@ class Convolve(OpDef):
     op_name = "Convolve"
     np_op_name = "convolve"
 
-    def infer_shape(self, a, v, mode: str = "full", **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, v: EagerTensorProtocol, mode: str = "full", **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for 1D discrete linear convolution.
 
         Args:
@@ -108,7 +102,7 @@ class ConvGeneralDilatedLocal(OpDef):
 
     op_name = "ConvGeneralDilatedLocal"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -127,7 +121,7 @@ class ConvGeneralDilatedPatches(OpDef):
 
     op_name = "ConvGeneralDilatedPatches"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -146,7 +140,7 @@ class ConvWithGeneralPadding(OpDef):
 
     op_name = "ConvWithGeneralPadding"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -165,7 +159,7 @@ class ConvTransposeShapeTuple(OpDef):
 
     op_name = "ConvTransposeShapeTuple"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -184,7 +178,7 @@ class ConvTranspose(OpDef):
 
     op_name = "ConvTranspose"
 
-    def infer_shape(self, lhs, rhs, **kwargs):
+    def infer_shape(self, lhs: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -209,7 +203,7 @@ class ConvTranspose(OpDef):
             strides = (strides,) * len(spatial_in)
 
         out_spatial = []
-        for s_in, k, st in zip(spatial_in, spatial_k, strides):
+        for s_in, k, st in zip(spatial_in, spatial_k, getattr(strides, "__iter__")()):
             if padding == "VALID":
                 s_out = (s_in - 1) * st + k
             else:  # SAME

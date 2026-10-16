@@ -1,12 +1,12 @@
-# ruff: noqa: E402, E501, F403
 """Numpy-related utilities."""
 
-from typing import Optional
+from typing import Optional, cast
 
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
-def to_categorical(x, num_classes: Optional[int] = None, dtype: str = "float32"):
+def to_categorical(x: EagerValue, num_classes: Optional[int] = None, dtype: str = "float32") -> EagerValue:
     """Convert a class vector (integers) to binary class matrix.
 
     Args:
@@ -24,10 +24,10 @@ def to_categorical(x, num_classes: Optional[int] = None, dtype: str = "float32")
     indices = ops.arange(num_classes)
     x_expanded = ops.expand_dims(x_ops, -1)
     one_hot = ops.equal(x_expanded, indices)
-    return ops.cast(one_hot, dtype)
+    return cast(EagerValue, ops.cast(one_hot, dtype))
 
 
-def normalize(x, axis: int = -1, order: int = 2):
+def normalize(x: EagerValue, axis: int = -1, order: int = 2) -> EagerValue:
     """Normalize a tensor/array.
 
     Args:

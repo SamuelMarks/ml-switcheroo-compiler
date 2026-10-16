@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field
 
 
@@ -99,14 +101,14 @@ def _load_domain_manifests(
         fpath: str = os.path.join(rules_dir, fname)
         try:
             with open(fpath, encoding="utf-8") as rf:
-                rdata: dict[str, object] = yaml.safe_load(rf) or {}
+                rdata: dict[str, AttributeValue] = yaml.safe_load(rf) or {}
                 if isinstance(rdata, dict):
                     if "ast_to_ir_ops" in rdata and isinstance(rdata["ast_to_ir_ops"], dict):
                         ast_to_ir_ops.update(rdata["ast_to_ir_ops"])
                     if "ir_to_ast_ops" in rdata and isinstance(rdata["ir_to_ast_ops"], dict):
                         ir_to_ast_ops.update(rdata["ir_to_ast_ops"])
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError, yaml.YAMLError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 def _load_framework_configs(frameworks: dict[str, FrameworkConfig]) -> None:
@@ -126,13 +128,13 @@ def _load_framework_configs(frameworks: dict[str, FrameworkConfig]) -> None:
         fpath: str = os.path.join(frameworks_dir, fname)
         try:
             with open(fpath, encoding="utf-8") as rf:
-                fw_data: dict[str, object] = yaml.safe_load(rf) or {}
+                fw_data: dict[str, AttributeValue] = yaml.safe_load(rf) or {}
                 if isinstance(fw_data, dict) and fw_name not in frameworks:
                     fw_cfg = TranspilationFrameworkConfig.model_validate(fw_data)
                     fw_cfg.framework_name = fw_name
                     frameworks[fw_name] = fw_cfg
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError, yaml.YAMLError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 def _load_method_rewrites(syntactic_patterns: SyntacticPatternsConfig) -> None:
@@ -147,12 +149,12 @@ def _load_method_rewrites(syntactic_patterns: SyntacticPatternsConfig) -> None:
 
     try:
         with open(method_rewrites_path, encoding="utf-8") as rf:
-            mdata: dict[str, object] = yaml.safe_load(rf) or {}
+            mdata: dict[str, AttributeValue] = yaml.safe_load(rf) or {}
             if isinstance(mdata, dict) and "method_to_function_rewrites" in mdata and isinstance(mdata["method_to_function_rewrites"], list):
                 for item in mdata["method_to_function_rewrites"]:
                     syntactic_patterns.method_to_function_rewrites.append(ASTPatternRule.model_validate(item))
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 def load_transpiler_config(yaml_path: str) -> TranspilerConfig:
@@ -165,7 +167,7 @@ def load_transpiler_config(yaml_path: str) -> TranspilerConfig:
         TranspilerConfig: The loaded configuration.
     """
     with open(yaml_path, encoding="utf-8") as f:
-        data: dict[str, object] = yaml.safe_load(f) or {}
+        data: dict[str, AttributeValue] = yaml.safe_load(f) or {}
 
     if not isinstance(data, dict) or not data:
         return TranspilerConfig(
@@ -367,7 +369,7 @@ class DefaultInsertionSpec(BaseModel):
 
     op_name: str
     target_framework: str | None = None
-    default_kwargs: dict[str, object] = Field(default_factory=dict)
+    default_kwargs: dict[str, AttributeValue] = Field(default_factory=dict)
 
 
 class KeywordToPositionalSpec(BaseModel):

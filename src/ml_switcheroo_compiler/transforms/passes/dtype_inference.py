@@ -1,15 +1,17 @@
-# ruff: noqa: E402, E501, F403
 """DType Inference Pass."""
 
-from typing import Optional
+from typing import Optional, cast
 
+from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _get_value_dtype(val) -> Optional[DType]:
+def _get_value_dtype(val: EagerValue) -> Optional[DType]:
     """Get the dtype from a constant value.
 
     Args:
@@ -19,7 +21,7 @@ def _get_value_dtype(val) -> Optional[DType]:
             tuple[int, ...]: Result.
     """
     if hasattr(val, "dtype"):
-        return DType(str(val.dtype))
+        return DType(str(getattr(val, "dtype")))
     if isinstance(val, bool):
         return DType.Bool
     if isinstance(val, int):
@@ -29,7 +31,7 @@ def _get_value_dtype(val) -> Optional[DType]:
     return None
 
 
-def _infer_constant_dtype(node, dtypes: dict[str, str]) -> bool:
+def _infer_constant_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a Constant node.
 
     Args:
@@ -49,11 +51,11 @@ def _infer_constant_dtype(node, dtypes: dict[str, str]) -> bool:
             return True
         return False
 
-    dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
+    dtypes[node.id] = cast(str, node.attributes.get("dtype", DType.Float32.value))
     return False
 
 
-def _infer_input_dtype(node, dtypes: dict[str, str]) -> bool:
+def _infer_input_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Input node.
 
     Args:
@@ -63,11 +65,11 @@ def _infer_input_dtype(node, dtypes: dict[str, str]) -> bool:
     Returns:
         bool: True if node was modified.
     """
-    dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
+    dtypes[node.id] = cast(str, node.attributes.get("dtype", DType.Float32.value))
     return False
 
 
-def _infer_output_dtype(node, dtypes: dict[str, str]) -> bool:
+def _infer_output_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Output node.
 
     Args:
@@ -109,7 +111,7 @@ def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
         return valid_dtypes[0]
 
 
-def _handle_cast_dtype(node, valid_dtypes: list[str]) -> Optional[str]:
+def _handle_cast_dtype(node: LogicalNode, valid_dtypes: list[str]) -> Optional[str]:
     """Evaluate _handle_cast_dtype operation.
 
     Args:
@@ -125,7 +127,7 @@ def _handle_cast_dtype(node, valid_dtypes: list[str]) -> Optional[str]:
     return None
 
 
-def _handle_boolean_dtype(node, valid_dtypes: list[str]) -> str:
+def _handle_boolean_dtype(node: LogicalNode, valid_dtypes: list[str]) -> str:
     """Evaluate _handle_boolean_dtype operation.
 
     Args:
@@ -159,7 +161,7 @@ DTYPE_INFERENCE_REGISTRY = {
 }
 
 
-def _get_node_valid_dtypes(node, dtypes: dict[str, str]) -> list[str]:
+def _get_node_valid_dtypes(node: EagerValue, dtypes: dict[str, str]) -> list[str]:
     """Evaluate _get_node_valid_dtypes operation.
 
     Args:
@@ -170,14 +172,14 @@ def _get_node_valid_dtypes(node, dtypes: dict[str, str]) -> list[str]:
             tuple[int, ...]: Result.
     """
     valid = []
-    for inp in node.inputs:
+    for inp in getattr(node, "inputs"):
         dt = dtypes.get(inp)
         if dt is not None:
             valid.append(dt)
     return valid
 
 
-def _infer_op_dtype(node, dtypes: dict[str, str]) -> bool:
+def _infer_op_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a generic Op node.
 
     Args:

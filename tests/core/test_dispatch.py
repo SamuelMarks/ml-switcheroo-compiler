@@ -1,5 +1,8 @@
 """Test core dispatch."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,8 +12,11 @@ from ml_switcheroo_compiler.core.dispatch import dispatch
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_dispatch_eager_unsupported(monkeypatch):
+
+def test_dispatch_eager_unsupported(monkeypatch: EagerTensorProtocol) -> None:
     """Test dispatch fallback in eager mode when unsupported."""
     config.eager_mode = True
 
@@ -26,11 +32,13 @@ def test_dispatch_eager_unsupported(monkeypatch):
     config.eager_mode = False
 
 
-def test_dispatch_tracing():
+def test_dispatch_tracing() -> None:
     """Test dispatch in tracing mode."""
     config.eager_mode = False
 
     class MockTensor:
+        """Test class MockTensor."""
+
         dtype = "float32"
 
     global_tracing_state.start_tracing()
@@ -39,14 +47,17 @@ def test_dispatch_tracing():
 
         @register_op("TestDispatchTracing")
         class TestDispatchTracing(OpDef):
+            """Test class TestDispatchTracing."""
+
             op_name = "TestDispatchTracing"
 
-            def infer_shape(self, *args, **kwargs):
+            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+                """Test function infer_shape."""
                 raise ValueError("Simulate shape inference failure")
 
         t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
         out = dispatch("test", "TestDispatchTracing", t)
-        assert out.shape == ()
-        assert out.dtype.value == "float32"
+        assert cast("EagerTensorProtocol", getattr(out, "shape")) == ()
+        assert cast("EagerTensorProtocol", getattr(out, "dtype")).value == "float32"
     finally:
         global_tracing_state.stop_tracing()

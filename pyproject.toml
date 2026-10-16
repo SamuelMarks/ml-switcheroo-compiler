@@ -38,7 +38,7 @@ target-version = "py39"
 exclude = ["ml-switcheroo-ir"]
 line-length = 300
 lint.select = ["E", "F", "UP", "B", "I", "C901", "PLR09", "D"]
-lint.ignore = ["B905", "UP007"]
+lint.ignore = ["B905", "UP007", "UP045", "B009", "B010"]
 
 [tool.ruff.lint.pylint]
 max-args = 8
@@ -52,23 +52,12 @@ max-complexity = 10
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.lint.per-file-ignores]
-"fix_*.py" = ["D", "E501", "E701"]
-"merge_tests.py" = ["D", ]
-"rename_all_extras.py" = ["D", "C901", "PLR09"]
-"patch_classmethods.py" = ["D"]
-"generate_undercovered.py" = ["D"]
-"tests/*" = ["C901", "PLR09", "E402", "E701", "D", "E741", "F841", "E712", "B017", "F821", "B018", "E722", "E702", "B007", "E731"]
-"scripts/*" = ["C901", "PLR09", ]
-"src/ml_switcheroo_compiler/ops/generated_registry.py" = ["E501"]
-"tests_js/*" = ["C901", "PLR09", ]
-
 [tool.mypy]
 strict = true
 disallow_untyped_defs = true
+disallow_subclassing_any = false
 ignore_missing_imports = true
-warn_unused_ignores = false
-disable_error_code = ["attr-defined", "operator", "arg-type", "call-overload", "call-arg", "index", "has-type", "assignment", "var-annotated", "type-arg", "no-any-return", "misc", "no-untyped-call", "no-untyped-def", "union-attr", "no-redef"]
+warn_unused_ignores = true
 
 
 [tool.coverage.run]
@@ -98,10 +87,10 @@ ignore-module = false
 ignore-nested-functions = false
 ignore-nested-classes = false
 ignore-setters = false
-ignore-overloaded-functions = true
+ignore-overloaded-functions = false
 fail-under = 100
 exclude = ["tests", "docs", "ml-switcheroo-ir"]
-ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
+ignore-regex = []
 # possible values: 0 (minimal output), 1 (-v), 2 (-vv)
 verbose = 0
 quiet = false

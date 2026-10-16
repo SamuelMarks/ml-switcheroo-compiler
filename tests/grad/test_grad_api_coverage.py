@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -24,6 +25,11 @@ from ml_switcheroo_compiler.grad.api import (
 from ml_switcheroo_compiler.grad.options import GradOptions
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_grad_api_overwrite_with_gradient_full() -> None:
     """Verify overwrite_with_gradient execution and custom VJP registration."""
@@ -40,11 +46,11 @@ def test_grad_api_overwrite_with_gradient_full() -> None:
     def target_fn(x: Tensor) -> Tensor:
         """Function with gradient overwrite."""
         overwritten = overwrite_with_gradient(x, g)
-        return overwritten * 2.0
+        return cast("Tensor", cast("EagerTensorProtocol", overwritten) * cast("EagerTensorProtocol", 2.0))
 
     # Under value_and_grad
     vag = value_and_grad(target_fn)
-    val, computed_grad = vag(t)
+    val, computed_grad = cast("Callable[..., EagerTensorProtocol]", vag)(t)
     assert val is not None
     assert computed_grad is not None
 
@@ -63,7 +69,7 @@ def test_grad_api_backward_non_proxy_data() -> None:
             """String representation."""
             return "raw_val_str"
 
-    loss_tensor = Tensor(NonProxyData(), TensorConfig((), DType.Float32, Device("cpu")))
+    loss_tensor = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", NonProxyData)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((), DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
 
     global_tracing_state.start_tracing("test_graph")
     global_tracing_state.active_graph = graph
@@ -84,8 +90,8 @@ def test_grad_api_grad_has_aux_branch() -> None:
         return x * 5.0, "auxiliary"
 
     grad_fn = grad(fn_aux, options=opts)
-    grads, aux = grad_fn(2.0)
-    assert np.isclose(grads, 5.0)
+    grads, aux = cast("Callable[..., EagerTensorProtocol]", grad_fn)(2.0)
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(grads, 5.0)
     assert aux == "auxiliary"
 
 
@@ -98,10 +104,10 @@ def test_grad_api_value_and_grad_has_aux_branch() -> None:
         return x * 3.0, "aux_info"
 
     vag_fn = value_and_grad(fn_with_aux, options=opts)
-    (loss, aux), grad_val = vag_fn(4.0)
+    (loss, aux), grad_val = cast("Callable[..., EagerTensorProtocol]", vag_fn)(4.0)
     assert aux == "aux_info"
     assert loss == 12.0
-    assert np.isclose(grad_val, 3.0)
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(grad_val, 3.0)
 
 
 def test_grad_api_nth_order_grad_graph() -> None:
@@ -135,10 +141,12 @@ def test_grad_api_nth_order_grad() -> None:
         nth_order_grad(lambda x: x, n=0)
 
     # Verify chaining
-    f = lambda x: x * x * x
+    def f(x: EagerValue) -> EagerValue:
+        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
+
     first_order = nth_order_grad(f, n=1)
     res_1 = first_order(2.0)
-    assert np.isclose(res_1, 12.0)
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(res_1, 12.0)
 
 
 def test_grad_api_symbolic_hvp_and_hvp() -> None:
@@ -150,11 +158,11 @@ def test_grad_api_symbolic_hvp_and_hvp() -> None:
         mock_hvp.return_value = "symbolic_hvp_graph"
         # Test with outputs=None
         res1 = hvp_graph(graph, ["x"], ["v"], outputs=None)
-        assert res1 == "symbolic_hvp_graph"
+        assert cast("EagerTensorProtocol", res1) == cast("EagerTensorProtocol", "symbolic_hvp_graph")
 
         # Test with explicit outputs
         res2 = hvp_graph(graph, ["x"], ["v"], outputs=["custom_out"])
-        assert res2 == "symbolic_hvp_graph"
+        assert cast("EagerTensorProtocol", res2) == cast("EagerTensorProtocol", "symbolic_hvp_graph")
 
     # Test top-level hvp function
     with patch("ml_switcheroo_compiler.grad.jvp_vjp.hvp", return_value=("prim_val", "hvp_val")) as mock_jvp_hvp:

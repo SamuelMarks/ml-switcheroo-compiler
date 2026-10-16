@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import numpy as np
@@ -14,6 +15,11 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _create_sample_graph(multi_output: bool = False, no_output: bool = False) -> IRGraph:
@@ -68,20 +74,20 @@ def test_dpnp_generator_and_aot() -> None:
     cfg = TensorConfig((2, 2), "float32", "cpu")
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
-    res = runner(t_in1, in2=np.array([[5.0, 6.0], [7.0, 8.0]]))
+    res = cast("Callable[..., EagerTensorProtocol]", runner)(t_in1, in2=cast("Callable[..., EagerTensorProtocol]", np.array)([[5.0, 6.0], [7.0, 8.0]]))
     assert res is not None
 
     # AOT compile multi-output
     g_multi = _create_sample_graph(multi_output=True)
     runner_multi = gen._compile_aot_impl(g_multi)
-    res_multi = runner_multi(t_in1, t_in2)
+    res_multi = cast("Callable[..., EagerTensorProtocol]", runner_multi)(t_in1, t_in2)
     assert isinstance(res_multi, tuple)
     assert len(res_multi) == 2
 
     # AOT compile no outputs
     g_no_out = _create_sample_graph(no_output=True)
     runner_no_out = gen._compile_aot_impl(g_no_out)
-    res_no_out = runner_no_out(t_in1, t_in2)
+    res_no_out = cast("Callable[..., EagerTensorProtocol]", runner_no_out)(t_in1, t_in2)
     assert isinstance(res_no_out, dict)
 
 
@@ -119,7 +125,7 @@ def test_dpnp_types() -> None:
     class NoItemObj:
         """Object without .item() method implementing __array__."""
 
-        def __array__(self) -> np.ndarray:
+        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
             """Convert to array.
 
             Returns:
@@ -127,8 +133,8 @@ def test_dpnp_types() -> None:
             """
             return np.array(7.5)
 
-    val_no_item = dpnp_pkg.item(NoItemObj())
-    assert np.isclose(val_no_item, 7.5)
+    val_no_item = cast("Callable[..., EagerTensorProtocol]", dpnp_pkg.item)(cast("Callable[..., EagerTensorProtocol]", NoItemObj)())
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(val_no_item, 7.5)
 
     # When dpnp is mock-imported
     mock_dpnp = mock.MagicMock()
@@ -145,23 +151,23 @@ def test_dpnp_eager_dispatch() -> None:
     """Verify DPNP eager op dispatching, class context, aliases, and errors."""
     # Normal dispatch
     res = dpnp_pkg.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    np.testing.assert_allclose(res, [4.0, 6.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [4.0, 6.0])
 
     # Classmethod invocation: cls_or_op is class
     res_cls = dpnp_pkg.DPNPGenerator.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    np.testing.assert_allclose(res_cls, [4.0, 6.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_cls, [4.0, 6.0])
 
     # Alias mapping branch: Sub -> subtract, Mul -> multiply, Div -> divide, Neg -> negative
     sub_res = dpnp_pkg.execute_op("Sub", np.array([5.0]), np.array([2.0]))
-    np.testing.assert_allclose(sub_res, [3.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(sub_res, [3.0])
     mul_res = dpnp_pkg.execute_op("Mul", np.array([5.0]), np.array([2.0]))
-    np.testing.assert_allclose(mul_res, [10.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(mul_res, [10.0])
     div_res = dpnp_pkg.execute_op("Div", np.array([6.0]), np.array([2.0]))
-    np.testing.assert_allclose(div_res, [3.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(div_res, [3.0])
     neg_res = dpnp_pkg.execute_op("Neg", np.array([5.0]))
-    np.testing.assert_allclose(neg_res, [-5.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(neg_res, [-5.0])
     truediv_res = dpnp_pkg.execute_op("TrueDivide", np.array([7.0]), np.array([2.0]))
-    np.testing.assert_allclose(truediv_res, [3.5])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(truediv_res, [3.5])
 
     # Unsupported op
     with pytest.raises(BackendNotSupportedError, match="not supported"):

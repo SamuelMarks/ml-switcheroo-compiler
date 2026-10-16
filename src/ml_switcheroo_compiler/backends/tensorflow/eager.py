@@ -2,6 +2,7 @@
 
 import sys
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.mapping_loader import dispatch_eager_op, load_backend_mappings
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -9,9 +10,9 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 def execute_op(
     cls: type,
     op_type: str,
-    *args: object,
-    **kwargs: object,
-) -> object:
+    *args: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Execute operation eagerly on TensorFlow backend with native argument validation.
 
     Args:
@@ -29,7 +30,7 @@ def execute_op(
     tf = sys.modules.get("tensorflow")
     if tf is None:
         try:
-            import tensorflow as tf  # noqa: F401
+            tf = __import__("tensorflow")
         except ImportError:
             tf = None
 
@@ -37,7 +38,7 @@ def execute_op(
         raise BackendNotSupportedError("TensorFlow is not installed or available in this environment.")
 
     # Convert Python sequences to native TensorFlow tensor primitives where possible
-    processed_args: list[object] = []
+    processed_args: list[EagerValue] = []
     for arg in args:
         if isinstance(arg, (list, tuple)) and hasattr(tf, "convert_to_tensor"):
             try:

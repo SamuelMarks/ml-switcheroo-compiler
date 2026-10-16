@@ -1,17 +1,15 @@
-"""Module frontend_utils.py."""
+"""Frontend reductions ops."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-"""Frontend reductions ops."""
-
-
+# ruff: noqa: E402
 import uuid
 from collections.abc import Sequence
+from typing import Callable, cast
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -71,8 +69,8 @@ def _emit_reduction_node(
     global_tracing_state.add_node(node)
 
     dtype_val = getattr(out_dtype, "value", out_dtype)
-    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
-    return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
+    proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
+    return Tensor(proxy, cast("Callable[..., TensorConfig]", TensorConfig)(out_shape, out_dtype, inputs[0].device))
 
 
 def _reduce_window_eager(
@@ -101,7 +99,7 @@ def _reduce_window_eager(
         computation,
         config=window_config,
     )
-    return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, operand.dtype, operand.device))
+    return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), operand.dtype, operand.device))
 
 
 def _build_reduce_window_attributes(

@@ -1,16 +1,27 @@
+"""Tests for test_cuda_yaml_dict."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_cuda_load_yaml_dict_string(monkeypatch):
+
+def test_cuda_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_cuda_load_yaml_dict_string."""
     import os
 
     from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    def mock_isdir(path):
+    def mock_isdir(path: EagerValue) -> EagerValue:
+        """Test function mock_isdir."""
         return True
 
-    def mock_listdir(path):
+    def mock_listdir(path: EagerValue) -> EagerValue:
+        """Test function mock_listdir."""
         return ["test.yaml"]
 
     mock_data = {"templates": {"op1": "string body", "op2": ["not", "string", "or", "dict_with_body"]}}
@@ -28,16 +39,19 @@ def test_cuda_load_yaml_dict_string(monkeypatch):
             assert gen.config.templates["op2"] == ["not", "string", "or", "dict_with_body"]
 
 
-def test_cuda_load_fallback_yaml(monkeypatch):
+def test_cuda_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_cuda_load_fallback_yaml."""
     import os
 
     from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    def mock_isdir(path):
+    def mock_isdir(path: EagerValue) -> EagerValue:
+        """Test function mock_isdir."""
         return False
 
-    def mock_exists(path):
+    def mock_exists(path: EagerValue) -> EagerValue:
+        """Test function mock_exists."""
         return True
 
     mock_data = {"templates": {"op3": {"body": "test"}}}
@@ -53,7 +67,8 @@ def test_cuda_load_fallback_yaml(monkeypatch):
             assert gen.config.templates["op3"] == {"body": "test"}
 
 
-def test_cuda_runner_init_ctypes_except(monkeypatch):
+def test_cuda_runner_init_ctypes_except(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_cuda_runner_init_ctypes_except."""
     from ml_switcheroo_compiler.backends.cuda.cuda import CUDARunner
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.cuda.cuda.cupy", None)
@@ -62,7 +77,8 @@ def test_cuda_runner_init_ctypes_except(monkeypatch):
         assert runner.mode == "ctypes"
 
 
-def test_cuda_runner_read_ctypes_return_zeros():
+def test_cuda_runner_read_ctypes_return_zeros() -> None:
+    """Test function test_cuda_runner_read_ctypes_return_zeros."""
     import ctypes
 
     from ml_switcheroo_compiler.backends.cuda.cuda import CUDARunner

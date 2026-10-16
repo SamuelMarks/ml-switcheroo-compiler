@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_backend_registry() -> None:
@@ -13,7 +19,7 @@ def test_backend_registry() -> None:
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend, register_backend
     from ml_switcheroo_compiler.core.config import config
 
-    @register_backend("dummy_decorator")
+    @cast("Callable[..., EagerTensorProtocol]", register_backend)("dummy_decorator")
     class DummyBackend(BaseGenerator):
         """Dummy backend for registry testing."""
 
@@ -36,22 +42,23 @@ def test_safe_import_backend() -> None:
 
     with patch("importlib.import_module", side_effect=ImportError):
         _safe_import_backend("missing")
+    assert callable(test_safe_import_backend)
 
 
 def test_loaders_and_lazy_loading() -> None:
     """Verify loaders execution and lazy loader error handling."""
     from ml_switcheroo_compiler.backends.registry import _LOADERS, BackendRegistry
 
-    for name, loader in _LOADERS.items():
+    for _name, loader in _LOADERS.items():
         try:
             loader()
-        except ImportError:
-            pass
+        except ImportError as _exc:
+            assert _exc is not None
 
     with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module", "test_lazy_no_loader": "some.other"}):
         with patch.dict(_LOADERS, {"test_lazy_fail": MagicMock(side_effect=ImportError("mock error"))}):
-            BackendRegistry._try_load_lazy("test_lazy_fail")
-            BackendRegistry._try_load_lazy("test_lazy_no_loader")
+            cast("Callable[..., EagerTensorProtocol]", BackendRegistry._try_load_lazy)("test_lazy_fail")
+            cast("Callable[..., EagerTensorProtocol]", BackendRegistry._try_load_lazy)("test_lazy_no_loader")
 
 
 def test_resolve_alias() -> None:

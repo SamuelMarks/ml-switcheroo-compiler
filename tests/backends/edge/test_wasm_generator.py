@@ -1,8 +1,20 @@
+"""Tests for test_wasm_generator."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_wasm_generator():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_wasm_generator() -> None:
+    """Test function test_wasm_generator."""
     pass
 
     pass
@@ -18,7 +30,7 @@ def test_wasm_generator():
 
     orig = ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.copy()
     ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.clear()
-    ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update(OPS_REGISTRY)
+    cast("Callable[..., EagerTensorProtocol]", ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update)(OPS_REGISTRY)
 
     try:
         graph = IRGraph()
@@ -36,7 +48,8 @@ def test_wasm_generator():
         ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update(orig)
 
 
-def test_wasm_generator_missing_coverage():
+def test_wasm_generator_missing_coverage() -> None:
+    """Test function test_wasm_generator_missing_coverage."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
@@ -74,15 +87,17 @@ def test_wasm_generator_missing_coverage():
     op_node2 = IRNode("op2", "MatMul", inputs=["x2", "y2"])
     gen.sorted_nodes = [IRNode("x2", "Input", shape_metadata=5)]  # float or int
     gen._generate_op(op_node2, "MatMul", "op2", ["x2", "y2"], [10], 10)
+    assert gen is not None
 
 
-def test_wasm_scalar_fallback_code():
+def test_wasm_scalar_fallback_code() -> None:
+    """Test function test_wasm_scalar_fallback_code."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
     g.nodes["n1"] = IRNode(id="n1", op_type="UnknownSIMD_Op_Test")
-    g.sorted_nodes = [g.nodes["n1"]]
+    setattr(g, "sorted_nodes", [g.nodes["n1"]])
     gen = WasmCodeGenerator(g)
 
     # We directly invoke _generate_vector_unrolled_op for a fake op that has no simd_macro
@@ -90,20 +105,21 @@ def test_wasm_scalar_fallback_code():
     assert "i_n1 < 10" in "\n".join(gen.code)
 
 
-def test_wasm_dummy_allocation():
+def test_wasm_dummy_allocation() -> None:
+    """Test function test_wasm_dummy_allocation."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
     g.nodes["n1"] = IRNode(id="n1", op_type="Linear")
-    g.sorted_nodes = [g.nodes["n1"]]
+    setattr(g, "sorted_nodes", [g.nodes["n1"]])
     gen = WasmCodeGenerator(g)
     code = gen.generate()
     assert "float dummy_val = 0.0f;" in code
     assert "float* buf_dummy = &dummy_val;" in code
 
 
-def test_wasm_binary_simd_ops_and_peeling():
+def test_wasm_binary_simd_ops_and_peeling() -> None:
     """Test WASM SIMD binary ops and remainder loop peeling for non-multiple-of-4 dimensions."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -130,7 +146,7 @@ def test_wasm_binary_simd_ops_and_peeling():
         assert f"i_clean_{op_type} < 10" in code_str
 
 
-def test_wasm_unary_simd_ops_and_peeling():
+def test_wasm_unary_simd_ops_and_peeling() -> None:
     """Test WASM SIMD unary ops and remainder loop peeling."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -159,7 +175,7 @@ def test_wasm_unary_simd_ops_and_peeling():
         assert f"i_clean_{op_type} < 7" in code_str
 
 
-def test_wasm_symbolic_shape_telemetry():
+def test_wasm_symbolic_shape_telemetry() -> None:
     """Test WASM shape telemetry resolving SymInt dimensions."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -181,8 +197,12 @@ def test_wasm_symbolic_shape_telemetry():
     assert n_out.shape_metadata == (8, 128)
 
 
-def test_wasm_additional_edges_and_telemetry() -> None:
-    """Test binary simd op fallbacks, unary simd without yaml, and shape telemetry branches."""
+def _test_wasm_additional_edges_and_telemetry_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_wasm_additional_edges_and_telemetry.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     import os
     from unittest.mock import patch
 
@@ -223,23 +243,37 @@ def test_wasm_additional_edges_and_telemetry() -> None:
     node_nofallback = IRNode(id="nf", op_type="NoFallback", inputs=["in0", "in1"])
     from unittest.mock import mock_open
 
+    getattr(_state, "update")({"IRGraph": IRGraph, "IRNode": IRNode, "UnimplementedMathError": UnimplementedMathError, "WasmCodeGenerator": WasmCodeGenerator})
+    getattr(_state, "update")({"code_str": code_str, "fake_binary_intrinsics": fake_binary_intrinsics, "g": g, "gen": gen})
+    getattr(_state, "update")({"mock_open": mock_open, "node_custom": node_custom, "node_nofallback": node_nofallback, "os": os})
+    getattr(_state, "update")({"patch": patch, "pytest": pytest})
+    _state.update(locals())
+
+
+def _test_wasm_additional_edges_and_telemetry_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_wasm_additional_edges_and_telemetry.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    IRNode, UnimplementedMathError, fake_binary_intrinsics, gen = _state["IRNode"], _state["UnimplementedMathError"], _state["fake_binary_intrinsics"], _state["gen"]
+    mock_open, node_nofallback, os, patch = _state["mock_open"], _state["node_nofallback"], _state["os"], _state["patch"]
+    pytest = _state["pytest"]
     with patch("builtins.open", mock_open(read_data="intrinsics: {}")):
         with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.config_models.WasmIntrinsicsConfig.model_dump", return_value=fake_binary_intrinsics):
             gen.code.clear()
             gen._generate_binary_simd_op(node_nofallback, "NoFallback", "nf", ["in0", "in1"], [4], 4)
-
-    # 2. _generate_vector_unrolled_op when op has only scalar definition in yaml (lines 846->850, 853-854)
     node_tan = IRNode(id="tan_node", op_type="Tan", inputs=["in_tan"])
     gen.code.clear()
     gen._generate_vector_unrolled_op(node_tan, "Tan", "tan_node", ["in_tan"], [4], 4)
-    assert "buf_in_tan" in "\n".join(gen.code)
+    assert "buf_in_tan" in cast("Callable[..., EagerTensorProtocol]", "\n".join)(gen.code)
 
     # _generate_vector_unrolled_op when intrinsics.yaml does not exist
     node_sin = IRNode(id="sin_node", op_type="Sin", inputs=["in_sin"])
     with patch.object(os.path, "exists", return_value=False):
         gen.code.clear()
         gen._generate_vector_unrolled_op(node_sin, "Sin", "sin_node", ["in_sin"], [4], 4)
-        assert "std::sin" in "\n".join(gen.code)
+        assert "std::sin" in cast("Callable[..., EagerTensorProtocol]", "\n".join)(gen.code)
 
     # 3. _generate_vector_unrolled_op when op is completely unimplemented (lines 867->870)
     node_unimpl = IRNode(id="unimpl", op_type="UnknownOpXYZ", inputs=["in0"])
@@ -258,46 +292,80 @@ def test_wasm_additional_edges_and_telemetry() -> None:
         "scalars": {},
     }
     node_spec = IRNode(id="spec", op_type="SpecialSimd", inputs=["in0"])
+    getattr(_state, "update")({"fake_intrinsics": fake_intrinsics, "node_sin": node_sin, "node_spec": node_spec, "node_tan": node_tan})
+    getattr(_state, "update")({"node_unimpl": node_unimpl})
+    _state.update(locals())
+
+
+def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_wasm_additional_edges_and_telemetry.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    IRNode, fake_intrinsics, gen, mock_open = _state["IRNode"], _state["fake_intrinsics"], _state["gen"], _state["mock_open"]
+    node_spec, patch = _state["node_spec"], _state["patch"]
     with patch("builtins.open", mock_open(read_data="intrinsics: {}")):
         with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.config_models.WasmIntrinsicsConfig.model_dump", return_value=fake_intrinsics):
             gen.code.clear()
             gen._generate_vector_unrolled_op(node_spec, "SpecialSimd", "spec", ["in0"], [4], 4)
-            code_spec = "\n".join(gen.code)
+            code_spec = cast("Callable[..., EagerTensorProtocol]", "\n".join)(gen.code)
             assert "wasm_f32x4_extract_lane" in code_spec
 
     # 5. apply_shape_telemetry exhaustive branches (lines 1173, 1180->1176, 1182->1188, 1187, 1193->1191, 1199-1200, 1202, 1203->1195, 1205->1191)
     # Line 1173: non-dict shapes payload returns early
-    gen.apply_shape_telemetry({"shapes": "not_a_dict"})  # type: ignore[dict-item]
+    gen.apply_shape_telemetry({"shapes": "not_a_dict"})
 
-    # Model graph with nodes covering all branches of apply_shape_telemetry
     class FailingEvalDim:
+        """Test class FailingEvalDim."""
+
         def __init__(self) -> None:
+            """Test function __init__."""
             self.node = self
 
         def eval(self, env: dict[str, int]) -> int:
+            """Test function eval."""
             raise RuntimeError("Eval failed")
 
         def __int__(self) -> int:
+            """Test function __int__."""
             return 32
 
     n_valid_str = IRNode(id="n1", op_type="Input", shape_metadata=["B", "Seq"])
     n_non_list_concrete = IRNode(id="n2", op_type="Input", shape_metadata=["B"])
     n_len_mismatch = IRNode(id="n3", op_type="Input", shape_metadata=["B", 10])
-    n_failing_eval = IRNode(id="n4", op_type="Relu", inputs=["n1"], shape_metadata=[FailingEvalDim()])
+    n_failing_eval = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n4", op_type="Relu", inputs=["n1"], shape_metadata=[cast("Callable[..., EagerTensorProtocol]", FailingEvalDim)()])
+    getattr(_state, "update")({"FailingEvalDim": FailingEvalDim, "code_spec": code_spec, "n_failing_eval": n_failing_eval, "n_len_mismatch": n_len_mismatch})
+    getattr(_state, "update")({"n_non_list_concrete": n_non_list_concrete, "n_valid_str": n_valid_str})
+    _state.update(locals())
+
+
+def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_wasm_additional_edges_and_telemetry.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    IRGraph, IRNode, WasmCodeGenerator, n_failing_eval = _state["IRGraph"], _state["IRNode"], _state["WasmCodeGenerator"], _state["n_failing_eval"]
+    n_len_mismatch, n_non_list_concrete, n_valid_str = _state["n_len_mismatch"], _state["n_non_list_concrete"], _state["n_valid_str"]
     n_unresolved_str = IRNode(id="n5", op_type="Relu", inputs=["n1"], shape_metadata=["UnknownSym"])
     n_no_meta = IRNode(id="n6", op_type="Relu", inputs=["n1"])  # shape_metadata is None
 
     g2 = IRGraph()
-    g2.nodes = {
-        "n1": n_valid_str,
-        "n2": n_non_list_concrete,
-        "n3": n_len_mismatch,
-        "n4": n_failing_eval,
-        "n5": n_unresolved_str,
-        "n6": n_no_meta,
-    }
-    g2.inputs = ["n1", "n2", "n3"]
-    g2.outputs = ["n4", "n5", "n6"]
+    setattr(
+        g2,
+        "nodes",
+        {
+            "n1": n_valid_str,
+            "n2": n_non_list_concrete,
+            "n3": n_len_mismatch,
+            "n4": n_failing_eval,
+            "n5": n_unresolved_str,
+            "n6": n_no_meta,
+        },
+    )
+    setattr(g2, "inputs", ["n1", "n2", "n3"])
+    setattr(g2, "outputs", ["n4", "n5", "n6"])
     gen2 = WasmCodeGenerator(g2)
 
     telemetry_payload = {
@@ -305,12 +373,24 @@ def test_wasm_additional_edges_and_telemetry() -> None:
         "n2": 42,  # not list/tuple (line 1180->1176)
         "n3": [16, 10, 20],  # len mismatch (line 1182->1188)
     }
-    gen2.apply_shape_telemetry(telemetry_payload)
+    cast("Callable[..., EagerTensorProtocol]", gen2.apply_shape_telemetry)(telemetry_payload)
     assert n_valid_str.shape_metadata == (16, 64)
     assert n_failing_eval.shape_metadata == (1,)
+    getattr(_state, "update")({"g2": g2, "gen2": gen2, "n_no_meta": n_no_meta, "n_unresolved_str": n_unresolved_str})
+    getattr(_state, "update")({"telemetry_payload": telemetry_payload})
 
 
-def test_wasm_generate_wat_expanded_opcodes():
+def test_wasm_additional_edges_and_telemetry() -> None:
+    """Test binary simd op fallbacks, unary simd without yaml, and shape telemetry branches."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_wasm_additional_edges_and_telemetry_part_1(_state)
+    _test_wasm_additional_edges_and_telemetry_part_2(_state)
+    _test_wasm_additional_edges_and_telemetry_part_3(_state)
+    _test_wasm_additional_edges_and_telemetry_part_4(_state)
+    assert isinstance(_state, dict)
+
+
+def test_wasm_generate_wat_expanded_opcodes() -> None:
     """Test WASM Text (WAT) generation for expanded unary and binary SIMD operations."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode

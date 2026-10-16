@@ -1,14 +1,12 @@
-# ruff: noqa: E402, E501, F403
-"""Module state.py."""
-
 """State Mutation & Aliasing Representation for IR."""
 
 import uuid
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-def create_read_variable(variable_name: str, shape, dtype: str) -> IRNode:
+def create_read_variable(variable_name: str, shape: EagerValue, dtype: str) -> IRNode:
     """Create a ReadVariable node.
 
     Args:
@@ -28,7 +26,7 @@ def create_read_variable(variable_name: str, shape, dtype: str) -> IRNode:
     )
 
 
-def create_assign_variable(variable_name: str, value_id: str, shape) -> IRNode:
+def create_assign_variable(variable_name: str, value_id: str, shape: EagerValue) -> IRNode:
     """Create an AssignVariable node.
 
     Args:
@@ -52,7 +50,7 @@ def create_scatter_update(
     tensor_id: str,
     indices_id: str,
     updates_id: str,
-    shape,
+    shape: EagerValue,
 ) -> IRNode:
     """Create a ScatterUpdate node.
 

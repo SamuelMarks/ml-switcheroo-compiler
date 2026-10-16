@@ -1,10 +1,13 @@
-# ruff: noqa: E402, E501, F403
 """Define binary mathematical operations and their shape inference and evaluation logic.
 
 This module provides a base class `BinaryMathOp` and concrete implementations for
 various element-wise binary mathematical operations (e.g., Add, Subtract, Multiply,
 Divide) using NumPy for evaluation
 """
+
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 
 # Simple broadcasting
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
@@ -21,7 +24,7 @@ class BinaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *shapes, **kwargs):
+    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -32,7 +35,7 @@ class BinaryMathOp(OpDef):
             tuple[int, ...]: Result.
         """
         if shapes and all(isinstance(s, tuple) for s in shapes):
-            return _bs(*shapes) if len(shapes) > 1 else shapes[0]
+            return _bs(*cast("tuple[tuple[int, ...], ...]", shapes)) if len(shapes) > 1 else shapes[0]
         return shapes[0] if shapes else ()
 
 
@@ -366,7 +369,7 @@ class Diff(OpDef):
 
     op_name = "Diff"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -386,7 +389,7 @@ class Digitize(OpDef):
 
     op_name = "Digitize"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -408,7 +411,7 @@ class ArrayEquiv(OpDef):
 
     op_name = "ArrayEquiv"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -469,7 +472,7 @@ class Betainc(OpDef):
 
     op_name = "Betainc"
 
-    def infer_shape(self, a, b, x=None, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, x: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -542,7 +545,7 @@ class Polyadd(BinaryMathOp):
 
     op_name = "Polyadd"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -567,7 +570,7 @@ class Polysub(BinaryMathOp):
 
     op_name = "Polysub"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -592,7 +595,7 @@ class Polymul(BinaryMathOp):
 
     op_name = "Polymul"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -617,7 +620,7 @@ class Polydiv(BinaryMathOp):
 
     op_name = "Polydiv"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -642,7 +645,7 @@ class Polyval(BinaryMathOp):
 
     op_name = "Polyval"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -667,7 +670,7 @@ class Poly(BinaryMathOp):
 
     op_name = "Poly"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -692,7 +695,7 @@ class Polyder(BinaryMathOp):
 
     op_name = "Polyder"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -717,7 +720,7 @@ class Polyfit(BinaryMathOp):
 
     op_name = "Polyfit"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -742,7 +745,7 @@ class Polyint(BinaryMathOp):
 
     op_name = "Polyint"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -767,7 +770,7 @@ class Roots(BinaryMathOp):
 
     op_name = "Roots"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -818,7 +821,7 @@ class Atan2(BinaryMathOp):
 class Clip(OpDef):
     """Operator Clip."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -833,7 +836,7 @@ class Clip(OpDef):
         return ()
 
 
-def clip(x, min_val=None, max_val=None, **kwargs):
+def clip(x: EagerValue, min_val: EagerValue = None, max_val: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Clip values in a tensor.
 
     Args:
@@ -855,10 +858,10 @@ def clip(x, min_val=None, max_val=None, **kwargs):
 
     kwargs["a_min"] = min_val
     kwargs["a_max"] = max_val
-    return emit_ir_node(None, "Clip", [x], getattr(x, "shape_metadata", None), kwargs)
+    return emit_ir_node(None, "Clip", [cast(str, x)], getattr(x, "shape_metadata", None), kwargs)
 
 
-def rem(*args, **kwargs):
+def rem(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate rem operation.
 
     Args:
@@ -943,7 +946,7 @@ class LegendrePolynomialP(BinaryMathOp):
     op_name = "LegendrePolynomialP"
 
 
-def igamma_grad_a(*args, **kwargs):
+def igamma_grad_a(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Compute the gradient of the regularized incomplete gamma function.
 
     Args:
@@ -958,7 +961,7 @@ def igamma_grad_a(*args, **kwargs):
     return dispatch_op("IgammaGradA", *args, **kwargs)
 
 
-def random_gamma_grad(*args, **kwargs):
+def random_gamma_grad(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Compute the derivative of a Gamma random variable.
 
     Args:
@@ -973,7 +976,7 @@ def random_gamma_grad(*args, **kwargs):
     return dispatch_op("RandomGammaGrad", *args, **kwargs)
 
 
-def sort_key_val(*args, **kwargs):
+def sort_key_val(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Sort keys and values.
 
     Args:

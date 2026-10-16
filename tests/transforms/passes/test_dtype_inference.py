@@ -1,18 +1,31 @@
+"""Tests for test_dtype_inference."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import _get_promoted_dtype, _get_value_dtype, _handle_cast_dtype, _infer_constant_dtype, _infer_input_dtype, _infer_op_dtype, _infer_output_dtype, dtype_inference_pass
 
-"Test Dtype Inference Pass."
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyVal:
+    """Test class DummyVal."""
+
     def __init__(self, dt: str) -> None:
+        """Test function __init__."""
         self.dtype = dt
 
 
 def test_get_value_dtype() -> None:
-    assert _get_value_dtype(DummyVal("float16")) == DType.Float16
+    """Test function test_get_value_dtype."""
+    assert cast("Callable[..., EagerTensorProtocol]", _get_value_dtype)(cast("Callable[..., EagerTensorProtocol]", DummyVal)("float16")) == DType.Float16
     assert _get_value_dtype(True) == DType.Bool
     assert _get_value_dtype(1) == DType.Int32
     assert _get_value_dtype(1.0) == DType.Float32
@@ -20,6 +33,7 @@ def test_get_value_dtype() -> None:
 
 
 def test_infer_constant_dtype() -> None:
+    """Test function test_infer_constant_dtype."""
     node1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 1.0})
     dtypes: dict[str, str] = {}
     assert _infer_constant_dtype(node1, dtypes) is True
@@ -32,6 +46,7 @@ def test_infer_constant_dtype() -> None:
 
 
 def test_infer_input_dtype() -> None:
+    """Test function test_infer_input_dtype."""
     node1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={})
     dtypes: dict[str, str] = {}
     assert _infer_input_dtype(node1, dtypes) is False
@@ -39,6 +54,7 @@ def test_infer_input_dtype() -> None:
 
 
 def test_infer_output_dtype() -> None:
+    """Test function test_infer_output_dtype."""
     node1 = IRNode(id="n1", op_type="Output", inputs=["in1"], attributes={})
     dtypes = {"in1": DType.Int32.value}
     assert _infer_output_dtype(node1, dtypes) is True
@@ -48,6 +64,7 @@ def test_infer_output_dtype() -> None:
 
 
 def test_get_promoted_dtype() -> None:
+    """Test function test_get_promoted_dtype."""
     from ml_switcheroo_compiler.core.config import config
 
     old_x64 = config.jax_enable_x64
@@ -62,6 +79,7 @@ def test_get_promoted_dtype() -> None:
 
 
 def test_handle_cast_dtype() -> None:
+    """Test function test_handle_cast_dtype."""
     node1 = IRNode(id="n1", op_type="Cast", inputs=[], attributes={"dtype": DType.Int32})
     assert _handle_cast_dtype(node1, []) == DType.Int32.value
     node2 = IRNode(id="n2", op_type="Cast", inputs=[], attributes={"dtype": "float16"})
@@ -71,6 +89,7 @@ def test_handle_cast_dtype() -> None:
 
 
 def test_infer_op_dtype() -> None:
+    """Test function test_infer_op_dtype."""
     dtypes = {"in1": DType.Int32.value, "in2": DType.Float32.value}
     node1 = IRNode(id="n1", op_type="Cast", inputs=["in1"], attributes={"dtype": DType.Float16})
     assert _infer_op_dtype(node1, dtypes) is True
@@ -87,6 +106,7 @@ def test_infer_op_dtype() -> None:
 
 
 def test_dtype_inference_pass() -> None:
+    """Test function test_dtype_inference_pass."""
     node1 = IRNode(id="in1", op_type="Constant", inputs=[], attributes={"value": 1})
     node2 = IRNode(id="in2", op_type="Constant", inputs=[], attributes={"value": 1.0})
     node3 = IRNode(id="add", op_type="Add", inputs=["in1", "in2"], attributes={})
@@ -96,6 +116,7 @@ def test_dtype_inference_pass() -> None:
 
 
 def test_dtype_inference_branches() -> None:
+    """Test function test_dtype_inference_branches."""
     node = IRNode(id="n1", op_type="Output", inputs=[], attributes={})
     dtypes: dict[str, str] = {}
     _infer_output_dtype(node, dtypes)

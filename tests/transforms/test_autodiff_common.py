@@ -1,8 +1,13 @@
+"""Tests for test_autodiff_common."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients, make_zero_jvp, make_zero_vjp
 
 
-def test_make_zero_vjp():
+def test_make_zero_vjp() -> None:
+    """Test function test_make_zero_vjp."""
     vjp_fn = make_zero_vjp("TestOp")
     graph = IRGraph()
     node = IRNode(id="test_node", op_type="TestOp", inputs=["a", "b"])
@@ -12,7 +17,8 @@ def test_make_zero_vjp():
     assert res[1] == UnconnectedGradients.ZERO
 
 
-def test_make_zero_jvp():
+def test_make_zero_jvp() -> None:
+    """Test function test_make_zero_jvp."""
     jvp_fn = make_zero_jvp("TestOp")
     graph = IRGraph()
     node = IRNode(id="test_node", op_type="TestOp", inputs=["a", "b"])

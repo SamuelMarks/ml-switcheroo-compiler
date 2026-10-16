@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
+from typing import cast
 
-import numpy as np
 from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -105,22 +108,22 @@ class NumbaGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return "\n".join(self.code)
 
-    def compile_fn(self) -> Callable[..., tuple[np.ndarray, ...]]:
+    def compile_fn(self) -> Callable[..., tuple[EagerValue, ...]]:
         """Compile the generated Python/Numba script into an executable function.
 
         Returns:
             Callable[..., tuple[np.ndarray, ...]]: Executable compiled function.
         """
         source: str = self.generate()
-        namespace: dict[str, object] = {}
-        exec(source, namespace)  # noqa: S102
-        func: object | None = namespace.get(self._func_name)
+        namespace: dict[str, EagerValue] = {}
+        exec(source, namespace)
+        func: EagerValue | None = namespace.get(self._func_name)
         if not callable(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        return func
+        return cast(Callable[..., tuple[EagerValue, ...]], func)
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Fallback for generic nodes emitting NumPy operations compiled by Numba.
 
         Args:
@@ -133,7 +136,7 @@ class NumbaGenerator(PythonStringGenerator):
         """
         return super().generic_visit(node, input_vars, **kwargs)
 
-    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit Numba JIT-compiled WhileLoop control flow.
 
         Args:
@@ -158,7 +161,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return res_var
 
-    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit Numba JIT-compiled ForiLoop control flow.
 
         Args:
@@ -184,7 +187,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return res_var
 
-    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit Numba JIT-compiled conditional branch (Cond) control flow.
 
         Args:
@@ -210,7 +213,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return res_var
 
-    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit Numba JIT-compiled Scan loop accumulation.
 
         Args:
@@ -287,7 +290,7 @@ class NumbaGenerator(PythonStringGenerator):
         arg_names: list[str] | None = None,
         signatures: list[str] | None = None,
         target: str = "cpu",
-    ) -> Callable[..., np.ndarray]:
+    ) -> Callable[..., EagerValue]:
         """Compile a vectorized ufunc via Numba @vectorize.
 
         Args:
@@ -310,15 +313,15 @@ class NumbaGenerator(PythonStringGenerator):
             signatures=signatures,
             target=target,
         )
-        ns: dict[str, object] = {}
-        exec(source, ns)  # noqa: S102
+        ns: dict[str, EagerValue] = {}
+        exec(source, ns)
         func = ns.get(op_name)
         if not callable(func):
             msg = f"Vectorized ufunc generation failed to produce callable '{op_name}'."
             raise RuntimeError(msg)
         return func
 
-    def visit_Sum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Sum(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel reduction loop with nb.prange or standard np.sum.
 
         Args:
@@ -341,7 +344,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.sum({in_var})")
         return out_var
 
-    def visit_Prod(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Prod(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel reduction loop with nb.prange or standard np.prod.
 
         Args:
@@ -364,7 +367,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.prod({in_var})")
         return out_var
 
-    def visit_Mean(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Mean(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel mean reduction or standard np.mean.
 
         Args:
@@ -388,7 +391,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.mean({in_var})")
         return out_var
 
-    def visit_Max(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Max(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel max reduction or standard np.max.
 
         Args:
@@ -411,7 +414,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.max({in_var})")
         return out_var
 
-    def visit_Min(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Min(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel min reduction or standard np.min.
 
         Args:
@@ -434,7 +437,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.min({in_var})")
         return out_var
 
-    def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel matrix multiplication with nb.prange or standard np.matmul.
 
         Args:
@@ -462,7 +465,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.matmul({a_var}, {b_var})")
         return out_var
 
-    def visit_BatchMatMul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_BatchMatMul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel batched matrix multiplication with nb.prange across outer batch.
 
         Args:
@@ -492,7 +495,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.matmul({a_var}, {b_var})")
         return out_var
 
-    def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel 2D convolution with nb.prange across batch and spatial height.
 
         Args:
@@ -530,7 +533,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {w_var}.shape[0], {x_var}.shape[2] - {w_var}.shape[2] + 1, {x_var}.shape[3] - {w_var}.shape[3] + 1), dtype={x_var}.dtype)")
         return out_var
 
-    def visit_MaxPool2D(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_MaxPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel 2D max pooling with nb.prange across batch and spatial height.
 
         Args:
@@ -561,7 +564,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
         return out_var
 
-    def visit_AvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit parallel 2D average pooling with nb.prange across batch and spatial height.
 
         Args:
@@ -592,7 +595,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
         return out_var
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into ahead-of-time Numba accelerated executable artifact.
 
         Args:
@@ -612,7 +615,7 @@ class NumbaGenerator(PythonStringGenerator):
         except Exception:
             compiled_fn = None
 
-        def runner(*args: object, **runner_kwargs: object) -> object:
+        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
             """Execute compiled Numba artifact or fallback graph evaluation.
 
             Args:
@@ -626,22 +629,22 @@ class NumbaGenerator(PythonStringGenerator):
             if compiled_fn is not None:
                 try:
                     args_tuple = tuple(getattr(a, "data", a) for a in args)
-                    return compiled_fn(args_tuple)
+                    return cast(Callable[..., EagerValue], compiled_fn)(args_tuple)
                 except Exception:
-                    pass
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
             from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-            feed_dict: dict[str, object] = {}
+            feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, feed_dict, backend=NumpyGenerator)
+            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict), backend=NumpyGenerator)
             if not graph.outputs:
-                return res_dict
+                return cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:
-                return res_dict.get(graph.outputs[0])
+                return cast(EagerValue, res_dict.get(graph.outputs[0]))
             return tuple(res_dict.get(out) for out in graph.outputs)
 
         return CompiledArtifact(

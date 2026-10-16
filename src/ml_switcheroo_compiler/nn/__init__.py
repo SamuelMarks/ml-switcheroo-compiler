@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Neural network modules and layers.
 
 Per the ML ecosystem architecture (see ARCHITECTURE.md), high-level neural network

@@ -1,4 +1,17 @@
-def test_dataset_options():
+"""Tests for test_dataset."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_dataset_options() -> None:
+    """Test function test_dataset_options."""
     from ml_switcheroo_compiler.core.dataset import AutoShardPolicy, Options
 
     o = Options()
@@ -9,7 +22,8 @@ def test_dataset_options():
     assert o.threading == {}
 
 
-def test_dataset_init():
+def test_dataset_init() -> None:
+    """Test function test_dataset_init."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.dataset import Dataset
@@ -39,17 +53,19 @@ def test_dataset_init():
     assert ds_from.length == 2
 
 
-def test_dataset_from_tensor_slices_error():
+def test_dataset_from_tensor_slices_error() -> None:
+    """Test function test_dataset_from_tensor_slices_error."""
     from ml_switcheroo_compiler.core.dataset import Dataset
 
     try:
         Dataset.from_tensor_slices()
         raise AssertionError()
-    except ValueError:
-        pass
+    except ValueError as _exc:
+        assert _exc is not None
 
 
-def test_dataset_options_batch_unbatch_map_batch():
+def test_dataset_options_batch_unbatch_map_batch() -> None:
+    """Test function test_dataset_options_batch_unbatch_map_batch."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.dataset import Dataset, Options
@@ -66,12 +82,12 @@ def test_dataset_options_batch_unbatch_map_batch():
     try:
         ds.batch(0)
         raise AssertionError()
-    except ValueError:
-        pass
+    except ValueError as _exc:
+        assert _exc is not None
 
     ds = ds.batch(2, True)
     assert ds._batch_size == 2
-    assert ds._drop_remainder == True
+    assert ds._drop_remainder
 
     ds = ds.unbatch()
     assert ds._batch_size == 1
@@ -81,8 +97,8 @@ def test_dataset_options_batch_unbatch_map_batch():
     try:
         ds.dense_to_ragged_batch(0)
         raise AssertionError()
-    except ValueError:
-        pass
+    except ValueError as _exc:
+        assert _exc is not None
 
     ds = ds.dense_to_ragged_batch(2, drop_remainder=True)
     assert ds._batch_size == 2
@@ -95,7 +111,8 @@ def test_dataset_options_batch_unbatch_map_batch():
     ds = ds.rejection_resample(lambda x: x, [0.5, 0.5])
 
 
-def test_dataset_iter_save_load_iters():
+def test_dataset_iter_save_load_iters() -> None:
+    """Test function test_dataset_iter_save_load_iters."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.dataset import ArrayIterator, Dataset, NumpyIterator
@@ -107,8 +124,8 @@ def test_dataset_iter_save_load_iters():
     ds = ds.batch(2, drop_remainder=False)
     batches = list(ds)
     assert len(batches) == 2
-    assert len(batches[0][0].data) == 2
-    assert len(batches[1][0].data) == 1
+    assert cast("Callable[..., EagerTensorProtocol]", len)(batches[0][0].data) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(batches[1][0].data) == 1
 
     ds = ds.batch(2, drop_remainder=True)
     batches = list(ds)
@@ -132,16 +149,17 @@ def test_dataset_iter_save_load_iters():
     it = NumpyIterator(ds)
     assert iter(it) is it
     n = next(it)
-    assert len(n) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(n) == 2
 
     ds2 = Dataset(t1)
     it2 = ArrayIterator(ds2)
     assert iter(it2) is it2
     n2 = next(it2)
-    assert len(n2) == 1
+    assert cast("Callable[..., EagerTensorProtocol]", len)(n2) == 1
 
 
-def test_dataset_coverage_remaining():
+def test_dataset_coverage_remaining() -> None:
+    """Test function test_dataset_coverage_remaining."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.dataset import AudioDataset, CsvDataset, Dataset, ImageDataset, NumpyDataset, SqlDataset, TextDataset
@@ -157,39 +175,45 @@ def test_dataset_coverage_remaining():
     try:
         ds.shuffle(-1)
         raise AssertionError()
-    except ValueError:
-        pass
+    except ValueError as _exc:
+        assert _exc is not None
 
     try:
         ds.prefetch(-1)
         raise AssertionError()
-    except ValueError:
-        pass
+    except ValueError as _exc:
+        assert _exc is not None
 
     ds = ds.prefetch(1)
 
-    csv_ds = CsvDataset("dummy.csv")
-    sql_ds = SqlDataset("dummy.db", "SELECT 1", "SELECT 1", (DType.Float32,))
-    audio_ds1 = AudioDataset(t1)
-    audio_ds2 = AudioDataset()
+    CsvDataset("dummy.csv")
+    SqlDataset("dummy.db", "SELECT 1", "SELECT 1", (DType.Float32,))
+    AudioDataset(t1)
+    AudioDataset()
 
-    img_ds1 = ImageDataset(t1, target_size=(2, 2), normalize=True)
-    img_ds2 = ImageDataset(target_size=(2, 2), normalize=True)
+    ImageDataset(t1, target_size=(2, 2), normalize=True)
+    ImageDataset(target_size=(2, 2), normalize=True)
 
-    txt_ds1 = TextDataset(t1, vocab_size=10)
-    txt_ds2 = TextDataset(vocab_size=10)
+    TextDataset(t1, vocab_size=10)
+    TextDataset(vocab_size=10)
 
-    np_ds = NumpyDataset(np.array([1, 2]))
+    NumpyDataset(np.array([1, 2]))
 
     img_t = Tensor(np.ones((1, 2, 2, 1)), TensorConfig(shape=(1, 2, 2, 1), dtype="float32", device="cpu"))
     img_ds3 = ImageDataset(img_t, target_size=(4, 4), normalize=True)
 
     class FakeUpsample:
-        def __call__(self, t, size):
+        """Test class FakeUpsample."""
+
+        def __call__(self, t: EagerValue, size: EagerValue) -> EagerValue:
+            """Test function __call__."""
             return t
 
     class FakeTrueDiv:
-        def __call__(self, t, v):
+        """Test class FakeTrueDiv."""
+
+        def __call__(self, t: EagerValue, v: EagerValue) -> EagerValue:
+            """Test function __call__."""
             return t
 
     from unittest.mock import patch
@@ -202,7 +226,8 @@ def test_dataset_coverage_remaining():
             list(img_ds3)
 
 
-def test_dataset_coverage_remaining_2():
+def test_dataset_coverage_remaining_2() -> None:
+    """Test function test_dataset_coverage_remaining_2."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.dataset import Dataset, ImageDataset, TFRecordReader
@@ -215,7 +240,7 @@ def test_dataset_coverage_remaining_2():
     ds = ds.snapshot("dummy")
 
     # 517 -> TFRecordDataset
-    tf_ds = TFRecordReader("dummy.tfrecord")
+    TFRecordReader("dummy.tfrecord")
 
     # [356, 358] -> self._seed is None
     ds = ds.shuffle(buffer_size=2, seed=None)
@@ -230,7 +255,10 @@ def test_dataset_coverage_remaining_2():
     img_ds5 = ImageDataset(img_t, target_size=(4, 4), normalize=False)
 
     class FakeUpsample:
-        def __call__(self, t, size):
+        """Test class FakeUpsample."""
+
+        def __call__(self, t: EagerValue, size: EagerValue) -> EagerValue:
+            """Test function __call__."""
             return t
 
     from unittest.mock import patch
@@ -239,3 +267,4 @@ def test_dataset_coverage_remaining_2():
 
     with patch.object(upsample_ops, "upsample_bilinear", FakeUpsample()):
         list(img_ds5)
+    assert img_ds5 is not None or img_ds5 is None

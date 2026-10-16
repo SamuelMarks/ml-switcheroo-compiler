@@ -1,9 +1,12 @@
 """Keras backend profiler for runtime execution and memory benchmarking."""
 
+import logging
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 try:
     import keras
@@ -37,20 +40,20 @@ def _get_keras_peak_memory_mb() -> float:
             torch_mod = sys.modules.get("torch")
             if torch_mod is not None and hasattr(torch_mod, "cuda") and torch_mod.cuda.is_available():
                 return float(torch_mod.cuda.max_memory_allocated() / (1024.0 * 1024.0))
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         try:
             tf_mod = sys.modules.get("tensorflow")
             if tf_mod is not None and hasattr(tf_mod, "config"):
                 mem_info = tf_mod.config.experimental.get_memory_info("GPU:0")
                 if "peak" in mem_info and mem_info["peak"] > 0:
                     return float(mem_info["peak"]) / (1024.0 * 1024.0)
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _get_process_memory_mb()
 
 
-def _sync_keras_result(result: Union[object, list[object], tuple[object, ...], dict[str, object]]) -> None:
+def _sync_keras_result(result: Union[EagerValue, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue]]) -> None:
     """Force evaluation synchronization of Keras execution output.
 
     Args:
@@ -67,13 +70,13 @@ def _sync_keras_result(result: Union[object, list[object], tuple[object, ...], d
     elif hasattr(keras, "ops") and hasattr(keras.ops, "convert_to_numpy") and callable(keras.ops.convert_to_numpy):
         try:
             _ = keras.ops.convert_to_numpy(result)
-        except Exception:
-            pass
-    elif hasattr(result, "numpy") and callable(result.numpy):
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    elif hasattr(result, "numpy") and callable(getattr(result, "numpy")):
         try:
-            _ = result.numpy()
-        except Exception:
-            pass
+            _ = getattr(result, "numpy")()
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 def _compute_metrics(
@@ -114,8 +117,8 @@ class KerasProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
-    ) -> list[object]:
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+    ) -> list[EagerValue]:
         """Convert inputs into topologically ordered Keras-compatible tensor inputs.
 
         Args:
@@ -128,7 +131,7 @@ class KerasProfiler:
         if keras is None:
             return []
 
-        keras_inputs_dict: dict[str, object] = {}
+        keras_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             if hasattr(keras, "ops") and hasattr(keras.ops, "convert_to_tensor"):
                 keras_inputs_dict[k] = keras.ops.convert_to_tensor(val, dtype="float32")
@@ -141,7 +144,7 @@ class KerasProfiler:
             return [keras_inputs_dict[k] for k in input_keys]
         return list(keras_inputs_dict.values())
 
-    def _compile_model(self, graph: IRGraph) -> Optional[Callable[..., object]]:
+    def _compile_model(self, graph: IRGraph) -> Optional[Callable[..., EagerValue]]:
         """Compile an IRGraph into an executable Keras Model or callable.
 
         Args:
@@ -156,20 +159,20 @@ class KerasProfiler:
         from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 
         code: str = KerasCodeGenerator(graph).generate()
-        ns: dict[str, object] = {}
+        ns: dict[str, EagerValue] = {}
         exec(code, ns)
         get_model = ns.get("get_model")
         if not callable(get_model):
             raise TypeError("Failed to generate valid get_model function from KerasCodeGenerator")
         model = get_model()
-        return model
+        return cast("Callable[..., EagerValue] | None", model)
 
     def _build_step_fn(
         self,
         has_ops: bool,
-        compiled_model: Optional[Callable[..., object]],
-        keras_inputs: list[object],
-    ) -> Callable[[], object]:
+        compiled_model: Optional[Callable[..., EagerValue]],
+        keras_inputs: list[EagerValue],
+    ) -> Callable[[], EagerValue]:
         """Build a single evaluation step callable for Keras backend.
 
         Args:
@@ -181,7 +184,7 @@ class KerasProfiler:
             Callable[[], object]: Step execution callable.
         """
 
-        def _execute_step() -> object:
+        def _execute_step() -> EagerValue:
             """Execute a single evaluation step on Keras backend.
 
             Returns:
@@ -197,7 +200,7 @@ class KerasProfiler:
 
             if not keras_inputs:
                 if hasattr(keras, "ops") and hasattr(keras.ops, "zeros"):
-                    return keras.ops.zeros((1,), dtype="float32")
+                    return cast(EagerValue, keras.ops.zeros((1,), dtype="float32"))
                 return 0.0
 
             accum = keras_inputs[0]
@@ -213,7 +216,7 @@ class KerasProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -238,7 +241,7 @@ class KerasProfiler:
         keras_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_model: Optional[Callable[..., object]] = None
+        compiled_model: Optional[Callable[..., EagerValue]] = None
         if has_ops:
             try:
                 compiled_model = self._compile_model(graph)

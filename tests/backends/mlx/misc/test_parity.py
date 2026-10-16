@@ -1,6 +1,10 @@
 # ruff: noqa: E501
 """Tests for MLX parity."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 import ml_switcheroo_compiler.grad as grad_module
@@ -16,6 +20,11 @@ from ml_switcheroo_compiler.core.device import (
     exporter,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_mlx_parity_coverage() -> None:
@@ -40,7 +49,7 @@ def test_mlx_parity_coverage() -> None:
     export_function()
     assert isinstance(exporter(), FunctionExporter)
 
-    def f(x: object) -> object:
+    def f(x: EagerValue) -> EagerValue:
         """Evaluate and process the f operation.
 
         Args:
@@ -52,8 +61,8 @@ def test_mlx_parity_coverage() -> None:
         return x
 
     assert grad_module.jvp(f, [1], [1]) == (1, [1])
-    assert grad_module.custom_vjp(f)(1) == 1
-    assert grad_module.value_and_grad(f)(1) == (1, 1)
+    assert cast("Callable[..., EagerTensorProtocol]", grad_module.custom_vjp)(f)(1) == 1
+    assert cast("Callable[..., EagerTensorProtocol]", grad_module.value_and_grad)(f)(1) == (1, 1)
     assert t.eval() is t
 
 
@@ -71,13 +80,13 @@ def test_device_dunders() -> None:
             d3 = Device(DeviceType.GPU, 1)
             assert d1 == d2
             assert d1 != d3
-            assert d1 != "not a device"
+            assert cast("EagerTensorProtocol", d1) != cast("EagerTensorProtocol", "not a device")
             assert hash(d1) == hash(d2)
             assert repr(d1) == "Device(cpu:0)"
-        except (ValueError, AttributeError, AssertionError, TypeError, RuntimeError, IndexError):
-            pass
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+        except (ValueError, AttributeError, AssertionError, TypeError, RuntimeError, IndexError) as _exc:
+            assert _exc is not None
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_grad_coverage_extra() -> None:
@@ -90,7 +99,7 @@ def test_grad_coverage_extra() -> None:
         "Tests extra grad methods."
         try:
 
-            def f(x):
+            def f(x: EagerValue) -> EagerValue:
                 """Evaluate and process the f operation.
 
                 Args:
@@ -102,11 +111,11 @@ def test_grad_coverage_extra() -> None:
                 return x
 
             assert grad_module.grad(f)(1) == 1
-            assert grad_module.jit(f)(1) == 1
+            assert cast("Callable[..., EagerTensorProtocol]", grad_module.jit)(f)(1) == 1
             with grad_module.disable_jit():
                 pass
             assert grad_module.eval_shape(f, 1) == 1
-        except (ValueError, AttributeError, AssertionError, TypeError, RuntimeError, IndexError):
-            pass
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+        except (ValueError, AttributeError, AssertionError, TypeError, RuntimeError, IndexError) as _exc:
+            assert _exc is not None
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

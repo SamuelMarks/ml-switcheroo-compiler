@@ -1,12 +1,7 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
 
-from typing import Optional
-
-try:
-    import mlx.core as mx
-except ImportError:
-    mx = None
+from types import ModuleType
+from typing import Callable, Optional, cast
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -14,9 +9,18 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+mx: Optional[ModuleType]
+try:
+    import mlx.core as _mx
+
+    mx = _mx
+except ImportError:
+    mx = None
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     """Evaluate zeros operation.
 
     Args:
@@ -26,10 +30,10 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     Returns:
             object: Result.
     """
-    return generic_zeros(mx, shape)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_zeros)(mx, shape))
 
 
-def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
+def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
     """Evaluate array operation.
 
     Args:
@@ -42,10 +46,10 @@ def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
     """
     del cls
     actual_dtype = getattr(mx, dtype) if isinstance(dtype, str) and hasattr(mx, dtype) else dtype
-    return generic_array(mx, data, actual_dtype)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(mx, data, actual_dtype))
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data: EagerValue) -> EagerValue:
     """Evaluate asarray operation.
 
     Args:
@@ -56,11 +60,11 @@ def asarray(cls: type, data: object) -> object:
             object: Result.
     """
     if hasattr(mx, "asarray"):
-        return generic_asarray(mx, data)
-    return generic_array(mx, data)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(mx, data))
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(mx, data))
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data: EagerValue) -> float:
     """Evaluate item operation.
 
     Args:
@@ -70,4 +74,4 @@ def item(cls: type, data: object) -> float:
     Returns:
         float: Result.
     """
-    return generic_item(mx, data)
+    return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(mx, data))

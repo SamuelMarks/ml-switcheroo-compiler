@@ -1,22 +1,20 @@
-# ruff: noqa: E402, E501, F403
-"""Module safetensors.py."""
-
-from collections.abc import Sequence  # noqa: F401
-from typing import Any, Optional, Union  # noqa: F401
-
 """Safetensors format serialization."""
+
+from __future__ import annotations
 
 import json
 import struct
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_8
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.constants import SAFETENSORS_HEADER_SIZE_BYTES
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
 
 class SafetensorsWeightFormat(WeightLoader, WeightSaver):
     """Safetensors weight format handler."""
 
-    def load(self, filepath: str) -> Any:
+    def load(self, filepath: str) -> dict[str, TensorLike]:
         """Load safetensors weights.
 
         Args:
@@ -27,7 +25,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         """
         with open(filepath, "rb") as f:
             header_size_bytes = f.read(8)
-            if len(header_size_bytes) < MAGIC_VAL_8:
+            if len(header_size_bytes) < SAFETENSORS_HEADER_SIZE_BYTES:
                 return {}
             header_size = struct.unpack("<Q", header_size_bytes)[0]
 
@@ -53,7 +51,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
             return weights
 
-    def save(self, weights_np, filepath: str) -> None:
+    def save(self, weights_np: EagerValue, filepath: str) -> None:
         """Save safetensors weights.
 
         Args:
@@ -64,7 +62,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         offset = 0
         buffers = []
 
-        for k, v in weights_np.items():
+        for k, v in getattr(weights_np, "items")():
             if not hasattr(v, "dtype") or not hasattr(v, "shape") or not hasattr(v, "tobytes"):
                 continue
 
@@ -80,15 +78,15 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
                 schema = SerializationSchemaConfig(**data)
             dtype_map = schema.safetensors.dtype_map
 
-            dtype_str = str(v.dtype)
+            dtype_str = str(getattr(v, "dtype"))
             st_dtype = dtype_map.get(dtype_str, "F32")
 
-            buffer = v.tobytes()
+            buffer = getattr(v, "tobytes")()
             length = len(buffer)
 
             header[k] = {
                 "dtype": st_dtype,
-                "shape": list[object](v.shape),
+                "shape": list[object](getattr(v, "shape")),
                 "data_offsets": [offset, offset + length],
             }
 

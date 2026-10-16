@@ -1,6 +1,10 @@
 # ruff: noqa: E501
 """Control flow tests."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import ConfigContext
@@ -10,6 +14,11 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import scan
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 device = Device(DeviceType.CPU, 0)
 
@@ -24,7 +33,7 @@ def test_scan_eager() -> None:
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def f(carry, x):
+        def f(carry: EagerValue, x: EagerValue) -> EagerValue:
             """F.
 
             Args:
@@ -34,12 +43,12 @@ def test_scan_eager() -> None:
             Returns:
             object: The resulting output.
             """
-            y = carry + x.data
+            y = carry + getattr(x, "data")
             return (y, Tensor(y, TensorConfig((), DType.Int32, device)))
 
-        (carry, ys) = scan(f, 0, xs)
+        (carry, ys) = cast("Callable[..., EagerTensorProtocol]", scan)(f, 0, xs)
         assert carry == 6
-        assert np.array_equal(ys.data, np.array([1, 3, 6]))
+        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(ys.data, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 3, 6]))
 
 
 def test_scan_trace() -> None:
@@ -53,7 +62,7 @@ def test_scan_trace() -> None:
         xs = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((3,), DType.Int32, device))
         init = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Int32, device))
 
-        def f(carry, x):
+        def f(carry: EagerValue, x: EagerValue) -> EagerValue:
             """F.
 
             Args:
@@ -66,7 +75,7 @@ def test_scan_trace() -> None:
             return (carry, x)
 
         global_tracing_state.start_tracing()
-        (_carry, ys) = scan(f, init, xs)
+        (_carry, ys) = cast("Callable[..., EagerTensorProtocol]", scan)(f, init, xs)
         assert ys.dtype == DType.Int32
         global_tracing_state.stop_tracing()
 
@@ -82,7 +91,7 @@ def test_scan_eager_ndarray() -> None:
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def f(carry, x):
+        def f(carry: EagerValue, x: EagerValue) -> EagerValue:
             """Evaluate and process the f operation.
 
             Args:
@@ -94,6 +103,6 @@ def test_scan_eager_ndarray() -> None:
             """
             return (carry, Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device)))
 
-        (carry_out, ys_out) = scan(f, 0, xs)
+        (carry_out, ys_out) = cast("Callable[..., EagerTensorProtocol]", scan)(f, 0, xs)
         assert isinstance(ys_out, Tensor)
-        assert np.array_equal(ys_out.data, np.array([[1, 2], [1, 2], [1, 2]]))
+        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(ys_out.data, cast("Callable[..., EagerTensorProtocol]", np.array)([[1, 2], [1, 2], [1, 2]]))

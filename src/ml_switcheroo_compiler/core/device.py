@@ -1,10 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Device and DeviceType classes for the ml-switcheroo compiler."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from types import TracebackType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.registry import EagerValue
 
 
 class DeviceType(Enum):
@@ -19,18 +23,17 @@ class DeviceType(Enum):
 class Device:
     """Represents a specific hardware device and index."""
 
-    device_type: DeviceType
+    device_type: DeviceType | str
     index: int = 0
 
     def __repr__(self) -> str:
-        """Return the string representation of the Device."""
-        if isinstance(self.device_type, str):
-            return f"Device({self.device_type}:{self.index})"
         """Return the string representation of the Device.
 
         Returns:
             str: The device representation (e.g. Device(cpu:0)).
         """
+        if isinstance(self.device_type, str):
+            return f"Device({self.device_type}:{self.index})"
         return f"Device({self.device_type.value}:{self.index})"
 
 
@@ -55,7 +58,7 @@ class StreamContext:
         Args:
             stream (Stream): The stream
         """
-        self.stream = stream
+        self.stream: Stream | None = stream
 
     def __enter__(self) -> StreamContext:
         """Enter the context manager.
@@ -65,7 +68,12 @@ class StreamContext:
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Exit context.
 
         Args:
@@ -92,7 +100,7 @@ def clear_cache() -> None:
 class FunctionExporter:
     """Provide a context managing class for exporting multiple traces of the same function."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Initialize FunctionExporter.
 
         Args:
@@ -110,7 +118,7 @@ class FunctionExporter:
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: EagerValue, exc_val: EagerValue, exc_tb: EagerValue) -> None:
         """Exit context.
 
         Args:
@@ -122,12 +130,12 @@ class FunctionExporter:
         self.kwargs = {}
 
 
-def export_function(*args: object, **kwargs: object) -> None:
+def export_function(*args: EagerValue, **kwargs: EagerValue) -> None:
     """Export a computational trace or function for unified persistence.
 
     Args:
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
+        *args: Positional arguments.
+        **kwargs: Keyword arguments.
 
     Raises:
         BackendNotSupportedError: If the backend does not support exporting.
@@ -142,12 +150,12 @@ def export_function(*args: object, **kwargs: object) -> None:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support export_function()")
 
 
-def exporter(*args: object, **kwargs: object) -> FunctionExporter:
+def exporter(*args: EagerValue, **kwargs: EagerValue) -> FunctionExporter:
     """Make a callable object to export multiple traces of a function to a file.
 
     Args:
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
+        *args: Positional arguments.
+        **kwargs: Keyword arguments.
 
     Returns:
         FunctionExporter: The exporter context manager.
@@ -214,5 +222,7 @@ def get_memory_info(device: str | None = None) -> dict[str, int]:
 
     backend = registry.get_active_backend()
     if hasattr(backend, "get_memory_info"):
-        return backend.get_memory_info(device)
+        from typing import cast
+
+        return cast("dict[str, int]", backend.get_memory_info(device))
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_memory_info()")

@@ -8,17 +8,26 @@ import os
 import sys
 from typing import TextIO
 
+# Ensure src is discoverable when invoked directly or via pre-commit
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
 from ml_ecosystem_snapshots.diff import DiffResult, diff_snapshots, generate_changelog
+from ml_switcheroo_ir import AttributeValue
+
+from ml_switcheroo_compiler.backends.snapshot_grounding import (
+    SnapshotGroundingEngine,
+    _resolve_default_snapshot_dir,
+)
 
 
-def load_snapshot_file(file_path: str) -> dict[str, object]:
+def load_snapshot_file(file_path: str) -> dict[str, AttributeValue]:
     """Load and parse a JSON snapshot file from disk.
 
     Args:
         file_path (str): Path to snapshot JSON file.
 
     Returns:
-        dict[str, object]: Parsed JSON snapshot payload.
+        dict[str, AttributeValue]: Parsed JSON snapshot payload.
 
     Raises:
         FileNotFoundError: If the specified file path does not exist.
@@ -26,7 +35,7 @@ def load_snapshot_file(file_path: str) -> dict[str, object]:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Snapshot file not found: {file_path}")
     with open(file_path, encoding="utf-8") as f:
-        data: dict[str, object] = json.load(f)
+        data: dict[str, AttributeValue] = json.load(f)
     return data
 
 
@@ -43,8 +52,8 @@ def compare_snapshot_files(
     Returns:
         tuple[DiffResult, str]: Tuple of DiffResult model and Markdown changelog string.
     """
-    old_data: dict[str, object] = load_snapshot_file(old_file)
-    new_data: dict[str, object] = load_snapshot_file(new_file)
+    old_data: dict[str, AttributeValue] = load_snapshot_file(old_file)
+    new_data: dict[str, AttributeValue] = load_snapshot_file(new_file)
     diff: DiffResult = diff_snapshots(old_data, new_data)
     changelog: str = generate_changelog(diff)
     return diff, changelog
@@ -67,6 +76,14 @@ def check_directory_drift(
     breaking_issues: list[str] = []
 
     if not os.path.exists(old_dir) or not os.path.exists(new_dir):
+        return results, breaking_issues
+
+    if os.path.abspath(old_dir) == os.path.abspath(new_dir) and os.path.abspath(old_dir) == os.path.abspath(_resolve_default_snapshot_dir()):
+        engine = SnapshotGroundingEngine(snapshot_dir=None)
+        for backend_name, target in sorted(engine.config.targets.items()):
+            has_fw_py = os.path.exists(os.path.join(engine.frameworks_dir, f"{target.framework}.py"))
+            if target.status == "available" and engine.get_snapshot_path(backend_name) is None and not has_fw_py and not engine.get_valid_endpoints(backend_name):
+                breaking_issues.append(f"{backend_name}: missing snapshot matching '{target.snapshot_glob}'")
         return results, breaking_issues
 
     old_files: set[str] = {f for f in os.listdir(old_dir) if f.endswith(".json")}
@@ -121,6 +138,24 @@ def parse_arguments(args: list[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
+def _resolve_target_path(raw_target: str | None, fallback: str) -> str:
+    """Resolve a target snapshot path or directory.
+
+    Args:
+        raw_target (str | None): Explicit CLI target path.
+        fallback (str): Fallback snapshot directory.
+
+    Returns:
+        str: Resolved target path.
+    """
+    target: str = raw_target if raw_target is not None else fallback
+    if os.path.basename(os.path.normpath(target)) in ("ml-framework-snapshots", "ml-ecosystem-snapshots") and not os.path.exists(target):
+        return str(_resolve_default_snapshot_dir())
+    if os.path.isdir(target) and os.path.isdir(os.path.join(target, "snapshots")):
+        return os.path.join(target, "snapshots")
+    return target
+
+
 def main(argv: list[str] | None = None, stdout: TextIO | None = None) -> int:
     """Execute snapshot drift detection workflow.
 
@@ -134,14 +169,12 @@ def main(argv: list[str] | None = None, stdout: TextIO | None = None) -> int:
     out: TextIO = stdout if stdout is not None else sys.stdout
     args = parse_arguments(argv if argv is not None else sys.argv[1:])
 
-    from ml_switcheroo_compiler.backends.snapshot_grounding import _resolve_default_snapshot_dir
+    old_target: str = _resolve_target_path(args.old, _resolve_default_snapshot_dir())
+    new_target: str = _resolve_target_path(args.new, old_target)
 
-    old_target: str = args.old if args.old is not None else _resolve_default_snapshot_dir()
-    new_target: str = args.new if args.new is not None else old_target
-
-    if not os.path.exists(old_target) and not os.path.exists(new_target):
-        print(f"Skipping drift check. Snapshots not found at {old_target}", file=out)
-        return 0
+    if not os.path.exists(old_target) or not os.path.exists(new_target):
+        out.write(f"Error: Snapshot path not found: {old_target}\n")
+        return 1
 
     if os.path.isfile(old_target) and os.path.isfile(new_target):
         diff, changelog = compare_snapshot_files(old_target, new_target)
@@ -149,8 +182,7 @@ def main(argv: list[str] | None = None, stdout: TextIO | None = None) -> int:
             with open(args.output_changelog, "w", encoding="utf-8") as f:
                 f.write(changelog)
         out.write(changelog + "\n")
-        has_breaking: bool = bool(diff.breaking_signature_changed or diff.removed)
-        if has_breaking and not args.allow_breaking:
+        if (diff.breaking_signature_changed or diff.removed) and not args.allow_breaking:
             out.write("Error: Breaking API changes detected in snapshot diff.\n")
             return 1
         return 0

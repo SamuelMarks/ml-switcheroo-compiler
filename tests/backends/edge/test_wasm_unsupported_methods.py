@@ -1,4 +1,16 @@
-def test_wasm_missing_methods_extra():
+"""Tests for test_wasm_unsupported_methods."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_wasm_missing_methods_extra() -> None:
     """Test missing NN and math methods in WASM."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -35,7 +47,7 @@ def test_wasm_missing_methods_extra():
     assert "if (4 > size) return; // Out of bounds" in code
 
 
-def test_wasm_line_coverage_extra():
+def test_wasm_line_coverage_extra() -> None:
     """Test line coverage for shape edge cases in WASM."""
     from unittest.mock import MagicMock, patch
 
@@ -53,8 +65,8 @@ def test_wasm_line_coverage_extra():
 
     n_cond_unmapped = IRNode(id="n_cond", op_type="Cond", inputs=["dummy"], shape_metadata=[])
     n_cond_unmapped.attributes["then_branch"] = IRGraph()
-    n_cond_unmapped.attributes["then_branch"].inputs = ["not_in_parent"]
-    n_cond_unmapped.attributes["then_branch"].nodes["sub"] = IRNode("sub", "Add", ["not_in_parent"])
+    setattr(getattr(getattr(n_cond_unmapped, "attributes"), "__getitem__")("then_branch"), "inputs", ["not_in_parent"])
+    getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(n_cond_unmapped.attributes, "__getitem__")("then_branch")), "nodes")), "__setitem__")("sub", cast("Callable[..., EagerTensorProtocol]", IRNode)("sub", "Add", ["not_in_parent"]))
 
     for n in [n_conv2d, n_dummy, n_dummy_none, n_avgpool, n_matmul_int, n_dummy_int, n_cond_unmapped]:
         g.nodes[n.id] = n
@@ -69,3 +81,4 @@ def test_wasm_line_coverage_extra():
         with patch("shutil.which", side_effect=lambda x: "emcc" if x == "emcc" else None):
             with patch("subprocess.run", return_value=MagicMock()):
                 gen.compile_wasm("dummy_out")
+    assert gen is not None

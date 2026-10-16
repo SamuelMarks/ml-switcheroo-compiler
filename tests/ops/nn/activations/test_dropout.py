@@ -1,5 +1,10 @@
+"""Tests for test_dropout."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -8,24 +13,32 @@ import ml_switcheroo_compiler.ops.nn.dropout as do
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
 
 
-def test_dropout_coverage():
+def test_dropout_coverage() -> None:
+    """Test function test_dropout_coverage."""
     config.eager_mode = True
     t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert do.Dropout().infer_shape(t) == (2, 2)
-    assert do.AlphaDropout().infer_shape(t) == (2, 2)
-    assert do.ActivityRegularization().infer_shape(t) == (2, 2)
-    assert do.ActivityRegularization().infer_shape([t]) == [t]
+    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout)().infer_shape(t) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", do.AlphaDropout)().infer_shape(t) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", do.ActivityRegularization)().infer_shape(t) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", do.ActivityRegularization)().infer_shape([t]) == [t]
 
     class DummyShape:
+        """Test class DummyShape."""
+
         shape = (2, 2)
 
-    assert do.Dropout1d().infer_shape(DummyShape()) == (2, 2)
-    assert do.Dropout2d().infer_shape(DummyShape()) == (2, 2)
-    assert do.Dropout3d().infer_shape(DummyShape()) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout1d)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout2d)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout3d)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (2, 2)
 
     with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
         config.eager_mode = False
@@ -47,10 +60,11 @@ def test_dropout_coverage():
         config.eager_mode = False
         import ml_switcheroo_compiler.ops.nn.dropout as d_mod
 
-        def dummy_emit(*args, **kwargs):
+        def dummy_emit(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function dummy_emit."""
             return "emitted"
 
-        d_mod._emit_shape_node = dummy_emit
+        setattr(d_mod, "_emit_shape_node", dummy_emit)
         assert do.dropout1d(t) == "emitted"
         assert do.dropout2d(t) == "emitted"
         assert do.dropout3d(t) == "emitted"

@@ -1,10 +1,11 @@
-"""Module linear_ops.py."""
-
-# ruff: noqa: E402, E501, F403
 """Linear transformations."""
 
-from typing import Any, Optional  # noqa: F401
+from typing import (
+    Optional,  # noqa: F401
+    cast,
+)
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add
 from ml_switcheroo_compiler.ops.linalg.einsum_frontend import einsum
@@ -12,7 +13,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
 
 
-def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None):
+def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> EagerValue:
     """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
@@ -23,13 +24,13 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None):
     Returns:
         The transformed tensor.
     """
-    out = matmul(input, swapaxes(weight, -1, -2))
+    out = matmul(input, cast("Tensor", swapaxes(weight, -1, -2)))
     if bias is not None:
         out = add(out, bias)
     return out
 
 
-def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None):
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> EagerValue:
     """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).

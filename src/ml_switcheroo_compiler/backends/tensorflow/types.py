@@ -1,5 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
+
+from typing import Callable, cast
 
 import tensorflow as tf
 
@@ -9,9 +10,10 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def zeros(cls: type, shape: tuple[int, ...]):
+def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     """Evaluate zeros operation.
 
     Args:
@@ -32,7 +34,7 @@ def zeros(cls: type, shape: tuple[int, ...]):
     return generic_zeros(tf, shape)
 
 
-def array(cls: type, data, dtype=None):
+def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     """Evaluate array operation.
 
     Args:
@@ -53,10 +55,10 @@ def array(cls: type, data, dtype=None):
     Returns:
             tuple[int, ...]: Result.
     """
-    return generic_array(tf, data, dtype)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(tf, data, dtype))
 
 
-def asarray(cls: type, data):
+def asarray(cls: type, data: EagerValue) -> EagerValue:
     """Evaluate asarray operation.
 
     Args:
@@ -74,10 +76,10 @@ def asarray(cls: type, data):
     Returns:
             tuple[int, ...]: Result.
     """
-    return generic_asarray(tf, data)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(tf, data))
 
 
-def item(cls: type, data) -> float:
+def item(cls: type, data: EagerValue) -> float:
     """Evaluate item operation.
 
     Args:
@@ -95,4 +97,4 @@ def item(cls: type, data) -> float:
     Returns:
         float: Result.
     """
-    return generic_item(tf, data)
+    return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(tf, data))

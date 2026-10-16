@@ -1,20 +1,19 @@
-# ruff: noqa: E402, E501, F403
-"""Module pickle_format.py."""
-
-from collections.abc import Sequence  # noqa: F401
-from typing import Any, Optional, Union  # noqa: F401
-
 """Pickle format serialization."""
 
-import pickle
+from __future__ import annotations
 
+import pickle
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
 
 class PickleWeightFormat(WeightLoader, WeightSaver):
     """Pickle weight format handler."""
 
-    def load(self, filepath: str) -> Any:
+    def load(self, filepath: str) -> dict[str, TensorLike]:
         """Load pickle weights.
 
         Args:
@@ -24,9 +23,9 @@ class PickleWeightFormat(WeightLoader, WeightSaver):
         dict: Result.
         """
         with open(filepath, "rb") as f:
-            return pickle.load(f)
+            return cast(dict[str, TensorLike], pickle.load(f))
 
-    def save(self, weights_np, filepath: str) -> None:
+    def save(self, weights_np: EagerValue, filepath: str) -> None:
         """Save pickle weights.
 
         Args:

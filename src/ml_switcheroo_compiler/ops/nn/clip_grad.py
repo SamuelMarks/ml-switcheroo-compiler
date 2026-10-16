@@ -1,10 +1,7 @@
-# ruff: noqa: E402, E501, F403
-"""Module clip_grad.py."""
-
 """Gradient norm clipping primitive."""
 
 from collections.abc import Iterable
-from typing import Any, Union  # noqa: F401
+from typing import Union  # noqa: F401
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.binary import add, divide, minimum, multiply, power

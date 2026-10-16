@@ -1,8 +1,7 @@
 """Module graph_scheduling.py."""
 
 from __future__ import annotations  # noqa: I001
-
-# ruff: noqa: E402, E501, F403
+from typing import cast
 
 
 import os
@@ -89,11 +88,11 @@ class DefaultCostModel:
         """
         dtype = node.attributes.get("dtype", "float32")
         sizes = self.config.memory_sizes
-        dtype_size = sizes.get(dtype, 4)
+        dtype_size = getattr(sizes, "get")(dtype, 4)
 
         shape = getattr(node, "shape_metadata", None)
         if shape is None:
-            return dtype_size
+            return cast("int | str", dtype_size)
 
         is_dynamic = getattr(node, "is_dynamic_shape", False)
         has_symbolic_dim = any(isinstance(d, str) for d in shape)
@@ -102,13 +101,13 @@ class DefaultCostModel:
             size = 1
             for dim in shape:
                 size *= max(1, int(dim))
-            return size * dtype_size
+            return cast("int | str", size * dtype_size)
 
         dims = [str(d) for d in shape]
         if dims:
             symbolic_math = " * ".join(dims) + f" * {dtype_size}"
             return symbolic_math
-        return dtype_size
+        return cast("int | str", dtype_size)
 
     def get_compute_cost(self, node: IRNode) -> int:
         """Calculate compute cost.
@@ -473,11 +472,11 @@ def _score_node(node_id: str, graph: IRGraph, cost_model: CostModel, remaining_u
         float: The node score.
     """
     node = graph.nodes[node_id]
-    mem_cost = cost_model.get_memory_cost(node)
+    mem_cost = int(cost_model.get_memory_cost(node))
     mem_freed = 0
     for inp in node.inputs:
         if inp in remaining_uses and remaining_uses[inp] == 1:
-            mem_freed += cost_model.get_memory_cost(graph.nodes[inp])
+            mem_freed += int(cost_model.get_memory_cost(graph.nodes[inp]))
     net_mem = mem_cost - mem_freed
     comp_cost = cost_model.get_compute_cost(node)
     is_compute_heavy = comp_cost > cost_model.compute_heavy_threshold
@@ -561,13 +560,13 @@ class GraphSchedulingPass:
         peak_mem = 0
         for nid in schedule:
             node = graph.nodes[nid]
-            current_mem += self.cost_model.get_memory_cost(node)
+            current_mem += int(self.cost_model.get_memory_cost(node))
             peak_mem = max(peak_mem, current_mem)
             for inp in node.inputs:
                 if inp in remaining_uses:
                     remaining_uses[inp] -= 1
                     if remaining_uses[inp] == 0:
-                        current_mem -= self.cost_model.get_memory_cost(graph.nodes[inp])
+                        current_mem -= int(self.cost_model.get_memory_cost(graph.nodes[inp]))
         return peak_mem
 
     def schedule(self, graph: IRGraph) -> list[str]:

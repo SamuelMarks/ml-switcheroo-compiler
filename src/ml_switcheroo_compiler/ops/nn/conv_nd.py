@@ -1,13 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """Convolution operations."""
 
 import typing
 from collections.abc import Sequence
-from typing import Any, Union  # noqa: F401
+from typing import (
+    Union,  # noqa: F401
+    cast,
+)
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2, MAGIC_VAL_3
+from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
@@ -22,7 +24,7 @@ def conv_transpose(
     rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-):
+) -> EagerValue:
     """Convolution transpose.
 
     Args:
@@ -54,61 +56,57 @@ def conv(
     inputs: Tensor,
     kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
-):
-    """Evaluate conv operation.
-
-    Args:
-        inputs (Tensor): The inputs parameter.
-        kernel (Tensor): The kernel parameter.
-        config (Any): The config parameter.
-
-    Returns:
-        Tensor: Result.
-
-    Raises:
-        ValueError: An exception.
-    """
-    conf = config if config is not None else GenericConvConfig()
-    """Provide generic convolution.
+) -> Tensor:
+    """Provide generic N-D convolution.
 
     Args:
         inputs (Tensor): The input tensor.
         kernel (Tensor): The kernel tensor.
-        strides (Union[int, Sequence[int]]): Strides.
-        padding (Union[str, Sequence[tuple[int, int]]]): Padding.
-        data_format (Optional[str]): Data format.
-        dilation_rate (Union[int, Sequence[int]]): Dilation rate.
+        config (Optional[GenericConvConfig]): Convolution configuration.
 
     Returns:
         Tensor: Convolution output.
+
+    Raises:
+        ValueError: If spatial rank is unsupported.
     """
+    conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return conv1d(
-            inputs,
-            kernel,
-            strides=conf.strides,
-            padding=conf.padding,
-            lhs_dilation=1,
-            rhs_dilation=conf.dilation_rate,
+        return cast(
+            Tensor,
+            conv1d(
+                inputs,
+                kernel,
+                strides=conf.strides,
+                padding=conf.padding,
+                lhs_dilation=1,
+                rhs_dilation=conf.dilation_rate,
+            ),
         )
-    elif spatial_rank == MAGIC_VAL_2:
-        return conv2d(
-            inputs,
-            kernel,
-            strides=conf.strides,
-            padding=conf.padding,
-            lhs_dilation=1,
-            rhs_dilation=conf.dilation_rate,
+    elif spatial_rank == MATRIX_RANK:
+        return cast(
+            Tensor,
+            conv2d(
+                inputs,
+                kernel,
+                strides=conf.strides,
+                padding=conf.padding,
+                lhs_dilation=1,
+                rhs_dilation=conf.dilation_rate,
+            ),
         )
-    elif spatial_rank == MAGIC_VAL_3:
-        return conv3d(
-            inputs,
-            kernel,
-            strides=conf.strides,
-            padding=conf.padding,
-            lhs_dilation=1,
-            rhs_dilation=conf.dilation_rate,
+    elif spatial_rank == MIN_CONV_RANK:
+        return cast(
+            Tensor,
+            conv3d(
+                inputs,
+                kernel,
+                strides=conf.strides,
+                padding=conf.padding,
+                lhs_dilation=1,
+                rhs_dilation=conf.dilation_rate,
+            ),
         )
     else:
         raise ValueError(f"Unsupported spatial rank: {spatial_rank}")
@@ -118,52 +116,45 @@ def depthwise_conv(
     inputs: Tensor,
     kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
-):
-    """Evaluate depthwise_conv operation.
-
-    Args:
-        inputs (Tensor): The inputs parameter.
-        kernel (Tensor): The kernel parameter.
-        config (Any): The config parameter.
-
-    Returns:
-        Tensor: Result.
-
-    Raises:
-        ValueError: An exception.
-    """
-    conf = config if config is not None else GenericConvConfig()
+) -> Tensor:
     """Provide generic depthwise convolution.
 
     Args:
         inputs (Tensor): Input tensor.
         kernel (Tensor): Kernel tensor.
-        strides (Union[int, Sequence[int]]): Strides.
-        padding (Union[str, Sequence[tuple[int, int]]]): Padding.
-        data_format (Optional[str]): Data format.
-        dilation_rate (Union[int, Sequence[int]]): Dilation rate.
+        config (Optional[GenericConvConfig]): Convolution configuration.
 
     Returns:
         Tensor: Convolution output.
+
+    Raises:
+        ValueError: If spatial rank is unsupported.
     """
+    conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return depthwise_conv1d(
-            inputs,
-            kernel,
-            strides=conf.strides,
-            padding=conf.padding,
-            lhs_dilation=1,
-            rhs_dilation=conf.dilation_rate,
-        )
-    elif spatial_rank == MAGIC_VAL_2:
-        return depthwise_conv2d(
-            inputs,
-            kernel,
-            config=GenericConvConfig(
+        return cast(
+            Tensor,
+            depthwise_conv1d(
+                inputs,
+                kernel,
                 strides=conf.strides,
                 padding=conf.padding,
-                dilation_rate=conf.dilation_rate,
+                lhs_dilation=1,
+                rhs_dilation=conf.dilation_rate,
+            ),
+        )
+    elif spatial_rank == MATRIX_RANK:
+        return cast(
+            Tensor,
+            depthwise_conv2d(
+                inputs,
+                kernel,
+                config=GenericConvConfig(
+                    strides=conf.strides,
+                    padding=conf.padding,
+                    dilation_rate=conf.dilation_rate,
+                ),
             ),
         )
     else:
@@ -175,56 +166,48 @@ def separable_conv(
     depthwise_kernel: Tensor,
     pointwise_kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
-):
-    """Evaluate separable_conv operation.
-
-    Args:
-        inputs (Tensor): The inputs parameter.
-        depthwise_kernel (Tensor): The depthwise_kernel parameter.
-        pointwise_kernel (Tensor): The pointwise_kernel parameter.
-        config (Any): The config parameter.
-
-    Returns:
-        Tensor: Result.
-
-    Raises:
-        ValueError: An exception.
-    """
-    conf = config if config is not None else GenericConvConfig()
+) -> Tensor:
     """Provide generic separable convolution.
 
     Args:
         inputs (Tensor): Input tensor.
         depthwise_kernel (Tensor): Depthwise kernel.
         pointwise_kernel (Tensor): Pointwise kernel.
-        strides (Union[int, Sequence[int]]): Strides.
-        padding (Union[str, Sequence[tuple[int, int]]]): Padding.
-        data_format (Optional[str]): Data format.
-        dilation_rate (Union[int, Sequence[int]]): Dilation rate.
+        config (Optional[GenericConvConfig]): Convolution configuration.
 
     Returns:
         Tensor: Convolution output.
+
+    Raises:
+        ValueError: If spatial rank is unsupported.
     """
+    conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return separable_conv1d(
-            inputs,
-            depthwise_kernel,
-            pointwise_kernel,
-            strides=conf.strides,
-            padding=conf.padding,
-            lhs_dilation=1,
-            rhs_dilation=conf.dilation_rate,
+        return cast(
+            Tensor,
+            separable_conv1d(
+                inputs,
+                depthwise_kernel,
+                pointwise_kernel,
+                strides=conf.strides,
+                padding=conf.padding,
+                lhs_dilation=1,
+                rhs_dilation=conf.dilation_rate,
+            ),
         )
-    elif spatial_rank == MAGIC_VAL_2:
-        return separable_conv2d(
-            inputs,
-            depthwise_kernel,
-            pointwise_kernel,
-            strides=conf.strides,
-            padding=conf.padding,
-            lhs_dilation=1,
-            rhs_dilation=conf.dilation_rate,
+    elif spatial_rank == MATRIX_RANK:
+        return cast(
+            Tensor,
+            separable_conv2d(
+                inputs,
+                depthwise_kernel,
+                pointwise_kernel,
+                strides=conf.strides,
+                padding=conf.padding,
+                lhs_dilation=1,
+                rhs_dilation=conf.dilation_rate,
+            ),
         )
     else:
         raise ValueError(f"Unsupported spatial rank for separable_conv: {spatial_rank}")

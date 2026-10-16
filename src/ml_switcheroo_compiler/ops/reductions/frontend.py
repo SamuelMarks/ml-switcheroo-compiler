@@ -1,7 +1,9 @@
-# ruff: noqa: E402, E501, F403
 """Apply reduction operations frontend."""
 
 from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Union, cast
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -59,7 +61,7 @@ def sum(
     if config.eager_mode:
         data = get_active_backend().execute_op("Sum", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
-    return _emit_shape_node("Sum", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Sum", [a], {"axis": axis, "keepdims": keepdims}, cast("Sequence[Union[int, str]]", (None,)), getattr(a, "dtype", "float32"))
 
 
 def max(
@@ -80,7 +82,7 @@ def max(
     if config.eager_mode:
         data = get_active_backend().execute_op("Max", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
-    return _emit_shape_node("Max", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Max", [a], {"axis": axis, "keepdims": keepdims}, cast("Sequence[Union[int, str]]", (None,)), getattr(a, "dtype", "float32"))
 
 
 def min(
@@ -101,7 +103,7 @@ def min(
     if config.eager_mode:
         data = get_active_backend().execute_op("Min", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
-    return _emit_shape_node("Min", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Min", [a], {"axis": axis, "keepdims": keepdims}, cast("Sequence[Union[int, str]]", (None,)), getattr(a, "dtype", "float32"))
 
 
 __all__ = [

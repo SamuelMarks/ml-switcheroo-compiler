@@ -52,6 +52,7 @@ def test_trace_counts() -> None:
     """Verify trace counter operations including get, increment, and reset."""
 
     def dummy_fn(x: Tensor) -> Tensor:
+        """Test function dummy_fn."""
         return x
 
     reset_trace_count(dummy_fn)
@@ -101,23 +102,25 @@ def test_proxy_tensor_sparsity_and_branches() -> None:
     g = global_tracing_state.start_tracing("no_specs")
     # Remove input_specs attribute to hit branch
     delattr(g, "input_specs")
-    p_no_specs = ProxyTensor(id="p_no_specs", shape=(2, 2))
+    ProxyTensor(id="p_no_specs", shape=(2, 2))
     assert "p_no_specs" in g.inputs
 
     # 3. Inside tracing when id is already in inputs
-    p_dup_in = ProxyTensor(id="p_no_specs", shape=(2, 2))
+    ProxyTensor(id="p_no_specs", shape=(2, 2))
     assert g.inputs.count("p_no_specs") == 1
 
     # 4. Inside tracing when id is already in nodes
     g.nodes["node_present"] = LogicalNode(id="node_present", op_type="Constant")
-    p_in_nodes = ProxyTensor(id="node_present", shape=(1,))
+    ProxyTensor(id="node_present", shape=(1,))
     assert "node_present" not in g.inputs
 
     # 5. When active_graph is None or doesn't have inputs/nodes
     class DummyGraph:
+        """Test class DummyGraph."""
+
         pass
 
-    global_tracing_state.active_graph = DummyGraph()
+    setattr(global_tracing_state, "active_graph", DummyGraph())
     p_dummy = ProxyTensor(id="dummy", shape=(1,))
     assert p_dummy.id == "dummy"
 

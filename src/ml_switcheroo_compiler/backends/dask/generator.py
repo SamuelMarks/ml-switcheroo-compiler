@@ -1,10 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """Dask code generator and eager execution backend."""
+
+from types import ModuleType
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 
 try:
     import dask.array as da
 except ImportError:
-    da = None
+    da = cast(ModuleType, None)
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -17,22 +22,32 @@ class DaskGenerator(PythonStringGenerator):
     """Generate Dask python code from IR."""
 
     @classmethod
-    def get_memory_info(cls, device=None):
-        """Get memory info."""
+    def get_memory_info(cls, device: EagerValue = None) -> EagerValue:
+        """Get memory info.
+
+        Args:
+            device: The device parameter.
+        """
         psutil = __import__("psutil")
         rss = psutil.Process().memory_info().rss
         return {"current": rss, "peak": rss}
 
     @classmethod
-    def initialize_distributed(cls, *args, **kwargs):
-        """Initialize distributed context."""
-        from dask.distributed import Client
+    def initialize_distributed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
+        """Initialize distributed context.
 
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
+        import dask.distributed as dask_dist
+
+        client_cls = getattr(dask_dist, "Client")
         backend_config = kwargs.get("backend_config")
         if backend_config and hasattr(backend_config, "options") and backend_config.options and "scheduler_address" in backend_config.options:
-            Client(backend_config.options["scheduler_address"])
+            client_cls(backend_config.options["scheduler_address"])
         else:
-            Client()
+            client_cls()
 
     def __init__(self, graph: IRGraph) -> None:
         """Init.
@@ -63,7 +78,7 @@ class DaskGenerator(PythonStringGenerator):
     _import_header = "import dask.array as da"
     _func_name = "evaluate"
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Fallback for generic nodes.
 
         Args:
@@ -76,7 +91,7 @@ class DaskGenerator(PythonStringGenerator):
         """
         return super().generic_visit(node, input_vars, **kwargs)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Construct and optimize a static Dask computation task graph and return an execution callable.
 
         Args:
@@ -89,7 +104,7 @@ class DaskGenerator(PythonStringGenerator):
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        def forward_fn(*fn_args: object) -> object:
+        def forward_fn(*fn_args: EagerValue) -> EagerValue:
             """Evaluate the graph with Dask arrays.
 
             Args:
@@ -99,25 +114,25 @@ class DaskGenerator(PythonStringGenerator):
                 object: Output tensor or collection of tensors.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
-            inputs: dict[str, object] = {}
+            inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-            evaluated = evaluate_graph(graph, inputs=inputs)
+            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
-                    return evaluated.get(graph.outputs[0])
+                    return cast(EagerValue, evaluated.get(graph.outputs[0]))
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return evaluated
+            return cast(EagerValue, evaluated)
 
         try:
             import dask
             import dask.array as da
 
-            delayed_fn = dask.delayed(forward_fn)
+            delayed_fn = getattr(dask, "delayed")(forward_fn)
 
-            def dask_aot_runner(*w_args: object, **w_kwargs: object) -> object:
+            def dask_aot_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
                 """Execute optimized Dask task graph.
 
                 Args:
@@ -127,9 +142,9 @@ class DaskGenerator(PythonStringGenerator):
                 Returns:
                     object: Computed outputs.
                 """
-                da_args = [da.from_array(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                da_args = [getattr(da, "from_array")(a.data if isinstance(a, Tensor) else a) for a in w_args]
                 task = delayed_fn(*da_args)
-                return dask.compute(task)[0]
+                return cast(EagerValue, getattr(dask, "compute")(task)[0])
 
             return dask_aot_runner
         except Exception:

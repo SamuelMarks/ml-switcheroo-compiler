@@ -1,21 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """RNN operations."""
 
-from typing import Any, Optional  # noqa: F401
+from collections.abc import Callable, Sequence
+from typing import Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
-from ml_switcheroo_compiler.ops.linalg import matmul
+from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.splitting import split
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
-def _compute_gru_gates(x_parts, r_parts, state: Tensor):
+def _compute_gru_gates(x_parts: EagerValue, r_parts: EagerValue, state: Tensor) -> EagerValue:
     """Evaluate _compute_gru_gates operation.
 
     Args:
@@ -26,8 +26,8 @@ def _compute_gru_gates(x_parts, r_parts, state: Tensor):
     Returns:
         Tensor: Result.
     """
-    x_z, x_r, x_h = x_parts
-    recurrent_z, recurrent_r, recurrent_h = r_parts
+    x_z, x_r, x_h = getattr(x_parts, "__iter__")()
+    recurrent_z, recurrent_r, recurrent_h = getattr(r_parts, "__iter__")()
     z = _sigmoid(add(x_z, recurrent_z))
     r = _sigmoid(add(x_r, recurrent_r))
     hh = tanh(add(x_h, multiply(r, recurrent_h)))
@@ -40,7 +40,7 @@ def gru_cell(
     kernel: Tensor,
     recurrent_kernel: Tensor,
     bias: Optional[Tensor] = None,
-):
+) -> EagerValue:
     """Fused GRU cell math.
 
     Args:
@@ -59,8 +59,8 @@ def gru_cell(
 
     matrix_inner = matmul(state, recurrent_kernel)
 
-    x_parts = split(matrix_x, 3, axis=-1)
-    r_parts = split(matrix_inner, 3, axis=-1)
+    x_parts = cast(Callable[..., Sequence[Tensor]], split)(matrix_x, 3, axis=-1)
+    r_parts = cast(Callable[..., Sequence[Tensor]], split)(matrix_inner, 3, axis=-1)
 
     h_new = _compute_gru_gates(x_parts, r_parts, state)
     return h_new, h_new
@@ -72,7 +72,7 @@ class Gru(OpDef):
 
     op_name = "Gru"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -85,7 +85,7 @@ class Gru(OpDef):
         return args[0] if args else ()
 
 
-def gru(*args, **kwargs):
+def gru(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """GRU layer.
 
     Args:
@@ -105,7 +105,7 @@ def gru(*args, **kwargs):
     return _emit_shape_node("Gru", list(args), kwargs, out_shape, out_dtype)
 
 
-def _sigmoid(x):
+def _sigmoid(x: Tensor) -> Tensor:
     """Evaluate _sigmoid operation.
 
     Args:

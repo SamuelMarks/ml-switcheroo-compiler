@@ -268,6 +268,61 @@ def test_main_mixed_paths_error(tmp_path: Path) -> None:
     assert "Error: Both --old and --new must be either files or directories" in buf.getvalue()
 
 
+def test_main_framework_snapshots_resolution(tmp_path: Path) -> None:
+    """Test resolving ../ml-framework-snapshots and snapshots/ subdirectories.
+
+    Args:
+        tmp_path (Path): Temporary test directory path.
+    """
+    buf = io.StringIO()
+    exit_code = main(["--old", "../ml-framework-snapshots", "--new", "../ml-framework-snapshots"], stdout=buf)
+    assert exit_code == 0
+    assert "Directory snapshot drift check passed" in buf.getvalue()
+
+    parent_dir = tmp_path / "repo_root"
+    snap_sub = parent_dir / "snapshots"
+    snap_sub.mkdir(parents=True)
+    (snap_sub / "target.json").write_text(json.dumps({"categories": {}}), encoding="utf-8")
+
+    buf_sub = io.StringIO()
+    exit_sub = main(["--old", str(parent_dir), "--new", str(parent_dir)], stdout=buf_sub)
+    assert exit_sub == 0
+
+    buf_missing = io.StringIO()
+    exit_missing = main(["--old", str(tmp_path / "does_not_exist")], stdout=buf_missing)
+    assert exit_missing == 1
+    assert "Error: Snapshot path not found" in buf_missing.getvalue()
+
+
+def test_check_directory_drift_missing_default_target(tmp_path: Path) -> None:
+    """Test check_directory_drift reporting a missing target on the default snapshot directory.
+
+    Args:
+        tmp_path (Path): Temporary test directory path.
+    """
+    from ml_switcheroo_compiler.backends.snapshot_grounding import (
+        BackendSnapshotTargetModel,
+        BackendSnapshotTargetsConfig,
+    )
+
+    fake_cfg = BackendSnapshotTargetsConfig(
+        targets={
+            "nonexistent_backend": BackendSnapshotTargetModel(
+                framework="nonexistent_fw",
+                snapshot_glob="nonexistent_v*.json",
+                status="available",
+            )
+        }
+    )
+    with (
+        patch("scripts.check_snapshot_drift._resolve_default_snapshot_dir", return_value=str(tmp_path)),
+        patch("scripts.check_snapshot_drift.SnapshotGroundingEngine.get_snapshot_path", return_value=None),
+        patch("ml_switcheroo_compiler.backends.snapshot_grounding.load_backend_snapshot_targets", return_value=fake_cfg),
+    ):
+        _, breaking = check_directory_drift(str(tmp_path), str(tmp_path))
+        assert any("nonexistent_backend" in b for b in breaking)
+
+
 def test_main_block_execution(tmp_path: Path) -> None:
     """Test __main__ module execution via runpy.
 

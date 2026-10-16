@@ -1,17 +1,25 @@
 """Unit tests for native Dask eager execution and dispatch."""
 
+from __future__ import annotations
+
 import builtins
 import importlib
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-pytest.importorskip("dask")
-
 import ml_switcheroo_compiler.backends.dask.eager as dask_eager
 from ml_switcheroo_compiler.backends.dask.eager import execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+pytest.importorskip("dask")
 
 
 def test_dask_eager_dispatch_native() -> None:
@@ -21,53 +29,54 @@ def test_dask_eager_dispatch_native() -> None:
 
     with patch.dict(sys.modules, {"dask.array": mock_da}):
         with patch("ml_switcheroo_compiler.backends.dask.eager.da", mock_da):
-            res = execute_op(None, "Add", [1.0, 2.0], [3.0, 4.0])
+            res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
             assert res == mock_da.add.return_value
             mock_da.add.assert_called_once()
 
             # Non-list arg (e.g. float) to test branch 60->66 and line 66
-            res_scalar = execute_op(None, "Add", 1.0, 2.0)
+            res_scalar = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1.0, 2.0)
             assert res_scalar == mock_da.add.return_value
 
             # from_array raises Exception to test lines 63-64
             mock_da.from_array.side_effect = RuntimeError("from_array error")
-            res_err = execute_op(None, "Add", [1.0, 2.0])
+            res_err = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1.0, 2.0])
             assert res_err == mock_da.add.return_value
             mock_da.from_array.side_effect = None
 
             # Ensure silent CPU NumPy fallback is prevented: unmapped op raises BackendNotSupportedError
             with pytest.raises(BackendNotSupportedError):
-                execute_op(None, "NonExistentDaskOp")
+                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "NonExistentDaskOp")
 
             # dispatch_eager_op raises BackendNotSupportedError
             with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("dispatch failure")):
                 with pytest.raises(BackendNotSupportedError, match="Operation 'Add' is not implemented"):
-                    execute_op(None, "Add", 1.0)
+                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1.0)
 
 
 def test_dask_import_error() -> None:
     """Test handling of ImportError when dask.array is not available at import time."""
     orig_import = builtins.__import__
 
-    def mock_import(name: str, *args: object, **kwargs: object) -> object:
+    def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Test function mock_import."""
         if "dask" in name:
             raise ImportError("Mocked missing dask")
-        return orig_import(name, *args, **kwargs)
+        return cast("Callable[..., EagerTensorProtocol]", orig_import)(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=mock_import):
         importlib.reload(dask_eager)
-        assert dask_eager.da is None
+        assert cast("EagerTensorProtocol", getattr(dask_eager, "da")) is None
 
     # Restore module
     importlib.reload(dask_eager)
-    assert dask_eager.da is not None
+    assert cast("EagerTensorProtocol", getattr(dask_eager, "da")) is not None
 
 
 def test_dask_eager_unavailable() -> None:
     """Test that BackendNotSupportedError is raised when Dask is unavailable."""
     with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):
         with pytest.raises(BackendNotSupportedError, match="Dask is not installed"):
-            execute_op(None, "Add", 1, 2)
+            cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1, 2)
 
 
 def test_dask_eager_reductions_and_kwarg_mapping() -> None:
@@ -77,7 +86,7 @@ def test_dask_eager_reductions_and_kwarg_mapping() -> None:
 
     with patch.dict(sys.modules, {"dask.array": mock_da}):
         with patch("ml_switcheroo_compiler.backends.dask.eager.da", mock_da):
-            execute_op(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
+            cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
             mock_da.sum.assert_called_once()
             _, kwargs = mock_da.sum.call_args
             assert "axis" in kwargs and kwargs["axis"] == 0
@@ -89,7 +98,7 @@ def test_dask_eager_mock_entry_backend_mod() -> None:
     mock_entry = MagicMock()
     mock_entry.add.return_value = 999
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.dask.eager": mock_entry}):
-        res = execute_op(None, "Add", 1, 2)
+        res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1, 2)
         assert res == 999
 
 
@@ -99,7 +108,7 @@ def test_dask_eager_registry_fallback() -> None:
 
     mock_func = MagicMock(return_value="dask_reg_res")
     with patch.object(global_eager_registry, "get", return_value=mock_func):
-        res = execute_op(None, "CustomDaskRegOp", 5)
+        res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "CustomDaskRegOp", 5)
         assert res == "dask_reg_res"
 
 
@@ -113,7 +122,7 @@ def test_dask_eager_remaining_branches() -> None:
 
     # 1. Line 26: _verify_dask_task_graph when da is None
     with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):
-        assert _verify_dask_task_graph("anything") is None
+        assert cast("Callable[..., EagerTensorProtocol]", _verify_dask_task_graph)("anything") is None
 
     # 2. Line 51: propagate_chunk_shapes when da is None
     with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):

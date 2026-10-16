@@ -3,15 +3,20 @@
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+from types import ModuleType
+from typing import Callable, Optional, Union, cast
 
-try:
-    import dask.array as da
-except ImportError:
-    da = None
-
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+da: Optional[ModuleType]
+try:
+    import dask.array as _da
+
+    da = _da
+except ImportError:
+    da = None
 
 
 def _get_process_memory_mb() -> float:
@@ -26,7 +31,7 @@ def _get_process_memory_mb() -> float:
     return float(rusage) / 1024.0
 
 
-def _sync_dask_result(result: Union[object, list[object], tuple[object, ...], dict[str, object]]) -> object:
+def _sync_dask_result(result: Union[EagerValue, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue]]) -> EagerValue:
     """Force computation and synchronization of Dask computation graph.
 
     Args:
@@ -42,9 +47,9 @@ def _sync_dask_result(result: Union[object, list[object], tuple[object, ...], di
     if isinstance(result, (list, tuple)):
         computed = [_sync_dask_result(item) for item in result]
         return type(result)(computed)
-    if hasattr(result, "compute") and callable(result.compute):
+    if hasattr(result, "compute") and callable(getattr(result, "compute")):
         try:
-            return result.compute()
+            return cast(EagerValue, getattr(result, "compute")())
         except Exception:
             return result
     return result
@@ -56,8 +61,8 @@ class DaskProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
-    ) -> list[object]:
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+    ) -> list[EagerValue]:
         """Convert input structures into topologically ordered Dask arrays.
 
         Args:
@@ -70,7 +75,7 @@ class DaskProfiler:
         if da is None:
             return []
 
-        da_inputs_dict: dict[str, object] = {}
+        da_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             if hasattr(val, "compute"):
                 da_inputs_dict[k] = val
@@ -83,7 +88,7 @@ class DaskProfiler:
             return [da_inputs_dict[k] for k in input_keys]
         return list(da_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., object]]:
+    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., EagerValue]]:
         """Compile an IRGraph into an executable Dask function.
 
         Args:
@@ -98,7 +103,7 @@ class DaskProfiler:
         from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 
         code: str = DaskGenerator(graph).generate()
-        ns: dict[str, object] = {}
+        ns: dict[str, EagerValue] = {}
         exec(code, ns)
         evaluate_fn = ns.get("evaluate")
         if not callable(evaluate_fn):
@@ -108,7 +113,7 @@ class DaskProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -142,14 +147,14 @@ class DaskProfiler:
         da_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Optional[Callable[..., object]] = None
+        compiled_fn: Optional[Callable[..., EagerValue]] = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)
             except Exception:
                 compiled_fn = None
 
-        def _execute_step() -> object:
+        def _execute_step() -> EagerValue:
             """Execute a single evaluation step on Dask backend with compute synchronization.
 
             Returns:

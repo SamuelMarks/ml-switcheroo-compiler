@@ -1,14 +1,27 @@
-def test_metal_load_yaml_dict_string(monkeypatch):
+"""Tests for test_metal_yaml_dict."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_metal_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_metal_load_yaml_dict_string."""
     import os
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    def mock_isdir(path):
+    def mock_isdir(path: EagerValue) -> EagerValue:
+        """Test function mock_isdir."""
         return True
 
-    def mock_listdir(path):
+    def mock_listdir(path: EagerValue) -> EagerValue:
+        """Test function mock_listdir."""
         return ["test.yaml"]
 
     mock_data = {"templates": {"op1": "string body", "op2": ["not", "string", "or", "dict_with_body"]}}
@@ -25,17 +38,20 @@ def test_metal_load_yaml_dict_string(monkeypatch):
             assert gen.config.templates["op2"] == ["not", "string", "or", "dict_with_body"]
 
 
-def test_metal_load_fallback_yaml(monkeypatch):
+def test_metal_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_metal_load_fallback_yaml."""
     import os
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    def mock_isdir(path):
+    def mock_isdir(path: EagerValue) -> EagerValue:
+        """Test function mock_isdir."""
         return False
 
-    def mock_exists(path):
+    def mock_exists(path: EagerValue) -> EagerValue:
+        """Test function mock_exists."""
         return True
 
     mock_data = {"templates": {"op3": {"body": "test"}}}
@@ -51,7 +67,8 @@ def test_metal_load_fallback_yaml(monkeypatch):
             assert gen.config.templates["op3"] == {"body": "test"}
 
 
-def test_metal_runner_init_coverage(monkeypatch):
+def test_metal_runner_init_coverage(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_metal_runner_init_coverage."""
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.metal.metal import MetalRunner
@@ -74,7 +91,8 @@ def test_metal_runner_init_coverage(monkeypatch):
         assert runner.metal is None
 
 
-def test_metal_runner_compile_dispatch():
+def test_metal_runner_compile_dispatch() -> None:
+    """Test function test_metal_runner_compile_dispatch."""
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.metal.metal import MetalRunner
@@ -87,7 +105,8 @@ def test_metal_runner_compile_dispatch():
             runner.write_buffer(None, b"test")
 
 
-def test_metal_runner_ctypes_real_buffer_allocation():
+def test_metal_runner_ctypes_real_buffer_allocation() -> None:
+    """Test function test_metal_runner_ctypes_real_buffer_allocation."""
     from unittest.mock import MagicMock
 
     from ml_switcheroo_compiler.backends.metal.metal import MetalRunner
@@ -106,8 +125,8 @@ def test_metal_runner_ctypes_real_buffer_allocation():
     assert buf is not None and buf.value == 0x2000
 
 
-def test_metal_runner_methods():
-
+def test_metal_runner_methods() -> None:
+    """Test function test_metal_runner_methods."""
     from ml_switcheroo_compiler.backends.metal.metal import MetalRunner
 
     runner = MetalRunner()

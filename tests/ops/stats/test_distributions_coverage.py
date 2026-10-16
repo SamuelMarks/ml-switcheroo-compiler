@@ -48,7 +48,7 @@ def test_statistical_distributions_full_coverage() -> None:
         (dist_mod.BinomCdf, "binom_cdf"),
     ]
 
-    for op_cls, fn_name in dist_pairs:
+    for op_cls, _fn_name in dist_pairs:
         instance = op_cls()
         assert instance.infer_shape(t_in) == (3, 3)
 

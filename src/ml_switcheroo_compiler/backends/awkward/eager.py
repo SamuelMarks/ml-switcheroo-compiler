@@ -5,12 +5,15 @@ from __future__ import annotations
 import importlib
 import math
 import operator
-from typing import Any
+from collections.abc import Callable
+from typing import cast
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
 
 
-def _unwrap_arg(arg: object) -> object:
+def _unwrap_arg(arg: EagerValue) -> EagerValue:
     """Unwrap Tensor into underlying array or scalar.
 
     Args:
@@ -20,7 +23,7 @@ def _unwrap_arg(arg: object) -> object:
         object: Unwrapped raw data.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return arg.data
+        return cast(EagerValue, getattr(arg, "data"))
     return arg
 
 
@@ -177,7 +180,7 @@ _UNARY_OPS = {
 }
 
 
-def _eval_operator(fn_name: str, args: tuple[object, ...]) -> tuple[bool, object]:
+def _eval_operator(fn_name: str, args: tuple[EagerValue, ...]) -> tuple[bool, EagerValue]:
     """Evaluate native overloaded operators on Awkward operands.
 
     Args:
@@ -188,17 +191,91 @@ def _eval_operator(fn_name: str, args: tuple[object, ...]) -> tuple[bool, object
         tuple[bool, object]: Handled flag and result.
     """
     if fn_name in _BINARY_OPS and len(args) >= 2:
-        return True, _BINARY_OPS[fn_name](args[0], args[1])
+        return True, cast(Callable[..., EagerValue], _BINARY_OPS[fn_name])(args[0], args[1])
     if fn_name in _UNARY_OPS and len(args) >= 1:
-        return True, _UNARY_OPS[fn_name](args[0])
+        return True, cast(Callable[..., EagerValue], _UNARY_OPS[fn_name])(args[0])
     return False, None
 
 
-def _eval_ragged_fallback(  # noqa: C901, PLR0911, PLR0912
+def _flatten_ragged_items(data: list[EagerValue] | tuple[EagerValue, ...]) -> list[EagerValue]:
+    """Flatten a 2-level ragged list or tuple into a 1D list of elements.
+
+    Args:
+        data (list[EagerValue] | tuple[EagerValue, ...]): Input ragged sequence.
+
+    Returns:
+        list[EagerValue]: Flattened elements.
+    """
+    res: list[EagerValue] = []
+    for sub in data:
+        if isinstance(sub, (list, tuple)):
+            res.extend(sub)
+        else:
+            res.append(sub)
+    return res
+
+
+def _eval_ragged_axis1_reduction(
     fn_name: str,
-    args: tuple[object, ...],
-    kwargs: dict[str, object],
-) -> tuple[bool, object]:
+    data: list[EagerValue] | tuple[EagerValue, ...],
+) -> tuple[bool, EagerValue]:
+    """Evaluate inner-axis (axis=1 or -1) ragged list reductions.
+
+    Args:
+        fn_name (str): Lowercase reduction operation name.
+        data (list[EagerValue] | tuple[EagerValue, ...]): Ragged sequence data.
+
+    Returns:
+        tuple[bool, EagerValue]: Handled flag and list of per-row reduced values.
+    """
+    if fn_name == "count":
+        res: EagerValue = [len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data]
+    elif fn_name == "sum":
+        res = [sum(sub) if isinstance(sub, (list, tuple)) else sub for sub in data]
+    elif fn_name == "mean":
+        res = [sum(sub) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
+    elif fn_name == "min":
+        res = [min([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
+    elif fn_name == "max":
+        res = [max([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
+    else:
+        res = [math.prod(sub) if isinstance(sub, (list, tuple)) else sub for sub in data]
+    return True, res
+
+
+def _eval_ragged_global_reduction(
+    fn_name: str,
+    data: list[EagerValue] | tuple[EagerValue, ...],
+) -> tuple[bool, EagerValue]:
+    """Evaluate global (all-axis) ragged list reductions.
+
+    Args:
+        fn_name (str): Lowercase reduction operation name.
+        data (list[EagerValue] | tuple[EagerValue, ...]): Ragged sequence data.
+
+    Returns:
+        tuple[bool, EagerValue]: Handled flag and scalar reduction result.
+    """
+    flat_items = _flatten_ragged_items(data)
+    if fn_name == "count":
+        res: EagerValue = len([x for x in flat_items if x is not None])
+    elif fn_name == "sum":
+        res = sum(getattr(flat_items, "__iter__")())
+    elif fn_name == "mean":
+        res = sum(getattr(flat_items, "__iter__")()) / len(flat_items) if flat_items else 0.0
+    elif fn_name in ("min", "max"):
+        flat_floats = [float(x) for x in flat_items if isinstance(x, (int, float))]
+        res = (min(flat_floats) if fn_name == "min" else max(flat_floats)) if flat_floats else None
+    else:
+        res = getattr(math, "prod")(flat_items) if flat_items else 1
+    return True, res
+
+
+def _eval_ragged_fallback(
+    fn_name: str,
+    args: tuple[EagerValue, ...],
+    kwargs: dict[str, EagerValue],
+) -> tuple[bool, EagerValue]:
     """Evaluate reference ragged and nested operations on Python lists without padding.
 
     Args:
@@ -209,68 +286,89 @@ def _eval_ragged_fallback(  # noqa: C901, PLR0911, PLR0912
     Returns:
         tuple[bool, object]: Handled flag and resulting structure.
     """
-    if not args:
+    if not args or not isinstance(args[0], (list, tuple)):
         return False, None
 
     data = args[0]
-    axis = kwargs.get("axis", None)
-
-    if fn_name == "flatten" and isinstance(data, (list, tuple)):
-        res: list[object] = []
-        for sub in data:
-            if isinstance(sub, (list, tuple)):
-                res.extend(sub)
-            else:
-                res.append(sub)
-        return True, res
-
-    if fn_name == "num" and isinstance(data, (list, tuple)):
+    if fn_name == "flatten":
+        return True, _flatten_ragged_items(data)
+    if fn_name == "num":
         return True, [len(sub) if isinstance(sub, (list, tuple)) else 1 for sub in data]
 
-    if fn_name == "count" and isinstance(data, (list, tuple)):
-        if axis in (-1, 1):
-            return True, [len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data]
-        return True, sum(len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data)
+    axis = kwargs.get("axis", None)
+    if axis in (-1, 1):
+        return _eval_ragged_axis1_reduction(fn_name, data)
+    return _eval_ragged_global_reduction(fn_name, data)
 
-    if fn_name == "sum" and isinstance(data, (list, tuple)):
-        if axis in (-1, 1):
-            return True, [sum(sub) if isinstance(sub, (list, tuple)) else sub for sub in data]
-        flat_items: list[Any] = [x for sub in data for x in (sub if isinstance(sub, (list, tuple)) else [sub])]
-        return True, sum(flat_items)
 
-    if fn_name == "mean" and isinstance(data, (list, tuple)):
-        if axis in (-1, 1):
-            return True, [sum(sub) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
-        flat_items = [x for sub in data for x in (sub if isinstance(sub, (list, tuple)) else [sub])]
-        return True, sum(flat_items) / len(flat_items) if flat_items else 0.0
+def _try_awkward_module_op(
+    ak_mod: EagerValue,
+    fn_name: str,
+    actual_args: tuple[EagerValue, ...],
+    kwargs: dict[str, EagerValue],
+) -> tuple[bool, EagerValue]:
+    """Attempt to execute operation directly on the awkward module.
 
-    if fn_name == "min" and isinstance(data, (list, tuple)):
-        if axis in (-1, 1):
-            return True, [min(sub) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
-        flat_items = [x for sub in data for x in (sub if isinstance(sub, (list, tuple)) else [sub])]
-        return True, min(flat_items) if flat_items else None
+    Args:
+        ak_mod (EagerValue): Loaded awkward module or None.
+        fn_name (str): Lowercase operation name.
+        actual_args (tuple[EagerValue, ...]): Unwrapped positional arguments.
+        kwargs (dict[str, EagerValue]): Keyword arguments.
 
-    if fn_name == "max" and isinstance(data, (list, tuple)):
-        if axis in (-1, 1):
-            return True, [max(sub) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
-        flat_items = [x for sub in data for x in (sub if isinstance(sub, (list, tuple)) else [sub])]
-        return True, max(flat_items) if flat_items else None
+    Returns:
+        tuple[bool, EagerValue]: Handled flag and evaluated result.
 
-    if fn_name == "prod" and isinstance(data, (list, tuple)):
-        if axis in (-1, 1):
-            return True, [math.prod(sub) if isinstance(sub, (list, tuple)) else sub for sub in data]
-        flat_items = [x for sub in data for x in (sub if isinstance(sub, (list, tuple)) else [sub])]
-        return True, math.prod(flat_items) if flat_items else 1
-
+    Raises:
+        BackendNotSupportedError: When awkward function invocation fails.
+    """
+    if ak_mod is None:
+        return False, None
+    target_fn_name: str | None = fn_name if hasattr(ak_mod, fn_name) else AK_OPS_MAP.get(fn_name)
+    if target_fn_name is not None and hasattr(ak_mod, target_fn_name):
+        try:
+            return True, getattr(ak_mod, target_fn_name)(*actual_args, **kwargs)
+        except Exception as exc:
+            msg = f"Failed executing awkward.{target_fn_name}: {exc}"
+            raise BackendNotSupportedError(msg) from exc
     return False, None
 
 
-def execute_op(  # noqa: C901, PLR0912
-    cls_or_op: object,
-    op_type_or_first: object = None,
-    *args: object,
-    **kwargs: object,
-) -> object:
+def _try_numpy_ufunc(
+    numpy_mod: EagerValue,
+    fn_name: str,
+    actual_args: tuple[EagerValue, ...],
+    kwargs: dict[str, EagerValue],
+) -> tuple[bool, EagerValue]:
+    """Attempt to execute operation via NumPy ufunc dispatch.
+
+    Args:
+        numpy_mod (EagerValue): Loaded NumPy module.
+        fn_name (str): Lowercase operation name.
+        actual_args (tuple[EagerValue, ...]): Unwrapped positional arguments.
+        kwargs (dict[str, EagerValue]): Keyword arguments.
+
+    Returns:
+        tuple[bool, EagerValue]: Handled flag and evaluated result.
+
+    Raises:
+        BackendNotSupportedError: When NumPy ufunc invocation fails.
+    """
+    np_name = UFUNC_NAMES.get(fn_name)
+    if np_name and hasattr(numpy_mod, np_name):
+        try:
+            return True, getattr(numpy_mod, np_name)(*actual_args, **kwargs)
+        except Exception as exc:
+            msg = f"Failed executing NumPy ufunc {np_name} on Awkward array: {exc}"
+            raise BackendNotSupportedError(msg) from exc
+    return False, None
+
+
+def execute_op(
+    cls_or_op: EagerValue,
+    op_type_or_first: EagerValue = None,
+    *args: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Execute operation eagerly on Awkward Array backend supporting native ragged structures.
 
     Args:
@@ -300,27 +398,18 @@ def execute_op(  # noqa: C901, PLR0912
     actual_args = tuple(_unwrap_arg(a) for a in raw_args)
     fn_name = op_type.lower()
 
-    if ak_mod is not None:
-        target_fn_name: str | None = fn_name if hasattr(ak_mod, fn_name) else AK_OPS_MAP.get(fn_name)
-        if target_fn_name is not None and hasattr(ak_mod, target_fn_name):
-            try:
-                return getattr(ak_mod, target_fn_name)(*actual_args, **kwargs)
-            except Exception as exc:
-                msg = f"Failed executing awkward.{target_fn_name}: {exc}"
-                raise BackendNotSupportedError(msg) from exc
+    ak_handled, ak_res = _try_awkward_module_op(ak_mod, fn_name, actual_args, kwargs)
+    if ak_handled:
+        return ak_res
 
     handled, op_res = _eval_operator(fn_name, actual_args)
     if handled:
         return op_res
 
-    numpy_mod = importlib.import_module("numpy")
-    np_name = UFUNC_NAMES.get(fn_name)
-    if np_name and hasattr(numpy_mod, np_name):
-        try:
-            return getattr(numpy_mod, np_name)(*actual_args, **kwargs)
-        except Exception as exc:
-            msg = f"Failed executing NumPy ufunc {np_name} on Awkward array: {exc}"
-            raise BackendNotSupportedError(msg) from exc
+    numpy_mod = _np_mod()
+    ufunc_handled, ufunc_res = _try_numpy_ufunc(numpy_mod, fn_name, actual_args, kwargs)
+    if ufunc_handled:
+        return ufunc_res
 
     ragged_handled, ragged_res = _eval_ragged_fallback(fn_name, actual_args, kwargs)
     if ragged_handled:

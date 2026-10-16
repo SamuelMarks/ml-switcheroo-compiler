@@ -1,68 +1,97 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.common.mixins.control_flow import ControlFlowASTVisitor
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyGenerator:
-    def get_fallback_prefix(self):
+    """Test class DummyGenerator."""
+
+    def get_fallback_prefix(self) -> EagerValue:
+        """Test function get_fallback_prefix."""
         return "bk"
 
 
 class DummyVisitor(ControlFlowASTVisitor):
-    def __init__(self):
-        self._generator = DummyGenerator()
+    """Test class DummyVisitor."""
+
+    def __init__(self) -> None:
+        """Test function __init__."""
+        setattr(self, "_generator", DummyGenerator())
 
 
 class DummyNode:
-    def __init__(self, attrs=None):
+    """Test class DummyNode."""
+
+    def __init__(self, attrs: EagerValue = None) -> None:
+        """Test function __init__."""
         self.attributes = attrs or {}
 
 
-def test_control_flow_mixin():
+def test_control_flow_mixin() -> None:
+    """Test function test_control_flow_mixin."""
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert vis.visit_Scan(node, ["a", "b"]) == "bk_scan(a, b)"
-    assert vis.visit_Switch(node, ["a", "b"]) == "bk_switch(a, b)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Scan)(node, ["a", "b"]) == "bk_scan(a, b)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Switch)(node, ["a", "b"]) == "bk_switch(a, b)"
 
     node_td = DummyNode({"wrapped_op_name": "MyOp"})
-    assert vis.visit_TimeDistributed(node_td, ["a"]) == "bk_time_distributed(a, 'MyOp')"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_TimeDistributed)(node_td, ["a"]) == "bk_time_distributed(a, 'MyOp')"
 
-    assert vis.visit_Assert(node, ["cond"], data=["msg"]) == "bk_assert(cond, data=['msg'])"
-    assert vis.visit_Assert(node, ["cond"]) == "bk_assert(cond, data=['Assertion failed.'])"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Assert)(node, ["cond"], data=["msg"]) == "bk_assert(cond, data=['msg'])"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Assert)(node, ["cond"]) == "bk_assert(cond, data=['Assertion failed.'])"
 
-    assert vis.visit_AssociativeScan(node, ["a", "b"]) == "bk_associative_scan(a, b)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_AssociativeScan)(node, ["a", "b"]) == "bk_associative_scan(a, b)"
 
 
-def test_control_flow_mixin_advanced():
+def test_control_flow_mixin_advanced() -> None:
+    """Test function test_control_flow_mixin_advanced."""
     from ml_switcheroo_compiler.backends.common.mixins.control_flow import ControlFlowASTVisitor
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
     class DummyGenerator:
-        def __init__(self, graph=None):
+        """Test class DummyGenerator."""
+
+        def __init__(self, graph: EagerValue = None) -> None:
+            """Test function __init__."""
             self.graph = graph
             self.code = ["def dummy():", "    return 1"]
             self.indent_level = 0
             self.formatter = type("Formatter", (), {"indent_level": 0})()
 
-        def get_fallback_prefix(self):
+        def get_fallback_prefix(self) -> EagerValue:
+            """Test function get_fallback_prefix."""
             return "bk"
 
-        def add_line(self, line):
-            self.code.append(line)
+        def add_line(self, line: EagerValue) -> None:
+            """Test function add_line."""
+            cast("Callable[..., EagerTensorProtocol]", self.code.append)(line)
 
     class DummyVisitor(ControlFlowASTVisitor):
-        def __init__(self):
-            self._generator = DummyGenerator()
+        """Test class DummyVisitor."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
+            setattr(self, "_generator", DummyGenerator())
             pass
 
     vis = DummyVisitor()
 
     # Create dummy IRGraph with dummy nodes
-    def make_graph():
+    def make_graph() -> EagerValue:
+        """Test function make_graph."""
         g = IRGraph()
         n = LogicalNode(id="dummy_out", op_type="Identity", inputs=["x"])
-        g.nodes = [n]
+        setattr(g, "nodes", [n])
         return g
 
     g_cond = make_graph()
@@ -110,7 +139,7 @@ def test_control_flow_mixin_advanced():
         assert res_fold == "fold_val_fold1"
 
     # visit_Vmap
-    assert vis.visit_Vmap(DummyNode(), ["a", "b"]) == "bk_vmap(a, b)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Vmap)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"]) == "bk_vmap(a, b)"
 
     # visit_Pmap
-    assert vis.visit_Pmap(DummyNode(), ["a", "b"]) == "bk_pmap(a, b)"
+    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Pmap)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"]) == "bk_pmap(a, b)"

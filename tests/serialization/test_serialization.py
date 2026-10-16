@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 import zipfile
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
@@ -14,58 +14,72 @@ from ml_switcheroo_compiler.serialization import (
     LoadedModel,
     SavedModel,
     custom_object_scope,
-    deserialize_keras_object,
+    deserialize_object,
     get_registered_object,
     graph_to_json,
     load_model,
     read_fingerprint,
-    register_keras_serializable,
+    register_serializable,
     run_restore_ops,
     save_model,
-    serialize_keras_object,
+    serialize_object,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_serialization_primitives_and_custom_objects() -> None:
     """Test custom object registration, scoping, and recursive configuration serialization."""
-    assert deserialize_keras_object() == {}
-    assert serialize_keras_object() == {}
+    assert deserialize_object() == {}
+    assert serialize_object() == {}
 
     # Custom serializable class
-    @register_keras_serializable(package="MyPackage", name="CustomDense")
+    @register_serializable(package="MyPackage", name="CustomDense")
     class CustomDense:
+        """Test class CustomDense."""
+
         def __init__(self, units: int = 32) -> None:
+            """Test function __init__."""
             self.units = units
 
-        def get_config(self) -> dict[str, Any]:
+        def get_config(self) -> dict[str, EagerValue]:
+            """Test function get_config."""
             return {"units": self.units}
 
         @classmethod
-        def from_config(cls, cfg: dict[str, Any]) -> CustomDense:
-            return cls(**cfg)
+        def from_config(cls, cfg: dict[str, EagerValue]) -> CustomDense:
+            """Test function from_config."""
+            return cast("CustomDense", cast("Callable[..., EagerTensorProtocol]", cls)(**cfg))
 
     obj = CustomDense(units=64)
-    serialized = serialize_keras_object(obj)
-    assert serialized["class_name"] == "CustomDense"
-    assert serialized["config"]["units"] == 64
+    serialized = serialize_object(obj)
+    assert cast("EagerTensorProtocol", getattr(serialized, "__getitem__")("class_name")) == "CustomDense"
+    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(serialized, "__getitem__")("config")), "__getitem__")("units")) == 64
 
     # Deserialization from registry
-    deserialized = deserialize_keras_object(serialized)
+    deserialized = deserialize_object(serialized)
     assert isinstance(deserialized, CustomDense)
     assert deserialized.units == 64
 
     # Scoped custom object
     class ScopedLayer:
+        """Test class ScopedLayer."""
+
         def __init__(self, rate: float = 0.5) -> None:
+            """Test function __init__."""
             self.rate = rate
 
-        def get_config(self) -> dict[str, Any]:
+        def get_config(self) -> dict[str, EagerValue]:
+            """Test function get_config."""
             return {"rate": self.rate}
 
     with custom_object_scope({"ScopedLayer": ScopedLayer}):
         assert get_registered_object("ScopedLayer") is ScopedLayer
         s_cfg = {"class_name": "ScopedLayer", "config": {"rate": 0.25}}
-        des_scoped = deserialize_keras_object(s_cfg)
+        des_scoped = deserialize_object(s_cfg)
         assert isinstance(des_scoped, ScopedLayer)
         assert des_scoped.rate == 0.25
 
@@ -74,7 +88,7 @@ def test_serialization_primitives_and_custom_objects() -> None:
 
     # Unknown class raises ValueError
     with pytest.raises(ValueError, match="Unknown class 'UnregisteredClass'"):
-        deserialize_keras_object({"class_name": "UnregisteredClass", "config": {}})
+        deserialize_object({"class_name": "UnregisteredClass", "config": {}})
 
 
 def test_universal_model_loader_and_save_model() -> None:
@@ -84,14 +98,18 @@ def test_universal_model_loader_and_save_model() -> None:
 
         # Mock model with config and weights
         class DummyModel:
+            """Test class DummyModel."""
+
             def __init__(self) -> None:
+                """Test function __init__."""
                 self.weights = [np.array([1.0, 2.0], dtype=np.float32)]
 
-            def get_config(self) -> dict[str, Any]:
+            def get_config(self) -> dict[str, EagerValue]:
+                """Test function get_config."""
                 return {"architecture": "linear", "hidden_dim": 128}
 
         m = DummyModel()
-        save_model(m, model_path)
+        cast("Callable[..., EagerTensorProtocol]", save_model)(m, model_path)
         assert os.path.exists(model_path)
 
         # Successful load
@@ -130,7 +148,10 @@ def test_saved_model_and_fingerprinting() -> None:
         sm_dir = os.path.join(tmpdir, "my_saved_model")
 
         class MockGraphModel:
-            def get_config(self) -> dict[str, Any]:
+            """Test class MockGraphModel."""
+
+            def get_config(self) -> dict[str, EagerValue]:
+                """Test function get_config."""
                 return {"op": "Add", "inputs": ["x", "y"]}
 
         sm = SavedModel(model=MockGraphModel(), signatures={"serving_default": {"inputs": ["x"]}})
@@ -160,7 +181,7 @@ def test_saved_model_and_fingerprinting() -> None:
         # SavedModel load
         loaded_sm = SavedModel.load(sm_dir)
         assert loaded_sm.signatures == {"serving_default": {"inputs": ["x"]}}
-        assert loaded_sm.model["op"] == "Add"
+        assert cast("EagerTensorProtocol", getattr(loaded_sm.model, "__getitem__")("op")) == "Add"
 
         # Corrupted proto load
         corrupt_pb_dir = os.path.join(tmpdir, "corrupt_sm")
@@ -189,21 +210,28 @@ def test_variable_restoration_engine() -> None:
         restored = run_restore_ops(tmpdir)
         assert "dense_w" in restored
         assert "dense_b" in restored
-        assert np.allclose(restored["dense_w"], var1)
-        assert np.allclose(restored["dense_b"], var2)
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(restored["dense_w"], var1)
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(restored["dense_b"], var2)
 
         # Restore into target model with matching shapes
         class MockVar:
+            """Test class MockVar."""
+
             def __init__(self, name: str, shape: tuple[int, ...]) -> None:
+                """Test function __init__."""
                 self.name = name
                 self.shape = shape
                 self.assigned = None
 
-            def assign(self, val: np.ndarray) -> None:
-                self.assigned = val
+            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+                """Test function assign."""
+                setattr(self, "assigned", val)
 
         class TargetModel:
+            """Test class TargetModel."""
+
             def __init__(self) -> None:
+                """Test function __init__."""
                 self.weights = [
                     MockVar("dense_w", (2, 2)),
                     MockVar("dense_b", (2,)),
@@ -211,12 +239,15 @@ def test_variable_restoration_engine() -> None:
 
         model_inst = TargetModel()
         run_restore_ops(tmpdir, target_model=model_inst)
-        assert np.allclose(model_inst.weights[0].assigned, var1)
-        assert np.allclose(model_inst.weights[1].assigned, var2)
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(model_inst.weights[0].assigned, var1)
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(model_inst.weights[1].assigned, var2)
 
         # Shape mismatch in target model raises ValueError
         class IncompatibleModel:
+            """Test class IncompatibleModel."""
+
             def __init__(self) -> None:
+                """Test function __init__."""
                 self.weights = [MockVar("dense_w", (3, 3))]
 
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'dense_w'"):
@@ -231,7 +262,10 @@ def test_file_handler() -> None:
     """Test file handler."""
 
     class DummyGraph:
-        def to_json(self):
+        """Test class DummyGraph."""
+
+        def to_json(self) -> EagerValue:
+            """Test function to_json."""
             return "{}"
 
-    assert graph_to_json(DummyGraph()) == "{}"
+    assert cast("Callable[..., EagerTensorProtocol]", graph_to_json)(cast("Callable[..., EagerTensorProtocol]", DummyGraph)()) == "{}"

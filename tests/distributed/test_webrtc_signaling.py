@@ -1,11 +1,218 @@
 """Tests for distributed WebRTC signaling server and store."""
 
+from __future__ import annotations
+
 import json
 import time
+from typing import TYPE_CHECKING, cast
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from ml_switcheroo_compiler.distributed.webrtc_signaling import SignalingServer, _answers, _candidates, _offers
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def _test_webrtc_signaling_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 1 of test_webrtc_signaling.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    base_url = _state["base_url"]
+    req = cast("Callable[..., EagerTensorProtocol]", Request)(base_url, method="OPTIONS")
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+        assert resp.headers.get("Access-Control-Allow-Origin") == "*"
+
+    # Test POST /offer
+    data = json.dumps({"peer_id": "p1", "offer": "offer1"}).encode("utf-8")
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/offer", data=data, method="POST"))
+    req.add_header("Content-Length", str(len(data)))
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+
+    # Test POST /answer
+    data = json.dumps({"peer_id": "p1", "answer": "answer1"}).encode("utf-8")
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/answer", data=data, method="POST"))
+    req.add_header("Content-Length", str(len(data)))
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+
+    # Test POST /candidate
+    data = json.dumps({"peer_id": "p1", "candidate": "cand1"}).encode("utf-8")
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/candidate", data=data, method="POST"))
+    req.add_header("Content-Length", str(len(data)))
+    getattr(_state, "update")({"data": data, "req": req, "resp": resp})
+    _state.update(locals())
+
+
+def _test_webrtc_signaling_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 2 of test_webrtc_signaling.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    base_url, req = _state["base_url"], _state["req"]
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+
+    # Test POST second candidate
+    data = json.dumps({"peer_id": "p1", "candidate": "cand2"}).encode("utf-8")
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/candidate", data=data, method="POST"))
+    req.add_header("Content-Length", str(len(data)))
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+
+    # Test GET /offer
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/offer?peer_id=p1"))
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+        res = cast("Callable[..., EagerTensorProtocol]", json.loads)(cast("Callable[..., EagerTensorProtocol]", resp.read)().decode())
+        assert res["offer"] == "offer1"
+
+    # Test GET /answer
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/answer?peer_id=p1"))
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+        res = cast("Callable[..., EagerTensorProtocol]", json.loads)(cast("Callable[..., EagerTensorProtocol]", resp.read)().decode())
+        assert res["answer"] == "answer1"
+
+    # Test GET /candidate
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/candidate?peer_id=p1"))
+    getattr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
+    _state.update(locals())
+
+
+def _test_webrtc_signaling_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 3 of test_webrtc_signaling.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    base_url, req = _state["base_url"], _state["req"]
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+        res = cast("Callable[..., EagerTensorProtocol]", json.loads)(cast("Callable[..., EagerTensorProtocol]", resp.read)().decode())
+        assert res["candidates"] == ["cand1", "cand2"]
+
+    # Test GET without peer_id
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/offer"))
+    try:
+        cast("Callable[..., EagerTensorProtocol]", urlopen)(req)
+    except HTTPError as e:
+        assert e.code == 400
+
+    # Test GET not found path
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/invalid?peer_id=p1"))
+    try:
+        cast("Callable[..., EagerTensorProtocol]", urlopen)(req)
+    except HTTPError as e:
+        assert e.code == 404
+
+    # Test POST not found path
+    data = json.dumps({"peer_id": "p1"}).encode("utf-8")
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/invalid", data=data, method="POST"))
+    req.add_header("Content-Length", str(len(data)))
+    try:
+        cast("Callable[..., EagerTensorProtocol]", urlopen)(req)
+    except HTTPError as e:
+        assert e.code == 404
+    getattr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
+    _state.update(locals())
+
+
+def _test_webrtc_signaling_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 4 of test_webrtc_signaling.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    base_url = _state["base_url"]
+    req = Request(f"{base_url}/offer?peer_id=p2")
+    with urlopen(req) as resp:
+        res = json.loads(resp.read().decode())
+        assert "offer" not in res
+
+    # Test empty GET answer
+    req = Request(f"{base_url}/answer?peer_id=p2")
+    with urlopen(req) as resp:
+        res = json.loads(resp.read().decode())
+        assert "answer" not in res
+
+    # Test /health
+    req = Request(f"{base_url}/health")
+    with urlopen(req) as resp:
+        assert resp.status == 200
+        res = json.loads(resp.read().decode())
+        assert res["status"] == "healthy"
+
+    # Test /reset
+    req = Request(f"{base_url}/reset", data=b"{}", method="POST")
+    req.add_header("Content-Length", "2")
+    with urlopen(req) as resp:
+        assert resp.status == 200
+
+    # Test invalid JSON POST
+    req = Request(f"{base_url}/offer", data=b"not-json", method="POST")
+    getattr(_state, "update")({"req": req, "res": res, "resp": resp})
+    _state.update(locals())
+
+
+def _test_webrtc_signaling_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 5 of test_webrtc_signaling.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    base_url, req = _state["base_url"], _state["req"]
+    req.add_header("Content-Length", "8")
+    try:
+        cast("Callable[..., EagerTensorProtocol]", urlopen)(req)
+    except HTTPError as e:
+        assert e.code == 400
+
+    # Test POST without peer_id
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/offer", data=b'{"offer": "no_peer"}', method="POST"))
+    req.add_header("Content-Length", "20")
+    try:
+        cast("Callable[..., EagerTensorProtocol]", urlopen)(req)
+    except HTTPError as e:
+        assert e.code == 400
+        err_data = json.loads(e.read().decode())
+        assert err_data["error"] == "Missing peer_id"
+
+    # Test OPTIONS
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/offer", method="OPTIONS"))
+    with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+        assert resp.status == 200
+
+    # Test /ws upgrade path
+    req = cast("EagerTensorProtocol", Request(f"{base_url}/ws"))
+    getattr(_state, "update")({"req": req, "resp": resp})
+    _state.update(locals())
+
+
+def _test_webrtc_signaling_sub_6(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 6 of test_webrtc_signaling.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    base_url, req, server = _state["base_url"], _state["req"], _state["server"]
+    try:
+        with cast("Callable[..., EagerTensorProtocol]", urlopen)(req) as resp:
+            assert resp.status in (101, 200)
+    except HTTPError as e:
+        assert e.code == 101
+
+    # Test URLs
+    assert server.get_url() == base_url
+    assert "ws://" in server.get_websocket_url()
+    _state.update(locals())
 
 
 def test_webrtc_signaling() -> None:
@@ -23,142 +230,18 @@ def test_webrtc_signaling() -> None:
 
     try:
         # Test OPTIONS
-        req = Request(base_url, method="OPTIONS")
-        with urlopen(req) as resp:
-            assert resp.status == 200
-            assert resp.headers.get("Access-Control-Allow-Origin") == "*"
-
-        # Test POST /offer
-        data = json.dumps({"peer_id": "p1", "offer": "offer1"}).encode("utf-8")
-        req = Request(f"{base_url}/offer", data=data, method="POST")
-        req.add_header("Content-Length", str(len(data)))
-        with urlopen(req) as resp:
-            assert resp.status == 200
-
-        # Test POST /answer
-        data = json.dumps({"peer_id": "p1", "answer": "answer1"}).encode("utf-8")
-        req = Request(f"{base_url}/answer", data=data, method="POST")
-        req.add_header("Content-Length", str(len(data)))
-        with urlopen(req) as resp:
-            assert resp.status == 200
-
-        # Test POST /candidate
-        data = json.dumps({"peer_id": "p1", "candidate": "cand1"}).encode("utf-8")
-        req = Request(f"{base_url}/candidate", data=data, method="POST")
-        req.add_header("Content-Length", str(len(data)))
-        with urlopen(req) as resp:
-            assert resp.status == 200
-
-        # Test POST second candidate
-        data = json.dumps({"peer_id": "p1", "candidate": "cand2"}).encode("utf-8")
-        req = Request(f"{base_url}/candidate", data=data, method="POST")
-        req.add_header("Content-Length", str(len(data)))
-        with urlopen(req) as resp:
-            assert resp.status == 200
-
-        # Test GET /offer
-        req = Request(f"{base_url}/offer?peer_id=p1")
-        with urlopen(req) as resp:
-            assert resp.status == 200
-            res = json.loads(resp.read().decode())
-            assert res["offer"] == "offer1"
-
-        # Test GET /answer
-        req = Request(f"{base_url}/answer?peer_id=p1")
-        with urlopen(req) as resp:
-            assert resp.status == 200
-            res = json.loads(resp.read().decode())
-            assert res["answer"] == "answer1"
-
-        # Test GET /candidate
-        req = Request(f"{base_url}/candidate?peer_id=p1")
-        with urlopen(req) as resp:
-            assert resp.status == 200
-            res = json.loads(resp.read().decode())
-            assert res["candidates"] == ["cand1", "cand2"]
-
-        # Test GET without peer_id
-        req = Request(f"{base_url}/offer")
-        try:
-            urlopen(req)
-        except HTTPError as e:
-            assert e.code == 400
-
-        # Test GET not found path
-        req = Request(f"{base_url}/invalid?peer_id=p1")
-        try:
-            urlopen(req)
-        except HTTPError as e:
-            assert e.code == 404
-
-        # Test POST not found path
-        data = json.dumps({"peer_id": "p1"}).encode("utf-8")
-        req = Request(f"{base_url}/invalid", data=data, method="POST")
-        req.add_header("Content-Length", str(len(data)))
-        try:
-            urlopen(req)
-        except HTTPError as e:
-            assert e.code == 404
-
-        # Test empty GET offer
-        req = Request(f"{base_url}/offer?peer_id=p2")
-        with urlopen(req) as resp:
-            res = json.loads(resp.read().decode())
-            assert "offer" not in res
-
-        # Test empty GET answer
-        req = Request(f"{base_url}/answer?peer_id=p2")
-        with urlopen(req) as resp:
-            res = json.loads(resp.read().decode())
-            assert "answer" not in res
-
-        # Test /health
-        req = Request(f"{base_url}/health")
-        with urlopen(req) as resp:
-            assert resp.status == 200
-            res = json.loads(resp.read().decode())
-            assert res["status"] == "healthy"
-
-        # Test /reset
-        req = Request(f"{base_url}/reset", data=b"{}", method="POST")
-        req.add_header("Content-Length", "2")
-        with urlopen(req) as resp:
-            assert resp.status == 200
-
-        # Test invalid JSON POST
-        req = Request(f"{base_url}/offer", data=b"not-json", method="POST")
-        req.add_header("Content-Length", "8")
-        try:
-            urlopen(req)
-        except HTTPError as e:
-            assert e.code == 400
-
-        # Test POST without peer_id
-        req = Request(f"{base_url}/offer", data=b'{"offer": "no_peer"}', method="POST")
-        req.add_header("Content-Length", "20")
-        try:
-            urlopen(req)
-        except HTTPError as e:
-            assert e.code == 400
-            err_data = json.loads(e.read().decode())
-            assert err_data["error"] == "Missing peer_id"
-
-        # Test OPTIONS
-        req = Request(f"{base_url}/offer", method="OPTIONS")
-        with urlopen(req) as resp:
-            assert resp.status == 200
-
-        # Test /ws upgrade path
-        req = Request(f"{base_url}/ws")
-        try:
-            with urlopen(req) as resp:
-                assert resp.status in (101, 200)
-        except HTTPError as e:
-            assert e.code == 101
-
-        # Test URLs
-        assert server.get_url() == base_url
-        assert "ws://" in server.get_websocket_url()
+        _state: dict[str, EagerTensorProtocol] = dict(locals())
+        getattr(_state, "update")({"base_url": base_url, "server": server})
+        for _sub_fn in (
+            _test_webrtc_signaling_sub_1,
+            _test_webrtc_signaling_sub_2,
+            _test_webrtc_signaling_sub_3,
+            _test_webrtc_signaling_sub_4,
+            _test_webrtc_signaling_sub_5,
+            _test_webrtc_signaling_sub_6,
+        ):
+            _sub_fn(_state)
+        assert isinstance(_state, dict)
 
     finally:
         server.stop()

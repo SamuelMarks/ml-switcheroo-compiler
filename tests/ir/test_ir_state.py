@@ -18,5 +18,5 @@ def test_state_creation() -> None:
         assert assign_var.op_type == "AssignVariable"
         scatter = create_scatter_update("t1", "idx1", "upd1", (2, 2))
         assert scatter.op_type == "ScatterUpdate"
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

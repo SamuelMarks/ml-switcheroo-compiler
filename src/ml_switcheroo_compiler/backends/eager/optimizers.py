@@ -1,12 +1,12 @@
 """optimizers.py module."""
 
-from typing import Any
+from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 
 
 @global_eager_registry.register("ApplyAdam")
-def apply_adam(backend_module: Any, param: object, m: object, v: object, grad: Any, lr: float) -> tuple[object, object, object]:
+def apply_adam(backend_module: ModuleType, param: EagerValue, m: EagerValue, v: EagerValue, grad: EagerValue, lr: float) -> tuple[EagerValue, EagerValue, EagerValue]:
     """Apply Adam update using backend operations.
 
     Args:
@@ -29,7 +29,7 @@ def apply_adam(backend_module: Any, param: object, m: object, v: object, grad: A
 
 
 @global_eager_registry.register("ApplyAdagrad")
-def apply_adagrad(backend_module: Any, param: object, accum: object, grad: Any, lr: float) -> tuple[object, object]:
+def apply_adagrad(backend_module: ModuleType, param: EagerValue, accum: EagerValue, grad: EagerValue, lr: float) -> tuple[EagerValue, EagerValue]:
     """Apply Adagrad update using backend operations.
 
     Args:
@@ -49,7 +49,7 @@ def apply_adagrad(backend_module: Any, param: object, accum: object, grad: Any, 
 
 
 @global_eager_registry.register("ApplyFtrl")
-def apply_ftrl(backend_module: Any, param: object, accum: object, linear: object, grad: Any, lr: float) -> tuple[object, object, object]:
+def apply_ftrl(backend_module: ModuleType, param: EagerValue, accum: EagerValue, linear: EagerValue, grad: EagerValue, lr: float) -> tuple[EagerValue, EagerValue, EagerValue]:
     """Apply FTRL update using backend operations.
 
     Args:
@@ -71,7 +71,7 @@ def apply_ftrl(backend_module: Any, param: object, accum: object, linear: object
 
 
 @global_eager_registry.register("ApplyRMSProp")
-def apply_rmsprop(backend_module: Any, param: object, ms: object, mom: object, grad: Any, lr: float) -> tuple[object, object, object]:
+def apply_rmsprop(backend_module: ModuleType, param: EagerValue, ms: EagerValue, mom: EagerValue, grad: EagerValue, lr: float) -> tuple[EagerValue, EagerValue, EagerValue]:
     """Apply RMSProp update using backend operations.
 
     Args:

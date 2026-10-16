@@ -1,4 +1,10 @@
-def test_generated_registry():
+"""Tests for test_generated_registry."""
+
+from __future__ import annotations
+
+
+def test_generated_registry() -> None:
+    """Test function test_generated_registry."""
     import ml_switcheroo_compiler.ops.generated_registry as gr
 
     assert "OPS_REGISTRY" in dir(gr)

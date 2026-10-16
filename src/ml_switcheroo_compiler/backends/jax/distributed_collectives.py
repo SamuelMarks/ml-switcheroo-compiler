@@ -1,16 +1,18 @@
-# ruff: noqa: E402, E501, F403
 """Native JAX distributed collective dispatch bindings."""
 
 from __future__ import annotations
 
-from typing import Any
+import logging
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def jax_all_reduce(
-    tensor: Any,
+    tensor: EagerValue,
     op: str = "SUM",
     axis_name: str = "data",
-) -> Any:
+) -> EagerValue:
     """Execute native JAX psum/pmax/pmin collective reduction.
 
     Args:
@@ -25,22 +27,22 @@ def jax_all_reduce(
         import jax.lax as lax
 
         if op.upper() in ("SUM", "ADD"):
-            return lax.psum(tensor, axis_name=axis_name)
+            return cast(EagerValue, getattr(lax, "psum")(tensor, axis_name=axis_name))
         elif op.upper() == "MAX":
-            return lax.pmax(tensor, axis_name=axis_name)
+            return cast(EagerValue, getattr(lax, "pmax")(tensor, axis_name=axis_name))
         elif op.upper() == "MIN":
-            return lax.pmin(tensor, axis_name=axis_name)
+            return cast(EagerValue, getattr(lax, "pmin")(tensor, axis_name=axis_name))
     except (ImportError, NameError):
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return tensor
 
 
 def jax_all_gather(
-    tensor: Any,
+    tensor: EagerValue,
     axis_name: str = "data",
     axis: int = 0,
-) -> Any:
+) -> EagerValue:
     """Execute native JAX all_gather along a named axis.
 
     Args:
@@ -54,17 +56,17 @@ def jax_all_gather(
     try:
         import jax.lax as lax
 
-        return lax.all_gather(tensor, axis_name=axis_name, axis=axis)
+        return cast(EagerValue, getattr(lax, "all_gather")(tensor, axis_name=axis_name, axis=axis))
     except (ImportError, NameError):
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return tensor
 
 
 def jax_broadcast(
-    tensor: Any,
+    tensor: EagerValue,
     src: int = 0,
-) -> Any:
+) -> EagerValue:
     """Execute native JAX broadcast.
 
     Args:

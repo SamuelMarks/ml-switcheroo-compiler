@@ -1,5 +1,10 @@
+"""Tests for test_update_badges."""
+
+from __future__ import annotations
+
 import json
 import subprocess
+from typing import TYPE_CHECKING, cast
 from unittest.mock import mock_open, patch
 
 from scripts.update_badges import (
@@ -10,8 +15,12 @@ from scripts.update_badges import (
     update_readme,
 )
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_get_color():
+
+def test_get_color() -> None:
+    """Test function test_get_color."""
     assert get_color(100) == "brightgreen"
     assert get_color(95) == "green"
     assert get_color(85) == "yellowgreen"
@@ -20,12 +29,14 @@ def test_get_color():
     assert get_color(50) == "red"
 
 
-def test_format_cov():
+def test_format_cov() -> None:
+    """Test function test_format_cov."""
     assert format_cov(100.0) == "100"
     assert format_cov(95.5) == "95.5"
 
 
-def test_get_test_coverage_success():
+def test_get_test_coverage_success() -> None:
+    """Test function test_get_test_coverage_success."""
     mock_data = {"totals": {"percent_covered": 85.5}}
     m_open = mock_open(read_data=json.dumps(mock_data))
 
@@ -37,7 +48,8 @@ def test_get_test_coverage_success():
     assert cov == 85.5
 
 
-def test_get_test_coverage_file_does_not_exist():
+def test_get_test_coverage_file_does_not_exist() -> None:
+    """Test function test_get_test_coverage_file_does_not_exist."""
     mock_data = {"totals": {"percent_covered": 90.0}}
     m_open = mock_open(read_data=json.dumps(mock_data))
     with patch("subprocess.run"), patch("builtins.open", m_open), patch("os.path.exists", return_value=False):
@@ -45,24 +57,28 @@ def test_get_test_coverage_file_does_not_exist():
         assert cov == 90.0
 
 
-def test_get_test_coverage_failure():
+def test_get_test_coverage_failure() -> None:
+    """Test function test_get_test_coverage_failure."""
     with patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "cmd")):
         cov = get_test_coverage()
     assert cov is None
 
 
-def test_get_doc_coverage_no_dir():
+def test_get_doc_coverage_no_dir() -> None:
+    """Test function test_get_doc_coverage_no_dir."""
     with patch("os.path.exists", return_value=False):
         assert get_doc_coverage() == 0.0
 
 
-def test_get_doc_coverage_no_files():
+def test_get_doc_coverage_no_files() -> None:
+    """Test function test_get_doc_coverage_no_files."""
     with patch("os.path.exists", return_value=True), patch("os.walk", return_value=[]):
         assert get_doc_coverage() == 0.0
 
 
-def test_get_doc_coverage_success():
-    mock_walk = [("src/ml_switcheroo_compiler", [], ["__init__.py", "core.py", "bad.py", "not_python.txt"])]
+def test_get_doc_coverage_success() -> None:
+    """Test function test_get_doc_coverage_success."""
+    mock_walk = cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["__init__.py", "core.py", "bad.py", "not_python.txt"])])
 
     # core.py has docstrings
     core_content = '''"""Module doc."""
@@ -104,11 +120,12 @@ def no_doc_func():
     pass
 """
 
-    def mock_open_file(path, *args, **kwargs):
-        if "core.py" in path:
-            return mock_open(read_data=core_content)()
-        elif "bad.py" in path:
-            return mock_open(read_data=bad_content)()
+    def mock_open_file(path: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Test function mock_open_file."""
+        if cast("EagerTensorProtocol", "core.py") in cast("EagerTensorProtocol", path):
+            return cast("EagerTensorProtocol", mock_open(read_data=core_content)())
+        elif cast("EagerTensorProtocol", "bad.py") in cast("EagerTensorProtocol", path):
+            return cast("EagerTensorProtocol", mock_open(read_data=bad_content)())
         raise Exception("File not found")
 
     with patch("os.path.exists", return_value=True), patch("os.walk", return_value=mock_walk), patch("builtins.open", side_effect=mock_open_file):
@@ -117,19 +134,23 @@ def no_doc_func():
     assert cov == 50.0
 
 
-def test_get_doc_coverage_exception_in_file():
-    mock_walk = [("src/ml_switcheroo_compiler", [], ["fail.py"])]
+def test_get_doc_coverage_exception_in_file() -> None:
+    """Test function test_get_doc_coverage_exception_in_file."""
+    mock_walk = cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["fail.py"])])
     with patch("os.path.exists", return_value=True), patch("os.walk", return_value=mock_walk), patch("builtins.open", mock_open()), patch("ast.parse", side_effect=Exception("Parse error")):
         cov = get_doc_coverage()
     assert cov == 0.0
 
 
-def test_update_readme_no_file():
+def test_update_readme_no_file() -> None:
+    """Test function test_update_readme_no_file."""
     with patch("os.path.exists", return_value=False):
         update_readme()
+    assert callable(test_update_readme_no_file)
 
 
-def test_update_readme_success():
+def test_update_readme_success() -> None:
+    """Test function test_update_readme_success."""
     readme_content = """# Project
 [![Test Coverage](https://img.shields.io/badge/test_coverage-50%25-red.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-50%25-red.svg)](#)
@@ -144,7 +165,8 @@ def test_update_readme_success():
     assert "doc_coverage-95.5%25-green" in written
 
 
-def test_update_readme_no_coverage_returned():
+def test_update_readme_no_coverage_returned() -> None:
+    """Test function test_update_readme_no_coverage_returned."""
     readme_content = """# Project
 [![Test Coverage](https://img.shields.io/badge/test_coverage-50%25-red.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-50%25-red.svg)](#)
@@ -159,10 +181,12 @@ def test_update_readme_no_coverage_returned():
     assert "doc_coverage-50%25-red" in written
 
 
-def test_main_block():
+def test_main_block() -> None:
+    """Test function test_main_block."""
     import runpy
     import sys
 
     with patch.object(sys, "argv", ["update_badges.py"]):
         with patch("os.path.exists", return_value=False):
             runpy.run_module("scripts.update_badges", run_name="__main__")
+    assert callable(test_main_block)

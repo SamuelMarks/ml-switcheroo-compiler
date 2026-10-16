@@ -1,9 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Control flow optimizations: branch pruning, invariant hoisting, and symbolic predicate evaluation."""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import cast
+
+from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 
@@ -53,16 +54,16 @@ def evaluate_static_predicate(graph: IRGraph, pred_id: str) -> bool | None:
 def _hoist_common_invariants(
     outer_graph: IRGraph,
     cond_node_id: str,
-    true_branch: Any,
-    false_branch: Any,
+    true_branch: IRGraph,
+    false_branch: IRGraph,
 ) -> list[IRNode]:
     """Identify and hoist identical computations from both branches to the outer graph.
 
     Args:
         outer_graph (IRGraph): The outer enclosing graph.
         cond_node_id (str): The ID of the conditional node.
-        true_branch (Any): The true / then branch graph or block.
-        false_branch (Any): The false / else branch graph or block.
+        true_branch (IRGraph): The true / then branch graph or block.
+        false_branch (IRGraph): The false / else branch graph or block.
 
     Returns:
         list[IRNode]: Hoisted nodes added to the outer graph.
@@ -111,7 +112,78 @@ def _hoist_common_invariants(
     return hoisted_nodes
 
 
-def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:  # noqa: C901
+def _inline_active_branch(
+    node_id: str,
+    node: IRNode,
+    active_branch: IRGraph,
+    new_nodes: dict[str, IRNode],
+) -> None:
+    """Inline the nodes of a statically selected conditional branch into the parent graph.
+
+    Args:
+        node_id (str): The conditional node ID being replaced.
+        node (IRNode): The conditional IRNode.
+        active_branch (IRGraph): The active branch subgraph to inline.
+        new_nodes (dict[str, IRNode]): Target dictionary of nodes for the optimized graph.
+    """
+    b_nodes = active_branch.nodes if isinstance(active_branch.nodes, dict) else {n.id: n for n in getattr(active_branch, "nodes", [])}
+    id_map: dict[str, str] = {}
+
+    for b_id, b_node in b_nodes.items():
+        if getattr(b_node, "op_type", "") in ("Input", "Output"):
+            continue
+        inlined_id = f"{node_id}_pruned_{b_id}"
+        id_map[b_id] = inlined_id
+        inlined_inputs = [id_map.get(inp, inp) for inp in b_node.inputs]
+        cloned = clone_logical_node(b_node, id=inlined_id, inputs=inlined_inputs)
+        new_nodes[inlined_id] = IRNode(**cloned.__dict__)
+
+    b_outs = getattr(active_branch, "outputs", [])
+    out_ref = id_map.get(b_outs[0], b_outs[0]) if b_outs else list(new_nodes.keys())[-1]
+    identity = clone_logical_node(node, id=node_id, op_type="Identity", inputs=[out_ref])
+    new_nodes[node_id] = IRNode(**identity.__dict__)
+
+
+def _optimize_cond_node(
+    graph: IRGraph,
+    node_id: str,
+    node: IRNode,
+    new_nodes: dict[str, IRNode],
+) -> tuple[bool, bool]:
+    """Optimize a single Cond or If node via branch pruning or invariant hoisting.
+
+    Args:
+        graph (IRGraph): The containing IR graph.
+        node_id (str): Identifier of the conditional node.
+        node (IRNode): The conditional node to optimize.
+        new_nodes (dict[str, IRNode]): Output node mapping being constructed.
+
+    Returns:
+        tuple[bool, bool]: (was_modified, was_replaced_by_inlining).
+    """
+    pred_id = node.inputs[0] if node.inputs else None
+    true_branch = node.attributes.get("then_branch", node.attributes.get("true_branch"))
+    false_branch = node.attributes.get("else_branch", node.attributes.get("false_branch"))
+
+    static_pred = evaluate_static_predicate(graph, pred_id) if pred_id else None
+    if static_pred is not None and (true_branch or false_branch):
+        active_branch = true_branch if static_pred else false_branch
+        if active_branch:
+            _inline_active_branch(node_id, node, cast("LogicalGraph", active_branch), new_nodes)
+            return True, True
+        return True, False
+
+    if true_branch and false_branch:
+        hoisted = _hoist_common_invariants(graph, node_id, cast("LogicalGraph", true_branch), cast("LogicalGraph", false_branch))
+        if hoisted:
+            for h_node in hoisted:
+                new_nodes[h_node.id] = h_node
+            return True, False
+
+    return False, False
+
+
+def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:
     """Run control flow optimizations on Cond/If nodes: branch pruning and invariant hoisting.
 
     Args:
@@ -124,46 +196,11 @@ def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:  # noqa: C901
     modified = False
 
     for node_id, node in graph.nodes.items():
-        op_type = getattr(node, "op_type", "")
-        if op_type in ("Cond", "If"):
-            pred_id = node.inputs[0] if node.inputs else None
-            true_branch = node.attributes.get("then_branch", node.attributes.get("true_branch"))
-            false_branch = node.attributes.get("else_branch", node.attributes.get("false_branch"))
-
-            # Step 1: Symbolic predicate evaluation & branch pruning
-            static_pred = evaluate_static_predicate(graph, pred_id) if pred_id else None
-            if static_pred is not None and (true_branch or false_branch):
-                modified = True
-                active_branch = true_branch if static_pred else false_branch
-
-                if active_branch:
-                    b_nodes = active_branch.nodes if isinstance(active_branch.nodes, dict) else {n.id: n for n in getattr(active_branch, "nodes", [])}
-                    id_map: dict[str, str] = {}
-
-                    # Inline active branch
-                    for b_id, b_node in b_nodes.items():
-                        if getattr(b_node, "op_type", "") in ("Input", "Output"):
-                            continue
-                        inlined_id = f"{node_id}_pruned_{b_id}"
-                        id_map[b_id] = inlined_id
-                        inlined_inputs = [id_map.get(inp, inp) for inp in b_node.inputs]
-                        cloned = clone_logical_node(b_node, id=inlined_id, inputs=inlined_inputs)
-                        new_nodes[inlined_id] = IRNode(**cloned.__dict__)
-
-                    # Point conditional node to branch output
-                    b_outs = getattr(active_branch, "outputs", [])
-                    out_ref = id_map.get(b_outs[0], b_outs[0]) if b_outs else list(new_nodes.keys())[-1]
-                    identity = clone_logical_node(node, id=node_id, op_type="Identity", inputs=[out_ref])
-                    new_nodes[node_id] = IRNode(**identity.__dict__)
-                    continue
-
-            # Step 2: Invariant hoisting if predicate is not statically evaluable
-            if true_branch and false_branch:
-                hoisted = _hoist_common_invariants(graph, node_id, true_branch, false_branch)
-                if hoisted:
-                    modified = True
-                    for h_node in hoisted:
-                        new_nodes[h_node.id] = h_node
+        if getattr(node, "op_type", "") in ("Cond", "If"):
+            cond_mod, inlined = _optimize_cond_node(graph, node_id, node, new_nodes)
+            modified = modified or cond_mod
+            if inlined:
+                continue
 
         new_nodes[node_id] = node if isinstance(node, IRNode) else (IRNode(**node.__dict__) if hasattr(node, "__dict__") else node)
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -10,6 +11,11 @@ import ml_switcheroo_compiler.ops.nn.conv2d as conv2d_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.configs import ConvConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -50,7 +56,7 @@ def test_conv2d_full_coverage() -> None:
             TensorConfig((1, 1, 8, 4), DType("float32"), Device("cpu")),
         )
 
-        cfg = ConvConfig(
+        cfg = cast("Callable[..., EagerTensorProtocol]", ConvConfig)(
             window_strides=(1, 1),
             padding="VALID",
             dimension_numbers=((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2)),

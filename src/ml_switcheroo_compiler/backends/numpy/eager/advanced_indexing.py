@@ -1,16 +1,20 @@
-# ruff: noqa: E402, E501, F403
 """Advanced indexing and scatter/gather operations."""
 
+from __future__ import annotations
+
 import threading
+from collections.abc import Callable
+from types import ModuleType
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry, numpy_eager_registry
 
 from .indexing import IndexingContext
 
 
-def _gather_nd(x, indices, **kwargs):
+def _gather_nd(x: EagerValue, indices: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate.
 
     Args:
@@ -21,10 +25,10 @@ def _gather_nd(x, indices, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return x[tuple(np.moveaxis(indices, -1, 0))]
+    return cast(EagerValue, getattr(x, "__getitem__")(tuple(getattr(np, "moveaxis")(indices, -1, 0))))
 
 
-def _scatter_nd(indices, updates, shape, **kwargs):
+def _scatter_nd(indices: EagerValue, updates: EagerValue, shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate.
 
     Args:
@@ -36,12 +40,12 @@ def _scatter_nd(indices, updates, shape, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = np.zeros(shape, dtype=updates.dtype)
-    res[tuple(np.moveaxis(indices, -1, 0))] = updates
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "zeros")(shape, dtype=getattr(updates, "dtype"))
+    res[tuple(getattr(np, "moveaxis")(indices, -1, 0))] = updates
     return res
 
 
-def _scatter(x, index, src, dim: int, **kwargs):
+def _scatter(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **kwargs: EagerValue) -> EagerValue:
     """Evaluate.
 
     Args:
@@ -54,12 +58,12 @@ def _scatter(x, index, src, dim: int, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    y: np.ndarray = np.copy(x)
-    np.put_along_axis(y, index, src, axis=dim)
+    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(x)
+    getattr(np, "put_along_axis")(y, index, src, axis=dim)
     return y
 
 
-def _scatter_add(x, index, src, dim: int, **kwargs):
+def _scatter_add(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **kwargs: EagerValue) -> EagerValue:
     """Evaluate.
 
     Args:
@@ -72,16 +76,16 @@ def _scatter_add(x, index, src, dim: int, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    y: np.ndarray = np.copy(x)
-    it: np.ndarray = np.nditer(index, flags=["multi_index"])
+    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(x)
+    it: np.nditer = getattr(np, "nditer")(index, flags=["multi_index"])
     for idx_val in it:
-        pos: list = list(it.multi_index)
+        pos: list[int] = list(it.multi_index)
         pos[dim] = int(np.asarray(idx_val).item())
-        y[tuple(pos)] += src[it.multi_index]
+        cast(EagerTensorProtocol, y)[tuple(pos)] += getattr(src, "__getitem__")(it.multi_index)
     return y
 
 
-def _tensor_scatter_update(tensor, indices, updates):
+def _tensor_scatter_update(tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Tensor scatter update for numpy.
 
     Args:
@@ -92,15 +96,15 @@ def _tensor_scatter_update(tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = np.copy(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: np.ndarray = np.asarray(indices)
-    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
+        indices = np.asarray(indices)
+    idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
     res[idx_tuple] = updates
     return res
 
 
-def _tensor_scatter_add(tensor, indices, updates):
+def _tensor_scatter_add(tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Tensor scatter add for numpy.
 
     Args:
@@ -111,15 +115,15 @@ def _tensor_scatter_add(tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = np.copy(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: np.ndarray = np.asarray(indices)
-    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
-    np.add.at(res, idx_tuple, updates)
+        indices = np.asarray(indices)
+    idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
+    getattr(np.add, "at")(res, idx_tuple, updates)
     return res
 
 
-def _tensor_scatter_max(tensor, indices, updates):
+def _tensor_scatter_max(tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Tensor scatter max for numpy.
 
     Args:
@@ -130,15 +134,15 @@ def _tensor_scatter_max(tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = np.copy(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: np.ndarray = np.asarray(indices)
-    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
-    np.maximum.at(res, idx_tuple, updates)
+        indices = np.asarray(indices)
+    idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
+    getattr(np.maximum, "at")(res, idx_tuple, updates)
     return res
 
 
-def _tensor_scatter_min(tensor, indices, updates):
+def _tensor_scatter_min(tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Tensor scatter min for numpy.
 
     Args:
@@ -149,16 +153,16 @@ def _tensor_scatter_min(tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = np.copy(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: np.ndarray = np.asarray(indices)
-    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
-    np.minimum.at(res, idx_tuple, updates)
+        indices = np.asarray(indices)
+    idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
+    getattr(np.minimum, "at")(res, idx_tuple, updates)
     return res
 
 
 @numpy_eager_registry.register("TakeAlongAxis")
-def _np_take_along_axis(backend_module, x, indices, axis):
+def _np_take_along_axis(backend_module: ModuleType, x: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
     """Evaluate _np_take_along_axis operation.
 
     Args:
@@ -170,11 +174,11 @@ def _np_take_along_axis(backend_module, x, indices, axis):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.take_along_axis(x, indices, axis=axis)
+    return cast(EagerValue, backend_module.take_along_axis(x, indices, axis=axis))
 
 
 @numpy_eager_registry.register("TensorScatterUpdate")
-def _np_tensor_scatter_update(backend_module, tensor, indices, updates):
+def _np_tensor_scatter_update(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Evaluate _np_tensor_scatter_update operation.
 
     Args:
@@ -186,11 +190,11 @@ def _np_tensor_scatter_update(backend_module, tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    return global_eager_registry.get("TensorScatterUpdate")(backend_module, tensor, indices, updates)
+    return cast(Callable[..., EagerValue], global_eager_registry.get("TensorScatterUpdate"))(backend_module, tensor, indices, updates)
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
-def _np_tensor_scatter_add(backend_module, tensor, indices, updates):
+def _np_tensor_scatter_add(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Evaluate _np_tensor_scatter_add operation.
 
     Args:
@@ -202,14 +206,14 @@ def _np_tensor_scatter_add(backend_module, tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = backend_module.array(tensor)
-    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.array(tensor)
+    idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.add.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("TensorScatterMax")
-def _np_tensor_scatter_max(backend_module, tensor, indices, updates):
+def _np_tensor_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Evaluate _np_tensor_scatter_max operation.
 
     Args:
@@ -221,14 +225,14 @@ def _np_tensor_scatter_max(backend_module, tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = backend_module.array(tensor)
-    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.array(tensor)
+    idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.maximum.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("TensorScatterMin")
-def _np_tensor_scatter_min(backend_module, tensor, indices, updates):
+def _np_tensor_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Evaluate _np_tensor_scatter_min operation.
 
     Args:
@@ -240,14 +244,14 @@ def _np_tensor_scatter_min(backend_module, tensor, indices, updates):
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray = backend_module.array(tensor)
-    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.array(tensor)
+    idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.minimum.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("GatherNd")
-def _np_gather_nd(backend_module, params, indices):
+def _np_gather_nd(backend_module: ModuleType, params: EagerValue, indices: EagerValue) -> EagerValue:
     """Evaluate _np_gather_nd operation.
 
     Args:
@@ -258,12 +262,12 @@ def _np_gather_nd(backend_module, params, indices):
     Returns:
             tuple[int, ...]: Result.
     """
-    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
-    return params[idx]
+    idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    return cast(EagerValue, getattr(params, "__getitem__")(idx))
 
 
 @numpy_eager_registry.register("ScatterNd")
-def _np_scatter_nd(backend_module, indices, updates, shape, **kwargs):
+def _np_scatter_nd(backend_module: ModuleType, indices: EagerValue, updates: EagerValue, shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_scatter_nd operation.
 
     Args:
@@ -276,14 +280,14 @@ def _np_scatter_nd(backend_module, indices, updates, shape, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    out: np.ndarray = np.zeros(shape, dtype=updates.dtype)
-    idx: tuple = tuple(np.moveaxis(np.array(indices), -1, 0))
+    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "zeros")(shape, dtype=getattr(updates, "dtype"))
+    idx: tuple[EagerValue, ...] = tuple(np.moveaxis(np.array(indices), -1, 0))
     out[idx] = updates
     return out
 
 
 @numpy_eager_registry.register("Scatter")
-def _np_scatter(backend_module, *args, **kwargs):
+def _np_scatter(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_scatter operation.
 
     Args:
@@ -294,17 +298,17 @@ def _np_scatter(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: np.ndarray = args[0]
-    index: np.ndarray = args[1]
-    src: np.ndarray = args[2]
-    dim: int = kwargs.get("dim", 0)
-    out: np.ndarray = np.copy(input_data)
-    np.put_along_axis(out, index, src, axis=dim)
+    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
+    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
+    dim: int = cast(int, kwargs.get("dim", 0))
+    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.copy(input_data)
+    getattr(np, "put_along_axis")(out, index, src, axis=dim)
     return out
 
 
 @numpy_eager_registry.register("ScatterAdd")
-def _np_scatter_add(backend_module, *args, **kwargs):
+def _np_scatter_add(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_scatter_add operation.
 
     Args:
@@ -315,16 +319,16 @@ def _np_scatter_add(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: np.ndarray = np.copy(args[0])
-    index: np.ndarray = args[1]
-    src: np.ndarray = args[2]
-    dim: int = kwargs.get("dim", 0)
-    np.put_along_axis(input_data, index, np.take_along_axis(input_data, index, axis=dim) + src, axis=dim)
+    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(args[0])
+    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
+    dim: int = cast(int, kwargs.get("dim", 0))
+    getattr(np, "put_along_axis")(input_data, index, np.add(getattr(np, "take_along_axis")(input_data, index, axis=dim), src), axis=dim)
     return input_data
 
 
 @numpy_eager_registry.register("ScatterApply")
-def _np_scatter_apply(backend_module, context: IndexingContext, *args, **kwargs):
+def _np_scatter_apply(backend_module: ModuleType, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_scatter_apply operation.
 
     Args:
@@ -341,13 +345,13 @@ def _np_scatter_apply(backend_module, context: IndexingContext, *args, **kwargs)
     """
     if len(args) == 0:
         return None
-    tensor: np.ndarray = np.asarray(args[0]).copy()
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0]).copy()
     if len(args) < 3:
         return tensor
 
-    indices: np.ndarray = np.asarray(args[1])
-    updates: np.ndarray = np.asarray(args[2])
-    reduction: str = kwargs.get("reduction", None)
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[1])
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[2])
+    reduction: str | None = cast("str | None", kwargs.get("reduction", None))
 
     try:
         if reduction == "add":
@@ -362,7 +366,7 @@ def _np_scatter_apply(backend_module, context: IndexingContext, *args, **kwargs)
 
 
 @numpy_eager_registry.register("ScatterMax")
-def _np_scatter_max(backend_module, tensor, indices, updates, context: threading.Thread = None):
+def _np_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
     """Evaluate _np_scatter_max operation.
 
     Args:
@@ -375,13 +379,13 @@ def _np_scatter_max(backend_module, tensor, indices, updates, context: threading
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: np.ndarray = np.copy(np.asarray(tensor))
+    tensor = np.copy(np.asarray(tensor))
     np.maximum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
 
 
 @numpy_eager_registry.register("ScatterMin")
-def _np_scatter_min(backend_module, tensor, indices, updates, context: threading.Thread = None):
+def _np_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
     """Evaluate _np_scatter_min operation.
 
     Args:
@@ -394,13 +398,13 @@ def _np_scatter_min(backend_module, tensor, indices, updates, context: threading
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: np.ndarray = np.copy(np.asarray(tensor))
+    tensor = np.copy(np.asarray(tensor))
     np.minimum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
 
 
 @numpy_eager_registry.register("ScatterMul")
-def _np_scatter_mul(backend_module, tensor, indices, updates, context: threading.Thread = None):
+def _np_scatter_mul(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
     """Evaluate _np_scatter_mul operation.
 
     Args:
@@ -413,6 +417,6 @@ def _np_scatter_mul(backend_module, tensor, indices, updates, context: threading
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: np.ndarray = np.copy(np.asarray(tensor))
+    tensor = np.copy(np.asarray(tensor))
     np.multiply.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor

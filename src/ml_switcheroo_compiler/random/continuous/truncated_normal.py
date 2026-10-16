@@ -31,7 +31,7 @@ def truncated_normal(
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node(
         "RandomTruncatedNormal",
-        [key],  # type: ignore[list-item]
+        [key],
         shape,
         dtype,
         {"lower": lower, "upper": upper},

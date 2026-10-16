@@ -2,20 +2,23 @@
 
 from __future__ import annotations
 
-import multiprocessing
 import os
 import tempfile
-from typing import Callable, Union
+from typing import TYPE_CHECKING, Callable, Union, cast
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 MetricsVal = Union[list[float], float]
 
-ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray], str, int, multiprocessing.Queue, None]
+ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, None]
 
 
 class MockSimpleProfiler:
@@ -24,7 +27,7 @@ class MockSimpleProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -171,7 +174,7 @@ class MockDeviceFailingProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
         *args: int,
         **kwargs: str | int | None,
     ) -> dict[str, MetricsVal]:
@@ -214,9 +217,12 @@ def test_config_models_to_json_and_yaml() -> None:
     assert "model: cnn" in ym
 
 
-def test_config_models_loaders() -> None:
-    """Verify YAML configuration loaders and error handling for plans and manifests."""
-    # 1. load_perf_baselines with default and custom path
+def _test_config_models_loaders_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_config_models_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     baselines_default = cfg_models_mod.load_perf_baselines()
     assert isinstance(baselines_default, cfg_models_mod.PerfBaselinesManifestModel)
 
@@ -260,14 +266,23 @@ targets:
   - backend: numpy
 """)
         valid_plan_yaml = tf.name
+    getattr(_state, "update")({"baselines_default": baselines_default, "invalid_yaml": invalid_yaml, "temp_name": temp_name, "tf": tf})
+    getattr(_state, "update")({"valid_plan_yaml": valid_plan_yaml})
+    _state.update(locals())
 
+
+def _test_config_models_loaders_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_config_models_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    valid_plan_yaml = _state["valid_plan_yaml"]
     try:
-        plan_loaded = cfg_models_mod.load_benchmark_plan(valid_plan_yaml)
+        plan_loaded = cast("Callable[..., EagerTensorProtocol]", cfg_models_mod.load_benchmark_plan)(valid_plan_yaml)
         assert plan_loaded.name == "valid_plan"
     finally:
         os.unlink(valid_plan_yaml)
-
-    # 3. load_benchmark_suite
     with pytest.raises(FileNotFoundError):
         cfg_models_mod.load_benchmark_suite("nonexistent_suite.yaml")
 
@@ -301,10 +316,18 @@ targets:
     # 4. load_model_workloads
     workloads = cfg_models_mod.load_workloads()
     assert len(workloads) > 0
+    getattr(_state, "update")({"invalid_suite": invalid_suite, "tf": tf, "valid_suite_yaml": valid_suite_yaml, "workloads": workloads})
+    _state.update(locals())
 
+
+def _test_config_models_loaders_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_config_models_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     with pytest.raises(FileNotFoundError):
         cfg_models_mod.load_model_workloads("nonexistent_workloads.yaml")
-
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as tf:
         tf.write("""- invalid list
 """)
@@ -315,12 +338,21 @@ targets:
             cfg_models_mod.load_model_workloads(invalid_workload)
     finally:
         os.unlink(invalid_workload)
+    getattr(_state, "update")({"invalid_workload": invalid_workload, "tf": tf})
+    _state.update(locals())
 
-    # Primary, fallback, and missing branches in load_model_workloads
+
+def _test_config_models_loaders_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_config_models_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     with pytest.MonkeyPatch.context() as mp:
         orig_exists = os.path.exists
 
         def mock_exists_primary(path: str) -> bool:
+            """Test function mock_exists_primary."""
             if path.endswith("/standard_workloads.yaml"):
                 return False
             return orig_exists(path)
@@ -330,6 +362,7 @@ targets:
         assert len(workloads_primary) > 0
 
         def mock_exists_fallback(path: str) -> bool:
+            """Test function mock_exists_fallback."""
             if path.endswith("/standard_workloads.yaml") or path.endswith("/workloads.yaml"):
                 return False
             return orig_exists(path)
@@ -339,6 +372,7 @@ targets:
         assert len(workloads_fallback) > 0
 
         def mock_exists_none(path: str) -> bool:
+            """Test function mock_exists_none."""
             if any(path.endswith("/" + name) for name in ("standard_workloads.yaml", "workloads.yaml", "model_workloads.yaml")):
                 return False
             return orig_exists(path)
@@ -346,8 +380,17 @@ targets:
         mp.setattr(os.path, "exists", mock_exists_none)
         with pytest.raises(FileNotFoundError):
             cfg_models_mod.load_model_workloads()
+    getattr(_state, "update")({"mock_exists_fallback": mock_exists_fallback, "mock_exists_none": mock_exists_none, "mock_exists_primary": mock_exists_primary, "mp": mp})
+    getattr(_state, "update")({"orig_exists": orig_exists, "workloads_fallback": workloads_fallback, "workloads_primary": workloads_primary})
+    _state.update(locals())
 
-    # 5. load_backend_profiles_manifest and load_backend_profiles
+
+def _test_config_models_loaders_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 5 of test_config_models_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     profiles = cfg_models_mod.load_backend_profiles()
     assert "numpy" in profiles
 
@@ -384,11 +427,21 @@ targets:
         assert "custom_numpy" in custom_profs
     finally:
         os.unlink(custom_prof_yaml)
+    getattr(_state, "update")({"custom_prof_yaml": custom_prof_yaml, "invalid_prof": invalid_prof, "profiles": profiles, "tf": tf})
+    _state.update(locals())
 
+
+def _test_config_models_loaders_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 6 of test_config_models_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     with pytest.MonkeyPatch.context() as mp:
         orig_exists = os.path.exists
 
         def mock_exists_no_bp(path: str) -> bool:
+            """Test function mock_exists_no_bp."""
             if path.endswith("/backend_profiles.yaml"):
                 return False
             return orig_exists(path)
@@ -396,3 +449,16 @@ targets:
         mp.setattr(os.path, "exists", mock_exists_no_bp)
         with pytest.raises(FileNotFoundError):
             cfg_models_mod.load_backend_profiles_manifest(None)
+    getattr(_state, "update")({"mock_exists_no_bp": mock_exists_no_bp, "mp": mp, "orig_exists": orig_exists})
+
+
+def test_config_models_loaders() -> None:
+    """Verify YAML configuration loaders and error handling for plans and manifests."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_config_models_loaders_part_1(_state)
+    _test_config_models_loaders_part_2(_state)
+    _test_config_models_loaders_part_3(_state)
+    _test_config_models_loaders_part_4(_state)
+    _test_config_models_loaders_part_5(_state)
+    _test_config_models_loaders_part_6(_state)
+    assert isinstance(_state, dict)

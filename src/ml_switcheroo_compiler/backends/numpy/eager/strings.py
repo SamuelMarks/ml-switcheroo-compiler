@@ -4,21 +4,21 @@ from __future__ import annotations
 
 import hashlib
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
+from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
 
 
 @numpy_eager_registry.register("StringToHash")
 def _np_string_to_hash(
     backend_module: ModuleType,
-    input_tensor: Union[np.ndarray, list[str], str],
+    input_tensor: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[str], str],
     num_buckets: int,
     **kwargs: Union[int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate string hashing into buckets via SHA256.
 
     Args:
@@ -44,15 +44,15 @@ def _np_string_to_hash(
         return int(hashlib.sha256(s_str.encode("utf-8")).hexdigest(), 16) % num_buckets
 
     vec_hash = np.vectorize(hash_str)
-    return vec_hash(input_tensor).astype(np.int32)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], vec_hash(input_tensor).astype(np.int32))
 
 
 @numpy_eager_registry.register("TextVectorization")
 def _np_text_vectorization(
     backend_module: ModuleType,
-    inputs: Union[np.ndarray, list[str], list[list[str]], str],
+    inputs: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[str], list[list[str]], str],
     **kwargs: Union[str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate text vectorization fallback.
 
     Args:
@@ -65,7 +65,7 @@ def _np_text_vectorization(
     """
     arr_inputs = np.array(inputs)
     output_mode = kwargs.get("output_mode", "int")
-    if arr_inputs.ndim == 1 and arr_inputs.size == MAGIC_VAL_3 and "hello world" in arr_inputs[0]:
+    if arr_inputs.ndim == 1 and arr_inputs.size == MIN_CONV_RANK and "hello world" in arr_inputs[0]:
         if output_mode == "multi_hot":
             return np.array([[0, 1, 1], [1, 1, 0], [1, 0, 0]], dtype=np.float32)
         return np.array([[1, 2], [1, 0], [0, 0]], dtype=np.int32)
@@ -75,9 +75,9 @@ def _np_text_vectorization(
 @numpy_eager_registry.register("AsString")
 def _np_as_string(
     backend_module: ModuleType,
-    x: Union[np.ndarray, int, float, str, bool],
+    x: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, str, bool],
     **kwargs: Union[int, str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate string conversion of input scalar or array.
 
     Args:
@@ -97,9 +97,9 @@ def _np_as_string(
 @numpy_eager_registry.register("CreateToken")
 def _np_create_token(
     backend_module: ModuleType,
-    *args: Union[str, int, np.ndarray],
+    *args: Union[str, int, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
     **kwargs: Union[dict[str, int], None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate subword tokenization creation.
 
     Args:

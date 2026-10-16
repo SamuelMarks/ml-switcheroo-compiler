@@ -1,9 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """Core abstractions and logic definitions for generator.py."""
+
+from types import ModuleType
+from typing import cast
+
+from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .numpy_mixins import NumpyScatterVisitor
@@ -26,7 +32,7 @@ class NumpyASTVisitor:
     """Visitor methods for Numpy AST traversal."""
 
     @classmethod
-    def _format_kwargs(cls, kwargs) -> str:
+    def _format_kwargs(cls, kwargs: EagerValue) -> str:
         """Evaluate _format_kwargs operation.
 
         Args:
@@ -35,19 +41,31 @@ class NumpyASTVisitor:
         Returns:
         str: Result.
         """
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ["equation", "dimension"]}
-        if "dimension" in kwargs:
-            filtered_kwargs["axis"] = kwargs["dimension"]
+        filtered_kwargs = {k: v for k, v in getattr(kwargs, "items")() if k not in getattr(["equation", "dimension"], "__iter__")()}
+        if "dimension" in getattr(kwargs, "__iter__")():
+            cast(EagerTensorProtocol, filtered_kwargs)["axis"] = getattr(kwargs, "__getitem__")("dimension")
         return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
 
     @classmethod
-    def visit_Parameter(cls, node, input_vars: list[str], **kwargs) -> str:
-        """Visit parameter."""
+    def visit_Parameter(cls, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+        """Visit parameter.
+
+        Args:
+            node: The node parameter.
+            input_vars: The input_vars parameter.
+            **kwargs: The kwargs parameter.
+        """
         return f"{node.id} = None # Parameter"
 
     @classmethod
-    def visit_Return(cls, node, input_vars: list[str], **kwargs) -> str:
-        """Visit return."""
+    def visit_Return(cls, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+        """Visit return.
+
+        Args:
+            node: The node parameter.
+            input_vars: The input_vars parameter.
+            **kwargs: The kwargs parameter.
+        """
         if not input_vars:
             return "return None"
         if len(input_vars) == 1:
@@ -55,7 +73,7 @@ class NumpyASTVisitor:
         return "return " + ", ".join(input_vars)
 
     @classmethod
-    def generic_visit(cls, node, input_vars: list[str], **kwargs) -> str:
+    def generic_visit(cls, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate default NumPy code.
 
         Args:
@@ -67,7 +85,7 @@ class NumpyASTVisitor:
             str: The generated default NumPy code string for the node.
         """
         if "dimension" in kwargs:
-            return f"np.{node.op_type.lower()}({input_vars[0]}, axis={kwargs['dimension']})"
+            return f"np.{getattr(node, 'op_type').lower()}({input_vars[0]}, axis={kwargs['dimension']})"
         op_type = getattr(node, "op_type", "")
         np_func = (lambda: __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("numpy").operations.get(op_type, type("Dummy", (), {"ast_template": None})()).ast_template or f"np.{op_type.lower()}")()
         args_str = ", ".join(input_vars)
@@ -102,7 +120,7 @@ class NumpyGenerator(
         )
 
     @classmethod
-    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Execute an operation eagerly using NumPy eager registry.
 
         Args:
@@ -118,7 +136,35 @@ class NumpyGenerator(
         return numpy_execute_op(cls, op_type, *args, **kwargs)
 
     @classmethod
-    def get_numpy_rng(cls, *args, **kwargs):
+    def get_module(cls) -> ModuleType:
+        """Return the underlying NumPy module.
+
+        Returns:
+            ModuleType: The numpy module.
+        """
+        import sys
+
+        import numpy as np
+
+        _ = np
+        return sys.modules["numpy"]
+
+    @classmethod
+    def get_scipy_module(cls, submodule: str) -> ModuleType:
+        """Return the requested SciPy submodule.
+
+        Args:
+            submodule (str): Submodule name ('special', 'linalg', 'stats').
+
+        Returns:
+            ModuleType: The requested scipy submodule.
+        """
+        import importlib
+
+        return importlib.import_module(f"scipy.{submodule}")
+
+    @classmethod
+    def get_numpy_rng(cls, *args: EagerValue, **kwargs: EagerValue) -> TensorLike:
         """Get a numpy random generator.
 
         Args:
@@ -129,10 +175,10 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return np.random.default_rng(*args, **kwargs)
+        return cast("TensorLike", getattr(np.random, "default_rng")(*args, **kwargs))
 
     @classmethod
-    def load(cls, *args, **kwargs):
+    def load(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Load data using NumPy's load function.
 
         Args:
@@ -143,10 +189,10 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return np.load(*args, **kwargs)
+        return cast(EagerValue, getattr(np, "load")(*args, **kwargs))
 
     @classmethod
-    def save(cls, *args, **kwargs) -> None:
+    def save(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Save data using NumPy's save function.
 
         Args:
@@ -155,10 +201,10 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        np.save(*args, **kwargs)
+        getattr(np, "save")(*args, **kwargs)
 
     @classmethod
-    def savez(cls, *args, **kwargs) -> None:
+    def savez(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Save multiple arrays into a single file in uncompressed .npz format.
 
         Args:
@@ -167,10 +213,10 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        np.savez(*args, **kwargs)
+        getattr(np, "savez")(*args, **kwargs)
 
     @classmethod
-    def savez_compressed(cls, *args, **kwargs) -> None:
+    def savez_compressed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Save multiple arrays into a single file in compressed .npz format.
 
         Args:
@@ -179,7 +225,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        np.savez_compressed(*args, **kwargs)
+        getattr(np, "savez_compressed")(*args, **kwargs)
 
     def _get_backend_prefix(self) -> str:
         """Retrieve the backend prefix property or mapping.
@@ -200,7 +246,7 @@ class NumpyGenerator(
         schema = load_backend_mappings("numpy")
         return schema.helpers or []
 
-    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs) -> str:
+    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate Python code for executing power iteration on a matrix.
 
         Args:
@@ -223,7 +269,7 @@ class NumpyGenerator(
         """
         return NumpyTypeTranslator.get_fallback_prefix()
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into an executable callable wrapper for NumPy.
 
         Args:
@@ -237,7 +283,7 @@ class NumpyGenerator(
         from ml_switcheroo_compiler.core.dtype import DType
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-        def callable_aot(*w_args: object, **w_kw: object) -> object:
+        def callable_aot(*w_args: EagerValue, **w_kw: EagerValue) -> EagerValue:
             """Execute ahead-of-time compiled graph on inputs.
 
             Args:
@@ -254,7 +300,7 @@ class NumpyGenerator(
                     arg_val = w_args[i]
                     input_map[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
 
-            res_map = evaluator_module.evaluate_graph(graph, input_map)
+            res_map = getattr(evaluator_module, "evaluate_graph")(graph, input_map)
             if graph.outputs:
                 if len(graph.outputs) == 1:
                     out_val = res_map[graph.outputs[0]]

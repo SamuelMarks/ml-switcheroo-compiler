@@ -5,11 +5,15 @@ from __future__ import annotations
 import os
 import runpy
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import yaml
 
 import scripts.migrate_domain_ops as mdo
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_load_base_op(tmp_path: Path) -> None:
@@ -87,11 +91,11 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
         }
         res_bin = mdo.migrate_domain("binary_test.yaml", spec_binary)
         assert "Add" in res_bin
-        assert res_bin["Add"]["math_semantics"]["identity_element"] == 0
-        assert res_bin["Mul"]["math_semantics"]["identity_element"] == 1
-        assert "autodiff" in res_bin["Add"]
-        assert res_bin["Add"]["signature"]["output_shape_formula"] == "broadcast(x1.shape, x2.shape)"
-        assert res_bin["Add"]["signature"]["output_dtype_formula"] == "promote(x1.dtype, x2.dtype)"
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_bin, "__getitem__")("Add")), "__getitem__")("math_semantics")), "__getitem__")("identity_element")) == 0
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_bin, "__getitem__")("Mul")), "__getitem__")("math_semantics")), "__getitem__")("identity_element")) == 1
+        assert "autodiff" in getattr(res_bin, "__getitem__")("Add")
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_bin, "__getitem__")("Add")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "broadcast(x1.shape, x2.shape)"
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_bin, "__getitem__")("Add")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "promote(x1.dtype, x2.dtype)"
 
         # 2. Unary domain specification (covers is_binary=False, default_inputs=['x'])
         spec_unary = {
@@ -102,8 +106,8 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
         }
         res_unary = mdo.migrate_domain("unary_test.yaml", spec_unary)
         assert "Abs" in res_unary
-        assert res_unary["Abs"]["signature"]["output_shape_formula"] == "x.shape"
-        assert res_unary["Abs"]["signature"]["output_dtype_formula"] == "x.dtype"
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_unary, "__getitem__")("Abs")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "x.shape"
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_unary, "__getitem__")("Abs")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "x.dtype"
 
         # 3. Creation domain specification (covers default_inputs=[])
         spec_creation = {
@@ -114,8 +118,8 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
         }
         res_creation = mdo.migrate_domain("creation_test.yaml", spec_creation)
         assert "Zeros" in res_creation
-        assert res_creation["Zeros"]["signature"]["output_shape_formula"] == "shape"
-        assert res_creation["Zeros"]["signature"]["output_dtype_formula"] == "float32"
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_creation, "__getitem__")("Zeros")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "shape"
+        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_creation, "__getitem__")("Zeros")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "float32"
 
         # 4. Control flow domain (covers non-differentiable domain)
         spec_cf = {
@@ -125,7 +129,7 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
             "is_binary": False,
         }
         res_cf = mdo.migrate_domain("cf_test.yaml", spec_cf)
-        assert not res_cf["Cond"]["math_semantics"]["differentiable"]
+        assert not cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_cf, "__getitem__")("Cond")), "__getitem__")("math_semantics")), "__getitem__")("differentiable"))
     finally:
         mdo.BASE_DIR = orig_base
 

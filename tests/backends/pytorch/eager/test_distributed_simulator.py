@@ -1,7 +1,12 @@
+"""Tests for test_distributed_simulator."""
+
+from __future__ import annotations
+
 import pytest
 
 
-def test_pytorch_distributed_simulators():
+def test_pytorch_distributed_simulators() -> None:
+    """Test function test_pytorch_distributed_simulators."""
     try:
         import torch
         import torch.distributed as dist

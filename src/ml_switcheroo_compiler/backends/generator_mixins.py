@@ -1,11 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """Mixins for code generators."""
 
-from typing import Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+if TYPE_CHECKING:
+    pass
 
 
 class GeneratorLifecycleMixin:
     """Provide mixin for the generation lifecycle."""
+
+    header: str
+    code: list[str]
+    indent_level: int
+    add_line: Callable[[str], None]
 
     def generate(self) -> str:
         """Generate code from the IR graph.
@@ -59,9 +69,9 @@ class GeneratorLifecycleMixin:
         Args:
             input_prefix (str): The input_prefix parameter for the operation.
         """
-        from ml_switcheroo_compiler.backends.base_generator import IRGraphWalker
+        from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, IRGraphWalker
 
-        walker: IRGraphWalker = IRGraphWalker(self)
+        walker: IRGraphWalker = IRGraphWalker(cast(BaseGenerator, self))
         walker.walk(input_prefix)
 
 
@@ -69,7 +79,7 @@ class EagerExecutionMixin:
     """Provide mixin for eager execution classmethods."""
 
     @classmethod
-    def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+    def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Execute an operation eagerly.
 
         Args:
@@ -84,7 +94,7 @@ class EagerExecutionMixin:
         return None
 
     @classmethod
-    def zeros(cls: type, shape: tuple[int, ...]) -> object:
+    def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
         """Evaluate zeros operation.
 
         Args:
@@ -93,14 +103,14 @@ class EagerExecutionMixin:
         Returns:
             object: Result.
         """
-        import numpy
-
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        return generic_zeros(cls.get_module() if hasattr(cls, "get_module") else numpy, shape)
+        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        return generic_zeros(mod, shape)
 
     @classmethod
-    def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
+    def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
         """Evaluate array operation.
 
         Args:
@@ -110,14 +120,14 @@ class EagerExecutionMixin:
         Returns:
             object: Result.
         """
-        import numpy
-
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        return generic_array(cls.get_module() if hasattr(cls, "get_module") else numpy, data, dtype)
+        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(mod, data, dtype))
 
     @classmethod
-    def asarray(cls: type, data: object) -> object:
+    def asarray(cls: type, data: EagerValue) -> EagerValue:
         """Evaluate asarray operation.
 
         Args:
@@ -126,14 +136,14 @@ class EagerExecutionMixin:
         Returns:
             object: Result.
         """
-        import numpy
-
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        return generic_asarray(cls.get_module() if hasattr(cls, "get_module") else numpy, data)
+        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(mod, data))
 
     @classmethod
-    def item(cls: type, data: object) -> float:
+    def item(cls: type, data: EagerValue) -> float:
         """Evaluate item operation.
 
         Args:
@@ -142,8 +152,8 @@ class EagerExecutionMixin:
         Returns:
             float: Result.
         """
-        import numpy
-
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_item
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        return generic_item(cls.get_module() if hasattr(cls, "get_module") else numpy, data)
+        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(mod, data))

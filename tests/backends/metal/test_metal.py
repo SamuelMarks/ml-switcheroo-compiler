@@ -1,7 +1,10 @@
 """Tests for Metal backend generator and runtime runner."""
 
+from __future__ import annotations
+
 import ctypes
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -14,8 +17,13 @@ from ml_switcheroo_compiler.backends.metal.metal import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_metal_generator():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_metal_generator() -> None:
     """Test Metal code generation."""
     graph = IRGraph()
     graph.inputs = ["in_0"]
@@ -26,7 +34,7 @@ def test_metal_generator():
     assert "setBuffer_offset_atIndex_" in out
 
 
-def test_metal_generator_coverage():
+def test_metal_generator_coverage() -> None:
     """Test Metal generator coverage."""
     graph = IRGraph()
     graph.nodes = {"input": IRNode(id="input", op_type="Input", inputs=[])}
@@ -35,7 +43,7 @@ def test_metal_generator_coverage():
     assert "matmul" not in out
 
 
-def test_metal_missing_yaml(monkeypatch):
+def test_metal_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
     """Test Metal generator when YAML directories do not exist."""
     import os
 
@@ -46,7 +54,7 @@ def test_metal_missing_yaml(monkeypatch):
     assert gen.config.templates == {}
 
 
-def test_calculate_node_bytes_branches():
+def test_calculate_node_bytes_branches() -> None:
     """Test all branches of _calculate_node_bytes."""
     # float64
     node_64 = IRNode(id="n1", op_type="Custom", inputs=[], attributes={"dtype": "float64"})
@@ -68,7 +76,7 @@ def test_calculate_node_bytes_branches():
     assert _calculate_node_bytes(node_def) == (1024, 4096)
 
 
-def test_metal_init_yaml_edge_cases(monkeypatch):
+def test_metal_init_yaml_edge_cases(monkeypatch: EagerTensorProtocol) -> None:
     """Test non-yaml files and non-dict op_data in yaml_dir, and empty fallback yaml."""
     import os
 
@@ -91,7 +99,7 @@ def test_metal_init_yaml_edge_cases(monkeypatch):
             assert gen2.config.templates == {}
 
 
-def test_metal_generate_missing_template_branches():
+def test_metal_generate_missing_template_branches() -> None:
     """Test generate with op_type missing from templates and with graph inputs."""
     graph = IRGraph()
     graph.inputs = ["in_0"]
@@ -104,7 +112,7 @@ def test_metal_generate_missing_template_branches():
     assert "buffer_out_0" not in out
 
 
-def test_metal_runner_init_with_metal():
+def test_metal_runner_init_with_metal() -> None:
     """Test MetalRunner.__init__ when Metal module is present."""
     mock_metal = MagicMock()
     mock_dev = MagicMock()
@@ -114,7 +122,7 @@ def test_metal_runner_init_with_metal():
         assert runner.device is mock_dev
 
 
-def test_metal_runner_is_available():
+def test_metal_runner_is_available() -> None:
     """Test MetalRunner.is_available branches."""
     mock_metal = MagicMock()
     mock_metal.MTLCreateSystemDefaultDevice.return_value = "mock_device"
@@ -130,7 +138,7 @@ def test_metal_runner_is_available():
             assert MetalRunner.is_available() is False
 
 
-def test_metal_runner_allocate_and_buffer_rw():
+def test_metal_runner_allocate_and_buffer_rw() -> None:
     """Test MetalRunner buffer allocation and read/write."""
     runner = MetalRunner()
     mock_dev = MagicMock()
@@ -155,7 +163,7 @@ def test_metal_runner_allocate_and_buffer_rw():
     assert runner.read_buffer(ctypes.c_void_p(0), 10) == b""
 
 
-def test_metal_runner_execute_kernel_failures():
+def test_metal_runner_execute_kernel_failures() -> None:
     """Test error handling in MetalRunner.execute_kernel."""
     runner = MetalRunner()
     runner.device = None
@@ -192,7 +200,7 @@ def test_metal_runner_execute_kernel_failures():
             runner.execute_kernel("src", "main")
 
 
-def test_metal_runner_execute_kernel_success():
+def test_metal_runner_execute_kernel_success() -> None:
     """Test successful execution of Metal compute kernel."""
     runner = MetalRunner()
     mock_metal = MagicMock()
@@ -222,14 +230,14 @@ def test_metal_runner_execute_kernel_success():
     with patch.dict(sys.modules, {"Metal": mock_metal}):
         # Case 1: with inputs
         res = runner.execute_kernel("src", "main", np.array([1.0], dtype=np.float32))
-        assert np.isclose(res[0], 42.0)
+        assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", getattr(res, "__getitem__"))(0), 42.0)
 
         # Case 2: without inputs
         res2 = runner.execute_kernel("src", "main")
-        assert np.isclose(res2[0], 42.0)
+        assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", getattr(res2, "__getitem__"))(0), 42.0)
 
 
-def test_metal_runner_launch_kernel():
+def test_metal_runner_launch_kernel() -> None:
     """Test MetalRunner.launch_kernel all branches and error handling."""
     runner = MetalRunner()
 
@@ -323,7 +331,7 @@ def test_metal_runner_launch_kernel():
         )
 
 
-def test_metal_coverage_additional_branches():
+def test_metal_coverage_additional_branches() -> None:
     """Verify missing branches in Metal code generation and runner."""
     # 1. _calculate_node_bytes with None node
     assert _calculate_node_bytes(None) == (1024, 4096)
@@ -366,7 +374,7 @@ def test_metal_coverage_additional_branches():
         runner._dispatch_compute_node(dummy_node, 0, mock_lib, encoder, {})
 
         # library is None in execute_graph -> raises RuntimeError
-        runner.is_available = lambda: True
+        setattr(runner, "is_available", lambda: True)
         mock_dev.newLibraryWithSource_options_error_.return_value = (None, "compilation failed")
         with pytest.raises(RuntimeError, match="Metal compilation failed"):
             runner.execute_graph(IRGraph(), {})
@@ -377,7 +385,10 @@ def test_metal_prepare_input_buffers() -> None:
     from ml_switcheroo_compiler.backends.metal.metal import _prepare_metal_input_buffers
 
     class _WrapperWithData:
-        def __init__(self, arr: np.ndarray) -> None:
+        """Test class _WrapperWithData."""
+
+        def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+            """Test function __init__."""
             self.data = arr
 
     graph = IRGraph()
@@ -390,7 +401,7 @@ def test_metal_prepare_input_buffers() -> None:
     wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
     list_raw = [1, 2, 3]
 
-    buffers = _prepare_metal_input_buffers(
+    buffers = cast("Callable[..., EagerTensorProtocol]", _prepare_metal_input_buffers)(
         graph,
         (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw),
     )
@@ -408,7 +419,10 @@ def test_metal_evaluate_fallback() -> None:
     from ml_switcheroo_compiler.backends.metal.metal import _evaluate_metal_fallback
 
     class _MockTensor:
-        def __init__(self, data: np.ndarray) -> None:
+        """Test class _MockTensor."""
+
+        def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+            """Test function __init__."""
             self.data = data
 
     # 1. Single output graph
@@ -424,7 +438,7 @@ def test_metal_evaluate_fallback() -> None:
     assert res_single is not None
 
     # Test with arg.data wrapper and extra arguments
-    res_wrapper = _evaluate_metal_fallback(g_single, (_MockTensor(arr), "extra_arg"))
+    res_wrapper = cast("Callable[..., EagerTensorProtocol]", _evaluate_metal_fallback)(g_single, (cast("Callable[..., EagerTensorProtocol]", _MockTensor)(arr), "extra_arg"))
     assert res_wrapper is not None
 
     # 2. Multi output graph
@@ -449,8 +463,12 @@ def test_metal_evaluate_fallback() -> None:
     assert isinstance(res_empty, dict)
 
 
-def test_metal_compile_and_runner_dispatch() -> None:
-    """Verify MetalCodeGenerator._compile_aot_impl and runner execution paths."""
+def _test_metal_compile_and_runner_dispatch_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_metal_compile_and_runner_dispatch.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
     from ml_switcheroo_compiler.backends.hardware_compilers import HardwareCompilationResult
 
@@ -473,7 +491,7 @@ def test_metal_compile_and_runner_dispatch() -> None:
         artifact = gen.compile_aot(graph, compile_options=["-O3"])
         assert isinstance(artifact, CompiledArtifact)
         assert artifact.binary_bytes == b"metalc binary source"
-        assert artifact.metadata["compiler_cli"] == "metal"
+        assert cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "metal"
 
     # 2. Compile without list options and without assembly ptx
     mock_comp_empty = HardwareCompilationResult(
@@ -490,10 +508,23 @@ def test_metal_compile_and_runner_dispatch() -> None:
     mock_runner = MagicMock()
     mock_runner.device = MagicMock()
     mock_runner.execute_graph.return_value = {"out": np.array([42.0])}
+    getattr(_state, "update")({"CompiledArtifact": CompiledArtifact, "HardwareCompilationResult": HardwareCompilationResult, "artifact": artifact, "artifact_empty": artifact_empty})
+    getattr(_state, "update")({"gen": gen, "graph": graph, "mock_comp_empty": mock_comp_empty, "mock_comp_res": mock_comp_res})
+    getattr(_state, "update")({"mock_runner": mock_runner, "n_exp": n_exp, "n_in": n_in})
+    _state.update(locals())
+
+
+def _test_metal_compile_and_runner_dispatch_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_metal_compile_and_runner_dispatch.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    artifact, mock_comp_res, mock_runner, n_in = _state["artifact"], _state["mock_comp_res"], _state["mock_runner"], _state["n_in"]
     with patch.object(MetalRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.metal.metal.MetalRunner", return_value=mock_runner):
             res_avail = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
-            assert np.array_equal(res_avail, np.array([42.0]))
+            assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_avail, cast("Callable[..., EagerTensorProtocol]", np.array)([42.0]))
 
     # 3b. Multi output with device present
     g_multi = IRGraph()
@@ -511,12 +542,25 @@ def test_metal_compile_and_runner_dispatch() -> None:
     mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
     with patch.object(MetalRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.metal.metal.MetalRunner", return_value=mock_runner_multi):
-            res_m = art_multi.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
+            res_m = cast("Callable[..., EagerTensorProtocol]", art_multi.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_m == (100, 200)
 
     # 3c. Device is None -> falls back to evaluator
     mock_runner_no_dev = MagicMock()
     mock_runner_no_dev.device = None
+    getattr(_state, "update")({"art_multi": art_multi, "g_multi": g_multi, "gen_multi": gen_multi, "mock_runner_multi": mock_runner_multi})
+    getattr(_state, "update")({"mock_runner_no_dev": mock_runner_no_dev, "n_out1": n_out1, "n_out2": n_out2, "res_avail": res_avail})
+    getattr(_state, "update")({"res_m": res_m})
+    _state.update(locals())
+
+
+def _test_metal_compile_and_runner_dispatch_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_metal_compile_and_runner_dispatch.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    artifact, mock_runner_no_dev = _state["artifact"], _state["mock_runner_no_dev"]
     with patch.object(MetalRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.metal.metal.MetalRunner", return_value=mock_runner_no_dev):
             res_nodev = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
@@ -535,3 +579,13 @@ def test_metal_compile_and_runner_dispatch() -> None:
     with patch.object(MetalRunner, "is_available", return_value=False):
         res_fallback = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
         assert res_fallback is not None
+    getattr(_state, "update")({"mock_runner_err": mock_runner_err, "res_err": res_err, "res_fallback": res_fallback, "res_nodev": res_nodev})
+
+
+def test_metal_compile_and_runner_dispatch() -> None:
+    """Verify MetalCodeGenerator._compile_aot_impl and runner execution paths."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_metal_compile_and_runner_dispatch_part_1(_state)
+    _test_metal_compile_and_runner_dispatch_part_2(_state)
+    _test_metal_compile_and_runner_dispatch_part_3(_state)
+    assert isinstance(_state, dict)

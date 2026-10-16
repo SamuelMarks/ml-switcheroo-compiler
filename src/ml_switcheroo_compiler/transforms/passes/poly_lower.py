@@ -1,7 +1,7 @@
 """Pass to lower complex polyfilled operations into simpler IR primitives."""
 
 import os
-from typing import Any
+from typing import cast
 
 import yaml
 
@@ -146,17 +146,17 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     return node
 
 
-def _load_poly_rules() -> dict[str, Any]:
+def _load_poly_rules() -> dict[str, dict[str, str]]:
     """Load poly rules.
 
     Returns:
-        dict: loaded rules.
+        dict[str, dict[str, str]]: loaded rules.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "poly_lower_rules.yaml")
     if not os.path.exists(yaml_path):
         return {}
     with open(yaml_path) as f:
-        return yaml.safe_load(f).get("rules", {})
+        return cast(dict[str, dict[str, str]], yaml.safe_load(f).get("rules", {}))
 
 
 def polyfill_lowering_pass(graph: IRGraph) -> bool:
@@ -188,9 +188,9 @@ def polyfill_lowering_pass(graph: IRGraph) -> bool:
                     modified = True
             elif rule["type"] == "rewrite":
                 node.op_type = str(rule.get("op_type", node.op_type))
-                if "attributes" in rule:
-                    for k, v in dict(rule["attributes"]).items():
-                        node.attributes[k] = v
+                if "attributes" in rule and isinstance(rule["attributes"], dict):
+                    for k, v in rule["attributes"].items():
+                        node.attributes[str(k)] = v
                 modified = True
 
         new_nodes[node.id] = node

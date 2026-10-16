@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module activations.py."""
-
 """Activations facade.
 
 Per the ML ecosystem architecture (see ARCHITECTURE.md and the "No API Shell" Rule),

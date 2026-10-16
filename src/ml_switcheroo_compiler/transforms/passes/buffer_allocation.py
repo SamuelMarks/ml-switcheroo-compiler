@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+import logging
 import os
 
 import yaml
@@ -465,7 +465,100 @@ class BufferAllocationPass:
         allocator = InterferenceGraphColoringAllocator(alignment=alignment)
         return allocator.compute_peak_memory_reduction(graph)
 
-    def run(self, graph: IRGraph) -> bool:  # noqa: C901, PLR0912, PLR0915
+    def _tag_colored_allocations(
+        self,
+        graph: IRGraph,
+        sorted_nodes: list[IRNode],
+        node_sizes: dict[str, int | str],
+    ) -> None:
+        """Tag graph nodes with register-colored buffer allocations.
+
+        Args:
+            graph (IRGraph): Target computation graph.
+            sorted_nodes (list[IRNode]): Topologically sorted IR nodes.
+            node_sizes (dict[str, int | str]): Precomputed byte sizes per node.
+        """
+        try:
+            ig = InterferenceGraph()
+            birth = {node.id: i for i, node in enumerate(sorted_nodes)}
+            l_use = _compute_liveness(graph, sorted_nodes)
+            for node in sorted_nodes:
+                sz_val = node_sizes[node.id]
+                b_sz = int(sz_val) if isinstance(sz_val, int) else 1024
+                ig.add_node(node.id, b_sz, birth.get(node.id, 0), l_use.get(node.id, 0))
+            ig.build_edges_from_intervals()
+            colors = ig.color_registers()
+            color_groups: dict[int, list[str]] = {}
+            for nid, c in colors.items():
+                color_groups.setdefault(c, []).append(nid)
+            color_sizes = {c: ((max(ig.sizes[nid] for nid in nids) + 256 - 1) // 256) * 256 for c, nids in color_groups.items()}
+            cur_off = 0
+            c_offsets: dict[int, int] = {}
+            for c in sorted(color_sizes.keys()):
+                c_offsets[c] = cur_off
+                cur_off += color_sizes[c]
+            for nid, c in colors.items():
+                if nid in graph.nodes:
+                    graph.nodes[nid].attributes["buffer_color"] = c
+                    graph.nodes[nid].attributes["colored_offset"] = c_offsets[c]
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+
+    @staticmethod
+    def _allocate_node_buffer(
+        node: IRNode,
+        i: int,
+        size: int | str,
+        graph: IRGraph,
+        last_use: dict[str, int],
+        allocator: GreedyOffsetAllocator,
+    ) -> bool:
+        """Allocate a static or symbolic buffer offset for a single node.
+
+        Args:
+            node (IRNode): The node to allocate a buffer for.
+            i (int): Current topological step index.
+            size (int | str): Byte size or symbolic expression string.
+            graph (IRGraph): The IR graph.
+            last_use (dict[str, int]): Mapping of node IDs to last-use step indices.
+            allocator (GreedyOffsetAllocator): Greedy offset allocator instance.
+
+        Returns:
+            bool: True if the node's buffer attributes were modified, False otherwise.
+        """
+        expire_t = last_use.get(node.id, i)
+        if isinstance(size, str):
+            var_name = getattr(node, "id", f"node_{i}")
+            assigned_offset = allocator.allocate_dynamic(size, i, expire_t, var_name)
+            getattr(graph, "attributes")["dynamic_memory_schema"]["dynamic_offsets"].append(
+                {
+                    "var_name": var_name,
+                    "symbolic_math": size,
+                    "node_id": node.id,
+                }
+            )
+            if node.attributes.get("buffer_offset_symbolic") != assigned_offset:
+                node.attributes["buffer_offset_symbolic"] = assigned_offset
+                node.attributes["buffer_size_symbolic"] = size
+                node.attributes["buffer_id"] = 0
+                return True
+            return False
+
+        reused_offset = _try_reuse_buffer(node, graph, size, i, last_use)
+        if reused_offset >= 0:
+            static_assigned_offset = reused_offset
+            allocator.allocate_at(static_assigned_offset, size, expire_t)
+        else:
+            static_assigned_offset = allocator.allocate_static(size, i, expire_t)
+
+        if node.attributes.get("buffer_offset") != static_assigned_offset:
+            node.attributes["buffer_offset"] = static_assigned_offset
+            node.attributes["buffer_size"] = size
+            node.attributes["buffer_id"] = 0
+            return True
+        return False
+
+    def run(self, graph: IRGraph) -> bool:
         """Run the buffer allocation pass on the graph.
 
         Args:
@@ -481,95 +574,23 @@ class BufferAllocationPass:
         graph_attrs = getattr(graph, "attributes", None)
         if graph_attrs is None:
             graph_attrs = {}
-            graph.attributes = graph_attrs
+            setattr(graph, "attributes", graph_attrs)
 
-        node_sizes: dict[str, int | str] = {}
-        for node in sorted_nodes:
-            node_sizes[node.id] = _get_node_byte_size(node)
+        node_sizes: dict[str, int | str] = {node.id: _get_node_byte_size(node) for node in sorted_nodes}
 
-        # Tag graph with register colored allocations for linear targets (WebGPU, WASM, LLVM/C++)
         if not graph_attrs.get("skip_coloring", False):
-            try:
-                coloring_allocator = InterferenceGraphColoringAllocator(alignment=256)  # noqa: F841
-                # Build interference graph directly using already-extracted node_sizes
-                ig = InterferenceGraph()
-                birth = {node.id: i for i, node in enumerate(sorted_nodes)}
-                l_use: dict[str, int] = {}
-                for i, node in enumerate(sorted_nodes):
-                    l_use[node.id] = i
-                    for inp in node.inputs:
-                        if inp in l_use:
-                            l_use[inp] = max(l_use[inp], i)
-                end_time = len(sorted_nodes)
-                for out_id in getattr(graph, "outputs", []):
-                    if out_id in l_use:
-                        l_use[out_id] = end_time
-
-                for node in sorted_nodes:
-                    sz_val = node_sizes[node.id]
-                    b_sz = int(sz_val) if isinstance(sz_val, int) else 1024
-                    ig.add_node(node.id, b_sz, birth.get(node.id, 0), l_use.get(node.id, 0))
-                ig.build_edges_from_intervals()
-                colors = ig.color_registers()
-                color_groups: dict[int, list[str]] = {}
-                for nid, c in colors.items():
-                    color_groups.setdefault(c, []).append(nid)
-                color_sizes: dict[int, int] = {}
-                for c, nids in color_groups.items():
-                    max_sz = max(ig.sizes[nid] for nid in nids)
-                    color_sizes[c] = ((max_sz + 256 - 1) // 256) * 256
-                cur_off = 0
-                c_offsets: dict[int, int] = {}
-                for c in sorted(color_sizes.keys()):
-                    c_offsets[c] = cur_off
-                    cur_off += color_sizes[c]
-                for nid, c in colors.items():
-                    if nid in graph.nodes:
-                        graph.nodes[nid].attributes["buffer_color"] = c
-                        graph.nodes[nid].attributes["colored_offset"] = c_offsets[c]
-            except Exception:
-                pass
+            self._tag_colored_allocations(graph, sorted_nodes, node_sizes)
 
         last_use = _compute_liveness(graph, sorted_nodes)
         allocator = GreedyOffsetAllocator()
         modified = False
 
-        graph.attributes = getattr(graph, "attributes", {})
-        graph.attributes["dynamic_memory_schema"] = {"dynamic_offsets": []}
+        setattr(graph, "attributes", getattr(graph, "attributes", {}))
+        getattr(graph, "attributes")["dynamic_memory_schema"] = {"dynamic_offsets": []}
 
         for i, node in enumerate(sorted_nodes):
-            size = node_sizes[node.id]
-
-            if isinstance(size, str):
-                var_name = getattr(node, "id", f"node_{i}")
-                assigned_offset = allocator.allocate_dynamic(size, i, last_use.get(node.id, i), var_name)
-
-                graph.attributes["dynamic_memory_schema"]["dynamic_offsets"].append(
-                    {
-                        "var_name": var_name,
-                        "symbolic_math": size,
-                        "node_id": node.id,
-                    }
-                )
-
-                if node.attributes.get("buffer_offset_symbolic") != assigned_offset:
-                    node.attributes["buffer_offset_symbolic"] = assigned_offset
-                    node.attributes["buffer_size_symbolic"] = size
-                    node.attributes["buffer_id"] = 0
-                    modified = True
-            else:
-                reused_offset = _try_reuse_buffer(node, graph, size, i, last_use)
-                if reused_offset >= 0:
-                    static_assigned_offset = reused_offset
-                    allocator.allocate_at(static_assigned_offset, size, last_use.get(node.id, i))
-                else:
-                    static_assigned_offset = allocator.allocate_static(size, i, last_use.get(node.id, i))
-
-                if node.attributes.get("buffer_offset") != static_assigned_offset:
-                    node.attributes["buffer_offset"] = static_assigned_offset
-                    node.attributes["buffer_size"] = size
-                    node.attributes["buffer_id"] = 0
-                    modified = True
+            if self._allocate_node_buffer(node, i, node_sizes[node.id], graph, last_use, allocator):
+                modified = True
 
         return modified
 

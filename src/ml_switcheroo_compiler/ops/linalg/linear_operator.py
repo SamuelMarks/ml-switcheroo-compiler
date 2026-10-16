@@ -1,11 +1,6 @@
-"""Module linear_operator.py."""
-
-from __future__ import annotations
-
-# ruff: noqa: E402, E501, F403
-
 """Core abstractions and logic definitions for linear_operator.py."""
 
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, Union
 

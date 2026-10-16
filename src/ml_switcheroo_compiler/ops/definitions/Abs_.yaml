@@ -18,14 +18,14 @@ variants:
     opcode: stablehlo.abs
   llvm_cpp:
     template: unary
-    scalar_expr: in0_val
+    scalar_expr: std::abs(in0_val)
   edge_wasm_simd:
     template: unary
-    scalar_expr: in0_val
-    simd_expr: in0_val
+    scalar_expr: std::abs(in0_val)
+    simd_expr: wasm_f32x4_abs(in0_val)
   edge_wgsl:
     template: unary
-    expr: buf_in0_f32[in0_offset]
+    expr: abs(buf_in0_f32[in0_offset])
 signature:
   args:
   - name: input

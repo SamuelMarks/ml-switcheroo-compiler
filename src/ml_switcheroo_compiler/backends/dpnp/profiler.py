@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import importlib
+import logging
 import resource
 import sys
 import time
 from typing import Callable
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -38,34 +40,37 @@ def _get_dpnp_peak_memory_mb() -> float:
                 total, free = info[0], info[1]
                 if isinstance(total, (int, float)) and isinstance(free, (int, float)):
                     return float(total - free) / (1024.0 * 1024.0)
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _get_process_memory_mb()
 
 
-def _sync_dpnp_result(result: object, sycl_queue: object | None = None) -> None:  # noqa: C901
+def _safe_wait(waitable: EagerValue) -> None:
+    """Invoke .wait() on a SYCL queue or event object while ignoring runtime errors.
+
+    Args:
+        waitable (EagerValue): Object potentially exposing a wait() method.
+    """
+    if waitable is not None and hasattr(waitable, "wait"):
+        try:
+            waitable.wait()
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+
+
+def _sync_dpnp_result(result: EagerValue, sycl_queue: EagerValue | None = None) -> None:
     """Synchronize SYCL execution queue or DPNP array evaluations.
 
     Args:
         result (object): Evaluated array or collection of arrays.
         sycl_queue (object | None): Optional SYCL execution queue.
     """
-    if sycl_queue is not None and hasattr(sycl_queue, "wait"):
-        try:
-            sycl_queue.wait()
-        except Exception:
-            pass
+    _safe_wait(sycl_queue)
 
-    if hasattr(result, "sycl_queue") and hasattr(result.sycl_queue, "wait"):
-        try:
-            result.sycl_queue.wait()
-        except Exception:
-            pass
+    if hasattr(result, "sycl_queue") and hasattr(getattr(result, "sycl_queue"), "wait"):
+        _safe_wait(getattr(result, "sycl_queue"))
     elif hasattr(result, "wait"):
-        try:
-            result.wait()
-        except Exception:
-            pass
+        _safe_wait(result)
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_dpnp_result(item, sycl_queue=sycl_queue)
@@ -77,19 +82,19 @@ def _sync_dpnp_result(result: object, sycl_queue: object | None = None) -> None:
 class DpnpProfiler:
     """Provides execution timing and peak memory profiling for DPNP on Intel SYCL devices."""
 
-    def __init__(self, sycl_queue: object | None = None) -> None:
+    def __init__(self, sycl_queue: EagerValue | None = None) -> None:
         """Initialize DPNP profiler with optional SYCL queue.
 
         Args:
             sycl_queue (object | None): Optional target SYCL queue.
         """
-        self.sycl_queue: object | None = sycl_queue
+        self.sycl_queue: EagerValue | None = sycl_queue
 
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | object],
-    ) -> list[object]:
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+    ) -> list[EagerValue]:
         """Convert input payloads into topologically ordered DPNP/NumPy arrays.
 
         Args:
@@ -99,10 +104,10 @@ class DpnpProfiler:
         Returns:
             list[object]: Ordered list of input arrays.
         """
-        dpnp_inputs: dict[str, object] = {}
+        dpnp_inputs: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             if type(val).__name__ == "Tensor" and hasattr(val, "data"):
-                dpnp_inputs[k] = val.data
+                dpnp_inputs[k] = getattr(val, "data")
             elif type(val).__name__ == "ndarray" or hasattr(val, "ndim"):
                 dpnp_inputs[k] = val
             elif isinstance(val, (list, tuple)):
@@ -118,7 +123,7 @@ class DpnpProfiler:
             return [dpnp_inputs[k] for k in input_keys]
         return list(dpnp_inputs.values())
 
-    def _compile_runner(self, graph: IRGraph, device: str = "auto") -> Callable[..., object] | None:
+    def _compile_runner(self, graph: IRGraph, device: str = "auto") -> Callable[..., EagerValue] | None:
         """Compile computational graph into a DPNP executable runner.
 
         Args:
@@ -137,7 +142,7 @@ class DpnpProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | object],
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
         device: str = "auto",
         num_iters: int = 10,
         warmup_iters: int = 2,

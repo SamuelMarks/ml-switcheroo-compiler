@@ -5,16 +5,17 @@ from __future__ import annotations
 import resource
 import sys
 import time
-from typing import Callable
+from typing import Callable, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 try:
     import numba
 except ImportError:
     numba = None
 
-import numpy as np
-
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -36,20 +37,20 @@ class NumbaProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | np.ndarray],
-    ) -> list[np.ndarray]:
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+    ) -> list[EagerValue]:
         """Convert input payloads into topologically ordered NumPy arrays.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, list[float] | list[list[float]] | np.ndarray]): Input mapping.
+            inputs (dict[str, list[float] | list[list[float]] | EagerValue]): Input mapping.
 
         Returns:
-            list[np.ndarray]: Ordered list of NumPy arrays.
+            list[EagerValue]: Ordered list of NumPy arrays.
         """
-        np_inputs_dict: dict[str, np.ndarray] = {}
+        np_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            if isinstance(val, np.ndarray):
+            if hasattr(val, "shape") and not isinstance(val, (list, tuple)):
                 np_inputs_dict[k] = val
             else:
                 np_inputs_dict[k] = np.asarray(val, dtype=np.float32)
@@ -60,7 +61,7 @@ class NumbaProfiler:
             return [np_inputs_dict[k] for k in input_keys]
         return list(np_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Callable[..., object] | None:
+    def _compile_graph(self, graph: IRGraph) -> Callable[..., EagerValue] | None:
         """Compile an IRGraph into an executable Numba JIT function.
 
         Args:
@@ -73,7 +74,7 @@ class NumbaProfiler:
 
         gen = NumbaGenerator(graph)
         code: str = gen.generate()
-        ns: dict[str, object] = {}
+        ns: dict[str, EagerValue] = {}
         exec(code, ns)
         fn = ns.get(gen._func_name)
         return fn if callable(fn) else None
@@ -81,7 +82,7 @@ class NumbaProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | np.ndarray],
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -90,7 +91,7 @@ class NumbaProfiler:
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, list[float] | list[list[float]] | np.ndarray]): Named input structures.
+            inputs (dict[str, list[float] | list[list[float]] | EagerValue]): Named input structures.
             device (str | None): Device identifier ('cpu').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
@@ -103,14 +104,14 @@ class NumbaProfiler:
         np_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Callable[..., object] | None = None
+        compiled_fn: Callable[..., EagerValue] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)
             except Exception:
                 compiled_fn = None
 
-        def _execute_step() -> object:
+        def _execute_step() -> EagerValue:
             """Execute a single evaluation step on Numba backend.
 
             Returns:
@@ -120,12 +121,12 @@ class NumbaProfiler:
                 return compiled_fn(tuple(np_inputs))
 
             if not np_inputs:
-                return np.zeros((1,), dtype=np.float32)
+                return cast(EagerValue, np.zeros((1,), dtype=np.float32))
 
             accum = np.zeros_like(np_inputs[0])
             for t in np_inputs:
                 accum = np.add(accum, t)
-            return accum
+            return cast(EagerValue, accum)
 
         for _ in range(max(1, warmup_iters)):
             _ = _execute_step()

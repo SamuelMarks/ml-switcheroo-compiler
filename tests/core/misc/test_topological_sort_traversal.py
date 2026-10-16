@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class _GraphNode:
@@ -41,7 +48,7 @@ def test_topological_sort_dependencies() -> None:
     n3 = _GraphNode("3", inputs=["2", "missing"])
     g = _GraphContainer([n1, n2, n3])
 
-    sorted_nodes = topological_sort(g)
+    sorted_nodes = cast("Callable[..., EagerTensorProtocol]", topological_sort)(g)
     assert len(sorted_nodes) == 3
     assert sorted_nodes[0].id == "1"
     assert sorted_nodes[1].id == "2"
@@ -50,7 +57,7 @@ def test_topological_sort_dependencies() -> None:
     n_cycle = _GraphNode("c", inputs=["c"])
     g_cycle = _GraphContainer([n_cycle])
     with pytest.raises(CompilationError, match="Cycle detected"):
-        topological_sort(g_cycle)
+        cast("Callable[..., EagerTensorProtocol]", topological_sort)(g_cycle)
 
 
 def test_topological_sort_visited_nodes() -> None:
@@ -59,14 +66,14 @@ def test_topological_sort_visited_nodes() -> None:
     n2 = _GraphNode("2", inputs=["1"])
     n3 = _GraphNode("3", inputs=["1"])
     g = _GraphContainer([n1, n2, n3])
-    sorted_nodes = topological_sort(g)
+    sorted_nodes = cast("Callable[..., EagerTensorProtocol]", topological_sort)(g)
     assert len(sorted_nodes) == 3
 
 
 def test_topological_sort_empty_graph() -> None:
     """Verify topological sort returns empty list for an empty graph container."""
     g = _GraphContainer([])
-    assert len(topological_sort(g)) == 0
+    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", topological_sort)(g)) == 0
 
 
 def test_topological_sort_multiple_visits() -> None:
@@ -80,4 +87,4 @@ def test_topological_sort_multiple_visits() -> None:
         nodes: dict[str, _GraphNode] = {"2": n2, "1": n1}
 
     g = DeterministicGraph()
-    assert len(topological_sort(g)) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", topological_sort)(g)) == 2

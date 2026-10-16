@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -6,8 +5,8 @@ from __future__ import annotations
 import glob  # noqa: F401
 import os  # noqa: F401
 import shutil  # noqa: F401
-from typing import Any
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor  # noqa: F401
@@ -17,13 +16,14 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def _fallback_load(filepath):
+def _fallback_load(filepath: str | None) -> EagerValue:
     """Fallback mechanism to load weights based on file extension.
 
     Args:
-        filepath (Any): The file path.
+        filepath: The file path.
 
-    Returns: np.ndarray: The loaded weights or None.
+    Returns:
+        dict | Tensor | None: The loaded weights or None.
     """
     if not isinstance(filepath, str):
         return None
@@ -32,23 +32,23 @@ def _fallback_load(filepath):
     if filepath.endswith(".npz"):
         return load_npz(filepath)
     if filepath.endswith(".npy"):
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return np.load(filepath)
+        return get_active_backend().execute_op("Load", filepath)
     if filepath.endswith(".h5"):
         return H5WeightFormat().load(filepath)
     return None
 
 
-def load(*args, **kwargs):
-    """Load arrays or pickled Anys from files.
+def load(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Load arrays or pickled objects from files.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor | dict: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -62,49 +62,53 @@ def load(*args, **kwargs):
     return _emit_shape_node("Load", list(args), kwargs, getattr(_first, "shape", ()), getattr(_first, "dtype", "float32"))
 
 
-def save(*args, **kwargs) -> Any:
+def save(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
     """Save.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-        Any: Result.
+        Tensor | None: Result.
     """
+    from typing import cast
+
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("Save", *args, **kwargs)
+        return cast("Tensor | None", get_active_backend().execute_op("Save", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Save", list(args), kwargs, (), "float32")
 
 
-def save_gguf(*args, **kwargs) -> Any:
+def save_gguf(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
     """Save gguf.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-        Any: Result.
+        Tensor | None: Result.
     """
+    from typing import cast
+
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("SaveGguf", *args, **kwargs)
+        return cast("Tensor | None", get_active_backend().execute_op("SaveGguf", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")
 
 
-def save_safetensors(file: str, arrays) -> None:
+def save_safetensors(file: str, arrays: EagerValue) -> None:
     """Save a dictionary of arrays to Safetensors format.
 
     Args:
@@ -114,43 +118,47 @@ def save_safetensors(file: str, arrays) -> None:
     SafetensorsWeightFormat().save(arrays, file)
 
 
-def savez(*args, **kwargs) -> Any:
+def savez(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
     """Savez.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-        Any: Result.
+        Tensor | None: Result.
     """
+    from typing import cast
+
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("Savez", *args, **kwargs)
+        return cast("Tensor | None", get_active_backend().execute_op("Savez", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
 
 
-def savez_compressed(*args, **kwargs) -> Any:
+def savez_compressed(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
     """Savez compressed.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-        Any: Result.
+        Tensor | None: Result.
     """
+    from typing import cast
+
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("SavezCompressed", *args, **kwargs)
+        return cast("Tensor | None", get_active_backend().execute_op("SavezCompressed", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SavezCompressed", list(args), kwargs, (), "float32")
@@ -162,7 +170,7 @@ class Load(OpDef):
 
     op_name = "Load"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -189,7 +197,7 @@ class Save(OpDef):
 
     op_name = "Save"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -216,7 +224,7 @@ class SaveGguf(OpDef):
 
     op_name = "SaveGguf"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -243,7 +251,7 @@ class Savez(OpDef):
 
     op_name = "Savez"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -270,7 +278,7 @@ class SavezCompressed(OpDef):
 
     op_name = "SavezCompressed"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

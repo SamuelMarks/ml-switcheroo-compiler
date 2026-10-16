@@ -1,10 +1,19 @@
 """Unit tests for Dead Code Elimination (DCE) pass."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dce import _find_side_effect_nodes, dce_pass
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_dce_basic():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_dce_basic() -> None:
     """Test DCE on a simple graph with dead nodes."""
     graph = IRGraph()
     graph.nodes = {
@@ -22,7 +31,7 @@ def test_dce_basic():
     assert "n1" in graph.nodes
 
 
-def test_dce_chained_dead_nodes():
+def test_dce_chained_dead_nodes() -> None:
     """Test DCE on a chain of dead nodes."""
     graph = IRGraph()
     graph.nodes = {
@@ -37,7 +46,7 @@ def test_dce_chained_dead_nodes():
     assert "n3" not in graph.nodes
 
 
-def test_dce_side_effect_preservation():
+def test_dce_side_effect_preservation() -> None:
     """Test that DCE preserves nodes with side effects."""
     graph = IRGraph()
     graph.nodes = {
@@ -54,7 +63,7 @@ def test_dce_side_effect_preservation():
     assert "n1" in graph.nodes
 
 
-def test_dce_no_op():
+def test_dce_no_op() -> None:
     """Test DCE on a graph where all nodes are reachable."""
     graph = IRGraph()
     graph.nodes = {"n1": IRNode(id="n1", op_type="Input", inputs=[]), "n2": IRNode(id="n2", op_type="Add", inputs=["n1", "n1"])}
@@ -76,8 +85,8 @@ def test_dce_pass_no_outputs_attribute() -> None:
             self.nodes: dict[str, LogicalNode] = {}
 
     mock_graph = MockGraphWithoutOutputs()
-    res = dce_pass(mock_graph)
-    assert res is False
+    res = cast("Callable[..., EagerTensorProtocol]", dce_pass)(mock_graph)
+    assert bool(res) is False
 
 
 def test_dce_nested_subgraphs() -> None:

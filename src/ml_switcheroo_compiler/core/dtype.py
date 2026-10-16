@@ -1,39 +1,95 @@
-# ruff: noqa: E402, E501, F403
-"""Module dtype.py."""
+"""DType enums for the ml-switcheroo compiler."""
 
 from __future__ import annotations
 
-"""DType enums for the ml-switcheroo compiler."""
-
 from enum import Enum
+from typing import TYPE_CHECKING
 
-from ml_switcheroo_ir.types import DType as DType
+if TYPE_CHECKING:
 
-# Re-export canonical DType and add backward-compatible capitalized attribute aliases
-DType.Float64 = DType.float64
-DType.Float32 = DType.float32
-DType.Float16 = DType.float16
-DType.BFloat16 = DType.bfloat16
-DType.Float8E4M3B11FNUZ = DType.float8_e4m3b11fnuz
-DType.Float8E4M3FN = DType.float8_e4m3fn
-DType.Float8E4M3FNUZ = getattr(DType, "float8_e4m3fnuz", DType.fp8_e4m3fnuz)
-DType.Float8E5M2 = DType.float8_e5m2
-DType.Float8E5M2FNUZ = getattr(DType, "float8_e5m2fnuz", DType.fp8_e5m2fnuz)
-DType.Complex64 = DType.complex64
-DType.Complex128 = DType.complex128
-DType.Int64 = DType.int64
-DType.Int32 = DType.int32
-DType.Int16 = DType.int16
-DType.Int8 = DType.int8
-DType.Int4 = DType.int4
-DType.UInt64 = DType.uint64
-DType.UInt32 = DType.uint32
-DType.UInt16 = DType.uint16
-DType.UInt8 = DType.uint8
-DType.UInt4 = DType.uint4
-DType.Bool = DType.bool
-DType.String = DType.string
-DType.Object = DType.object
+    class DType(str, Enum):
+        """Canonical DType enumeration with lowercase and PascalCase members."""
+
+        float64 = "float64"
+        float32 = "float32"
+        float16 = "float16"
+        bfloat16 = "bfloat16"
+        float8_e4m3b11fnuz = "float8_e4m3b11fnuz"
+        float8_e4m3fn = "float8_e4m3fn"
+        float8_e4m3fnuz = "float8_e4m3fnuz"
+        fp8_e4m3fnuz = "float8_e4m3fnuz"
+        float8_e5m2 = "float8_e5m2"
+        float8_e5m2fnuz = "float8_e5m2fnuz"
+        fp8_e5m2fnuz = "float8_e5m2fnuz"
+        complex64 = "complex64"
+        complex128 = "complex128"
+        int64 = "int64"
+        int32 = "int32"
+        int16 = "int16"
+        int8 = "int8"
+        int4 = "int4"
+        uint64 = "uint64"
+        uint32 = "uint32"
+        uint16 = "uint16"
+        uint8 = "uint8"
+        uint4 = "uint4"
+        bool = "bool"
+        string = "string"
+        object = "object"
+
+        Float64 = "float64"
+        Float32 = "float32"
+        Float16 = "float16"
+        BFloat16 = "bfloat16"
+        Float8E4M3B11FNUZ = "float8_e4m3b11fnuz"
+        Float8E4M3FN = "float8_e4m3fn"
+        Float8E4M3FNUZ = "float8_e4m3fnuz"
+        Float8E5M2 = "float8_e5m2"
+        Float8E5M2FNUZ = "float8_e5m2fnuz"
+        Complex64 = "complex64"
+        Complex128 = "complex128"
+        Int64 = "int64"
+        Int32 = "int32"
+        Int16 = "int16"
+        Int8 = "int8"
+        Int4 = "int4"
+        UInt64 = "uint64"
+        UInt32 = "uint32"
+        UInt16 = "uint16"
+        UInt8 = "uint8"
+        UInt4 = "uint4"
+        Bool = "bool"
+        String = "string"
+        Object = "object"
+
+else:
+    from ml_switcheroo_ir.types import DType as DType
+
+    # Re-export canonical DType and add backward-compatible capitalized attribute aliases
+    DType.Float64 = DType.float64
+    DType.Float32 = DType.float32
+    DType.Float16 = DType.float16
+    DType.BFloat16 = DType.bfloat16
+    DType.Float8E4M3B11FNUZ = DType.float8_e4m3b11fnuz
+    DType.Float8E4M3FN = DType.float8_e4m3fn
+    DType.Float8E4M3FNUZ = getattr(DType, "float8_e4m3fnuz", DType.fp8_e4m3fnuz)
+    DType.Float8E5M2 = DType.float8_e5m2
+    DType.Float8E5M2FNUZ = getattr(DType, "float8_e5m2fnuz", DType.fp8_e5m2fnuz)
+    DType.Complex64 = DType.complex64
+    DType.Complex128 = DType.complex128
+    DType.Int64 = DType.int64
+    DType.Int32 = DType.int32
+    DType.Int16 = DType.int16
+    DType.Int8 = DType.int8
+    DType.Int4 = DType.int4
+    DType.UInt64 = DType.uint64
+    DType.UInt32 = DType.uint32
+    DType.UInt16 = DType.uint16
+    DType.UInt8 = DType.uint8
+    DType.UInt4 = DType.uint4
+    DType.Bool = DType.bool
+    DType.String = DType.string
+    DType.Object = DType.object
 
 
 class QuantDType(Enum):

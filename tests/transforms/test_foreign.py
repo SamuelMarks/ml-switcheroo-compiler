@@ -1,3 +1,9 @@
+"""Tests for test_foreign."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 from unittest.mock import MagicMock
 
@@ -6,16 +12,23 @@ from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.transforms.foreign import _handle_fx_call_function, _handle_fx_output, _handle_fx_placeholder, _translate_jax_equation, ingest_jaxpr, ingest_torch_fx
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_handle_fx_placeholder():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_handle_fx_placeholder() -> None:
+    """Test function test_handle_fx_placeholder."""
     graph = LogicalGraph()
-    node_map = {}
+    node_map = cast("dict[str, EagerTensorProtocol]", {})
     node = MagicMock(name="ph")
-    _handle_fx_placeholder(node, graph, node_map)
+    cast("Callable[..., EagerTensorProtocol]", _handle_fx_placeholder)(node, graph, node_map)
     assert node.name in node_map
 
 
-def test_handle_fx_call_function():
+def test_handle_fx_call_function() -> None:
+    """Test function test_handle_fx_call_function."""
     graph = LogicalGraph()
     node_map = {"a": "a_mapped"}
     node = MagicMock()
@@ -38,30 +51,32 @@ def test_handle_fx_call_function():
     assert graph.nodes[node.name].op_type == "Unknown"
 
 
-def test_handle_fx_output():
+def test_handle_fx_output() -> None:
+    """Test function test_handle_fx_output."""
     graph = LogicalGraph()
-    node_map = {}
+    node_map = cast("dict[str, EagerTensorProtocol]", {})
     node = MagicMock()
     arg1 = MagicMock()
     arg1.name = "out1"
     arg2 = MagicMock()
     del arg2.name
     node.args = [(arg1, arg2)]
-    _handle_fx_output(node, graph, node_map)
+    cast("Callable[..., EagerTensorProtocol]", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == ["out1"]
     node.args = [arg1]
-    _handle_fx_output(node, graph, node_map)
+    cast("Callable[..., EagerTensorProtocol]", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == ["out1"]
 
     # Test args not a tuple and no name
     no_name_arg = MagicMock()
     del no_name_arg.name
     node.args = [no_name_arg]
-    _handle_fx_output(node, graph, node_map)
+    cast("Callable[..., EagerTensorProtocol]", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == []  # It resets graph.outputs to empty
 
 
-def test_ingest_torch_fx():
+def test_ingest_torch_fx() -> None:
+    """Test function test_ingest_torch_fx."""
     with pytest.raises(ValueError):
         ingest_torch_fx(None)
     gm = MagicMock()
@@ -93,7 +108,8 @@ def test_ingest_torch_fx():
     assert len(g3.nodes) == 0
 
 
-def test_translate_jax_equation():
+def test_translate_jax_equation() -> None:
+    """Test function test_translate_jax_equation."""
     graph = LogicalGraph()
     eqn = MagicMock()
     eqn.primitive.name = "add"
@@ -115,7 +131,8 @@ def test_translate_jax_equation():
     assert graph.nodes["out"].op_type == "Unknown"
 
 
-def test_ingest_jaxpr():
+def test_ingest_jaxpr() -> None:
+    """Test function test_ingest_jaxpr."""
     with pytest.raises(ValueError):
         ingest_jaxpr(None)
     jaxpr = MagicMock()

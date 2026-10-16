@@ -1,8 +1,20 @@
+"""Tests for test_rematerialization."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, _load_rules, rematerialization_pass
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_rematerialization_pass():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_rematerialization_pass() -> None:
+    """Test function test_rematerialization_pass."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input")
 
@@ -53,7 +65,8 @@ def test_rematerialization_pass():
     assert _estimate_memory(n3) == 4.0
 
 
-def test_rematerialization_already_exists():
+def test_rematerialization_already_exists() -> None:
+    """Test function test_rematerialization_already_exists."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.rematerialization import rematerialization_pass
 
@@ -86,7 +99,7 @@ def test_rematerialization_already_exists():
     assert n2.attributes.get("rematerialize") is True
 
 
-def test_rematerialization_max_dist():
+def test_rematerialization_max_dist() -> None:
     """Test _find_target_nodes when distance between nodes is within threshold."""
     from ml_switcheroo_ir import LogicalNode
 
@@ -98,7 +111,7 @@ def test_rematerialization_max_dist():
 
     rules = {"target_ops": ["A"], "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0}}
 
-    res = _find_target_nodes([node], consumers, node_indices, rules)
+    res = cast("Callable[..., EagerTensorProtocol]", _find_target_nodes)([node], consumers, node_indices, rules)
     assert not res
 
 

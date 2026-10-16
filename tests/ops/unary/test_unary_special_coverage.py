@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import ml_switcheroo_compiler.ops.unary.special as unary_special
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class _MockDimWithId:
@@ -63,7 +70,7 @@ def test_unary_special_exhaustive() -> None:
     assert cast_op.infer_shape((2, 3)) == (2, 3)
     assert cast_op.infer_shape([4, 5]) == (4, 5)
     assert cast_op.infer_shape(_MockShapeContainer((6, 7))) == (6, 7)
-    assert cast_op.infer_shape(_MockShapeMetaContainer((8, 9))) == (8, 9)
+    assert cast("Callable[..., EagerTensorProtocol]", cast_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", _MockShapeMetaContainer)((8, 9))) == (8, 9)
 
     # 2. Bitcast
     bitcast_op = unary_special.Bitcast()
@@ -83,7 +90,7 @@ def test_unary_special_exhaustive() -> None:
     assert frexp_op.infer_shape((3, 4)) == (3, 4)
     assert frexp_op.infer_shape([5, 6]) == (5, 6)
     assert frexp_op.infer_shape(_MockShapeContainer((7, 8))) == (7, 8)
-    assert frexp_op.infer_shape(_MockShapeMetaContainer((9, 10))) == (9, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", frexp_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", _MockShapeMetaContainer)((9, 10))) == (9, 10)
 
     # 5. Lbeta
     lbeta_op = unary_special.Lbeta()
@@ -93,7 +100,7 @@ def test_unary_special_exhaustive() -> None:
     assert lbeta_op.infer_shape((4, 5, 6)) == (4, 5)
     assert lbeta_op.infer_shape([7, 8]) == (7,)
     assert lbeta_op.infer_shape(_MockShapeContainer((10, 20))) == (10,)
-    assert lbeta_op.infer_shape(99) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", lbeta_op.infer_shape)(99) == ()
 
     # 6. All registered UnaryMathOp subclasses
     unary_math_classes = [

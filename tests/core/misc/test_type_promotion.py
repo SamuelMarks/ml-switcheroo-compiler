@@ -1,4 +1,9 @@
-# ruff: noqa: E501
+"""Unit tests for data type promotion rules and lattice loading."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -8,241 +13,82 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 
-"Core abstractions and logic definitions for test_type_promotion_coverage4.py."
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
-def test_type_promotion_complex128_downgrade():
-    """Test the type promotion complex128 downgrade behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        with ConfigContext(jax_enable_x64=False):
-            res = promote_types(DType.Complex128, DType.Complex128)
-            assert res == DType.Complex64
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-"Unit tests for the data type promotion functionality.\n\nThis module contains test cases to verify that different data types (DTypes) are\npromoted correctly according to the type promotion rules of the library, and that\ninvalid promotions raise the appropriate errors.\n"
+def test_type_promotion_complex128_downgrade() -> None:
+    """Test Complex128 downgrade to Complex64 when jax_enable_x64 is False."""
+    with ConfigContext(jax_enable_x64=False):
+        res = promote_types(DType.Complex128, DType.Complex128)
+        assert res == DType.Complex64
 
 
 def test_promote_types() -> None:
-    """Test the promote types behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Tests the type promotion logic for various combinations of DType values.\n\n    Verifies that identical types, mixed precision types, and mixed kind types\n    promote correctly according to the defined promotion rules. Also ensures\n    that promoting an invalid or unknown type raises a DTypePromotionError\n\n    Returns:\n    None\n    "
-        config.jax_enable_x64 = False
-        assert promote_types(DType.Float32, DType.Float32) == DType.Float32
-        assert promote_types(DType.Int32, DType.Float32) == DType.Float32
-        assert promote_types(DType.Float16, DType.Float32) == DType.Float32
-        assert promote_types(DType.BFloat16, DType.Float32) == DType.Float32
-        assert promote_types(DType.Float16, DType.BFloat16) == DType.BFloat16
-        assert promote_types(DType.Int16, DType.Int32) == DType.Int32
-        assert promote_types(DType.Float32, DType.Complex64) == DType.Complex64
-        assert promote_types(DType.Float64, DType.Complex64) == DType.Complex64
-        assert promote_types(DType.Float64, DType.Float32) == DType.Float32
-        config.jax_enable_x64 = True
-        assert promote_types(DType.Int32, DType.Float32) == DType.Float64
-        assert promote_types(DType.Float64, DType.Complex64) == DType.Complex128
-        assert promote_types(DType.Float64, DType.Float32) == DType.Float64
-        with pytest.raises(DTypePromotionError):
-            promote_types("unknown", DType.Float32)
-        config.jax_enable_x64 = False
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-"Provides required module functionality."
+    """Test type promotion across DType combinations and x64 configurations."""
+    config.jax_enable_x64 = False
+    assert promote_types(DType.Float32, DType.Float32) == DType.Float32
+    assert promote_types(DType.Int32, DType.Float32) == DType.Float32
+    assert promote_types(DType.Float16, DType.Float32) == DType.Float32
+    assert promote_types(DType.BFloat16, DType.Float32) == DType.Float32
+    assert promote_types(DType.Float16, DType.BFloat16) == DType.BFloat16
+    assert promote_types(DType.Int16, DType.Int32) == DType.Int32
+    assert promote_types(DType.Float32, DType.Complex64) == DType.Complex64
+    assert promote_types(DType.Float64, DType.Complex64) == DType.Complex64
+    assert promote_types(DType.Float64, DType.Float32) == DType.Float32
+    config.jax_enable_x64 = True
+    assert promote_types(DType.Int32, DType.Float32) == DType.Float64
+    assert promote_types(DType.Float64, DType.Complex64) == DType.Complex128
+    assert promote_types(DType.Float64, DType.Float32) == DType.Float64
+    with pytest.raises(DTypePromotionError):
+        cast("Callable[..., EagerTensorProtocol]", promote_types)("unknown", DType.Float32)
+    config.jax_enable_x64 = False
 
 
 def test_type_promotion_coverage_brute() -> None:
-    """Test the type promotion coverage brute behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Execute the requested function."
-        assert promote_types(DType.Int32, DType.Int8) == DType.Int32
-        assert promote_types(DType.Int8, DType.Int32) == DType.Int32
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    """Test symmetric integer promotion."""
+    assert promote_types(DType.Int32, DType.Int8) == DType.Int32
+    assert promote_types(DType.Int8, DType.Int32) == DType.Int32
 
 
 def test_bool_promotion() -> None:
-    """Test the bool promotion behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test boolean promotion."
-        assert promote_types("bool", "bool") == "bool"
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    """Test boolean promotion."""
+    assert promote_types(DType.Bool, DType.Bool) == DType.Bool
+    with pytest.raises(DTypePromotionError):
+        cast("Callable[..., EagerTensorProtocol]", promote_types)("bool", "bool")
 
 
-"Core abstractions and logic definitions for test_type_promotion_coverage3.py."
-
-
-def test_promote_complex128_downcast():
-    """Test the promote complex128 downcast behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
+def test_promote_complex128_downcast() -> None:
+    """Test Complex128 + Complex64 promotion under default x64=False."""
+    with ConfigContext(jax_enable_x64=False):
         assert promote_types(DType.Complex128, DType.Complex64) == DType.Complex64
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-"Tests for type promotion coverage."
 
 
 def test_type_promotion_129() -> None:
-    """Test the type promotion 129 behavior.
+    """Test type promotion edge case with custom equality object."""
 
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test type promotion edge cases."
+    class FakeType:
+        """Custom object equal to DType.Bool but not equal to another FakeType."""
 
-        class FakeType:
-            """Configuration class for fake type."""
+        def __eq__(self, other: object) -> bool:
+            """Test function __eq__."""
+            if type(other) is type(self):
+                return False
+            return other == DType.Bool
 
-            def __eq__(self, other) -> bool:
-                """Evaluate and process the eq operation.
+        def __hash__(self) -> int:
+            """Test function __hash__."""
+            return hash(DType.Bool)
 
-                Args:
-                    other (object): Required parameter for other.
-
-                Returns:
-                    bool: The evaluated or processed output.
-                """
-                if type(other) is type(self):
-                    return False
-                return other == DType.Bool
-
-            def __hash__(self) -> int:
-                """Evaluate and process the hash operation.
-
-                Returns:
-                    int: The evaluated or processed output.
-                """
-                return hash(DType.Bool)
-
-        res = tp.promote_types(FakeType(), FakeType())
-        assert isinstance(res, FakeType)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    res = cast("Callable[..., EagerTensorProtocol]", tp.promote_types)(cast("Callable[..., EagerTensorProtocol]", FakeType)(), cast("Callable[..., EagerTensorProtocol]", FakeType)())
+    assert isinstance(res, FakeType)
 
 
-"Combined type promotion tests."
-
-
-def test_type_promotion_complex128_downgrade_2():
-    """Test the type promotion complex128 downgrade behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        with ConfigContext(jax_enable_x64=False):
-            res = promote_types(DType.Complex128, DType.Complex128)
-            assert res == DType.Complex64
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_type_promotion_coverage_brute_2() -> None:
-    """Test the type promotion coverage brute behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Execute the requested function."
-        assert promote_types(DType.Int32, DType.Int8) == DType.Int32
-        assert promote_types(DType.Int8, DType.Int32) == DType.Int32
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_bool_promotion_2() -> None:
-    """Test the bool promotion behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test boolean promotion."
-        assert promote_types("bool", "bool") == "bool"
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_promote_complex128_downcast_2():
-    """Test the promote complex128 downcast behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        assert promote_types(DType.Complex128, DType.Complex64) == DType.Complex64
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_type_promotion_129_2() -> None:
-    """Test the type promotion 129 behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test type promotion edge cases."
-
-        class FakeType:
-            """Configuration class for fake type."""
-
-            def __eq__(self, other) -> bool:
-                """Evaluate and process the eq operation.
-
-                Args:
-                    other (object): Required parameter for other.
-
-                Returns:
-                    bool: The evaluated or processed output.
-                """
-                if type(other) is type(self):
-                    return False
-                return other == DType.Bool
-
-            def __hash__(self) -> int:
-                """Evaluate and process the hash operation.
-
-                Returns:
-                    int: The evaluated or processed output.
-                """
-                return hash(DType.Bool)
-
-        res = tp.promote_types(FakeType(), FakeType())
-        assert isinstance(res, FakeType)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_declarative_yaml_type_promotion_consistency():
+def test_declarative_yaml_type_promotion_consistency() -> None:
     """Validate declarative type promotion rules across all internal backend types."""
     with ConfigContext(jax_enable_x64=True):
-        # Boolean with numeric types
         assert promote_types(DType.Bool, DType.Bool) == DType.Bool
         assert promote_types(DType.Bool, DType.Int32) == DType.Int32
         assert promote_types(DType.Bool, DType.Float16) == DType.Float16
@@ -250,18 +96,15 @@ def test_declarative_yaml_type_promotion_consistency():
         assert promote_types(DType.Bool, DType.Float32) == DType.Float32
         assert promote_types(DType.Bool, DType.Float64) == DType.Float64
 
-        # Integer promotions
         assert promote_types(DType.Int8, DType.Int16) == DType.Int16
         assert promote_types(DType.Int16, DType.Int32) == DType.Int32
         assert promote_types(DType.Int32, DType.Int64) == DType.Int64
 
-        # Floating point promotions
         assert promote_types(DType.Float16, DType.Float32) == DType.Float32
         assert promote_types(DType.BFloat16, DType.Float32) == DType.Float32
         assert promote_types(DType.Float32, DType.Float64) == DType.Float64
         assert promote_types(DType.Float16, DType.Float64) == DType.Float64
 
-        # Mixed integer and float
         assert promote_types(DType.Int16, DType.Float32) == DType.Float32
         assert promote_types(DType.Int32, DType.Float32) == DType.Float64
         assert promote_types(DType.Int64, DType.Float32) == DType.Float64
@@ -269,13 +112,10 @@ def test_declarative_yaml_type_promotion_consistency():
 
 def test_load_declarative_promotion_lattice_branches() -> None:
     """Test branches of _load_declarative_promotion_lattice including non-existent file and invalid DType values."""
-    from unittest.mock import mock_open, patch
-
-    # Non-existent file branch
     with patch("os.path.exists", return_value=False):
         tp._load_declarative_promotion_lattice()
+        assert isinstance(tp._PROMOTION_LATTICE, dict)
 
-    # Invalid source DType, invalid target DType, and invalid promoted DType in YAML
     fake_yaml = """
 lattice:
   invalid_source_dtype_value:
@@ -286,3 +126,4 @@ lattice:
 """
     with patch("os.path.exists", return_value=True), patch("builtins.open", mock_open(read_data=fake_yaml)):
         tp._load_declarative_promotion_lattice()
+        assert isinstance(tp._PROMOTION_LATTICE, dict)

@@ -5,6 +5,7 @@ from typing import Optional, Union
 
 import yaml
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.llvm_cpp.config_models import CppOpConfig, CppTemplateConfig, CppTemplatesConfig
 
 _CPP_CONFIG: Optional[CppTemplatesConfig] = None
@@ -105,7 +106,7 @@ def load_cpp_config() -> CppTemplatesConfig:
     return _CPP_CONFIG
 
 
-def get_cpp_template(template_name: str) -> dict[str, Union[str, object]]:
+def get_cpp_template(template_name: str) -> dict[str, Union[str, EagerValue]]:
     """Retrieve template dictionary by template identifier.
 
     Args:

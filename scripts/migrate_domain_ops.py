@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import cast
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ops.config_models import DomainOperationsModel, OperationDefinitionModel
 
@@ -84,7 +85,7 @@ CPP_SCALAR_EXPR: dict[str, str] = {
     "Swish": "in0_val / (1.0f + std::exp(-in0_val))",
 }
 
-DOMAIN_SPECS: dict[str, dict[str, Any]] = {
+DOMAIN_SPECS: dict[str, dict[str, AttributeValue]] = {
     "binary_ops.yaml": {
         "domain": "binary",
         "ops": [
@@ -293,14 +294,14 @@ DOMAIN_SPECS: dict[str, dict[str, Any]] = {
 }
 
 
-def _load_base_op(op_name: str) -> dict[str, Any]:
+def _load_base_op(op_name: str) -> dict[str, AttributeValue]:
     """Load existing base op YAML if available.
 
     Args:
         op_name (str): The name of the operation.
 
     Returns:
-        dict[str, Any]: Loaded or default op dictionary.
+        dict[str, AttributeValue]: Loaded or default op dictionary.
     """
     candidates = [op_name, NAME_ALIASES.get(op_name, ""), op_name.lower()]
     for cand in candidates:
@@ -319,26 +320,26 @@ def _load_base_op(op_name: str) -> dict[str, Any]:
     }
 
 
-def migrate_domain(filename: str, spec: dict[str, Any]) -> dict[str, Any]:
+def migrate_domain(filename: str, spec: dict[str, AttributeValue]) -> dict[str, AttributeValue]:
     """Build domain-specific operations dictionary for YAML serialization.
 
     Args:
         filename (str): The target YAML filename.
-        spec (dict[str, Any]): Domain specification configuration.
+        spec (dict[str, AttributeValue]): Domain specification configuration.
 
     Returns:
-        dict[str, Any]: Complete validated domain operations dictionary.
+        dict[str, AttributeValue]: Complete validated domain operations dictionary.
     """
-    domain: str = spec["domain"]
-    ops: list[str] = spec["ops"]
-    is_binary: bool = spec.get("is_binary", False)
-    default_inputs: list[str] = spec.get("inputs", ["x"])
+    domain: str = str(spec["domain"])
+    ops: list[str] = cast("list[str]", spec["ops"])
+    is_binary: bool = bool(spec.get("is_binary", False))
+    default_inputs: list[str] = cast("list[str]", spec.get("inputs", ["x"]))
 
-    domain_dict: dict[str, Any] = {}
+    domain_dict: dict[str, AttributeValue] = {}
 
     for op in ops:
         base_data = _load_base_op(op)
-        variants = base_data.get("variants", {})
+        variants = cast("dict[str, dict[str, str]]", base_data.get("variants", {}))
 
         # Enrich llvm_cpp scalar expression if known
         cpp_expr = CPP_SCALAR_EXPR.get(op) or CPP_SCALAR_EXPR.get(NAME_ALIASES.get(op, ""))
@@ -349,7 +350,7 @@ def migrate_domain(filename: str, spec: dict[str, Any]) -> dict[str, Any]:
             variants["llvm_cpp"]["template"] = "binary" if is_binary else "unary"
 
         # Math semantics
-        math_semantics: dict[str, Any] = {
+        math_semantics: dict[str, AttributeValue] = {
             "is_commutative": op in {"Add", "Mul", "BitwiseAnd", "BitwiseOr", "BitwiseXor", "Equal", "NotEqual"},
             "is_associative": op in {"Add", "Mul", "BitwiseAnd", "BitwiseOr", "BitwiseXor"},
             "is_idempotent": op in {"Relu", "Floor", "Ceil", "Round", "Abs"},
@@ -374,7 +375,7 @@ def migrate_domain(filename: str, spec: dict[str, Any]) -> dict[str, Any]:
         shape_formula = "broadcast(x1.shape, x2.shape)" if is_binary and len(default_inputs) >= 2 else (f"{default_inputs[0]}.shape" if default_inputs else "shape")
         dtype_formula = "promote(x1.dtype, x2.dtype)" if is_binary and len(default_inputs) >= 2 else (f"{default_inputs[0]}.dtype" if default_inputs else "float32")
 
-        signature: dict[str, Any] = {
+        signature: dict[str, AttributeValue] = {
             "args": args_list,
             "output_shape_formula": shape_formula,
             "output_dtype_formula": dtype_formula,

@@ -1,3 +1,7 @@
+"""Tests for test_pooling_infer_shape."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.reductions.pooling import (
     AdaptiveAvgPool2D,
     AdaptiveAvgPool3D,
@@ -18,11 +22,17 @@ from ml_switcheroo_compiler.ops.reductions.pooling import (
 )
 
 
-def test_pooling_infer_shape():
+def test_pooling_infer_shape() -> None:
+    """Test function test_pooling_infer_shape."""
+
     class DummyShape2D:
+        """Test class DummyShape2D."""
+
         shape = (1, 1, 4, 4)
 
     class DummyShape3D:
+        """Test class DummyShape3D."""
+
         shape = (1, 1, 4, 4, 4)
 
     assert CTCLoss().infer_shape(DummyShape2D()) == (1,)

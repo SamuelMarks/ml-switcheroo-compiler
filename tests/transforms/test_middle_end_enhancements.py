@@ -229,7 +229,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     g_ag = IRGraph()
     x = IRNode(id="x", op_type="Input")
     ag_node = IRNode(id="ag_in", op_type="Identity", inputs=["x"], attributes={"inject_collective": "AllGather"})
-    ag_node.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"])
+    setattr(ag_node, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
     g_ag.nodes = {"x": x, "ag_in": ag_node}
     g_ag.outputs = ["ag_in"]
 
@@ -241,7 +241,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     g_a2a = IRGraph()
     x2 = IRNode(id="x2", op_type="Input")
     a2a_node = IRNode(id="a2a_in", op_type="Identity", inputs=["x2"], attributes={"inject_collective": "AllToAll"})
-    a2a_node.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"])
+    setattr(a2a_node, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
     g_a2a.nodes = {"x2": x2, "a2a_in": a2a_node}
     g_a2a.outputs = ["a2a_in"]
 

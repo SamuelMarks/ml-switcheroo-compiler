@@ -27,4 +27,4 @@ def gamma(
         Tensor: Result.
     """
     dtype = dtype or dtypes.DType.Float32
-    return _emit_random_node("Gamma", [key, a], shape, dtype)  # type: ignore[list-item]
+    return _emit_random_node("Gamma", [key, a], shape, dtype)

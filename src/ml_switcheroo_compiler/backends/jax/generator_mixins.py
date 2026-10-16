@@ -1,13 +1,13 @@
-# ruff: noqa: E402, E501, F403
 """JAX Generator Mixins."""
 
-from typing import Any, Optional
+from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.audio_utils import (
     extract_mel_attributes,  # noqa: F401
     extract_stft_attributes,  # noqa: F401
 )
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.generator_utils import (
     _extract_extract_boxes_attributes,  # noqa: F401
     _extract_filter_attributes,  # noqa: F401
@@ -33,7 +33,7 @@ class JaxDistributedVisitor:
         return getattr(self.generator, "code", [])
 
     @staticmethod
-    def _extract_code_lines(target: object) -> list[str]:
+    def _extract_code_lines(target: EagerValue) -> list[str]:
         """Obtain mutable target code list from visitor or generator.
 
         Args:
@@ -42,15 +42,15 @@ class JaxDistributedVisitor:
         Returns:
             list[str]: Mutable code lines list.
         """
-        if hasattr(target, "code") and isinstance(target.code, list):
-            return target.code
-        if hasattr(target, "generator") and hasattr(target.generator, "code"):
-            gen_code = target.generator.code
+        if hasattr(target, "code") and isinstance(getattr(target, "code"), list):
+            return cast(list[str], getattr(target, "code"))
+        if hasattr(target, "generator") and hasattr(getattr(target, "generator"), "code"):
+            gen_code = getattr(target, "generator").code
             if isinstance(gen_code, list):
-                return gen_code
+                return cast(list[str], gen_code)
         return []
 
-    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for sending a tensor via token-passing pipeline communication.
 
         Args:
@@ -61,7 +61,7 @@ class JaxDistributedVisitor:
         Returns:
             str: Empty string as send is a statement emitted directly into generator code.
         """
-        code_lines = JaxDistributedVisitor._extract_code_lines(self)
+        code_lines = getattr(JaxDistributedVisitor, "_extract_code_lines")(self)
         if not any("jax.lax.create_token()" in line for line in code_lines):
             code_lines.append("    token = jax.lax.create_token()")
 
@@ -72,7 +72,7 @@ class JaxDistributedVisitor:
         code_lines.append(f"    token = jax.lax.send({in_var}, token, channel={channel})")
         return ""
 
-    def visit_Recv(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Recv(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for receiving a tensor via token-passing pipeline communication.
 
         Args:
@@ -83,7 +83,7 @@ class JaxDistributedVisitor:
         Returns:
             str: The name of the variable storing the received tensor.
         """
-        code_lines = JaxDistributedVisitor._extract_code_lines(self)
+        code_lines = getattr(JaxDistributedVisitor, "_extract_code_lines")(self)
         if not any("jax.lax.create_token()" in line for line in code_lines):
             code_lines.append("    token = jax.lax.create_token()")
 
@@ -93,7 +93,7 @@ class JaxDistributedVisitor:
         raw_shape = getattr(node, "shape_metadata", None)
         if raw_shape is None:
             raw_shape = getattr(node, "attributes", {}).get("shape", ())
-        shape: tuple[object, ...] = tuple(raw_shape) if isinstance(raw_shape, (list, tuple)) else (raw_shape,)
+        shape: tuple[EagerValue, ...] = tuple(raw_shape) if isinstance(raw_shape, (list, tuple)) else (raw_shape,)
 
         raw_dtype = str(getattr(node, "attributes", {}).get("dtype", getattr(node, "dtype", "float32"))).lower()
         clean_dtype = raw_dtype if raw_dtype.startswith("jnp.") else f"jnp.{raw_dtype}"
@@ -104,7 +104,7 @@ class JaxDistributedVisitor:
         code_lines.append(f"    {res_var}, token = jax.lax.recv(token, channel={channel}, shape={shape}, dtype={clean_dtype})")
         return res_var
 
-    def visit_AllGather(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_AllGather(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the all_gather operation.
 
         Args:
@@ -119,7 +119,7 @@ class JaxDistributedVisitor:
         axis_name: str = getattr(node, "attributes", {}).get("axis_name", "'x'")
         return f"jax.lax.all_gather({tensor}, axis_name={axis_name})"
 
-    def visit_ReduceScatter(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_ReduceScatter(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the reduce_scatter operation.
 
         Args:
@@ -136,7 +136,7 @@ class JaxDistributedVisitor:
         op: str = getattr(node, "attributes", {}).get("op", "jax.lax.psum")
         return f"jax.lax.reduce_scatter({tensor}, {op}, scatter_dimension={axis}, axis_name={axis_name})"
 
-    def visit_AllReduce(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_AllReduce(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the all_reduce operation.
 
         Args:
@@ -152,7 +152,7 @@ class JaxDistributedVisitor:
         op: str = getattr(node, "attributes", {}).get("op", "psum")
         return f"jax.lax.{op}({tensor}, axis_name={axis_name})"
 
-    def visit_AllToAll(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_AllToAll(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the all_to_all collective operation.
 
         Args:
@@ -169,7 +169,7 @@ class JaxDistributedVisitor:
         concat_axis: int = int(getattr(node, "attributes", {}).get("concat_axis", 0))
         return f"jax.lax.all_to_all({tensor}, axis_name={axis_name}, split_axis={split_axis}, concat_axis={concat_axis})"
 
-    def visit_Broadcast(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Broadcast(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the broadcast collective operation.
 
         Args:
@@ -196,7 +196,7 @@ class JaxMathVisitor:
         """
         self.generator = generator
 
-    def visit_SegmentSum(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_SegmentSum(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the SegmentSum operation.
 
         Args:
@@ -210,7 +210,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_sum({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_SegmentMax(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_SegmentMax(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the SegmentMax operation.
 
         Args:
@@ -224,7 +224,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_max({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_SegmentMin(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_SegmentMin(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the SegmentMin operation.
 
         Args:
@@ -238,7 +238,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_min({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_SegmentProd(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_SegmentProd(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the SegmentProd operation.
 
         Args:
@@ -252,7 +252,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_prod({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_UnsortedSegmentSum(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_UnsortedSegmentSum(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the UnsortedSegmentSum operation.
 
         Args:
@@ -266,7 +266,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_sum({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_UnsortedSegmentMax(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_UnsortedSegmentMax(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the UnsortedSegmentMax operation.
 
         Args:
@@ -280,7 +280,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_max({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_UnsortedSegmentMin(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_UnsortedSegmentMin(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the UnsortedSegmentMin operation.
 
         Args:
@@ -294,7 +294,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_min({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_UnsortedSegmentProd(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_UnsortedSegmentProd(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the UnsortedSegmentProd operation.
 
         Args:
@@ -308,7 +308,7 @@ class JaxMathVisitor:
         num_segments = getattr(node, "attributes", {}).get("num_segments", "None")
         return f"jax.ops.segment_prod({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
 
-    def visit_MatrixExponential(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_MatrixExponential(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the MatrixExponential operation.
 
         Args:
@@ -321,7 +321,7 @@ class JaxMathVisitor:
         """
         return f"jax.scipy.linalg.expm({input_vars[0]})"
 
-    def visit_Polar(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Polar(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the Polar operation.
 
         Args:
@@ -337,7 +337,7 @@ class JaxMathVisitor:
             side = f"'{side}'"
         return f"jax.scipy.linalg.polar({input_vars[0]}, side={side})"
 
-    def visit_Schur(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Schur(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the Schur operation.
 
         Args:
@@ -350,7 +350,7 @@ class JaxMathVisitor:
         """
         return f"jax.scipy.linalg.schur({input_vars[0]})"
 
-    def visit_Cholesky(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Cholesky(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the Cholesky operation.
 
         Args:
@@ -363,7 +363,7 @@ class JaxMathVisitor:
         """
         return f"jax.numpy.linalg.cholesky({input_vars[0]})"
 
-    def visit_Svd(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Svd(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the Svd operation.
 
         Args:
@@ -378,7 +378,7 @@ class JaxMathVisitor:
         compute_uv: bool = bool(getattr(node, "attributes", {}).get("compute_uv", True))
         return f"jax.numpy.linalg.svd({input_vars[0]}, full_matrices={full_matrices}, compute_uv={compute_uv})"
 
-    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the PowerIteration operation.
 
         Args:
@@ -393,7 +393,7 @@ class JaxMathVisitor:
         u_var: str = input_vars[1] if len(input_vars) > 1 else "None"
         return f"jax_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
-    def visit_RaggedDot(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_RaggedDot(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the RaggedDot operation.
 
         Args:
@@ -406,7 +406,7 @@ class JaxMathVisitor:
         """
         return f"jax_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the Einsum operation.
 
         Args:
@@ -421,7 +421,7 @@ class JaxMathVisitor:
         eq: str = str(kwargs.get("equation", ""))
         return f"jnp.einsum('{eq}', {args_str})"
 
-    def visit_Conv1D(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Conv1D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for Conv1D.
 
         Args:
@@ -437,7 +437,7 @@ class JaxMathVisitor:
         padding = str(getattr(node, "attributes", {}).get("padding", "SAME")).upper()
         return f"jax.lax.conv_general_dilated({input_vars[0]}, {input_vars[1]}, window_strides=({stride},), padding='{padding}')"
 
-    def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for Conv2D.
 
         Args:
@@ -453,7 +453,7 @@ class JaxMathVisitor:
         padding = str(getattr(node, "attributes", {}).get("padding", "SAME")).upper()
         return f"jax.lax.conv_general_dilated({input_vars[0]}, {input_vars[1]}, window_strides={stride}, padding='{padding}')"
 
-    def visit_Conv3D(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Conv3D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for Conv3D.
 
         Args:
@@ -469,7 +469,7 @@ class JaxMathVisitor:
         padding = str(getattr(node, "attributes", {}).get("padding", "SAME")).upper()
         return f"jax.lax.conv_general_dilated({input_vars[0]}, {input_vars[1]}, window_strides={stride}, padding='{padding}')"
 
-    def visit_MultiHeadAttention(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_MultiHeadAttention(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for MultiHeadAttention / ScaledDotProductAttention.
 
         Args:
@@ -483,7 +483,7 @@ class JaxMathVisitor:
         q, k, v = input_vars[0], input_vars[1], input_vars[2]
         return f"(lambda q, k, v: (jnp.matmul(jax.nn.softmax(jnp.matmul(q, jnp.swapaxes(k, -1, -2)) / jnp.sqrt(q.shape[-1])), v)))({q}, {k}, {v})"
 
-    def visit_ScaledDotProductAttention(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_ScaledDotProductAttention(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for ScaledDotProductAttention.
 
         Args:
@@ -496,7 +496,7 @@ class JaxMathVisitor:
         """
         return self.visit_MultiHeadAttention(node, input_vars, **kwargs)
 
-    def visit_LayerNorm(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_LayerNorm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for LayerNorm.
 
         Args:
@@ -510,7 +510,7 @@ class JaxMathVisitor:
         eps = float(getattr(node, "attributes", {}).get("eps", 1e-5))
         return f"(lambda x: (x - jnp.mean(x, axis=-1, keepdims=True)) / jnp.sqrt(jnp.var(x, axis=-1, keepdims=True) + {eps}))({input_vars[0]})"
 
-    def visit_RMSNorm(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_RMSNorm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for RMSNorm.
 
         Args:
@@ -524,7 +524,7 @@ class JaxMathVisitor:
         eps = float(getattr(node, "attributes", {}).get("eps", 1e-5))
         return f"(lambda x: x * jax.lax.rsqrt(jnp.mean(x ** 2, axis=-1, keepdims=True) + {eps}))({input_vars[0]})"
 
-    def visit_BatchNorm(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_BatchNorm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for BatchNorm.
 
         Args:
@@ -538,7 +538,7 @@ class JaxMathVisitor:
         eps = float(getattr(node, "attributes", {}).get("eps", 1e-5))
         return f"(lambda x: (x - jnp.mean(x, axis=0, keepdims=True)) / jnp.sqrt(jnp.var(x, axis=0, keepdims=True) + {eps}))({input_vars[0]})"
 
-    def visit_GroupNorm(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_GroupNorm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for GroupNorm.
 
         Args:
@@ -551,7 +551,7 @@ class JaxMathVisitor:
         """
         return f"{input_vars[0]}"
 
-    def visit_MaxPool2D(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_MaxPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for MaxPool2D.
 
         Args:
@@ -564,7 +564,7 @@ class JaxMathVisitor:
         """
         return f"jax.lax.reduce_window({input_vars[0]}, -jnp.inf, jax.lax.max, window_dimensions=(1, 2, 2, 1), window_strides=(1, 2, 2, 1), padding='SAME')"
 
-    def visit_AvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_AvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for AvgPool2D.
 
         Args:
@@ -577,7 +577,7 @@ class JaxMathVisitor:
         """
         return f"(jax.lax.reduce_window({input_vars[0]}, 0.0, jax.lax.add, window_dimensions=(1, 2, 2, 1), window_strides=(1, 2, 2, 1), padding='SAME') / 4.0)"
 
-    def visit_AdaptiveAvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_AdaptiveAvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for AdaptiveAvgPool2D.
 
         Args:
@@ -590,7 +590,7 @@ class JaxMathVisitor:
         """
         return f"{input_vars[0]}"
 
-    def visit_Linear(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Linear(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for Linear projection.
 
         Args:
@@ -617,7 +617,7 @@ class JaxControlFlowVisitor:
         """
         self.generator = generator
 
-    def visit_If(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_If(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the If operation.
 
         Args:
@@ -631,7 +631,7 @@ class JaxControlFlowVisitor:
         # Simple fallback for jax.lax.cond if proper block tracing is not used natively
         return f"jax.lax.cond({input_vars[0]}, lambda: None, lambda: None)"
 
-    def visit_Loop(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Loop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the Loop operation.
 
         Args:
@@ -644,7 +644,7 @@ class JaxControlFlowVisitor:
         """
         return f"jax.lax.while_loop(lambda _: True, lambda _: {input_vars[0]}, {input_vars[0]})"
 
-    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate JAX code for the Scan operation.
 
         Args:

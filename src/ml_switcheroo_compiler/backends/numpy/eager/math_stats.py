@@ -1,11 +1,13 @@
-# ruff: noqa: E402, E501, F403
 """Math stats ops."""
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from types import ModuleType
+from typing import Callable, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("Average")
-def _np_average(backend_module, *args, **kwargs):
+def _np_average(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_average operation.
 
     Args:
@@ -16,11 +18,11 @@ def _np_average(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.average(*args, **kwargs)
+    return cast(EagerValue, backend_module.average(*args, **kwargs))
 
 
 @numpy_eager_registry.register("CorrCoef")
-def _np_corrcoef(backend_module, *args, **kwargs):
+def _np_corrcoef(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return Pearson product-moment correlation coefficients.
 
     Args:
@@ -30,11 +32,11 @@ def _np_corrcoef(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.corrcoef(*args, **kwargs)
+    return cast(EagerValue, backend_module.corrcoef(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Correlate")
-def _np_correlate(backend_module, *args, **kwargs):
+def _np_correlate(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
@@ -44,11 +46,11 @@ def _np_correlate(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.correlate(*args, **kwargs)
+    return cast(EagerValue, backend_module.correlate(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Cov")
-def _np_cov(backend_module, *args, **kwargs):
+def _np_cov(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Estimate a covariance matrix, given data and weights.
 
     Args:
@@ -58,11 +60,11 @@ def _np_cov(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.cov(*args, **kwargs)
+    return cast(EagerValue, backend_module.cov(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Histogram")
-def _np_histogram_(backend_module, *args, **kwargs):
+def _np_histogram_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Histogram via histogram.
 
     Args:
@@ -72,11 +74,11 @@ def _np_histogram_(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.histogram(*args, **kwargs)
+    return cast(EagerValue, backend_module.histogram(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Histogram2d")
-def _np_histogram2d_(backend_module, *args, **kwargs):
+def _np_histogram2d_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Histogram2d via histogram2d.
 
     Args:
@@ -86,11 +88,11 @@ def _np_histogram2d_(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.histogram2d(*args, **kwargs)
+    return cast(EagerValue, backend_module.histogram2d(*args, **kwargs))
 
 
 @numpy_eager_registry.register("HistogramBinEdges")
-def _np_histogram_bin_edges_(backend_module, *args, **kwargs):
+def _np_histogram_bin_edges_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement HistogramBinEdges via histogram_bin_edges.
 
     Args:
@@ -100,11 +102,11 @@ def _np_histogram_bin_edges_(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.histogram_bin_edges(*args, **kwargs)
+    return cast(EagerValue, backend_module.histogram_bin_edges(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Histogramdd")
-def _np_histogramdd_(backend_module, *args, **kwargs):
+def _np_histogramdd_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Histogramdd via histogramdd.
 
     Args:
@@ -114,11 +116,11 @@ def _np_histogramdd_(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.histogramdd(*args, **kwargs)
+    return cast(EagerValue, backend_module.histogramdd(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Median")
-def _np_median_(backend_module, *args, **kwargs):
+def _np_median_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Median via median.
 
     Args:
@@ -128,11 +130,11 @@ def _np_median_(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.median(*args, **kwargs)
+    return cast(EagerValue, backend_module.median(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix(backend_module, *args, **kwargs):
+def _np_confusion_matrix(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_confusion_matrix operation.
 
     Args:
@@ -152,25 +154,25 @@ def _np_confusion_matrix(backend_module, *args, **kwargs):
     y_pred = args[1] if len(args) > 1 else kwargs.get("predictions", None)
 
     if hasattr(y_true, "data"):
-        y_true = y_true.data
+        y_true = getattr(y_true, "data")
     if hasattr(y_pred, "data"):
-        y_pred = y_pred.data
+        y_pred = getattr(y_pred, "data")
 
     if y_true is None or y_pred is None:
         raise ValueError("Expected labels and predictions")
 
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
-        num_classes = max(np.max(y_true), np.max(y_pred)) + 1
+        num_classes = cast("Callable[..., EagerTensorProtocol]", max)(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
 
     y_true = np.asarray(y_true).flatten()
     y_pred = np.asarray(y_pred).flatten()
 
-    return np.bincount(y_true * num_classes + y_pred, minlength=num_classes**2).reshape((num_classes, num_classes))
+    return cast(EagerValue, getattr(getattr(np, "bincount")(cast(EagerTensorProtocol, y_true) * cast(EagerTensorProtocol, num_classes) + cast(EagerTensorProtocol, y_pred), minlength=cast(EagerTensorProtocol, num_classes) ** 2), "reshape")((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Descriptive")
-def _np_descriptive(backend_module, *args, **kwargs):
+def _np_descriptive(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_descriptive operation.
 
     Args:
@@ -188,16 +190,16 @@ def _np_descriptive(backend_module, *args, **kwargs):
 
     a = args[0] if len(args) > 0 else kwargs.get("a", None)
     if hasattr(a, "data"):
-        a = a.data
+        a = getattr(a, "data")
 
     if a is None:
         raise ValueError("Expected 1 argument")
 
-    return {"mean": np.mean(a), "std": np.std(a), "min": np.min(a), "max": np.max(a)}
+    return {"mean": getattr(np, "mean")(a), "std": getattr(np, "std")(a), "min": getattr(np, "min")(a), "max": getattr(np, "max")(a)}
 
 
 @numpy_eager_registry.register("Distributions")
-def _np_distributions(backend_module, *args, **kwargs):
+def _np_distributions(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_distributions operation.
 
     Args:
@@ -214,7 +216,7 @@ def _np_distributions(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("RandomCategorical")
-def _np_randomcategorical(backend_module, *args, **kwargs):
+def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_randomcategorical operation.
 
     Args:
@@ -232,21 +234,21 @@ def _np_randomcategorical(backend_module, *args, **kwargs):
     except IndexError:
         logits = kwargs.get("logits")
     if hasattr(logits, "data"):
-        logits = logits.data
+        logits = getattr(logits, "data")
     shape = kwargs.get("shape", ())
     # Compute probabilities from logits
-    p = np.exp(logits - np.max(logits, axis=-1, keepdims=True))
+    p = getattr(np, "exp")(logits - getattr(np, "max")(logits, axis=-1, keepdims=True))
     p = p / np.sum(p, axis=-1, keepdims=True)
     if not shape:
         shape = p.shape[:-1]
     # Simple choice using flat probabilities
     # Assuming logits are 1D or batched properly
-    res = np.zeros(shape, dtype=np.int32)
-    return res
+    res = getattr(np, "zeros")(shape, dtype=np.int32)
+    return cast(EagerValue, res)
 
 
 @numpy_eager_registry.register("RandomPermutation")
-def _np_randompermutation(backend_module, *args, **kwargs):
+def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_randompermutation operation.
 
     Args:
@@ -264,15 +266,15 @@ def _np_randompermutation(backend_module, *args, **kwargs):
     except IndexError:
         x = kwargs.get("x")
     if hasattr(x, "data"):
-        x = x.data
+        x = getattr(x, "data")
 
     if isinstance(x, (int, np.integer)):
         return np.random.permutation(x)
-    return np.random.permutation(np.copy(x))
+    return np.random.permutation(getattr(np, "copy")(x))
 
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
-def _np_randomtruncatednormal(backend_module, *args, **kwargs):
+def _np_randomtruncatednormal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_randomtruncatednormal operation.
 
     Args:
@@ -284,11 +286,11 @@ def _np_randomtruncatednormal(backend_module, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
-    return backend_module.random.standard_normal(size=shape)
+    return cast(EagerValue, backend_module.random.standard_normal(size=shape))
 
 
 @numpy_eager_registry.register("RandomBernoulli")
-def _np_randombernoulli(backend_module, *args, **kwargs):
+def _np_randombernoulli(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_randombernoulli operation.
 
     Args:
@@ -301,11 +303,11 @@ def _np_randombernoulli(backend_module, *args, **kwargs):
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
-    return backend_module.random.binomial(1, p, size=shape)
+    return cast(EagerValue, backend_module.random.binomial(1, p, size=shape))
 
 
 @numpy_eager_registry.register("RandomUniform")
-def _np_randomuniform(backend_module, *args, **kwargs):
+def _np_randomuniform(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_randomuniform operation.
 
     Args:
@@ -319,11 +321,11 @@ def _np_randomuniform(backend_module, *args, **kwargs):
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     low = kwargs.get("minval", args[1] if len(args) > 1 else 0.0)
     high = kwargs.get("maxval", args[2] if len(args) > 2 else 1.0)
-    return backend_module.random.uniform(low=low, high=high, size=shape)
+    return cast(EagerValue, backend_module.random.uniform(low=low, high=high, size=shape))
 
 
 @numpy_eager_registry.register("RandomChoice")
-def _np_randomchoice(backend_module, *args, **kwargs):
+def _np_randomchoice(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_randomchoice operation.
 
     Args:
@@ -342,15 +344,15 @@ def _np_randomchoice(backend_module, *args, **kwargs):
     p = kwargs.get("p", args[2] if len(args) > 2 else None)
 
     if hasattr(a, "data"):
-        a = a.data
+        a = getattr(a, "data")
     if hasattr(p, "data") and p is not None:
         p = p.data
 
-    return np.random.choice(a, size=shape, replace=replace, p=p)
+    return cast(EagerValue, getattr(np.random, "choice")(a, size=shape, replace=replace, p=p))
 
 
 @numpy_eager_registry.register("RandomShuffle")
-def _np_randomshuffle(backend_module, *args, **kwargs):
+def _np_randomshuffle(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_randomshuffle operation.
 
     Args:
@@ -365,14 +367,14 @@ def _np_randomshuffle(backend_module, *args, **kwargs):
 
     x = kwargs.get("x", args[1] if len(args) > 1 else args[0])
     if hasattr(x, "data"):
-        x = x.data
-    x = np.copy(x)
+        x = getattr(x, "data")
+    x = getattr(np, "copy")(x)
     np.random.shuffle(x)
-    return x
+    return cast(EagerValue, x)
 
 
 @numpy_eager_registry.register("Dirichlet")
-def _np_dirichlet(backend_module, *args, **kwargs):
+def _np_dirichlet(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_dirichlet operation.
 
     Args:
@@ -388,5 +390,5 @@ def _np_dirichlet(backend_module, *args, **kwargs):
     alpha = kwargs.get("alpha", args[1] if len(args) > 1 else None)
     shape = kwargs.get("shape", ())
     if hasattr(alpha, "data"):
-        alpha = alpha.data
-    return np.random.dirichlet(alpha, size=shape)
+        alpha = getattr(alpha, "data")
+    return cast(EagerValue, getattr(np.random, "dirichlet")(alpha, size=shape))

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -12,6 +12,11 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_bitwise import (
     _signbit,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_math_bitwise_coverage() -> None:
@@ -23,8 +28,8 @@ def test_math_bitwise_coverage() -> None:
     # 1. _signbit
     # Case A: backend has signbit
     res_sb = _signbit(np, np.array([-1.0, 0.0, 1.0]))
-    assert bool(res_sb[0]) is True
-    assert bool(res_sb[2]) is False
+    assert bool(cast("EagerTensorProtocol", getattr(res_sb, "__getitem__")(0))) is True
+    assert bool(cast("EagerTensorProtocol", getattr(res_sb, "__getitem__")(2))) is False
 
     # Case B: backend lacks signbit (fallback x < 0)
     class DummyNoSignbit:
@@ -33,15 +38,15 @@ def test_math_bitwise_coverage() -> None:
         pass
 
     res_fallback = _signbit(DummyNoSignbit(), np.array([-2, 5]))
-    assert bool(res_fallback[0]) is True
-    assert bool(res_fallback[1]) is False
+    assert bool(cast("EagerTensorProtocol", getattr(res_fallback, "__getitem__")(0))) is True
+    assert bool(cast("EagerTensorProtocol", getattr(res_fallback, "__getitem__")(1))) is False
 
     # 2. _np_packbits
     # Case A: backend has packbits
     class DummyPackbits:
         """Dummy backend with packbits."""
 
-        def packbits(self, *args: Any, **kwargs: Any) -> str:
+        def packbits(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock packbits."""
             return "packed"
 
@@ -55,14 +60,14 @@ def test_math_bitwise_coverage() -> None:
 
     arr = np.array([[[1, 0, 1, 1, 0, 0, 1, 0]]], dtype=np.uint8)
     packed_res = _np_packbits(DummyNoPackbits(), arr, axis=-1)
-    assert packed_res.shape == (1, 1, 1)
+    assert cast("EagerTensorProtocol", getattr(packed_res, "shape")) == (1, 1, 1)
 
     # 3. _np_unpackbits
     # Case A: backend has unpackbits
     class DummyUnpackbits:
         """Dummy backend with unpackbits."""
 
-        def unpackbits(self, *args: Any, **kwargs: Any) -> str:
+        def unpackbits(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock unpackbits."""
             return "unpacked"
 
@@ -70,7 +75,7 @@ def test_math_bitwise_coverage() -> None:
 
     # Case B: backend lacks unpackbits (fallback to numpy.unpackbits)
     unpacked_res = _np_unpackbits(DummyNoPackbits(), np.array([180], dtype=np.uint8))
-    assert len(unpacked_res) == 8
+    assert cast("Callable[..., EagerTensorProtocol]", len)(unpacked_res) == 8
 
     # Registry verification
     assert global_eager_registry.get("Signbit") is not None

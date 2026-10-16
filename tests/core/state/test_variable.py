@@ -1,6 +1,8 @@
 # ruff: noqa: E501
 """Core abstractions and logic definitions for test_variable.py."""
 
+from __future__ import annotations
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import ConfigContext
@@ -10,7 +12,7 @@ from ml_switcheroo_compiler.core.tensor import Parameter, Tensor, TensorConfig, 
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_variable_and_parameter():
+def test_variable_and_parameter() -> None:
     """Test the variable and parameter behavior.
 
     Returns:
@@ -28,8 +30,8 @@ def test_variable_and_parameter():
             v.assign(t)
             try:
                 v.assign(t)
-            except Exception:
-                pass
+            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                assert _exc is not None
         with ConfigContext(eager_mode=False):
             global_tracing_state.start_tracing()
             try:
@@ -40,5 +42,5 @@ def test_variable_and_parameter():
                 v.assign_sub(t)
             finally:
                 global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

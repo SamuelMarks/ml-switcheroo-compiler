@@ -1,5 +1,9 @@
 """Unit tests for the CST transpiler backend."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.cst_transpiler import (
     CSTTransformer,
     _build_attribute_chain,
@@ -7,6 +11,11 @@ from ml_switcheroo_compiler.backends.cst_transpiler import (
     type_infer_dry_run,
     validate_diff,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_build_attribute_chain() -> None:
@@ -78,8 +87,8 @@ def test_transpile_source_import() -> None:
 
     transformer = CSTTransformer("jax")
     dummy_names = [cst.ImportAlias(name=cst.Name("foo"))]
-    node = cst.ImportFrom(module=cst.Integer("1"), names=dummy_names)
-    assert transformer.leave_ImportFrom(node, node) is node
+    node = cast("Callable[..., EagerTensorProtocol]", cst.ImportFrom)(module=cast("Callable[..., EagerTensorProtocol]", cst.Integer)("1"), names=dummy_names)
+    assert id(cast("Callable[..., EagerTensorProtocol]", transformer.leave_ImportFrom)(node, node)) == id(node)
 
     # Test _get_base_name fallback (Line 79)
     # create a mock Attribute with a non-Name/non-Attribute value
@@ -108,7 +117,7 @@ def test_transpile_source_call() -> None:
     source = "add(x, y)\n"
     assert transpile_source(source, target_framework="jax") == source
 
-    transformer = CSTTransformer("jax")
+    CSTTransformer("jax")
 
     # Complex non-attribute call (to cover `not isinstance(updated_node.func.value, cst.Name)`)
     # Actually, `mlx.core.add` has `func.value` as an Attribute, which we now handle with `_get_base_name`
@@ -202,7 +211,8 @@ def test_type_infer_assign_edge_cases() -> None:
     assert res == {"dry_run": "success"}
 
 
-def test_transpile_kwargs():
+def test_transpile_kwargs() -> None:
+    """Test function test_transpile_kwargs."""
     source = "torch.sum(x, dim=1, keepdim=True)\n"
     assert transpile_source(source, target_framework="jax") == "jax.numpy.sum(x, axis=1, keepdims=True)\n"
 
@@ -210,7 +220,8 @@ def test_transpile_kwargs():
     assert transpile_source(source, target_framework="pytorch") == "torch.sum(x, dim=1, keepdim=True)\n"
 
 
-def test_transpile_broadcast_expand():
+def test_transpile_broadcast_expand() -> None:
+    """Test function test_transpile_broadcast_expand."""
     source = "x.expand(1, 2)\n"
     assert transpile_source(source, target_framework="jax") == "jax.numpy.broadcast_to(x, 1, 2)\n"
     assert transpile_source(source, target_framework="mlx") == "mlx.core.broadcast_to(x, 1, 2)\n"
@@ -220,7 +231,8 @@ def test_transpile_broadcast_expand():
     assert transpile_source(source, target_framework="pytorch") == "x.expand(1, 2)\n"
 
 
-def test_transpile_classdef():
+def test_transpile_classdef() -> None:
+    """Test function test_transpile_classdef."""
     source = "class MyModel(nn.Module):\n    def forward(self, x):\n        return x\n"
     res_jax = transpile_source(source, target_framework="jax")
     assert "class MyModel(flax.linen.Module):" in res_jax
@@ -232,7 +244,8 @@ def test_transpile_classdef():
     assert "def forward(self, x):" in res_pt
 
 
-def test_cst_coverage_edge_cases():
+def test_cst_coverage_edge_cases() -> None:
+    """Test function test_cst_coverage_edge_cases."""
     source = "class MyModel(object):\n    def __call__(x):\n        return x\n"
     res = transpile_source(source, target_framework="pytorch")
     assert "class MyModel(object):" in res
@@ -252,13 +265,15 @@ def test_cst_coverage_edge_cases():
     assert "def foo(a=1): pass" in res4
 
 
-def test_transpile_kwarg_else():
+def test_transpile_kwarg_else() -> None:
+    """Test function test_transpile_kwarg_else."""
     source = "foo(a=1)\n"
     res = transpile_source(source, target_framework="unknown")
     assert "foo(a=1)" in res
 
 
 def test_cst_transpiler_branches() -> None:
+    """Test function test_cst_transpiler_branches."""
     from ml_switcheroo_compiler.backends.cst_transpiler import type_infer_dry_run, validate_diff
 
     assert type_infer_dry_run("some random invalid python code {")["dry_run"] == "failed"
@@ -279,18 +294,21 @@ def test_cst_transpiler_branches() -> None:
 
 
 def test_cst_attribute() -> None:
+    """Test function test_cst_attribute."""
     source = "x = self.weight\n"
     res = transpile_source(source)
     assert 'state["weight"]' in res or "self.weight" in res
 
 
 def test_cst_import_branches() -> None:
+    """Test function test_cst_import_branches."""
     source = "import torch as t\n"
     res = transpile_source(source, target_framework="jax")
     assert "import" in res
 
 
-def test_cst_transpiler_missing_branches():
+def test_cst_transpiler_missing_branches() -> None:
+    """Test function test_cst_transpiler_missing_branches."""
     import libcst as cst
 
     from ml_switcheroo_compiler.backends.cst_transpiler import CSTTransformer, transpile_source
@@ -315,14 +333,16 @@ def test_cst_transpiler_missing_branches():
     # If the target framework has an empty kwarg_map it falls to 160.
     # We can fake it via subclass.
     class FakeConfig:
-        kwarg_map = {}
+        """Test class FakeConfig."""
+
+        kwarg_map = cast("dict[str, EagerTensorProtocol]", {})
         module_path = ["fake"]
         broadcast_method = "broadcast_fake"
-        method_map = {}
-        class_bases = {"fake_base": []}
+        method_map = cast("dict[str, EagerTensorProtocol]", {})
+        class_bases = cast("EagerTensorProtocol", {"fake_base": []})
 
     visitor = CSTTransformer("pytorch")
-    visitor.target_config = FakeConfig()
+    setattr(visitor, "target_config", FakeConfig())
 
     tree = cst.parse_module("func(x=1)")
     tree = tree.visit(visitor)
@@ -330,9 +350,8 @@ def test_cst_transpiler_missing_branches():
     # 5. broadcast_method different but not expand/broadcast_to
     # Just need fw_config.broadcast_method = "A" and target = "B"
     # Actually, we can just trigger it using fake visitor
-    visitor.target_config = FakeConfig()
+    setattr(visitor, "target_config", FakeConfig())
     # It needs a valid original fw config in _CONFIG.frameworks to match
-    source2 = "x.broadcast(1)"
 
     # 6. line 247 -> 241 (target base parts empty)
     # visitor with FakeConfig that has empty class base
@@ -342,7 +361,7 @@ def test_cst_transpiler_missing_branches():
     # 5. properly visit
     # Let's say pytorch to fake, pytorch uses expand, fake uses broadcast_fake
     tree = cst.parse_module("x.expand(1)")
-    visitor.target_config = FakeConfig()  # with broadcast_fake
+    setattr(visitor, "target_config", FakeConfig())  # with broadcast_fake
     visitor.target_framework = "fake"
     # To match we need final_node.func.attr.value to be the broadcast_method of some config.
     # We can just visit it directly
@@ -394,18 +413,22 @@ def test_cst_transpiler_advanced_transforms() -> None:
 
     # Early returns with target_config fallback to jnp (line 338 fallback)
     class FalsyAfterFirstCheck:
+        """Test class FalsyAfterFirstCheck."""
+
         def __init__(self) -> None:
+            """Test function __init__."""
             self.checked = False
             self.method_map: dict[str, str] = {}
 
         def __bool__(self) -> bool:
+            """Test function __bool__."""
             if not self.checked:
                 self.checked = True
                 return True
             return False
 
     t_dynamic = CSTTransformer("jax")
-    t_dynamic.target_config = FalsyAfterFirstCheck()  # type: ignore[assignment]
+    setattr(t_dynamic, "target_config", FalsyAfterFirstCheck())
     tree_dynamic = cst.parse_module(src_early_ret)
     res_dynamic = tree_dynamic.visit(t_dynamic)
     assert "jnp.where(cond, a, b)" in res_dynamic.code

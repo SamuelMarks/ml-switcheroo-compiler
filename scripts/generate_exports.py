@@ -62,6 +62,53 @@ def _append_import_lines(
         all_exports.extend(unique_exports)
 
 
+def _extract_existing_all(source: str) -> Optional[list[str]]:
+    """Extract existing __all__ string literals from Python source.
+
+    Args:
+        source (str): Python source code.
+
+    Returns:
+        Optional[list[str]]: List of exported names if found, else None.
+    """
+    try:
+        tree: ast.Module = ast.parse(source)
+    except SyntaxError:
+        return None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__" and isinstance(node.value, (ast.List, ast.Tuple)):
+                    return [str(elt.value) for elt in node.value.elts if isinstance(elt, ast.Constant) and isinstance(elt.value, str)]
+    return None
+
+
+def _format_and_write_if_changed(filepath: str, old_source: str, new_source: str) -> None:
+    """Format new_source with ruff and write to filepath if different from old_source.
+
+    Args:
+        filepath (str): Target file path.
+        old_source (str): Original source text.
+        new_source (str): New source text to format and write.
+    """
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
+        tmp.write(new_source)
+        tmp_name: str = tmp.name
+
+    try:
+        subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
+        subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
+        with open(tmp_name) as f:
+            new_source_formatted: str = f.read()
+    finally:
+        os.remove(tmp_name)
+
+    if old_source != new_source_formatted:
+        with open(filepath, "w") as f:
+            f.write(new_source_formatted)
+        print(f"Updated {filepath}")
+
+
 def generate_init(
     filepath: str,
     module_name: str,
@@ -97,23 +144,9 @@ def generate_init(
     with open(filepath) as f:
         old_source: str = f.read()
 
-    try:
-        tree: ast.Module = ast.parse(old_source)
-        existing_all: Optional[list[str]] = None
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == "__all__":
-                        if isinstance(node.value, (ast.List, ast.Tuple)):
-                            existing_all = []
-                            for elt in node.value.elts:
-                                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                                    existing_all.append(str(elt.value))
-
-        if existing_all is not None and sorted(list(set(existing_all))) == all_exports:
-            return
-    except SyntaxError:
-        pass
+    existing_all = _extract_existing_all(old_source)
+    if existing_all is not None and sorted(list(set(existing_all))) == all_exports:
+        return
 
     new_source: str = '# mypy: ignore-errors\n# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\n' + "\n".join(import_lines) + "\n\n"
     new_source += "# pylint: disable=duplicate-code\n"
@@ -122,22 +155,61 @@ def generate_init(
         new_source += f'    "{e}",\n'
     new_source += "]\n"
 
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
-        tmp.write(new_source)
-        tmp_name: str = tmp.name
+    _format_and_write_if_changed(filepath, old_source, new_source)
 
-    try:
-        subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
-        subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
-        with open(tmp_name) as f:
-            new_source_formatted: str = f.read()
-    finally:
-        os.remove(tmp_name)
 
-    if old_source != new_source_formatted:
-        with open(filepath, "w") as f:
-            f.write(new_source_formatted)
-        print(f"Updated {filepath}")
+def _compute_module_exports(mod: types.ModuleType, source_for_magic: str) -> list[str]:
+    """Compute sorted list of exported symbol names for a module.
+
+    Args:
+        mod (types.ModuleType): Imported module object.
+        source_for_magic (str): Source text to inspect for magic comments.
+
+    Returns:
+        list[str]: Sorted list of exported symbol names.
+    """
+    magic_from: Optional[re.Match[str]] = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
+    magic_auto: Optional[re.Match[str]] = re.search(r"#\s*auto-generate-all", source_for_magic)
+    magic_exclude: Optional[re.Match[str]] = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
+
+    exclude_set: set[str] = {m.strip() for m in magic_exclude.group(1).split(",")} if magic_exclude else set()
+
+    if magic_from:
+        raw_exports: list[str] = []
+        for sm in (m.strip() for m in magic_from.group(1).split(",")):
+            raw_exports.extend(_get_exports_from_submodule(sm))
+        return sorted({e for e in raw_exports if e not in exclude_set})
+    if magic_auto:
+        return sorted({n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType) and n not in exclude_set})
+
+    exports_attr = getattr(mod, "__all__", None)
+    if exports_attr is None:
+        return sorted({n for n in dir(mod) if not n.startswith("_")})
+    if isinstance(exports_attr, (list, tuple, set)):
+        return sorted({str(x) for x in exports_attr})
+    return []
+
+
+def _find_all_lines_to_remove(tree: ast.Module) -> set[int]:
+    """Identify 1-based line numbers of __all__ assignments and mutations in an AST.
+
+    Args:
+        tree (ast.Module): Parsed module AST.
+
+    Returns:
+        set[int]: Line numbers to remove.
+    """
+    lines_to_remove: set[int] = set()
+    for node in ast.walk(tree):
+        is_assign = isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets)
+        is_call = isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute) and isinstance(node.value.func.value, ast.Name) and node.value.func.value.id == "__all__" and node.value.func.attr in ("extend", "append")
+        if is_assign or is_call:
+            lineno = getattr(node, "lineno", None)
+            end_lineno = getattr(node, "end_lineno", None)
+            if isinstance(lineno, int) and isinstance(end_lineno, int):
+                for line_num in range(lineno, end_lineno + 1):
+                    lines_to_remove.add(line_num)
+    return lines_to_remove
 
 
 def process_file(filepath: str) -> None:
@@ -154,8 +226,7 @@ def process_file(filepath: str) -> None:
     if not abs_path.startswith(src_dir):
         return
 
-    rel_path: str = os.path.relpath(abs_path, src_dir)
-    modname: str = rel_path.replace(os.path.sep, ".")
+    modname: str = os.path.relpath(abs_path, src_dir).replace(os.path.sep, ".")
     if modname.endswith(".py"):
         modname = modname[:-3]
     if modname.endswith(".__init__"):
@@ -168,87 +239,23 @@ def process_file(filepath: str) -> None:
         return
 
     with open(filepath) as f:
-        source_for_magic: str = f.read()
-
-    magic_from: Optional[re.Match[str]] = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
-    magic_auto: Optional[re.Match[str]] = re.search(r"#\s*auto-generate-all", source_for_magic)
-    magic_exclude: Optional[re.Match[str]] = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
-
-    exclude_set: set[str] = set()
-    if magic_exclude:
-        exclude_set = {m.strip() for m in magic_exclude.group(1).split(",")}
-
-    exports: list[str] = []
-    if magic_from:
-        source_mods: list[str] = [m.strip() for m in magic_from.group(1).split(",")]
-        for sm in source_mods:
-            exports.extend(_get_exports_from_submodule(sm))
-        exports = [e for e in set(exports) if e not in exclude_set]
-    elif magic_auto:
-        exports = [n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType) and n not in exclude_set]
-    else:
-        exports_attr = getattr(mod, "__all__", None)
-        if exports_attr is None:
-            exports = [n for n in dir(mod) if not n.startswith("_")]
-        elif isinstance(exports_attr, (list, tuple, set)):
-            exports = [str(x) for x in exports_attr]
-        else:
-            exports = []
-
-    exports = sorted(list(set(exports)))
-
-    with open(filepath) as f:
         source: str = f.read()
+
+    exports = _compute_module_exports(mod, source)
+    existing_all = _extract_existing_all(source)
+    if existing_all is not None and sorted(list(set(existing_all))) == exports:
+        return
 
     try:
         tree: ast.Module = ast.parse(source)
     except SyntaxError:
         return
 
-    existing_all: Optional[list[str]] = None
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "__all__":
-                    if isinstance(node.value, (ast.List, ast.Tuple)):
-                        existing_all = []
-                        for elt in node.value.elts:
-                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                                existing_all.append(str(elt.value))
-
-    if existing_all is not None and sorted(list(set(existing_all))) == exports:
-        # Lists are semantically equal, no need to rewrite
-        return
-
-    lines_to_remove: set[int] = set()
-
-    for node in ast.walk(tree):
-        is_target: bool = False
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "__all__":
-                    is_target = True
-        elif isinstance(node, ast.Expr):
-            if isinstance(node.value, ast.Call):
-                func: ast.expr = node.value.func
-                if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) and func.value.id == "__all__":
-                    if func.attr in ("extend", "append"):
-                        is_target = True
-
-        if is_target:
-            if hasattr(node, "lineno") and hasattr(node, "end_lineno") and node.end_lineno is not None:
-                for line_num in range(node.lineno, node.end_lineno + 1):
-                    lines_to_remove.add(line_num)
-
+    lines_to_remove = _find_all_lines_to_remove(tree)
     if not lines_to_remove and not getattr(mod, "__all__", None):
         return
 
-    old_lines: list[str] = source.split("\n")
-    new_lines: list[str] = []
-    for i, line in enumerate(old_lines, 1):
-        if i not in lines_to_remove:
-            new_lines.append(line)
-
+    new_lines: list[str] = [line for i, line in enumerate(source.split("\n"), 1) if i not in lines_to_remove]
     while new_lines and new_lines[-1].strip() == "":
         new_lines.pop()
 
@@ -257,22 +264,7 @@ def process_file(filepath: str) -> None:
         new_source += f'    "{e_exp}",\n'
     new_source += "]\n"
 
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
-        tmp.write(new_source)
-        tmp_name: str = tmp.name
-
-    try:
-        subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
-        subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
-        with open(tmp_name) as f:
-            new_source_formatted: str = f.read()
-    finally:
-        os.remove(tmp_name)
-
-    if source != new_source_formatted:
-        with open(filepath, "w") as f:
-            f.write(new_source_formatted)
-        print(f"Updated {filepath}")
+    _format_and_write_if_changed(filepath, source, new_source)
 
 
 def main() -> None:

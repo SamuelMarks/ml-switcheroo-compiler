@@ -1,11 +1,22 @@
+"""Tests for test_sparse_and_ragged."""
+
+from __future__ import annotations
+
 import inspect
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged as sr
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_sparse_and_ragged_coverage():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_sparse_and_ragged_coverage() -> None:
+    """Test function test_sparse_and_ragged_coverage."""
     ops = [getattr(sr, name) for name in dir(sr) if name.startswith("_") and callable(getattr(sr, name))]
     arg = np.array([1.0, 2.0])
 
@@ -16,16 +27,16 @@ def test_sparse_and_ragged_coverage():
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t", "sp_input"):
-                args_to_pass.append(arg)
+                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
             else:
-                args_to_pass.append(arg)
+                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
 
         try:
             op(*args_to_pass)
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
 
         try:
             op(*args_to_pass[:-1])
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None

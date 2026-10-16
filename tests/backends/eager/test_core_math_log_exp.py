@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -17,20 +17,23 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_log_exp import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_math_log_exp_coverage() -> None:
-    """Test all branches and lines of math_log_exp.
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-    Returns:
-        None
+
+def _test_math_log_exp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_math_log_exp_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
     """
 
-    # 1. _expm1
-    # Case A: backend has expm1
     class Expm1Backend:
         """Backend with expm1."""
 
-        def expm1(self, x: Any) -> str:
+        def expm1(self, x: EagerValue) -> str:
             """Mock expm1."""
             return "expm1_val"
 
@@ -40,7 +43,7 @@ def test_math_log_exp_coverage() -> None:
     class ExpBackend:
         """Backend with exp only."""
 
-        def exp(self, x: Any) -> float:
+        def exp(self, x: EagerValue) -> float:
             """Mock exp."""
             return 2.0
 
@@ -50,16 +53,28 @@ def test_math_log_exp_coverage() -> None:
     class FloatPowerBackend:
         """Backend with float_power."""
 
-        def float_power(self, *args: Any, **kwargs: Any) -> str:
+        def float_power(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock float_power."""
             return "float_power_val"
 
     class PowerBackend:
         """Backend with power."""
 
-        def power(self, *args: Any, **kwargs: Any) -> str:
+        def power(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock power."""
             return "power_val"
+
+    getattr(_state, "update")({"ExpBackend": ExpBackend, "Expm1Backend": Expm1Backend, "FloatPowerBackend": FloatPowerBackend, "PowerBackend": PowerBackend})
+    _state.update(locals())
+
+
+def _test_math_log_exp_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_math_log_exp_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    FloatPowerBackend, PowerBackend = _state["FloatPowerBackend"], _state["PowerBackend"]
 
     class EmptyBackend:
         """Empty backend."""
@@ -75,11 +90,11 @@ def test_math_log_exp_coverage() -> None:
     class FrexpBackend:
         """Backend with frexp."""
 
-        def frexp(self, *args: Any, **kwargs: Any) -> str:
+        def frexp(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock frexp."""
             return "frexp_val"
 
-        def ldexp(self, *args: Any, **kwargs: Any) -> str:
+        def ldexp(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock ldexp."""
             return "ldexp_val"
 
@@ -88,13 +103,21 @@ def test_math_log_exp_coverage() -> None:
     assert _ldexp(fb, 0.75, 2) == "ldexp_val"
     assert _frexp(eb, 8.0) == (0.5, 4)
     assert _ldexp(eb, 0.5, 4) == 8.0
+    getattr(_state, "update")({"EmptyBackend": EmptyBackend, "FrexpBackend": FrexpBackend, "eb": eb, "fb": fb})
+    _state.update(locals())
 
-    # 4. _slogdet
-    # Case A: backend.linalg has slogdet
+
+def _test_math_log_exp_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_math_log_exp_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+
     class LinalgSlogdet:
         """Container with slogdet."""
 
-        def slogdet(self, *args: Any, **kwargs: Any) -> str:
+        def slogdet(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock slogdet."""
             return "linalg_slogdet"
 
@@ -109,13 +132,22 @@ def test_math_log_exp_coverage() -> None:
     class BackendRootSlogdet:
         """Backend with root slogdet."""
 
-        def slogdet(self, *args: Any, **kwargs: Any) -> str:
+        def slogdet(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock slogdet."""
             return "root_slogdet"
 
     assert _slogdet(BackendRootSlogdet(), [[1, 2], [3, 4]]) == "root_slogdet"
+    getattr(_state, "update")({"BackendLinalg": BackendLinalg, "BackendRootSlogdet": BackendRootSlogdet, "LinalgSlogdet": LinalgSlogdet})
+    _state.update(locals())
 
-    # Case C: backend without root slogdet and linalg has no slogdet initially
+
+def _test_math_log_exp_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_math_log_exp_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+
     class LinalgProxy:
         """Proxy that only has slogdet on second check."""
 
@@ -123,7 +155,7 @@ def test_math_log_exp_coverage() -> None:
             """Initialize proxy."""
             self.calls = 0
 
-        def __getattr__(self, name: str) -> Any:
+        def __getattr__(self, name: str) -> EagerValue:
             """Dynamic attribute lookup."""
             if name == "slogdet":
                 self.calls += 1
@@ -139,18 +171,27 @@ def test_math_log_exp_coverage() -> None:
             """Initialize proxy."""
             self.linalg = LinalgProxy()
 
-        def asarray(self, x: Any) -> np.ndarray:
+        def asarray(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
             """Mock asarray."""
             return np.asarray(x)
 
     assert _slogdet(BackendProxyLinalg(), [[1, 0], [0, 1]]) == "fallback_slogdet_arr"
+    getattr(_state, "update")({"BackendProxyLinalg": BackendProxyLinalg, "LinalgProxy": LinalgProxy})
+    _state.update(locals())
 
-    # 5. _np_xlog1py
-    # Case A: backend has xlog1py
+
+def _test_math_log_exp_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 5 of test_math_log_exp_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    eb = _state["eb"]
+
     class Xlog1pyBackend:
         """Backend with xlog1py."""
 
-        def xlog1py(self, *args: Any, **kwargs: Any) -> str:
+        def xlog1py(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock xlog1py."""
             return "xlog1py_val"
 
@@ -158,15 +199,15 @@ def test_math_log_exp_coverage() -> None:
 
     # Case B: fallback to numpy
     res_xlog1py = _np_xlog1py(eb, np.array([0.0, 2.0]), np.array([1.0, 1.0]))
-    assert res_xlog1py[0] == 0.0
-    assert np.isclose(res_xlog1py[1], 2.0 * np.log1p(1.0))
+    assert cast("EagerTensorProtocol", getattr(res_xlog1py, "__getitem__")(0)) == 0.0
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(res_xlog1py, "__getitem__")(1)), 2.0 * cast("Callable[..., EagerTensorProtocol]", np.log1p)(1.0))
 
     # 6. _np_xlogy
     # Case A: backend has xlogy
     class XlogyBackend:
         """Backend with xlogy."""
 
-        def xlogy(self, *args: Any, **kwargs: Any) -> str:
+        def xlogy(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock xlogy."""
             return "xlogy_val"
 
@@ -174,9 +215,25 @@ def test_math_log_exp_coverage() -> None:
 
     # Case B: fallback to numpy
     res_xlogy = _np_xlogy(eb, np.array([0.0, 2.0]), np.array([1.0, 2.0]))
-    assert res_xlogy[0] == 0.0
-    assert np.isclose(res_xlogy[1], 2.0 * np.log(2.0))
+    assert cast("EagerTensorProtocol", getattr(res_xlogy, "__getitem__")(0)) == 0.0
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(res_xlogy, "__getitem__")(1)), 2.0 * cast("Callable[..., EagerTensorProtocol]", np.log)(2.0))
 
     # Registry verification
     for name in ["Expm1", "FloatPower", "Frexp", "Ldexp", "Slogdet", "Xlog1py", "Xlogy"]:
         assert global_eager_registry.get(name) is not None
+    getattr(_state, "update")({"Xlog1pyBackend": Xlog1pyBackend, "XlogyBackend": XlogyBackend, "res_xlog1py": res_xlog1py, "res_xlogy": res_xlogy})
+
+
+def test_math_log_exp_coverage() -> None:
+    """Test all branches and lines of math_log_exp.
+
+    Returns:
+        None
+    """
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_math_log_exp_coverage_part_1(_state)
+    _test_math_log_exp_coverage_part_2(_state)
+    _test_math_log_exp_coverage_part_3(_state)
+    _test_math_log_exp_coverage_part_4(_state)
+    _test_math_log_exp_coverage_part_5(_state)
+    assert isinstance(_state, dict)

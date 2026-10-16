@@ -1,9 +1,6 @@
-"""Module mixed_precision.py."""
+"""Mixed Precision and Loss Scaling passes."""
 
 from __future__ import annotations
-
-# ruff: noqa: E402, E501, F403
-"""Mixed Precision and Loss Scaling passes."""
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter

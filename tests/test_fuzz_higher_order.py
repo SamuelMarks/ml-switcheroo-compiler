@@ -1,10 +1,12 @@
 """Fuzzing higher-order derivatives."""
 
-import pytest
+from __future__ import annotations
 
-pytest.importorskip("hypothesis")
+from typing import TYPE_CHECKING, cast
+
 import hypothesis.strategies as st
 import numpy as np
+import pytest
 from hypothesis import given, settings
 
 import ml_switcheroo_compiler.ops as ops
@@ -14,13 +16,20 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import hvp
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+pytest.importorskip("hypothesis")
+
 
 @pytest.mark.parametrize("backend_name", ["numpy", "mlx", "pytorch", "jax"])
 @settings(max_examples=5, deadline=None)
 @given(
     val1=st.floats(min_value=-1.5, max_value=1.5, allow_nan=False, allow_infinity=False),
 )
-def test_higher_order_equivalence(backend_name, val1):
+def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: EagerTensorProtocol) -> None:
     """Test higher-order equivalence."""
     if backend_name == "mlx":
         pytest.importorskip("mlx.core")
@@ -28,22 +37,23 @@ def test_higher_order_equivalence(backend_name, val1):
 
     prev = config.backend
     try:
-        config.backend = backend_name
+        setattr(config, "backend", backend_name)
         backend = get_active_backend()
         arr_x = backend.asarray(np.array([val1], dtype=np.float32))
         arr_v = backend.asarray(np.array([1.0], dtype=np.float32))
 
         # Test f(x) = x^3
-        def f(x):
+        def f(x: EagerValue) -> EagerValue:
+            """Test function f."""
             return ops.multiply(x, ops.multiply(x, x))
 
         x = Tensor(arr_x, TensorConfig((1,), DType.Float32, Device("cpu")))
         v = Tensor(arr_v, TensorConfig((1,), DType.Float32, Device("cpu")))
 
-        _, tan = hvp(f, (x,), (v,))
+        _, tan = cast("Callable[..., EagerTensorProtocol]", hvp)(f, (x,), (v,))
         computed = float(np.asarray(backend.asarray(tan))[0])
 
         expected = 6.0 * val1
-        np.testing.assert_allclose(computed, expected, rtol=1e-2, atol=1e-2)
+        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(computed, expected, rtol=1e-2, atol=1e-2)
     finally:
         config.backend = prev

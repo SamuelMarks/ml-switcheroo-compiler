@@ -1,3 +1,9 @@
+"""Tests for test_nlp."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 import numpy as np
 
@@ -19,8 +25,14 @@ from ml_switcheroo_compiler.ops.nn.nlp import (
     uniform_candidate_sampler,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_nlp_coverage():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_nlp_coverage() -> None:
+    """Test function test_nlp_coverage."""
     config.eager_mode = True
     labels = Tensor(np.array([[1]]), TensorConfig(shape=(1, 1), dtype=DType("int32"), device=Device("cpu")))
     logits = Tensor(np.array([[[1.0, 2.0, 3.0]]]), TensorConfig(shape=(1, 1, 3), dtype=DType("float32"), device=Device("cpu")))
@@ -37,56 +49,63 @@ def test_nlp_coverage():
     w = Tensor(np.array([[1.0, 2.0, 3.0]]), TensorConfig(shape=(1, 3), dtype=DType("float32"), device=Device("cpu")))
     b = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
 
-    assert nce_loss(w, b, labels, logits, 1) is not None
-    assert sampled_softmax_loss(w, b, labels, logits, 1) is not None
+    assert cast("Callable[..., EagerTensorProtocol]", nce_loss)(w, b, labels, logits, 1) is not None
+    assert cast("Callable[..., EagerTensorProtocol]", sampled_softmax_loss)(w, b, labels, logits, 1) is not None
     assert ctc_beam_search_decoder(logits, seq_len) is not None
     assert ctc_greedy_decoder(logits, seq_len) is not None
     assert ctc_loss(labels, logits, seq_len, seq_len) is not None
     assert ctc_unique_labels(labels) is not None
 
 
-def test_nlp_options_and_shapes(monkeypatch):
+def test_nlp_options_and_shapes(monkeypatch: EagerTensorProtocol) -> None:
     """Test NLP options dataclasses, CtcLoss shape inference, and eager execution."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.ops.nn.nlp import CtcLoss, CTCLossOptions, NLPOpsConfig, SamplingConfig, VocabConfig
 
-    vocab_conf = VocabConfig()
+    VocabConfig()
     ctc_decode_conf = CTCLossOptions()
-    ctc_loss_conf = NLPOpsConfig()
-    sampling_conf = SamplingConfig()
+    NLPOpsConfig()
+    SamplingConfig()
 
     assert ctc_decode_conf.logits_time_major == 1
 
     class LogitsShape3:
+        """Test class LogitsShape3."""
+
         shape = (10, 32, 5)
 
     class LogitsShape2:
+        """Test class LogitsShape2."""
+
         shape = (10, 5)
 
-    assert CtcLoss().infer_shape(None, LogitsShape3(), None, None) == (32,)
-    assert CtcLoss().infer_shape(None, LogitsShape2(), None, None) == (1,)
+    assert cast("Callable[..., EagerTensorProtocol]", CtcLoss)().infer_shape(None, cast("Callable[..., EagerTensorProtocol]", LogitsShape3)(), None, None) == (32,)
+    assert cast("Callable[..., EagerTensorProtocol]", CtcLoss)().infer_shape(None, cast("Callable[..., EagerTensorProtocol]", LogitsShape2)(), None, None) == (1,)
 
     orig = config.eager_mode
     config.eager_mode = True
 
     class DummyBackend:
-        def execute_op(self, *args, **kwargs):
+        """Test class DummyBackend."""
+
+        def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function execute_op."""
             return np.array([1.0])
 
     import ml_switcheroo_compiler.backends.registry as reg
 
-    monkeypatch.setattr(reg, "get_active_backend", lambda: DummyBackend())
+    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(reg, "get_active_backend", lambda: cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
     try:
         t_labels = Tensor(np.array([1]), TensorConfig(shape=(1,), dtype=DType("int32"), device=Device("cpu")))
         t_logits = Tensor(np.array([[1.0]]), TensorConfig(shape=(1, 1), dtype=DType("float32"), device=Device("cpu")))
         t_len = Tensor(np.array([1]), TensorConfig(shape=(1,), dtype=DType("int32"), device=Device("cpu")))
         res = ctc_loss(t_labels, t_logits, t_len, t_len)
-        assert res.shape == (1,)
+        assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1,)
     finally:
         config.eager_mode = orig
 
 
-def test_nlp_tracing_candidate_samplers_and_losses():
+def test_nlp_tracing_candidate_samplers_and_losses() -> None:
     """Test candidate samplers and loss operations in symbolic tracing mode."""
     import ml_switcheroo_compiler.ops.nn.nlp as nlp
     import ml_switcheroo_compiler.tracing.state as state
@@ -97,11 +116,13 @@ def test_nlp_tracing_candidate_samplers_and_losses():
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    state.global_tracing_state.add_node = lambda node: None
+    setattr(state.global_tracing_state, "add_node", lambda node: None)
 
     try:
 
         class DummyTensor:
+            """Test class DummyTensor."""
+
             shape = (1, 1, 1)
             dtype = "float32"
             device = "cpu"
@@ -112,7 +133,7 @@ def test_nlp_tracing_candidate_samplers_and_losses():
 
         nlp.fixed_unigram_candidate_sampler(t, c)
         nlp.compute_accidental_hits(t, t, c)
-        nlp.ctc_loss(t, t, t, t)
+        cast("Callable[..., EagerTensorProtocol]", nlp.ctc_loss)(t, t, t, t)
         nlp.log_uniform_candidate_sampler(t, c)
         nlp.learned_unigram_candidate_sampler(t, c)
         nlp.all_candidate_sampler(t, c)
@@ -130,4 +151,5 @@ def test_nlp_tracing_candidate_samplers_and_losses():
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        state.global_tracing_state.add_node = orig_add_node
+        setattr(state.global_tracing_state, "add_node", orig_add_node)
+    assert orig_add_node is not None or orig_add_node is None

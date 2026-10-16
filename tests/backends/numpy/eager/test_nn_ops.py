@@ -1,5 +1,9 @@
 """Tests for numpy eager NN operations."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
@@ -11,19 +15,24 @@ from ml_switcheroo_compiler.backends.numpy.eager.nn_ops import (
     _np_dropout2d,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_missing_nn_ops() -> None:
     """Test dropout2d behaviour with dropping and eval modes."""
     x_4d = np.ones((1, 2, 3, 3))
 
     res_drop = nn_ops._np_dropout2d(np, x_4d, p=0.5, training=True)
-    assert res_drop.shape == x_4d.shape
+    assert cast("EagerTensorProtocol", getattr(res_drop, "shape")) == cast("EagerTensorProtocol", getattr(x_4d, "shape"))
 
     res_no_drop = nn_ops._np_dropout2d(np, x_4d, p=0.0, training=True)
-    np.testing.assert_array_equal(res_no_drop, x_4d)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res_no_drop, x_4d)
 
     res_test = nn_ops._np_dropout2d(np, x_4d, p=0.5, training=False)
-    np.testing.assert_array_equal(res_test, x_4d)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res_test, x_4d)
 
 
 def test_dropout2d_non_4d() -> None:
@@ -38,12 +47,12 @@ def test_block_masked_mm() -> None:
     a = np.ones((2, 3))
     b = np.ones((3, 2))
     res = _np_block_masked_mm(None, a, b)
-    assert res.shape == (2, 2)
-    assert np.allclose(res, np.matmul(a, b))
+    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, cast("Callable[..., EagerTensorProtocol]", np.matmul)(a, b))
 
     # Test _np_mul registered helper
     res_mul = nn_ops._np_mul(np, a, a)
-    assert np.allclose(res_mul, a * a)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_mul, a * a)
 
 
 def test_batch_norm_1d() -> None:
@@ -53,13 +62,13 @@ def test_batch_norm_1d() -> None:
     beta_1d = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
     out = _np_batch_norm(np, x_1d, gamma_1d, beta_1d)
-    assert out.shape == (3,)
-    assert not np.isnan(out).any()
+    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (3,)
+    assert not cast("Callable[..., EagerTensorProtocol]", np.isnan)(out).any()
 
     d_out = np.ones_like(x_1d)
     grad_in = _np_batch_norm_input_grad(np, d_out, x_1d, gamma_1d)
-    assert grad_in.shape == (3,)
-    assert not np.isnan(grad_in).any()
+    assert cast("EagerTensorProtocol", getattr(grad_in, "shape")) == (3,)
+    assert not cast("Callable[..., EagerTensorProtocol]", np.isnan)(grad_in).any()
 
 
 def test_max_pool2d_with_argmax_forward() -> None:
@@ -68,16 +77,16 @@ def test_max_pool2d_with_argmax_forward() -> None:
 
     # Int kernel and stride
     out1 = nn_ops._np_max_pool2d_with_argmax_forward(np, x, kernel_size=2, stride=2)
-    assert out1.shape == (1, 2, 2, 2)
+    assert cast("EagerTensorProtocol", getattr(out1, "shape")) == (1, 2, 2, 2)
 
     # Tuple pool_size and strides
     out2 = nn_ops._np_max_pool2d_with_argmax_forward(np, x, pool_size=(2, 2), strides=(2, 2))
-    assert out2.shape == (1, 2, 2, 2)
-    assert np.allclose(out1, out2)
+    assert cast("EagerTensorProtocol", getattr(out2, "shape")) == (1, 2, 2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out1, out2)
 
     # Default stride (derived from kernel_size tuple)
     out3 = nn_ops._np_max_pool2d_with_argmax_forward(np, x, kernel_size=(2, 2))
-    assert out3.shape == (1, 2, 2, 2)
+    assert cast("EagerTensorProtocol", getattr(out3, "shape")) == (1, 2, 2, 2)
 
 
 def test_batch_norm_forward_and_grads() -> None:
@@ -90,30 +99,30 @@ def test_batch_norm_forward_and_grads() -> None:
 
     # Forward with explicit gamma, beta, eps
     out_4d = nn_ops._np_batch_norm(np, x_4d, gamma, beta, eps=1e-5)
-    assert out_4d.shape == x_4d.shape
+    assert cast("EagerTensorProtocol", getattr(out_4d, "shape")) == cast("EagerTensorProtocol", getattr(x_4d, "shape"))
 
     # Forward with defaults (None gamma, None beta, epsilon kwarg)
     out_defaults = nn_ops._np_batch_norm(np, x_4d, None, None, epsilon=1e-4)
-    assert out_defaults.shape == x_4d.shape
+    assert cast("EagerTensorProtocol", getattr(out_defaults, "shape")) == cast("EagerTensorProtocol", getattr(x_4d, "shape"))
 
     # Input grad 4D with gamma and without gamma
     d_x_4d = nn_ops._np_batch_norm_input_grad(np, d_out_4d, x_4d, gamma, eps=1e-5)
-    assert d_x_4d.shape == x_4d.shape
+    assert cast("EagerTensorProtocol", getattr(d_x_4d, "shape")) == cast("EagerTensorProtocol", getattr(x_4d, "shape"))
     d_x_no_g = nn_ops._np_batch_norm_input_grad(np, d_out_4d, x_4d, None, epsilon=1e-5)
-    assert d_x_no_g.shape == x_4d.shape
+    assert cast("EagerTensorProtocol", getattr(d_x_no_g, "shape")) == cast("EagerTensorProtocol", getattr(x_4d, "shape"))
 
     # Gamma grad 4D and 1D
     d_gamma_4d = nn_ops._np_batch_norm_gamma_grad(np, d_out_4d, x_4d, eps=1e-5)
-    assert d_gamma_4d.shape == (3,)
+    assert cast("EagerTensorProtocol", getattr(d_gamma_4d, "shape")) == (3,)
     x_1d = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     d_gamma_1d = nn_ops._np_batch_norm_gamma_grad(np, np.ones_like(x_1d), x_1d, epsilon=1e-5)
-    assert d_gamma_1d.shape == (1,)
+    assert cast("EagerTensorProtocol", getattr(d_gamma_1d, "shape")) == (1,)
 
     # Beta grad 4D and 1D
     d_beta_4d = nn_ops._np_batch_norm_beta_grad(np, d_out_4d)
-    assert d_beta_4d.shape == (3,)
+    assert cast("EagerTensorProtocol", getattr(d_beta_4d, "shape")) == (3,)
     d_beta_1d = nn_ops._np_batch_norm_beta_grad(np, np.ones_like(x_1d))
-    assert d_beta_1d.shape == (1,)
+    assert cast("EagerTensorProtocol", getattr(d_beta_1d, "shape")) == (1,)
 
 
 def test_layer_norm_forward_and_grads() -> None:
@@ -125,29 +134,29 @@ def test_layer_norm_forward_and_grads() -> None:
 
     # Forward with explicit params and axis=-1
     out = nn_ops._np_layer_norm(np, x, gamma, beta, eps=1e-5, axis=-1)
-    assert out.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(out, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Forward with defaults and positive axis
     out_axis1 = nn_ops._np_layer_norm(np, x, None, None, epsilon=1e-5, axis=1)
-    assert out_axis1.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(out_axis1, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Input grad with gamma and without gamma, positive axis
     dx = nn_ops._np_layer_norm_input_grad(np, d_out, x, gamma, eps=1e-5, axis=-1)
-    assert dx.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
     dx_axis1 = nn_ops._np_layer_norm_input_grad(np, d_out, x, None, epsilon=1e-5, axis=1)
-    assert dx_axis1.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx_axis1, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Gamma grad negative and positive axis
     d_gamma = nn_ops._np_layer_norm_gamma_grad(np, d_out, x, eps=1e-5, axis=-1)
-    assert d_gamma.shape == (4,)
+    assert cast("EagerTensorProtocol", getattr(d_gamma, "shape")) == (4,)
     d_gamma_axis1 = nn_ops._np_layer_norm_gamma_grad(np, d_out, x, epsilon=1e-5, axis=1)
-    assert d_gamma_axis1.shape == (3,)
+    assert cast("EagerTensorProtocol", getattr(d_gamma_axis1, "shape")) == (3,)
 
     # Beta grad negative and positive axis
     d_beta = nn_ops._np_layer_norm_beta_grad(np, d_out, axis=-1)
-    assert d_beta.shape == (4,)
+    assert cast("EagerTensorProtocol", getattr(d_beta, "shape")) == (4,)
     d_beta_axis1 = nn_ops._np_layer_norm_beta_grad(np, d_out, axis=1)
-    assert d_beta_axis1.shape == (3,)
+    assert cast("EagerTensorProtocol", getattr(d_beta_axis1, "shape")) == (3,)
 
 
 def test_rms_norm_forward_and_grads() -> None:
@@ -158,19 +167,19 @@ def test_rms_norm_forward_and_grads() -> None:
 
     # Forward with gamma and without gamma
     out = nn_ops._np_rms_norm(np, x, gamma, eps=1e-5)
-    assert out.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(out, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
     out_no_g = nn_ops._np_rms_norm(np, x, None, epsilon=1e-5)
-    assert out_no_g.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(out_no_g, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Input grad with gamma and without gamma
     dx = nn_ops._np_rms_norm_input_grad(np, d_out, x, gamma, eps=1e-5)
-    assert dx.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
     dx_no_g = nn_ops._np_rms_norm_input_grad(np, d_out, x, None, epsilon=1e-5)
-    assert dx_no_g.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx_no_g, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Gamma grad
     d_gamma = nn_ops._np_rms_norm_gamma_grad(np, d_out, x, eps=1e-5)
-    assert d_gamma.shape == (4,)
+    assert cast("EagerTensorProtocol", getattr(d_gamma, "shape")) == (4,)
 
 
 def test_group_norm_forward_and_grads() -> None:
@@ -182,27 +191,27 @@ def test_group_norm_forward_and_grads() -> None:
 
     # Forward with num_groups, gamma, beta
     out = nn_ops._np_group_norm(np, x, gamma, beta, num_groups=2, eps=1e-5)
-    assert out.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(out, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Forward with groups, None gamma, None beta
     out_g = nn_ops._np_group_norm(np, x, None, None, groups=2, epsilon=1e-5)
-    assert out_g.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(out_g, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Input grad with gamma and without gamma
     dx = nn_ops._np_group_norm_input_grad(np, d_out, x, gamma, num_groups=2, eps=1e-5)
-    assert dx.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
     dx_no_g = nn_ops._np_group_norm_input_grad(np, d_out, x, None, groups=2, epsilon=1e-5)
-    assert dx_no_g.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx_no_g, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Gamma grad with num_groups vs groups
     dg = nn_ops._np_group_norm_gamma_grad(np, d_out, x, num_groups=2, eps=1e-5)
-    assert dg.shape == (4,)
+    assert cast("EagerTensorProtocol", getattr(dg, "shape")) == (4,)
     dg2 = nn_ops._np_group_norm_gamma_grad(np, d_out, x, groups=2, epsilon=1e-5)
-    assert dg2.shape == (4,)
+    assert cast("EagerTensorProtocol", getattr(dg2, "shape")) == (4,)
 
     # Beta grad
     db = nn_ops._np_group_norm_beta_grad(np, d_out)
-    assert db.shape == (4,)
+    assert cast("EagerTensorProtocol", getattr(db, "shape")) == (4,)
 
 
 def test_avg_pool2d_forward_and_grads() -> None:
@@ -211,24 +220,24 @@ def test_avg_pool2d_forward_and_grads() -> None:
 
     # Forward int kernel and stride
     out1 = nn_ops._np_avg_pool2d(np, x, kernel_size=2, stride=2)
-    assert out1.shape == (1, 2, 2, 2)
+    assert cast("EagerTensorProtocol", getattr(out1, "shape")) == (1, 2, 2, 2)
 
     # Forward tuple pool_size, strides, and default stride
     out2 = nn_ops._np_avg_pool2d(np, x, pool_size=(2, 2), strides=(2, 2))
-    assert np.allclose(out1, out2)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out1, out2)
     out3 = nn_ops._np_avg_pool2d(np, x, pool_size=(2, 2))
-    assert out3.shape == (1, 2, 2, 2)
+    assert cast("EagerTensorProtocol", getattr(out3, "shape")) == (1, 2, 2, 2)
 
     # Grad int kernel and stride
     d_out = np.ones((1, 2, 2, 2), dtype=np.float32)
     dx1 = nn_ops._np_avg_pool2d_grad(np, d_out, x, kernel_size=2, stride=2)
-    assert dx1.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx1, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Grad tuple pool_size and default stride
     dx2 = nn_ops._np_avg_pool2d_grad(np, d_out, x, pool_size=(2, 2), strides=(2, 2))
-    assert np.allclose(dx1, dx2)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(dx1, dx2)
     dx3 = nn_ops._np_avg_pool2d_grad(np, d_out, x, pool_size=(2, 2))
-    assert dx3.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx3, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
 
 def test_max_pool2d_with_argmax_grad() -> None:
@@ -238,10 +247,10 @@ def test_max_pool2d_with_argmax_grad() -> None:
 
     # Grad int kernel and stride
     dx1 = nn_ops._np_max_pool2d_with_argmax_grad(np, d_out, x, kernel_size=2, stride=2)
-    assert dx1.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx1, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # Grad tuple pool_size, strides, and default stride
     dx2 = nn_ops._np_max_pool2d_with_argmax_grad(np, d_out, x, pool_size=(2, 2), strides=(2, 2))
-    assert np.allclose(dx1, dx2)
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(dx1, dx2)
     dx3 = nn_ops._np_max_pool2d_with_argmax_grad(np, d_out, x, pool_size=(2, 2))
-    assert dx3.shape == x.shape
+    assert cast("EagerTensorProtocol", getattr(dx3, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))

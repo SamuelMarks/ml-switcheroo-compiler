@@ -1,5 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Gradient computation and autodiff utilities."""
+
+from __future__ import annotations
 
 import contextlib  # noqa: F401
 import math  # noqa: F401
@@ -7,10 +8,11 @@ import typing  # noqa: F401
 import uuid
 from collections.abc import Callable, Sequence  # noqa: F401
 from dataclasses import dataclass, field  # noqa: F401
-from typing import Optional
+from typing import Optional, cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.backends.registry import get_active_backend  # noqa: F401
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -26,19 +28,19 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 class CustomVJPFunction:
     """Wrap for custom_vjp functions."""
 
-    def __init__(self, fun) -> None:
+    def __init__(self, fun: Callable[..., EagerValue]) -> None:
         """Initialize the custom VJP wrapper.
 
         Args:
             fun (Callable[..., object]): The base function being wrapped for custom VJPs.
         """
         self.fun = fun
-        self.fwd = None
-        self.bwd = None
+        self.fwd: EagerValue = None
+        self.bwd: EagerValue = None
         self.bwd_subgraph: Optional[LogicalGraph] = None
         self._tracing_fwd = False
 
-    def defvjp(self, fwd, bwd, bwd_subgraph: Optional[LogicalGraph] = None) -> None:
+    def defvjp(self, fwd: EagerValue, bwd: EagerValue, bwd_subgraph: Optional[LogicalGraph] = None) -> None:
         """Define the forward and backward passes.
 
         Args:
@@ -52,8 +54,8 @@ class CustomVJPFunction:
             self.bwd_subgraph = bwd_subgraph
         elif isinstance(bwd, LogicalGraph):
             self.bwd_subgraph = bwd
-        elif hasattr(bwd, "graph") and isinstance(bwd.graph, LogicalGraph):
-            self.bwd_subgraph = bwd.graph
+        elif hasattr(bwd, "graph") and isinstance(getattr(bwd, "graph"), LogicalGraph):
+            self.bwd_subgraph = getattr(bwd, "graph")
         else:
             self.bwd_subgraph = None
 
@@ -65,7 +67,7 @@ class CustomVJPFunction:
         """
         self.bwd_subgraph = bwd_subgraph
 
-    def _extract_tensor_args(self, args):
+    def _extract_tensor_args(self, args: tuple[Tensor | int | float | str | bool | None, ...]) -> list[Tensor]:
         """Extract all tensor instances from the provided arguments.
 
         Args:
@@ -76,7 +78,7 @@ class CustomVJPFunction:
         """
         return [a for a in args if isinstance(a, Tensor)]
 
-    def _trace_fwd_graph(self, tensor_args):
+    def _trace_fwd_graph(self, tensor_args: list[Tensor]) -> Optional[LogicalGraph]:
         """Trace the forward pass of the custom VJP function to construct its logical graph.
 
         Args:
@@ -89,11 +91,11 @@ class CustomVJPFunction:
 
         self._tracing_fwd = True
         try:
-            return _trace_function(self.fwd, tuple(tensor_args), "fwd_pass")
+            return cast(Optional[LogicalGraph], cast("Callable[..., EagerTensorProtocol]", _trace_function)(self.fwd, tuple(tensor_args), "fwd_pass"))
         finally:
             self._tracing_fwd = False
 
-    def _resolve_output_metadata(self, tensor_args) -> tuple[tuple[int, ...], str, str]:
+    def _resolve_output_metadata(self, tensor_args: list[Tensor]) -> tuple[tuple[int, ...], str, str]:
         """Determine the shape, dtype, and device for the output based on the input tensors.
 
         Args:
@@ -102,17 +104,22 @@ class CustomVJPFunction:
         Returns:
             tuple: A tuple containing the output shape, dtype, and device string.
         """
-        shape = ()
+        shape: tuple[int, ...] = ()
         dtype = "float32"
         device = "cpu"
         if tensor_args:
             first_arg = tensor_args[0]
             shape = getattr(first_arg, "shape", ())
             dtype = getattr(getattr(first_arg, "dtype", None), "value", "float32")
-            device = getattr(first_arg, "device", "cpu")
+            device = str(getattr(first_arg, "device", "cpu"))
         return (shape, dtype, device)
 
-    def _emit_vjp_node(self, tensor_args, fwd_graph, primal_graph):
+    def _emit_vjp_node(
+        self,
+        tensor_args: list[Tensor],
+        fwd_graph: Optional[LogicalGraph],
+        primal_graph: Optional[LogicalGraph],
+    ) -> Tensor:
         """Emit a CustomVJP node into the active computation graph.
 
         Args:
@@ -127,7 +134,7 @@ class CustomVJPFunction:
         in_ids: list[str] = []
         for a in tensor_args:
             if hasattr(a, "data") and hasattr(a.data, "id"):
-                in_ids.append(a.data.id)
+                in_ids.append(getattr(a.data, "id"))
             else:
                 cid = str(uuid.uuid4())
                 arr = getattr(a, "data", a)
@@ -164,7 +171,7 @@ class CustomVJPFunction:
         proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])
         return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Execute the function, tracing the forward and primal graphs if tracing is active.
 
         Args:
@@ -176,13 +183,13 @@ class CustomVJPFunction:
         if config.eager_mode or not global_tracing_state.is_tracing or self._tracing_fwd:
             return self.fun(*args, **kwargs)
 
-        tensor_args = self._extract_tensor_args(args)
+        tensor_args = getattr(self, "_extract_tensor_args")(args)
         fwd_graph = self._trace_fwd_graph(tensor_args)
-        primal_graph = _trace_function(self.fun, tuple(tensor_args), "primal_pass")
+        primal_graph = cast("Callable[..., LogicalGraph]", _trace_function)(self.fun, tuple(tensor_args), "primal_pass")
         return self._emit_vjp_node(tensor_args, fwd_graph, primal_graph)
 
 
-def custom_vjp(fun):
+def custom_vjp(fun: Callable[..., EagerValue]) -> EagerValue:
     """Wrap a function to allow defining custom vector-Jacobian product (VJP) rules.
 
     Args:

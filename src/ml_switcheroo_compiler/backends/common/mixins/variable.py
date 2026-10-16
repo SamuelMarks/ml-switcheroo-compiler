@@ -1,10 +1,6 @@
-"""Module variable.py."""
-
-from __future__ import annotations
-
-# ruff: noqa: E402, E501, F403
 """Provide mixin module."""
 
+from __future__ import annotations
 
 from ml_switcheroo_compiler.ir.core import IRNode
 

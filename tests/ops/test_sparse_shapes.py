@@ -1,5 +1,9 @@
 """Unit tests for sparse operations shape inference, batch dimensions, and broadcasting."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.sparse import (
     Smm,
@@ -32,6 +36,11 @@ from ml_switcheroo_compiler.ops.sparse import (
     SparseToIndicator,
     SparseTranspose,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class MockSparseTensor:
@@ -67,18 +76,18 @@ def test_sparse_dense_matmul_and_smm() -> None:
     # 2D: (M=4, K=8) x (K=8, N=16) -> (4, 16)
     sp_a = MockSparseTensor((4, 8))
     dense_b = _make_tensor((8, 16))
-    assert op_spmm.infer_shape(sp_a, dense_b) == (4, 16)
-    assert op_smm.infer_shape(sp_a, dense_b) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_spmm.infer_shape)(sp_a, dense_b) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_smm.infer_shape)(sp_a, dense_b) == (4, 16)
 
     # Batched broadcasting: (2, 1, 5, 10) x (1, 3, 10, 6) -> (2, 3, 5, 6)
     sp_batch = MockSparseTensor((2, 1, 5, 10))
     dense_batch = _make_tensor((1, 3, 10, 6))
-    assert op_spmm.infer_shape(sp_batch, dense_batch) == (2, 3, 5, 6)
-    assert op_smm.infer_shape(sp_batch, dense_batch) == (2, 3, 5, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_spmm.infer_shape)(sp_batch, dense_batch) == (2, 3, 5, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_smm.infer_shape)(sp_batch, dense_batch) == (2, 3, 5, 6)
 
     # Fallbacks
-    assert op_spmm.infer_shape(None, None) == ()
-    assert op_smm.infer_shape(None, None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_spmm.infer_shape)(None, None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_smm.infer_shape)(None, None) == ()
 
 
 def test_sparse_elementwise_broadcasting() -> None:
@@ -92,10 +101,10 @@ def test_sparse_elementwise_broadcasting() -> None:
     sp1 = MockSparseTensor((2, 1, 4))
     sp2 = MockSparseTensor((1, 3, 4))
 
-    assert op_add.infer_shape(sp1, sp2) == (2, 3, 4)
-    assert op_s_add.infer_shape(sp1, sp2) == (2, 3, 4)
-    assert op_max.infer_shape(sp1, sp2) == (2, 3, 4)
-    assert op_min.infer_shape(sp1, sp2) == (2, 3, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_add.infer_shape)(sp1, sp2) == (2, 3, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_s_add.infer_shape)(sp1, sp2) == (2, 3, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_max.infer_shape)(sp1, sp2) == (2, 3, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_min.infer_shape)(sp1, sp2) == (2, 3, 4)
 
 
 def test_sparse_reductions() -> None:
@@ -106,16 +115,16 @@ def test_sparse_reductions() -> None:
     sp = MockSparseTensor((4, 8, 16))
 
     # Reduce along axis 1 (without keepdims)
-    assert op_sum.infer_shape(sp, axis=1, keepdims=False) == (4, 16)
-    assert op_max.infer_shape(sp, axis=1, keepdims=False) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_sum.infer_shape)(sp, axis=1, keepdims=False) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_max.infer_shape)(sp, axis=1, keepdims=False) == (4, 16)
 
     # Reduce along axis 1 (with keepdims)
-    assert op_sum.infer_shape(sp, axis=1, keepdims=True) == (4, 1, 16)
-    assert op_max.infer_shape(sp, axis=1, keepdims=True) == (4, 1, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_sum.infer_shape)(sp, axis=1, keepdims=True) == (4, 1, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_max.infer_shape)(sp, axis=1, keepdims=True) == (4, 1, 16)
 
     # Full reduction
-    assert op_sum.infer_shape(sp, axis=None, keepdims=False) == ()
-    assert op_max.infer_shape(sp, axis=None, keepdims=False) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_sum.infer_shape)(sp, axis=None, keepdims=False) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_max.infer_shape)(sp, axis=None, keepdims=False) == ()
 
 
 def test_sparse_shape_preserving_ops() -> None:
@@ -129,12 +138,12 @@ def test_sparse_shape_preserving_ops() -> None:
 
     sp = MockSparseTensor((5, 10, 15))
 
-    assert op_softmax.infer_shape(sp) == (5, 10, 15)
-    assert op_map.infer_shape(sp) == (5, 10, 15)
-    assert op_mask.infer_shape(sp) == (5, 10, 15)
-    assert op_fill.infer_shape(sp) == (5, 10, 15)
-    assert op_reorder.infer_shape(sp) == (5, 10, 15)
-    assert op_retain.infer_shape(sp) == (5, 10, 15)
+    assert cast("Callable[..., EagerTensorProtocol]", op_softmax.infer_shape)(sp) == (5, 10, 15)
+    assert cast("Callable[..., EagerTensorProtocol]", op_map.infer_shape)(sp) == (5, 10, 15)
+    assert cast("Callable[..., EagerTensorProtocol]", op_mask.infer_shape)(sp) == (5, 10, 15)
+    assert cast("Callable[..., EagerTensorProtocol]", op_fill.infer_shape)(sp) == (5, 10, 15)
+    assert cast("Callable[..., EagerTensorProtocol]", op_reorder.infer_shape)(sp) == (5, 10, 15)
+    assert cast("Callable[..., EagerTensorProtocol]", op_retain.infer_shape)(sp) == (5, 10, 15)
 
 
 def test_sparse_reshaping_and_dimensions() -> None:
@@ -147,20 +156,20 @@ def test_sparse_reshaping_and_dimensions() -> None:
     sp = MockSparseTensor((4, 8))
 
     # Expand dims at axis 1 -> (4, 1, 8)
-    assert op_expand.infer_shape(sp, axis=1) == (4, 1, 8)
+    assert cast("Callable[..., EagerTensorProtocol]", op_expand.infer_shape)(sp, axis=1) == (4, 1, 8)
 
     # Reshape to (2, 2, 8)
-    assert op_reshape.infer_shape(sp, (2, 2, 8)) == (2, 2, 8)
+    assert cast("Callable[..., EagerTensorProtocol]", op_reshape.infer_shape)(sp, (2, 2, 8)) == (2, 2, 8)
 
     # Reset shape to (8, 4)
-    assert op_reset.infer_shape(sp, new_shape=(8, 4)) == (8, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_reset.infer_shape)(sp, new_shape=(8, 4)) == (8, 4)
 
     # Transpose (4, 8) -> (8, 4)
-    assert op_transpose.infer_shape(sp) == (8, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_transpose.infer_shape)(sp) == (8, 4)
 
     # Transpose with perm
     sp_3d = MockSparseTensor((2, 4, 8))
-    assert op_transpose.infer_shape(sp_3d, perm=(2, 0, 1)) == (8, 2, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_transpose.infer_shape)(sp_3d, perm=(2, 0, 1)) == (8, 2, 4)
 
 
 def test_sparse_concat_and_split() -> None:
@@ -172,11 +181,11 @@ def test_sparse_concat_and_split() -> None:
     sp2 = MockSparseTensor((4, 10))
 
     # Concat along axis 1 -> (4, 16)
-    assert op_concat.infer_shape([sp1, sp2], axis=1) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_concat.infer_shape)([sp1, sp2], axis=1) == (4, 16)
 
     # Split (4, 16) into 4 chunks along axis 1 -> 4 tuples of (4, 4)
     sp_split_in = MockSparseTensor((4, 16))
-    chunks = op_split.infer_shape(sp_split_in, num_split=4, axis=1)
+    chunks = cast("Callable[..., EagerTensorProtocol]", op_split.infer_shape)(sp_split_in, num_split=4, axis=1)
     assert len(chunks) == 4
     for ch in chunks:
         assert ch == (4, 4)
@@ -192,25 +201,25 @@ def test_sparse_generation_and_conversions() -> None:
     op_slice = SparseSlice()
 
     # SparseEye
-    assert op_eye.infer_shape(5, num_columns=7) == (5, 7)
-    assert op_eye.infer_shape(4) == (4, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op_eye.infer_shape)(5, num_columns=7) == (5, 7)
+    assert cast("Callable[..., EagerTensorProtocol]", op_eye.infer_shape)(4) == (4, 4)
 
     # SparseBincount
     sp = MockSparseTensor((10,))
-    assert op_bincount.infer_shape(sp, size=50) == (10, 50)
+    assert cast("Callable[..., EagerTensorProtocol]", op_bincount.infer_shape)(sp, size=50) == (10, 50)
 
     # SparseCrossHashed
-    assert op_cross.infer_shape([sp], num_buckets=100) == (10, 100)
+    assert cast("Callable[..., EagerTensorProtocol]", op_cross.infer_shape)([sp], num_buckets=100) == (10, 100)
 
     # SparseToIndicator
-    assert op_to_ind.infer_shape(sp, vocab_size=256) == (10, 256)
+    assert cast("Callable[..., EagerTensorProtocol]", op_to_ind.infer_shape)(sp, vocab_size=256) == (10, 256)
 
     # SparseToDense
-    assert op_to_dense.infer_shape(None, (10, 20)) == (10, 20)
+    assert cast("Callable[..., EagerTensorProtocol]", op_to_dense.infer_shape)(None, (10, 20)) == (10, 20)
 
     # SparseSlice
     sp_2d = MockSparseTensor((10, 20))
-    assert op_slice.infer_shape(sp_2d, start=(2, 4), size=(3, 5)) == (3, 5)
+    assert cast("Callable[..., EagerTensorProtocol]", op_slice.infer_shape)(sp_2d, start=(2, 4), size=(3, 5)) == (3, 5)
 
 
 def test_sparse_segment_operations() -> None:
@@ -221,9 +230,9 @@ def test_sparse_segment_operations() -> None:
 
     data = _make_tensor((20, 8))
 
-    assert op_sum.infer_shape(data, num_segments=5) == (5, 8)
-    assert op_mean.infer_shape(data, num_segments=5) == (5, 8)
-    assert op_sqrt.infer_shape(data, num_segments=5) == (5, 8)
+    assert cast("Callable[..., EagerTensorProtocol]", op_sum.infer_shape)(data, num_segments=5) == (5, 8)
+    assert cast("Callable[..., EagerTensorProtocol]", op_mean.infer_shape)(data, num_segments=5) == (5, 8)
+    assert cast("Callable[..., EagerTensorProtocol]", op_sqrt.infer_shape)(data, num_segments=5) == (5, 8)
 
 
 def test_sparse_remaining_branches_and_edge_cases() -> None:
@@ -248,32 +257,32 @@ def test_sparse_remaining_branches_and_edge_cases() -> None:
 
     # 3. SparseReduceMax with empty shape (line 263)
     op_red_max = SparseReduceMax()
-    assert op_red_max.infer_shape(None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_red_max.infer_shape)(None) == ()
 
     # 4. SparseExpandDims with negative axis (line 333)
     op_expand = SparseExpandDims()
-    assert op_expand.infer_shape(MockSparseTensor((2, 3)), axis=-1) == (2, 3, 1)
+    assert cast("Callable[..., EagerTensorProtocol]", op_expand.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockSparseTensor)((2, 3)), axis=-1) == (2, 3, 1)
 
     # 5. SparseReshape with shape=None (line 518)
     op_reshape = SparseReshape()
-    assert op_reshape.infer_shape(MockSparseTensor((10, 20)), shape=None) == (10, 20)
+    assert cast("Callable[..., EagerTensorProtocol]", op_reshape.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockSparseTensor)((10, 20)), shape=None) == (10, 20)
 
     # 6. SparseSlice with size=None (line 631)
     op_slice = SparseSlice()
-    assert op_slice.infer_shape(MockSparseTensor((10, 20)), start=(0, 0), size=None) == (10, 20)
+    assert cast("Callable[..., EagerTensorProtocol]", op_slice.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockSparseTensor)((10, 20)), start=(0, 0), size=None) == (10, 20)
 
     # 7. SparseConcat: empty inputs, negative axis, and short shapes (lines 722, 726, 730->728, 732->734)
     op_concat = SparseConcat()
-    assert op_concat.infer_shape([]) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_concat.infer_shape)([]) == ()
     sp_a = MockSparseTensor((4, 8))
     sp_b = MockSparseTensor((4, 8))
-    assert op_concat.infer_shape([sp_a, sp_b], axis=-1) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_concat.infer_shape)([sp_a, sp_b], axis=-1) == (4, 16)
     # len(s) <= axis and len(first_shape) <= axis
     sp_1d = MockSparseTensor((4,))
     sp_empty = MockSparseTensor(())
-    assert op_concat.infer_shape([sp_1d, sp_empty], axis=2) == (4,)
+    assert cast("Callable[..., EagerTensorProtocol]", op_concat.infer_shape)([sp_1d, sp_empty], axis=2) == (4,)
 
     # 8. SparseSplit: negative axis and axis >= len(shape) (lines 759, 760->762)
     op_split = SparseSplit()
-    assert op_split.infer_shape(MockSparseTensor((4, 8)), num_split=2, axis=-1) == ((4, 4), (4, 4))
-    assert op_split.infer_shape(MockSparseTensor((4,)), num_split=2, axis=2) == ((4,), (4,))
+    assert cast("Callable[..., EagerTensorProtocol]", op_split.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockSparseTensor)((4, 8)), num_split=2, axis=-1) == ((4, 4), (4, 4))
+    assert cast("Callable[..., EagerTensorProtocol]", op_split.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockSparseTensor)((4,)), num_split=2, axis=2) == ((4,), (4,))

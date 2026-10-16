@@ -1,11 +1,13 @@
 """Numpy Variable Ops."""
 
-# ruff: noqa: E402, E501, F403
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from types import ModuleType
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("Assign")
-def _np_assign(backend_module, x, y, *args, **kwargs):
+def _np_assign(backend_module: ModuleType, x: EagerValue, y: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_assign operation.
 
     Args:
@@ -22,7 +24,7 @@ def _np_assign(backend_module, x, y, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Cast")
-def _np_cast(backend_module, x, dtype, *args, **kwargs):
+def _np_cast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_cast operation.
 
     Args:
@@ -41,11 +43,11 @@ def _np_cast(backend_module, x, dtype, *args, **kwargs):
             dt = "float32"
         elif "int4" in dt:
             dt = "int8"
-    return backend_module.asarray(x).astype(dt)
+    return cast(EagerValue, backend_module.asarray(x).astype(dt))
 
 
 @numpy_eager_registry.register("Bitcast")
-def _np_bitcast(backend_module, x, dtype, *args, **kwargs):
+def _np_bitcast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_bitcast operation.
 
     Args:
@@ -58,11 +60,11 @@ def _np_bitcast(backend_module, x, dtype, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.asarray(x).view(getattr(dtype, "value", dtype))
+    return cast(EagerValue, backend_module.asarray(x).view(getattr(dtype, "value", dtype)))
 
 
 @numpy_eager_registry.register("ReadVariable")
-def _np_read_variable(backend_module, *args, **kwargs):
+def _np_read_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_read_variable operation.
 
     Args:
@@ -77,7 +79,7 @@ def _np_read_variable(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("AssignVariable")
-def _np_assign_variable(backend_module, *args, **kwargs):
+def _np_assign_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_assign_variable operation.
 
     Args:

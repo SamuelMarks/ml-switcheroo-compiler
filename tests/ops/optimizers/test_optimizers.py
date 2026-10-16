@@ -1,3 +1,9 @@
+"""Tests for test_optimizers."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 from unittest.mock import patch
 
@@ -34,25 +40,31 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
     sgd_update,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_optimizers_coverage():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_optimizers_coverage() -> None:
+    """Test function test_optimizers_coverage."""
     config.eager_mode = True
     t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
     grad = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
     assert sgd_update(t, grad, SGDConfig(lr=0.1, weight_decay=0.1, momentum=0.9, nesterov=True)) is not None
-    state = {}
-    assert sgd_update(t, grad, SGDConfig(lr=0.1, momentum=0.9, nesterov=False), state) is not None
-    assert sgd_update(t, grad, SGDConfig(lr=0.1, momentum=0.9, nesterov=False), state) is not None
+    state = cast("dict[str, EagerTensorProtocol]", {})
+    assert cast("Callable[..., EagerTensorProtocol]", sgd_update)(t, grad, cast("Callable[..., EagerTensorProtocol]", SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
+    assert cast("Callable[..., EagerTensorProtocol]", sgd_update)(t, grad, cast("Callable[..., EagerTensorProtocol]", SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
 
     assert adam_update(t, grad, AdamHyperparams(lr=0.1, weight_decay=0.1)) is not None
     assert adamw_update(t, grad, AdamWHyperparams(lr=0.1, weight_decay=0.1)) is not None
     assert adagrad_update(t, grad, AdagradConfig(lr=0.1, weight_decay=0.1)) is not None
 
     assert rmsprop_update(t, grad, RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9)) is not None
-    state_rms = {}
-    assert rmsprop_update(t, grad, RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
-    assert rmsprop_update(t, grad, RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
+    state_rms = cast("dict[str, EagerTensorProtocol]", {})
+    assert cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(t, grad, cast("Callable[..., EagerTensorProtocol]", RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
+    assert cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(t, grad, cast("Callable[..., EagerTensorProtocol]", RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
 
     assert adadelta_update(t, grad, AdadeltaConfig(lr=0.1, weight_decay=0.1)) is not None
     assert adamax_update(t, grad, AdamaxHyperparams(lr=0.1, weight_decay=0.1)) is not None
@@ -60,10 +72,10 @@ def test_optimizers_coverage():
     assert adafactor_update(t, grad, 0.1) is not None
     assert muon_update(t, grad, 0.1) is not None
 
-    assert ApplyAdam().infer_shape(t, t, t) == (2, 2)
-    assert ApplyAdagrad().infer_shape(t, t) == (2, 2)
-    assert ApplyFtrl().infer_shape(t, t, t) == (2, 2)
-    assert ApplyRMSProp().infer_shape(t, t, t) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", ApplyAdam)().infer_shape(t, t, t) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", ApplyAdagrad)().infer_shape(t, t) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", ApplyFtrl)().infer_shape(t, t, t) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", ApplyRMSProp)().infer_shape(t, t, t) == (2, 2)
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.side_effect = Exception("ValueError mock")
@@ -76,13 +88,16 @@ def test_optimizers_coverage():
             global_tracing_state.is_tracing = True
 
             class DummyGraph:
-                name = "dummy"
-                nodes = {}
+                """Test class DummyGraph."""
 
-                def add_node(self, node):
+                name = "dummy"
+                nodes = cast("dict[str, EagerTensorProtocol]", {})
+
+                def add_node(self, node: EagerValue) -> None:
+                    """Test function add_node."""
                     pass
 
-            global_tracing_state.active_graph = DummyGraph()
+            setattr(global_tracing_state, "active_graph", DummyGraph())
 
             assert apply_adam(t, t, t, grad, 0.1) is not None
             assert apply_adagrad(t, t, grad, 0.1) is not None

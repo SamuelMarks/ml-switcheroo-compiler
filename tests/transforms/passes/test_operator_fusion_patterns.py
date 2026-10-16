@@ -1,4 +1,10 @@
-def test_operator_fusion_extra():
+"""Tests for test_operator_fusion_patterns."""
+
+from __future__ import annotations
+
+
+def test_operator_fusion_extra() -> None:
+    """Test function test_operator_fusion_extra."""
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import MemoryAwareCostModel
 
@@ -17,7 +23,8 @@ def test_operator_fusion_extra():
     assert model.is_fusion_valid({"n2": node2}) is True
 
 
-def test_discover_and_apply_new_fusion_patterns():
+def test_discover_and_apply_new_fusion_patterns() -> None:
+    """Test function test_discover_and_apply_new_fusion_patterns."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
         _discover_fusion_patterns,
@@ -50,7 +57,8 @@ def test_discover_and_apply_new_fusion_patterns():
     assert g_conv.nodes["act"].inputs == ["x", "w", "bias"]
 
 
-def test_layer_norm_basic_fusion():
+def test_layer_norm_basic_fusion() -> None:
+    """Test function test_layer_norm_basic_fusion."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import apply_operator_fusion
 

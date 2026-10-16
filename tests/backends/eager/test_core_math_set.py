@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -16,6 +16,11 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_set import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_math_set_coverage() -> None:
     """Test all branches and lines of math_set.
@@ -27,27 +32,27 @@ def test_math_set_coverage() -> None:
     class SetBackend:
         """Backend with set operations."""
 
-        def intersect1d(self, *args: Any, **kwargs: Any) -> str:
+        def intersect1d(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock intersect1d."""
             return "intersect1d_val"
 
-        def union1d(self, *args: Any, **kwargs: Any) -> str:
+        def union1d(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock union1d."""
             return "union1d_val"
 
-        def unique(self, *args: Any, **kwargs: Any) -> str:
+        def unique(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock unique."""
             return "unique_val"
 
-        def uniqueall(self, *args: Any, **kwargs: Any) -> str:
+        def uniqueall(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock uniqueall."""
             return "uniqueall_val"
 
-        def uniquecounts(self, *args: Any, **kwargs: Any) -> str:
+        def uniquecounts(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock uniquecounts."""
             return "uniquecounts_val"
 
-        def uniquevalues(self, *args: Any, **kwargs: Any) -> str:
+        def uniquevalues(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock uniquevalues."""
             return "uniquevalues_val"
 
@@ -66,21 +71,21 @@ def test_math_set_coverage() -> None:
         pass
 
     eb = EmptyBackend()
-    assert list(_np_union1d(eb, [1, 2], [2, 3])) == [1, 2, 3]
-    assert list(_np_unique(eb, [3, 1, 2, 1])) == [1, 2, 3]
+    assert cast("Callable[..., EagerTensorProtocol]", list)(cast("Callable[..., EagerTensorProtocol]", _np_union1d)(eb, [1, 2], [2, 3])) == [1, 2, 3]
+    assert cast("Callable[..., EagerTensorProtocol]", list)(cast("Callable[..., EagerTensorProtocol]", _np_unique)(eb, [3, 1, 2, 1])) == [1, 2, 3]
 
-    vals, idx, inv, counts = _np_uniqueall(eb, np.array([2, 1, 2]))
-    assert list(vals) == [1, 2]
-    assert len(idx) == 2
-    assert len(inv) == 3
-    assert list(counts) == [1, 2]
+    vals, idx, inv, counts = cast("Callable[..., EagerTensorProtocol]", _np_uniqueall)(eb, cast("Callable[..., EagerTensorProtocol]", np.array)([2, 1, 2]))
+    assert cast("Callable[..., EagerTensorProtocol]", list)(vals) == [1, 2]
+    assert cast("Callable[..., EagerTensorProtocol]", len)(idx) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(inv) == 3
+    assert cast("Callable[..., EagerTensorProtocol]", list)(counts) == [1, 2]
 
-    u_vals, u_counts = _np_uniquecounts(eb, np.array([5, 5, 6]))
-    assert list(u_vals) == [5, 6]
-    assert list(u_counts) == [2, 1]
+    u_vals, u_counts = cast("Callable[..., EagerTensorProtocol]", _np_uniquecounts)(eb, cast("Callable[..., EagerTensorProtocol]", np.array)([5, 5, 6]))
+    assert cast("Callable[..., EagerTensorProtocol]", list)(u_vals) == [5, 6]
+    assert cast("Callable[..., EagerTensorProtocol]", list)(u_counts) == [2, 1]
 
     val_only = _np_uniquevalues(eb, np.array([7, 8, 7]))
-    assert list(val_only) == [7, 8]
+    assert cast("Callable[..., EagerTensorProtocol]", list)(val_only) == [7, 8]
 
     # Registry verification
     for name in ["Intersect1d", "Union1d", "Unique", "UniqueAll", "UniqueCounts", "UniqueValues"]:

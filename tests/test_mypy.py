@@ -1,4 +1,9 @@
-def test_mypy():
+"""Tests for test_mypy."""
+
+from __future__ import annotations
+
+
+def test_mypy() -> None:
     """Verify static typing via mypy across src/ml_switcheroo_compiler/."""
     import shutil
     import subprocess

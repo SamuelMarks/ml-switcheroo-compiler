@@ -1,5 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Dead Code Elimination pass."""
+
+from __future__ import annotations
 
 import os
 from collections.abc import Set

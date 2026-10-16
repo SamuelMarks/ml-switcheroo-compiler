@@ -1,10 +1,19 @@
 """Test mlx coverage."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
-pytest.importorskip("mlx.core")
-
 from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+pytest.importorskip("mlx.core")
 
 
 def test_mlx_types() -> None:
@@ -15,10 +24,10 @@ def test_mlx_types() -> None:
     assert zeros is not None
     import mlx.core as mx
 
-    array(None, [1, 2])
-    asarray(None, [3, 4])
-    zeros(None, (2,))
-    item(None, mx.array([5]))
+    cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2])
+    cast("Callable[..., EagerTensorProtocol]", asarray)(None, [3, 4])
+    cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2,))
+    cast("Callable[..., EagerTensorProtocol]", item)(None, cast("Callable[..., EagerTensorProtocol]", mx.array)([5]))
 
 
 def test_mlx_types_asarray_mock() -> None:
@@ -27,12 +36,14 @@ def test_mlx_types_asarray_mock() -> None:
 
     from ml_switcheroo_compiler.backends.mlx.types import asarray
 
-    mx.asarray = lambda x: mx.array(x)
-    asarray(None, [1, 2])
-    del mx.asarray
+    setattr(mx, "asarray", lambda x: mx.array(x))
+    cast("Callable[..., EagerTensorProtocol]", asarray)(None, [1, 2])
+    delattr(mx, "asarray")
+    assert callable(asarray)
 
 
-def test_mlx_init_import_error(monkeypatch):
+def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_mlx_init_import_error."""
     import importlib.util
     import sys
 
@@ -40,10 +51,11 @@ def test_mlx_init_import_error(monkeypatch):
     if "ml_switcheroo_compiler.backends.mlx" in sys.modules:
         del sys.modules["ml_switcheroo_compiler.backends.mlx"]
 
-    def mock_find_spec(name, package=None):
+    def mock_find_spec(name: EagerValue, package: EagerValue = None) -> EagerValue:
+        """Test function mock_find_spec."""
         if name == "mlx":
             return None
-        return importlib.util._find_spec(name, package)
+        return cast("EagerValue", getattr(importlib.util, "_find_spec")(name, package))
 
     monkeypatch.setattr(importlib.util, "find_spec", mock_find_spec)
     monkeypatch.delitem(sys.modules, "pytest", raising=False)

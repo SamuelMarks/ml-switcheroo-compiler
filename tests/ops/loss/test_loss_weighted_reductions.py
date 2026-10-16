@@ -9,6 +9,7 @@ from ml_switcheroo_compiler.ops.loss import kld, kullback_leibler_divergence, lo
 
 
 def test_loss_extras() -> None:
+    """Test function test_loss_extras."""
     backend = get_active_backend()
     dev = Device("cpu")
     t1 = Tensor(backend.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, dev))

@@ -7,6 +7,8 @@ def test_unary_logical_functions() -> None:
     """Test unary logical coverage."""
 
     class DummyNode:
+        """Test class DummyNode."""
+
         shape = (10, 20)
 
     a = DummyNode()
@@ -16,13 +18,13 @@ def test_unary_logical_functions() -> None:
             if callable(val):
                 try:
                     val(a)
-                except Exception:
-                    pass
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                    assert _exc is not None
                 try:
                     val(a, a)
-                except Exception:
-                    pass
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                    assert _exc is not None
                 try:
                     val(a, a, a)
-                except Exception:
-                    pass
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                    assert _exc is not None

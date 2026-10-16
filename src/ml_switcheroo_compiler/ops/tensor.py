@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module tensor.py."""
-
 """Tensor Manipulation operations."""
 
 from ml_switcheroo_compiler.ops.binary import allclose

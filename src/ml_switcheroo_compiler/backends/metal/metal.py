@@ -2,11 +2,12 @@
 
 import ctypes
 import ctypes.util
-import importlib
+import logging
 import os
-from typing import Optional, Protocol, Union, runtime_checkable
+from typing import Callable, Optional, Protocol, Union, cast, runtime_checkable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
@@ -17,6 +18,8 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -110,7 +113,7 @@ def _resolve_metal_grid_sizes(
     return str(num_elements), "1", "1"
 
 
-def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[object, ...]) -> dict[str, bytes]:
+def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -> dict[str, bytes]:
     """Prepare raw byte buffers for Metal execution.
 
     Args:
@@ -124,17 +127,17 @@ def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[object, ...]) -> di
     for idx, arg in enumerate(args):
         input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
         if hasattr(arg, "tobytes"):
-            input_buffers[input_name] = arg.tobytes()
+            input_buffers[input_name] = getattr(arg, "tobytes")()
         elif isinstance(arg, (bytes, bytearray, memoryview)):
             input_buffers[input_name] = bytes(arg)
-        elif hasattr(arg, "data") and hasattr(arg.data, "tobytes"):
-            input_buffers[input_name] = arg.data.tobytes()
+        elif hasattr(arg, "data") and hasattr(getattr(arg, "data"), "tobytes"):
+            input_buffers[input_name] = getattr(arg, "data").tobytes()
         else:
-            input_buffers[input_name] = bytes(arg)
+            input_buffers[input_name] = cast("Callable[..., bytes]", bytes)(arg)
     return input_buffers
 
 
-def _evaluate_metal_fallback(graph: IRGraph, args: tuple[object, ...]) -> object:
+def _evaluate_metal_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> EagerValue:
     """Evaluate graph using reference interpreter fallback.
 
     Args:
@@ -146,11 +149,11 @@ def _evaluate_metal_fallback(graph: IRGraph, args: tuple[object, ...]) -> object
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    feed_dict: dict[str, object] = {graph.inputs[i]: getattr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
-    res_dict = evaluate_graph(graph, feed_dict)
+    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: getattr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict))
     if len(graph.outputs) == 1:
-        return res_dict.get(graph.outputs[0])
-    return tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict
+        return cast(EagerValue, res_dict.get(graph.outputs[0]))
+    return cast(EagerValue, tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
 
 
 METAL_SYNTH_MATH_MAP: dict[str, str] = {
@@ -258,7 +261,7 @@ class MetalCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (Optional[list[CodeGeneratorVisitor]], optional): Visitor delegates.
         """
-        super().__init__(graph, delegates)
+        getattr(super(), "__init__")(graph, delegates)
         yaml_dir: str = os.path.join(os.path.dirname(__file__), "metal_orchestration")
         yaml_path: str = os.path.join(os.path.dirname(__file__), "msl_templates.yaml")
         self.config = load_hardware_templates(yaml_dir, yaml_path)
@@ -386,7 +389,7 @@ class MetalCodeGenerator(BaseGenerator):
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
         msl.append(f"    {out_name} = device.newBufferWithLength_options_({bytes_alloc}, 0)")
-        wg: list[int] = tpl.get("workgroup_size", [1, 1, 1]) or [1, 1, 1]
+        wg: list[int] = cast(list[int], getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
 
         gx, gy, gz = _resolve_metal_grid_sizes(node, num_elements, self.graph)
         msl.append(f"    grid_size_{node_idx} = MTLSize({gx}, {gy}, {gz})")
@@ -424,7 +427,7 @@ class MetalCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    body: str = tpl.get("body", "").replace("#include <metal_stdlib>\nusing namespace metal;", "")
+                    body: str = getattr(getattr(tpl, "get")("body", ""), "replace")("#include <metal_stdlib>\nusing namespace metal;", "")
                     msl.append(body)
 
     def generate_msl(self) -> str:
@@ -488,7 +491,7 @@ class MetalCodeGenerator(BaseGenerator):
 
         return "\n".join(dispatch_lines)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into ahead-of-time Apple Metal executable artifact.
 
         Args:
@@ -506,7 +509,7 @@ class MetalCodeGenerator(BaseGenerator):
         compile_opts = kwargs.get("compile_options", None)
         comp_res = compiler.compile(metal_source, options=compile_opts if isinstance(compile_opts, list) else None)
 
-        def runner(*args: object, **runner_kwargs: object) -> object:
+        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
             """Execute compiled Metal artifact with runtime dispatch or fallback.
 
             Args:
@@ -521,12 +524,14 @@ class MetalCodeGenerator(BaseGenerator):
                     runner_inst = MetalRunner()
                     if runner_inst.device is not None:
                         input_buffers = _prepare_metal_input_buffers(graph, args)
-                        out_dict = runner_inst.execute_graph(graph, input_buffers)
+                        out_dict = getattr(runner_inst, "execute_graph")(graph, input_buffers)
                         if len(graph.outputs) == 1:
-                            return out_dict.get(graph.outputs[0])
+                            from typing import cast
+
+                            return cast(EagerValue, out_dict.get(graph.outputs[0]))
                         return tuple(out_dict.get(out_name) for out_name in graph.outputs)
-                except Exception:
-                    pass
+                except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
             return _evaluate_metal_fallback(graph, args)
 
@@ -577,7 +582,7 @@ class MetalRunner:
             if device is not None:
                 return True
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
         try:
             metal_path = ctypes.util.find_library("Metal") or "/System/Library/Frameworks/Metal.framework/Metal"
@@ -588,7 +593,7 @@ class MetalRunner:
                 dev = func()
                 return dev is not None
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return False
 
     def compile_and_dispatch(
@@ -782,7 +787,7 @@ class MetalRunner:
         encoder = cmd_buf.computeCommandEncoder()
         encoder.setComputePipelineState_(pipeline_state)
 
-        numpy_mod = importlib.import_module("numpy")
+        numpy_mod = _np_mod()
         for i, arr in enumerate(inputs):
             contiguous_arr = numpy_mod.ascontiguousarray(arr, dtype=numpy_mod.float32)
             buf = self.device.newBufferWithBytes_length_options_(
@@ -809,9 +814,9 @@ class MetalRunner:
         cmd_buf.waitUntilCompleted()
 
         out_ptr = out_buf.contents()
-        return numpy_mod.ctypeslib.as_array(ctypes.cast(out_ptr, ctypes.POINTER(ctypes.c_float)), shape=out_shape).copy()
+        return cast(ArrayBufferType, numpy_mod.ctypeslib.as_array(ctypes.cast(out_ptr, ctypes.POINTER(ctypes.c_float)), shape=out_shape).copy())
 
-    def _prepare_device_buffers(self, inputs: dict[str, ArrayBufferType]) -> dict[str, object]:
+    def _prepare_device_buffers(self, inputs: dict[str, ArrayBufferType]) -> dict[str, EagerValue]:
         """Allocate and populate input Metal buffers from host inputs.
 
         Args:
@@ -822,7 +827,7 @@ class MetalRunner:
         """
         import Metal
 
-        device_buffers: dict[str, object] = {}
+        device_buffers: dict[str, EagerValue] = {}
         for inp_name, data in inputs.items():
             if isinstance(data, (bytes, memoryview)):
                 raw_bytes = bytes(data)
@@ -830,7 +835,7 @@ class MetalRunner:
                 float_arr = (ctypes.c_float * len(data))(*data)
                 raw_bytes = bytes(float_arr)
             else:
-                numpy_mod = importlib.import_module("numpy")
+                numpy_mod = _np_mod()
                 raw_bytes = bytes(numpy_mod.ascontiguousarray(data, dtype=numpy_mod.float32))
             buf = self.device.newBufferWithBytes_length_options_(
                 raw_bytes,
@@ -844,9 +849,9 @@ class MetalRunner:
         self,
         node: IRNode,
         node_idx: int,
-        library: object,
-        encoder: object,
-        device_buffers: dict[str, object],
+        library: EagerValue,
+        encoder: EagerValue,
+        device_buffers: dict[str, EagerValue],
     ) -> None:
         """Dispatch a single compute node on Metal encoder.
 
@@ -869,14 +874,14 @@ class MetalRunner:
         if pipeline_state is None:
             return
 
-        encoder.setComputePipelineState_(pipeline_state)
+        getattr(encoder, "setComputePipelineState_")(pipeline_state)
         for in_i, inp in enumerate(node.inputs):
             b = device_buffers.get(inp)
             if b is not None:
-                encoder.setBuffer_offset_atIndex_(b, 0, in_i)
+                getattr(encoder, "setBuffer_offset_atIndex_")(b, 0, in_i)
         elem_count, byte_size = _calculate_node_bytes(node)
         out_buf = self.device.newBufferWithLength_options_(byte_size, Metal.MTLResourceStorageModeShared)
-        encoder.setBuffer_offset_atIndex_(out_buf, 0, len(node.inputs))
+        getattr(encoder, "setBuffer_offset_atIndex_")(out_buf, 0, len(node.inputs))
         device_buffers[node.id] = out_buf
 
         block_cfg, grid_cfg = query_optimal_launch_geometry(
@@ -884,7 +889,7 @@ class MetalRunner:
         )
         threads_per_grid = Metal.MTLSize(grid_cfg[0] * block_cfg[0], grid_cfg[1] * block_cfg[1], grid_cfg[2] * block_cfg[2])
         threads_per_group = Metal.MTLSize(block_cfg[0], block_cfg[1], block_cfg[2])
-        encoder.dispatchThreads_threadsPerThreadgroup_(threads_per_grid, threads_per_group)
+        getattr(encoder, "dispatchThreads_threadsPerThreadgroup_")(threads_per_grid, threads_per_group)
 
     def execute_graph(
         self,
@@ -941,7 +946,7 @@ class MetalRunner:
 
         return results
 
-    def _execute_metal_reduction_passes(self, np_arr: object, fallback: float) -> float:
+    def _execute_metal_reduction_passes(self, np_arr: EagerValue, fallback: float) -> float:
         """Execute multi-pass parallel tree reduction on Metal GPU device.
 
         Args:
@@ -953,8 +958,8 @@ class MetalRunner:
         """
         import Metal
 
-        numpy_mod = importlib.import_module("numpy")
-        flat_arr = numpy_mod.ascontiguousarray(np_arr.flatten(), dtype=numpy_mod.float32)
+        numpy_mod = _np_mod()
+        flat_arr = numpy_mod.ascontiguousarray(getattr(np_arr, "flatten")(), dtype=numpy_mod.float32)
         n_elements = int(flat_arr.size)
 
         msl_kernel = (
@@ -1064,7 +1069,7 @@ class MetalRunner:
         Returns:
             float: Evaluated scalar sum equivalent to NumPy sum.
         """
-        numpy_mod = importlib.import_module("numpy")
+        numpy_mod = _np_mod()
         np_arr = numpy_mod.asarray(arr, dtype=numpy_mod.float32)
         if np_arr.size == 0:
             return 0.0

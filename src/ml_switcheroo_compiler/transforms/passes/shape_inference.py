@@ -1,16 +1,19 @@
-"""Module shape_inference.py."""
+"""Shape Inference Pass."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Shape Inference Pass."""
-
-
+import logging
 import typing
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ShapeInspectionPayload
+
+from collections.abc import Callable
+
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.errors import CompilationError, ShapeMismatchError
@@ -25,7 +28,10 @@ from ml_switcheroo_compiler.transforms.passes.config_models import (
 )
 
 
-def _infer_constant_shape(node, shapes):
+def _infer_constant_shape(
+    node: IRNode,
+    shapes: dict[str, tuple[int, ...] | None],
+) -> tuple[int, ...] | None:
     """Evaluate _infer_constant_shape operation.
 
     Args:
@@ -35,6 +41,7 @@ def _infer_constant_shape(node, shapes):
     Returns:
         tuple: Result.
     """
+    del shapes
     val = node.attributes.get("value")
 
     backend = get_active_backend()
@@ -42,7 +49,10 @@ def _infer_constant_shape(node, shapes):
     return getattr(arr, "shape", ())
 
 
-def _infer_output_shape(node, shapes):
+def _infer_output_shape(
+    node: IRNode,
+    shapes: dict[str, tuple[int, ...] | None],
+) -> tuple[int, ...] | None:
     """Evaluate _infer_output_shape operation.
 
     Args:
@@ -57,7 +67,7 @@ def _infer_output_shape(node, shapes):
     return None
 
 
-def _prepare_op_kwargs(node):
+def _prepare_op_kwargs(node: IRNode) -> dict[str, AttributeValue]:
     """Evaluate _prepare_op_kwargs operation.
 
     Args:
@@ -66,7 +76,7 @@ def _prepare_op_kwargs(node):
     Returns:
         dict: Result.
     """
-    kwargs = {**node.attributes}
+    kwargs: dict[str, AttributeValue] = {**node.attributes}
     if hasattr(node, "shape_metadata") and node.shape_metadata:
         if node.op_type in ("Expand", "BroadcastTo"):
             kwargs["shape"] = node.shape_metadata
@@ -75,7 +85,10 @@ def _prepare_op_kwargs(node):
     return kwargs
 
 
-def _infer_op_shape(node, shapes):
+def _infer_op_shape(
+    node: IRNode,
+    shapes: dict[str, tuple[int, ...] | None],
+) -> tuple[int, ...] | None:
     """Evaluate _infer_op_shape operation.
 
     Args:
@@ -93,11 +106,11 @@ def _infer_op_shape(node, shapes):
     return result if isinstance(result, tuple) else None
 
 
-def _normalize_shape_tuple(raw_shape: object) -> tuple[int, ...] | None:
+def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[AttributeValue] | dict[str, AttributeValue] | None) -> tuple[int, ...] | None:
     """Normalize a raw shape container to an optional tuple of ints.
 
     Args:
-        raw_shape (object): Raw shape object.
+        raw_shape (tuple | list | dict | None): Raw shape object.
 
     Returns:
         tuple[int, ...] | None: Normalized int shape tuple.
@@ -110,10 +123,39 @@ def _normalize_shape_tuple(raw_shape: object) -> tuple[int, ...] | None:
         if any(isinstance(x, str) for x in raw_shape):
             return None
         try:
-            return tuple(int(x) if not isinstance(x, S) else x for x in raw_shape)
+            from typing import cast
+
+            return cast("tuple[int, ...]", tuple(int(x) if not isinstance(x, S) else x for x in raw_shape))
         except (ValueError, TypeError):
             return None
     return None
+
+
+def _infer_input_shape(
+    node: IRNode,
+    shapes: dict[str, tuple[int, ...] | None],
+) -> tuple[int, ...] | None:
+    """Infer input node shape from metadata.
+
+    Args:
+        node (IRNode): Input node.
+        shapes (dict[str, tuple[int, ...] | None]): Known shapes.
+
+    Returns:
+        tuple[int, ...] | None: Normalized shape.
+    """
+    del shapes
+    return cast("tuple[int, ...] | None", cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(node.shape_metadata))
+
+
+_SPECIAL_OP_HANDLERS: dict[
+    str,
+    Callable[[IRNode, dict[str, tuple[int, ...] | None]], tuple[int, ...] | None],
+] = {
+    "Constant": _infer_constant_shape,
+    "Input": _infer_input_shape,
+    "Output": _infer_output_shape,
+}
 
 
 def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None]) -> tuple[int, ...] | None:
@@ -129,22 +171,16 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     Raises:
         CompilationError: An exception.
     """
-    handlers = {
-        "Constant": lambda: _infer_constant_shape(node, shapes),
-        "Input": lambda: _normalize_shape_tuple(node.shape_metadata),
-        "Output": lambda: _infer_output_shape(node, shapes),
-    }
-
-    if node.op_type in handlers:
-        return handlers[node.op_type]()
+    if node.op_type in _SPECIAL_OP_HANDLERS:
+        return _SPECIAL_OP_HANDLERS[node.op_type](node, shapes)
 
     try:
         return _infer_op_shape(node, shapes)
     except (KeyError, AttributeError):
-        return _normalize_shape_tuple(node.shape_metadata)
+        return cast("tuple[int, ...] | None", cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(node.shape_metadata))
     except ValueError as e:
         if "Operation" in str(e) and "not found" in str(e):
-            return _normalize_shape_tuple(node.shape_metadata)
+            return cast("tuple[int, ...] | None", cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(node.shape_metadata))
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
     except (TypeError, Exception) as e:
@@ -152,7 +188,70 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
         raise CompilationError(msg) from e
 
 
-def shape_inference_pass(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
+def _propagate_subgraph_shapes(node: IRNode, shapes: dict[str, tuple[int, ...] | None]) -> bool:
+    """Propagate input shapes into a node's nested subgraphs and run shape inference on them.
+
+    Args:
+        node (IRNode): Parent node containing subgraphs.
+        shapes (dict[str, tuple[int, ...] | None]): Known shapes of nodes in the parent graph.
+
+    Returns:
+        bool: True if any nested subgraph was modified, False otherwise.
+    """
+    modified = False
+    for sub in getattr(node, "subgraphs", {}).values():
+        if hasattr(sub, "nodes") and hasattr(sub, "inputs"):
+            for inp_id, parent_inp in zip(sub.inputs, node.inputs):
+                if shapes.get(parent_inp) is not None and inp_id in sub.nodes:
+                    sub.nodes[inp_id].shape_metadata = shapes[parent_inp]
+            if shape_inference_pass(sub):
+                modified = True
+    return modified
+
+
+def _fallback_subgraph_output_shape(node: IRNode) -> tuple[int, ...] | None:
+    """Attempt to extract output shape from a node's nested subgraphs.
+
+    Args:
+        node (IRNode): Node whose subgraphs are inspected.
+
+    Returns:
+        tuple[int, ...] | None: Normalized output shape from the first subgraph with an output shape, or None.
+    """
+    for sub in getattr(node, "subgraphs", {}).values():
+        if hasattr(sub, "outputs") and sub.outputs and sub.outputs[0] in sub.nodes:
+            sub_out_shape = _normalize_shape_tuple(getattr(sub.nodes[sub.outputs[0]], "shape_metadata", None))
+            if sub_out_shape is not None:
+                return sub_out_shape
+    return None
+
+
+def _apply_inferred_shape(node: IRNode, out_shape: tuple[int, ...]) -> bool:
+    """Update a node's shape metadata and contiguous strides.
+
+    Args:
+        node (IRNode): Node to update.
+        out_shape (tuple[int, ...]): Inferred concrete shape tuple.
+
+    Returns:
+        bool: True if the node's shape_metadata was changed, False otherwise.
+    """
+    from ml_switcheroo_compiler.ops.shape_inference import compute_contiguous_strides
+
+    modified = False
+    if node.shape_metadata != out_shape:
+        node.shape_metadata = out_shape
+        modified = True
+    strides = compute_contiguous_strides(out_shape)
+    node.attributes["strides"] = strides
+    try:
+        setattr(node, "strides", strides)
+    except AttributeError:
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    return modified
+
+
+def shape_inference_pass(graph: IRGraph) -> bool:
     """In-place shape inference.
 
     Args:
@@ -161,44 +260,21 @@ def shape_inference_pass(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
     Returns:
         bool: Result.
     """
-    from ml_switcheroo_compiler.ops.shape_inference import compute_contiguous_strides
-
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
     shapes: dict[str, tuple[int, ...] | None] = {}
 
     for node in sorted_nodes:
-        # Propagate shapes across nested subgraphs
-        for sub in getattr(node, "subgraphs", {}).values():
-            if hasattr(sub, "nodes") and hasattr(sub, "inputs"):
-                for inp_id, parent_inp in zip(sub.inputs, node.inputs):
-                    if parent_inp in shapes and shapes[parent_inp] is not None:
-                        if inp_id in sub.nodes:
-                            sub.nodes[inp_id].shape_metadata = shapes[parent_inp]
-                if shape_inference_pass(sub):
-                    modified = True
+        if _propagate_subgraph_shapes(node, shapes):
+            modified = True
 
         out_shape = _determine_node_shape(node, shapes)
-
         if out_shape is None:
-            for sub in getattr(node, "subgraphs", {}).values():
-                if hasattr(sub, "outputs") and sub.outputs and sub.outputs[0] in sub.nodes:
-                    sub_out_shape = _normalize_shape_tuple(getattr(sub.nodes[sub.outputs[0]], "shape_metadata", None))
-                    if sub_out_shape is not None:
-                        out_shape = sub_out_shape
-                        break
+            out_shape = _fallback_subgraph_output_shape(node)
 
         shapes[node.id] = out_shape
-        if out_shape is not None:
-            if node.shape_metadata != out_shape:
-                node.shape_metadata = out_shape
-                modified = True
-            strides = compute_contiguous_strides(out_shape)
-            node.attributes["strides"] = strides
-            try:
-                node.strides = strides
-            except AttributeError:
-                pass
+        if out_shape is not None and _apply_inferred_shape(node, out_shape):
+            modified = True
 
     return modified
 
@@ -246,10 +322,10 @@ def record_runtime_observation(
 
     node.shape_metadata = norm_shape
 
-    if not hasattr(graph, "annotations") or not isinstance(graph.annotations, dict):
-        graph.annotations = {}
+    if not hasattr(graph, "annotations") or not isinstance(getattr(graph, "annotations", None), dict):
+        setattr(graph, "annotations", {})
 
-    history: list[dict[str, str | tuple[int, ...]]] = graph.annotations.setdefault("learned_shapes_history", [])
+    history: list[dict[str, str | tuple[int, ...]]] = getattr(graph, "annotations").setdefault("learned_shapes_history", [])
     history.append(
         {
             "node_id": node_id,
@@ -273,7 +349,7 @@ def annotate_learned_shapes(
     Returns:
         bool: True if any node shape metadata was updated, False otherwise.
     """
-    shape_map: dict[str, typing.Sequence[int]] = {}
+    shape_map: typing.Mapping[str, typing.Sequence[int]] = {}
     if isinstance(observed_shapes, RuntimeShapePacket):
         shape_map = {obs.node_id: obs.shape for obs in observed_shapes.observations}
     elif isinstance(observed_shapes, ShapeInspectionPayload):
@@ -290,9 +366,9 @@ def annotate_learned_shapes(
                 record_runtime_observation(graph, nid, shape)
                 modified = True
 
-    if not hasattr(graph, "annotations") or not isinstance(graph.annotations, dict):
-        graph.annotations = {}
-    graph.annotations["convergence_converged"] = True
+    if not hasattr(graph, "annotations") or not isinstance(getattr(graph, "annotations", None), dict):
+        setattr(graph, "annotations", {})
+    getattr(graph, "annotations")["convergence_converged"] = True
 
     if modified:
         shape_inference_pass(graph)

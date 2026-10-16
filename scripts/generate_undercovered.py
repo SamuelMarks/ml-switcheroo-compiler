@@ -4,6 +4,32 @@ from __future__ import annotations
 
 import json
 import os
+from typing import Union
+
+CoverageSummary = dict[str, Union[int, float]]
+CoverageEntry = dict[str, Union[CoverageSummary, dict[str, dict[str, CoverageSummary]]]]
+
+
+def _is_file_undercovered(file_data: CoverageEntry) -> tuple[bool, float, int, int]:
+    """Check if a single file's coverage summary or functions are undercovered.
+
+    Args:
+        file_data: Coverage dictionary for a single file.
+
+    Returns:
+        tuple[bool, float, int, int]: (is_undercovered, pct, missing_lines, missing_branches).
+    """
+    raw_summary = file_data.get("summary", {})
+    summary: CoverageSummary = {k: v for k, v in raw_summary.items() if isinstance(v, (int, float))} if isinstance(raw_summary, dict) else {}
+    pct = float(summary.get("percent_covered", 0.0))
+    missing_lines = int(summary.get("missing_lines", 0))
+    missing_branches = int(summary.get("missing_branches", 0))
+    partial_branches = int(summary.get("num_partial_branches", 0))
+    raw_funcs = file_data.get("functions", {})
+    funcs_dict = raw_funcs if isinstance(raw_funcs, dict) else {}
+    funcs_undercovered = any(isinstance(fn_data, dict) and isinstance(fn_data.get("summary"), dict) and (int(fn_data["summary"].get("missing_lines", 0)) > 0 or int(fn_data["summary"].get("missing_branches", 0)) > 0) for fn_data in funcs_dict.values())
+    is_under = pct < 100.0 or missing_lines > 0 or missing_branches > 0 or partial_branches > 0 or funcs_undercovered
+    return is_under, pct, missing_lines, missing_branches
 
 
 def generate_undercovered_list() -> list[tuple[str, float, int, int]]:
@@ -19,11 +45,7 @@ def generate_undercovered_list() -> list[tuple[str, float, int, int]]:
     with open(json_path, encoding="utf-8") as f:
         data = json.load(f)
 
-    files_in_src: set[str] = set()
-    for root, _, files in os.walk("src/ml_switcheroo_compiler"):
-        for file in files:
-            if file.endswith(".py"):
-                files_in_src.add(os.path.normpath(os.path.join(root, file)))
+    files_in_src: set[str] = {os.path.normpath(os.path.join(root, file)) for root, _, files in os.walk("src/ml_switcheroo_compiler") for file in files if file.endswith(".py")}
 
     undercovered: list[tuple[str, float, int, int]] = []
     covered_files: set[str] = set()
@@ -33,26 +55,12 @@ def generate_undercovered_list() -> list[tuple[str, float, int, int]]:
         if not norm_path.startswith("src/ml_switcheroo_compiler"):
             continue
         covered_files.add(norm_path)
-        summary = file_data.get("summary", {})
-        pct = float(summary.get("percent_covered", 0.0))
-        missing_lines = int(summary.get("missing_lines", 0))
-        missing_branches = int(summary.get("missing_branches", 0))
-        partial_branches = int(summary.get("num_partial_branches", 0))
-
-        # Check function coverage
-        funcs_undercovered = False
-        for fn_data in file_data.get("functions", {}).values():
-            fn_summary = fn_data.get("summary", {})
-            if fn_summary.get("missing_lines", 0) > 0 or fn_summary.get("missing_branches", 0) > 0:
-                funcs_undercovered = True
-                break
-
-        if pct < 100.0 or missing_lines > 0 or missing_branches > 0 or partial_branches > 0 or funcs_undercovered:
+        is_under, pct, missing_lines, missing_branches = _is_file_undercovered(file_data)
+        if is_under:
             undercovered.append((norm_path, pct, missing_lines, missing_branches))
 
-    # Add any source files completely missing from the test coverage extraction
-    for f in sorted(files_in_src - covered_files):
-        undercovered.append((f, 0.0, -1, -1))
+    for missing_file in sorted(files_in_src - covered_files):
+        undercovered.append((missing_file, 0.0, -1, -1))
 
     undercovered.sort(key=lambda x: x[0])
     return undercovered

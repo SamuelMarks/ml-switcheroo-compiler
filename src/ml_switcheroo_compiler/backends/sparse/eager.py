@@ -1,11 +1,13 @@
 """Dedicated eager execution handlers and dispatch for the Sparse COO backend."""
 
-from typing import Union
+from __future__ import annotations
 
-import numpy as np
+import logging
+from collections.abc import Callable
+from typing import Union, cast
 
 from ml_switcheroo_compiler.backends import mapping_loader
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 from ml_switcheroo_compiler.backends.sparse import kernels, types
 from ml_switcheroo_compiler.backends.sparse.types import (
     COOTensor,
@@ -13,6 +15,7 @@ from ml_switcheroo_compiler.backends.sparse.types import (
     CSRTensor,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.distributed.host_collectives import _np_mod, np
 
 _DIRECT_OPS = {
     "coo_fromdense": kernels.coo_fromdense,
@@ -70,38 +73,48 @@ _DIRECT_OPS = {
 }
 
 
-def _dispatch_sparse_linalg(  # noqa: C901, PLR0911, PLR0912
+def _dispatch_sparse_matmul(a: EagerValue, b: EagerValue) -> tuple[bool, EagerValue]:
+    """Dispatch sparse matrix multiplication (SpMM, Dense-SpMM, and SpGEMM) by operand types.
+
+    Args:
+        a (EagerValue): Left matrix operand.
+        b (EagerValue): Right matrix operand.
+
+    Returns:
+        tuple[bool, EagerValue]: Handled flag and computed matrix product.
+    """
+    if isinstance(a, (COOTensor, CSRTensor, CSCTensor)) and isinstance(b, np.ndarray):
+        coo_a = a if isinstance(a, COOTensor) else a.to_coo()
+        return True, kernels.spmm(coo_a, b)
+    if isinstance(a, np.ndarray) and isinstance(b, (COOTensor, CSRTensor, CSCTensor)):
+        coo_b = b if isinstance(b, COOTensor) else b.to_coo()
+        return True, kernels.dense_spmm(a, coo_b)
+    if isinstance(a, COOTensor) and isinstance(b, COOTensor):
+        return True, kernels.spgemm(a, b).to_coo()
+    if isinstance(a, CSRTensor) and isinstance(b, CSRTensor):
+        return True, kernels.spgemm(a.to_coo(), b.to_coo())
+    if isinstance(a, CSCTensor) and isinstance(b, CSCTensor):
+        return True, kernels.spgemm(a.to_coo(), b.to_coo()).to_coo().to_csc()
+    return False, None
+
+
+def _dispatch_sparse_linalg(
     op_type: str,
-    a: object,
-    b: object,
-) -> tuple[bool, object]:
+    a: EagerValue,
+    b: EagerValue,
+) -> tuple[bool, EagerValue]:
     """Dispatch sparse linear algebra and arithmetic based on operand format types.
 
     Args:
         op_type (str): Name of the operation.
-        a (object): First operand.
-        b (object): Second operand.
+        a (EagerValue): First operand.
+        b (EagerValue): Second operand.
 
     Returns:
-        tuple[bool, object]: Handled flag and computed result.
+        tuple[bool, EagerValue]: Handled flag and computed result.
     """
     if op_type in ("MatMul", "matmul", "Dot", "dot"):
-        if isinstance(a, COOTensor) and isinstance(b, np.ndarray):
-            return True, kernels.spmm(a, b)
-        if isinstance(a, np.ndarray) and isinstance(b, COOTensor):
-            return True, kernels.dense_spmm(a, b)
-        if isinstance(a, CSRTensor) and isinstance(b, np.ndarray):
-            return True, kernels.spmm(a.to_coo(), b)
-        if isinstance(a, CSCTensor) and isinstance(b, np.ndarray):
-            return True, kernels.spmm(a.to_coo(), b)
-        if isinstance(a, np.ndarray) and isinstance(b, (CSRTensor, CSCTensor)):
-            return True, kernels.dense_spmm(a, b.to_coo())
-        if isinstance(a, COOTensor) and isinstance(b, COOTensor):
-            return True, kernels.spgemm(a, b).to_coo()
-        if isinstance(a, CSRTensor) and isinstance(b, CSRTensor):
-            return True, kernels.spgemm(a.to_coo(), b.to_coo())
-        if isinstance(a, CSCTensor) and isinstance(b, CSCTensor):
-            return True, kernels.spgemm(a.to_coo(), b.to_coo()).to_coo().to_csc()
+        return _dispatch_sparse_matmul(a, b)
 
     if op_type in ("Add", "add"):
         if isinstance(a, CSRTensor) and isinstance(b, CSRTensor):
@@ -118,12 +131,12 @@ def _dispatch_sparse_linalg(  # noqa: C901, PLR0911, PLR0912
     return False, None
 
 
-def execute_op(  # noqa: C901
+def execute_op(
     cls: type,
     op_type: str,
-    *args: object,
-    **kwargs: object,
-) -> object:
+    *args: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Execute operation eagerly on the Sparse COO backend.
 
     Args:
@@ -145,7 +158,7 @@ def execute_op(  # noqa: C901
             return linalg_res
 
     if op_type in _DIRECT_OPS:
-        handler = _DIRECT_OPS[op_type]
+        handler = cast(Callable[..., EagerValue], _DIRECT_OPS[op_type])
         return handler(*args, **kwargs)
 
     schema = mapping_loader.load_backend_mappings("sparse")
@@ -159,17 +172,17 @@ def execute_op(  # noqa: C901
                 backend_module=kernels,
             )
         except BackendNotSupportedError:
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     func = global_eager_registry.get(op_type)
     if func is not None:
-        processed_args: list[Union[np.ndarray, object]] = []
+        processed_args: list[Union[EagerValue, EagerValue]] = []
         for a in args:
             if isinstance(a, (COOTensor, CSRTensor, CSCTensor)):
                 processed_args.append(a.to_dense())
             else:
                 processed_args.append(a)
-        res = func(np, *processed_args, **kwargs)
+        res = func(_np_mod(), *processed_args, **kwargs)
         if isinstance(res, np.ndarray):
             return COOTensor.from_dense(res)
         return res

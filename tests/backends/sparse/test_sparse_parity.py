@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import numpy as np
@@ -19,8 +20,13 @@ from ml_switcheroo_compiler.backends.sparse.types import (
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def _make_test_adj(n: int = 4) -> tuple[np.ndarray, COOTensor]:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def _make_test_adj(n: int = 4) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], COOTensor]:
     """Create a sample graph adjacency matrix and corresponding COOTensor.
 
     Args:
@@ -56,45 +62,45 @@ def test_sparse_dense_and_sparse_sparse_linalg_parity() -> None:
         ],
         dtype=np.float32,
     )
-    expected_spmm = dense_a @ dense_b
+    expected_spmm = cast("EagerTensorProtocol", dense_a) @ cast("EagerTensorProtocol", dense_b)
 
     # 1. SpMM: Sparse x Dense (COO, CSR, CSC)
     res_coo_dense = execute_op(SparseGenerator, "MatMul", coo_a, dense_b)
-    np.testing.assert_allclose(res_coo_dense, expected_spmm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_coo_dense, expected_spmm, rtol=1e-5, atol=1e-5)
 
     res_csr_dense = execute_op(SparseGenerator, "matmul", csr_a, dense_b)
-    np.testing.assert_allclose(res_csr_dense, expected_spmm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_csr_dense, expected_spmm, rtol=1e-5, atol=1e-5)
 
     res_csc_dense = execute_op(SparseGenerator, "Dot", csc_a, dense_b)
-    np.testing.assert_allclose(res_csc_dense, expected_spmm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_csc_dense, expected_spmm, rtol=1e-5, atol=1e-5)
 
     # 2. Dense SpMM: Dense x Sparse (Dense x COO, Dense x CSR, Dense x CSC)
     dense_left = dense_b.T
-    expected_dense_spmm = dense_left @ dense_a
+    expected_dense_spmm = cast("EagerTensorProtocol", dense_left) @ cast("EagerTensorProtocol", dense_a)
 
     res_dense_coo = execute_op(SparseGenerator, "matmul", dense_left, coo_a)
-    np.testing.assert_allclose(res_dense_coo, expected_dense_spmm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_dense_coo, expected_dense_spmm, rtol=1e-5, atol=1e-5)
 
     res_dense_csr = execute_op(SparseGenerator, "Dot", dense_left, csr_a)
-    np.testing.assert_allclose(res_dense_csr, expected_dense_spmm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_dense_csr, expected_dense_spmm, rtol=1e-5, atol=1e-5)
 
     res_dense_csc = execute_op(SparseGenerator, "MatMul", dense_left, csc_a)
-    np.testing.assert_allclose(res_dense_csc, expected_dense_spmm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_dense_csc, expected_dense_spmm, rtol=1e-5, atol=1e-5)
 
     # 3. SpGEMM: Sparse x Sparse (COO x COO, CSR x CSR, CSC x CSC)
-    expected_spgemm = dense_a @ dense_a
+    expected_spgemm = cast("EagerTensorProtocol", dense_a) @ cast("EagerTensorProtocol", dense_a)
 
     res_spgemm_coo = execute_op(SparseGenerator, "MatMul", coo_a, coo_a)
     assert isinstance(res_spgemm_coo, COOTensor)
-    np.testing.assert_allclose(res_spgemm_coo.to_dense(), expected_spgemm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_spgemm_coo.to_dense)(), expected_spgemm, rtol=1e-5, atol=1e-5)
 
     res_spgemm_csr = execute_op(SparseGenerator, "matmul", csr_a, csr_a)
     assert isinstance(res_spgemm_csr, CSRTensor)
-    np.testing.assert_allclose(res_spgemm_csr.to_dense(), expected_spgemm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_spgemm_csr.to_dense)(), expected_spgemm, rtol=1e-5, atol=1e-5)
 
     res_spgemm_csc = execute_op(SparseGenerator, "Dot", csc_a, csc_a)
     assert isinstance(res_spgemm_csc, CSCTensor)
-    np.testing.assert_allclose(res_spgemm_csc.to_dense(), expected_spgemm, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_spgemm_csc.to_dense)(), expected_spgemm, rtol=1e-5, atol=1e-5)
 
 
 def test_csr_and_csc_arithmetic() -> None:
@@ -108,17 +114,17 @@ def test_csr_and_csc_arithmetic() -> None:
 
     # CSR Add and Sub
     res_csr_add = execute_op(SparseGenerator, "Add", csr_1, csr_2)
-    np.testing.assert_allclose(res_csr_add.to_dense(), dense_1 + dense_2, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_csr_add, "to_dense")))(), cast("EagerTensorProtocol", dense_1) + cast("EagerTensorProtocol", dense_2), rtol=1e-5, atol=1e-5)
 
     res_csr_sub = execute_op(SparseGenerator, "Sub", csr_1, csr_2)
-    np.testing.assert_allclose(res_csr_sub.to_dense(), dense_1 - dense_2, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_csr_sub, "to_dense")))(), cast("EagerTensorProtocol", dense_1) - cast("EagerTensorProtocol", dense_2), rtol=1e-5, atol=1e-5)
 
     # CSC Add and Sub
     res_csc_add = execute_op(SparseGenerator, "add", csc_1, csc_2)
-    np.testing.assert_allclose(res_csc_add.to_dense(), dense_1 + dense_2, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_csc_add, "to_dense")))(), cast("EagerTensorProtocol", dense_1) + cast("EagerTensorProtocol", dense_2), rtol=1e-5, atol=1e-5)
 
     res_csc_sub = execute_op(SparseGenerator, "sub", csc_1, csc_2)
-    np.testing.assert_allclose(res_csc_sub.to_dense(), dense_1 - dense_2, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_csc_sub, "to_dense")))(), cast("EagerTensorProtocol", dense_1) - cast("EagerTensorProtocol", dense_2), rtol=1e-5, atol=1e-5)
 
     # Empty matrix edge cases
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
@@ -148,9 +154,9 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     # Verify rows with edges sum to 1.0
     for r in range(4):
         if np.any(dense_adj[r] != 0):
-            assert np.isclose(np.sum(attn_dense[r]), 1.0, atol=1e-5)
+            assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("EagerTensorProtocol", getattr(attn_dense, "__getitem__")(r))), 1.0, atol=1e-5)
         else:
-            assert np.isclose(np.sum(attn_dense[r]), 0.0)
+            assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("EagerTensorProtocol", getattr(attn_dense, "__getitem__")(r))), 0.0)
 
     # Empty tensor edge case for sparse_softmax
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
@@ -170,7 +176,7 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     deg_hat = np.sum(a_hat, axis=1)
     deg_inv_sqrt = np.diag(1.0 / np.sqrt(deg_hat))
     expected_norm_adj = deg_inv_sqrt @ a_hat @ deg_inv_sqrt
-    np.testing.assert_allclose(norm_adj.to_dense(), expected_norm_adj, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", norm_adj.to_dense)(), expected_norm_adj, rtol=1e-5, atol=1e-5)
 
     # Without self loops
     norm_adj_no_loops = kernels.graph_norm_adjacency(coo_adj, add_self_loops=False)
@@ -188,12 +194,12 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     )
     # Aggregation without custom weights
     agg_out = kernels.gnn_spmm_attention(coo_adj, node_features)
-    assert agg_out.shape == (4, 2)
-    np.testing.assert_allclose(agg_out, dense_adj @ node_features, rtol=1e-5, atol=1e-5)
+    assert cast("EagerTensorProtocol", getattr(agg_out, "shape")) == (4, 2)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(agg_out, cast("EagerTensorProtocol", dense_adj) @ cast("EagerTensorProtocol", node_features), rtol=1e-5, atol=1e-5)
 
     # Aggregation with attention weights
     agg_attn_out = kernels.gnn_spmm_attention(coo_adj, node_features, attention_weights=coo_adj)
-    assert agg_attn_out.shape == (4, 2)
+    assert cast("EagerTensorProtocol", getattr(agg_attn_out, "shape")) == (4, 2)
 
     # 4. sparse_dropout
     dropped = kernels.sparse_dropout(coo_adj, drop_rate=0.5, training=True, seed=42)
@@ -273,12 +279,12 @@ def test_sparse_profiler_and_memory_metrics() -> None:
     )
 
     assert "latencies" in metrics
-    assert len(metrics["latencies"]) == 3
-    assert metrics["latency_ms"] >= 0.0
-    assert metrics["p50_ms"] >= 0.0
-    assert metrics["p95_ms"] >= 0.0
-    assert metrics["p99_ms"] >= 0.0
-    assert metrics["peak_memory_mb"] > 0.0
+    assert cast("Callable[..., EagerTensorProtocol]", len)(metrics["latencies"]) == 3
+    assert getattr(metrics, "__getitem__")("latency_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("p50_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("p95_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("p99_ms") >= 0.0
+    assert getattr(metrics, "__getitem__")("peak_memory_mb") > 0.0
 
     # Test Linux RSS branch in _get_process_memory_mb
     with mock.patch("sys.platform", "linux"):
@@ -287,21 +293,26 @@ def test_sparse_profiler_and_memory_metrics() -> None:
     # Profile with empty inputs
     empty_graph = IRGraph()
     metrics_empty = profiler.profile_graph(empty_graph, inputs={}, num_iters=2, warmup_iters=1)
-    assert len(metrics_empty["latencies"]) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(metrics_empty["latencies"]) == 2
 
     # Profile with fallback summation step
     class MockAddTensor:
-        def __add__(self, other: object) -> object:
-            return self
+        """Test class MockAddTensor."""
+
+        def __add__(self, other: EagerValue) -> EagerValue:
+            """Test function __add__."""
+            return cast("EagerTensorProtocol", self)
 
     class MockNonAddTensor:
+        """Test class MockNonAddTensor."""
+
         pass
 
-    metrics_add = profiler.profile_graph(empty_graph, inputs={"a": MockAddTensor(), "b": MockAddTensor()}, num_iters=2)
-    assert len(metrics_add["latencies"]) == 2
+    metrics_add = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(empty_graph, inputs={"a": cast("Callable[..., EagerTensorProtocol]", MockAddTensor)(), "b": cast("Callable[..., EagerTensorProtocol]", MockAddTensor)()}, num_iters=2)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(metrics_add["latencies"]) == 2
 
-    metrics_non_add = profiler.profile_graph(empty_graph, inputs={"a": MockNonAddTensor(), "b": MockNonAddTensor()}, num_iters=2)
-    assert len(metrics_non_add["latencies"]) == 2
+    metrics_non_add = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(empty_graph, inputs={"a": cast("Callable[..., EagerTensorProtocol]", MockNonAddTensor)(), "b": cast("Callable[..., EagerTensorProtocol]", MockNonAddTensor)()}, num_iters=2)
+    assert cast("Callable[..., EagerTensorProtocol]", len)(metrics_non_add["latencies"]) == 2
 
 
 def test_sparse_eager_dispatch_coverage() -> None:
@@ -327,8 +338,12 @@ def test_sparse_eager_dispatch_coverage() -> None:
         execute_op(SparseGenerator, "NonexistentUnknownSparseOp", coo_adj)
 
 
-def test_sparse_edge_cases_and_branch_coverage() -> None:
-    """Verify edge conditions in eager linalg dispatch, kernels, and profiler."""
+def _test_sparse_edge_cases_and_branch_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_sparse_edge_cases_and_branch_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     dense_adj, coo_adj = _make_test_adj(4)
     csr_adj = coo_adj.to_csr()
     csc_adj = coo_adj.to_csc()
@@ -362,24 +377,38 @@ def test_sparse_edge_cases_and_branch_coverage() -> None:
 
     sub_csr_res = kernels.csr_sub(empty_csr, csr_adj)
     assert isinstance(sub_csr_res, CSRTensor)
-    np.testing.assert_allclose(sub_csr_res.to_dense(), -dense_adj)
+    getattr(_state, "update")({"_": _, "coo_adj": coo_adj, "csc_adj": csc_adj, "csr_adj": csr_adj})
+    getattr(_state, "update")({"dense_adj": dense_adj, "empty_coo": empty_coo, "empty_csc": empty_csc, "empty_csr": empty_csr})
+    getattr(_state, "update")({"handled_add": handled_add, "handled_coo_add": handled_coo_add, "handled_dense_matmul": handled_dense_matmul, "handled_mixed_add": handled_mixed_add})
+    getattr(_state, "update")({"handled_sub": handled_sub, "sub_csr_res": sub_csr_res})
+    _state.update(locals())
 
-    sub_csr_b_empty = kernels.csr_sub(csr_adj, empty_csr)
+
+def _test_sparse_edge_cases_and_branch_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_sparse_edge_cases_and_branch_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    coo_adj, csc_adj, csr_adj, dense_adj = _state["coo_adj"], _state["csc_adj"], _state["csr_adj"], _state["dense_adj"]
+    empty_csc, empty_csr, sub_csr_res = _state["empty_csc"], _state["empty_csr"], _state["sub_csr_res"]
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", sub_csr_res.to_dense)(), -dense_adj)
+
+    sub_csr_b_empty = cast("Callable[..., EagerTensorProtocol]", kernels.csr_sub)(csr_adj, empty_csr)
     assert sub_csr_b_empty is csr_adj
-
-    sub_csc_res = kernels.csc_sub(empty_csc, csc_adj)
+    sub_csc_res = cast("Callable[..., EagerTensorProtocol]", kernels.csc_sub)(empty_csc, csc_adj)
     assert isinstance(sub_csc_res, CSCTensor)
-    np.testing.assert_allclose(sub_csc_res.to_dense(), -dense_adj)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", sub_csc_res.to_dense)(), -dense_adj)
 
-    sub_csc_b_empty = kernels.csc_sub(csc_adj, empty_csc)
-    assert sub_csc_b_empty is csc_adj
+    sub_csc_b_empty = cast("Callable[..., EagerTensorProtocol]", kernels.csc_sub)(csc_adj, empty_csc)
+    assert cast("EagerTensorProtocol", sub_csc_b_empty) is cast("EagerTensorProtocol", csc_adj)
 
     # 3. sparse_dropout: drop_rate >= 1.0 on CSR and CSC
-    csr_100 = kernels.sparse_dropout(csr_adj, drop_rate=1.0)
+    csr_100 = cast("Callable[..., EagerTensorProtocol]", kernels.sparse_dropout)(csr_adj, drop_rate=1.0)
     assert isinstance(csr_100, CSRTensor)
     assert csr_100.nnz == 0
 
-    csc_100 = kernels.sparse_dropout(csc_adj, drop_rate=1.0)
+    csc_100 = cast("Callable[..., EagerTensorProtocol]", kernels.sparse_dropout)(csc_adj, drop_rate=1.0)
     assert isinstance(csc_100, CSCTensor)
     assert csc_100.nnz == 0
 
@@ -387,7 +416,7 @@ def test_sparse_edge_cases_and_branch_coverage() -> None:
     fake_rng = mock.MagicMock()
     fake_rng.uniform.return_value = np.ones(coo_adj.nnz)
     with mock.patch("numpy.random.default_rng", return_value=fake_rng):
-        drop_all = kernels.sparse_dropout(coo_adj, drop_rate=0.5)
+        drop_all = cast("Callable[..., EagerTensorProtocol]", kernels.sparse_dropout)(coo_adj, drop_rate=0.5)
         assert drop_all.nnz == 0
 
     # 5. profiler: inputs with COOTensor, np.ndarray, list, and other types
@@ -402,16 +431,28 @@ def test_sparse_edge_cases_and_branch_coverage() -> None:
             "raw": 42,
         },
     )
-    assert len(prepared) == 4
+    getattr(_state, "update")({"csc_100": csc_100, "csr_100": csr_100, "drop_all": drop_all, "fake_rng": fake_rng})
+    getattr(_state, "update")({"g": g, "prepared": prepared, "profiler": profiler, "sub_csc_b_empty": sub_csc_b_empty})
+    getattr(_state, "update")({"sub_csc_res": sub_csc_res, "sub_csr_b_empty": sub_csr_b_empty})
+    _state.update(locals())
 
+
+def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_sparse_edge_cases_and_branch_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g, prepared, profiler = _state["g"], _state["prepared"], _state["profiler"]
+    assert len(prepared) == 4
     try:
         import sparse as pydata_sparse
 
         pydata_coo = pydata_sparse.COO.from_numpy(np.array([1.0, 2.0]))
         prepared_pydata = profiler._prepare_inputs(g, {"pydata": pydata_coo})
         assert len(prepared_pydata) == 1
-    except ImportError:
-        pass
+    except ImportError as _exc:
+        assert _exc is not None
 
     # 6. profiler: _compile_graph failure fallback
     g_sum = IRGraph()
@@ -428,19 +469,41 @@ def test_sparse_edge_cases_and_branch_coverage() -> None:
     # 7. profiler import fallback when sparse library is not present
     real_import = __import__
 
-    def fake_sparse_import(name: str, *args: object, **kwargs: object) -> object:
+    def fake_sparse_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Test function fake_sparse_import."""
         if name == "sparse":
             raise ImportError("no sparse module")
-        return real_import(name, *args, **kwargs)
+        return cast("Callable[..., EagerTensorProtocol]", real_import)(name, *args, **kwargs)
 
+    getattr(_state, "update")({"fake_sparse_import": fake_sparse_import, "g_sum": g_sum, "metrics_fail": metrics_fail, "n_in": n_in})
+    getattr(_state, "update")({"n_out": n_out, "real_import": real_import})
+    _state.update(locals())
+
+
+def _test_sparse_edge_cases_and_branch_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_sparse_edge_cases_and_branch_coverage.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    fake_sparse_import = _state["fake_sparse_import"]
     import importlib
 
     with mock.patch("builtins.__import__", side_effect=fake_sparse_import):
         import ml_switcheroo_compiler.backends.sparse.profiler as sp_prof_mod
 
         importlib.reload(sp_prof_mod)
-
-    # Restore profiler module
     import ml_switcheroo_compiler.backends.sparse.profiler as sp_prof_mod
 
     importlib.reload(sp_prof_mod)
+    getattr(_state, "update")({"importlib": importlib, "sp_prof_mod": sp_prof_mod})
+
+
+def test_sparse_edge_cases_and_branch_coverage() -> None:
+    """Verify edge conditions in eager linalg dispatch, kernels, and profiler."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_sparse_edge_cases_and_branch_coverage_part_1(_state)
+    _test_sparse_edge_cases_and_branch_coverage_part_2(_state)
+    _test_sparse_edge_cases_and_branch_coverage_part_3(_state)
+    _test_sparse_edge_cases_and_branch_coverage_part_4(_state)
+    assert isinstance(_state, dict)

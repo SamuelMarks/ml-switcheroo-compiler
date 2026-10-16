@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import mock_open, patch
 
 from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import load_yaml_dir
@@ -39,6 +40,11 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
     vectorization_pass,
     vectorize_graph,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_control_flow_opt_branches() -> None:
@@ -120,7 +126,7 @@ def test_parallel_scan_branches() -> None:
     b_graph = IRGraph()
     b_graph.nodes["unknown_op"] = IRNode(id="unknown_op", op_type="CustomUnsupportedOp")
     rules = {"associative_ops": {"Add": {"parallel_primitive": "CumSum"}}}
-    assert detect_associative_reduction(b_graph, rules) is None
+    assert cast("Callable[..., EagerTensorProtocol]", detect_associative_reduction)(b_graph, rules) is None
 
     # 3. parallel_scan_pass: node is Scan but reduction is not associative
     g_scan = IRGraph()
@@ -267,13 +273,13 @@ def test_webgl_custom_setup_empty_inputs() -> None:
     g.outputs = ["test_node"]
 
     gen = WebGLCodeGenerator(g)
-    js = []
-    w, h = gen._emit_node(node, {}, js)
+    js = cast("list[EagerTensorProtocol]", [])
+    w, h = cast("Callable[..., EagerTensorProtocol]", gen._emit_node)(node, {}, js)
     assert w > 0 and h > 0
     assert any("kDim" in line or "32" in line for line in js)
 
 
-def test_wasm_provider_branches(tmp_path) -> None:
+def test_wasm_provider_branches(tmp_path: EagerTensorProtocol) -> None:
     """Test load_yaml_dir branches with empty dictionary and non-dict values."""
     yaml_dir = tmp_path / "yaml_test_dir"
     yaml_dir.mkdir()
@@ -364,15 +370,15 @@ def test_webgpu_generator_branches() -> None:
         gen.sorted_nodes.extend([g.nodes["x4d"], g.nodes["w4d"]])
 
         mm_node = IRNode(id="mm", op_type="MatMul", inputs=["x", "x"], shape_metadata=(4, 4))
-        wgsl_mm, _, _, _ = gen._get_wgsl_for_op(mm_node, (4, 4), 16, "mm")
+        wgsl_mm, _, _, _ = cast("Callable[..., EagerTensorProtocol]", gen._get_wgsl_for_op)(mm_node, (4, 4), 16, "mm")
         assert wgsl_mm is not None
 
         conv_node = IRNode(id="conv", op_type="Conv2D", inputs=["x4d", "w4d"], shape_metadata=(1, 1, 4, 4))
-        wgsl_conv, _, _, _ = gen._get_wgsl_for_op(conv_node, (1, 1, 4, 4), 16, "conv")
+        wgsl_conv, _, _, _ = cast("Callable[..., EagerTensorProtocol]", gen._get_wgsl_for_op)(conv_node, (1, 1, 4, 4), 16, "conv")
         assert wgsl_conv is not None
 
         pool_node = IRNode(id="pool", op_type="MaxPool2D", inputs=["x4d"], shape_metadata=(1, 1, 4, 4), attributes={"window_size": (2, 2)})
-        wgsl_pool, _, _, _ = gen._get_wgsl_for_op(pool_node, (1, 1, 4, 4), 16, "pool")
+        wgsl_pool, _, _, _ = cast("Callable[..., EagerTensorProtocol]", gen._get_wgsl_for_op)(pool_node, (1, 1, 4, 4), 16, "pool")
         assert wgsl_pool is not None
 
         # 3. _compile_aot_impl with graph == self.graph and graph != self.graph

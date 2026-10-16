@@ -1,12 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Constant Folding pass evaluated via reference eager backend."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import Callable, cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
+from ml_switcheroo_compiler.backends.registry import BackendRegistry, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.interpreter import evaluate_graph
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -33,18 +35,18 @@ def _evaluate_constant_node(
     node: IRNode,
     canonical_inputs: list[str],
     graph: IRGraph,
-    backend: Any,
-) -> Any:
+    backend: type,
+) -> EvalValue:
     """Evaluate a constant node using the reference eager backend.
 
     Args:
         node (IRNode): Primal IR node to fold.
         canonical_inputs (list[str]): Input node IDs.
         graph (IRGraph): Parent computation graph.
-        backend (Any): Reference eager backend generator.
+        backend (type): Reference eager backend generator.
 
     Returns:
-        Any: Evaluated concrete value.
+        EvalValue: Evaluated concrete value.
     """
     subgraph = LogicalGraph(outputs=[node.id])
     for inp in canonical_inputs:
@@ -58,15 +60,88 @@ def _evaluate_constant_node(
     )
     outputs = evaluate_graph(subgraph, {}, backend=backend)
     val = outputs[node.id]
-    if (hasattr(val, "size") and val.size == 1) or (hasattr(val, "numel") and val.numel() == 1):
+    if (hasattr(val, "size") and getattr(val, "size") == 1) or (hasattr(val, "numel") and getattr(val, "numel")() == 1):
         if backend is not None and hasattr(backend, "item"):
             val = backend.item(val)
         elif hasattr(val, "item"):
-            val = val.item()
+            val = getattr(val, "item")()
     return val
 
 
-def constant_folding_pass(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
+def _resolve_folding_backend() -> type | None:
+    """Resolve the active or fallback NumPy backend for constant evaluation.
+
+    Returns:
+        type | None: Backend class or None if unavailable.
+    """
+    backend = get_active_backend()
+    if backend is None:
+        try:
+            backend = BackendRegistry.get("numpy")
+        except Exception:
+            backend = None
+    return backend
+
+
+def _try_fold_single_node(
+    node: IRNode,
+    canonical_inputs: list[str],
+    graph: IRGraph,
+    backend: type | None,
+) -> bool:
+    """Attempt to fold a single node with constant inputs into a Constant node.
+
+    Args:
+        node (IRNode): Node to evaluate and fold.
+        canonical_inputs (list[str]): Resolved input node IDs.
+        graph (IRGraph): Containing computation graph.
+        backend (type | None): Reference eager backend.
+
+    Returns:
+        bool: True if the node was folded into a Constant, False otherwise.
+    """
+    import logging
+
+    if node.op_type == "Constant" or not _are_all_inputs_constant(canonical_inputs, graph):
+        return False
+
+    try:
+        val = cast("Callable[..., EagerTensorProtocol]", _evaluate_constant_node)(node, canonical_inputs, graph, backend)
+        graph.nodes[node.id].op_type = "Constant"
+        graph.nodes[node.id].attributes = {"value": val}
+        graph.nodes[node.id].inputs = []
+        return True
+    except (ValueError, TypeError, RuntimeError) as e:
+        logging.getLogger(__name__).debug(f"Failed to constant fold {node.op_type}: {e}")
+        return False
+    except Exception as e:
+        if type(e).__name__ == "UnimplementedMathError":
+            logging.getLogger(__name__).debug(f"Unimplemented math for constant folding {node.op_type}: {e}")
+            return False
+        raise
+
+
+def _fold_nested_subgraphs(graph: IRGraph) -> bool:
+    """Recursively run constant folding on nested subgraphs in nodes and attributes.
+
+    Args:
+        graph (IRGraph): Parent computation graph.
+
+    Returns:
+        bool: True if any nested subgraph was modified, False otherwise.
+    """
+    modified = False
+    for node in graph.nodes.values():
+        for sub in getattr(node, "subgraphs", {}).values():
+            if isinstance(sub, LogicalGraph) and constant_folding_pass(sub):
+                modified = True
+        for attr_val in node.attributes.values():
+            if isinstance(attr_val, LogicalGraph) and constant_folding_pass(attr_val):
+                modified = True
+    return modified
+
+
+def constant_folding_pass(graph: IRGraph) -> bool:
     """In-place Constant Folding evaluated via reference eager backend.
 
     Evaluates compile-time known constant nodes until fixpoint is reached.
@@ -84,48 +159,16 @@ def constant_folding_pass(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
         pass_modified = False
         sorted_nodes = DAGTopologicalSorter.sort(graph)
         id_map: dict[str, str] = {}
-        backend = get_active_backend()
-        if backend is None:
-            try:
-                backend = BackendRegistry.get("numpy")
-            except Exception:
-                backend = None
+        backend = _resolve_folding_backend()
 
         for node in sorted_nodes:
             canonical_inputs = [id_map.get(inp, inp) for inp in node.inputs]
-            if node.op_type != "Constant" and _are_all_inputs_constant(canonical_inputs, graph):
-                try:
-                    val = _evaluate_constant_node(node, canonical_inputs, graph, backend)
-                    graph.nodes[node.id].op_type = "Constant"
-                    graph.nodes[node.id].attributes = {"value": val}
-                    graph.nodes[node.id].inputs = []
-                    id_map[node.id] = node.id
-                    pass_modified = True
-                    total_modified = True
-                    continue
-                except (ValueError, TypeError, RuntimeError) as e:
-                    import logging
-
-                    logging.getLogger(__name__).debug(f"Failed to constant fold {node.op_type}: {e}")
-                    continue
-                except Exception as e:
-                    if type(e).__name__ == "UnimplementedMathError":
-                        import logging
-
-                        logging.getLogger(__name__).debug(f"Unimplemented math for constant folding {node.op_type}: {e}")
-                        continue
-                    else:
-                        raise
+            if _try_fold_single_node(node, canonical_inputs, graph, backend):
+                pass_modified = True
+                total_modified = True
             id_map[node.id] = node.id
 
-    for node in graph.nodes.values():
-        for sub in getattr(node, "subgraphs", {}).values():
-            if isinstance(sub, LogicalGraph):
-                if constant_folding_pass(sub):
-                    total_modified = True
-        for attr_val in node.attributes.values():
-            if isinstance(attr_val, LogicalGraph):
-                if constant_folding_pass(attr_val):
-                    total_modified = True
+    if _fold_nested_subgraphs(graph):
+        total_modified = True
 
     return total_modified

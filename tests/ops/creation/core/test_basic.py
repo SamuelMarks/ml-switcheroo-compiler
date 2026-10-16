@@ -1,12 +1,27 @@
+"""Tests for test_basic."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.ops.creation.basic import Arange, Bartlett, Blackman, ConstantOfShape, CreationOp, Frombuffer, Full, Hamming, Hanning, Kaiser, Logspace, ManualSeed, Rand, Randint, Range, TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyItem:
-    def item(self):
+    """Test class DummyItem."""
+
+    def item(self) -> EagerValue:
+        """Test function item."""
         return 5
 
 
-def test_creation_basic():
+def test_creation_basic() -> None:
+    """Test function test_creation_basic."""
     c = CreationOp()
     assert c.infer_shape((2, 2)) == (2, 2)
 
@@ -25,12 +40,12 @@ def test_creation_basic():
     assert ri.infer_shape(0, 10, (2, 2)) == (2, 2)
     assert ri.infer_shape(0, 10) == ()
 
-    assert ManualSeed().infer_shape(42) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", ManualSeed)().infer_shape(42) == ()
 
-    assert ConstantOfShape().infer_shape((2, 2)) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
     assert ConstantOfShape().infer_shape() == ()
 
-    assert Range().infer_shape((2, 2)) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", Range)().infer_shape((2, 2)) == (2, 2)
     assert Range().infer_shape() == ()
 
     for cls in [Blackman, Bartlett, Hamming, Hanning, Kaiser]:

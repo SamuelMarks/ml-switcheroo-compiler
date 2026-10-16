@@ -1,47 +1,64 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.backend_utils import format_shape_metadata, resolve_input_vars
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyNode:
-    def __init__(self, inputs):
+    """Test class DummyNode."""
+
+    def __init__(self, inputs: EagerValue) -> None:
+        """Test function __init__."""
         self.inputs = inputs
 
 
 class DummyDim:
-    def __init__(self, id_val):
+    """Test class DummyDim."""
+
+    def __init__(self, id_val: EagerValue) -> None:
+        """Test function __init__."""
         self.id = id_val
 
 
-def test_resolve_input_vars():
+def test_resolve_input_vars() -> None:
+    """Test function test_resolve_input_vars."""
     node = DummyNode(inputs=["a", "b", "c"])
     var_names = {"a": "var_a", "b": "var_b"}
-    res = resolve_input_vars(node, var_names)
+    res = cast("Callable[..., EagerTensorProtocol]", resolve_input_vars)(node, var_names)
     assert res == ["var_a", "var_b", "c"]
 
 
-def test_format_shape_metadata():
+def test_format_shape_metadata() -> None:
+    """Test function test_format_shape_metadata."""
     node = DummyNode(inputs=[])
 
     # 1. No shape metadata
-    assert format_shape_metadata(node, {}) is None
+    assert cast("Callable[..., EagerTensorProtocol]", format_shape_metadata)(node, {}) is None
 
     # 2. empty shape metadata
-    node.shape_metadata = ()
-    assert format_shape_metadata(node, {}) is None
+    setattr(node, "shape_metadata", ())
+    assert cast("Callable[..., EagerTensorProtocol]", format_shape_metadata)(node, {}) is None
 
     # 3. various dimension types
-    node.shape_metadata = (DummyDim("dim1"), "str_dim", 42)
+    setattr(node, "shape_metadata", (DummyDim("dim1"), "str_dim", 42))
     var_names = {"dim1": "resolved_dim1"}
-    res = format_shape_metadata(node, var_names)
+    res = cast("Callable[..., EagerTensorProtocol]", format_shape_metadata)(node, var_names)
     assert res == "(resolved_dim1, 'str_dim', 42)"
 
     # 4. single element tuple formatting
-    node.shape_metadata = (42,)
-    res = format_shape_metadata(node, {})
+    setattr(node, "shape_metadata", (42,))
+    res = cast("Callable[..., EagerTensorProtocol]", format_shape_metadata)(node, {})
     assert res == "(42,)"
 
     # 5. dummy dim missing from var_names
-    node.shape_metadata = (DummyDim("missing"),)
-    res = format_shape_metadata(node, {})
+    setattr(node, "shape_metadata", (DummyDim("missing"),))
+    res = cast("Callable[..., EagerTensorProtocol]", format_shape_metadata)(node, {})
     assert res == "(missing,)"

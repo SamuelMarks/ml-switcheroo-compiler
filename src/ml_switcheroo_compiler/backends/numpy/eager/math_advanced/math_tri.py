@@ -4,28 +4,30 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from types import ModuleType
-from typing import Union
+from typing import TYPE_CHECKING, Callable, Union, cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import _get_np_arg
-from ml_switcheroo_compiler.ops.linalg.linear_operator import (
-    BaseLinearOperator,
-    LinearOperatorBlockLowerTriangular,
-    LinearOperatorFullMatrix,
-    LinearOperatorLowerTriangular,
-    LinearOperatorTridiag,
-)
-from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.ops.linalg.linear_operator import (
+        BaseLinearOperator,
+        LinearOperatorBlockLowerTriangular,
+        LinearOperatorFullMatrix,
+        LinearOperatorLowerTriangular,
+        LinearOperatorTridiag,
+    )
+    from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig
 
 
 @numpy_eager_registry.register("Tri")
 def _np_tri(
     backend_module: ModuleType,
-    *args: Union[int, np.dtype],
-    **kwargs: Union[int, np.dtype, None],
-) -> np.ndarray:
+    *args: Union[int, np.dtype[np.generic]],
+    **kwargs: Union[int, np.dtype[np.generic], None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Construct an array with ones at and below the given diagonal and zeros elsewhere.
 
     Args:
@@ -36,7 +38,7 @@ def _np_tri(
     Returns:
         np.ndarray: Triangular array with ones at and below diagonal.
     """
-    return np.tri(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "tri")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TrilIndices")
@@ -44,7 +46,7 @@ def _np_trilindices(
     backend_module: ModuleType,
     *args: Union[int, None],
     **kwargs: Union[int, None],
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Return the indices for the lower-triangle of an (n, m) array.
 
     Args:
@@ -55,15 +57,15 @@ def _np_trilindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    return np.tril_indices(*args, **kwargs)
+    return cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "tril_indices")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TrilIndicesFrom")
 def _np_trilindicesfrom(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, list[int], int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[int], int],
     **kwargs: Union[int, None],
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Return the indices for the lower-triangle of an array.
 
     Args:
@@ -74,15 +76,15 @@ def _np_trilindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for lower triangle of input array.
     """
-    return np.tril_indices_from(np.asarray(args[0]), *args[1:], **kwargs)
+    return cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "tril_indices_from")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("TrimZeros")
 def _np_trimzeros(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, list[int], list[float], str],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[int], list[float], str],
     **kwargs: Union[str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Trim the leading and/or trailing zeros from a 1-D array or sequence.
 
     Args:
@@ -93,7 +95,7 @@ def _np_trimzeros(
     Returns:
         np.ndarray: Trimmed array without leading/trailing zeros.
     """
-    return np.trim_zeros(np.asarray(args[0]), *args[1:], **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "trim_zeros")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("TriuIndices")
@@ -101,7 +103,7 @@ def _np_triuindices(
     backend_module: ModuleType,
     *args: Union[int, None],
     **kwargs: Union[int, None],
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Return the indices for the upper-triangle of an (n, m) array.
 
     Args:
@@ -112,15 +114,15 @@ def _np_triuindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    return np.triu_indices(*args, **kwargs)
+    return cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "triu_indices")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TriuIndicesFrom")
 def _np_triuindicesfrom(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, list[int], int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[int], int],
     **kwargs: Union[int, None],
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Return the indices for the upper-triangle of an array.
 
     Args:
@@ -131,15 +133,15 @@ def _np_triuindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for upper triangle of input array.
     """
-    return np.triu_indices_from(np.asarray(args[0]), *args[1:], **kwargs)
+    return cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "triu_indices_from")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("Fromstring")
 def _np_fromstring_(
     backend_module: ModuleType,
-    *args: Union[str, bytes, np.dtype, int],
-    **kwargs: Union[np.dtype, str, int, None],
-) -> np.ndarray:
+    *args: Union[str, bytes, np.dtype[np.generic], int],
+    **kwargs: Union[np.dtype[np.generic], str, int, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """A new 1-D array initialized from text data in a string.
 
     Args:
@@ -150,15 +152,15 @@ def _np_fromstring_(
     Returns:
         np.ndarray: 1-D array created from string.
     """
-    return backend_module.fromstring(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.fromstring(*args, **kwargs))
 
 
 @numpy_eager_registry.register("MatrixPower")
 def _np_linalg_matrix_power_(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int],
     **kwargs: Union[int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Raise a square matrix to the (integer) power n.
 
     Args:
@@ -169,7 +171,7 @@ def _np_linalg_matrix_power_(
     Returns:
         np.ndarray: Matrix raised to integer power n.
     """
-    return backend_module.linalg.matrix_power(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.linalg.matrix_power(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AsStringConfig")
@@ -188,13 +190,15 @@ def _np_asstringconfig(
     Returns:
         AsStringConfig: Config instance for string formatting.
     """
-    return AsStringConfig(*args, **kwargs)
+    from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig
+
+    return cast(AsStringConfig, cast("Callable[..., EagerTensorProtocol]", AsStringConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("LinearOperatorBlockLowerTriangular")
 def _np_linearoperatorblocklowertriangular(
     backend_module: ModuleType,
-    *args: Union[list[BaseLinearOperator], np.ndarray, int],
+    *args: Union[list[BaseLinearOperator], np.ndarray[tuple[int, ...], np.dtype[np.generic]], int],
     **kwargs: Union[int, str, None],
 ) -> LinearOperatorBlockLowerTriangular:
     """Construct a LinearOperatorBlockLowerTriangular instance.
@@ -207,13 +211,15 @@ def _np_linearoperatorblocklowertriangular(
     Returns:
         LinearOperatorBlockLowerTriangular: Block lower triangular operator instance.
     """
+    from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockLowerTriangular
+
     return LinearOperatorBlockLowerTriangular(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperatorFullMatrix")
 def _np_linearoperatorfullmatrix(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, str],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, str],
     **kwargs: Union[int, str, None],
 ) -> LinearOperatorFullMatrix:
     """Construct a LinearOperatorFullMatrix instance.
@@ -226,13 +232,15 @@ def _np_linearoperatorfullmatrix(
     Returns:
         LinearOperatorFullMatrix: Full matrix linear operator instance.
     """
+    from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorFullMatrix
+
     return LinearOperatorFullMatrix(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperatorLowerTriangular")
 def _np_linearoperatorlowertriangular(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, str],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, str],
     **kwargs: Union[int, str, None],
 ) -> LinearOperatorLowerTriangular:
     """Construct a LinearOperatorLowerTriangular instance.
@@ -245,13 +253,15 @@ def _np_linearoperatorlowertriangular(
     Returns:
         LinearOperatorLowerTriangular: Lower triangular operator instance.
     """
+    from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorLowerTriangular
+
     return LinearOperatorLowerTriangular(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperatorTridiag")
 def _np_linearoperatortridiag(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, str],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, str],
     **kwargs: Union[int, str, None],
 ) -> LinearOperatorTridiag:
     """Construct a LinearOperatorTridiag instance.
@@ -264,15 +274,17 @@ def _np_linearoperatortridiag(
     Returns:
         LinearOperatorTridiag: Tridiagonal linear operator instance.
     """
+    from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorTridiag
+
     return LinearOperatorTridiag(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, list[int], int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[int], int],
     **kwargs: Union[int, None],
-) -> Union[np.ndarray, None]:
+) -> Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], None]:
     """Evaluate confusion matrix of true and predicted labels.
 
     Args:
@@ -289,16 +301,16 @@ def _np_confusion_matrix(
         return None
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
-        num_classes = int(max(np.max(y_true), np.max(y_pred))) + 1
-    return np.bincount(y_true * num_classes + y_pred, minlength=num_classes**2).reshape((num_classes, num_classes))
+        num_classes = max(int(np.max(y_true).item()), int(np.max(y_pred).item())) + 1
+    return np.bincount(np.add(np.multiply(y_true, num_classes), y_pred), minlength=num_classes**2).reshape((num_classes, num_classes))
 
 
 @numpy_eager_registry.register("Distributions")
 def _np_distributions(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, list[float], list[int]],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[float], list[int]],
     **kwargs: Union[int, str, None],
-) -> Union[dict[str, np.ndarray], None]:
+) -> Union[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], None]:
     """Compute histogram counts and bin edges for distribution inspection.
 
     Args:
@@ -319,12 +331,12 @@ def _np_distributions(
 @numpy_eager_registry.register("StridedSlice")
 def _np_stridedslice(
     backend_module: ModuleType,
-    data: np.ndarray,
+    data: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     start: Sequence[int],
     end: Sequence[int],
     strides: Sequence[int],
     **kwargs: Union[int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate strided slice eagerly on an array.
 
     Args:

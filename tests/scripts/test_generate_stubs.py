@@ -9,11 +9,15 @@ import sys
 import types
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 from pytest import CaptureFixture
 
 import scripts.generate_stubs as gs
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_clean_type_annotation() -> None:
@@ -98,7 +102,7 @@ def test_generate_stubs_from_snapshot_exhaustive(tmp_path: Path) -> None:
             "invalid_category": "not_a_list",
         }
     }
-    count = gs._generate_stubs_from_snapshot(snap_data, "numpy", str(out_file))
+    count = cast("Callable[..., EagerTensorProtocol]", gs._generate_stubs_from_snapshot)(snap_data, "numpy", cast("Callable[..., EagerTensorProtocol]", str)(out_file))
     assert count >= 3
     content = out_file.read_text(encoding="utf-8")
     assert "def f_full(x: Tensor, y: Tensor = ..., *args: Tensor, kw1: Tensor, **kwargs: Tensor) -> int: ..." in content
@@ -122,20 +126,24 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
     # 2. Fake module with inspectable functions and signature failure
     fake_mod = types.ModuleType("fake_fw")
-    fake_mod._priv = 1  # type: ignore[attr-defined]
-    fake_mod.Tensor = 2  # type: ignore[attr-defined]
-    fake_mod.non_callable = 42  # type: ignore[attr-defined]
+    setattr(fake_mod, "_priv", 1)
+    setattr(fake_mod, "Tensor", 2)
+    setattr(fake_mod, "non_callable", 42)
 
-    def f_normal(x: object, y: object = 10) -> None:
+    def f_normal(x: EagerValue, y: EagerValue = 10) -> None:
+        """Test function f_normal."""
         pass
 
-    def f_varargs(*args: object, **kwargs: object) -> None:
+    def f_varargs(*args: EagerValue, **kwargs: EagerValue) -> None:
+        """Test function f_varargs."""
         pass
 
-    def f_kwonly(*, k1: object, k2: object = 20) -> None:
+    def f_kwonly(*, k1: EagerValue, k2: EagerValue = 20) -> None:
+        """Test function f_kwonly."""
         pass
 
-    def f_varpos_kw(*args: object, k1: object) -> None:
+    def f_varpos_kw(*args: EagerValue, k1: EagerValue) -> None:
+        """Test function f_varpos_kw."""
         pass
 
     class BadSig:
@@ -144,18 +152,20 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         fail_sig = True
 
         def __call__(self) -> None:
+            """Test function __call__."""
             pass
 
     bad_obj = BadSig()
-    fake_mod.f_normal = f_normal  # type: ignore[attr-defined]
-    fake_mod.f_varargs = f_varargs  # type: ignore[attr-defined]
-    fake_mod.f_kwonly = f_kwonly  # type: ignore[attr-defined]
-    fake_mod.f_varpos_kw = f_varpos_kw  # type: ignore[attr-defined]
-    fake_mod.bad_sig = bad_obj  # type: ignore[attr-defined]
+    setattr(fake_mod, "f_normal", f_normal)
+    setattr(fake_mod, "f_varargs", f_varargs)
+    setattr(fake_mod, "f_kwonly", f_kwonly)
+    setattr(fake_mod, "f_varpos_kw", f_varpos_kw)
+    setattr(fake_mod, "bad_sig", bad_obj)
 
     real_sig = inspect.signature
 
-    def smart_sig(obj: Callable[..., object]) -> inspect.Signature:
+    def smart_sig(obj: Callable[..., EagerValue]) -> inspect.Signature:
+        """Test function smart_sig."""
         if getattr(obj, "fail_sig", False):
             raise ValueError("Signature failed")
         return real_sig(obj)
@@ -164,10 +174,11 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
     real_import = importlib.import_module
 
-    def mock_import(name: str, *args: object, **kwargs: object) -> types.ModuleType:
+    def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> types.ModuleType:
+        """Test function mock_import."""
         if name == "fake_fw":
             return fake_mod
-        return real_import(name, *args, **kwargs)
+        return cast("types.ModuleType", cast("Callable[..., EagerTensorProtocol]", real_import)(name, *args, **kwargs))
 
     with patch("inspect.signature", side_effect=smart_sig):
         with patch("scripts.generate_stubs.importlib.import_module", side_effect=mock_import):
@@ -356,7 +367,7 @@ def test_format_params_via_ecosystem() -> None:
         "invalid",
         {"name": ""},
     ]
-    res = gs.format_params_via_ecosystem(params, has_varargs=True)  # type: ignore[arg-type]
+    res = cast("Callable[..., EagerTensorProtocol]", gs.format_params_via_ecosystem)(params, has_varargs=True)
     assert "x: Tensor" in res
     assert "dim: int = 0" in res
 

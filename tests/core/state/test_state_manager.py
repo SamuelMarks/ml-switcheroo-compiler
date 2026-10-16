@@ -1,12 +1,15 @@
 """Test module."""
 
+from __future__ import annotations
+
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.state_manager import _build_functional_outputs, _process_assign_node, _rewrite_node, lift_state
 
 
-def test_state_manager():
+def test_state_manager() -> None:
     # Test _process_assign_node
+    """Test function test_state_manager."""
     n_assign = LogicalNode(id="a", op_type="Assign", domain="ml_switcheroo", inputs=["state1", "val1"])
     env = {"state1": "state1", "state2": "state2"}
     _process_assign_node(n_assign, env)

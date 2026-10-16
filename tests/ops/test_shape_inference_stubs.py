@@ -1,292 +1,177 @@
 """Tests for operator shape inference stubs across operations."""
 
+from __future__ import annotations
 
-def test_shape_misc_stubs():
-    from ml_switcheroo_compiler.ops.shape.pad_and_tile import Flatnonzero, Lexsort, Nonzero, Percentile, Quantile, RavelMultiIndex, Repeat, Searchsorted, SortComplex, Tile, Unique
+from typing import TYPE_CHECKING, cast
+from unittest.mock import patch
 
-    class Dummy:
-        shape = (2, 2)
+import pytest
 
-        def __iter__(self):
-            return iter(self.shape)
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+class Dummy:
+    """Dummy tensor-like object with a 2D shape."""
+
+    shape = (2, 2)
+
+    def __iter__(self) -> EagerValue:
+        """Test function __iter__."""
+        return cast("EagerTensorProtocol", iter(self.shape))
+
+
+def test_shape_misc_stubs() -> None:
+    """Verify shape inference on miscellaneous shape ops."""
+    from ml_switcheroo_compiler.ops.shape.pad_and_tile import (
+        Flatnonzero,
+        Lexsort,
+        Nonzero,
+        Percentile,
+        Quantile,
+        RavelMultiIndex,
+        Repeat,
+        Searchsorted,
+        SortComplex,
+        Tile,
+        Unique,
+    )
 
     for OpClass in [Flatnonzero, Lexsort, Nonzero, Percentile, Quantile, RavelMultiIndex, Repeat, Searchsorted, SortComplex, Tile, Unique]:
         op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        assert op.infer_shape(Dummy(), Dummy()) is not None
-        assert op.infer_shape() is not None
+        assert isinstance(op.infer_shape(Dummy()), tuple)
+        assert isinstance(op.infer_shape(Dummy(), Dummy()), tuple)
+        assert isinstance(op.infer_shape(), tuple)
 
 
-def test_shape_slicing_stubs():
+def test_shape_slicing_stubs() -> None:
+    """Verify shape inference on IndexInDim and UpdateSlice."""
     from ml_switcheroo_compiler.ops.shape.slicing import IndexInDim, UpdateSlice
-
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
 
     for OpClass in [IndexInDim, UpdateSlice]:
         op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert isinstance(op.infer_shape(Dummy()), tuple)
+        assert isinstance(op.infer_shape(), tuple)
 
 
-def test_creation_frontend_stubs():
+def test_creation_frontend_stubs() -> None:
+    """Verify shape inference on creation frontend ops."""
     from ml_switcheroo_compiler.ops.creation.frontend_utils import FromDlpack, Frompyfunc, Geometric, Geomspace
-
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
 
     for OpClass in [Geometric, Geomspace, FromDlpack, Frompyfunc]:
         op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        assert op.infer_shape(Dummy(), Dummy(), Dummy()) is not None
-        assert op.infer_shape(size=(1, 2)) is not None
-        assert op.infer_shape(num=5) is not None
-        assert op.infer_shape() is not None
+        assert isinstance(op.infer_shape(Dummy()), tuple)
+        assert isinstance(op.infer_shape(Dummy(), Dummy(), Dummy()), tuple)
+        assert isinstance(op.infer_shape(size=(1, 2)), tuple)
+        assert isinstance(op.infer_shape(num=5), tuple)
+        assert isinstance(op.infer_shape(), tuple)
 
 
-def test_nn_activations_stubs():
+def test_nn_activations_stubs() -> None:
+    """Verify shape inference on neural network activation ops."""
     from ml_switcheroo_compiler.ops.nn.activations import HardSilu, HardSwish, Squareplus
-
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
 
     for OpClass in [HardSilu, HardSwish, Squareplus]:
         op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) == (2, 2)
+        assert op.infer_shape() == ()
 
 
-def test_distributed_stubs():
+def test_distributed_stubs() -> None:
+    """Verify shape inference on distributed collective ops."""
     from ml_switcheroo_compiler.ops.distributed_ops import Outfeed, Pmax, Pmin, Ppermute, Pshuffle, PsumScatter, Pswapaxes
-
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
 
     for OpClass in [Outfeed, Pshuffle, Pswapaxes, Ppermute, PsumScatter, Pmax, Pmin]:
         op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert isinstance(op.infer_shape(Dummy()), tuple)
+        assert op.infer_shape() == ()
 
 
-def test_random_stubs():
+def test_random_stubs() -> None:
+    """Verify shape inference on Rademacher op."""
     from ml_switcheroo_compiler.ops.random_ops.core import Rademacher
 
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
-
-    for OpClass in [Rademacher]:
-        op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        assert op.infer_shape(shape=(1, 2)) is not None
-        assert op.infer_shape() is not None
+    op = Rademacher()
+    assert isinstance(op.infer_shape(Dummy()), tuple)
+    assert op.infer_shape(shape=(1, 2)) == (1, 2)
+    assert op.infer_shape() == ()
 
 
-def test_unary_logical_stubs():
+def test_unary_logical_stubs() -> None:
+    """Verify shape inference on unary logical ops."""
     from ml_switcheroo_compiler.ops.unary.logical import Ediff1d, Iscomplex, Iscomplexobj, Isin, Isreal, Isrealobj, Issubdtype
 
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
-
-    for OpClass in [Iscomplex, Iscomplexobj, Isreal, Isrealobj, Issubdtype, Isin, Ediff1d]:
+    for OpClass in [Iscomplex, Iscomplexobj, Isreal, Isrealobj, Issubdtype, Isin]:
         op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert isinstance(op.infer_shape(Dummy()), tuple)
+        assert op.infer_shape() == ()
+    ediff_op = Ediff1d()
+    assert isinstance(ediff_op.infer_shape(Dummy()), tuple)
+    assert ediff_op.infer_shape() == (0,)
 
 
-def test_linalg_dot_stubs():
+def test_linalg_dot_stubs() -> None:
+    """Verify shape inference on Pdot op."""
     from ml_switcheroo_compiler.ops.linalg.dot import Pdot
 
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
-
-    for OpClass in [Pdot]:
-        op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+    op = Pdot()
+    assert isinstance(op.infer_shape(Dummy(), Dummy()), tuple)
+    with pytest.raises((ValueError, IndexError)):
+        op.infer_shape()
 
 
-def test_io_stubs():
+def test_io_stubs() -> None:
+    """Verify shape inference on I/O ops."""
     from ml_switcheroo_compiler.ops.io import Fromfile, Fromfunction, Fromiter, Fromstring
-
-    class Dummy:
-        shape = (2, 2)
-
-        def __iter__(self):
-            return iter(self.shape)
 
     for OpClass in [Fromfile, Fromstring, Fromiter, Fromfunction]:
         op = OpClass()
-        assert op.infer_shape(Dummy()) is not None
-        assert op.infer_shape(Dummy(), Dummy()) is not None
-        assert op.infer_shape(shape=(2, 2)) is not None
-        assert op.infer_shape() is not None
+        assert isinstance(op.infer_shape(Dummy()), tuple)
+        assert isinstance(op.infer_shape(Dummy(), Dummy()), tuple)
+        assert isinstance(op.infer_shape(shape=(2, 2)), tuple)
+        assert isinstance(op.infer_shape(), tuple)
 
 
-def test_broadcast_to_empty_shape():
-    from ml_switcheroo_compiler.ops.distributed_ops import BroadcastTo
-
-    op = BroadcastTo()
-    assert op.infer_shape() == ()
-
-
-def test_broadcast_to_empty_shape_2():
-    from ml_switcheroo_compiler.ops.distributed_ops import BroadcastTo
-
-    op = BroadcastTo()
-    # To hit not shapes, we pass an argument that doesnt have shape
-    assert op.infer_shape(42) == ()
-
-
-def test_broadcast_to_empty_shape_3():
-    from ml_switcheroo_compiler.ops.distributed_ops import BroadcastTo
-
-    op = BroadcastTo()
-    # Need to pass an arg that DOES NOT have a shape attribute so `shapes` is empty
-    assert op.infer_shape(42) == ()
-
-
-def test_broadcast_to_empty_shape_real():
+def test_broadcast_to_empty_shape() -> None:
+    """Verify BroadcastTo shape inference edge cases."""
     from ml_switcheroo_compiler.ops.distributed_ops import BroadcastTo
 
     class NoShape:
+        """Test class NoShape."""
+
         pass
 
     op = BroadcastTo()
-    # It checks `hasattr(a, "shape")`. If we pass NoShape(), it has no shape.
-    # `shapes` will be empty. `if not shapes:` is true, returns `()`.
-    assert op.infer_shape(NoShape()) == ()
-
-
-def test_broadcast_to_empty_shape_empty():
-    from ml_switcheroo_compiler.ops.distributed_ops import BroadcastTo
-
-    op = BroadcastTo()
-    # It checks `hasattr(a, "shape")`. If we pass No args.
-    # `shapes` will be empty. `if not shapes:` is true, returns `()`.
     assert op.infer_shape() == ()
-
-
-def test_broadcast_to_kwargs():
-    from ml_switcheroo_compiler.ops.distributed_ops import BroadcastTo
-
-    op = BroadcastTo()
+    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(42) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", NoShape)()) == ()
     assert op.infer_shape(shape=(5, 5)) == (5, 5)
 
 
-def test_dot_infer_shape_edge_cases():
-    from ml_switcheroo_compiler.ops.linalg.dot import Dot
+def test_dot_and_pdot_infer_shape_edge_cases() -> None:
+    """Verify Dot and Pdot shape inference across 0D, 1D, 2D, and ND inputs."""
+    from ml_switcheroo_compiler.ops.linalg.dot import Dot, Pdot
 
     class MockTensor:
-        def __init__(self, shape):
+        """Test class MockTensor."""
+
+        def __init__(self, shape: tuple[int, ...]) -> None:
+            """Test function __init__."""
             self.shape = shape
 
-    op = Dot()
-    # len(lhs) == 1, len(rhs) == 1 -> () (already covered? Missing branch 157?)
-    try:
-        op.infer_shape(MockTensor((2,)), MockTensor((2,)))
-    except ValueError:
-        pass
-
-    # 0 or 0 -> scalar multiplication
-    try:
-        op.infer_shape(MockTensor(()), MockTensor((2,)))
-    except ValueError:
-        pass
-    try:
-        op.infer_shape(MockTensor((2,)), MockTensor(()))
-    except ValueError:
-        pass
-
-    # rhs == 1 -> lhs[:-1]
-    try:
-        op.infer_shape(MockTensor((2, 2)), MockTensor((2,)))
-    except ValueError:
-        pass
-
-    # else (N-D and M-D) -> lhs[:-1] + rhs[:-2] + rhs[-1:]
-    try:
-        op.infer_shape(MockTensor((2, 3, 4)), MockTensor((4, 5)))
-    except ValueError:
-        pass
-
-
-def test_pdot_infer_shape_edge_cases():
-    from ml_switcheroo_compiler.ops.linalg.dot import Pdot
-
-    class MockTensor:
-        def __init__(self, shape):
-            self.shape = shape
-
-    op = Pdot()
-    # len(lhs) == 1, len(rhs) == 1 -> ()
-    try:
-        op.infer_shape(MockTensor((2,)), MockTensor((2,)))
-    except ValueError:
-        pass
-
-    # 0 or 0 -> scalar multiplication
-    try:
-        op.infer_shape(MockTensor(()), MockTensor((2,)))
-    except ValueError:
-        pass
-    try:
-        op.infer_shape(MockTensor((2,)), MockTensor(()))
-    except ValueError:
-        pass
-
-    # rhs == 1 -> lhs[:-1]
-    try:
-        op.infer_shape(MockTensor((2, 2)), MockTensor((2,)))
-    except ValueError:
-        pass
-
-    # else (N-D and M-D) -> lhs[:-1] + rhs[:-2] + rhs[-1:]
-    try:
-        op.infer_shape(MockTensor((2, 3, 4)), MockTensor((4, 5)))
-    except ValueError:
-        pass
+    for OpClass in (Dot, Pdot):
+        op = OpClass()
+        assert op.infer_shape(MockTensor((2,)), MockTensor((2,))) == ()
+        assert op.infer_shape(MockTensor(()), MockTensor((2,))) == (2,)
+        assert op.infer_shape(MockTensor((2,)), MockTensor(())) == (2,)
+        assert op.infer_shape(MockTensor((2, 2)), MockTensor((2,))) == (2,)
+        assert op.infer_shape(MockTensor((2, 3, 4)), MockTensor((4, 5))) == (2, 3, 5)
 
 
 def test_ops_shape_inference_inputs_type_and_missing_op() -> None:
     """Test infer_shape with non-sequence inputs kwarg and non-existent op."""
-    from unittest.mock import patch
-
     from ml_switcheroo_compiler.ops.shape_inference import infer_shape
 
     res1 = infer_shape("Add", inputs=12345)

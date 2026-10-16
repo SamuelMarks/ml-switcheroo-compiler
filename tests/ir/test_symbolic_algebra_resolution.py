@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.ir.shape_system import (
@@ -12,6 +14,11 @@ from ml_switcheroo_compiler.ir.shape_system import (
     SymUnaryOp,
     SymVar,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_non_polynomial_operators_evaluation() -> None:
@@ -129,12 +136,16 @@ def test_unary_operations_and_piecewise() -> None:
         SymUnaryOp("invalid_op", SymConst(1)).eval({})
 
     # SymPiecewise conditional nodes
-    cond_1 = lambda env: env["x"] > 10
-    cond_2 = lambda env: env["x"] > 0
-    piecewise = SymPiecewise(
+    def cond_1(env: EagerValue) -> EagerValue:
+        return cast("EagerValue", getattr(env, "__getitem__")("x") > 10)
+
+    def cond_2(env: EagerValue) -> EagerValue:
+        return cast("EagerValue", getattr(env, "__getitem__")("x") > 0)
+
+    piecewise = cast("Callable[..., EagerTensorProtocol]", SymPiecewise)(
         cases=[
-            (cond_1, SymConst(100)),
-            (cond_2, SymConst(50)),
+            (cond_1, cast("Callable[..., EagerTensorProtocol]", SymConst)(100)),
+            (cond_2, cast("Callable[..., EagerTensorProtocol]", SymConst)(50)),
         ],
         default=SymConst(0),
     )

@@ -1,11 +1,10 @@
-"""Module control_flow.py."""
+"""Provide mixin module."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-"""Provide mixin module."""
+from typing import Callable, cast
 
-
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
@@ -15,7 +14,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Control flow AST generator mixin."""
 
-    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_Scan operation.
 
         Args:
@@ -30,7 +29,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Natively, backends implement this as a specific scan.
         return f"{pfx}_scan({', '.join(input_vars)})"
 
-    def visit_Switch(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Switch(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_Switch operation.
 
         Args:
@@ -45,7 +44,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Fallback to a custom runner
         return f"{pfx}_switch({', '.join(input_vars)})"
 
-    def visit_TimeDistributed(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TimeDistributed(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_TimeDistributed operation.
 
         Args:
@@ -76,7 +75,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         data = kwargs.get("data", ["Assertion failed."])
         return f"{pfx}_assert({input_vars[0]}, data={data})"
 
-    def visit_AssociativeScan(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AssociativeScan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_AssociativeScan operation.
 
         Args:
@@ -90,7 +89,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_associative_scan({', '.join(input_vars)})"
 
-    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """visit_WhileLoop function.
 
         Args:
@@ -112,7 +111,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         cond_gen = self.generator.__class__(cond_graph)
         cond_gen.formatter.indent_level = self.generator.indent_level
-        visitor_cond: CodeGeneratorVisitor = CodeGeneratorVisitor(cond_gen)
+        visitor_cond: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(cond_gen)
         visitor_cond.generate_body("state")
         for line in cond_gen.code[1:]:
             self.generator.add_line(line)
@@ -123,7 +122,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         body_gen = self.generator.__class__(body_graph)
         body_gen.formatter.indent_level = self.generator.indent_level
-        visitor_body: CodeGeneratorVisitor = CodeGeneratorVisitor(body_gen)
+        visitor_body: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(body_gen)
         visitor_body.generate_body("state")
         for line in body_gen.code[1:]:
             self.generator.add_line(line)
@@ -137,7 +136,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"loop_val_{node.id}"
 
-    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """visit_Cond function.
 
         Args:
@@ -159,7 +158,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         true_gen = self.generator.__class__(true_graph)
         true_gen.formatter.indent_level = self.generator.indent_level
-        visitor_true: CodeGeneratorVisitor = CodeGeneratorVisitor(true_gen)
+        visitor_true: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(true_gen)
         visitor_true.generate_body()
         for line in true_gen.code[1:]:
             self.generator.add_line(line)
@@ -170,7 +169,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         false_gen = self.generator.__class__(false_graph)
         false_gen.formatter.indent_level = self.generator.indent_level
-        visitor_false: CodeGeneratorVisitor = CodeGeneratorVisitor(false_gen)
+        visitor_false: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(false_gen)
         visitor_false.generate_body()
         for line in false_gen.code[1:]:
             self.generator.add_line(line)
@@ -178,7 +177,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"true_fn_{node.id}() if {cond_val} else false_fn_{node.id}()"
 
-    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """visit_ForiLoop function.
 
         Args:
@@ -201,7 +200,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         body_gen = self.generator.__class__(body_graph)
         body_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(body_gen)
+        visitor: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(body_gen)
         # Assuming args passed as list [i, state]
         visitor.generate_body("[i, state]")
         for line in body_gen.code[1:]:
@@ -216,7 +215,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"loop_val_{node.id}"
 
-    def visit_Map(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Map(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """visit_Map function.
 
         Args:
@@ -236,7 +235,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         f_gen = self.generator.__class__(f_graph)
         f_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(f_gen)
+        visitor: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(f_gen)
         visitor.generate_body("[x]")
         for line in f_gen.code[1:]:
             self.generator.add_line(line)
@@ -246,7 +245,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # map usually means array mapping over first dimension
         return f"{pfx}.stack([map_fn_{node.id}(x) for x in {xs}])"
 
-    def visit_Fold(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Fold(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """visit_Fold function.
 
         Args:
@@ -267,7 +266,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         f_gen = self.generator.__class__(f_graph)
         f_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(f_gen)
+        visitor: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(f_gen)
         visitor.generate_body("[acc, x]")
         for line in f_gen.code[1:]:
             self.generator.add_line(line)
@@ -281,7 +280,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"fold_val_{node.id}"
 
-    def visit_Vmap(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Vmap(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """visit_Vmap function.
 
         Args:
@@ -295,7 +294,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_vmap({', '.join(input_vars)})"
 
-    def visit_Pmap(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Pmap(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """visit_Pmap function.
 
         Args:

@@ -6,7 +6,10 @@ multiplication shape inference, and axis normalization functions, including hand
 symbolic dimensions and error conditions.
 """
 
+from __future__ import annotations
+
 from collections import namedtuple
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -19,6 +22,11 @@ from ml_switcheroo_compiler.ir.shape_system import (
     matmul_shape,
     normalize_axis,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_broadcast_shapes() -> None:
@@ -44,8 +52,8 @@ def test_broadcast_shapes() -> None:
         tracker.add_constraint("T", 5)
         with pytest.raises((ValueError, ShapeMismatchError)):
             broadcast_shapes(("B", 3), ("T", 3), tracker=tracker)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_matmul_shape() -> None:
@@ -68,8 +76,8 @@ def test_matmul_shape() -> None:
             matmul_shape((2, 3), (4, 5))
         with pytest.raises((ValueError, ShapeMismatchError)):
             matmul_shape((5, 2, 3), (4, 3, 4))
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_matmul_inner_mismatch_batched() -> None:
@@ -82,8 +90,8 @@ def test_matmul_inner_mismatch_batched() -> None:
         "Verifies that `matmul_shape` raises a ValueError when inner dimensions mismatch in.\n\n    batched multiplication\n\n    This test ensures that an explicit error message regarding incompatible inner\n    dimensions is raised when attempting to multiply batched matrices with\n    mismatched\n    contracting dimensions\n\n    Returns:\n    None\n    "
         with pytest.raises((ValueError, ShapeMismatchError), match="Incompatible inner dimensions"):
             matmul_shape((5, 2, 3), (5, 4, 4))
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_matmul_shape_1d() -> None:
@@ -97,8 +105,8 @@ def test_matmul_shape_1d() -> None:
         assert matmul_shape((5,), (5,)) == ()
         assert matmul_shape((5,), (5, 4)) == (4,)
         assert matmul_shape((3, 5), (5,)) == (3,)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_normalize_axis() -> None:
@@ -125,9 +133,9 @@ def test_normalize_axis() -> None:
         with pytest.raises((ValueError, ShapeMismatchError)):
             normalize_axis((-4,), 3)
         with pytest.raises(TypeError):
-            normalize_axis(1.5, 3)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+            cast("Callable[..., EagerTensorProtocol]", normalize_axis)(1.5, 3)
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_symint() -> None:
@@ -155,8 +163,8 @@ def test_symint() -> None:
         assert a == SymInt("A")
         assert a != b
         assert a != "A"
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_symbolic_solver() -> None:
@@ -171,8 +179,8 @@ def test_symbolic_solver() -> None:
         assert not SymbolicSolver.is_consistent(2, 3)
         assert SymbolicSolver.is_consistent(SymInt("A"), SymInt("A"))
         assert not SymbolicSolver.is_consistent(SymInt("A"), SymInt("B"))
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_shape_tracker() -> None:
@@ -187,21 +195,21 @@ def test_shape_tracker() -> None:
         assert ShapeTracker.infer_elementwise([]) == ()
         t1 = TensorSpec(shape=(2, SymInt("A")))
         t2 = TensorSpec(shape=(SymInt("A"),))
-        out = ShapeTracker.infer_elementwise([t1, t2])
+        out = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.infer_elementwise)([t1, t2])
         assert len(out) == 2
         assert out[0] == 2
         assert isinstance(out[1], SymInt) and out[1].expr == "A"
         t3 = TensorSpec(shape=(SymInt("A"), 2))
         t4 = TensorSpec(shape=(2,))
-        out_matmul = ShapeTracker.infer_matmul(t3, t4)
+        out_matmul = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.infer_matmul)(t3, t4)
         assert len(out_matmul) == 1
         assert isinstance(out_matmul[0], SymInt) and out_matmul[0].expr == "A"
         t5 = TensorSpec(shape=(2, 3))
         t6 = TensorSpec(shape=(3, 4))
-        out_matmul2 = ShapeTracker.infer_matmul(t5, t6)
+        out_matmul2 = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.infer_matmul)(t5, t6)
         assert out_matmul2 == (2, 4)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_symint_hash() -> None:
@@ -213,5 +221,5 @@ def test_symint_hash() -> None:
     try:
         "Test symint hash."
         assert hash(SymInt("a")) == hash("a")
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

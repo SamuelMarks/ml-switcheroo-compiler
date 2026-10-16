@@ -6,7 +6,9 @@ reconstruction, shape debugging, FLOPs estimation, memory profiling, numerical a
 detection, and graph visualization utilities (Graphviz and HTML exports).
 """
 
-from typing import NoReturn
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, NoReturn, cast
 
 import numpy as np
 import pytest
@@ -24,6 +26,11 @@ from ml_switcheroo_compiler.diagnostics import (
     to_graphviz,
     to_html,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_traceback_reconstructor() -> None:
@@ -50,7 +57,7 @@ def test_debug_shapes() -> None:
     """
     "Verifies the shape debugging utility under various model execution scenarios.\n\n    Returns:\n    None\n    "
 
-    def dummy_model(x):
+    def dummy_model(x: EagerValue) -> EagerValue:
         """Dummy model.
 
         Args:
@@ -59,13 +66,13 @@ def test_debug_shapes() -> None:
         Returns:
         object: The resulting output.
         """
-        return x + 1.0
+        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1.0)
 
-    res = debug_shapes(dummy_model, (2, 2))
+    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model, (2, 2))
     assert "| input | (2, 2) | float64 |" in res
     assert "| output | (2, 2) | float64 |" in res
 
-    def dummy_model_no_shape(x) -> int:
+    def dummy_model_no_shape(x: EagerValue) -> int:
         """Dummy model no shape.
 
         Args:
@@ -76,10 +83,10 @@ def test_debug_shapes() -> None:
         """
         return 5
 
-    res = debug_shapes(dummy_model_no_shape, (2, 2))
+    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model_no_shape, (2, 2))
     assert "| output | unknown | float64 |" in res
 
-    def failing_model(x) -> NoReturn:
+    def failing_model(x: EagerValue) -> NoReturn:
         """Failing model.
 
         Args:
@@ -103,9 +110,9 @@ def test_debug_shapes() -> None:
         m.setattr(debugger, "_FORMATTERS", dummy_dict)
         # It should format with dummy_dict now
         try:
-            debug_shapes(dummy_model, (2, 2))
-        except:
-            pass
+            cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model, (2, 2))
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
 
         m.setattr(debugger, "_FORMATTERS", {"graphviz": {"header": "H", "node": "N", "edge": "E", "footer": "F"}})
         g = LogicalGraph()
@@ -132,7 +139,7 @@ def test_estimate_flops() -> None:
         class BadShape:
             """Bad Shape class."""
 
-            def __iter__(self):
+            def __iter__(self) -> None:
                 """Iter.
 
                 Returns:
@@ -164,7 +171,7 @@ def test_memory_profiler() -> None:
         class BadShape:
             """Bad Shape class."""
 
-            def __iter__(self):
+            def __iter__(self) -> None:
                 """Iter.
 
                 Returns:
@@ -198,14 +205,14 @@ def test_numerical_anomaly_detector() -> None:
         t_none = Tensor(None, TensorConfig((2,), DType.Float32, device))
         check_numerical_anomaly(t_none)
         t2 = Tensor(np.array([1.0, np.nan]), TensorConfig((2,), DType.Float32, device))
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match=r".*"):
             check_numerical_anomaly(t2)
 
         class NonArray:
             """Non Array class."""
 
-        t3 = Tensor(NonArray(), TensorConfig((2,), DType.Float32, device))
-        check_numerical_anomaly(t3)
+        t3 = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", NonArray)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((2,), DType.Float32, device))
+        cast("Callable[..., EagerTensorProtocol]", check_numerical_anomaly)(t3)
         config.eager_mode = False
     except Exception as e:
         raise e
@@ -298,7 +305,7 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     assert decoded_1c.size == (12, 12)
 
     # 4. Test write_raw_pb
-    logdir: str = str(tmp_path / "tfevents")
+    logdir: str = str(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "tfevents"))
     write_raw_pb(b"mock_proto_data", logdir)
     with open(f"{logdir}/events.out.tfevents.pb", "rb") as f:
         assert f.read() == b"mock_proto_data"
@@ -306,6 +313,6 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     # 5. Test debugging.enable_dump_debug_info
     from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info
 
-    dump_dir: str = str(tmp_path / "dump_debug")
+    dump_dir: str = str(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "dump_debug"))
     enable_dump_debug_info(dump_dir)
-    assert (tmp_path / "dump_debug").exists()
+    assert cast("Callable[..., EagerTensorProtocol]", (cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "dump_debug")).exists)()

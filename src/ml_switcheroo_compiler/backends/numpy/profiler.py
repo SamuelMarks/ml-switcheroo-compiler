@@ -1,12 +1,16 @@
 """Numpy backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import resource
 import sys
 import time
-from typing import Any, Optional, Union
+from typing import Optional, Union, cast
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -28,7 +32,7 @@ class NumpyProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], np.ndarray]],
+        inputs: dict[str, Union[list[float], list[list[float]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -49,16 +53,16 @@ class NumpyProfiler:
 
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        np_inputs_dict: dict[str, np.ndarray] = {}
+        np_inputs_dict: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]] = {}
         for k, val in inputs.items():
             if isinstance(val, np.ndarray):
                 np_inputs_dict[k] = val
             else:
                 np_inputs_dict[k] = np.asarray(val, dtype=np.float32)
 
-        np_input_list: list[np.ndarray] = list(np_inputs_dict.values())
+        np_input_list: list[np.ndarray[tuple[int, ...], np.dtype[np.generic]]] = list(np_inputs_dict.values())
 
-        def _execute_step() -> Any:
+        def _execute_step() -> EagerValue:
             """Execute a single evaluation step on NumPy backend.
 
             Returns:
@@ -68,7 +72,7 @@ class NumpyProfiler:
                 from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
                 from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-                return evaluate_graph(graph, np_inputs_dict, backend=NumpyGenerator)
+                return cast(EagerValue, evaluate_graph(graph, cast("dict[str, EvalValue]", np_inputs_dict), backend=NumpyGenerator))
             if not np_input_list:
                 return np.zeros((1,), dtype=np.float32)
             accum = np.zeros_like(np_input_list[0])

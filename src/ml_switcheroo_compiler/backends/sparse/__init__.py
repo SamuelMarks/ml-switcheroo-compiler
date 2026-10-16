@@ -2,6 +2,9 @@
 
 import importlib.util
 import sys
+from typing import Callable, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 try:
     _has_pkg = importlib.util.find_spec("sparse") is not None
@@ -41,11 +44,11 @@ from .types import (
     zeros,
 )
 
-SparseGenerator.zeros = classmethod(zeros)
-SparseGenerator.array = classmethod(array)
-SparseGenerator.asarray = classmethod(asarray)
-SparseGenerator.item = classmethod(item)
-SparseGenerator.execute_op = classmethod(execute_op)
+type.__setattr__(SparseGenerator, "zeros", classmethod(zeros))
+type.__setattr__(SparseGenerator, "array", classmethod(array))
+type.__setattr__(SparseGenerator, "asarray", classmethod(asarray))
+type.__setattr__(SparseGenerator, "item", classmethod(item))
+type.__setattr__(SparseGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", classmethod)(execute_op))
 
 __all__ = [
     "COOTensor",

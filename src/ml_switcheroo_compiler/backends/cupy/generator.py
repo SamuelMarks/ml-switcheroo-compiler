@@ -1,6 +1,9 @@
-# ruff: noqa: E402, E501, F403
 """CuPy code generator and eager execution backend."""
 
+from typing import cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 try:
@@ -47,7 +50,7 @@ class CupyGenerator(PythonStringGenerator):
     _import_header = "import cupy as cp"
     _func_name = "evaluate"
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Fallback for generic nodes.
 
         Args:
@@ -60,7 +63,7 @@ class CupyGenerator(PythonStringGenerator):
         """
         return super().generic_visit(node, input_vars, **kwargs)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into an AOT execution callable with CUDA graph capture or compiled kernel.
 
         Args:
@@ -73,7 +76,7 @@ class CupyGenerator(PythonStringGenerator):
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        def forward_fn(*fn_args: object) -> object:
+        def forward_fn(*fn_args: EagerValue) -> EagerValue:
             """Evaluate the graph with CuPy arrays.
 
             Args:
@@ -83,17 +86,17 @@ class CupyGenerator(PythonStringGenerator):
                 object: Output tensor or collection of tensors.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
-            inputs: dict[str, object] = {}
+            inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-            evaluated = evaluate_graph(graph, inputs=inputs)
+            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
-                    return evaluated.get(graph.outputs[0])
+                    return cast(EagerValue, evaluated.get(graph.outputs[0]))
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return evaluated
+            return cast(EagerValue, evaluated)
 
         try:
             import cupy as cp
@@ -110,7 +113,7 @@ class CupyGenerator(PythonStringGenerator):
                     graph_record.end_capture()
                     instance = graph_record.instantiate()
 
-                def aot_cupy_graph_runner(*w_args: object, **w_kwargs: object) -> object:
+                def aot_cupy_graph_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
                     """Execute captured CuPy CUDA graph.
 
                     Args:
@@ -126,7 +129,7 @@ class CupyGenerator(PythonStringGenerator):
 
                 return aot_cupy_graph_runner
 
-            def aot_cupy_runner(*w_args: object, **w_kwargs: object) -> object:
+            def aot_cupy_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
                 """Execute compiled CuPy graph callable.
 
                 Args:

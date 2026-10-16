@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_polynomial import (
     _np_polyint,
     _polyval,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_math_polynomial_coverage() -> None:
@@ -23,7 +28,7 @@ def test_math_polynomial_coverage() -> None:
     class PolyvalBackend:
         """Backend with polyval."""
 
-        def polyval(self, *args: Any, **kwargs: Any) -> str:
+        def polyval(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock polyval."""
             return "polyval_val"
 
@@ -42,7 +47,7 @@ def test_math_polynomial_coverage() -> None:
     class PolyintBackend:
         """Backend with polyint."""
 
-        def polyint(self, *args: Any, **kwargs: Any) -> str:
+        def polyint(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock polyint."""
             return "polyint_val"
 
@@ -50,7 +55,7 @@ def test_math_polynomial_coverage() -> None:
 
     # Case B: backend lacks polyint -> fallback to np.polyint
     p_int = _np_polyint(EmptyBackend(), [3, 2, 1])
-    assert list(p_int) == [1.0, 1.0, 1.0, 0.0]
+    assert cast("Callable[..., EagerTensorProtocol]", list)(p_int) == [1.0, 1.0, 1.0, 0.0]
 
     # Registry
     assert global_eager_registry.get("Polyval") is not None

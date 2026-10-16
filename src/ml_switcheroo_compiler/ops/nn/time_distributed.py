@@ -1,10 +1,9 @@
-"""Module time_distributed.py."""
+"""Time distributed wrapper operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Time distributed wrapper operations."""
+import logging
+from typing import cast
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
@@ -45,11 +44,11 @@ class TimeDistributed(OpDef):
                     dtype: str | None = getattr(x, "dtype", None)
 
                 inner_kwargs = {k: v for k, v in kwargs.items() if k != "wrapped_op_name"}
-                inner_out_shape = inner_op.infer_shape(_InnerDummy(), **inner_kwargs)
+                inner_out_shape = cast(tuple[int, ...], inner_op.infer_shape(_InnerDummy(), **inner_kwargs))
                 if inner_out_shape and len(inner_out_shape) >= 1:
                     return (batch, time_dim, *inner_out_shape[1:])
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return x_shape
 
 

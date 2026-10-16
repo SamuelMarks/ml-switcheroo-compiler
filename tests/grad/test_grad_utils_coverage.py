@@ -31,7 +31,7 @@ def test_grad_utils_find_wrt_tensors_branches() -> None:
 
     proxy2 = ProxyTensor(id="node_2", shape=(), dtype="float32")
     t2 = Tensor(proxy2, TensorConfig((), DType.Float32, Device("cpu")))
-    t2.trainable = True
+    setattr(t2, "trainable", True)
 
     proxy3 = ProxyTensor(id="node_3", shape=(), dtype="float32")
     t3 = Variable(proxy3, TensorConfig((), DType.Float32, Device("cpu")))

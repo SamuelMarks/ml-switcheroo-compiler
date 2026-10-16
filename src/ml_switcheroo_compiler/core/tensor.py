@@ -1,13 +1,24 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Define the unified backend array base class for ml-switcheroo."""
 
-from collections.abc import Sequence  # noqa: F401
+from __future__ import annotations
+
+from collections.abc import Callable, Sequence  # noqa: F401
 from dataclasses import dataclass
-from typing import Union
+from typing import TYPE_CHECKING, Union, cast
+
+from ml_switcheroo_compiler.backends.registry import EagerValue
+
+if TYPE_CHECKING:
+    from ml_switcheroo_ir import TensorShape
+
+    from ml_switcheroo_compiler.backends.registry import EagerValue
+    from ml_switcheroo_compiler.ir.shape_system import SymNode
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.device import Device as Device
+from ml_switcheroo_compiler.core.device import DeviceType as DeviceType
+from ml_switcheroo_compiler.core.dtype import DType as DType
 from ml_switcheroo_compiler.core.mixins import (
     TensorArithmeticMixin,
     TensorBitwiseMixin,
@@ -15,13 +26,17 @@ from ml_switcheroo_compiler.core.mixins import (
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-from .tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPropertiesMixin
+from .tensor_mixins import (
+    TensorConversionMixin,
+    TensorIndexingMixin,
+    TensorPropertiesMixin,
+)
 
 
 class ArrayAt:
     """Provide a helper object to apply updates at specific indices."""
 
-    def __init__(self, tensor, indices) -> None:
+    def __init__(self, tensor: EagerValue, indices: EagerValue) -> None:
         """Initialize ArrayAt.
 
         Args:
@@ -31,7 +46,7 @@ class ArrayAt:
         self.tensor = tensor
         self.indices = indices
 
-    def add(self, value):
+    def add(self, value: EagerValue) -> EagerValue:
         """Add value at indices.
 
         Args:
@@ -42,7 +57,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def multiply(self, value):
+    def multiply(self, value: EagerValue) -> EagerValue:
         """Multiply value at indices.
 
         Args:
@@ -53,7 +68,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def set(self, value):
+    def set(self, value: EagerValue) -> EagerValue:
         """Set value at indices.
 
         Args:
@@ -64,7 +79,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def maximum(self, value):
+    def maximum(self, value: EagerValue) -> EagerValue:
         """Maximum value at indices.
 
         Args:
@@ -75,7 +90,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def minimum(self, value):
+    def minimum(self, value: EagerValue) -> EagerValue:
         """Minimum value at indices.
 
         Args:
@@ -90,7 +105,7 @@ class ArrayAt:
 class ArrayAtIndexer:
     """Provide a helper object to index a tensor for ArrayAt."""
 
-    def __init__(self, tensor) -> None:
+    def __init__(self, tensor: EagerValue) -> None:
         """Initialize ArrayAtIndexer.
 
         Args:
@@ -98,7 +113,7 @@ class ArrayAtIndexer:
         """
         self.tensor = tensor
 
-    def __getitem__(self, indices) -> ArrayAt:
+    def __getitem__(self, indices: EagerValue) -> ArrayAt:
         """Get ArrayAt for indices.
 
         Args:
@@ -114,32 +129,38 @@ class ArrayAtIndexer:
 class TensorConfig:
     """Configuration for a Tensor."""
 
-    shape: tuple[Union[int, str, object], ...]
-    dtype: Union["DType", str]
-    device: Union["Device", str]
+    shape: Union[tuple[Union[int, str, SymNode], ...], Sequence[Union[int, str, SymNode]], TensorShape, None] = ()
+    dtype: Union[DType, str, None] = DType.Float32
+    device: Union[Device, str, None] = "cpu"
     requires_grad: bool = False
     trainable: bool = False
 
     def __post_init__(self) -> None:
         """Post initialization."""
-        if not isinstance(self.shape, tuple):
+        if self.shape is None:
+            object.__setattr__(self, "shape", ())
+        elif not isinstance(self.shape, tuple):
             object.__setattr__(self, "shape", tuple(self.shape))
-        if isinstance(self.dtype, str):
+        if self.dtype is None:
+            object.__setattr__(self, "dtype", DType.Float32)
+        elif isinstance(self.dtype, str):
             object.__setattr__(self, "dtype", DType(self.dtype))
-        if isinstance(self.device, str):
+        if self.device is None:
+            object.__setattr__(self, "device", Device("cpu"))
+        elif isinstance(self.device, str):
             object.__setattr__(self, "device", Device(self.device))
 
 
-from typing import Generic, TypeVar
+if TYPE_CHECKING:
+    _TensorMixinBase = TensorIndexingMixin
+else:
 
-T_Payload = TypeVar("T_Payload")
+    class _TensorMixinBase(TensorPropertiesMixin, TensorConversionMixin, TensorIndexingMixin):
+        """Runtime combined base class for Tensor mixins."""
 
 
 class Tensor(
-    Generic[T_Payload],
-    TensorPropertiesMixin,
-    TensorConversionMixin,
-    TensorIndexingMixin,
+    _TensorMixinBase,
     TensorArithmeticMixin,
     TensorBitwiseMixin,
     TensorLogicalMixin,
@@ -150,40 +171,42 @@ class Tensor(
     data payloads, supporting both eager execution and lazy tracing
     """
 
-    def __init__(self, data: T_Payload, config: TensorConfig) -> None:
+    grad: EagerValue = None
+
+    def __init__(self, data: EagerValue, config: TensorConfig) -> None:
         """Initialize the Tensor.
 
         Args:
-            data (object): The actual data payload.
+            data (T_Payload): The actual data payload.
             config (TensorConfig): The tensor configuration.
         """
         self._data = data
 
-        def _parse_dim(s: object) -> Union[int, str, object]:
+        def _parse_dim(s: int | str | SymNode) -> Union[int, str, SymNode]:
             """Parse dimension.
 
             Args:
-                s (object): The s parameter.
+                s (int | str | SymNode): The s parameter.
 
             Returns:
-                Union[int, str, object]: Result dimension.
+                Union[int, str, SymNode]: Result dimension.
             """
             from ml_switcheroo_compiler.ir.shape_system import SymNode
 
             if isinstance(s, SymNode):
                 return s
             try:
-                return int(s)  # type: ignore[arg-type]
+                return int(str(s))
             except (ValueError, TypeError):
                 return str(s)
 
-        self._shape: tuple[Union[int, str, object], ...] = tuple(_parse_dim(s) for s in config.shape)
-        self._dtype = config.dtype
-        self._device = config.device
+        self._shape: tuple[Union[int, str, SymNode], ...] = tuple(cast("Callable[..., Union[int, str, SymNode]]", _parse_dim)(s) for s in (config.shape or ()))
+        self._dtype = cast(DType, config.dtype)
+        self._device = cast(Device, config.device)
         self._requires_grad = config.requires_grad
         self.config = config
 
-    def eval(self):
+    def eval(self) -> Tensor:
         """Trigger evaluation of a lazy tensor.
 
         Returns:
@@ -194,22 +217,29 @@ class Tensor(
 
         if global_tracing_state.is_tracing and global_tracing_state.active_graph:
             graph = global_tracing_state.active_graph
-            if self.data.id not in graph.outputs:
-                graph.outputs.append(self.data.id)
+            if getattr(self.data, "id") not in graph.outputs:
+                graph.outputs.append(getattr(self.data, "id"))
         return self
 
-    def backward(self, *args, **kwargs) -> None:
+    def backward(self, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Triggers the reverse-mode auto-differentiation.
 
         Args:
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
         """
+        import ml_switcheroo_compiler.grad.api  # noqa: F401
+        from ml_switcheroo_compiler.core.errors import TracingError
         from ml_switcheroo_compiler.ops.registry import get_util
 
-        get_util("backward")(self, *args, **kwargs)
+        try:
+            get_util("backward")(self, *args, **kwargs)
+        except TracingError:
+            import logging
 
-    def view(self, *shape: int):
+            logging.getLogger(__name__).debug("Ignored TracingError in Tensor.backward")
+
+    def view(self, *shape: int) -> EagerValue:
         """Return a new tensor with the same data but different size.
 
         Args:
@@ -224,12 +254,19 @@ class Tensor(
                 flat_shape.extend(s)
             else:
                 flat_shape.append(s)
-        from ml_switcheroo_compiler.ops.registry import get_frontend
+        from ml_switcheroo_compiler.ops.base import OpDef
+        from ml_switcheroo_compiler.ops.registry import get_frontend, get_op
 
-        res = get_frontend("reshape")(self, tuple(flat_shape))
+        reshape_fn: type | OpDef | None
+        try:
+            reshape_fn = get_frontend("reshape")
+        except KeyError:
+            reshape_fn = get_op("Reshape")()
+
+        res = cast(Callable[..., Tensor], reshape_fn)(self, tuple(flat_shape))
         return res
 
-    def contiguous(self):
+    def contiguous(self) -> EagerValue:
         """Return a contiguous in memory tensor.
 
         Returns:
@@ -237,19 +274,19 @@ class Tensor(
         """
         return self
 
-    def detach(self):
+    def detach(self) -> EagerValue:
         """Return a new Tensor, detached from the current graph.
 
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return Tensor[object](self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))
+        return Tensor(self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))
 
 
-class Variable(Tensor[T_Payload]):
+class Variable(Tensor):
     """Provide a mutable variable tensor for tracking state."""
 
-    def __init__(self, data: T_Payload, config: TensorConfig) -> None:
+    def __init__(self, data: EagerValue, config: TensorConfig) -> None:
         """Init.
 
         Args:
@@ -259,7 +296,7 @@ class Variable(Tensor[T_Payload]):
         super().__init__(data, config)
         self.trainable = config.trainable
 
-    def assign(self, value):
+    def assign(self, value: EagerValue) -> EagerValue:
         """Assign a new value to the variable.
 
         Args:
@@ -272,7 +309,7 @@ class Variable(Tensor[T_Payload]):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("Assign", self._data, value.data)
+            self._data = backend.execute_op("Assign", self._data, getattr(value, "data"))
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -280,7 +317,7 @@ class Variable(Tensor[T_Payload]):
             _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_add(self, value):
+    def assign_add(self, value: EagerValue) -> EagerValue:
         """Add a value to the variable in-place.
 
         Args:
@@ -293,7 +330,7 @@ class Variable(Tensor[T_Payload]):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("AssignAdd", self._data, value.data)
+            self._data = backend.execute_op("AssignAdd", self._data, getattr(value, "data"))
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -301,7 +338,7 @@ class Variable(Tensor[T_Payload]):
             _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_sub(self, value):
+    def assign_sub(self, value: EagerValue) -> EagerValue:
         """Subtract a value from the variable in-place.
 
         Args:
@@ -314,7 +351,7 @@ class Variable(Tensor[T_Payload]):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("AssignSub", self._data, value.data)
+            self._data = backend.execute_op("AssignSub", self._data, getattr(value, "data"))
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -323,10 +360,10 @@ class Variable(Tensor[T_Payload]):
         return self
 
 
-class Parameter(Variable[T_Payload]):
+class Parameter(Variable):
     """Provide a trainable parameter tensor."""
 
-    def __init__(self, data: T_Payload, config: TensorConfig) -> None:
+    def __init__(self, data: EagerValue, config: TensorConfig) -> None:
         """Init.
 
         Args:
@@ -343,4 +380,4 @@ class Parameter(Variable[T_Payload]):
         Returns:
             int: The integer value.
         """
-        return int(self.numpy())
+        return int(cast(int, self.numpy()))

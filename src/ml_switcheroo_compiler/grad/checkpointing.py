@@ -10,12 +10,13 @@ from collections.abc import Callable
 from typing import Optional, Union
 
 import yaml
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.grad.utils import GradValue
 from ml_switcheroo_compiler.ops import control_flow_utils
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -62,7 +63,7 @@ def load_rematerialization_rules(path: Optional[str] = None) -> Rematerializatio
     if not os.path.exists(target_path):
         target_path = os.path.join(os.path.dirname(__file__), "..", "transforms", "passes", "rematerialization_rules.yaml")
 
-    raw_data: dict[str, object] = {}
+    raw_data: dict[str, AttributeValue] = {}
     if os.path.exists(target_path):
         with open(target_path, encoding="utf-8") as f:
             raw_data = yaml.safe_load(f) or {}
@@ -107,35 +108,35 @@ def get_rematerialization_policy(
 
 
 def checkpoint(
-    fun: Callable[..., object],
+    fun: Callable[..., GradValue],
     policy: Optional[Union[str, RematerializationPolicyModel]] = None,
-) -> Callable[..., object]:
+) -> Callable[..., GradValue]:
     """Apply gradient checkpointing / rematerialization to a function.
 
     Args:
-        fun (Callable[..., object]): The function to checkpoint.
+        fun (Callable[..., GradValue]): The function to checkpoint.
         policy (Optional[Union[str, RematerializationPolicyModel]]): Checkpointing policy.
 
     Returns:
-        Callable[..., object]: The checkpointed function.
+        Callable[..., GradValue]: The checkpointed function.
     """
     active_policy = get_rematerialization_policy(policy)
 
-    def wrapper(*args: object, **kwargs: object) -> object:
+    def wrapper(*args: GradValue, **kwargs: GradValue) -> GradValue:
         """Execute checkpointed function wrapper.
 
         Args:
-            *args (object): Positional arguments.
-            **kwargs (object): Keyword arguments.
+            *args (GradValue): Positional arguments.
+            **kwargs (GradValue): Keyword arguments.
 
         Returns:
-            object: Computed result or proxy tensor.
+            GradValue: Computed result or proxy tensor.
         """
         if config.eager_mode or not global_tracing_state.is_tracing:
             return fun(*args, **kwargs)
 
         tensor_args = [a for a in args if isinstance(a, Tensor)]
-        fwd_block = control_flow_utils._trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
+        fwd_block = getattr(control_flow_utils, "_trace_function")(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
 
         out_node_id = fwd_block.outputs[0]
         nodes_dict = {n.id: n for n in (fwd_block.nodes if isinstance(fwd_block.nodes, list) else fwd_block.nodes.values())}
@@ -157,7 +158,7 @@ def checkpoint(
         node = LogicalNode(
             id=out_id,
             op_type="Checkpoint",
-            inputs=[a.data.id for a in tensor_args if hasattr(a, "data") and hasattr(a.data, "id")],
+            inputs=[getattr(a.data, "id") for a in tensor_args if hasattr(a, "data") and hasattr(a.data, "id")],
             attributes={
                 "subgraph": fwd_block,
                 "fun": fun,
@@ -175,55 +176,55 @@ def checkpoint(
 
 
 def remat(
-    fun: Callable[..., object],
+    fun: Callable[..., GradValue],
     policy: Optional[Union[str, RematerializationPolicyModel]] = None,
-) -> Callable[..., object]:
+) -> Callable[..., GradValue]:
     """Gradient checkpointing / rematerialization alias.
 
     Args:
-        fun (Callable[..., object]): The function to rematerialize.
+        fun (Callable[..., GradValue]): The function to rematerialize.
         policy (Optional[Union[str, RematerializationPolicyModel]]): Checkpointing policy.
 
     Returns:
-        Callable[..., object]: The rematerialized function.
+        Callable[..., GradValue]: The rematerialized function.
     """
     return checkpoint(fun, policy=policy)
 
 
 def recompute_grad(
-    fun: Callable[..., object],
+    fun: Callable[..., GradValue],
     policy: Optional[Union[str, RematerializationPolicyModel]] = None,
-) -> Callable[..., object]:
+) -> Callable[..., GradValue]:
     """Gradient checkpointing / rematerialization alias.
 
     Args:
-        fun (Callable[..., object]): The function to recompute gradients for.
+        fun (Callable[..., GradValue]): The function to recompute gradients for.
         policy (Optional[Union[str, RematerializationPolicyModel]]): Checkpointing policy.
 
     Returns:
-        Callable[..., object]: The recomputing function.
+        Callable[..., GradValue]: The recomputing function.
     """
     return checkpoint(fun, policy=policy)
 
 
-_CACHED_COST_MODEL: Optional[dict[str, object]] = None
+_CACHED_COST_MODEL: Optional[dict[str, AttributeValue]] = None
 
 
-def load_cost_models(path: Optional[str] = None) -> dict[str, object]:
+def load_cost_models(path: Optional[str] = None) -> dict[str, AttributeValue]:
     """Load operator compute costs and memory footprints from cost_models.yaml.
 
     Args:
         path (Optional[str]): Custom path to cost_models.yaml.
 
     Returns:
-        dict[str, object]: Parsed cost models dictionary.
+        dict[str, AttributeValue]: Parsed cost models dictionary.
     """
     global _CACHED_COST_MODEL
     if _CACHED_COST_MODEL is not None and path is None:
         return _CACHED_COST_MODEL
 
     target_path = path or os.path.join(os.path.dirname(__file__), "..", "transforms", "passes", "cost_models.yaml")
-    raw_data: dict[str, object] = {}
+    raw_data: dict[str, AttributeValue] = {}
     if os.path.exists(target_path):
         with open(target_path, encoding="utf-8") as f:
             raw_data = yaml.safe_load(f) or {}
@@ -234,7 +235,7 @@ def load_cost_models(path: Optional[str] = None) -> dict[str, object]:
 
 def _evaluate_node_costs(
     node: LogicalNode,
-    memory_sizes: dict[str, object],
+    memory_sizes: dict[str, AttributeValue],
     heavy_ops: set[str],
     light_ops: set[str],
     heavy_cost: int,
@@ -245,7 +246,7 @@ def _evaluate_node_costs(
 
     Args:
         node (LogicalNode): The IR node.
-        memory_sizes (dict[str, object]): Mapping from dtype string to byte size.
+        memory_sizes (dict[str, AttributeValue]): Mapping from dtype string to byte size.
         heavy_ops (set[str]): Set of compute-heavy operator substrings.
         light_ops (set[str]): Set of compute-light operator substrings.
         heavy_cost (int): Base cost of heavy operators.
@@ -323,7 +324,7 @@ def _solve_01_knapsack_dp(
 def knapsack_memory_scheduler(
     graph: LogicalGraph,
     memory_budget_bytes: int,
-    cost_model: Optional[dict[str, object]] = None,
+    cost_model: Optional[dict[str, AttributeValue]] = None,
 ) -> list[str]:
     """Solve dynamic 0/1 knapsack problem to find optimal checkpoint cut-points minimizing recomputation FLOPs.
 

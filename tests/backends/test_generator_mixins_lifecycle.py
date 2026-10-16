@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
@@ -81,7 +88,7 @@ class _MockCustomModule:
         """
         return ("custom_zeros", shape)
 
-    def array(self, data: object, dtype: object | None = None) -> tuple[str, object, object | None]:
+    def array(self, data: EagerValue, dtype: EagerValue | None = None) -> tuple[str, EagerValue, EagerValue | None]:
         """Mock array.
 
         Args:
@@ -93,7 +100,7 @@ class _MockCustomModule:
         """
         return ("custom_array", data, dtype)
 
-    def asarray(self, data: object) -> tuple[str, object]:
+    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
         """Mock asarray.
 
         Args:
@@ -104,7 +111,7 @@ class _MockCustomModule:
         """
         return ("custom_asarray", data)
 
-    def item(self, data: object) -> float:
+    def item(self, data: EagerValue) -> float:
         """Mock item.
 
         Args:
@@ -157,7 +164,7 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     gen = _MockDummyGenerator(graph)
     assert gen._generate_file_header() == ["# Header comment"]
     assert gen._resolve_imports() == []
-    assert gen._generate_return_block() is None
+    assert cast("Callable[..., EagerTensorProtocol]", gen._generate_return_block)() is None
 
     code_str = gen.generate()
     assert "# Header comment" in code_str
@@ -171,17 +178,17 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     assert _MockEagerBackendWithModule.zeros((2, 3)) == ("custom_zeros", (2, 3))
     assert _MockEagerBackendWithModule.array([1, 2], dtype="float32") == ("custom_array", [1, 2], "float32")
     assert _MockEagerBackendWithModule.asarray([3, 4]) == ("custom_asarray", [3, 4])
-    assert _MockEagerBackendWithModule.item(_MockScalarHolder()) == 33.3
+    assert cast("Callable[..., EagerTensorProtocol]", _MockEagerBackendWithModule.item)(cast("Callable[..., EagerTensorProtocol]", _MockScalarHolder)()) == 33.3
 
     # Eager zeros, array, asarray, item with default numpy fallback
     z_def = _MockEagerBackendDefault.zeros((2, 2))
-    assert z_def.shape == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(z_def, "shape")) == (2, 2)
 
     arr_def = _MockEagerBackendDefault.array([5, 6])
-    assert arr_def.tolist() == [5, 6]
+    assert cast("EagerTensorProtocol", getattr(arr_def, "tolist"))() == [5, 6]
 
     as_arr_def = _MockEagerBackendDefault.asarray([7.5, 8.5])
-    assert as_arr_def.tolist() == [7.5, 8.5]
+    assert cast("EagerTensorProtocol", getattr(as_arr_def, "tolist"))() == [7.5, 8.5]
 
-    item_val = _MockEagerBackendDefault.item(_MockScalarHolder())
+    item_val = cast("Callable[..., EagerTensorProtocol]", _MockEagerBackendDefault.item)(cast("Callable[..., EagerTensorProtocol]", _MockScalarHolder)())
     assert item_val == 33.3

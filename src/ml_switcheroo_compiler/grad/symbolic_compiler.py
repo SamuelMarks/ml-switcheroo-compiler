@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import ast
+import logging
 import os
 import re
 import uuid
 from collections.abc import Sequence
-from typing import Union
+from typing import Callable, Union, cast
 
 import yaml
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.grad.config_models import (
     AutodiffRuleModel,
     AutodiffRulesManifestModel,
@@ -60,7 +62,7 @@ class SymbolicExpressionCompiler:
             raise FileNotFoundError(f"Autodiff rules manifest not found at: {self.manifest_path}")
 
         with open(self.manifest_path, encoding="utf-8") as f:
-            raw_data: dict[str, str | int | float | bool | list | dict | None] = yaml.safe_load(f) or {}
+            raw_data: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue] | None] = yaml.safe_load(f) or {}
 
         self._manifest = AutodiffRulesManifestModel.model_validate(raw_data)
         return self._manifest
@@ -194,11 +196,11 @@ class SymbolicExpressionCompiler:
 
         attrs: dict[str, AttrPrimitive] = {}
         if hasattr(node, "attributes") and node.attributes and canonical_op == getattr(node, "op_type", ""):
-            attrs.update(dict(node.attributes))
+            attrs.update(cast("dict[str, str | int | float | None]", dict(node.attributes)))
         attrs.update(parsed_attrs)
 
         shape_meta = getattr(node, "shape_metadata", None)
-        return emit_ir_node(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs)
+        return cast(str, cast("Callable[..., EagerTensorProtocol]", emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
 
     def _resolve_symbolic_variable(
         self,
@@ -230,7 +232,7 @@ class SymbolicExpressionCompiler:
 
         tan_match: re.Match[str] | None = re.match(r"^\$tangent\[(\d+)\]$", clean_expr)
         if tan_match:
-            idx: int = int(tan_match.group(1))
+            idx = int(tan_match.group(1))
             return tangents[idx] if tangents and idx < len(tangents) else ""
 
         return None
@@ -260,7 +262,7 @@ class SymbolicExpressionCompiler:
             float(clean_expr)
             return clean_expr
         except ValueError:
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
         resolved_var: str | None = self._resolve_symbolic_variable(clean_expr, node, cotangent, tangents)
         if resolved_var is not None:

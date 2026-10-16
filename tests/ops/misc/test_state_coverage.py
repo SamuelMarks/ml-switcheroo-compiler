@@ -10,7 +10,7 @@ def test_state_ops_shape_inference() -> None:
     read_op = ReadVariable()
     assert read_op.infer_shape(shape=(2, 3)) == (2, 3)
     assert read_op.infer_shape(shape="batch_size") == "batch_size"
-    assert read_op.infer_shape(shape=123) == ()  # type: ignore[arg-type]
+    assert read_op.infer_shape(shape=123) == ()
     assert read_op.infer_shape() == ()
 
     assign_op = AssignVariable()

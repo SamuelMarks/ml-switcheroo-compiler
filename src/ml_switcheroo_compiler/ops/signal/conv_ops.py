@@ -1,26 +1,27 @@
-"""Module conv_ops.py."""
-
-from .common_ops import _calculate_padding, _emit_signal_node
-
-# ruff: noqa: E402, E501, F403
 """Signal processing operations."""
 
 from dataclasses import dataclass  # noqa: F401
-from typing import Any, Optional  # noqa: F401
+from typing import (
+    Callable,
+    Optional,  # noqa: F401
+    cast,
+)
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node  # noqa: F401
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node  # noqa: F401
 
+from .common_ops import _calculate_padding, _emit_signal_node
+
 
 @register_op("Convolve2d")
 class Convolve2d(OpDef):
     """Convolve2d."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -53,7 +54,7 @@ def convolve2d(
     mode: str = "full",
     boundary: str = "fill",
     fillvalue: float = 0.0,
-):
+) -> EagerValue:
     """Evaluate convolve2d operation.
 
     Args:
@@ -72,12 +73,15 @@ def convolve2d(
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
-        return Tensor(data, TensorConfig(data.shape, in1.dtype, in1.device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), in1.dtype, in1.device))
 
-    return _emit_signal_node(
-        "Convolve2d",
-        [in1, in2],
-        kwargs,
-        in1.shape,
-        in1.dtype,
+    return cast(
+        EagerValue,
+        cast("Callable[..., EagerTensorProtocol]", _emit_signal_node)(
+            "Convolve2d",
+            [in1, in2],
+            kwargs,
+            in1.shape,
+            in1.dtype,
+        ),
     )

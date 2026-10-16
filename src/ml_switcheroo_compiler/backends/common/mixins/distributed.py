@@ -1,7 +1,10 @@
 """Distributed AST Mixin."""
 
+from typing import cast
+
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
@@ -14,9 +17,9 @@ class DistributedASTVisitor(CommonASTVisitor):
         Args:
             generator: The generator instance.
         """
-        super().__init__(generator=generator)
+        getattr(super(), "__init__")(generator=generator)
 
-    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for the Send operation.
 
         Args:
@@ -27,7 +30,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         Returns:
             str: Generated code.
         """
-        target: int = int(node.attributes.get("target_stage", 0))
+        target: int = int(cast(int, node.attributes.get("target_stage", 0)))
         self.generator.code.append(f"    # Send tensor to pipeline stage {target}")
         gen_class_name = self.generator.__class__.__name__.replace("CodeGenerator", "").replace("Generator", "").lower()
         if gen_class_name == "numpy":
@@ -42,7 +45,7 @@ class DistributedASTVisitor(CommonASTVisitor):
             return f"keras.distribution.send({input_vars[0]}, target={target})"
         return f"send({input_vars[0]}, target={target})"
 
-    def visit_Recv(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Recv(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for the Recv operation.
 
         Args:
@@ -53,7 +56,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         Returns:
             str: Generated code.
         """
-        source: int = int(node.attributes.get("source_stage", 0))
+        source: int = int(cast(int, node.attributes.get("source_stage", 0)))
         shape = node.shape_metadata
         dtype: str = getattr(node, "dtype", "float32")
         self.generator.code.append(f"    # Recv tensor from pipeline stage {source}")

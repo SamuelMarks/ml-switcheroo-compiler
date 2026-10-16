@@ -1,10 +1,17 @@
-def test_reductions_init():
+"""Tests for test_init."""
+
+from __future__ import annotations
+
+
+def test_reductions_init() -> None:
+    """Test function test_reductions_init."""
     import ml_switcheroo_compiler.ops.reductions as red
 
     assert red.sum is not None
 
 
-def test_reductions_init_missing():
+def test_reductions_init_missing() -> None:
+    """Test function test_reductions_init_missing."""
     import importlib
     from unittest.mock import patch
 

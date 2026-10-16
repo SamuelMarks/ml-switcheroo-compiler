@@ -1,7 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Formatting utilities for backend code generators."""
 
 from dataclasses import dataclass
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 @dataclass
@@ -11,7 +12,7 @@ class FormatterContext:
     prefix: str
     op_type: str
     input_vars: list[str]
-    kwargs: dict[str, object]
+    kwargs: dict[str, EagerValue]
     axis_kwarg: str = "axis"
     keepdims_kwarg: str = "keepdims"
 
@@ -20,7 +21,7 @@ class OpFormatter:
     """Formatter for backend operation strings."""
 
     @staticmethod
-    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, object]) -> str:
+    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, EagerValue]) -> str:
         """Replace format placeholders with variables and kwargs.
 
         Args:
@@ -96,10 +97,10 @@ class FallbackHandler:
 
     @staticmethod
     def generate_fallback_code(
-        node: object,
+        node: EagerValue,
         input_vars: list[str],
         prefix: str,
-        **kwargs: object,
+        **kwargs: EagerValue,
     ) -> str:
         """Generate fallback code for an unsupported operation.
 

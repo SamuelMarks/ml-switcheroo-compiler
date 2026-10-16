@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Shape-Aware Rewriting Passes."""
 
 from __future__ import annotations

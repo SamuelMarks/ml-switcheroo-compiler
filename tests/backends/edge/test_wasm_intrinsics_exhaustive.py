@@ -1,5 +1,9 @@
 """Test WASM SIMD intrinsics coverage across operations."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
@@ -7,13 +11,16 @@ from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-def get_all_ops():
+
+def get_all_ops() -> EagerValue:
     """Extract all operations from the registry."""
     return list(OPS_REGISTRY.keys())
 
 
-def test_wasm_scalar_fallback_and_simd():
+def test_wasm_scalar_fallback_and_simd() -> None:
     """Test that UnimplementedMathError is NOT raised for operations that should have fallbacks/SIMD."""
     # Build a graph with one input
     graph = IRGraph()

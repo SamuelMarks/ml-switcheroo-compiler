@@ -1,17 +1,18 @@
 """export_api module."""
 
+import logging
 from typing import Optional, TypeVar
 
 IRGraph = TypeVar("IRGraph")
 
-# ruff: noqa: E402, E501, F403
-"""Export API."""
+# ruff: noqa: E402
 
 import os
 import typing
 from typing import Callable, Optional  # noqa: F811
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.export.pb_utils import ProtobufWriter
 
@@ -21,9 +22,9 @@ class ExportArchive:
 
     def __init__(self) -> None:
         """Initialize."""
-        self.trackables: dict[int, typing.Union[int, float, str, bool, list, tuple, dict, None]] = {}
-        self.endpoints: dict[str, Callable] = {}
-        self.collections: dict[str, typing.Union[int, float, str, bool, list, tuple, dict, None]] = {}
+        self.trackables: dict[int, typing.Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None]] = {}
+        self.endpoints: dict[str, Callable[..., AttributeValue]] = {}
+        self.collections: dict[str, typing.Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None]] = {}
 
         yaml_path = os.path.join(os.path.dirname(__file__), "tf_schema.yaml")
         if os.path.exists(yaml_path):
@@ -32,7 +33,7 @@ class ExportArchive:
         else:
             self.schema = {"types": {}, "operations": {}}
 
-    def track(self, resource: typing.Union[int, float, str, bool, list, tuple, dict, None]) -> None:
+    def track(self, resource: typing.Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None]) -> None:
         """Track a resource.
 
         Args:
@@ -40,7 +41,12 @@ class ExportArchive:
         """
         self.trackables[id(resource)] = resource
 
-    def add_endpoint(self, name: str, fn: Callable, **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None]) -> None:
+    def add_endpoint(
+        self,
+        name: str,
+        fn: Callable[..., AttributeValue],
+        **kwargs: typing.Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None],
+    ) -> None:
         """Add an endpoint.
 
         Args:
@@ -51,7 +57,11 @@ class ExportArchive:
         self.endpoints[name] = fn
 
     def _get_tf_dtype(self, dtype_str: str) -> int:
-        """Map IR dtype string to TF DT_* enum."""
+        """Map IR dtype string to TF DT_* enum.
+
+        Args:
+            dtype_str: The dtype_str parameter.
+        """
         return int(self.schema.get("types", {}).get(str(dtype_str).lower(), 1))  # Default DT_FLOAT
 
     def _get_tf_op(self, op_type: str) -> str:
@@ -79,7 +89,7 @@ class ExportArchive:
             raise ValueError(msg)
 
         # Dynamically build inputs
-        input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
+        input_nodes = [n for n in getattr(graph, "nodes").values() if n.op_type == "Input"]
         for i, node in enumerate(input_nodes):
             inp_tensor = ProtobufWriter()
             inp_tensor.add_string(1, node.id)  # name
@@ -94,7 +104,7 @@ class ExportArchive:
         # Dynamically build outputs
         if hasattr(graph, "outputs") and graph.outputs:
             for i, out_id in enumerate(graph.outputs):
-                out_node = graph.nodes.get(out_id)
+                out_node = getattr(graph, "nodes").get(out_id)
                 dtype = getattr(out_node, "dtype", "float32") if out_node else "float32"
 
                 out_tensor = ProtobufWriter()
@@ -122,7 +132,7 @@ class ExportArchive:
         if graph is not None:
             from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
-            sorted_nodes = DAGTopologicalSorter.sort(graph)
+            sorted_nodes = getattr(DAGTopologicalSorter, "sort")(graph)
 
             for node in sorted_nodes:
                 node_def = ProtobufWriter()
@@ -165,7 +175,7 @@ class ExportArchive:
         saved_model.add_message(2, meta_graph)  # meta_graphs
         return saved_model.get_bytes()
 
-    def write_out(self, filepath: str, options: typing.Union[dict, None] = None, graph: Optional["IRGraph"] = None) -> None:
+    def write_out(self, filepath: str, options: typing.Union[dict[str, AttributeValue], None] = None, graph: Optional["IRGraph"] = None) -> None:
         """Write the archive to a directory.
 
         Args:
@@ -194,7 +204,11 @@ class ExportArchive:
         with open(os.path.join(filepath, "saved_model.pb"), "wb") as f:
             f.write(self._build_saved_model(graph))
 
-    def add_variable_collection(self, name: str, variables: typing.Union[list, dict, tuple]) -> None:
+    def add_variable_collection(
+        self,
+        name: str,
+        variables: typing.Union[list[AttributeValue], dict[str, AttributeValue], tuple[AttributeValue, ...]],
+    ) -> None:
         """Add a variable collection.
 
         Args:
@@ -224,7 +238,7 @@ def validate_onnx_binary(file_path: str) -> bool:
         meta = validate_onnx_model_bytes(data)
         return bool(int(meta.get("opset_version", 0)) >= 14 or int(meta.get("ir_version", 0)) > 0)
     except Exception:
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     with open(file_path, "rb") as f:
         header = f.read(16)

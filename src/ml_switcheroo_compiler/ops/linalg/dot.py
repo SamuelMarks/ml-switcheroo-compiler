@@ -1,24 +1,68 @@
-"""Module dot.py."""
+"""Dot product operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from collections.abc import Sequence
+from typing import Callable, cast
 
-"""Dot product operations."""
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _has_valid_shape(obj) -> bool:
+def _has_valid_shape(obj: Tensor | Sequence[int] | None) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
-        obj (Any): The obj parameter.
+        obj: Target tensor or shape sequence.
 
     Returns:
         bool: Result.
     """
-    return hasattr(obj, "shape") and bool(obj.shape)
+    return hasattr(obj, "shape") and bool(getattr(obj, "shape"))
+
+
+def _extract_dot_operand_shape(obj: Tensor | Sequence[int] | None) -> tuple[int, ...]:
+    """Extract shape tuple from a tensor or shape sequence.
+
+    Args:
+        obj: Target tensor or shape sequence.
+
+    Returns:
+        tuple[int, ...]: Extracted shape tuple.
+    """
+    if hasattr(obj, "shape"):
+        return tuple(int(d) for d in getattr(obj, "shape"))
+    if hasattr(obj, "shape_metadata"):
+        sm = getattr(obj, "shape_metadata")
+        if sm:
+            return tuple(int(d) for d in sm)
+    if isinstance(obj, (list, tuple)):
+        return tuple(int(d) for d in obj)
+    return ()
+
+
+def _compute_dot_contraction_shape(shape_a: tuple[int, ...], shape_b: tuple[int, ...]) -> tuple[int, ...]:
+    """Compute contracted output shape for two operand shape tuples.
+
+    Args:
+        shape_a: Shape tuple of first operand.
+        shape_b: Shape tuple of second operand.
+
+    Returns:
+        tuple[int, ...]: Contracted output shape tuple.
+    """
+    ndim_a = len(shape_a)
+    ndim_b = len(shape_b)
+    if ndim_a == 0 or ndim_b == 0:
+        return shape_b if ndim_a == 0 else shape_a
+    if ndim_b == 1:
+        return () if ndim_a == 1 else shape_a[:-1]
+    if ndim_a == 1:
+        return shape_b[1:]
+    if ndim_a == 2 and ndim_b == 2:
+        return (shape_a[0], shape_b[1])
+    return shape_a[:-1] + shape_b[:-2] + (shape_b[-1],)
 
 
 @register_op("Dot")
@@ -28,7 +72,7 @@ class Dot(OpDef):
     Computes the dot product of two arrays
     """
 
-    def infer_shape(self, a=None, b=None, **kwargs) -> tuple[int, ...]:  # noqa: C901, PLR0911
+    def infer_shape(self, a: EagerValue = None, b: EagerValue = None, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer output shape for dot product following standard tensor contraction rules.
 
         Args:
@@ -44,56 +88,9 @@ class Dot(OpDef):
         if inp_a is None or inp_b is None:
             return ()
 
-        def _get_shape(obj: object) -> tuple[int, ...]:
-            """Extract shape tuple from object.
-
-            Args:
-                obj (object): Target tensor or shape.
-
-            Returns:
-                tuple[int, ...]: Extracted shape tuple.
-            """
-            if hasattr(obj, "shape"):
-                return tuple(int(d) for d in obj.shape)
-            if hasattr(obj, "shape_metadata"):
-                sm = obj.shape_metadata
-                if sm:
-                    return tuple(int(d) for d in sm)
-            if isinstance(obj, (list, tuple)):
-                return tuple(int(d) for d in obj)
-            return ()
-
-        shape_a = _get_shape(inp_a)
-        shape_b = _get_shape(inp_b)
-
-        ndim_a = len(shape_a)
-        ndim_b = len(shape_b)
-
-        # 0D scalar cases
-        if ndim_a == 0:
-            return shape_b
-        if ndim_b == 0:
-            return shape_a
-
-        # 1D x 1D -> 0D scalar
-        if ndim_a == 1 and ndim_b == 1:
-            return ()
-
-        # 2D x 2D -> 2D matrix multiplication (M, K) x (K, N) -> (M, N)
-        if ndim_a == 2 and ndim_b == 2:
-            return (shape_a[0], shape_b[1])
-
-        # ND x 1D -> sum-product over last axis of a and only axis of b: a[:-1]
-        if ndim_b == 1:
-            return shape_a[:-1]
-
-        # 1D x ND -> sum-product over first axis of b and only axis of a: b[1:]
-        if ndim_a == 1:
-            return shape_b[1:]
-
-        # ND x MD (N >= 2, M >= 2) -> sum-product over last axis of a and second-to-last axis of b:
-        # result shape is a[:-1] + b[:-2] + b[-1:]
-        return shape_a[:-1] + shape_b[:-2] + (shape_b[-1],)
+        shape_a = cast("Callable[..., tuple[int, ...]]", _extract_dot_operand_shape)(inp_a)
+        shape_b = cast("Callable[..., tuple[int, ...]]", _extract_dot_operand_shape)(inp_b)
+        return _compute_dot_contraction_shape(shape_a, shape_b)
 
 
 @register_op("DotGeneral")
@@ -105,7 +102,7 @@ class DotGeneral(OpDef):
 
     op_name = "DotGeneral"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -125,7 +122,7 @@ class DotGeneral(OpDef):
             res = broadcast_shapes(res, s)
         return res
 
-    def _compute_out_shape(self, lhs_shape, rhs_shape, dimension_numbers):
+    def _compute_out_shape(self, lhs_shape: EagerValue, rhs_shape: EagerValue, dimension_numbers: EagerValue) -> EagerValue:
         """Evaluate _compute_out_shape operation.
 
         Args:
@@ -136,13 +133,13 @@ class DotGeneral(OpDef):
         Returns:
             tuple: Result.
         """
-        contracting, batch = dimension_numbers
-        lhs_contracting, rhs_contracting = contracting
-        lhs_batch, rhs_batch = batch
+        contracting, batch = getattr(dimension_numbers, "__iter__")()
+        lhs_contracting, rhs_contracting = getattr(contracting, "__iter__")()
+        lhs_batch, rhs_batch = getattr(batch, "__iter__")()
 
-        out_shape = [lhs_shape[b] for b in lhs_batch]
-        out_shape.extend([lhs_shape[i] for i in range(len(lhs_shape)) if i not in lhs_contracting + lhs_batch])
-        out_shape.extend([rhs_shape[i] for i in range(len(rhs_shape)) if i not in rhs_contracting + rhs_batch])
+        out_shape = [getattr(lhs_shape, "__getitem__")(b) for b in getattr(lhs_batch, "__iter__")()]
+        out_shape.extend([getattr(lhs_shape, "__getitem__")(i) for i in range(getattr(lhs_shape, "__len__")()) if i not in getattr(lhs_contracting + lhs_batch, "__iter__")()])
+        out_shape.extend([getattr(rhs_shape, "__getitem__")(i) for i in range(getattr(rhs_shape, "__len__")()) if i not in getattr(rhs_contracting + rhs_batch, "__iter__")()])
 
         return tuple(out_shape)
 
@@ -154,7 +151,7 @@ class Tensordot(OpDef):
     Computes tensor dot product along specified axes.
     """
 
-    def infer_shape(self, a, b, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -174,7 +171,7 @@ class Inner(OpDef):
     Computes the inner product of two vectors or matrices.
     """
 
-    def infer_shape(self, a, b, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -194,7 +191,7 @@ class Outer(OpDef):
     Computes the outer product of two vectors.
     """
 
-    def infer_shape(self, a, b, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -207,7 +204,7 @@ class Outer(OpDef):
         return ()
 
 
-def _compute_pdot_shape(lhs_shape, rhs_shape):
+def _compute_pdot_shape(lhs_shape: tuple[int, ...], rhs_shape: tuple[int, ...]) -> tuple[int, ...]:
     """Evaluate _compute_pdot_shape operation.
 
     Args:
@@ -236,7 +233,7 @@ class Pdot(OpDef):
 
     op_name = "Pdot"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -246,14 +243,15 @@ class Pdot(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        lhs = args[0] if len(args) > 0 else None
-        rhs = args[1] if len(args) > 1 else None
-        lhs_shape = getattr(lhs, "shape", ())
-        rhs_shape = getattr(rhs, "shape", ())
+        del kwargs
+        lhs = args[0]
+        rhs = args[1]
+        lhs_shape = getattr(lhs, "shape", lhs if isinstance(lhs, tuple) else ())
+        rhs_shape = getattr(rhs, "shape", rhs if isinstance(rhs, tuple) else ())
         return _compute_pdot_shape(lhs_shape, rhs_shape)
 
 
-def pdot(*args, **kwargs):
+def pdot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate pdot operation.
 
     Args:

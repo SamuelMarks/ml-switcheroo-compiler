@@ -1,13 +1,15 @@
 """JAX backend profiler for runtime execution and memory benchmarking."""
 
+import logging
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, cast
 
 import jax
 import jax.numpy as jnp
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -41,8 +43,8 @@ def _extract_jax_peak_memory_mb() -> float:
                     peak_mem = float(stats["peak_bytes_in_use"]) / (1024.0 * 1024.0)
                 elif stats and "bytes_in_use" in stats:
                     peak_mem = float(stats["bytes_in_use"]) / (1024.0 * 1024.0)
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return peak_mem
 
 
@@ -66,7 +68,7 @@ def _prepare_jax_inputs(
     return jax_inputs_dict, list(jax_inputs_dict.values())
 
 
-def _sync_jax_result(result: Union[jax.Array, tuple[object, ...], list[object], dict[str, object], object]) -> None:
+def _sync_jax_result(result: Union[jax.Array, tuple[EagerValue, ...], list[EagerValue], dict[str, EagerValue], EagerValue]) -> None:
     """Force hardware device synchronization on all JAX leaf tensors using block_until_ready.
 
     Args:
@@ -79,22 +81,22 @@ def _sync_jax_result(result: Union[jax.Array, tuple[object, ...], list[object], 
                 if hasattr(leaf, "block_until_ready") and callable(leaf.block_until_ready):
                     leaf.block_until_ready()
             return
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if isinstance(result, dict):
         for val in result.values():
             _sync_jax_result(val)
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_jax_result(item)
-    elif hasattr(result, "block_until_ready") and callable(result.block_until_ready):
-        result.block_until_ready()
+    elif hasattr(result, "block_until_ready") and callable(getattr(result, "block_until_ready")):
+        getattr(result, "block_until_ready")()
 
 
 class JAXProfiler:
     """Provides genuine execution timing and peak memory profiling for JAX."""
 
-    def _compile_graph(self, graph: IRGraph) -> Callable[..., object]:
+    def _compile_graph(self, graph: IRGraph) -> Callable[..., EagerValue]:
         """Compile an IRGraph into an executable JAX callable.
 
         Args:
@@ -109,13 +111,13 @@ class JAXProfiler:
         from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
         code: str = JAXCodeGenerator(graph).generate()
-        ns: dict[str, object] = {}
+        ns: dict[str, EagerValue] = {}
         exec(code, ns)
         native_apply_model = ns.get("apply_model")
         if not callable(native_apply_model):
             raise TypeError("Failed to generate valid apply_model function from JAXCodeGenerator")
 
-        def _raw_forward_step(*args: jax.Array) -> object:
+        def _raw_forward_step(*args: jax.Array) -> EagerValue:
             """Evaluate forward step of graph on JAX backend natively.
 
             Args:
@@ -127,7 +129,7 @@ class JAXProfiler:
             return native_apply_model({}, *args)
 
         try:
-            return jax.jit(_raw_forward_step)
+            return cast("Callable[..., EagerValue]", jax.jit(_raw_forward_step))
         except Exception:
             return _raw_forward_step
 
@@ -176,9 +178,9 @@ class JAXProfiler:
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         jax_inputs_dict, _ = _prepare_jax_inputs(inputs)
         jax_input_list: list[jax.Array] = self._order_inputs(graph, jax_inputs_dict)
-        compiled_fn: Optional[Callable[..., object]] = self._compile_graph(graph) if has_ops else None
+        compiled_fn: Optional[Callable[..., EagerValue]] = self._compile_graph(graph) if has_ops else None
 
-        def _execute_step() -> object:
+        def _execute_step() -> EagerValue:
             """Execute a single forward evaluation step on JAX backend.
 
             Returns:

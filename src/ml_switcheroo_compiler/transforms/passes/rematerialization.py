@@ -1,14 +1,17 @@
 """Rematerialization pass."""
 
+from __future__ import annotations
+
 import os
 
 import yaml
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _load_rules():
+def _load_rules() -> dict[str, list[str] | dict[str, float | int]]:
     """Load rematerialization rules from YAML config.
 
     Returns:
@@ -41,7 +44,7 @@ def _estimate_memory(node: IRNode) -> float:
     return bytes_val
 
 
-def _estimate_compute(node: IRNode, rules) -> float:
+def _estimate_compute(node: IRNode, rules: EagerValue) -> float:
     """Estimate FLOPs of a node.
 
     Args:
@@ -58,12 +61,12 @@ def _estimate_compute(node: IRNode, rules) -> float:
     if isinstance(shape, (list, tuple)):
         for dim in shape:
             flops *= dim
-    if node.op_type in rules.get("high_cost_ops", []):
+    if node.op_type in getattr(rules, "get")("high_cost_ops", []):
         flops *= 100  # arbitrary higher cost
     return flops
 
 
-def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], node_indices: dict[str, int], rules) -> list[IRNode]:
+def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], node_indices: dict[str, int], rules: EagerValue) -> list[IRNode]:
     """Find nodes suitable for rematerialization.
 
     Args:
@@ -75,9 +78,9 @@ def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], nod
     Returns:
         list[IRNode]: List of nodes to rematerialize.
     """
-    target_ops = set(rules.get("target_ops", []))
-    min_mem = rules.get("thresholds", {}).get("min_memory_bytes", 1024 * 1024)
-    max_ratio = rules.get("thresholds", {}).get("max_compute_to_memory_ratio", 10.0)
+    target_ops = set(getattr(rules, "get")("target_ops", []))
+    min_mem = getattr(getattr(rules, "get")("thresholds", {}), "get")("min_memory_bytes", 1024 * 1024)
+    max_ratio = getattr(getattr(rules, "get")("thresholds", {}), "get")("max_compute_to_memory_ratio", 10.0)
 
     to_remat = []
     for n in nodes:

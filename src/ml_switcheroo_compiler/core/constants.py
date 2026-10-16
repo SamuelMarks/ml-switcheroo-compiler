@@ -1,12 +1,10 @@
-# ruff: noqa: E402, E501, F403
-"""Module constants.py."""
+"""Centralized domain constants for the ML Switcheroo Compiler."""
 
-"""Centralized constants for the ML Switcheroo Compiler."""
+from __future__ import annotations
 
-MAGIC_VAL_2 = 2
-MAGIC_VAL_3 = 3
-MAGIC_VAL_4 = 4
-MAGIC_VAL_5 = 5
-MAGIC_VAL_8 = 8
-MAGIC_VAL_10_0 = 10.0
-MAGIC_VAL_0_5 = 0.5
+BINARY_OP_ARITY: int = 2
+MATRIX_RANK: int = 2
+MIN_CONV_RANK: int = 3
+CONV_2D_TENSOR_RANK: int = 4
+CONV_3D_TENSOR_RANK: int = 5
+SAFETENSORS_HEADER_SIZE_BYTES: int = 8

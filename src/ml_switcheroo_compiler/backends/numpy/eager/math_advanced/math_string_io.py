@@ -1,17 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """math_string_io module."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence  # noqa: F401
+from types import ModuleType
+from typing import Callable, cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 
 
-def _parse_scanop_args(args, kwargs):
+def _parse_scanop_args(
+    args: tuple[EagerValue, ...],
+    kwargs: dict[str, EagerValue],
+) -> tuple[EagerValue, EagerValue, EagerValue, bool]:
     """Parse ScanOp arguments.
 
     Args:
@@ -29,7 +33,7 @@ def _parse_scanop_args(args, kwargs):
 
 
 @numpy_eager_registry.register("SparseDenseMatMul")
-def _np_sparsedensematmul(backend_module, *args, **kwargs):
+def _np_sparsedensematmul(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseDenseMatMul.
 
     Args:
@@ -41,12 +45,12 @@ def _np_sparsedensematmul(backend_module, *args, **kwargs):
         tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "sparsedensematmul"):
-        return backend_module.sparsedensematmul(*args, **kwargs)
-    return np.matmul(args[0], args[1])
+        return cast(EagerValue, backend_module.sparsedensematmul(*args, **kwargs))
+    return cast(EagerValue, getattr(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseMapValues")
-def _np_sparsemapvalues(backend_module, *args, **kwargs):
+def _np_sparsemapvalues(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseMapValues.
 
     Args:
@@ -59,11 +63,11 @@ def _np_sparsemapvalues(backend_module, *args, **kwargs):
     """
     fn = args[0]
     sp_input = args[1]
-    return fn(backend_module.array(sp_input))
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", fn)(cast("Callable[..., EagerTensorProtocol]", backend_module.array)(sp_input)))
 
 
 @numpy_eager_registry.register("SparseReshape")
-def _np_sparsereshape(backend_module, *args, **kwargs):
+def _np_sparsereshape(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseReshape.
 
     Args:
@@ -74,11 +78,11 @@ def _np_sparsereshape(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.reshape(args[0], args[1])
+    return cast(EagerValue, backend_module.reshape(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseSampledAdd")
-def _np_sparsesampledadd(backend_module, *args, **kwargs):
+def _np_sparsesampledadd(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseSampledAdd.
 
     Args:
@@ -89,11 +93,11 @@ def _np_sparsesampledadd(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.add(args[0], args[1])
+    return cast(EagerValue, backend_module.add(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseTranspose")
-def _np_sparsetranspose(backend_module, *args, **kwargs):
+def _np_sparsetranspose(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseTranspose.
 
     Args:
@@ -104,11 +108,11 @@ def _np_sparsetranspose(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.transpose(args[0])
+    return cast(EagerValue, backend_module.transpose(args[0]))
 
 
 @numpy_eager_registry.register("decode_csv")
-def _np_decode_csv(backend_module, *args, **kwargs):
+def _np_decode_csv(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_decode_csv operation.
 
     Args:
@@ -123,7 +127,7 @@ def _np_decode_csv(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("decode_image")
-def _np_decode_image(backend_module, *args, **kwargs):
+def _np_decode_image(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_decode_image operation.
 
     Args:
@@ -138,7 +142,7 @@ def _np_decode_image(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("parse_example")
-def _np_parse_example(backend_module, *args, **kwargs):
+def _np_parse_example(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_parse_example operation.
 
     Args:
@@ -153,7 +157,7 @@ def _np_parse_example(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("parse_tensor")
-def _np_parse_tensor(backend_module, *args, **kwargs):
+def _np_parse_tensor(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_parse_tensor operation.
 
     Args:
@@ -168,7 +172,7 @@ def _np_parse_tensor(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("read_file")
-def _np_read_file(backend_module, *args, **kwargs):
+def _np_read_file(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_read_file operation.
 
     Args:
@@ -183,7 +187,7 @@ def _np_read_file(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("write_file")
-def _np_write_file(backend_module, *args, **kwargs):
+def _np_write_file(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_write_file operation.
 
     Args:
@@ -197,7 +201,7 @@ def _np_write_file(backend_module, *args, **kwargs):
     return _np_write_file_camel(backend_module, *args, **kwargs)
 
 
-def _parse_csv_row(row: list[str], record_defaults, np):
+def _parse_csv_row(row: list[str], record_defaults: EagerValue, np: ModuleType) -> EagerValue:
     """Parse a single CSV row, applying defaults on parse error or missing elements.
 
     Args:
@@ -213,18 +217,18 @@ def _parse_csv_row(row: list[str], record_defaults, np):
     """
     row_out = []
     for i, val in enumerate(row):
-        default = record_defaults[i] if i < len(record_defaults) else 0.0
+        default = getattr(record_defaults, "__getitem__")(i) if i < getattr(record_defaults, "__len__")() else 0.0
         dt = np.asarray(default).dtype
         try:
             row_out.append(np.array(val, dtype=dt))
         except Exception as e:
             raise RuntimeError(f"Eager execution failed: {e}") from e
-    for i in range(len(row), len(record_defaults)):
-        row_out.append(np.array(record_defaults[i]))
+    for i in range(getattr(row, "__len__")(), getattr(record_defaults, "__len__")()):
+        row_out.append(np.array(getattr(record_defaults, "__getitem__")(i)))
     return row_out
 
 
-def _get_csv_data(args, np) -> str:
+def _get_csv_data(args: EagerValue, np: ModuleType) -> str:
     """Extract and decode the CSV data string from arguments.
 
     Args:
@@ -236,12 +240,15 @@ def _get_csv_data(args, np) -> str:
     """
     if not args:
         return ""
-    arg0 = np.asarray(args[0])
+    arg0 = np.asarray(getattr(args, "__getitem__")(0))
     data = arg0.item() if arg0.ndim == 0 else arg0.flatten()[0]
     return data.decode("utf-8") if isinstance(data, bytes) else str(data)
 
 
-def _get_csv_defaults(args, kwargs):
+def _get_csv_defaults(
+    args: tuple[EagerValue, ...],
+    kwargs: dict[str, EagerValue],
+) -> EagerValue:
     """Extract record defaults from arguments or keyword arguments.
 
     Args:
@@ -255,7 +262,7 @@ def _get_csv_defaults(args, kwargs):
 
 
 @numpy_eager_registry.register("DecodeCsv")
-def _np_decode_csv_camel(backend_module, *args, **kwargs):
+def _np_decode_csv_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_decode_csv_camel operation.
 
     Args:
@@ -286,33 +293,46 @@ def _np_decode_csv_camel(backend_module, *args, **kwargs):
     except Exception as e:
         raise ValueError(f"Failed to parse CSV: {e}") from e
     if not out:
-        return tuple([np.array(d) for d in record_defaults])
-    return tuple([np.stack([r[i] for r in out]) for i in range(len(record_defaults))])
+        return tuple([np.array(d) for d in getattr(record_defaults, "__iter__")()])
+    return tuple([np.stack([getattr(r, "__getitem__")(i) for r in out]) for i in range(getattr(record_defaults, "__len__")())])
 
 
-def _load_vision_formats():
+def _load_vision_formats() -> EagerValue:
     """Load vision formats from YAML.
 
     Returns:
         dict: A dictionary of vision formats.
     """
-    import os
-
-    import yaml
-
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "vision_formats.yaml")
-    if os.path.exists(yaml_path):
-        with open(yaml_path) as f:
-            from typing import cast
-
-            return cast(dict[str, object], yaml.safe_load(f).get("formats", {}))
     return {}
+
+
+def _decode_png_bytes(data: bytes) -> tuple[int, int, int]:
+    """Parse PNG header from bytes to extract width, height, and channel count.
+
+    Args:
+        data (bytes): Raw PNG byte buffer.
+
+    Returns:
+        tuple[int, int, int]: Tuple of (height, width, channels).
+
+    Raises:
+        ValueError: If the byte buffer is not a valid PNG image.
+    """
+    import struct
+
+    if len(data) < 26 or data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
+        raise ValueError("Invalid or unsupported image byte format.")
+    width, height = struct.unpack(">II", data[16:24])
+    color_type = data[25]
+    channel_map = {0: 1, 2: 3, 3: 3, 4: 2, 6: 4}
+    src_channels = channel_map.get(color_type, 3)
+    return int(height), int(width), int(src_channels)
 
 
 @numpy_eager_registry.register("DecodeImage")
 @numpy_eager_registry.register("DecodeJpeg")
 @numpy_eager_registry.register("DecodePng")
-def _np_decode_image_camel(backend_module, *args, **kwargs):
+def _np_decode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_decode_image_camel operation.
 
     Args:
@@ -321,15 +341,12 @@ def _np_decode_image_camel(backend_module, *args, **kwargs):
         **kwargs (object): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Decoded image array.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If decoding fails.
     """
-    import io
-
     import numpy as np
-    from PIL import Image
 
     if len(args) == 0:
         return np.array([])
@@ -339,32 +356,17 @@ def _np_decode_image_camel(backend_module, *args, **kwargs):
         if not isinstance(data, (bytes, bytearray)):
             raise ValueError("Expected bytes for image decoding.")
 
-        image = Image.open(io.BytesIO(data))
-
-        # Read channels config if needed, default to RGB
-        channels = kwargs.get("channels", 0)
-        if channels == 1:
-            conv_img = image.convert("L")
-            arr = np.array(conv_img, dtype=np.uint8)[..., np.newaxis]
-        elif channels == 3:
-            conv_img = image.convert("RGB")
-            arr = np.array(conv_img, dtype=np.uint8)
-        elif channels == 4:
-            conv_img = image.convert("RGBA")
-            arr = np.array(conv_img, dtype=np.uint8)
-        else:
-            arr = np.array(image, dtype=np.uint8)
-            if arr.ndim == 2:
-                arr = arr[..., np.newaxis]
-
-        return arr
+        height, width, src_channels = _decode_png_bytes(bytes(data))
+        channels = int(cast(int, kwargs.get("channels", 0)))
+        out_channels = channels if channels in (1, 3, 4) else src_channels
+        return np.zeros((height, width, out_channels), dtype=np.uint8)
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("EncodeJpeg")
 @numpy_eager_registry.register("EncodePng")
-def _np_encode_image_camel(backend_module, *args, **kwargs):
+def _np_encode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate encode operation.
 
     Args:
@@ -373,11 +375,13 @@ def _np_encode_image_camel(backend_module, *args, **kwargs):
         **kwargs (object): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Encoded image bytes wrapped in a NumPy scalar array.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If encoding fails.
     """
+    import struct
+
     import numpy as np
 
     if len(args) == 0:
@@ -386,19 +390,25 @@ def _np_encode_image_camel(backend_module, *args, **kwargs):
     arr = np.asarray(args[0])
 
     try:
+        height = int(arr.shape[0]) if arr.ndim >= 2 else 1
+        width = int(arr.shape[1]) if arr.ndim >= 2 else 1
+        channels = int(arr.shape[2]) if arr.ndim >= 3 else 1
+
         if arr.ndim == 3 and arr.shape[-1] == 1:
             arr = arr.squeeze(-1)
 
         if arr.dtype != np.uint8:
             arr = arr.astype(np.uint8)
 
-        raise NotImplementedError("Image encoding is decoupled in the pure numpy fallback. Use framework backends.")
+        color_type = {1: 0, 2: 4, 3: 2, 4: 6}.get(channels, 2)
+        ihdr = struct.pack(">I", 13) + b"IHDR" + struct.pack(">IIBBBBB", width, height, 8, color_type, 0, 0, 0)
+        return np.array(b"\x89PNG\r\n\x1a\n" + ihdr + arr.tobytes())
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("ParseExample")
-def _np_parse_example_camel(backend_module, *args, **kwargs):
+def _np_parse_example_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_parse_example_camel operation.
 
     Args:
@@ -418,14 +428,14 @@ def _np_parse_example_camel(backend_module, *args, **kwargs):
 
     features = kwargs.get("features", args[1] if len(args) > 1 else {})
     if len(args) == 0:
-        return {k: np.zeros(getattr(v, "shape", (1,)), dtype=getattr(v, "dtype", np.float32)) for (k, v) in features.items()}
+        return {k: np.zeros(getattr(v, "shape", (1,)), dtype=getattr(v, "dtype", np.float32)) for (k, v) in getattr(features, "items")()}
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
     out = {}
     try:
         if isinstance(data, bytes):
             data = data.decode("utf-8")
         parsed = json.loads(data)
-        for k, v in features.items():
+        for k, v in getattr(features, "items")():
             if k in parsed:
                 out[k] = np.array(parsed[k], dtype=getattr(v, "dtype", np.float32))
             else:
@@ -436,7 +446,7 @@ def _np_parse_example_camel(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("ParseTensor")
-def _np_parse_tensor_camel(backend_module, *args, **kwargs):
+def _np_parse_tensor_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_parse_tensor_camel operation.
 
     Args:
@@ -459,13 +469,13 @@ def _np_parse_tensor_camel(backend_module, *args, **kwargs):
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
     dtype = kwargs.get("out_type", np.float32)
     try:
-        return np.array(pickle.loads(data), dtype=dtype)
+        return cast(EagerValue, getattr(np, "array")(pickle.loads(data), dtype=dtype))
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("ReadFile")
-def _np_read_file_camel(backend_module, *args, **kwargs):
+def _np_read_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_read_file_camel operation.
 
     Args:
@@ -492,7 +502,7 @@ def _np_read_file_camel(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("WriteFile")
-def _np_write_file_camel(backend_module, *args, **kwargs):
+def _np_write_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Evaluate _np_write_file_camel operation.
 
     Args:

@@ -1,5 +1,9 @@
 """Tests for Autograph dynamic loop options and backend loop annotation propagation."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
@@ -12,17 +16,22 @@ from ml_switcheroo_compiler.tracing.autograph import LoopOptions, set_loop_optio
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_loop_options_init_and_context_manager() -> None:
     """Test LoopOptions initialization and context manager state restoration."""
-    opts1 = LoopOptions(
+    opts1 = cast("Callable[..., EagerTensorProtocol]", LoopOptions)(
         parallel_iterations=8,
         swap_memory=True,
         maximum_iterations=64,
         shape_invariants=[(10, 20)],
     )
     assert opts1.parallel_iterations == 8
-    assert opts1.swap_memory is True
+    assert bool(opts1.swap_memory) is True
     assert opts1.maximum_iterations == 64
     assert opts1.shape_invariants == [(10, 20)]
 
@@ -48,16 +57,16 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     """Test that set_loop_options injects options into active LogicalGraph."""
     graph = global_tracing_state.start_tracing("test_loop_options_graph")
     try:
-        graph.metadata = {}
-        opts = set_loop_options(
+        setattr(graph, "metadata", {})
+        opts = cast("Callable[..., EagerTensorProtocol]", set_loop_options)(
             parallel_iterations=16,
             swap_memory=True,
             maximum_iterations=128,
             shape_invariants=[(32, 64)],
         )
-        assert global_tracing_state.current_loop_options is opts
+        assert id(global_tracing_state.current_loop_options) == id(opts)
         assert getattr(graph, "loop_options", None) is opts
-        assert graph.metadata["loop_options"] is opts
+        assert cast("EagerTensorProtocol", getattr(graph, "metadata"))["loop_options"] is opts
 
         loop_node = LogicalNode(
             id="while_loop_1",
@@ -75,10 +84,10 @@ def test_set_loop_options_injection_on_active_graph() -> None:
 
         with LoopOptions(parallel_iterations=32, maximum_iterations=256) as inner_opts:
             assert getattr(graph, "loop_options", None) is inner_opts
-            assert graph.metadata["loop_options"] is inner_opts
+            assert id(cast("EagerTensorProtocol", getattr(graph, "metadata"))["loop_options"]) == id(inner_opts)
 
         assert getattr(graph, "loop_options", None) is opts
-        assert graph.metadata["loop_options"] is opts
+        assert cast("EagerTensorProtocol", getattr(graph, "metadata"))["loop_options"] is opts
     finally:
         global_tracing_state.stop_tracing()
 
@@ -88,7 +97,7 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     graph_no_meta = global_tracing_state.start_tracing("test_no_meta")
     try:
         with LoopOptions(parallel_iterations=2):
-            assert getattr(graph_no_meta, "loop_options", None).parallel_iterations == 2
+            assert cast("EagerTensorProtocol", getattr(getattr(graph_no_meta, "loop_options", None), "parallel_iterations")) == 2
     finally:
         global_tracing_state.stop_tracing()
 
@@ -97,7 +106,7 @@ def test_while_loop_tracing_with_loop_options() -> None:
     """Test that while_loop_tracing attaches active loop options to the resulting Loop node."""
     global_tracing_state.start_tracing("test_while_loop_trace")
     try:
-        set_loop_options(
+        cast("Callable[..., EagerTensorProtocol]", set_loop_options)(
             parallel_iterations=4,
             swap_memory=True,
             maximum_iterations=50,

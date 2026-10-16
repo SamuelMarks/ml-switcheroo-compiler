@@ -1,7 +1,12 @@
+"""Tests for test_state."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.state import AssignVariable, ReadVariable
 
 
-def test_state_infer_shape():
+def test_state_infer_shape() -> None:
+    """Test function test_state_infer_shape."""
     op1 = ReadVariable()
     assert op1.infer_shape(shape=(2, 3)) == (2, 3)
     assert op1.infer_shape() == ()

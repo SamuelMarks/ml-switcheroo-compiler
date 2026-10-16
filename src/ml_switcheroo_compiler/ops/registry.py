@@ -1,18 +1,16 @@
-"""Module registry.py."""
+"""Declarative and dynamic operation registry for the ML compiler."""
 
-# ruff: noqa: E402, E501, F403
-import typing
-from typing import Any, Callable
+from __future__ import annotations
 
-AnyType = typing.Union[int, float, str, bool, list, tuple, dict, None, type, typing.Callable]
+from collections.abc import Callable
+from typing import TypeVar
 
-import os  # noqa: F401
+from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.ops.base import OpDef
 
-import yaml  # noqa: F401
-
-_REGISTRY: dict[str, type] = {}
-_YAML_REGISTRY = {}
-_UTIL_REGISTRY = {}
+_REGISTRY: dict[str, type[OpDef]] = {}
+_YAML_REGISTRY: dict[str, dict[str, dict[str, dict[str, str]]]] = {}
+_UTIL_REGISTRY: dict[str, Callable[..., EagerValue]] = {}
 
 
 def _load_yaml_registry(force: bool = False) -> None:
@@ -29,35 +27,42 @@ def _load_yaml_registry(force: bool = False) -> None:
         from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
         _YAML_REGISTRY.clear()
-        _YAML_REGISTRY.update(OPS_REGISTRY)
+        getattr(_YAML_REGISTRY, "update")(OPS_REGISTRY)
 
 
-def register_op(name: str):
-    """Decorator to register a custom operation."""
+def register_op(name: str) -> Callable[[type], type]:
+    """Decorator to register a custom operation.
+
+    Args:
+        name (str): Canonical operation name.
+
+    Returns:
+        Callable[[type], type]: Class decorator registering the operation.
+    """
 
     def decorator(cls: type) -> type:
-        """Decorator function.
+        """Register the operation class under the given name.
 
         Args:
-        cls (Any): The cls parameter.
+            cls (type): The operation class to register.
 
         Returns:
-        Any: Result.
+            type: The registered operation class.
         """
         if name in _REGISTRY and _REGISTRY[name].__name__ != cls.__name__:
             raise ValueError(f"Operation {name} already registered")
-        cls.op_type = name
+        setattr(cls, "op_type", name)
         _REGISTRY[name] = cls
         return cls
 
     return decorator
 
 
-F = typing.TypeVar("F", bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., EagerValue])
 
 
 def register_util(name: str) -> Callable[[F], F]:
-    """Decorator to register a util.
+    """Decorator to register a utility function.
 
     Args:
         name (str): Identifier name for the utility function.
@@ -81,15 +86,35 @@ def register_util(name: str) -> Callable[[F], F]:
     return decorator
 
 
-def get_util(name: str):
-    """Get a util."""
+def get_util(name: str) -> Callable[..., EagerValue]:
+    """Retrieve a registered utility function by name.
+
+    Args:
+        name (str): Identifier of the utility function.
+
+    Returns:
+        Callable[..., EagerValue]: Registered utility callable.
+
+    Raises:
+        KeyError: If the utility function is not registered.
+    """
     if name not in _UTIL_REGISTRY:
         raise KeyError(f"Util {name} not found")
     return _UTIL_REGISTRY[name]
 
 
-def get_op(op_name: str) -> type:
-    """Retrieve an operation class by name."""
+def get_op(op_name: str) -> type[OpDef]:
+    """Retrieve an operation class by name.
+
+    Args:
+        op_name (str): Canonical operation name.
+
+    Returns:
+        type[OpDef]: Operation definition class.
+
+    Raises:
+        KeyError: If the operation is a non-math metadata type or is not found.
+    """
     from ml_switcheroo_compiler.diagnostics.types_registry import is_non_math_type
 
     if is_non_math_type(op_name):
@@ -101,12 +126,8 @@ def get_op(op_name: str) -> type:
     _load_yaml_registry(force=False)
 
     if op_name in _YAML_REGISTRY:
-        from ml_switcheroo_compiler.ops.base import OpDef
-
-        # Create dynamic OpDef class from yaml
         op_data = _YAML_REGISTRY[op_name]
 
-        # Build dynamic class purely from declarative schema data
         class DynamicOpDef(OpDef):
             """DynamicOpDef class synthesized declaratively."""
 
@@ -118,44 +139,37 @@ def get_op(op_name: str) -> type:
             invariants = op_data.get("invariants")
             autodiff = op_data.get("autodiff")
             variants = op_data.get("variants")
-            # attach data
             _yaml_data = op_data
 
             @classmethod
-            def get_yaml_data(cls):
-                """get_yaml_data function.
-
-                Args:
-                cls (Any): The cls parameter.
+            def get_yaml_data(cls) -> dict[str, dict[str, dict[str, str]]]:
+                """Return raw declarative registry dictionary for this operation.
 
                 Returns:
-                Any: Result.
+                    dict[str, dict[str, dict[str, str]]]: Raw YAML metadata dictionary.
                 """
                 return cls._yaml_data
 
-            def infer_shape(self, *args, **kwargs):
+            def infer_shape(self, *args: tuple[int, ...], **kwargs: int) -> tuple[int, ...]:
                 """Infer shape declaratively using declarative shape signatures.
 
                 Args:
-                    self (Any): The self parameter.
-                    *args (Any): Positional args.
-                    **kwargs (Any): Keyword args.
+                    *args (tuple[int, ...]): Input tensor shapes.
+                    **kwargs (int): Shape inference keyword parameters.
 
                 Returns:
-                    tuple: Result shape tuple.
+                    tuple[int, ...]: Inferred output shape tuple.
 
                 Raises:
                     ValueError: If input shapes violate the operation's declarative shape signature.
                 """
                 from ml_switcheroo_compiler.ops.shape_inference import infer_shape as _infer_shape
 
-                return _infer_shape(op_name, *args, **kwargs)
+                return tuple(int(x) if isinstance(x, int) else 0 for x in _infer_shape(op_name, *args, **kwargs))
 
-        # Give it a nice name
         DynamicOpDef.__name__ = op_name
         DynamicOpDef.__qualname__ = op_name
 
-        # Cache it
         _REGISTRY[op_name] = DynamicOpDef
         return DynamicOpDef
 
@@ -163,7 +177,11 @@ def get_op(op_name: str) -> type:
 
 
 def get_all_ops() -> dict[str, type]:
-    """Return all registered operations."""
+    """Return all registered operations.
+
+    Returns:
+        dict[str, type]: Mapping from operation name to operation class.
+    """
     _load_yaml_registry()
     for op_name in _YAML_REGISTRY:
         if op_name not in _REGISTRY:
@@ -174,39 +192,31 @@ def get_all_ops() -> dict[str, type]:
     return _REGISTRY
 
 
-# Alias for backwards compatibility
 get_op_class = get_op
 
-# Initialize on load
 _load_yaml_registry()
 
 
-# Expose backward compatibility aliases for tests that expect the old structure
 class _RegistryShim:
-    """_RegistryShim class."""
+    """Backward-compatible registry shim exposing generator mappings."""
 
-    def __init__(self, data) -> None:
-        """__init__ function.
+    def __init__(self, data: dict[str, dict[str, dict[str, dict[str, str]]]]) -> None:
+        """Initialize the registry shim.
 
         Args:
-        self (Any): The self parameter.
-        data (Any): The data parameter.
-
-        Returns:
-        Any: Result.
+            data (dict[str, dict[str, dict[str, dict[str, str]]]]): Operation registry dictionary.
         """
         self.operations = data
 
-    def get_generator_mapping(self, prefix: str, op_name: str):
-        """get_generator_mapping function.
+    def get_generator_mapping(self, prefix: str, op_name: str) -> str | None:
+        """Retrieve generator mapping for a backend prefix and operation name.
 
         Args:
-        self (Any): The self parameter.
-        prefix (Any): The prefix parameter.
-        op_name (Any): The op_name parameter.
+            prefix (str): Backend identifier prefix.
+            op_name (str): Operation name.
 
         Returns:
-        Any: Result.
+            str | None: Generator mapping format string if present.
         """
         op = self.operations.get(op_name, {})
         if not op:
@@ -216,19 +226,18 @@ class _RegistryShim:
         return backend.get("generator")
 
 
-backend_mapping_registry = _RegistryShim(_YAML_REGISTRY)
 _OP_REGISTRY = _REGISTRY
-_FRONTEND_REGISTRY = {}
+_FRONTEND_REGISTRY: dict[str, type] = {}
 
 
-def get_backend_mapping(op_name: str):
-    """get_backend_mapping function.
+def get_backend_mapping(op_name: str) -> dict[str, dict[str, str]]:
+    """Retrieve backend variants mapping for an operation.
 
     Args:
-        op_name (Any): The op_name parameter.
+        op_name (str): Canonical operation name.
 
     Returns:
-        Any: Result.
+        dict[str, dict[str, str]]: Mapping of backend variants for the operation.
     """
     op = _YAML_REGISTRY.get(op_name)
     if op:
@@ -236,28 +245,27 @@ def get_backend_mapping(op_name: str):
     return {}
 
 
-# Frontend registration
-_FRONTENDS = {}
+_FRONTENDS: dict[str, type] = {}
 
 
-def register_frontend(name: str):
-    """register_frontend function.
+def register_frontend(name: str) -> Callable[[type], type]:
+    """Decorator to register a frontend class.
 
     Args:
-        name (Any): The name parameter.
+        name (str): Frontend identifier name.
 
     Returns:
-        Any: Result.
+        Callable[[type], type]: Class decorator registering the frontend.
     """
 
-    def decorator(cls):
-        """Decorator function.
+    def decorator(cls: type) -> type:
+        """Register the frontend class under the given name.
 
         Args:
-        cls (Any): The cls parameter.
+            cls (type): Frontend class to register.
 
         Returns:
-        Any: Result.
+            type: The registered frontend class.
         """
         _FRONTENDS[name] = cls
         return cls
@@ -265,64 +273,35 @@ def register_frontend(name: str):
     return decorator
 
 
-def get_frontend(name: str):
-    """get_frontend function.
+def get_frontend(name: str) -> type | None:
+    """Retrieve a registered frontend class by name.
 
     Args:
-        name (Any): The name parameter.
+        name (str): Frontend identifier name.
 
     Returns:
-        Any: Result.
+        type | None: Registered frontend class.
+
+    Raises:
+        KeyError: If the frontend is not registered.
     """
     if name not in _FRONTENDS:
         raise KeyError(f"Frontend {name} not found")
     return _FRONTENDS.get(name)
 
 
-# Patch _RegistryShim
-class _RegistryShimFix:
-    """_RegistryShimFix class."""
+class _RegistryShimFix(_RegistryShim):
+    """Extended registry shim supporting both generator and eager mappings."""
 
-    def __init__(self, data) -> None:
-        """__init__ function.
-
-        Args:
-        self (Any): The self parameter.
-        data (Any): The data parameter.
-
-        Returns:
-        Any: Result.
-        """
-        self.operations = data
-
-    def get_generator_mapping(self, prefix: str, op_name: str):
-        """get_generator_mapping function.
+    def get_eager_mapping(self, prefix: str, op_name: str) -> str | None:
+        """Retrieve eager mapping for a backend prefix and operation name.
 
         Args:
-        self (Any): The self parameter.
-        prefix (Any): The prefix parameter.
-        op_name (Any): The op_name parameter.
+            prefix (str): Backend identifier prefix.
+            op_name (str): Operation name.
 
         Returns:
-        Any: Result.
-        """
-        op = self.operations.get(op_name, {})
-        if not op:
-            return None
-        variants = op.get("variants", {})
-        backend = variants.get(prefix, {})
-        return backend.get("generator")
-
-    def get_eager_mapping(self, prefix: str, op_name: str):
-        """get_eager_mapping function.
-
-        Args:
-        self (Any): The self parameter.
-        prefix (Any): The prefix parameter.
-        op_name (Any): The op_name parameter.
-
-        Returns:
-        Any: Result.
+            str | None: Eager mapping string if present.
         """
         op = self.operations.get(op_name, {})
         if not op:
@@ -331,18 +310,39 @@ class _RegistryShimFix:
         backend = variants.get(prefix, {})
         return backend.get("eager")
 
-    def get_op(self, op_name: str):
-        """get_op function.
+    def get_op(self, op_name: str) -> dict[str, dict[str, dict[str, str]]] | None:
+        """Retrieve raw operation entry from the registry.
 
         Args:
-        self (Any): The self parameter.
-        op_name (Any): The op_name parameter.
+            op_name (str): Operation name.
 
         Returns:
-        Any: Result.
+            dict[str, dict[str, dict[str, str]]] | None: Operation dictionary if found.
         """
         return self.operations.get(op_name)
 
 
 backend_mapping_registry = _RegistryShimFix(_YAML_REGISTRY)
-from ml_switcheroo_compiler.ops.base import OpDef  # noqa: F401
+
+__all__ = [
+    "OpDef",
+    "_FRONTEND_REGISTRY",
+    "_FRONTENDS",
+    "_OP_REGISTRY",
+    "_REGISTRY",
+    "_RegistryShim",
+    "_RegistryShimFix",
+    "_UTIL_REGISTRY",
+    "_YAML_REGISTRY",
+    "_load_yaml_registry",
+    "backend_mapping_registry",
+    "get_all_ops",
+    "get_backend_mapping",
+    "get_frontend",
+    "get_op",
+    "get_op_class",
+    "get_util",
+    "register_frontend",
+    "register_op",
+    "register_util",
+]

@@ -1,20 +1,25 @@
-"""Module eager.py."""
+"""Backend utilities."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-"""Backend utilities."""
 import builtins
+from types import ModuleType
+from typing import Callable, cast
 
 try:
     import mlx.core as mx
 except ImportError:
-    mx = None
+    mx = cast(ModuleType, None)
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, mlx_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    global_eager_registry,
+    mlx_eager_registry,
+)
 
 
-def _get_mlx_func(op_type: str):
+def _get_mlx_func(op_type: str) -> EagerValue:
     """Retrieve the corresponding MLX function for a given operation type.
 
     Args:
@@ -27,19 +32,18 @@ def _get_mlx_func(op_type: str):
     s1: str = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
     snake: str = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
     if snake == "mul":
-        snake: str = "multiply"
+        snake = "multiply"
     elif snake == "sub":
-        snake: str = "subtract"
+        snake = "subtract"
     elif snake == "div":
-        snake: str = "divide"
+        snake = "divide"
     for mod in [mx, getattr(mx, "linalg", None), getattr(mx, "fft", None)]:
         if mod is not None and hasattr(mod, snake):
-            return getattr(mod, snake)
+            return cast(EagerValue, getattr(mod, snake))
     return None
 
 
-# ruff: noqa: E402, E501, F403
-def execute_op(cls: type, op_type: str, *args, **kwargs):
+def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate execute_op operation.
 
     Args:
@@ -64,7 +68,7 @@ def execute_op(cls: type, op_type: str, *args, **kwargs):
         func = _get_mlx_func(op_type)
         if func is None:
             raise AttributeError(f"No attribute found for {op_type}")
-        return func(*args, **kwargs)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", func)(*args, **kwargs))
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -72,7 +76,7 @@ def execute_op(cls: type, op_type: str, *args, **kwargs):
 
 
 @mlx_eager_registry.register("Cast")
-def _mlx_cast(backend_module, *args, **kwargs):
+def _mlx_cast(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_cast operation.
 
     Args:
@@ -83,16 +87,16 @@ def _mlx_cast(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: str = args[0]
-    dtype_val: float = kwargs.get("dtype") if "dtype" in kwargs else args[1]
-    dtype: str = _resolve_dtype(backend_module, dtype_val)
+    tensor = args[0]
+    dtype_val = kwargs.get("dtype") if "dtype" in kwargs else args[1]
+    dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
         return tensor
-    return tensor.astype(dtype)
+    return cast(EagerValue, getattr(tensor, "astype")(dtype))
 
 
 @mlx_eager_registry.register("Relu")
-def _mlx_relu(backend_module, x, *args, **kwargs):
+def _mlx_relu(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate ReLU activation using MLX.
 
     Args:
@@ -107,13 +111,13 @@ def _mlx_relu(backend_module, x, *args, **kwargs):
     try:
         import mlx.nn as nn
 
-        return nn.relu(x)
+        return cast(EagerValue, getattr(nn, "relu")(x))
     except (ImportError, AttributeError):
-        return backend_module.maximum(x, 0)
+        return cast(EagerValue, backend_module.maximum(x, 0))
 
 
 @mlx_eager_registry.register("RaggedTensorToDense")
-def _mlx_ragged_tensor_to_dense(backend_module, rt_input, default_value=None, **kwargs):
+def _mlx_ragged_tensor_to_dense(backend_module: ModuleType, rt_input: EagerValue, default_value: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Convert a ragged tensor representation to a dense padded array using MLX.
 
     Args:
@@ -139,7 +143,7 @@ def _mlx_ragged_tensor_to_dense(backend_module, rt_input, default_value=None, **
             else:
                 padded_x = x
             padded.append(padded_x)
-        return backend_module.stack(padded, axis=0)
+        return cast(EagerValue, backend_module.stack(padded, axis=0))
 
     values = None
     row_splits = None
@@ -147,8 +151,8 @@ def _mlx_ragged_tensor_to_dense(backend_module, rt_input, default_value=None, **
         values = rt_input["values"]
         row_splits = rt_input["row_splits"]
     elif hasattr(rt_input, "values") and hasattr(rt_input, "row_splits"):
-        values = rt_input.values
-        row_splits = rt_input.row_splits
+        values = getattr(rt_input, "values")
+        row_splits = getattr(rt_input, "row_splits")
 
     if values is not None and row_splits is not None:
         num_rows = len(row_splits) - 1
@@ -171,14 +175,14 @@ def _mlx_ragged_tensor_to_dense(backend_module, rt_input, default_value=None, **
                 row_val = backend_module.concatenate([row_val, pad_arr], axis=0)
             rows.append(row_val)
         if rows:
-            return backend_module.stack(rows, axis=0)
-        return dense_tensor
+            return cast(EagerValue, backend_module.stack(rows, axis=0))
+        return cast(EagerValue, dense_tensor)
 
     return rt_input
 
 
 @mlx_eager_registry.register("TakeAlongAxis")
-def _mlx_take_along_axis(backend_module, *args, **kwargs):
+def _mlx_take_along_axis(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_take_along_axis operation.
 
     Args:
@@ -189,11 +193,11 @@ def _mlx_take_along_axis(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.take_along_axis(*args, **kwargs)
+    return cast(EagerValue, backend_module.take_along_axis(*args, **kwargs))
 
 
 @mlx_eager_registry.register("Take")
-def _mlx_take(backend_module, *args, **kwargs):
+def _mlx_take(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_take operation.
 
     Args:
@@ -204,11 +208,11 @@ def _mlx_take(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.take(*args, **kwargs)
+    return cast(EagerValue, backend_module.take(*args, **kwargs))
 
 
 @mlx_eager_registry.register("TensorScatterUpdate")
-def _mlx_tensor_scatter_update(backend_module, *args, **kwargs):
+def _mlx_tensor_scatter_update(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_tensor_scatter_update operation.
 
     Args:
@@ -220,14 +224,14 @@ def _mlx_tensor_scatter_update(backend_module, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: str = backend_module.array(tensor)
-    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res = backend_module.array(tensor)
+    idx: tuple[EagerValue, ...] = tuple(cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = updates
-    return res
+    return cast(EagerValue, res)
 
 
 @mlx_eager_registry.register("TensorScatterAdd")
-def _mlx_tensor_scatter_add(backend_module, *args, **kwargs):
+def _mlx_tensor_scatter_add(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement TensorScatterAdd.
 
     Args:
@@ -239,14 +243,14 @@ def _mlx_tensor_scatter_add(backend_module, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: str = backend_module.array(tensor)
-    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res = backend_module.array(tensor)
+    idx: tuple[EagerValue, ...] = tuple(cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = res[idx] + updates
-    return res
+    return cast(EagerValue, res)
 
 
 @mlx_eager_registry.register("TensorScatterMax")
-def _mlx_tensor_scatter_max(backend_module, *args, **kwargs):
+def _mlx_tensor_scatter_max(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement TensorScatterMax.
 
     Args:
@@ -260,14 +264,14 @@ def _mlx_tensor_scatter_max(backend_module, *args, **kwargs):
     mx = backend_module
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: str = backend_module.array(tensor)
-    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res = backend_module.array(tensor)
+    idx: tuple[EagerValue, ...] = tuple(cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = mx.maximum(res[idx], updates)
-    return res
+    return cast(EagerValue, res)
 
 
 @mlx_eager_registry.register("TensorScatterMin")
-def _mlx_tensor_scatter_min(backend_module, *args, **kwargs):
+def _mlx_tensor_scatter_min(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement TensorScatterMin.
 
     Args:
@@ -281,14 +285,14 @@ def _mlx_tensor_scatter_min(backend_module, *args, **kwargs):
     mx = backend_module
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: str = backend_module.array(tensor)
-    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res = backend_module.array(tensor)
+    idx: tuple[EagerValue, ...] = tuple(cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = mx.minimum(res[idx], updates)
-    return res
+    return cast(EagerValue, res)
 
 
 @mlx_eager_registry.register("ScatterNd")
-def _mlx_scatter_nd(backend_module, *args, **kwargs):
+def _mlx_scatter_nd(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_scatter_nd operation.
 
     Args:
@@ -301,22 +305,22 @@ def _mlx_scatter_nd(backend_module, *args, **kwargs):
     """
     indices = args[0]
     updates = args[1]
-    shape: tuple = args[2] if len(args) > 2 else kwargs.get("shape")
+    shape = args[2] if len(args) > 2 else kwargs.get("shape")
     if hasattr(shape, "data"):
-        shape: tuple = shape.data
+        shape = getattr(shape, "data")
     if hasattr(shape, "tolist"):
-        shape: tuple = shape.tolist()
+        shape = getattr(shape, "tolist")()
     if isinstance(shape, tuple):
-        shape: tuple = list(shape)
+        shape = list(shape)
     # Implement native MLX ScatterNd logic using array indexing
-    res: str = backend_module.zeros(shape, dtype=updates.dtype)
-    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res = backend_module.zeros(shape, dtype=getattr(updates, "dtype"))
+    idx: tuple[EagerValue, ...] = tuple(cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = updates
-    return res
+    return cast(EagerValue, res)
 
 
 @mlx_eager_registry.register("Reshape")
-def _mlx_reshape(backend_module, *args, **kwargs):
+def _mlx_reshape(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_reshape operation.
 
     Args:
@@ -327,14 +331,14 @@ def _mlx_reshape(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: tuple = kwargs.get("shape", args[1] if len(args) > 1 else kwargs.get("newshape"))
+    shape = kwargs.get("shape", args[1] if len(args) > 1 else kwargs.get("newshape"))
     if hasattr(shape, "data"):
-        shape: tuple = shape.data
+        shape = getattr(shape, "data")
     if hasattr(shape, "tolist"):
-        shape: tuple = shape.tolist()
+        shape = getattr(shape, "tolist")()
     if isinstance(shape, tuple):
-        shape: tuple = list(shape)
-    return backend_module.reshape(args[0] if "input" not in kwargs else kwargs["input"], shape)
+        shape = list(shape)
+    return cast(EagerValue, backend_module.reshape(args[0] if "input" not in kwargs else kwargs["input"], shape))
 
 
 _MLX_DTYPE_FALLBACK_MAP = {
@@ -344,7 +348,7 @@ _MLX_DTYPE_FALLBACK_MAP = {
 }
 
 
-def _resolve_dtype(backend_module, dtype_val):
+def _resolve_dtype(backend_module: ModuleType, dtype_val: EagerValue) -> EagerValue:
     """Resolve a given dtype object or string to a valid MLX dtype.
 
     Args:
@@ -356,16 +360,16 @@ def _resolve_dtype(backend_module, dtype_val):
     if dtype_val is None:
         return None
     dtype_str: str = str(dtype_val).split(".")[-1]
-    dtype: str = getattr(backend_module, dtype_str, dtype_val)
+    dtype: EagerValue = getattr(backend_module, dtype_str, dtype_val)
     if isinstance(dtype, str) and not hasattr(backend_module, dtype_str):
         for k, v in _MLX_DTYPE_FALLBACK_MAP.items():
             if k in dtype:
-                return getattr(backend_module, v)
+                return cast(EagerValue, getattr(backend_module, v))
     return dtype
 
 
 @mlx_eager_registry.register("Zeros")
-def _mlx_zeros(backend_module, *args, **kwargs):
+def _mlx_zeros(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_zeros operation.
 
     Args:
@@ -376,23 +380,23 @@ def _mlx_zeros(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: tuple = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
+    shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
-        shape: tuple = shape.data
-    dtype_val: float = kwargs.get("dtype", None)
-    dtype: str = _resolve_dtype(backend_module, dtype_val)
+        shape = getattr(shape, "data")
+    dtype_val = kwargs.get("dtype", None)
+    dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return backend_module.zeros(shape)
+        return cast(EagerValue, backend_module.zeros(shape))
     if isinstance(shape, (int, float)):
-        shape: tuple = (int(shape),)
+        shape = (int(shape),)
     try:
-        return backend_module.zeros(shape, dtype=dtype)
+        return cast(EagerValue, backend_module.zeros(shape, dtype=dtype))
     except TypeError:
-        return backend_module.zeros(shape)
+        return cast(EagerValue, backend_module.zeros(shape))
 
 
 @mlx_eager_registry.register("Ones")
-def _mlx_ones(backend_module, *args, **kwargs):
+def _mlx_ones(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_ones operation.
 
     Args:
@@ -403,23 +407,23 @@ def _mlx_ones(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: tuple = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
+    shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
-        shape: tuple = shape.data
-    dtype_val: float = kwargs.get("dtype", getattr(backend_module, "float32", None))
-    dtype: str = _resolve_dtype(backend_module, dtype_val)
+        shape = getattr(shape, "data")
+    dtype_val = kwargs.get("dtype", getattr(backend_module, "float32", None))
+    dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return backend_module.ones(shape)
+        return cast(EagerValue, backend_module.ones(shape))
     if isinstance(shape, (int, float)):
-        shape: tuple = (int(shape),)
+        shape = (int(shape),)
     try:
-        return backend_module.ones(shape, dtype=dtype)
+        return cast(EagerValue, backend_module.ones(shape, dtype=dtype))
     except TypeError:
-        return backend_module.ones(shape)
+        return cast(EagerValue, backend_module.ones(shape))
 
 
 @mlx_eager_registry.register("Full")
-def _mlx_full(backend_module, *args, **kwargs):
+def _mlx_full(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_full operation.
 
     Args:
@@ -430,24 +434,24 @@ def _mlx_full(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: tuple = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
+    shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
-        shape: tuple = shape.data
-    fill_value: float = kwargs.get("fill_value", args[1] if len(args) > 1 else 0)
-    dtype_val: float = kwargs.get("dtype", getattr(backend_module, "float32", None))
-    dtype: str = _resolve_dtype(backend_module, dtype_val)
+        shape = getattr(shape, "data")
+    fill_value = kwargs.get("fill_value", args[1] if len(args) > 1 else 0)
+    dtype_val = kwargs.get("dtype", getattr(backend_module, "float32", None))
+    dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return backend_module.full(shape, fill_value)
+        return cast(EagerValue, backend_module.full(shape, fill_value))
     if isinstance(shape, (int, float)):
-        shape: tuple = (int(shape),)
+        shape = (int(shape),)
     try:
-        return backend_module.full(shape, fill_value, dtype=dtype)
+        return cast(EagerValue, backend_module.full(shape, fill_value, dtype=dtype))
     except TypeError:
-        return backend_module.full(shape, fill_value)
+        return cast(EagerValue, backend_module.full(shape, fill_value))
 
 
 @mlx_eager_registry.register("Partition")
-def _parse_partition_k(k) -> int:
+def _parse_partition_k(k: EagerValue) -> int:
     """Parse k parameter for partition.
 
     Args:
@@ -457,13 +461,13 @@ def _parse_partition_k(k) -> int:
         int: Result.
     """
     if hasattr(k, "item"):
-        return int(k.item())
-    if hasattr(k, "data") and hasattr(k.data, "item"):
-        return int(k.data.item())
-    return int(k)
+        return int(getattr(k, "item")())
+    if hasattr(k, "data") and hasattr(getattr(k, "data"), "item"):
+        return int(getattr(k, "data").item())
+    return int(cast(int, k))
 
 
-def _mlx_partition(backend_module, *args, **kwargs):
+def _mlx_partition(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_partition operation.
 
     Args:
@@ -475,23 +479,23 @@ def _mlx_partition(backend_module, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     a = args[0]
-    k_raw: dict = kwargs.get("k", args[1] if len(args) > 1 else 1)
-    k: int = _parse_partition_k(k_raw)
+    k_raw = kwargs.get("k", args[1] if len(args) > 1 else 1)
+    k: int = int(cast(int, _parse_partition_k(k_raw)))
     return_indices = kwargs.get("return_indices", None)
-    kth: int = max(0, a.shape[-1] - k)
+    kth: int = max(0, getattr(a, "shape")[-1] - k)
     if return_indices is False:
         if hasattr(backend_module, "topk"):
-            return backend_module.topk(a, k)
-        return backend_module.partition(a, kth, axis=-1)[..., -k:]
+            return cast(EagerValue, backend_module.topk(a, k))
+        return cast(EagerValue, backend_module.partition(a, kth, axis=-1)[..., -k:])
     indices = backend_module.argpartition(a, kth, axis=-1)[..., -k:]
     if return_indices is True:
-        return indices
+        return cast(EagerValue, indices)
     values = backend_module.take_along_axis(a, indices, axis=-1)
     return (values, indices)
 
 
 @mlx_eager_registry.register("NanToNum")
-def _mlx_nan_to_num(backend_module, *args, **kwargs):
+def _mlx_nan_to_num(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_nan_to_num operation.
 
     Args:
@@ -502,22 +506,22 @@ def _mlx_nan_to_num(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    valid_kwargs: dict = {}
+    valid_kwargs: dict[str, float] = {}
     for key in ("nan", "posinf", "neginf"):
         if key in kwargs:
-            val: float = kwargs[key]
+            val: float = cast(float, kwargs[key])
             if hasattr(val, "item"):
-                val: float = float(val.item())
+                val = float(val.item())
             elif hasattr(val, "data") and hasattr(val.data, "item"):
-                val: float = float(val.data.item())
+                val = float(val.data.item())
             elif val is not None:
-                val: float = float(val)
+                val = float(val)
             valid_kwargs[key] = val
-    return backend_module.nan_to_num(*args, **valid_kwargs)
+    return cast(EagerValue, backend_module.nan_to_num(*args, **valid_kwargs))
 
 
 @mlx_eager_registry.register("Cummax")
-def _mlx_cummax(backend_module, *args, **kwargs):
+def _mlx_cummax(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_cummax operation.
 
     Args:
@@ -528,15 +532,15 @@ def _mlx_cummax(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: str = kwargs.pop("dtype", None)
+    dtype: str = cast(str, kwargs.pop("dtype", None))
     res: str = backend_module.cummax(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res: str = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
+        res = getattr(res, "astype")(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Cummin")
-def _mlx_cummin(backend_module, *args, **kwargs):
+def _mlx_cummin(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_cummin operation.
 
     Args:
@@ -547,15 +551,15 @@ def _mlx_cummin(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: str = kwargs.pop("dtype", None)
+    dtype: str = cast(str, kwargs.pop("dtype", None))
     res: str = backend_module.cummin(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res: str = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
+        res = getattr(res, "astype")(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Cumprod")
-def _mlx_cumprod(backend_module, *args, **kwargs):
+def _mlx_cumprod(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_cumprod operation.
 
     Args:
@@ -566,15 +570,15 @@ def _mlx_cumprod(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: str = kwargs.pop("dtype", None)
+    dtype: str = cast(str, kwargs.pop("dtype", None))
     res: str = backend_module.cumprod(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res: str = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
+        res = getattr(res, "astype")(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Slice")
-def _mlx_slice(backend_module, *args, **kwargs):
+def _mlx_slice(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_slice operation.
 
     Args:
@@ -586,17 +590,17 @@ def _mlx_slice(backend_module, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     a = args[0]
-    dim: int = kwargs.get("dim")
-    start = kwargs.get("start")
-    end = kwargs.get("end")
-    step = kwargs.get("step", 1)
-    sl: list = [builtins.slice(None)] * len(a.shape)
+    dim: int = int(cast(int, kwargs.get("dim", 0)))
+    start = cast("int | None", kwargs.get("start"))
+    end = cast("int | None", kwargs.get("end"))
+    step = cast("int | None", kwargs.get("step", 1))
+    sl: list[slice] = [builtins.slice(None)] * len(getattr(a, "shape"))
     sl[dim] = builtins.slice(start, end, step)
-    return a[tuple(sl)]
+    return cast(EagerValue, getattr(a, "__getitem__")(tuple(sl)))
 
 
 @mlx_eager_registry.register("Eye")
-def _mlx_eye(backend_module, *args, **kwargs):
+def _mlx_eye(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_eye operation.
 
     Args:
@@ -609,17 +613,17 @@ def _mlx_eye(backend_module, *args, **kwargs):
     """
     n_arg = args[0]
     if hasattr(n_arg, "data"):
-        n_arg = n_arg.data
+        n_arg = getattr(n_arg, "data")
     m_arg = args[1] if len(args) > 1 else None
     if hasattr(m_arg, "data"):
-        m_arg = m_arg.data
-    m_val: float = int(m_arg) if m_arg is not None else int(n_arg)
-    k_val: float = int(kwargs.get("k", 0))
-    return backend_module.eye(n=int(n_arg), m=m_val, k=k_val, dtype=getattr(backend_module, kwargs.get("dtype", "float32")))
+        m_arg = getattr(m_arg, "data")
+    m_val: float = int(cast(int, m_arg)) if m_arg is not None else int(cast(int, n_arg))
+    k_val: float = int(cast(int, kwargs.get("k", 0)))
+    return cast(EagerValue, getattr(backend_module, "eye")(n=int(cast(int, n_arg)), m=m_val, k=k_val, dtype=getattr(backend_module, getattr(kwargs, "get")("dtype", "float32"))))
 
 
 @mlx_eager_registry.register("Rope")
-def _mlx_rope(backend_module, x, **kwargs):
+def _mlx_rope(backend_module: ModuleType, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Apply Rotary Positional Encoding using MLX.
 
     Args:
@@ -630,16 +634,16 @@ def _mlx_rope(backend_module, x, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    dim: int = kwargs.get("dim")
-    base: float = kwargs.get("base", 10000.0)
-    offset: int = kwargs.get("offset", 0)
-    traditional: bool = kwargs.get("traditional", False)
-    scale: float = kwargs.get("scale", 1.0)
-    return mx.fast.rope(x, dim, traditional=traditional, base=base, scale=scale, offset=offset)
+    dim = kwargs.get("dim")
+    base: float = cast(float, kwargs.get("base", 10000.0))
+    offset: int = cast(int, kwargs.get("offset", 0))
+    traditional: bool = cast(bool, kwargs.get("traditional", False))
+    scale: float = cast(float, kwargs.get("scale", 1.0))
+    return cast(EagerValue, getattr(mx.fast, "rope")(x, dim, traditional=traditional, base=base, scale=scale, offset=offset))
 
 
 @mlx_eager_registry.register("Variance")
-def _mlx_variance(backend_module, *args, **kwargs):
+def _mlx_variance(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _mlx_variance operation.
 
     Args:
@@ -651,11 +655,11 @@ def _mlx_variance(backend_module, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     kwargs.setdefault("ddof", 0)
-    return backend_module.var(*args, **kwargs)
+    return cast(EagerValue, backend_module.var(*args, **kwargs))
 
 
 @mlx_eager_registry.register("AllReduce")
-def _mlx_all_reduce(backend_module, tensor, **kwargs):
+def _mlx_all_reduce(backend_module: ModuleType, tensor: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement AllReduce for MLX eager mode.
 
     Args:
@@ -668,12 +672,12 @@ def _mlx_all_reduce(backend_module, tensor, **kwargs):
     mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
-        return mx.distributed.all_sum(tensor)
+        return cast(EagerValue, mx.distributed.all_sum(tensor))
     return tensor
 
 
 @mlx_eager_registry.register("AllGather")
-def _mlx_all_gather(backend_module, tensor, **kwargs):
+def _mlx_all_gather(backend_module: ModuleType, tensor: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement AllGather for MLX eager mode.
 
     Args:
@@ -686,12 +690,12 @@ def _mlx_all_gather(backend_module, tensor, **kwargs):
     mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_gather"):
-        return mx.distributed.all_gather(tensor)
-    return mx.expand_dims(tensor, axis=0)
+        return cast(EagerValue, mx.distributed.all_gather(tensor))
+    return cast(EagerValue, mx.expand_dims(tensor, axis=0))
 
 
 @mlx_eager_registry.register("AllToAll")
-def _mlx_all_to_all(backend_module, tensor, **kwargs):
+def _mlx_all_to_all(backend_module: ModuleType, tensor: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement AllToAll for MLX eager mode.
 
     Args:
@@ -704,12 +708,118 @@ def _mlx_all_to_all(backend_module, tensor, **kwargs):
     mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_to_all"):
-        return mx.distributed.all_to_all(tensor)
+        return cast(EagerValue, mx.distributed.all_to_all(tensor))
     return tensor
 
 
+def _slice_scatter_chunk(tensor: EagerValue, scatter_dim: int, rank: int, world_size: int) -> EagerValue:
+    """Slice a tensor along scatter_dim for a given rank and world_size.
+
+    Args:
+        tensor (EagerValue): Input tensor to slice.
+        scatter_dim (int): Dimension along which to partition.
+        rank (int): Current rank index.
+        world_size (int): Total number of ranks.
+
+    Returns:
+        EagerValue: Sliced chunk for the specified rank.
+    """
+    t_arr = cast(EagerTensorProtocol, tensor)
+    dim_size = t_arr.shape[scatter_dim]
+    chunk_size = dim_size // world_size
+    start_idx = rank * chunk_size
+    end_idx = start_idx + chunk_size
+    slices = [slice(None)] * t_arr.ndim
+    slices[scatter_dim] = slice(start_idx, end_idx)
+    return t_arr[tuple(slices)]
+
+
+def _mlx_native_reduce_scatter(mx_mod: EagerValue, tensor: EagerValue, kwargs: dict[str, EagerValue]) -> EagerValue:
+    """Execute native MLX distributed all_sum followed by rank chunk slicing.
+
+    Args:
+        mx_mod (EagerValue): Loaded MLX module with distributed support.
+        tensor (EagerValue): Input tensor.
+        kwargs (dict[str, EagerValue]): Distributed options (group, scatter_dim).
+
+    Returns:
+        EagerValue: Reduced and scattered tensor slice.
+    """
+    mod = cast(ModuleType, mx_mod)
+    reduced = mod.distributed.all_sum(tensor)
+    group = cast(ModuleType, kwargs.get("group"))
+    try:
+        rank = group.rank() if group else (mod.distributed.init().rank() if hasattr(mod.distributed, "init") else 0)
+        world_size = group.size() if group else (mod.distributed.init().size() if hasattr(mod.distributed, "init") else 1)
+    except Exception:
+        rank = 0
+        world_size = 1
+
+    scatter_dim = int(cast(int, kwargs.get("scatter_dim", 0)))
+    return _slice_scatter_chunk(reduced, scatter_dim, rank, world_size)
+
+
+def _combine_ring_chunks(mx_mod: EagerValue, accum: EagerValue, peer_chunk: EagerValue, red_op: str) -> EagerValue:
+    """Combine two tensor chunks using the specified reduction operator.
+
+    Args:
+        mx_mod (EagerValue): Loaded MLX module or None.
+        accum (EagerValue): Running accumulator chunk.
+        peer_chunk (EagerValue): Incoming peer chunk.
+        red_op (str): Uppercase reduction operation name.
+
+    Returns:
+        EagerValue: Combined chunk result.
+    """
+    mod = cast(ModuleType, mx_mod)
+    acc_arr = cast(EagerTensorProtocol, accum)
+    peer_arr = cast(EagerTensorProtocol, peer_chunk)
+    if red_op in ("PROD", "PRODUCT", "MUL"):
+        return mod.multiply(acc_arr, peer_arr) if (mod and hasattr(mod, "multiply")) else (acc_arr * peer_arr)
+    if red_op == "MAX":
+        return mod.maximum(acc_arr, peer_arr) if (mod and hasattr(mod, "maximum")) else (acc_arr if bool(acc_arr >= peer_arr) else peer_arr)
+    if red_op == "MIN":
+        return mod.minimum(acc_arr, peer_arr) if (mod and hasattr(mod, "minimum")) else (acc_arr if bool(acc_arr <= peer_arr) else peer_arr)
+    return mod.add(acc_arr, peer_arr) if (mod and hasattr(mod, "add")) else (acc_arr + peer_arr)
+
+
+def _mlx_ring_reduce_scatter(
+    mx_mod: EagerValue,
+    all_ranks_data: list[EagerValue] | tuple[EagerValue, ...],
+    scatter_dim: int,
+    rank: int,
+    red_op: str,
+) -> EagerValue:
+    """Perform host-level ring reduce-scatter across all_ranks_data.
+
+    Args:
+        mx_mod (EagerValue): Loaded MLX module or None.
+        all_ranks_data (list[EagerValue] | tuple[EagerValue, ...]): Per-rank input tensors.
+        scatter_dim (int): Dimension to scatter along.
+        rank (int): Current rank index.
+        red_op (str): Uppercase reduction operator string.
+
+    Returns:
+        EagerValue: Accumulated chunk for the current rank.
+    """
+    num_ranks = len(all_ranks_data)
+    dim_size = getattr(all_ranks_data[0], "shape", [1])[scatter_dim]
+    chunk_size = dim_size // num_ranks
+    start = rank * chunk_size
+    end = start + chunk_size
+    slices = [slice(None)] * getattr(all_ranks_data[0], "ndim", 1)
+    slices[scatter_dim] = slice(start, end)
+
+    accum: EagerValue = cast(EagerTensorProtocol, all_ranks_data[rank])[tuple(slices)]
+    for step in range(1, num_ranks):
+        peer = (rank + step) % num_ranks
+        peer_chunk = cast(EagerTensorProtocol, all_ranks_data[peer])[tuple(slices)]
+        accum = _combine_ring_chunks(mx_mod, accum, peer_chunk, red_op)
+    return accum
+
+
 @mlx_eager_registry.register("ReduceScatter")
-def _mlx_reduce_scatter(backend_module, tensor, **kwargs):  # noqa: C901, PLR0915
+def _mlx_reduce_scatter(backend_module: ModuleType, tensor: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement ReduceScatter for MLX eager mode using native collectives or ring reduce-scatter fallback.
 
     Args:
@@ -720,77 +830,24 @@ def _mlx_reduce_scatter(backend_module, tensor, **kwargs):  # noqa: C901, PLR091
     Returns:
         object: The scattered reduced tensor.
     """
-    mx = backend_module
+    mx_mod = backend_module
 
-    # 1. Native distributed path via AllReduce + slicing
-    if mx is not None and hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
-        reduced = mx.distributed.all_sum(tensor)
+    if mx_mod is not None and hasattr(mx_mod, "distributed") and hasattr(mx_mod.distributed, "all_sum"):
+        return _mlx_native_reduce_scatter(mx_mod, tensor, kwargs)
 
-        # Get rank and world size to slice
-        group = kwargs.get("group")
-        try:
-            # Fallbacks if distributed isn't fully initialized
-            rank = group.rank() if group else (mx.distributed.init().rank() if hasattr(mx.distributed, "init") else 0)
-            world_size = group.size() if group else (mx.distributed.init().size() if hasattr(mx.distributed, "init") else 1)
-        except Exception:
-            rank = 0
-            world_size = 1
-
-        scatter_dim = kwargs.get("scatter_dim", 0)
-        dim_size = reduced.shape[scatter_dim]
-        chunk_size = dim_size // world_size
-
-        start_idx = rank * chunk_size
-        end_idx = start_idx + chunk_size
-
-        slices = [slice(None)] * reduced.ndim
-        slices[scatter_dim] = slice(start_idx, end_idx)
-        return reduced[tuple(slices)]
-
-    # 2. Host-level ring reduce-scatter collective fallback
     all_ranks_data = kwargs.get("all_ranks_data")
-    scatter_dim = int(kwargs.get("scatter_dim", 0))
+    scatter_dim = int(cast(int, kwargs.get("scatter_dim", 0)))
     red_op = str(kwargs.get("op_type", "SUM")).upper()
-    rank = int(kwargs.get("rank", 0))
+    rank = int(cast(int, kwargs.get("rank", 0)))
 
     if all_ranks_data:
-        P = len(all_ranks_data)
-        dim_size = getattr(all_ranks_data[0], "shape", [1])[scatter_dim]
-        chunk_size = dim_size // P
-        start = rank * chunk_size
-        end = start + chunk_size
-        slices = [slice(None)] * getattr(all_ranks_data[0], "ndim", 1)
-        slices[scatter_dim] = slice(start, end)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _mlx_ring_reduce_scatter)(mx_mod, all_ranks_data, scatter_dim, rank, red_op))
 
-        # Accumulate across all ranks in ring order
-        accum = all_ranks_data[rank][tuple(slices)]
-        for step in range(1, P):
-            peer = (rank + step) % P
-            peer_chunk = all_ranks_data[peer][tuple(slices)]
-            if red_op in ("SUM", "ADD"):
-                accum = mx.add(accum, peer_chunk) if (mx and hasattr(mx, "add")) else (accum + peer_chunk)
-            elif red_op in ("PROD", "PRODUCT", "MUL"):
-                accum = mx.multiply(accum, peer_chunk) if (mx and hasattr(mx, "multiply")) else (accum * peer_chunk)
-            elif red_op == "MAX":
-                accum = mx.maximum(accum, peer_chunk) if (mx and hasattr(mx, "maximum")) else (accum if accum >= peer_chunk else peer_chunk)
-            elif red_op == "MIN":
-                accum = mx.minimum(accum, peer_chunk) if (mx and hasattr(mx, "minimum")) else (accum if accum <= peer_chunk else peer_chunk)
-            else:
-                accum = mx.add(accum, peer_chunk) if (mx and hasattr(mx, "add")) else (accum + peer_chunk)
-
-        return accum
-
-    world_size = int(kwargs.get("world_size", 1))
+    world_size = int(cast(int, kwargs.get("world_size", 1)))
     if hasattr(tensor, "shape"):
         if world_size <= 1:
             return tensor
-        dim_size = tensor.shape[scatter_dim]
-        chunk_size = dim_size // world_size
-        start_idx = rank * chunk_size
-        end_idx = start_idx + chunk_size
-        slices = [slice(None)] * tensor.ndim
-        slices[scatter_dim] = slice(start_idx, end_idx)
-        return tensor[tuple(slices)]
+        return _slice_scatter_chunk(tensor, scatter_dim, rank, world_size)
 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 

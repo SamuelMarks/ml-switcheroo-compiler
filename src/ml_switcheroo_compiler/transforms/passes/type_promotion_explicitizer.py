@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module type_promotion_explicitizer.py."""
-
 """Type Promotion Explicitizer Pass."""
 
 import uuid
@@ -8,7 +5,7 @@ from typing import Optional
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -72,7 +69,7 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
     dtype_inference_pass(graph)
 
     for node in sorted_nodes:
-        if len(node.inputs) != MAGIC_VAL_2:
+        if len(node.inputs) != BINARY_OP_ARITY:
             continue
 
         in1, in2 = node.inputs

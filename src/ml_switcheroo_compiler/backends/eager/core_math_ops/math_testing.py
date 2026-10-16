@@ -1,16 +1,16 @@
-# ruff: noqa: E402, E501, F403
 """math_testing module."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import Any
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Allclose")
-def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _allclose(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _allclose operation.
 
     Args:
@@ -27,7 +27,7 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     atol = kwargs.get("atol", 1e-08) if hasattr(kwargs, "get") else 1e-08
     equal_nan = kwargs.get("equal_nan", False) if hasattr(kwargs, "get") else False
 
-    def _val(x: object) -> Any:
+    def _val(x: EagerValue) -> EagerValue:
         """Evaluate _val operation.
 
         Args:
@@ -37,21 +37,19 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
             object: Result.
         """
         x_data = getattr(x, "data", x)
-        if hasattr(x_data, "item") and callable(x_data.item):
-            return x_data.item()
+        if hasattr(x_data, "item") and callable(getattr(x_data, "item")):
+            return cast(EagerValue, getattr(x_data, "item")())
         if hasattr(x_data, "tolist"):
-            return x_data.tolist()
+            return cast(EagerValue, getattr(x_data, "tolist")())
         return x_data
 
     if hasattr(backend_module, "allclose"):
-        return backend_module.allclose(a, b, rtol=float(_val(rtol)), atol=float(_val(atol)), equal_nan=bool(_val(equal_nan)))
-    import numpy as np
-
-    return np.allclose(a, b, rtol=float(_val(rtol)), atol=float(_val(atol)), equal_nan=bool(_val(equal_nan)))
+        return cast(EagerValue, getattr(backend_module, "allclose")(a, b, rtol=float(cast(float, _val(rtol))), atol=float(cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
+    return cast(EagerValue, np.allclose(a, b, rtol=float(cast(float, _val(rtol))), atol=float(cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
 
 
 @global_eager_registry.register("ArrayEquiv")
-def _array_equiv(backend_module: Any, a1: object, a2: object, **kwargs: Any) -> Any:
+def _array_equiv(backend_module: EagerValue, a1: EagerValue, a2: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _array_equiv operation.
 
     Args:
@@ -63,11 +61,11 @@ def _array_equiv(backend_module: Any, a1: object, a2: object, **kwargs: Any) -> 
     Returns:
             object: Result.
     """
-    return backend_module.allclose(a1, a2) if hasattr(backend_module, "allclose") else True
+    return getattr(backend_module, "allclose")(a1, a2) if hasattr(backend_module, "allclose") else True
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: Any, condition: object, data: Any = None, summarize: int = 3, **kwargs: Any) -> Any:
+def _assert(backend_module: EagerValue, condition: EagerValue, data: EagerValue = None, summarize: int = 3, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _assert operation.
 
     Args:
@@ -83,8 +81,6 @@ def _assert(backend_module: Any, condition: object, data: Any = None, summarize:
     Raises:
         AssertionError: When condition evaluates to False.
     """
-    import numpy as np
-
     cond_arr = np.asarray(condition)
     if not np.all(cond_arr):
         node_id = kwargs.get("node_id", "AssertOp")
@@ -99,7 +95,7 @@ def _assert(backend_module: Any, condition: object, data: Any = None, summarize:
 
 
 @global_eager_registry.register("PromoteTypes")
-def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _promotetypes(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _promotetypes operation.
 
     Args:
@@ -110,11 +106,11 @@ def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.promote_types(*args, **kwargs)
+    return cast(EagerValue, getattr(backend_module, "promote_types")(*args, **kwargs))
 
 
 @global_eager_registry.register("ResultType")
-def _resulttype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _resulttype(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _resulttype operation.
 
     Args:
@@ -125,4 +121,4 @@ def _resulttype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.result_type(*args, **kwargs)
+    return cast(EagerValue, getattr(backend_module, "result_type")(*args, **kwargs))

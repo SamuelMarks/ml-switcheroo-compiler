@@ -1,17 +1,16 @@
-# ruff: noqa: E402, E501, F403
-"""Module base.py."""
+# ruff: noqa: E402
+"""Define base definitions for the operation registry."""
 
 from __future__ import annotations
 
-"""Define base definitions for the operation registry."""
-
-
 import functools
 import uuid
-from typing import Any, Callable, Optional, TypeVar  # noqa: F401
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, TypeVar, Union, cast  # noqa: F401
 
-from ml_switcheroo_ir import AttributeValue, LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -21,6 +20,7 @@ from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 # Global operation registry
 
 T = TypeVar("T", bound="OpDef")
+OpArgValue = EagerValue
 
 
 class OpDef:
@@ -31,51 +31,57 @@ class OpDef:
 
     op_type: str = "Unknown"
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        """Universal dispatcher for the operation.
+    if TYPE_CHECKING:
+        __call__: Callable[..., Tensor]
+        infer_shape: Callable[..., EagerValue]
+        eager_eval: Callable[..., EagerValue]
+    else:
 
-        Args:
-        *args: Positional args.
-        **kwargs: Keyword args.
+        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> Tensor:
+            """Universal dispatcher for the operation.
 
-        Returns:
-            Any: Result.
-        """
-        return dispatch_op(self.op_type, *args, **kwargs)
+            Args:
+                *args: Positional args.
+                **kwargs: Keyword args.
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...] | tuple[tuple[int, ...], ...] | str:
-        """infer_shape function.
+            Returns:
+                Tensor: Result.
+            """
+            return cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
 
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
+        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """infer_shape function.
 
-        Returns:
-            tuple[int, ...] | tuple[tuple[int, ...], ...] | str: Inferred output shape or tuple of output shapes.
-        """
-        return tuple()
+            Args:
+                args: Positional args.
+                kwargs: Keyword args.
 
-    def eager_eval(self, *args: Any, **kwargs: Any) -> Any:
-        """Evaluate eager_eval operation.
+            Returns:
+                tuple[int, ...] | tuple[tuple[int, ...], ...] | str | None: Inferred output shape or tuple of output shapes.
+            """
+            return tuple()
 
-        Args:
-        *args: Positional args.
-        **kwargs: Keyword args.
+        def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Evaluate eager_eval operation.
 
-        Returns:
-            Any: Result.
-        """
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+            Args:
+                *args: Positional args.
+                **kwargs: Keyword args.
 
-        backend = get_active_backend()
-        return backend.execute_op(self.op_type, *args, **kwargs)
+            Returns:
+                OpArgValue: Result.
+            """
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+            backend = get_active_backend()
+            return backend.execute_op(self.op_type, *args, **kwargs)
 
 
 def emit_ir_node(
-    graph: Any,
+    graph: LogicalGraph | None,
     op_type: str,
     inputs: list[str],
-    shape_metadata: Any | None = None,
+    shape_metadata: tuple[int | str, ...] | list[int | str] | None = None,
     attributes: dict[str, AttributeValue] | None = None,
 ) -> str:
     """Emit a new node into the IR graph directly.
@@ -107,7 +113,7 @@ def emit_ir_node(
     return nid
 
 
-def dispatch_eager(op_name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callable[..., OpArgValue]]:
     """Evaluate dispatch_eager operation.
 
     Args:
@@ -117,7 +123,7 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., Any]], Callable[...,
         Callable: Result.
     """
 
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(func: Callable[..., OpArgValue]) -> Callable[..., OpArgValue]:
         """Evaluate decorator operation.
 
         Args:
@@ -128,7 +134,7 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., Any]], Callable[...,
         """
 
         @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: OpArgValue, **kwargs: OpArgValue) -> OpArgValue:
             """Evaluate wrapper operation.
 
             Args:
@@ -151,11 +157,11 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., Any]], Callable[...,
                     return tuple(
                         Tensor(
                             backend.array(d),
-                            TensorConfig(backend.array(d).shape, getattr(d, "dtype", dtype), device),
+                            TensorConfig(getattr(backend.array(d), "shape"), getattr(d, "dtype", dtype), device),
                         )
                         for d in data
                     )
-                return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, dtype, device))
+                return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), dtype, device))
             return func(*args, **kwargs)
 
         return wrapper
@@ -171,4 +177,4 @@ __all__ = [
     "register_op",
 ]
 
-from ml_switcheroo_compiler.ops.registry import get_op, register_op  # noqa: E402
+from ml_switcheroo_compiler.ops.registry import get_op, register_op

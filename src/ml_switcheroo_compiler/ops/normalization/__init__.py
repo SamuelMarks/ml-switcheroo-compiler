@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Apply normalization operations package."""
 
 from ml_switcheroo_compiler.ops.base import get_op  # noqa: F401

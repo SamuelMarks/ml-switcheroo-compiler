@@ -1,6 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Ragged ops core."""
 
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,7 +12,7 @@ class RaggedDot(OpDef):
 
     op_name = "RaggedDot"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the RaggedDot operation.
 
         Args:
@@ -25,8 +27,8 @@ class RaggedDot(OpDef):
         if len(args) >= 2:
             a, b = args[0], args[1]
         else:
-            a = kwargs.get("rt_a", kwargs.get("a", args[0] if args else None))
-            b = kwargs.get("b", kwargs.get("weights", args[1] if len(args) > 1 else None))
+            a = cast(EagerTensorProtocol, kwargs.get("rt_a", kwargs.get("a", args[0] if args else None)))
+            b = cast(EagerTensorProtocol, kwargs.get("b", kwargs.get("weights", args[1] if len(args) > 1 else None)))
 
         if a is None:
             return ()

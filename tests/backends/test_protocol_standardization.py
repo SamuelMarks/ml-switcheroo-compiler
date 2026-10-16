@@ -1,6 +1,8 @@
 """Unit tests verifying adherence to standardized compiler eager and autodiff protocols."""
 
-from typing import Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union, cast
 
 import pytest
 
@@ -13,6 +15,9 @@ from ml_switcheroo_compiler.ops.eager_evaluator import (
     EvaluationContext,
     EvaluationStrategy,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class MockEagerTensor:
@@ -29,7 +34,7 @@ class MockEagerTensor:
         return self._shape
 
     @property
-    def dtype(self) -> object:
+    def dtype(self) -> EagerValue:
         """Get dtype."""
         return self._dtype
 
@@ -37,31 +42,31 @@ class MockEagerTensor:
         """Length of leading dim."""
         return self._shape[0]
 
-    def __getitem__(self, key: object) -> "MockEagerTensor":
+    def __getitem__(self, key: EagerValue) -> MockEagerTensor:
         """Get item."""
         return self
 
-    def __setitem__(self, key: object, value: object) -> None:
+    def __setitem__(self, key: EagerValue, value: EagerValue) -> None:
         """Set item."""
         pass
 
-    def __neg__(self) -> "MockEagerTensor":
+    def __neg__(self) -> MockEagerTensor:
         """Negation."""
         return self
 
-    def __add__(self, other: EagerValue) -> "MockEagerTensor":
+    def __add__(self, other: EagerValue) -> MockEagerTensor:
         """Addition."""
         return self
 
-    def __sub__(self, other: EagerValue) -> "MockEagerTensor":
+    def __sub__(self, other: EagerValue) -> MockEagerTensor:
         """Subtraction."""
         return self
 
-    def __mul__(self, other: EagerValue) -> "MockEagerTensor":
+    def __mul__(self, other: EagerValue) -> MockEagerTensor:
         """Multiplication."""
         return self
 
-    def __truediv__(self, other: EagerValue) -> "MockEagerTensor":
+    def __truediv__(self, other: EagerValue) -> MockEagerTensor:
         """Division."""
         return self
 
@@ -81,7 +86,7 @@ class MockEagerTensor:
         """Greater than or equal."""
         return True
 
-    def __pow__(self, other: EagerValue) -> "MockEagerTensor":
+    def __pow__(self, other: EagerValue) -> MockEagerTensor:
         """Exponentiation."""
         return self
 
@@ -97,7 +102,7 @@ class MockGradTensor:
         self._data = [1, 2, 3]
 
     @property
-    def dtype(self) -> object:
+    def dtype(self) -> EagerValue:
         """Get dtype."""
         return self._dtype
 
@@ -112,7 +117,7 @@ class MockGradTensor:
         return self._id
 
     @property
-    def data(self) -> object:
+    def data(self) -> EagerValue:
         """Get data."""
         return self._data
 
@@ -133,7 +138,7 @@ class MockInterpreterTensor:
         """Get shape."""
         return self._shape
 
-    def __getitem__(self, key: object) -> "MockInterpreterTensor":
+    def __getitem__(self, key: EagerValue) -> MockInterpreterTensor:
         """Get item."""
         return self
 
@@ -254,17 +259,17 @@ def test_custom_eager_eval_strategy() -> None:
 
     # Test base abstract evaluate method
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        EvaluationStrategy()  # type: ignore[abstract]
+        cast("Callable[..., EagerTensorProtocol]", EvaluationStrategy)()
 
     # Test instance passed as op_cls
-    ctx_inst = EvaluationContext(
-        op_cls=OpWithEagerEval(),  # instance rather than type
+    ctx_inst = cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(
+        op_cls=cast("Callable[..., EagerTensorProtocol]", OpWithEagerEval)(),  # instance rather than type
         op_type="Add",
         args=[10, 20],
         kwargs={},
         backend=DummyBackend,
     )
-    assert strategy.evaluate(ctx_inst) == 30
+    assert cast("Callable[..., EagerTensorProtocol]", strategy.evaluate)(ctx_inst) == 30
 
 
 def test_eager_evaluator_dispatch_and_packing() -> None:
@@ -284,7 +289,7 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
     class CustomOpClass:
         """Custom op class for testing strategy."""
 
-        def eager_eval(self, *args: object, **kwargs: object) -> None:
+        def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> None:
             """Eager eval."""
             pass
 
@@ -293,7 +298,7 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
 
     res = EagerEvaluator.evaluate("Add", t1, t2)
     assert isinstance(res, Tensor)
-    np.testing.assert_allclose(res.data, np.array([4.0, 6.0]))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res.data, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0, 6.0]))
 
     # Test packing multiple tuple outputs
     res_tuple = EagerEvaluator._pack_outputs((arr1, arr2), t1, "cpu")

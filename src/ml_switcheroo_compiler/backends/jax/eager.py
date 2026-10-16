@@ -1,7 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
 
-from typing import Callable  # noqa: F401
+from __future__ import annotations
+
+from typing import Callable, cast  # noqa: F401
 
 import jax.ops
 import jax.scipy.linalg
@@ -10,8 +11,10 @@ import jax.scipy.special
 import jax.scipy.special as jss
 import jax.scipy.stats
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def _execute_adaptive_avg_pool(operand: object, output_size: object) -> object:
+
+def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
     """_execute_adaptive_avg_pool function.
 
     Args:
@@ -29,7 +32,7 @@ def _execute_adaptive_avg_pool(operand: object, output_size: object) -> object:
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(output_size)
+        output_size_list = list(getattr(output_size, "__iter__")())
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -58,7 +61,7 @@ def _execute_adaptive_avg_pool(operand: object, output_size: object) -> object:
     return sum_pooled / float(window_area)
 
 
-def _execute_adaptive_max_pool(operand: object, output_size: object) -> object:
+def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
     """_execute_adaptive_max_pool function.
 
     Args:
@@ -76,7 +79,7 @@ def _execute_adaptive_max_pool(operand: object, output_size: object) -> object:
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(output_size)
+        output_size_list = list(getattr(output_size, "__iter__")())
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -96,7 +99,7 @@ def _execute_adaptive_max_pool(operand: object, output_size: object) -> object:
     return reduce_window(operand_arr, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID")
 
 
-def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
+def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_accumulate_n operation.
 
     Args:
@@ -109,16 +112,16 @@ def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
     Raises:
         ValueError: An exception.
     """
-    inputs: object = args[0] if len(args) > 0 else kwargs.get("inputs", [])
+    inputs = cast(list[EagerValue], args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res: object = inputs[0]
+    res: EagerValue = inputs[0]
     for i in range(1, len(inputs)):
-        res = res + inputs[i]
+        res = cast(EagerTensorProtocol, res) + cast(EagerTensorProtocol, inputs[i])
     return res
 
 
-def _execute_binom_cdf(*args: object, **kwargs: object) -> object:
+def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_binom_cdf operation.
 
     Args:
@@ -128,12 +131,12 @@ def _execute_binom_cdf(*args: object, **kwargs: object) -> object:
     Returns:
             object: Result.
     """
-    k, n, p = args[0], args[1], args[2]
-    loc: float = float(kwargs.get("loc", 0.0))
-    return jss.betainc(n - (k - loc), (k - loc) + 1, 1 - p)
+    k, n, p = cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]), cast(EagerTensorProtocol, args[2])
+    loc: float = float(cast(float, kwargs.get("loc", 0.0)))
+    return cast(EagerValue, getattr(jss, "betainc")(n - (k - loc), (k - loc) + 1, 1 - p))
 
 
-def _execute_bessel_jn(*args: object, **kwargs: object) -> object:
+def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_bessel_jn operation.
 
     Args:
@@ -143,10 +146,10 @@ def _execute_bessel_jn(*args: object, **kwargs: object) -> object:
     Returns:
             object: Result.
     """
-    return jax.scipy.special.bessel_jn(args[1], v=args[0])
+    return cast(EagerValue, jax.scipy.special.bessel_jn(args[1], v=args[0]))
 
 
-def _execute_unsorted_segment_sum(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_unsorted_segment_sum operation.
 
     Args:
@@ -156,10 +159,10 @@ def _execute_unsorted_segment_sum(*args: object, **kwargs: object) -> object:
     Returns:
             object: Result.
     """
-    return jax.ops.segment_sum(*args, **kwargs)
+    return cast(EagerValue, getattr(jax.ops, "segment_sum")(*args, **kwargs))
 
 
-def _execute_unsorted_segment_max(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_unsorted_segment_max operation.
 
     Args:
@@ -169,10 +172,10 @@ def _execute_unsorted_segment_max(*args: object, **kwargs: object) -> object:
     Returns:
             object: Result.
     """
-    return jax.ops.segment_max(*args, **kwargs)
+    return cast(EagerValue, getattr(jax.ops, "segment_max")(*args, **kwargs))
 
 
-def _execute_unsorted_segment_min(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_unsorted_segment_min operation.
 
     Args:
@@ -182,10 +185,10 @@ def _execute_unsorted_segment_min(*args: object, **kwargs: object) -> object:
     Returns:
             object: Result.
     """
-    return jax.ops.segment_min(*args, **kwargs)
+    return cast(EagerValue, getattr(jax.ops, "segment_min")(*args, **kwargs))
 
 
-def _execute_unsorted_segment_prod(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_unsorted_segment_prod operation.
 
     Args:
@@ -195,10 +198,10 @@ def _execute_unsorted_segment_prod(*args: object, **kwargs: object) -> object:
     Returns:
             object: Result.
     """
-    return jax.ops.segment_prod(*args, **kwargs)
+    return cast(EagerValue, getattr(jax.ops, "segment_prod")(*args, **kwargs))
 
 
-def _execute_variance(*args: object, **kwargs: object) -> object:
+def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_variance operation.
 
     Args:
@@ -211,10 +214,10 @@ def _execute_variance(*args: object, **kwargs: object) -> object:
     import jax.numpy as jnp
 
     kwargs.setdefault("ddof", 0)
-    return jnp.var(*args, **kwargs)
+    return cast(EagerValue, getattr(jnp, "var")(*args, **kwargs))
 
 
-def _execute_cast(*args: object, **kwargs: object) -> object:
+def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_cast operation.
 
     Args:
@@ -224,13 +227,13 @@ def _execute_cast(*args: object, **kwargs: object) -> object:
     Returns:
             object: Result.
     """
-    tensor: object = args[0]
-    dtype: object = kwargs.get("dtype") if "dtype" in kwargs else args[1]
+    tensor: EagerValue = args[0]
+    dtype: EagerValue = kwargs.get("dtype") if "dtype" in kwargs else args[1]
     dt_str: str = str(getattr(dtype, "value", dtype)).split(".")[-1]
     import jax.numpy as jnp
 
     if "int4" in dt_str:
-        dt: object = jnp.int8
+        dt: EagerValue = jnp.int8
     elif "bfloat16" in dt_str:
         dt = jnp.bfloat16
     elif "float16" in dt_str:
@@ -239,10 +242,10 @@ def _execute_cast(*args: object, **kwargs: object) -> object:
         dt = getattr(jnp, "float8_e4m3fn", jnp.float32)
     else:
         dt = getattr(jnp, dt_str, None)
-    return tensor.astype(dt)
+    return cast(EagerTensorProtocol, tensor).astype(dt)
 
 
-def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
+def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _execute_ragged_tensor_to_dense operation.
 
     Args:
@@ -254,12 +257,12 @@ def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
     """
     import jax.numpy as jnp
 
-    rt: object = args[0]
+    rt: EagerValue = args[0]
     # Check shape/type via duck typing since jnp.ndarray might be masked
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and hasattr(rt[0], "shape"):
         max_len: int = max(len(x) for x in rt)
-        padded: list[object] = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
-        return jnp.stack(padded)
+        padded: list[EagerValue] = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
+        return cast(EagerValue, getattr(jnp, "stack")(padded))
     return rt
 
 
@@ -366,7 +369,7 @@ _OP_DISPATCH = {
 }
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate execute_op operation.
 
     Args:
@@ -389,7 +392,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
 
         func_resolved = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
         if func_resolved:
-            return func_resolved(*args, **kwargs)
+            return cast(Callable[..., EagerValue], func_resolved)(*args, **kwargs)
     import jax.numpy as jnp
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -416,7 +419,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
             func = getattr(mod, snake)
             break
     if func is not None:
-        return func(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

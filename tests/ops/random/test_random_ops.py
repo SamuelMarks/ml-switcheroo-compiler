@@ -1,3 +1,9 @@
+"""Tests for test_random_ops."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 from unittest.mock import patch
 
@@ -52,11 +58,19 @@ from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
 from ml_switcheroo_compiler.ops.random_ops.frontend import sobol_sample
 from ml_switcheroo_compiler.ops.random_ops.sobol import SobolSample, generate_sobol
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_random_ops_coverage():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_random_ops_coverage() -> None:
+    """Test function test_random_ops_coverage."""
     config.eager_mode = True
 
     class DummyShape:
+        """Test class DummyShape."""
+
         shape = (1, 2)
 
     ops = [
@@ -125,8 +139,8 @@ def test_random_ops_coverage():
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value="dispatched_rademacher"):
         assert rademacher(5) == "dispatched_rademacher"
 
-    assert RngBitGenerator().infer_shape(1, (1, 2), "float32") == (1, 2)
-    assert RngUniform().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", RngBitGenerator)().infer_shape(1, (1, 2), "float32") == (1, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", RngUniform)().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
     assert SobolSample().infer_shape(2, 10, skip=0) == (10, 2)
 
     assert generate_sobol(2, 10, 0).shape == (10, 2)
@@ -141,13 +155,16 @@ def test_random_ops_coverage():
         global_tracing_state.is_tracing = True
 
         class DummyGraph:
-            name = "dummy"
-            nodes = {}
+            """Test class DummyGraph."""
 
-            def add_node(self, node):
+            name = "dummy"
+            nodes = cast("dict[str, EagerTensorProtocol]", {})
+
+            def add_node(self, node: EagerValue) -> None:
+                """Test function add_node."""
                 pass
 
-        global_tracing_state.active_graph = DummyGraph()
+        setattr(global_tracing_state, "active_graph", DummyGraph())
 
         assert sobol_sample(2, 10, 0) is not None
 

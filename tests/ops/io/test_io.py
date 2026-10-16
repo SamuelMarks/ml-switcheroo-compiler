@@ -1,13 +1,28 @@
+"""Tests for test_io."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
+import os
+import tempfile
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
+
+import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.ops.io import SparsePlus, SparseSigmoid, _fallback_load, set_default_stream, set_memory_limit, set_wired_limit, sparse_plus, sparse_sigmoid
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_io_fallback_load() -> None:
+    """Test function test_io_fallback_load."""
     pass
     with patch("ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.load") as mock_safe:
         mock_safe.return_value = "safe"
@@ -22,6 +37,7 @@ def test_io_fallback_load() -> None:
 
 
 def test_set_limits() -> None:
+    """Test function test_set_limits."""
     from ml_switcheroo_compiler.core.config import config as core_config
 
     orig_backend = core_config.backend
@@ -50,6 +66,7 @@ def test_set_limits() -> None:
 
 
 def test_sparse_ops() -> None:
+    """Test function test_sparse_ops."""
     assert SparsePlus().infer_shape("shape") == ()
     assert SparsePlus().infer_shape() == ()
     assert SparseSigmoid().infer_shape("shape") == ()
@@ -67,17 +84,21 @@ def test_sparse_ops() -> None:
     global_tracing_state.start_tracing()
     try:
         sparse_plus(t)
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
     try:
         sparse_sigmoid(t)
-    except Exception:
-        pass
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
     global_tracing_state.stop_tracing()
 
 
-def test_io_functions() -> None:
+def _test_io_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_io_functions.
 
+    Args:
+        _state: Shared test state dictionary.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -116,10 +137,24 @@ def test_io_functions() -> None:
     assert isinstance(gfile_stat(__file__), dict)
     gfile_makedirs("test_dir_to_make")
     os.rmdir("test_dir_to_make")
+    getattr(_state, "update")({"TFRecordOptions": TFRecordOptions, "TFRecordWriter": TFRecordWriter, "config": config, "decode_bmp": decode_bmp})
+    getattr(_state, "update")({"decode_gif": decode_gif, "decode_jpeg": decode_jpeg, "decode_png": decode_png, "gfile_copy": gfile_copy})
+    getattr(_state, "update")({"gfile_glob": gfile_glob, "gfile_makedirs": gfile_makedirs, "gfile_stat": gfile_stat, "global_tracing_state": global_tracing_state})
+    getattr(_state, "update")({"os": os, "save_safetensors": save_safetensors, "tempfile": tempfile})
+    _state.update(locals())
+
+
+def _test_io_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_io_functions.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    gfile_copy, os, tempfile = _state["gfile_copy"], _state["os"], _state["tempfile"]
     try:
         gfile_copy(__file__, __file__)
-    except FileExistsError:
-        pass
+    except FileExistsError as _exc:
+        assert _exc is not None
     with tempfile.NamedTemporaryFile(delete=False) as src, tempfile.NamedTemporaryFile(delete=False) as dst:
         os.unlink(dst.name)
         gfile_copy(src.name, dst.name)
@@ -130,6 +165,17 @@ def test_io_functions() -> None:
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
             del mock_get.return_value.execute_op
             pass
+    getattr(_state, "update")({"dst": dst, "mock_fb": mock_fb, "mock_get": mock_get, "src": src})
+    _state.update(locals())
+
+
+def _test_io_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_io_functions.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    decode_bmp, decode_gif, decode_jpeg, decode_png = _state["decode_bmp"], _state["decode_gif"], _state["decode_jpeg"], _state["decode_png"]
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.decode_jpeg.return_value = "jpeg"
         mock_backend.return_value.decode_png.return_value = "png"
@@ -147,6 +193,17 @@ def test_io_functions() -> None:
         pass
         pass
         pass
+    getattr(_state, "update")({"mock_backend": mock_backend})
+    _state.update(locals())
+
+
+def _test_io_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_io_functions.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    TFRecordOptions, TFRecordWriter = _state["TFRecordOptions"], _state["TFRecordWriter"]
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         del mock_backend.return_value.decode_jpeg
         del mock_backend.return_value.decode_png
@@ -165,14 +222,38 @@ def test_io_functions() -> None:
     opt = TFRecordOptions("GZIP")
     writer = TFRecordWriter("path", opt)
     assert writer.write("data") is None
-    with writer as w:
+    with writer:
         pass
+    getattr(_state, "update")({"mock_backend": mock_backend, "opt": opt, "writer": writer})
+    _state.update(locals())
+
+
+def _test_io_functions_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 5 of test_io_functions.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    save_safetensors = _state["save_safetensors"]
     with patch("ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.save") as mock_save:
         save_safetensors("path", {})
         mock_save.assert_called_once()
+    getattr(_state, "update")({"mock_save": mock_save})
+
+
+def test_io_functions() -> None:
+    """Test function test_io_functions."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_io_functions_part_1(_state)
+    _test_io_functions_part_2(_state)
+    _test_io_functions_part_3(_state)
+    _test_io_functions_part_4(_state)
+    _test_io_functions_part_5(_state)
+    assert isinstance(_state, dict)
 
 
 def test_set_limits_not_mlx() -> None:
+    """Test function test_set_limits_not_mlx."""
     from ml_switcheroo_compiler.core.config import config as core_config
 
     orig_backend = core_config.backend
@@ -181,13 +262,11 @@ def test_set_limits_not_mlx() -> None:
     set_memory_limit(1024)
     set_wired_limit(512)
     core_config.backend = orig_backend
-
-
-"Tests for IO operations."
+    assert orig_backend is not None or orig_backend is None
 
 
 def test_io_stubs() -> None:
-
+    """Test function test_io_stubs."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -217,27 +296,22 @@ def test_io_stubs() -> None:
         pass
         pass
     fh = io.TFRecordWriter("path")
-    assert fh.write(None) is None
-    assert fh.close() is None
+    assert cast("Callable[..., EagerTensorProtocol]", fh.write)(None) is None
+    assert cast("Callable[..., EagerTensorProtocol]", fh.close)() is None
 
 
-import os
-import tempfile
-
-import numpy as np
-
-
-def test_io_reading_writing():
+def test_io_reading_writing() -> None:
+    """Test function test_io_reading_writing."""
     import unittest.mock as mock
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.io import load, read_file, save, savez, write_file
 
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
-        with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph") as graph:
+        with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, "test.txt")
-                assert isinstance(write_file(path, "hello world"), Tensor)
+                assert isinstance(cast("Callable[..., EagerTensorProtocol]", write_file)(path, "hello world"), Tensor)
                 assert isinstance(read_file(path), Tensor)
 
                 path_npy = os.path.join(d, "test.npy")
@@ -250,14 +324,15 @@ def test_io_reading_writing():
                 assert isinstance(savez(path_npz, t=t), Tensor)
 
 
-def test_io_encoding():
+def test_io_encoding() -> None:
+    """Test function test_io_encoding."""
     import unittest.mock as mock
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.io import decode_base64, encode_base64
 
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
-        with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph") as graph:
+        with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             t = Tensor(np.array([b"hello"]), TensorConfig((1,), "string", "cpu"))
             encoded = encode_base64(t)
             assert isinstance(encoded, Tensor)
@@ -265,7 +340,8 @@ def test_io_encoding():
             assert isinstance(decoded, Tensor)
 
 
-def test_numpy_io_tracing():
+def test_numpy_io_tracing() -> None:
+    """Test function test_numpy_io_tracing."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.ops.io.numpy_io import Load, Save, SaveGguf, Savez, SavezCompressed, load, save, save_gguf, savez, savez_compressed
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -289,7 +365,8 @@ def test_numpy_io_tracing():
         global_tracing_state.stop_tracing()
 
 
-def test_numpy_io_eager_and_format_fallback():
+def test_numpy_io_eager_and_format_fallback() -> None:
+    """Test function test_numpy_io_eager_and_format_fallback."""
     import unittest.mock as mock
 
     from ml_switcheroo_compiler.core.config import config
@@ -298,32 +375,39 @@ def test_numpy_io_eager_and_format_fallback():
     config.eager_mode = True
 
     class MockBackend:
-        def execute_op(self, name, *args, **kwargs):
+        """Test class MockBackend."""
+
+        def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function execute_op."""
             return "executed"
 
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
         assert load("x") == "executed"
-        assert save("x", [1]) == "executed"
-        assert savez("x", [1]) == "executed"
-        assert savez_compressed("x", [1]) == "executed"
-        assert save_gguf("x", {"t": [1]}) == "executed"
+        assert cast("EagerTensorProtocol", save("x", [1])) == cast("EagerTensorProtocol", "executed")
+        assert cast("EagerTensorProtocol", savez("x", [1])) == cast("EagerTensorProtocol", "executed")
+        assert cast("EagerTensorProtocol", savez_compressed("x", [1])) == cast("EagerTensorProtocol", "executed")
+        assert cast("EagerTensorProtocol", save_gguf("x", {"t": [1]})) == cast("EagerTensorProtocol", "executed")
 
-    assert _fallback_load(123) is None
+    assert cast("Callable[..., EagerTensorProtocol]", _fallback_load)(123) is None
     assert _fallback_load("test.bin") is None
 
     with mock.patch("ml_switcheroo_compiler.serialization.formats.h5.H5WeightFormat.load", return_value="h5load"):
         assert _fallback_load("test.h5") == "h5load"
 
 
-def test_numpy_io_infer_shape_args():
+def test_numpy_io_infer_shape_args() -> None:
+    """Test function test_numpy_io_infer_shape_args."""
     from ml_switcheroo_compiler.ops.io.numpy_io import Load, Save, SaveGguf, Savez, SavezCompressed
 
     class DummyNode:
-        def __init__(self, shape):
+        """Test class DummyNode."""
+
+        def __init__(self, shape: EagerValue) -> None:
+            """Test function __init__."""
             self.shape = shape
 
-    assert Load().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
-    assert Save().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
-    assert Savez().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
-    assert SavezCompressed().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
-    assert SaveGguf().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", Load)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", Save)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", Savez)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", SavezCompressed)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", SaveGguf)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)

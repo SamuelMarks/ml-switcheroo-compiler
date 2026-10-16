@@ -1,9 +1,9 @@
-# ruff: noqa: E402, E501, F403
 """NLP operations."""
 
 from dataclasses import dataclass, field
-from typing import Any, Optional  # noqa: F401
+from typing import Optional  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -56,7 +56,7 @@ class NLPOpsConfig:
     name: Optional[str] = None
 
 
-def all_candidate_sampler(true_classes, config: NLPOpsConfig):
+def all_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
     """Generate all candidates for sampling operations.
 
     Args:
@@ -70,13 +70,13 @@ def all_candidate_sampler(true_classes, config: NLPOpsConfig):
     num_sampled_tensor = Tensor(None, TensorConfig((config.sampling.num_sampled,), "int32", "cpu"))
     true_expected_count = Tensor(
         None,
-        TensorConfig(true_classes.shape, "float32", "cpu"),
+        TensorConfig(getattr(true_classes, "shape"), "float32", "cpu"),
     )
     sampled_expected_count = Tensor(None, TensorConfig((config.sampling.num_sampled,), "float32", "cpu"))
     return num_sampled_tensor, true_expected_count, sampled_expected_count
 
 
-def compute_accidental_hits(true_classes, sampled_candidates, config: NLPOpsConfig):
+def compute_accidental_hits(true_classes: EagerValue, sampled_candidates: EagerValue, config: NLPOpsConfig) -> EagerValue:
     """Compute accidental hits for candidate sampling.
 
     Identifies cases where a sampled candidate matches a true class and returns
@@ -138,10 +138,10 @@ class SamplerConfig:
 
 
 def fixed_unigram_candidate_sampler(
-    true_classes,
+    true_classes: EagerValue,
     config: NLPOpsConfig,
     sampler_config: Optional[SamplerConfig] = None,
-):
+) -> EagerValue:
     """Sample candidates using a fixed unigram distribution.
 
     Generates a set of sampled candidates according to a provided unigram
@@ -158,7 +158,7 @@ def fixed_unigram_candidate_sampler(
     return all_candidate_sampler(true_classes, config)
 
 
-def learned_unigram_candidate_sampler(true_classes, config: NLPOpsConfig):
+def learned_unigram_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
     """Sample candidates using a learned unigram distribution.
 
     Generates candidates by continuously updating a unigram distribution
@@ -174,7 +174,7 @@ def learned_unigram_candidate_sampler(true_classes, config: NLPOpsConfig):
     return all_candidate_sampler(true_classes, config)
 
 
-def log_uniform_candidate_sampler(true_classes, config: NLPOpsConfig):
+def log_uniform_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
     """Sample candidates using a log-uniform (Zipfian) distribution.
 
     Useful when classes are ordered by decreasing frequency.
@@ -189,7 +189,7 @@ def log_uniform_candidate_sampler(true_classes, config: NLPOpsConfig):
     return all_candidate_sampler(true_classes, config)
 
 
-def uniform_candidate_sampler(true_classes, config: NLPOpsConfig):
+def uniform_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
     """Sample candidates using a uniform distribution.
 
     Generates candidates where each candidate ID has an equal probability
@@ -222,12 +222,12 @@ class NCELossConfig:
 
 
 def nce_loss(
-    weights,
-    biases,
-    labels,
-    inputs,
+    weights: EagerValue,
+    biases: EagerValue,
+    labels: EagerValue,
+    inputs: EagerValue,
     config: NCELossConfig,
-):
+) -> EagerValue:
     """Compute the noise-contrastive estimation (NCE) training loss.
 
     This function calculates the NCE loss which is often used for training
@@ -264,12 +264,12 @@ class SampledSoftmaxConfig:
 
 
 def sampled_softmax_loss(
-    weights,
-    biases,
-    labels,
-    inputs,
+    weights: EagerValue,
+    biases: EagerValue,
+    labels: EagerValue,
+    inputs: EagerValue,
     config: SampledSoftmaxConfig,
-):
+) -> EagerValue:
     """Compute the sampled softmax training loss.
 
     This function approximates the full softmax loss by sampling a subset
@@ -289,12 +289,12 @@ def sampled_softmax_loss(
 
 
 def ctc_beam_search_decoder(
-    inputs,
-    sequence_length,
-    beam_width=100,
-    top_paths=1,
-    merge_repeated=True,
-):
+    inputs: EagerValue,
+    sequence_length: EagerValue,
+    beam_width: EagerValue = 100,
+    top_paths: EagerValue = 1,
+    merge_repeated: EagerValue = True,
+) -> EagerValue:
     """Perform beam search decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
@@ -314,11 +314,11 @@ def ctc_beam_search_decoder(
 
 
 def ctc_greedy_decoder(
-    inputs,
-    sequence_length,
-    merge_repeated=True,
-    blank_index=None,
-):
+    inputs: EagerValue,
+    sequence_length: EagerValue,
+    merge_repeated: EagerValue = True,
+    blank_index: EagerValue = None,
+) -> EagerValue:
     """Perform greedy decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
@@ -356,7 +356,7 @@ def ctc_loss(
     label_length: Tensor,
     logit_length: Tensor,
     options: Optional[CTCLossOptions] = None,
-):
+) -> EagerValue:
     """Compute the Connectionist Temporal Classification (CTC) Loss.
 
     Calculates the loss between a continuous sequence of logits and a target
@@ -389,7 +389,7 @@ def ctc_loss(
     )
 
 
-def ctc_unique_labels(labels, name=None):
+def ctc_unique_labels(labels: EagerValue, name: EagerValue = None) -> EagerValue:
     """Extract unique labels and indices for batched data.
 
     Utility function typically used in conjunction with CTC loss to find
@@ -437,7 +437,7 @@ class CtcLoss(OpDef):
 
     op_name = "CtcLoss"
 
-    def infer_shape(self, labels, logits, label_length, logit_length, **kwargs):
+    def infer_shape(self, labels: EagerTensorProtocol, logits: EagerTensorProtocol, label_length: EagerTensorProtocol, logit_length: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infers the output shape for the CTC loss operation.
 
         Args:

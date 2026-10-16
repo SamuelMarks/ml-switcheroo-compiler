@@ -1,23 +1,20 @@
-"""Module eager.py."""
+"""Eager mode implementations for control flow operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import Callable, TypeVar, cast  # noqa: F401
 
-"""Eager mode implementations for control flow operations."""
-
-
-from typing import Any, Callable  # noqa: F401
-
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
 
+_StateT = TypeVar("_StateT")
 
-def cond_eager(pred: Tensor, true_fn, false_fn):
+
+def cond_eager(pred: Tensor, true_fn: Callable[..., EagerValue], false_fn: Callable[..., EagerValue]) -> EagerValue:
     """Evaluate cond_eager operation.
 
     Args:
@@ -33,7 +30,11 @@ def cond_eager(pred: Tensor, true_fn, false_fn):
     return false_fn()
 
 
-def while_loop_eager(cond_fn, body_fn, init_val):
+def while_loop_eager(
+    cond_fn: Callable[[_StateT], bool | Tensor],
+    body_fn: Callable[[_StateT], _StateT],
+    init_val: _StateT,
+) -> _StateT:
     """Evaluate while_loop_eager operation.
 
     Args:
@@ -53,7 +54,11 @@ def while_loop_eager(cond_fn, body_fn, init_val):
     return val
 
 
-def _stack_scan_outputs(ys, init, last_y):
+def _stack_scan_outputs(
+    ys: list[EagerValue],
+    init: Tensor | tuple[Tensor, ...],
+    last_y: Tensor | tuple[Tensor, ...],
+) -> Tensor:
     """Evaluate _stack_scan_outputs operation.
 
     Args:
@@ -69,20 +74,20 @@ def _stack_scan_outputs(ys, init, last_y):
         return Tensor(
             stacked_ys,
             TensorConfig(
-                stacked_ys.shape,
-                last_y.dtype if hasattr(last_y, "dtype") else init.dtype,
-                last_y.device if hasattr(last_y, "device") else init.device,
+                getattr(stacked_ys, "shape"),
+                getattr(last_y, "dtype") if hasattr(last_y, "dtype") else getattr(init, "dtype"),
+                getattr(last_y, "device") if hasattr(last_y, "device") else getattr(init, "device"),
             ),
         )
     else:
         stacked_ys = get_active_backend().array(ys)
         return Tensor(
             stacked_ys,
-            TensorConfig(stacked_ys.shape, DType(str(stacked_ys.dtype)), config.default_device),
+            TensorConfig(getattr(stacked_ys, "shape"), DType(str(getattr(stacked_ys, "dtype"))), config.default_device),
         )
 
 
-def scan_eager(f, init, xs, length: int | None = None):
+def scan_eager(f: Callable[..., EagerValue], init: EagerValue, xs: EagerValue, length: int | None = None) -> EagerValue:
     """Evaluate scan_eager operation.
 
     Args:
@@ -96,13 +101,13 @@ def scan_eager(f, init, xs, length: int | None = None):
     """
     carry = init
     ys = []
-    scan_length = length if length is not None else (xs.shape[0] if xs is not None else 0)
+    scan_length = length if length is not None else (getattr(xs, "shape")[0] if xs is not None else 0)
     for i in range(scan_length):
-        x = Tensor(xs.data[i], TensorConfig(xs.shape[1:], xs.dtype, xs.device)) if xs is not None else None
-        carry, y = f(carry, x)
-        ys.append(y.data if hasattr(y, "data") else y)
+        x = Tensor(getattr(xs, "data")[i], TensorConfig(getattr(xs, "shape")[1:], getattr(xs, "dtype"), getattr(xs, "device"))) if xs is not None else None
+        carry, y = getattr(f(carry, x), "__iter__")()
+        ys.append(getattr(y, "data") if hasattr(y, "data") else y)
 
-    out_tensor = _stack_scan_outputs(ys, init, y if scan_length > 0 else init)
+    out_tensor = cast("Callable[..., EagerTensorProtocol]", _stack_scan_outputs)(ys, init, y if scan_length > 0 else init)
     return carry, out_tensor
 
 
@@ -118,7 +123,7 @@ def _map_fn_eager_get_length(elems: Tensor) -> int:
     return elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
 
 
-def _map_fn_eager_execute(fn, elems: Tensor, length: int):
+def _map_fn_eager_execute(fn: Callable[..., EagerValue], elems: Tensor, length: int) -> EagerValue:
     """Evaluate _map_fn_eager_execute operation.
 
     Args:
@@ -131,13 +136,13 @@ def _map_fn_eager_execute(fn, elems: Tensor, length: int):
     """
     ys = []
     for i in range(length):
-        x = Tensor(elems.data[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
+        x = Tensor(cast(EagerTensorProtocol, elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
         y = fn(x)
-        ys.append(y.data if hasattr(y, "data") else y)
+        ys.append(getattr(y, "data") if hasattr(y, "data") else y)
     return ys
 
 
-def _map_fn_eager_stack(ys, elems: Tensor, dtype: DType | None):
+def _map_fn_eager_stack(ys: EagerValue, elems: Tensor, dtype: DType | None) -> EagerValue:
     """Evaluate _map_fn_eager_stack operation.
 
     Args:
@@ -148,16 +153,16 @@ def _map_fn_eager_stack(ys, elems: Tensor, dtype: DType | None):
     Returns:
         Tensor: Result.
     """
-    if len(ys) > 0 and isinstance(ys[0], tuple):
+    if getattr(ys, "__len__")() > 0 and isinstance(getattr(ys, "__getitem__")(0), tuple):
         stacked_ys = get_active_backend().execute_op("Stack", ys)
-        return Tensor(stacked_ys, TensorConfig(stacked_ys.shape, elems.dtype, elems.device))
+        return Tensor(stacked_ys, TensorConfig(getattr(stacked_ys, "shape"), elems.dtype, elems.device))
 
     stacked_ys = get_active_backend().array(ys)
-    out_dtype = dtype if dtype is not None else DType(str(stacked_ys.dtype))
-    return Tensor(stacked_ys, TensorConfig(stacked_ys.shape, out_dtype, elems.device))
+    out_dtype = dtype if dtype is not None else DType(str(getattr(stacked_ys, "dtype")))
+    return Tensor(stacked_ys, TensorConfig(getattr(stacked_ys, "shape"), out_dtype, elems.device))
 
 
-def map_fn_eager(fn, elems: Tensor, dtype: DType | None = None):
+def map_fn_eager(fn: Callable[..., EagerValue], elems: Tensor, dtype: DType | None = None) -> EagerValue:
     """Evaluate map_fn_eager operation.
 
     Args:
@@ -173,7 +178,7 @@ def map_fn_eager(fn, elems: Tensor, dtype: DType | None = None):
     return _map_fn_eager_stack(ys, elems, dtype)
 
 
-def pmap_eager(func, axis_name: str | None = None):
+def pmap_eager(func: Callable[..., EagerValue], axis_name: str | None = None) -> EagerValue:
     """Evaluate pmap_eager operation.
 
     Args:
@@ -184,7 +189,7 @@ def pmap_eager(func, axis_name: str | None = None):
         Callable: Result.
     """
 
-    def wrapped(*args):
+    def wrapped(*args: EagerValue) -> EagerValue:
         """Evaluate wrapped operation.
 
         Args:
@@ -193,12 +198,12 @@ def pmap_eager(func, axis_name: str | None = None):
         Returns:
             tuple[int, ...]: Result.
         """
-        return vmap(func)(*args)
+        return cast("Callable[..., EagerValue]", vmap(func))(*args)
 
     return wrapped
 
 
-def stop_gradient_eager(x):
+def stop_gradient_eager(x: _StateT) -> _StateT:
     """Evaluate stop_gradient_eager operation.
 
     Args:
@@ -210,7 +215,7 @@ def stop_gradient_eager(x):
     return x
 
 
-def assert_value_eager(condition, message: str = "") -> None:
+def assert_value_eager(condition: EagerValue, message: str = "") -> None:
     """Evaluate assert_value_eager operation.
 
     Args:

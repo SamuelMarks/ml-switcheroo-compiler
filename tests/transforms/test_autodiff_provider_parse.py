@@ -1,15 +1,32 @@
+"""Tests for test_autodiff_provider_parse."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_autodiff_provider_parse_expression():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_autodiff_provider_parse_expression() -> None:
+    """Test function test_autodiff_provider_parse_expression."""
     from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import _parse_expression
 
     class DummyGraph:
-        def __init__(self):
-            self.nodes = {}
+        """Test class DummyGraph."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
+            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
     class DummyNode:
-        def __init__(self):
+        """Test class DummyNode."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
             self.inputs = ["in0", "in1"]
             self.op_type = "MyOp"
             self.attributes = {"attr": 1, "float_attr": 2.5}
@@ -21,66 +38,67 @@ def test_autodiff_provider_parse_expression():
         mock_emit.return_value = "res_id"
 
         # Test cotangent
-        res = _parse_expression(graph, "$cotangent", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "$cotangent", node, cotangent="C")
         assert res == "C"
 
-        res = _parse_expression(graph, "ZerosLike($x)", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "ZerosLike($x)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "ZerosLike"
 
-        res = _parse_expression(graph, "Mul($cotangent, 2)", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Mul($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Mul", "Multiply")
 
-        res = _parse_expression(graph, "Add(1, $cotangent)", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Add(1, $cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Add"
 
-        res = _parse_expression(graph, "Sub($cotangent, $in0)", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Sub($cotangent, $in0)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Sub", "Subtract")
 
-        res = _parse_expression(graph, "Div($in0, $cotangent)", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Div($in0, $cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Div", "TrueDivide")
 
-        res = _parse_expression(graph, "Neg($cotangent)", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Neg($cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Neg", "Negative")
 
-        res = _parse_expression(graph, "Pow($cotangent, 2)", node, cotangent="C")
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Pow($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Pow"
 
         # Test tangents
-        res = _parse_expression(graph, "$tangent[0]", node, tangents=["T0", "T1"])
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "$tangent[0]", node, tangents=["T0", "T1"])
         assert res == "T0"
 
         # Input
-        res = _parse_expression(graph, "$input[1]", node)
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "$input[1]", node)
         assert res == "in1"
 
         # Nested Parens
-        res = _parse_expression(graph, "Func(Arg(1))", node)
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Func(Arg(1))", node)
         assert mock_emit.call_args[0][1] == "Func"
-        res = _parse_expression(graph, "ReduceSum($in0)", node)
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "ReduceSum($in0)", node)
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "ReduceSum"
 
-        res = _parse_expression(graph, "Exp($in0)", node)
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Exp($in0)", node)
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Exp"
 
         # Attributes
-        res = _parse_expression(graph, "$attr", node)
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "$attr", node)
         assert res == "$attr"
 
         # Constants
-        res = _parse_expression(graph, "Constant(1.5)", node)
+        res = cast("Callable[..., EagerTensorProtocol]", _parse_expression)(graph, "Constant(1.5)", node)
         assert res.startswith("cst_ad")
 
 
-def test_get_vjp_from_data():
+def test_get_vjp_from_data() -> None:
+    """Test function test_get_vjp_from_data."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data
 
@@ -92,10 +110,10 @@ def test_get_vjp_from_data():
                     assert callable(vjp_fn)
 
         graph = IRGraph()
-        node = IRNode("n1", "MyOp", ["in0", "in1"])
+        node = cast("Callable[..., EagerTensorProtocol]", IRNode)("n1", "MyOp", ["in0", "in1"])
 
         with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression", return_value="parsed"):
-            res = vjp_fn(graph, node, "C")
+            res = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(graph, node, "C")
             assert len(res) == 2
             assert list(res) == ["parsed", "parsed"]
 
@@ -120,7 +138,8 @@ def test_get_vjp_from_data():
         assert vjp_fn is None
 
 
-def test_get_jvp_from_data():
+def test_get_jvp_from_data() -> None:
+    """Test function test_get_jvp_from_data."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data
 
@@ -129,7 +148,7 @@ def test_get_jvp_from_data():
         assert callable(jvp_fn)
 
         graph = IRGraph()
-        node = IRNode("n1", "MyOp", ["in0"])
+        node = cast("Callable[..., EagerTensorProtocol]", IRNode)("n1", "MyOp", ["in0"])
 
         with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression", return_value="parsed"):
             res = jvp_fn(graph, node, ["T0"])

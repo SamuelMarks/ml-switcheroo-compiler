@@ -1,3 +1,9 @@
+"""Tests for test_main."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -5,8 +11,14 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.transforms.autodiff import _accumulate_gradients, _add_nodes, _backward_pass, _copy_graph, _extract_gradients, _get_input_tangents, _get_reachable_from_output, _invoke_jvp_rule, _process_jvp_node, grad, hvp, jvp
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_add_nodes():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_add_nodes() -> None:
+    """Test function test_add_nodes."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     n2 = LogicalNode("n2", "Input", shape_metadata=(2,))
@@ -17,7 +29,8 @@ def test_add_nodes():
     assert g.nodes[out_id].op_type == "Add"
 
 
-def test_copy_graph():
+def test_copy_graph() -> None:
+    """Test function test_copy_graph."""
     g = LogicalGraph(name="test")
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     g.nodes["n1"] = n1
@@ -26,55 +39,60 @@ def test_copy_graph():
     assert "n1" in g2.nodes
 
 
-def test_get_reachable_from_output():
-    n1 = LogicalNode("n1", "Input", [])
+def test_get_reachable_from_output() -> None:
+    """Test function test_get_reachable_from_output."""
+    n1 = cast("Callable[..., EagerTensorProtocol]", LogicalNode)("n1", "Input", [])
     n2 = LogicalNode("n2", "Add", inputs=["n1", "n1"])
     n3 = LogicalNode("n3", "Mul", inputs=["n2", "n2"])
-    assert _get_reachable_from_output([n1, n2, n3], "n3") == {"n3", "n2", "n1"}
+    assert cast("Callable[..., EagerTensorProtocol]", _get_reachable_from_output)([n1, n2, n3], "n3") == {"n3", "n2", "n1"}
 
 
-def test_accumulate_gradients(mocker):
+def test_accumulate_gradients(mocker: EagerTensorProtocol) -> None:
+    """Test function test_accumulate_gradients."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
     mock_get_vjp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff.get_vjp")
 
-    def dummy_vjp(graph, node, adj):
+    def dummy_vjp(graph: EagerValue, node: EagerValue, adj: EagerValue) -> EagerValue:
+        """Test function dummy_vjp."""
         return ["da", "db"]
 
-    mock_get_vjp.return_value = lambda g, n, adj: ["da", "db"]
-    adj = {}
-    _accumulate_gradients(g, n1, "adj", adj)
+    setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
+    adj = cast("dict[str, EagerTensorProtocol]", {})
+    cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
     assert adj == {"a": "da", "b": "db"}
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._add_nodes", return_value="added")
-    _accumulate_gradients(g, n1, "adj", adj)
+    cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
     assert adj == {"a": "added", "b": "added"}
-    mock_get_vjp.side_effect = ValueError
+    setattr(mock_get_vjp, "side_effect", ValueError)
     from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 
     with pytest.raises(MissingJVPRuleError):
-        _accumulate_gradients(g, n1, "adj", adj)
-    mock_get_vjp.side_effect = None
-    mock_get_vjp.return_value = lambda g, n, adj: ["da"]
+        cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
+    setattr(mock_get_vjp, "side_effect", None)
+    setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da"])
     with pytest.raises(ValueError):
-        _accumulate_gradients(g, n1, "adj", adj)
+        cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
 
 
-def test_backward_pass(mocker):
+def test_backward_pass(mocker: EagerTensorProtocol) -> None:
+    """Test function test_backward_pass."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
-    n2 = LogicalNode("n2", "Input", [])
+    n2 = cast("Callable[..., EagerTensorProtocol]", LogicalNode)("n2", "Input", [])
     mock_acc = mocker.patch("ml_switcheroo_compiler.transforms.autodiff._accumulate_gradients")
-    _backward_pass(g, [n1, n2], {"n1"}, {"n1": "adj"})
+    cast("Callable[..., EagerTensorProtocol]", _backward_pass)(g, [n1, n2], {"n1"}, {"n1": "adj"})
     mock_acc.assert_called_once()
     mock_acc.reset_mock()
     _backward_pass(g, [n1], set(), {"n1": "adj"})
     mock_acc.assert_not_called()
     mock_acc.reset_mock()
-    _backward_pass(g, [n2], {"n2"}, {"n2": "adj"})
+    cast("Callable[..., EagerTensorProtocol]", _backward_pass)(g, [n2], {"n2"}, {"n2": "adj"})
     mock_acc.assert_not_called()
 
 
-def test_extract_gradients():
+def test_extract_gradients() -> None:
+    """Test function test_extract_gradients."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     g.nodes["n1"] = n1
@@ -86,7 +104,8 @@ def test_extract_gradients():
         _extract_gradients(g, ["not_exist"], {})
 
 
-def test_grad(mocker):
+def test_grad(mocker: EagerTensorProtocol) -> None:
+    """Test function test_grad."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     n2 = LogicalNode("n2", "Mul", inputs=["n1", "n1"])
@@ -94,10 +113,11 @@ def test_grad(mocker):
     g.nodes["n2"] = n2
     mock_get_vjp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff.get_vjp")
 
-    def dummy_vjp(graph, node, adj):
+    def dummy_vjp(graph: EagerValue, node: EagerValue, adj: EagerValue) -> EagerValue:
+        """Test function dummy_vjp."""
         return ["da", "db"]
 
-    mock_get_vjp.return_value = lambda g, n, adj: ["da", "db"]
+    setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._add_nodes", return_value="added")
     with pytest.raises(ValueError):
         grad(g, ["n1"], "not_exist")
@@ -105,7 +125,8 @@ def test_grad(mocker):
     assert g2 is not None
 
 
-def test_get_input_tangents():
+def test_get_input_tangents() -> None:
+    """Test function test_get_input_tangents."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     g.nodes["n1"] = n1
@@ -116,45 +137,50 @@ def test_get_input_tangents():
     assert "jvp_zeros" in res[1]
 
 
-def test_invoke_jvp_rule():
+def test_invoke_jvp_rule() -> None:
+    """Test function test_invoke_jvp_rule."""
 
-    def mock_jvp(graph, node, tangent):
+    def mock_jvp(graph: EagerValue, node: EagerValue, tangent: EagerValue) -> EagerValue:
+        """Test function mock_jvp."""
         return "res"
 
-    assert _invoke_jvp_rule(mock_jvp, None, None, ["t"]) == "res"
+    assert cast("Callable[..., EagerTensorProtocol]", _invoke_jvp_rule)(mock_jvp, None, None, ["t"]) == "res"
 
-    def mock_jvp_bad():
+    def mock_jvp_bad() -> None:
+        """Test function mock_jvp_bad."""
         pass
 
     import pytest
 
     with pytest.raises(MissingJVPRuleError):
-        _invoke_jvp_rule(mock_jvp_bad, None, None, ["t"])
+        cast("Callable[..., EagerTensorProtocol]", _invoke_jvp_rule)(mock_jvp_bad, None, None, ["t"])
 
 
-def test_process_jvp_node(mocker):
+def test_process_jvp_node(mocker: EagerTensorProtocol) -> None:
+    """Test function test_process_jvp_node."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
     mock_get_jvp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
-    mock_get_jvp.return_value = lambda graph, node, tangents: "out_t"
+    setattr(mock_get_jvp, "return_value", lambda graph, node, tangents: "out_t")
     _process_jvp_node(g, n1, {})
     tangents = {"a": "t1"}
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._get_input_tangents", return_value=["t1", "t2"])
     _process_jvp_node(g, n1, tangents)
     assert tangents["n1"] == "out_t"
-    mock_get_jvp.side_effect = ValueError
+    setattr(mock_get_jvp, "side_effect", ValueError)
     with pytest.raises(ValueError):
         _process_jvp_node(g, n1, tangents)
 
 
-def test_jvp_hvp(mocker):
+def test_jvp_hvp(mocker: EagerTensorProtocol) -> None:
+    """Test function test_jvp_hvp."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     n2 = LogicalNode("n2", "Mul", inputs=["n1", "n1"])
     g.nodes["n1"] = n1
     g.nodes["n2"] = n2
     mock_get_jvp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
-    mock_get_jvp.return_value = lambda graph, node, tangents: "out_t"
+    setattr(mock_get_jvp, "return_value", lambda graph, node, tangents: "out_t")
     with pytest.raises(ValueError):
         jvp(g, ["n1"], ["t1", "t2"], ["n2"])
     with pytest.raises(ValueError):
@@ -166,10 +192,11 @@ def test_jvp_hvp(mocker):
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.has_vjp", return_value=True)
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.has_jvp", return_value=True)
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff.jvp", return_value="hvp_res")
-    assert hvp(g, ["n1"], ["t1"], ["n2"]) == "hvp_res"
+    assert cast("EagerTensorProtocol", hvp(g, ["n1"], ["t1"], ["n2"])) == cast("EagerTensorProtocol", "hvp_res")
 
 
-def test_jvp_zero_output(mocker):
+def test_jvp_zero_output(mocker: EagerTensorProtocol) -> None:
+    """Test function test_jvp_zero_output."""
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     n2 = LogicalNode("n2", "Mul", inputs=["n1", "n1"])
@@ -177,6 +204,6 @@ def test_jvp_zero_output(mocker):
     g.nodes["n2"] = n2
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp", return_value=lambda graph, node, tangents: "out_t")
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._get_input_tangents", return_value=["t1", "t1"])
-    g.nodes["t1"] = LogicalNode("t1", "Input", [])
+    getattr(g.nodes, "__setitem__")("t1", cast("Callable[..., EagerTensorProtocol]", LogicalNode)("t1", "Input", []))
     g2 = jvp(g, ["n1"], ["t1"], ["n2", "n1"])
     assert len(g2.outputs) == 2

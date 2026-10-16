@@ -1,20 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """math_internal module."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence  # noqa: F401
+from collections.abc import Callable, Sequence  # noqa: F401
+from types import ModuleType
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 
 from .math_string_io import _parse_scanop_args
 
 
 @numpy_eager_registry.register("PopulationCount")
-def _np_population_count(backend_module, x, *args, **kwargs):
+def _np_population_count(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Count the number of set bits in the binary representation of each element.
 
     Args:
@@ -30,7 +31,7 @@ def _np_population_count(backend_module, x, *args, **kwargs):
 
 
 @numpy_eager_registry.register("GetPrintoptions")
-def _np_get_printoptions_(backend_module, *args, **kwargs):
+def _np_get_printoptions_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement GetPrintoptions via get_printoptions.
 
     Args:
@@ -40,11 +41,11 @@ def _np_get_printoptions_(backend_module, *args, **kwargs):
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.get_printoptions(*args, **kwargs)
+    return cast(EagerValue, backend_module.get_printoptions(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AffineConfig")
-def _np_affineconfig(backend_module, *args, **kwargs):
+def _np_affineconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement AffineConfig.
 
     Args:
@@ -59,7 +60,7 @@ def _np_affineconfig(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("BlurConfig")
-def _np_blurconfig(backend_module, *args, **kwargs):
+def _np_blurconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement BlurConfig.
 
     Args:
@@ -72,11 +73,11 @@ def _np_blurconfig(backend_module, *args, **kwargs):
     """
     from ml_switcheroo_compiler.ops.configs import BlurConfig
 
-    return BlurConfig(*args, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", BlurConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("CustomRoot")
-def _np_customroot(backend_module, *args, **kwargs):
+def _np_customroot(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement CustomRoot.
 
     Args:
@@ -91,12 +92,12 @@ def _np_customroot(backend_module, *args, **kwargs):
     initial_guess = args[1]
     solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
     if solve:
-        return solve(f, initial_guess)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", solve)(f, initial_guess))
     return initial_guess
 
 
 @numpy_eager_registry.register("ElasticConfig")
-def _np_elasticconfig(backend_module, *args, **kwargs):
+def _np_elasticconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement ElasticConfig.
 
     Args:
@@ -109,11 +110,11 @@ def _np_elasticconfig(backend_module, *args, **kwargs):
     """
     from ml_switcheroo_compiler.ops.configs import ElasticConfig
 
-    return ElasticConfig(*args, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", ElasticConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("LinearOperator")
-def _np_linearoperator(backend_module, *args, **kwargs):
+def _np_linearoperator(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperator.
 
     Args:
@@ -130,7 +131,7 @@ def _np_linearoperator(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorAdjoint")
-def _np_linearoperatoradjoint(backend_module, *args, **kwargs):
+def _np_linearoperatoradjoint(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorAdjoint.
 
     Args:
@@ -147,7 +148,7 @@ def _np_linearoperatoradjoint(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorCirculant")
-def _np_linearoperatorcirculant(backend_module, *args, **kwargs):
+def _np_linearoperatorcirculant(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorCirculant.
 
     Args:
@@ -164,7 +165,7 @@ def _np_linearoperatorcirculant(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorCirculant2D")
-def _np_linearoperatorcirculant2d(backend_module, *args, **kwargs):
+def _np_linearoperatorcirculant2d(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorCirculant2D.
 
     Args:
@@ -181,7 +182,7 @@ def _np_linearoperatorcirculant2d(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorCirculant3D")
-def _np_linearoperatorcirculant3d(backend_module, *args, **kwargs):
+def _np_linearoperatorcirculant3d(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorCirculant3D.
 
     Args:
@@ -198,7 +199,7 @@ def _np_linearoperatorcirculant3d(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorComposition")
-def _np_linearoperatorcomposition(backend_module, *args, **kwargs):
+def _np_linearoperatorcomposition(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorComposition.
 
     Args:
@@ -215,7 +216,7 @@ def _np_linearoperatorcomposition(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorHouseholder")
-def _np_linearoperatorhouseholder(backend_module, *args, **kwargs):
+def _np_linearoperatorhouseholder(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorHouseholder.
 
     Args:
@@ -232,7 +233,7 @@ def _np_linearoperatorhouseholder(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorKronecker")
-def _np_linearoperatorkronecker(backend_module, *args, **kwargs):
+def _np_linearoperatorkronecker(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorKronecker.
 
     Args:
@@ -249,7 +250,7 @@ def _np_linearoperatorkronecker(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorLowRankUpdate")
-def _np_linearoperatorlowrankupdate(backend_module, *args, **kwargs):
+def _np_linearoperatorlowrankupdate(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorLowRankUpdate.
 
     Args:
@@ -266,7 +267,7 @@ def _np_linearoperatorlowrankupdate(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorToeplitz")
-def _np_linearoperatortoeplitz(backend_module, *args, **kwargs):
+def _np_linearoperatortoeplitz(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorToeplitz.
 
     Args:
@@ -283,7 +284,7 @@ def _np_linearoperatortoeplitz(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("PerspectiveConfig")
-def _np_perspectiveconfig(backend_module, *args, **kwargs):
+def _np_perspectiveconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement PerspectiveConfig.
 
     Args:
@@ -296,11 +297,11 @@ def _np_perspectiveconfig(backend_module, *args, **kwargs):
     """
     from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
-    return PerspectiveConfig(*args, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", PerspectiveConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("RawMatMul")
-def _np_rawmatmul(backend_module, *args, **kwargs):
+def _np_rawmatmul(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement RawMatMul.
 
     Args:
@@ -312,12 +313,12 @@ def _np_rawmatmul(backend_module, *args, **kwargs):
         tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "rawmatmul"):
-        return backend_module.rawmatmul(*args, **kwargs)
-    return np.matmul(args[0], args[1])
+        return cast(EagerValue, backend_module.rawmatmul(*args, **kwargs))
+    return cast(EagerValue, getattr(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("RawMerge")
-def _np_rawmerge(backend_module, *args, **kwargs):
+def _np_rawmerge(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement RawMerge.
 
     Args:
@@ -333,7 +334,7 @@ def _np_rawmerge(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("RawOp")
-def _np_rawop(backend_module, *args, **kwargs):
+def _np_rawop(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement RawOp.
 
     Args:
@@ -348,7 +349,7 @@ def _np_rawop(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("RawSwitch")
-def _np_rawswitch(backend_module, *args, **kwargs):
+def _np_rawswitch(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement RawSwitch.
 
     Args:
@@ -367,7 +368,7 @@ def _np_rawswitch(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("ScanOp")
-def _np_scanop(backend_module, *args, **kwargs):
+def _np_scanop(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement ScanOp.
 
     Args:
@@ -390,13 +391,13 @@ def _np_scanop(backend_module, *args, **kwargs):
         out[0] = acc
     start_idx = 0 if has_acc else 1
     for i in range(start_idx, elems_arr.shape[0]):
-        acc = fn(acc, elems_arr[i])
+        acc = cast("Callable[..., EagerValue]", fn)(acc, elems_arr[i])
         out[i] = acc
     return out
 
 
 @numpy_eager_registry.register("SwitchOp")
-def _np_switchop(backend_module, *args, **kwargs):
+def _np_switchop(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SwitchOp.
 
     Args:
@@ -415,7 +416,7 @@ def _np_switchop(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("TensorArrayRead")
-def _np_tensorarrayread(backend_module, *args, **kwargs):
+def _np_tensorarrayread(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement TensorArrayRead.
 
     Args:
@@ -428,11 +429,11 @@ def _np_tensorarrayread(backend_module, *args, **kwargs):
     """
     handle = args[0]
     index = args[1]
-    return handle[index]
+    return cast(EagerValue, getattr(handle, "__getitem__")(index))
 
 
 @numpy_eager_registry.register("TensorArrayWrite")
-def _np_tensorarraywrite(backend_module, *args, **kwargs):
+def _np_tensorarraywrite(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement TensorArrayWrite.
 
     Args:
@@ -446,15 +447,15 @@ def _np_tensorarraywrite(backend_module, *args, **kwargs):
     handle = args[0]
     index = args[1]
     value = args[2]
-    new_handle = list(handle)
-    if index >= len(new_handle):
-        new_handle.extend([None] * (index - len(new_handle) + 1))
-    new_handle[index] = value
+    new_handle = list(getattr(handle, "__iter__")())
+    if int(cast(int, index)) >= len(new_handle):
+        new_handle.extend([None] * int(cast(EagerTensorProtocol, index) - cast(EagerTensorProtocol, len(new_handle)) + 1))
+    cast(EagerTensorProtocol, new_handle)[index] = value
     return new_handle
 
 
 @numpy_eager_registry.register("TensorConfig")
-def _np_tensorconfig(backend_module, *args, **kwargs):
+def _np_tensorconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement TensorConfig.
 
     Args:
@@ -467,4 +468,4 @@ def _np_tensorconfig(backend_module, *args, **kwargs):
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-    return TensorConfig(*args, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(*args, **kwargs))

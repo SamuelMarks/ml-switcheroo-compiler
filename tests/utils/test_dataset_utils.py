@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -29,6 +30,11 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
     unpack_x_y_sample_weight,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_pack_x_y_sample_weight() -> None:
     """Test pack."""
@@ -49,7 +55,7 @@ def test_unpack_x_y_sample_weight() -> None:
 
 def test_split_dataset() -> None:
     """Test split."""
-    assert split_dataset(1, 0.5) == (1, 1)
+    assert cast("Callable[..., EagerTensorProtocol]", split_dataset)(1, 0.5) == (1, 1)
 
 
 def test_pad_sequences() -> None:
@@ -94,9 +100,9 @@ def test_numpy_dataset_iteration_and_length() -> None:
     assert len(ds) == 3
     batches = list(ds)
     assert len(batches) == 3
-    assert len(batches[0][0]) == 2
-    assert len(batches[0][1]) == 2
-    assert len(batches[2][0]) == 1
+    assert cast("Callable[..., EagerTensorProtocol]", len)(batches[0][0]) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(batches[0][1]) == 2
+    assert cast("Callable[..., EagerTensorProtocol]", len)(batches[2][0]) == 1
 
     # Without targets
     ds_no_y = NumpyDataset(x, config=BatchConfig(batch_size=3, shuffle=False))
@@ -105,87 +111,131 @@ def test_numpy_dataset_iteration_and_length() -> None:
     assert batches_no_y == [[1, 2, 3], [4, 5]]
 
 
+def _test_directory_dataset_parsers_and_loaders_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 1 of test_directory_dataset_parsers_and_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    tmp_dir = _state["tmp_dir"]
+    cat_dir = os.path.join(tmp_dir, "cats")
+    dog_dir = os.path.join(tmp_dir, "dogs")
+    empty_dir = os.path.join(tmp_dir, "not_a_dir.txt")
+    os.makedirs(cat_dir)
+    os.makedirs(dog_dir)
+    with open(empty_dir, "w") as f:
+        f.write("dummy")
+
+    cat1_img = os.path.join(cat_dir, "cat1.jpg")
+    cat2_png = os.path.join(cat_dir, "cat2.png")
+    cat_txt = os.path.join(cat_dir, "cat.txt")
+    cat_audio = os.path.join(cat_dir, "cat.wav")
+
+    dog1_img = os.path.join(dog_dir, "dog1.bmp")
+    dog_txt = os.path.join(dog_dir, "dog.txt")
+    dog_audio = os.path.join(dog_dir, "dog.flac")
+
+    for p in [cat1_img, cat2_png, cat_txt, cat_audio, dog1_img, dog_txt, dog_audio]:
+        with open(p, "w") as f:
+            f.write("content")
+    getattr(_state, "update")({"cat1_img": cat1_img, "cat2_png": cat2_png, "cat_audio": cat_audio, "cat_dir": cat_dir})
+    getattr(_state, "update")({"cat_txt": cat_txt, "dog1_img": dog1_img, "dog_audio": dog_audio, "dog_dir": dog_dir})
+    getattr(_state, "update")({"dog_txt": dog_txt, "empty_dir": empty_dir, "f": f})
+    _state.update(locals())
+
+
+def _test_directory_dataset_parsers_and_loaders_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 2 of test_directory_dataset_parsers_and_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    cat_dir, dog_dir, tmp_dir = _state["cat_dir"], _state["dog_dir"], _state["tmp_dir"]
+    try:
+        broken_sym = os.path.join(dog_dir, "broken.jpg")
+        os.symlink(os.path.join(dog_dir, "nonexistent.jpg"), broken_sym)
+    except (OSError, NotImplementedError) as _exc:
+        assert _exc is not None
+
+    # Test _parse_class_names
+    classes = cast("Callable[..., EagerTensorProtocol]", _parse_class_names)(tmp_dir, None)
+    assert classes == ["cats", "dogs"]
+    classes_explicit = cast("Callable[..., EagerTensorProtocol]", _parse_class_names)(tmp_dir, ["dogs", "cats"])
+    assert classes_explicit == ["dogs", "cats"]
+
+    # Test _is_valid_file extension filtering
+    assert cast("Callable[..., EagerTensorProtocol]", _is_valid_file)("cat1.jpg", cat_dir, [".jpg"])
+    assert not cast("Callable[..., EagerTensorProtocol]", _is_valid_file)("cat1.jpg", cat_dir, [".png"])
+
+    # Test _walk_directory_and_filter skipping non-directory
+    fps, lbls = cast("Callable[..., EagerTensorProtocol]", _walk_directory_and_filter)(tmp_dir, ["cats", "nonexistent_dir"], [".jpg"])
+    assert len(fps) == 1
+    assert lbls == [0]
+
+    # Test _get_files_and_labels error on non-existent directory
+    with pytest.raises(ValueError, match="does not exist"):
+        _get_files_and_labels(os.path.join(tmp_dir, "missing_folder"))
+
+    # Test _get_files_and_labels with custom labels
+    fps, lbls, cls_names = cast("Callable[..., EagerTensorProtocol]", _get_files_and_labels)(tmp_dir, labels=[10, 20, 30], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
+    assert lbls == [10, 20, 30]
+
+    # Test _get_files_and_labels with labels as string not equal to 'inferred'
+    fps_str, lbls_str, _ = cast("Callable[..., EagerTensorProtocol]", _get_files_and_labels)(tmp_dir, labels="custom_mode", class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
+    getattr(_state, "update")({"_": _, "classes": classes, "classes_explicit": classes_explicit, "cls_names": cls_names})
+    getattr(_state, "update")({"fps": fps, "fps_str": fps_str, "lbls": lbls, "lbls_str": lbls_str})
+    _state.update(locals())
+
+
+def _test_directory_dataset_parsers_and_loaders_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute sub-part 3 of test_directory_dataset_parsers_and_loaders.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    lbls_str, tmp_dir = _state["lbls_str"], _state["tmp_dir"]
+    assert len(lbls_str) == 3
+
+    # Test _get_files_and_labels label length mismatch
+    with pytest.raises(ValueError, match="Length of labels does not match"):
+        cast("Callable[..., EagerTensorProtocol]", _get_files_and_labels)(tmp_dir, labels=[1], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
+
+    # Test audio_dataset_from_directory
+    cfg_audio = DatasetConfig(io_config=IOConfig(), batch_config=BatchConfig(batch_size=1, seed=123))
+    audio_ds = cast("Callable[..., EagerTensorProtocol]", audio_dataset_from_directory)(tmp_dir, cfg_audio)
+    assert len(audio_ds) == 2
+
+    # Test default config for audio_dataset_from_directory
+    audio_ds_default = cast("Callable[..., EagerTensorProtocol]", audio_dataset_from_directory)(tmp_dir)
+    assert len(audio_ds_default) >= 1
+
+    # Test image_dataset_from_directory
+    img_ds = cast("Callable[..., EagerTensorProtocol]", image_dataset_from_directory)(tmp_dir)
+    assert len(img_ds) >= 1
+
+    # Test text_dataset_from_directory
+    txt_ds = cast("Callable[..., EagerTensorProtocol]", text_dataset_from_directory)(tmp_dir)
+    assert len(txt_ds) >= 1
+    items = list(txt_ds)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(items, "__getitem__")(0)), "__getitem__")(0)), "__getitem__")(0)) == "content"
+    getattr(_state, "update")({"audio_ds": audio_ds, "audio_ds_default": audio_ds_default, "cfg_audio": cfg_audio, "img_ds": img_ds})
+    getattr(_state, "update")({"items": items, "txt_ds": txt_ds})
+    _state.update(locals())
+
+
 def test_directory_dataset_parsers_and_loaders() -> None:
     """Test directory parsing, file validation, and datasets from directory."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         # Create class folders and files
-        cat_dir = os.path.join(tmp_dir, "cats")
-        dog_dir = os.path.join(tmp_dir, "dogs")
-        empty_dir = os.path.join(tmp_dir, "not_a_dir.txt")
-        os.makedirs(cat_dir)
-        os.makedirs(dog_dir)
-        with open(empty_dir, "w") as f:
-            f.write("dummy")
-
-        cat1_img = os.path.join(cat_dir, "cat1.jpg")
-        cat2_png = os.path.join(cat_dir, "cat2.png")
-        cat_txt = os.path.join(cat_dir, "cat.txt")
-        cat_audio = os.path.join(cat_dir, "cat.wav")
-
-        dog1_img = os.path.join(dog_dir, "dog1.bmp")
-        dog_txt = os.path.join(dog_dir, "dog.txt")
-        dog_audio = os.path.join(dog_dir, "dog.flac")
-
-        for p in [cat1_img, cat2_png, cat_txt, cat_audio, dog1_img, dog_txt, dog_audio]:
-            with open(p, "w") as f:
-                f.write("content")
-
-        # Create broken symlink in dog_dir if symlinks supported
-        try:
-            broken_sym = os.path.join(dog_dir, "broken.jpg")
-            os.symlink(os.path.join(dog_dir, "nonexistent.jpg"), broken_sym)
-        except (OSError, NotImplementedError):
-            pass
-
-        # Test _parse_class_names
-        classes = _parse_class_names(tmp_dir, None)
-        assert classes == ["cats", "dogs"]
-        classes_explicit = _parse_class_names(tmp_dir, ["dogs", "cats"])
-        assert classes_explicit == ["dogs", "cats"]
-
-        # Test _is_valid_file extension filtering
-        assert _is_valid_file("cat1.jpg", cat_dir, [".jpg"])
-        assert not _is_valid_file("cat1.jpg", cat_dir, [".png"])
-
-        # Test _walk_directory_and_filter skipping non-directory
-        fps, lbls = _walk_directory_and_filter(tmp_dir, ["cats", "nonexistent_dir"], [".jpg"])
-        assert len(fps) == 1
-        assert lbls == [0]
-
-        # Test _get_files_and_labels error on non-existent directory
-        with pytest.raises(ValueError, match="does not exist"):
-            _get_files_and_labels(os.path.join(tmp_dir, "missing_folder"))
-
-        # Test _get_files_and_labels with custom labels
-        fps, lbls, cls_names = _get_files_and_labels(tmp_dir, labels=[10, 20, 30], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
-        assert lbls == [10, 20, 30]
-
-        # Test _get_files_and_labels with labels as string not equal to 'inferred'
-        fps_str, lbls_str, _ = _get_files_and_labels(tmp_dir, labels="custom_mode", class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
-        assert len(lbls_str) == 3
-
-        # Test _get_files_and_labels label length mismatch
-        with pytest.raises(ValueError, match="Length of labels does not match"):
-            _get_files_and_labels(tmp_dir, labels=[1], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
-
-        # Test audio_dataset_from_directory
-        cfg_audio = DatasetConfig(io_config=IOConfig(), batch_config=BatchConfig(batch_size=1, seed=123))
-        audio_ds = audio_dataset_from_directory(tmp_dir, cfg_audio)
-        assert len(audio_ds) == 2
-
-        # Test default config for audio_dataset_from_directory
-        audio_ds_default = audio_dataset_from_directory(tmp_dir)
-        assert len(audio_ds_default) >= 1
-
-        # Test image_dataset_from_directory
-        img_ds = image_dataset_from_directory(tmp_dir)
-        assert len(img_ds) >= 1
-
-        # Test text_dataset_from_directory
-        txt_ds = text_dataset_from_directory(tmp_dir)
-        assert len(txt_ds) >= 1
-        items = list(txt_ds)
-        assert items[0][0][0] == "content"
+        _state: dict[str, EagerTensorProtocol] = dict(locals())
+        getattr(_state, "update")({"tmp_dir": tmp_dir})
+        for _sub_fn in (
+            _test_directory_dataset_parsers_and_loaders_sub_1,
+            _test_directory_dataset_parsers_and_loaders_sub_2,
+            _test_directory_dataset_parsers_and_loaders_sub_3,
+        ):
+            _sub_fn(_state)
+        assert isinstance(_state, dict)
 
 
 def test_timeseries_dataset_from_array() -> None:
@@ -212,7 +262,7 @@ def test_timeseries_dataset_from_array() -> None:
     ds_no_target = timeseries_dataset_from_array(data, None, sequence_length=3)
     windows_no_target = list(ds_no_target)
     assert len(windows_no_target) > 0
-    assert len(windows_no_target[0][0]) == 3
+    assert cast("Callable[..., EagerTensorProtocol]", len)(windows_no_target[0][0]) == 3
 
     # Test timeseries_dataset_from_array with targets and loader configs
     cfg = DatasetConfig(

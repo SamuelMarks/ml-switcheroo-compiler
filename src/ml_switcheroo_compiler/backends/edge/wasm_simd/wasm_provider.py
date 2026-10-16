@@ -1,25 +1,35 @@
 """WASM Provider for Edge Runtime."""
 
 from pathlib import Path
-from typing import Union
+from typing import Callable, Union, cast
 
 import yaml
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 _WASM_TEMPLATES: dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]] = {}
 
 
 def load_yaml(file_name: str) -> dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]:
-    """Load yaml."""
+    """Load yaml.
+
+    Args:
+        file_name: The file_name parameter.
+    """
     file_path: Path = Path(__file__).parent / file_name
     with open(file_path) as f:
         from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmTemplatesConfig
 
         raw: dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]] = yaml.safe_load(f)
-        return WasmTemplatesConfig(**raw).model_dump()
+        return cast(dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]], cast("Callable[..., WasmTemplatesConfig]", WasmTemplatesConfig)(**raw).model_dump())
 
 
 def load_yaml_dir(dir_name: str) -> dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]:
-    """Load all yaml files in a directory."""
+    """Load all yaml files in a directory.
+
+    Args:
+        dir_name: The dir_name parameter.
+    """
     import glob
 
     dir_path: Path = Path(__file__).parent / dir_name
@@ -64,7 +74,11 @@ def get_wasm_template(template_name: str) -> dict[str, str]:
 
 
 def get_js_orchestration_template(name: str) -> str:
-    """Get js template."""
+    """Get js template.
+
+    Args:
+        name: The name parameter.
+    """
     global _WASM_TEMPLATES
     if not _WASM_TEMPLATES:
         _WASM_TEMPLATES = load_yaml_dir("wasm_templates")
@@ -87,10 +101,10 @@ def get_cpp_helpers() -> list[str]:
     return []
 
 
-_WASM_SIMD_OPS: dict[str, object] = {}
+_WASM_SIMD_OPS: dict[str, EagerValue] = {}
 
 
-def get_wasm_simd_ops() -> dict[str, object]:
+def get_wasm_simd_ops() -> dict[str, EagerValue]:
     """Retrieve full WASM SIMD operation mappings.
 
     Returns:
@@ -120,5 +134,5 @@ def get_wasm_simd_op(op_name: str) -> dict[str, Union[str, int, float, None]]:
     if isinstance(ops, dict) and op_name in ops:
         val = ops[op_name]
         if isinstance(val, dict):
-            return val
+            return cast("dict[str, Union[str, int, float, None]]", val)
     return {}

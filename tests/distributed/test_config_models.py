@@ -1,6 +1,9 @@
 """Unit tests for distributed topology and device mesh configuration models."""
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, cast
 
 import yaml
 
@@ -14,6 +17,11 @@ from ml_switcheroo_compiler.distributed.config_models import (
     StageCommunicationConfig,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_pipeline_config_model() -> None:
     """Test pipeline topologies configuration validation and accessors."""
@@ -24,7 +32,7 @@ def test_pipeline_config_model() -> None:
             "stage_communication": {"protocol": "p2p_queue"},
         }
     }
-    config = PipelineTopologiesConfig(root=data)
+    config = cast("Callable[..., EagerTensorProtocol]", PipelineTopologiesConfig)(root=data)
     default_config = config.get("default")
     assert default_config is not None
     assert default_config.microbatch_splitting.num_microbatches == 4
@@ -121,7 +129,7 @@ def test_load_consolidated_topology_file() -> None:
     assert cfg.webrtc_topology is not None
 
 
-def test_load_consolidated_topology_fallback(tmp_path: object) -> None:
+def test_load_consolidated_topology_fallback(tmp_path: EagerTensorProtocol) -> None:
     """Test load_consolidated_topology fallback when distributed_topology.yaml is missing."""
     from unittest.mock import patch
 
@@ -131,6 +139,7 @@ def test_load_consolidated_topology_fallback(tmp_path: object) -> None:
     real_exists = os.path.exists
 
     def mock_exists(path: str) -> bool:
+        """Test function mock_exists."""
         if path.endswith("distributed_topology.yaml"):
             return False
         return real_exists(path)
@@ -151,7 +160,7 @@ def test_load_consolidated_topology_fallback(tmp_path: object) -> None:
         assert cfg_empty.webrtc_topology is None
 
 
-def test_load_distributed_topologies(tmp_path: object) -> None:
+def test_load_distributed_topologies(tmp_path: EagerTensorProtocol) -> None:
     """Test load_distributed_topologies loader function."""
     from ml_switcheroo_compiler.distributed.config_models import load_distributed_topologies
 

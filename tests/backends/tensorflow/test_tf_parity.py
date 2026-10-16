@@ -1,9 +1,17 @@
 """Exhaustive parity tests for TensorFlow backend using tf.math, tf.raw_ops, and tf.nn."""
 
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def _create_mock_tf() -> MagicMock:
@@ -64,24 +72,24 @@ def test_tf_ops_parity() -> None:
     mock_tf = _create_mock_tf()
     with patch.dict(sys.modules, {"tensorflow": mock_tf}):
         # Math
-        assert execute_op(None, "Add", [1.0], [2.0]) == "tf_add"
-        assert execute_op(None, "Multiply", [2.0], [3.0]) == "tf_mul"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1.0], [2.0]) == "tf_add"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Multiply", [2.0], [3.0]) == "tf_mul"
 
         # Reductions
-        assert execute_op(None, "ReduceSum", [1.0, 2.0], dim=0) == "tf_sum"
-        assert execute_op(None, "ReduceMean", [1.0, 2.0], dim=0) == "tf_mean"
-        assert execute_op(None, "ArgMax", [1.0, 2.0], dim=0) == "tf_argmax"
-        assert execute_op(None, "ArgMin", [1.0, 2.0], dim=0) == "tf_argmin"
-        assert execute_op(None, "ReduceL2", [1.0, 2.0]) == "tf_l2norm"
-        assert execute_op(None, "CumSum", [1.0, 2.0], dim=0) == "tf_cumsum"
-        assert execute_op(None, "CumProd", [1.0, 2.0], dim=0) == "tf_cumprod"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "ReduceSum", [1.0, 2.0], dim=0) == "tf_sum"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "ReduceMean", [1.0, 2.0], dim=0) == "tf_mean"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "ArgMax", [1.0, 2.0], dim=0) == "tf_argmax"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "ArgMin", [1.0, 2.0], dim=0) == "tf_argmin"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "ReduceL2", [1.0, 2.0]) == "tf_l2norm"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "CumSum", [1.0, 2.0], dim=0) == "tf_cumsum"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "CumProd", [1.0, 2.0], dim=0) == "tf_cumprod"
 
         # Linear algebra
-        assert execute_op(None, "MatMul", [[1.0]], [[2.0]]) == "tf_matmul"
-        assert execute_op(None, "Cholesky", [[1.0]]) == "tf_cholesky"
-        assert execute_op(None, "QR", [[1.0]]) == ("tf_q", "tf_r")
-        assert execute_op(None, "SVD", [[1.0]]) == ("tf_s", "tf_u", "tf_v")
-        assert execute_op(None, "Solve", [[1.0]], [[2.0]]) == "tf_solve"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "MatMul", [[1.0]], [[2.0]]) == "tf_matmul"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Cholesky", [[1.0]]) == "tf_cholesky"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "QR", [[1.0]]) == ("tf_q", "tf_r")
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "SVD", [[1.0]]) == ("tf_s", "tf_u", "tf_v")
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Solve", [[1.0]], [[2.0]]) == "tf_solve"
 
 
 def test_tf_control_flow_and_vision_parity() -> None:
@@ -90,18 +98,27 @@ def test_tf_control_flow_and_vision_parity() -> None:
     with patch.dict(sys.modules, {"tensorflow": mock_tf}):
         # Control Flow
         pred = True
-        true_fn = lambda: 1
-        false_fn = lambda: 0
-        assert execute_op(None, "Cond", pred, true_fn, false_fn) == "tf_cond"
-        assert execute_op(None, "If", pred, true_fn, false_fn) == "tf_cond"
 
-        cond_fn = lambda i: i < 10
-        body_fn = lambda i: i + 1
-        assert execute_op(None, "WhileLoop", cond_fn, body_fn, [0]) == "tf_while_loop"
-        assert execute_op(None, "While", cond_fn, body_fn, [0]) == "tf_while_loop"
+        def true_fn() -> EagerValue:
+            return 1
+
+        def false_fn() -> EagerValue:
+            return 0
+
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Cond", pred, true_fn, false_fn) == "tf_cond"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "If", pred, true_fn, false_fn) == "tf_cond"
+
+        def cond_fn(i: EagerValue) -> EagerValue:
+            return cast("EagerTensorProtocol", i) < cast("EagerTensorProtocol", 10)
+
+        def body_fn(i: EagerValue) -> EagerValue:
+            return cast("EagerTensorProtocol", i) + cast("EagerTensorProtocol", 1)
+
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "WhileLoop", cond_fn, body_fn, [0]) == "tf_while_loop"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "While", cond_fn, body_fn, [0]) == "tf_while_loop"
 
         # Vision and NN
-        assert execute_op(None, "Conv2D", [[[[1.0]]]], [[[[1.0]]]]) == "tf_conv2d"
-        assert execute_op(None, "MaxPool2D", [[[[1.0]]]]) == "tf_maxpool"
-        assert execute_op(None, "AvgPool2D", [[[[1.0]]]]) == "tf_avgpool"
-        assert execute_op(None, "ResizeBilinear", [[[[1.0]]]], size=(2, 2)) == "tf_resize"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Conv2D", [[[[1.0]]]], [[[[1.0]]]]) == "tf_conv2d"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "MaxPool2D", [[[[1.0]]]]) == "tf_maxpool"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "AvgPool2D", [[[[1.0]]]]) == "tf_avgpool"
+        assert cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "ResizeBilinear", [[[[1.0]]]], size=(2, 2)) == "tf_resize"

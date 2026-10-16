@@ -1,11 +1,12 @@
-# ruff: noqa: E402, E501, F403
 """Ctypes-based NCCL collective driver bindings for CUDA."""
 
 from __future__ import annotations
 
 import ctypes
+import logging
 from typing import Optional  # noqa: F401
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # NCCL Data types
@@ -37,7 +38,7 @@ class NCCLDriver:
             lib_path (str | None): Custom path to libnccl.so or None for discovery.
         """
         self.nccl_lib: ctypes.CDLL | None = None
-        self._allocated_buffers: dict[int, object] = {}
+        self._allocated_buffers: dict[int, EagerValue] = {}
         self.cuda_rt: ctypes.CDLL | None = None
         for rt in ["libcudart.so.12", "libcudart.so.11", "libcudart.so", "nvcuda.dll", "libcuda.dylib"]:
             try:
@@ -99,12 +100,12 @@ class NCCLDriver:
                 fn.argtypes = [ctypes.c_void_p]
                 fn.restype = ctypes.c_int
                 fn(ctypes.c_void_p(ptr))
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         else:
             self._allocated_buffers.pop(ptr, None)
 
-    def copy_host_to_device(self, host_array: object, dev_ptr: int) -> None:
+    def copy_host_to_device(self, host_array: EagerValue, dev_ptr: int) -> None:
         """Transfer memory buffer from host NumPy array to accelerator device pointer.
 
         Args:
@@ -121,11 +122,11 @@ class NCCLDriver:
                 # cudaMemcpyHostToDevice = 1
                 fn(ctypes.c_void_p(dev_ptr), ctypes.c_void_p(buf_ptr), nbytes, 1)
                 return
-            except Exception:
-                pass
-        ctypes.memmove(dev_ptr, buf_ptr, nbytes)
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+        getattr(ctypes, "memmove")(dev_ptr, buf_ptr, nbytes)
 
-    def copy_device_to_host(self, dev_ptr: int, out_array: object) -> None:
+    def copy_device_to_host(self, dev_ptr: int, out_array: EagerValue) -> None:
         """Transfer memory buffer from accelerator device pointer to destination host NumPy array.
 
         Args:
@@ -142,9 +143,9 @@ class NCCLDriver:
                 # cudaMemcpyDeviceToHost = 2
                 fn(ctypes.c_void_p(buf_ptr), ctypes.c_void_p(dev_ptr), nbytes, 2)
                 return
-            except Exception:
-                pass
-        ctypes.memmove(buf_ptr, dev_ptr, nbytes)
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+        getattr(ctypes, "memmove")(buf_ptr, dev_ptr, nbytes)
 
     def _check_available(self) -> None:
         """Verify that NCCL hardware and shared library are available.
@@ -181,7 +182,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclAllReduce
+            fn = getattr(self.nccl_lib, "ncclAllReduce")
             fn.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_void_p,
@@ -220,7 +221,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclAllGather
+            fn = getattr(self.nccl_lib, "ncclAllGather")
             fn.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_void_p,
@@ -260,7 +261,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclBroadcast
+            fn = getattr(self.nccl_lib, "ncclBroadcast")
             fn.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_void_p,
@@ -301,7 +302,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclReduceScatter
+            fn = getattr(self.nccl_lib, "ncclReduceScatter")
             fn.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_void_p,
@@ -341,7 +342,7 @@ class NCCLDriver:
         self._check_available()
         try:
             if hasattr(self.nccl_lib, "ncclAllToAll"):
-                fn = self.nccl_lib.ncclAllToAll
+                fn = getattr(self.nccl_lib, "ncclAllToAll")
                 fn.argtypes = [
                     ctypes.c_void_p,
                     ctypes.c_void_p,
@@ -380,7 +381,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclSend
+            fn = getattr(self.nccl_lib, "ncclSend")
             fn.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_size_t,
@@ -418,7 +419,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclRecv
+            fn = getattr(self.nccl_lib, "ncclRecv")
             fn.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_size_t,
@@ -443,7 +444,7 @@ class NCCLDriver:
         """
         self._check_available()
         uid: _NcclUniqueId = _NcclUniqueId()
-        fn = self.nccl_lib.ncclGetUniqueId
+        fn = getattr(self.nccl_lib, "ncclGetUniqueId")
         fn.argtypes = [ctypes.POINTER(_NcclUniqueId)]
         fn.restype = ctypes.c_int
         status: int = int(fn(ctypes.byref(uid)))
@@ -470,7 +471,7 @@ class NCCLDriver:
         ctypes.memmove(ctypes.byref(uid), comm_id[:128], min(128, len(comm_id)))
 
         comm = ctypes.c_void_p()
-        fn = self.nccl_lib.ncclCommInitRank
+        fn = getattr(self.nccl_lib, "ncclCommInitRank")
         fn.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.c_int, _NcclUniqueId, ctypes.c_int]
         fn.restype = ctypes.c_int
         status: int = int(fn(ctypes.byref(comm), nranks, uid, rank))
@@ -489,7 +490,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclCommDestroy
+            fn = getattr(self.nccl_lib, "ncclCommDestroy")
             fn.argtypes = [ctypes.c_void_p]
             fn.restype = ctypes.c_int
             return int(fn(ctypes.c_void_p(comm)))
@@ -504,7 +505,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclGroupStart
+            fn = getattr(self.nccl_lib, "ncclGroupStart")
             fn.restype = ctypes.c_int
             return int(fn())
         except Exception:
@@ -518,7 +519,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            fn = self.nccl_lib.ncclGroupEnd
+            fn = getattr(self.nccl_lib, "ncclGroupEnd")
             fn.restype = ctypes.c_int
             return int(fn())
         except Exception:

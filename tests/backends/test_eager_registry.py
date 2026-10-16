@@ -1,20 +1,30 @@
 """Test module."""
 
-from unittest.mock import MagicMock, patch
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerOpRegistry
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_eager_registry():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_eager_registry() -> None:
+    """Test function test_eager_registry."""
     r = EagerOpRegistry()
     assert r.get("foo") is None
 
     @r.register("foo")
-    def foo(x):
-        return x + 1
+    def foo(x: EagerValue) -> EagerValue:
+        """Test function foo."""
+        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1)
 
     assert r.get("foo") is foo
 
@@ -24,19 +34,22 @@ def test_eager_registry():
         r.dispatch("bar_unique_not_existing", 1)
 
 
-def test_eager_registry_fallback():
+def test_eager_registry_fallback() -> None:
+    """Test function test_eager_registry_fallback."""
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     r = EagerOpRegistry()
 
     @global_eager_registry.register("global_foo_test")
-    def gfoo(x):
-        return x + 2
+    def gfoo(x: EagerValue) -> EagerValue:
+        """Test function gfoo."""
+        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 2)
 
     assert r.dispatch("global_foo_test", 3) == 5
 
 
-def test_global_eager_registry_fallback_missing():
+def test_global_eager_registry_fallback_missing() -> None:
+    """Test function test_global_eager_registry_fallback_missing."""
     import pytest
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -45,100 +58,108 @@ def test_global_eager_registry_fallback_missing():
         global_eager_registry.dispatch("op_does_not_exist_ever_123")
 
 
-def test_decode_image_eager():
+def test_decode_image_eager() -> None:
+    """Test function test_decode_image_eager."""
+    import struct
+
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_decode_image_camel
 
     # Test empty args
-    assert len(_np_decode_image_camel(None)) == 0
+    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", _np_decode_image_camel)(None)) == 0
 
     # Test not bytes
     with pytest.raises(RuntimeError, match="Expected bytes"):
         _np_decode_image_camel(None, np.array([1, 2, 3]))
 
-    # Test success path with mocked PIL
-    mock_img = MagicMock()
-    mock_img.convert.return_value = mock_img
-    mock_img.__array__ = MagicMock(return_value=np.ones((10, 10, 3), dtype=np.uint8))
+    # Construct valid 10x10 RGB PNG header
+    png_bytes = b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">IIBBBBB", 10, 10, 8, 2, 0, 0, 0)
 
-    with patch("PIL.Image.open", return_value=mock_img):
-        # Default channels
-        res = _np_decode_image_camel(None, b"fake_data")
-        assert res.shape == (10, 10, 3)
+    # Default channels
+    res = _np_decode_image_camel(None, png_bytes)
+    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (10, 10, 3)
 
-        # Channels = 1
-        res1 = _np_decode_image_camel(None, b"fake_data", channels=1)
-        assert res1.shape == (10, 10, 3, 1)  # Because mock array is already 3D
+    # Channels = 1
+    res1 = _np_decode_image_camel(None, png_bytes, channels=1)
+    assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (10, 10, 1)
 
-        # Channels = 4
-        res4 = _np_decode_image_camel(None, b"fake_data", channels=4)
-        assert res4.shape == (10, 10, 3)
+    # Channels = 4
+    res4 = _np_decode_image_camel(None, png_bytes, channels=4)
+    assert cast("EagerTensorProtocol", getattr(res4, "shape")) == (10, 10, 4)
 
 
-def test_encode_image_eager():
+def test_encode_image_eager() -> None:
+    """Test function test_encode_image_eager."""
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_encode_image_camel
 
     # Test empty args
     res = _np_encode_image_camel(None)
-    assert res.item() == b""
+    assert cast("EagerTensorProtocol", getattr(res, "item"))() == b""
 
-    mock_img = MagicMock()
+    # Shape with 1 channel
+    arr = np.ones((10, 10, 1), dtype=np.uint8)
+    res = _np_encode_image_camel(None, arr)
+    assert isinstance(res, np.ndarray)
 
-    with patch("PIL.Image.fromarray", return_value=mock_img):
-        # Shape missing last channel
-        arr = np.ones((10, 10, 1), dtype=np.uint8)
-        res = _np_encode_image_camel(None, arr)
-        assert isinstance(res, np.ndarray)
+    # Non-uint8 dtype
+    arr2 = np.ones((10, 10, 3), dtype=np.float32)
+    res2 = _np_encode_image_camel(None, arr2)
+    assert isinstance(res2, np.ndarray)
 
-        # Non-uint8 dtype
-        arr2 = np.ones((10, 10, 3), dtype=np.float32)
-        res2 = _np_encode_image_camel(None, arr2)
-        assert isinstance(res2, np.ndarray)
-
-        # Trigger exception
-        with patch("io.BytesIO", side_effect=Exception("mock error")):
-            with pytest.raises(RuntimeError):
-                _np_encode_image_camel(None, arr2)
+    # Trigger exception
+    with patch("struct.pack", side_effect=Exception("mock error")):
+        with pytest.raises(RuntimeError):
+            _np_encode_image_camel(None, arr2)
 
 
-def test_load_vision_formats_missing():
+def test_load_vision_formats_missing() -> None:
+    """Test function test_load_vision_formats_missing."""
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _load_vision_formats
 
     with patch("os.path.exists", return_value=False):
         assert _load_vision_formats() == {}
 
 
-def test_dynamic_fallback():
-
+def test_dynamic_fallback() -> None:
+    """Test function test_dynamic_fallback."""
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     class DummyObj:
-        def my_op(self, *args):
+        """Test class DummyObj."""
+
+        def my_op(self, *args: EagerValue) -> EagerValue:
+            """Test function my_op."""
             return 42
 
-    assert global_eager_registry.dispatch("My_Op", DummyObj()) == 42
+    assert cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("My_Op", cast("Callable[..., EagerTensorProtocol]", DummyObj)()) == 42
 
     class DummyBackend:
-        def my_backend_op(self, *args, **kwargs):
+        """Test class DummyBackend."""
+
+        def my_backend_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function my_backend_op."""
             return 43
 
-        def subtract(self, *args, **kwargs):
+        def subtract(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function subtract."""
             return 44
 
-    assert global_eager_registry.dispatch("My_Backend_Op", 1, backend_module=DummyBackend()) == 43
-    assert global_eager_registry.dispatch("sub", DummyBackend(), backend_module=DummyBackend()) == 44
+    assert cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("My_Backend_Op", 1, backend_module=cast("Callable[..., EagerTensorProtocol]", DummyBackend)()) == 43
+    assert cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("sub", cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), backend_module=cast("Callable[..., EagerTensorProtocol]", DummyBackend)()) == 44
 
     with pytest.raises(ValueError, match="not found in registry and no universal fallback"):
-        global_eager_registry.dispatch("missing_op_on_backend", backend_module=DummyBackend())
+        cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("missing_op_on_backend", backend_module=cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
 
 
-def test_custom_vjp_and_tuple():
+def test_custom_vjp_and_tuple() -> None:
+    """Test function test_custom_vjp_and_tuple."""
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     assert global_eager_registry.dispatch("CustomVJP", None, 1) == 1
     assert global_eager_registry.dispatch("CustomVJP", None, 1, 2) == (1, 2)
 
-    def my_bwd(res, *args):
-        return sum(args)
+    def my_bwd(res: EagerValue, *args: EagerValue) -> EagerValue:
+        """Test function my_bwd."""
+        return cast("Callable[..., EagerTensorProtocol]", sum)(args)
 
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn=my_bwd) == 3
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn="not callable") is None

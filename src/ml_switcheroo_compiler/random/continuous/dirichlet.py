@@ -29,4 +29,4 @@ def dirichlet(
     if shape is None:
         shape = ()
     dtype = dtype or dtypes.DType.Float32
-    return _emit_random_node("Dirichlet", [key, alpha], shape, dtype)  # type: ignore[list-item]
+    return _emit_random_node("Dirichlet", [key, alpha], shape, dtype)

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
-ArrayInput = Union[np.ndarray, Sequence[float], Sequence[int], float, int]
+ArrayInput = Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], Sequence[float], Sequence[int], float, int]
 
 
 @numpy_eager_registry.register("Convolve")
@@ -18,7 +18,7 @@ def _np_convolve(
     backend_module: ModuleType,
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
@@ -29,7 +29,7 @@ def _np_convolve(
     Returns:
         np.ndarray: The computed result.
     """
-    return backend_module.convolve(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.convolve(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedLocal")
@@ -37,7 +37,7 @@ def _np_convgeneraldilatedlocal(
     backend_module: ModuleType,
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement ConvGeneralDilatedLocal.
 
     Args:
@@ -50,7 +50,7 @@ def _np_convgeneraldilatedlocal(
     """
     import scipy.signal
 
-    return scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid")
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedPatches")
@@ -58,7 +58,7 @@ def _np_convgeneraldilatedpatches(
     backend_module: ModuleType,
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement ConvGeneralDilatedPatches.
 
     Args:
@@ -71,7 +71,7 @@ def _np_convgeneraldilatedpatches(
     """
     import scipy.signal
 
-    return scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid")
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
 
 
 @numpy_eager_registry.register("ConvWithGeneralPadding")
@@ -79,7 +79,7 @@ def _np_convwithgeneralpadding(
     backend_module: ModuleType,
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement ConvWithGeneralPadding.
 
     Args:
@@ -92,7 +92,7 @@ def _np_convwithgeneralpadding(
     """
     import scipy.signal
 
-    return scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid")
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))
 
 
 @numpy_eager_registry.register("RawConv2D")
@@ -100,7 +100,7 @@ def _np_rawconv2d(
     backend_module: ModuleType,
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement RawConv2D.
 
     Args:
@@ -113,4 +113,4 @@ def _np_rawconv2d(
     """
     import scipy.signal
 
-    return scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid")
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid"))

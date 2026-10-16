@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import importlib
 import sys
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
 import ml_switcheroo_compiler.backends.dask.types as dask_types
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class _MockBackendModule:
@@ -24,7 +30,7 @@ class _MockBackendModule:
         """
         return ("zeros", shape)
 
-    def array(self, data: object, dtype: object = None) -> tuple[str, object, object]:
+    def array(self, data: EagerValue, dtype: EagerValue = None) -> tuple[str, EagerValue, EagerValue]:
         """Mock array.
 
         Args:
@@ -36,7 +42,7 @@ class _MockBackendModule:
         """
         return ("array", data, dtype)
 
-    def asarray(self, data: object) -> tuple[str, object]:
+    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
         """Mock asarray.
 
         Args:
@@ -107,30 +113,30 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
         pass
 
     z = dask_types.zeros(_DummyDaskBackend, (2, 2))
-    assert z.shape == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(z, "shape")) == (2, 2)
 
     arr1 = dask_types.array(_DummyDaskBackend, [1, 2], dtype=None)
-    assert arr1.compute().tolist() == [1, 2]
+    assert cast("EagerTensorProtocol", getattr(arr1, "compute"))().tolist() == [1, 2]
 
     arr2 = dask_types.array(_DummyDaskBackend, [3, 4], dtype="float32")
-    assert arr2.compute().tolist() == [3.0, 4.0]
+    assert cast("EagerTensorProtocol", getattr(arr2, "compute"))().tolist() == [3.0, 4.0]
 
-    arr3 = dask_types.array(_DummyDaskBackend, [5, 6], dtype=_MockDaskDtypeWrapper("int32"))
-    assert arr3.compute().tolist() == [5, 6]
+    arr3 = cast("Callable[..., EagerTensorProtocol]", dask_types.array)(_DummyDaskBackend, [5, 6], dtype=cast("Callable[..., EagerTensorProtocol]", _MockDaskDtypeWrapper)("int32"))
+    assert cast("EagerTensorProtocol", getattr(arr3, "compute"))().tolist() == [5, 6]
 
     as_arr = dask_types.asarray(_DummyDaskBackend, [7, 8])
-    assert as_arr.compute().tolist() == [7, 8]
+    assert cast("EagerTensorProtocol", getattr(as_arr, "compute"))().tolist() == [7, 8]
 
-    item_val = dask_types.item(_DummyDaskBackend, as_arr[0])
+    item_val = dask_types.item(_DummyDaskBackend, cast("EagerTensorProtocol", getattr(as_arr, "__getitem__")(0)))
     assert item_val == 7.0
 
     # ImportError coverage for dask_types
     monkeypatch.setitem(sys.modules, "dask", None)
     monkeypatch.setitem(sys.modules, "dask.array", None)
     importlib.reload(dask_types)
-    assert dask_types.da is None
+    assert cast("EagerTensorProtocol", getattr(dask_types, "da")) is None
 
     # Restore dask_types
     monkeypatch.undo()
     importlib.reload(dask_types)
-    assert dask_types.da is not None
+    assert cast("EagerTensorProtocol", getattr(dask_types, "da")) is not None

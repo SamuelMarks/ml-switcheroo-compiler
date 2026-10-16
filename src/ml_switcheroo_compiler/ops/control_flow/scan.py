@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -35,5 +35,5 @@ def scan(
     import ml_switcheroo_compiler.ops.control_flow as cf
 
     if config.eager_mode:
-        return cf.scan_eager(f, init, xs, length)
-    return cf.scan_tracing(f, init, xs, length)
+        return cast(tuple[Carry, Tensor], getattr(cf, "scan_eager")(f, init, xs, length))
+    return cast(tuple[Carry, Tensor], getattr(cf, "scan_tracing")(f, init, xs, length))

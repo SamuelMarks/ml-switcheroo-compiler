@@ -1,5 +1,9 @@
 """Tests for sparse and ragged extras."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
@@ -16,18 +20,24 @@ from ml_switcheroo_compiler.ops.sparse import (
     sparse_to_dense,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_sparse_extras() -> None:
+    """Test function test_sparse_extras."""
     backend = get_active_backend()
     dev = Device("cpu")
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = SparseConcat()
-    assert op1.infer_shape(None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(None) == ()
     op2 = SparseSplit()
-    assert op2.infer_shape(None, None) == ((),)
+    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(None, None) == ((),)
     op3 = SparseToDense()
-    assert op3.infer_shape(None, None, None, None) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)(None, None, None, None) == ()
 
     config.eager_mode = False
     from unittest.mock import patch
@@ -41,12 +51,13 @@ def test_sparse_extras() -> None:
 
 
 def test_ragged_extras() -> None:
+    """Test function test_ragged_extras."""
     backend = get_active_backend()
     dev = Device("cpu")
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = BooleanMask()
-    assert len(op1.infer_shape(None, None)) == 1
+    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(None, None)) == 1
     op2 = MapFlatValues()
     assert op2.infer_shape(None) == ()
 
@@ -55,5 +66,5 @@ def test_ragged_extras() -> None:
 
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node") as mock_emit:
         boolean_mask(t1, t1)
-        map_flat_values(lambda x: x, t1)
+        cast("Callable[..., EagerTensorProtocol]", map_flat_values)(lambda x: x, t1)
         assert mock_emit.call_count == 2

@@ -1,9 +1,11 @@
-# ruff: noqa: E402, E501, F403
 # pylint: disable=duplicate-code
 
 """Define shape manipulation operations for the ML Switcheroo framework."""
 
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from typing import cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 
 
 @register_op("Concatenate")
@@ -13,16 +15,7 @@ class Concatenate(OpDef):
     This operator concatenates a sequence of arrays along an existing axis.
     """
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
-
-        Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape for the Concatenate operation.
 
         Args:
@@ -33,12 +26,14 @@ class Concatenate(OpDef):
             tuple[int, ...]: The inferred shape of the concatenated output tensor.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = args[0]
-            axis = kwargs.get("axis", 0)
+            from typing import cast
+
+            shapes = cast("list[tuple[int, ...]] | tuple[tuple[int, ...], ...]", args[0])
+            axis = int(cast(int, kwargs.get("axis", 0)))
             if not shapes:
                 return ()
             res = list(shapes[0])
-            res[axis] = sum(s[axis] if len(s) > axis else 1 for s in shapes)
+            res[axis] = sum(int(s[axis]) if len(s) > axis else 1 for s in shapes)
             return tuple(res)
         return ()
 
@@ -50,16 +45,7 @@ class Stack(OpDef):
     This operator joins a sequence of arrays along a new axis.
     """
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple: Result.
-        """
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape for the Stack operation.
 
         Args:
@@ -69,6 +55,7 @@ class Stack(OpDef):
         Returns:
             tuple[int, ...]: The inferred shape of the stacked output tensor.
         """
+        del args, kwargs
         return ()
 
 
@@ -79,16 +66,7 @@ class Split(OpDef):
     This operator splits an array into multiple sub-arrays.
     """
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple: Result.
-        """
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape for the Split operation.
 
         Args:
@@ -98,8 +76,9 @@ class Split(OpDef):
         Returns:
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
+        del kwargs
         if len(args) > 0 and hasattr(args[0], "shape"):
-            return tuple(args[0].shape)
+            return tuple(getattr(args[0], "shape"))
         return ()
 
 
@@ -110,16 +89,7 @@ class Hsplit(OpDef):
     This operator splits an array into multiple sub-arrays horizontally (column-wise).
     """
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple: Result.
-        """
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape for the Hsplit operation.
 
         Args:
@@ -129,8 +99,9 @@ class Hsplit(OpDef):
         Returns:
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
+        del kwargs
         if len(args) > 0 and hasattr(args[0], "shape"):
-            return tuple(args[0].shape)
+            return tuple(getattr(args[0], "shape"))
         return ()
 
 
@@ -141,16 +112,7 @@ class Vsplit(OpDef):
     This operator splits an array into multiple sub-arrays vertically (row-wise).
     """
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple: Result.
-        """
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape for the Vsplit operation.
 
         Args:
@@ -160,8 +122,9 @@ class Vsplit(OpDef):
         Returns:
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
+        del kwargs
         if len(args) > 0 and hasattr(args[0], "shape"):
-            return tuple(args[0].shape)
+            return tuple(getattr(args[0], "shape"))
         return ()
 
 
@@ -172,16 +135,7 @@ class Dsplit(OpDef):
     This operator splits an array into multiple sub-arrays along the 3rd axis (depth).
     """
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple: Result.
-        """
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape for the Dsplit operation.
 
         Args:
@@ -191,8 +145,9 @@ class Dsplit(OpDef):
         Returns:
             tuple[int, ...]: The inferred shape of the split output tensors.
         """
+        del kwargs
         if len(args) > 0 and hasattr(args[0], "shape"):
-            return tuple(args[0].shape)
+            return tuple(getattr(args[0], "shape"))
         return ()
 
 
@@ -203,7 +158,7 @@ class Hstack(OpDef):
     This operator stacks arrays in sequence horizontally (column wise).
     """
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -233,7 +188,7 @@ class Vstack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -263,7 +218,7 @@ class Dstack(OpDef):
     This operator stacks arrays in sequence depth wise (along third axis).
     """
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -295,7 +250,7 @@ class ColumnStack(OpDef):
     This operator stacks 1-D arrays as columns into a 2-D array.
     """
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -325,16 +280,7 @@ class RowStack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple: Result.
-        """
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer the output shape for the RowStack operation.
 
         Args:
@@ -344,6 +290,7 @@ class RowStack(OpDef):
         Returns:
             tuple[int, ...]: The inferred shape of the row-stacked output tensor.
         """
+        del args, kwargs
         return ()
 
 
@@ -354,7 +301,7 @@ class Argwhere(OpDef):
     op_name = "Argwhere"
     np_op_name = "argwhere"
 
-    def infer_shape(self, a, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the Argwhere operation.
 
         Args:
@@ -373,7 +320,7 @@ class Append(OpDef):
     This operator appends values to the end of an array.
     """
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -388,7 +335,7 @@ class Append(OpDef):
         axis = kwargs.get("axis")
         if axis is not None:
             res = list(args[0].shape)
-            res[axis] += args[1].shape[axis] if len(args) > 1 and hasattr(args[1], "shape") else 1
+            cast(EagerTensorProtocol, res)[axis] += getattr(getattr(args, "__getitem__")(1).shape, "__getitem__")(axis) if len(args) > 1 and hasattr(getattr(args, "__getitem__")(1), "shape") else 1
             return tuple(res)
         import math
 

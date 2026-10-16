@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
 import os
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -28,16 +30,7 @@ from ml_switcheroo_compiler.grad.api import (
     overwrite_with_gradient,
     value_and_grad,
 )
-from ml_switcheroo_compiler.grad.utils import (
-    GradOptions,
-    _check_scalar,
-    _compute_grad_and_value,
-    _convert_to_tensors,
-    _find_wrt_tensors,
-    _get_concrete_val,
-    _get_inputs_dict,
-    _to_original_type,
-)
+from ml_switcheroo_compiler.grad.utils import _check_scalar, _compute_grad_and_value, _convert_to_tensors, _find_wrt_tensors, _get_concrete_val, _get_inputs_dict, _to_original_type
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.loop_tiling import _split_shape, loop_tiling_pass
 from ml_switcheroo_compiler.transforms.passes.poly_lower import polyfill_lowering_pass
@@ -50,10 +43,17 @@ from ml_switcheroo_compiler.utils.generic_utils import (
     get_file,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+GradOptions = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad.utils"), "GradOptions"))
+
 device = Device(DeviceType.CPU, 0)
 
 
-def test_export_api_empty_graph_outputs(tmp_path) -> None:
+def test_export_api_empty_graph_outputs(tmp_path: EagerTensorProtocol) -> None:
     """Test ExportArchive.write_out when graph has empty outputs list and validation edge cases."""
     archive = ExportArchive()
     g = IRGraph(name="empty_out_graph")
@@ -163,15 +163,16 @@ def test_grad_api_features() -> None:
     assert res_ig is not None
 
     # value_and_grad with has_aux=True (line 207)
-    def aux_fn(x):
+    def aux_fn(x: EagerValue) -> EagerValue:
+        """Test function aux_fn."""
         return x, "aux_info"
 
     vg_fn = value_and_grad(aux_fn, options=GradOptions(has_aux=True))
-    val_aux, g_val = vg_fn(t_in)
-    assert val_aux[1] == "aux_info"
+    val_aux, g_val = cast("Callable[..., EagerTensorProtocol]", vg_fn)(t_in)
+    assert cast("EagerTensorProtocol", getattr(val_aux, "__getitem__")(1)) == "aux_info"
 
-    g_aux_fn = grad(aux_fn, options=GradOptions(has_aux=True))
-    grads_aux, aux_val = g_aux_fn(t_in)
+    g_aux_fn = cast("Callable[..., EagerTensorProtocol]", grad)(aux_fn, options=cast("Callable[..., EagerTensorProtocol]", GradOptions)(has_aux=True))
+    grads_aux, aux_val = cast("Callable[..., EagerTensorProtocol]", g_aux_fn)(t_in)
     assert aux_val == "aux_info"
 
     # hook_gradient backward pass with hook returning None (line 293)
@@ -237,12 +238,12 @@ def test_grad_utils_branches() -> None:
     bool_arr = np.array([True, False], dtype=bool)
     orig_t = Tensor(np.array([1, 0]), TensorConfig((2,), DType.Int32, device))
     t_res_bool = _to_original_type(bool_arr, orig_t)
-    assert t_res_bool.dtype == DType.Bool
+    assert cast("EagerTensorProtocol", getattr(t_res_bool, "dtype")) == DType.Bool
 
     # 7. _compute_grad_and_value with active tracing (lines 314-319)
     with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph", g):
-            val, grads = _compute_grad_and_value(lambda x: x, GradOptions(), (t_valid,))
+            val, grads = cast("Callable[..., EagerTensorProtocol]", _compute_grad_and_value)(lambda x: x, cast("Callable[..., EagerTensorProtocol]", GradOptions)(), (t_valid,))
             assert val is not None
 
 
@@ -259,30 +260,36 @@ def test_graph_utils_topological_sort_branches() -> None:
 
     # 2. list nodes where visited node is skipped and node not found in list (lines 43->48, 65-67, 69-67)
     class MockGraphList:
-        def __init__(self):
+        """Test class MockGraphList."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
             n1 = IRNode(id="n1", op_type="Input", inputs=[])
             n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])
             self.nodes = [n2, n1]
 
     g_list = MockGraphList()
-    sorter = _TopologicalSorter(g_list)
+    sorter = cast("Callable[..., EagerTensorProtocol]", _TopologicalSorter)(g_list)
     sorter.visit("node_absent_from_list")  # triggers lines 42->48 and 43->48
     sorted_nodes = sorter.sort()
     assert len(sorted_nodes) == 2
 
     # 3. non-dict, non-list nodes iterable (lines 42->48)
     class MockGraphTuple:
-        def __init__(self):
+        """Test class MockGraphTuple."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
             n1 = IRNode(id="n1", op_type="Input", inputs=[])
             self.nodes = (n1,)
 
     g_tuple = MockGraphTuple()
-    sorter2 = _TopologicalSorter(g_tuple)
+    sorter2 = cast("Callable[..., EagerTensorProtocol]", _TopologicalSorter)(g_tuple)
     sorted_tuple = sorter2.sort()
     assert len(sorted_tuple) == 0
 
 
-def test_generic_utils_branches(tmp_path) -> None:
+def test_generic_utils_branches(tmp_path: EagerTensorProtocol) -> None:
     """Test generic_utils branches: custom cache_dir, untar=False, verbose!=1."""
     # 1. get_file with cache_dir not None and untar/extract False
     custom_cache = str(tmp_path / "custom_cache")
@@ -310,7 +317,7 @@ def test_backends_registry_lazy_loader_branches() -> None:
     try:
         # Line 146: name in _LAZY_MODULES but NOT in _LOADERS
         assert dummy_key not in _LOADERS
-        BackendRegistry._try_load_lazy(dummy_key)
+        cast("Callable[..., EagerTensorProtocol]", BackendRegistry._try_load_lazy)(dummy_key)
 
         # Line 197: inside get_all() where name not in _LOADERS
         all_b = BackendRegistry.get_all()
@@ -340,12 +347,12 @@ def test_loop_tiling_symbolic_shapes_and_no_split() -> None:
     # 1. Matmul with non-integer symbolic dimensions (line 93)
     shape_sym_matmul = (4, "M", "N")
     op_config_matmul = {"TILE_M": 16, "TILE_N": 16}
-    assert _split_shape("matmul", shape_sym_matmul, op_config_matmul) == shape_sym_matmul
+    assert cast("Callable[..., EagerTensorProtocol]", _split_shape)("matmul", shape_sym_matmul, op_config_matmul) == shape_sym_matmul
 
     # 2. Conv2D with non-integer symbolic dimensions (line 105)
     shape_sym_conv = (1, "H", "W", 3)
     op_config_conv = {"TILE_H": 16, "TILE_W": 16}
-    assert _split_shape("conv2d", shape_sym_conv, op_config_conv) == shape_sym_conv
+    assert cast("Callable[..., EagerTensorProtocol]", _split_shape)("conv2d", shape_sym_conv, op_config_conv) == shape_sym_conv
 
     # 3. loop_tiling_pass where new_shape == shape (line 144)
     g = IRGraph()

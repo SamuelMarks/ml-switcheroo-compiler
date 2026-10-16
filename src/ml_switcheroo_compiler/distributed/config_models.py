@@ -2,10 +2,13 @@
 
 import os
 from collections.abc import ItemsView
-from typing import Optional
+from typing import Optional, cast
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field, RootModel
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MicrobatchSplittingConfig(BaseModel):
@@ -64,17 +67,17 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
 
     root: dict[str, TopologyConfig]
 
-    def dict(self, *args: object, **kwargs: object) -> dict[str, object]:
+    def _dict(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, AttributeValue]:
         """Return dict representation.
 
         Args:
-            *args (object): Positional dump args.
-            **kwargs (object): Keyword dump args.
+            *args: Positional dump args.
+            **kwargs: Keyword dump args.
 
         Returns:
-            dict[str, object]: Dictionary representation.
+            dict[str, AttributeValue]: Dictionary representation.
         """
-        return super().model_dump(*args, **kwargs)
+        return cast(dict[str, AttributeValue], getattr(super(), "model_dump")(*args, **kwargs))
 
     def items(self) -> ItemsView[str, TopologyConfig]:
         """Return items from the underlying dictionary.
@@ -95,6 +98,9 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
             Optional[TopologyConfig]: The topology config or default.
         """
         return self.root.get(key, default)
+
+
+setattr(PipelineTopologiesConfig, "dict", PipelineTopologiesConfig._dict)
 
 
 class ClusterMeshConfig(BaseModel):
@@ -161,7 +167,7 @@ class DistributedTopologyConfig(BaseModel):
     device_mesh_grids: dict[str, DeviceMeshGridConfig] = {}
     collective_algorithms: list[CollectiveAlgorithmConfig] = []
     pipeline_topologies: dict[str, TopologyConfig] = {}
-    webrtc_topology: Optional[dict[str, object]] = None
+    webrtc_topology: Optional[dict[str, AttributeValue]] = None
 
 
 class DeviceMeshYamlConfig(BaseModel):
@@ -219,7 +225,7 @@ def load_consolidated_topology(yaml_path: Optional[str] = None) -> DistributedTo
         return DistributedTopologyConfig.model_validate(raw_data)
 
     # Fallback consolidation from sibling YAML files
-    consolidated_dict: dict[str, object] = {
+    consolidated_dict: dict[str, AttributeValue] = {
         "version": "1.0",
         "cluster_topologies": {},
         "device_mesh_grids": {},
@@ -233,7 +239,7 @@ def load_consolidated_topology(yaml_path: Optional[str] = None) -> DistributedTo
         with open(mesh_path, encoding="utf-8") as f:
             mesh_raw = yaml.safe_load(f) or {}
         mesh_cfg = DeviceMeshYamlConfig.model_validate(mesh_raw)
-        grids: dict[str, object] = {}
+        grids: dict[str, AttributeValue] = {}
         for name, cm in mesh_cfg.cluster_meshes.items():
             grids[name] = {
                 "shape": cm.shape,

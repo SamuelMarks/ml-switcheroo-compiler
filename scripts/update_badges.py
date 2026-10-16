@@ -5,12 +5,56 @@ report, gets documentation coverage, formats these values, determines appropriat
 colors, and updates the corresponding shields.io badge URLs in the README.md file.
 """
 
+import ast
 import json
 import os
 import re
 import subprocess
 import sys
 from typing import Optional
+
+
+class _DocVisitor(ast.NodeVisitor):
+    """Visitor to count AST nodes and their docstrings."""
+
+    def __init__(self) -> None:
+        """Initialize the visitor."""
+        self.total_nodes: int = 0
+        self.nodes_with_docstrings: int = 0
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        """Visit a class definition node.
+
+        Args:
+            node (ast.ClassDef): The class definition node.
+        """
+        if not node.name.startswith("_"):
+            self.total_nodes += 1
+            if ast.get_docstring(node):
+                self.nodes_with_docstrings += 1
+            self.generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """Visit a function definition node.
+
+        Args:
+            node (ast.FunctionDef): The function definition node.
+        """
+        if not node.name.startswith("_"):
+            self.total_nodes += 1
+            if ast.get_docstring(node):
+                self.nodes_with_docstrings += 1
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Visit an async function definition node.
+
+        Args:
+            node (ast.AsyncFunctionDef): The async function definition node.
+        """
+        if not node.name.startswith("_"):
+            self.total_nodes += 1
+            if ast.get_docstring(node):
+                self.nodes_with_docstrings += 1
 
 
 def get_color(pct: float) -> str:
@@ -96,104 +140,32 @@ def get_doc_coverage() -> float:
     Returns:
         float: The documentation coverage percentage.
     """
-    import ast
-
-    class DocVisitor(ast.NodeVisitor):
-        """Visitor to count AST nodes and their docstrings."""
-
-        def __init__(self) -> None:
-            """Initialize the visitor.
-
-            Returns:
-                None
-            """
-            self.total_nodes: int = 0
-            self.nodes_with_docstrings: int = 0
-
-        def visit_ClassDef(self, node: ast.ClassDef) -> None:
-            """Visit a class definition node.
-
-            Args:
-                node (ast.ClassDef): The class definition node.
-
-            Returns:
-                None
-            """
-            if not node.name.startswith("_"):
-                self.total_nodes += 1
-                if ast.get_docstring(node):
-                    self.nodes_with_docstrings += 1
-                # Visit methods
-                self.generic_visit(node)
-
-        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-            """Visit a function definition node.
-
-            Args:
-                node (ast.FunctionDef): The function definition node.
-
-            Returns:
-                None
-            """
-            if not node.name.startswith("_"):
-                self.total_nodes += 1
-                if ast.get_docstring(node):
-                    self.nodes_with_docstrings += 1
-            # Do not visit inner functions/classes
-
-        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-            """Visit an async function definition node.
-
-            Args:
-                node (ast.AsyncFunctionDef): The async function definition node.
-
-            Returns:
-                None
-            """
-            if not node.name.startswith("_"):
-                self.total_nodes += 1
-                if ast.get_docstring(node):
-                    self.nodes_with_docstrings += 1
-            # Do not visit inner functions/classes
-
     total_nodes: int = 0
     nodes_with_docstrings: int = 0
 
-    # We can walk the source directory
     src_dir: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src", "ml_switcheroo_compiler")
-
     if not os.path.exists(src_dir):
         return 0.0
 
     for root, _, files in os.walk(src_dir):
         for file in files:
-            if file.endswith(".py"):
-                # Similar to interrogate -i, ignore module docstrings for __init__.py
-                if file == "__init__.py":
-                    continue
+            if not file.endswith(".py") or file == "__init__.py":
+                continue
+            path: str = os.path.join(root, file)
+            with open(path, encoding="utf-8") as f:
+                try:
+                    tree: ast.Module = ast.parse(f.read(), filename=path)
+                    total_nodes += 1
+                    if ast.get_docstring(tree):
+                        nodes_with_docstrings += 1
+                    visitor = _DocVisitor()
+                    visitor.visit(tree)
+                    total_nodes += visitor.total_nodes
+                    nodes_with_docstrings += visitor.nodes_with_docstrings
+                except Exception:
+                    pass
 
-                path: str = os.path.join(root, file)
-                with open(path, encoding="utf-8") as f:
-                    try:
-                        content: str = f.read()
-                        tree: ast.Module = ast.parse(content, filename=path)
-
-                        # Check module docstring
-                        total_nodes += 1
-                        if ast.get_docstring(tree):
-                            nodes_with_docstrings += 1
-
-                        visitor: DocVisitor = DocVisitor()
-                        visitor.visit(tree)
-                        total_nodes += visitor.total_nodes
-                        nodes_with_docstrings += visitor.nodes_with_docstrings
-
-                    except Exception:
-                        pass
-
-    if total_nodes == 0:
-        return 0.0
-    return (nodes_with_docstrings / total_nodes) * 100.0
+    return 0.0 if total_nodes == 0 else (nodes_with_docstrings / total_nodes) * 100.0
 
 
 def update_readme() -> None:

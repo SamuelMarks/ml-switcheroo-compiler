@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module __init__.py."""
-
 """Diagnostics and profiling package."""
 
 from ml_switcheroo_compiler.diagnostics.flop_counter import estimate_flops

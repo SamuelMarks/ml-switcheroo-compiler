@@ -1,19 +1,20 @@
-"""Module norms.py."""
+"""Core abstractions and logic definitions for norms.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import TYPE_CHECKING, cast
 
-"""Core abstractions and logic definitions for norms.py."""
-
-
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
-def matrix_power(input: Tensor, n: int):
+
+def matrix_power(input: Tensor, n: int) -> EagerValue:
     """Raise a square matrix to the integer power `n`.
 
     Args:
@@ -27,7 +28,7 @@ def matrix_power(input: Tensor, n: int):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n)
+        data = cast("TensorLike", backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n))
         return Tensor(data, TensorConfig(data.shape, getattr(input, "dtype", None), getattr(input, "device", None)))
     return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [getattr(input, "dtype", None)])
 
@@ -54,7 +55,7 @@ def norm(
     ord: int | str | None = None,
     axis: int | tuple[int, ...] | None = None,
     keepdims: bool = False,
-):
+) -> EagerValue:
     """Matrix or vector norm.
 
     Args:
@@ -79,7 +80,7 @@ def norm(
     return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [getattr(x, "dtype", None)])
 
 
-def matrix_exponential(a: Tensor):
+def matrix_exponential(a: Tensor) -> EagerValue:
     """Evaluate matrix_exponential operation.
 
     Args:
@@ -92,12 +93,12 @@ def matrix_exponential(a: Tensor):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a))
+        data = cast("TensorLike", backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a)))
         return Tensor(data, TensorConfig(data.shape, getattr(a, "dtype", None), getattr(a, "device", None)))
     return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])
 
 
-def matrix_exp(a: Tensor):
+def matrix_exp(a: Tensor) -> EagerValue:
     """Evaluate matrix_exp operation.
 
     Args:
@@ -113,7 +114,7 @@ def _power_iteration_eager(
     input: Tensor,
     num_iters: int,
     u: Tensor | None,
-):
+) -> EagerValue:
     """Execute power iteration eagerly.
 
     Args:
@@ -128,11 +129,14 @@ def _power_iteration_eager(
 
     backend = get_active_backend()
 
-    v_data, u_data, sigma_data = backend.execute_op(
-        "PowerIteration",
-        (input.data if type(input).__name__ == "Tensor" else input),
-        num_iters=num_iters,
-        u=(u.data if type(u).__name__ == "Tensor" else u) if u is not None else None,
+    v_data, u_data, sigma_data = cast(
+        "tuple[TensorLike, TensorLike, TensorLike]",
+        backend.execute_op(
+            "PowerIteration",
+            (input.data if type(input).__name__ == "Tensor" else input),
+            num_iters=num_iters,
+            u=(u.data if type(u).__name__ == "Tensor" else u) if u is not None else None,
+        ),
     )
 
     return (
@@ -146,7 +150,7 @@ def power_iteration(
     input: Tensor,
     num_iters: int = 1,
     u: Tensor | None = None,
-):
+) -> EagerValue:
     """Compute the dominant singular value and vectors using power iteration.
 
     Args:

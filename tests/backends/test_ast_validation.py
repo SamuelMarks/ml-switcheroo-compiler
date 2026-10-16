@@ -1,7 +1,12 @@
+"""Tests for test_ast_validation."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
 
 
-def test_ast_control_flow():
+def test_ast_control_flow() -> None:
+    """Test function test_ast_control_flow."""
     code = """
 x = torch.zeros(10)
 y = torch.ones(10)
@@ -23,7 +28,8 @@ while x[1] < 10:
     assert "Mul" in op_types
 
 
-def test_ast_ssa():
+def test_ast_ssa() -> None:
+    """Test function test_ast_ssa."""
     code = """
 a = torch.zeros()
 b = torch.ones()

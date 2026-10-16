@@ -1,4 +1,9 @@
+"""Tests for test_export_control_flow."""
+
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -6,15 +11,21 @@ from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_onnx_control_flow(tmp_path) -> None:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_onnx_control_flow(tmp_path: EagerTensorProtocol) -> None:
+    """Test function test_onnx_control_flow."""
     cond_graph = IRGraph()
-    cond_graph.nodes["c_in0"] = IRNode("c_in0", "Input", [])
+    getattr(cond_graph.nodes, "__setitem__")("c_in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("c_in0", "Input", []))
     cond_graph.nodes["c_out"] = IRNode("c_out", "Relu", inputs=["c_in0"])
     cond_graph.outputs = ["c_out"]
 
     graph = IRGraph()
-    graph.nodes["in0"] = IRNode("in0", "Input", [])
+    getattr(graph.nodes, "__setitem__")("in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("in0", "Input", []))
 
     graph.nodes["if_node"] = IRNode("if_node", "If", inputs=["in0"])
     graph.nodes["if_node"].attributes["then_branch"] = cond_graph
@@ -40,8 +51,9 @@ def test_onnx_control_flow(tmp_path) -> None:
 
 
 def test_stablehlo_control_flow() -> None:
+    """Test function test_stablehlo_control_flow."""
     graph = IRGraph()
-    graph.nodes["in0"] = IRNode("in0", "Input", [])
+    getattr(graph.nodes, "__setitem__")("in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("in0", "Input", []))
     graph.nodes["while_node"] = IRNode("while_node", "WhileLoop", inputs=["in0"])
     graph.nodes["cond_node"] = IRNode("cond_node", "Cond", inputs=["in0"])
     graph.outputs = ["cond_node"]
@@ -52,8 +64,9 @@ def test_stablehlo_control_flow() -> None:
 
 
 def test_onnx_fallback() -> None:
+    """Test function test_onnx_fallback."""
     graph = IRGraph()
-    graph.nodes["in0"] = IRNode("in0", "Input", [])
+    getattr(graph.nodes, "__setitem__")("in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("in0", "Input", []))
     graph.nodes["unknown"] = IRNode("unknown", "SomeRandomOp", inputs=["in0"])
     graph.outputs = ["unknown"]
 
@@ -65,8 +78,9 @@ def test_onnx_fallback() -> None:
 
 
 def test_stablehlo_fallback() -> None:
+    """Test function test_stablehlo_fallback."""
     graph = IRGraph()
-    graph.nodes["in0"] = IRNode("in0", "Input", [])
+    getattr(graph.nodes, "__setitem__")("in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("in0", "Input", []))
     graph.nodes["unknown"] = IRNode("unknown", "SomeRandomOp", inputs=["in0"])
     graph.outputs = ["unknown"]
 
@@ -75,9 +89,10 @@ def test_stablehlo_fallback() -> None:
     assert "custom_call" in text or "SomeRandomOp" in text
 
 
-def test_onnx_dynamic_axes(tmp_path) -> None:
+def test_onnx_dynamic_axes(tmp_path: EagerTensorProtocol) -> None:
+    """Test function test_onnx_dynamic_axes."""
     graph = IRGraph()
-    graph.nodes["in0"] = IRNode("in0", "Input", [], shape_metadata=[10, 10])
+    getattr(graph.nodes, "__setitem__")("in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("in0", "Input", [], shape_metadata=[10, 10]))
     graph.nodes["out"] = IRNode("out", "Relu", inputs=["in0"], shape_metadata=[10, 10])
     graph.outputs = ["out"]
 

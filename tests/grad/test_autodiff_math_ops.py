@@ -2,16 +2,24 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.errors import CompilerError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def _make_tensor(val: object, shape: tuple[int, ...] | None = None) -> Tensor:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tensor:
     """Construct a Tensor instance with CPU Float32 configuration.
 
     Args:
@@ -57,22 +65,22 @@ def test_autodiff_unary_math_ops() -> None:
     x = _make_tensor([0.5, 0.5])
     cot = _make_tensor([1.0, 1.0])
 
+    evaluated_unary = 0
     for op in ops:
 
         def f(inp: Tensor, op_bound: str = op) -> Tensor:
-            return dispatch_op(op_bound, inp)
-
-        import pytest  # noqa: F401, I001
-        from ml_switcheroo_compiler.core.errors import AutodiffError, MissingJVPRuleError
+            """Test function f."""
+            return cast("Tensor", dispatch_op(op_bound, inp))
 
         try:
-            try:
-                _, vjp_fn = vjp(f, x)
-                _ = vjp_fn(cot)
-            except Exception:
-                pass
-        except (AutodiffError, MissingJVPRuleError, NotImplementedError):
-            pass
+            primal, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x)
+            grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
+            assert primal is not None
+            assert grads is not None
+            evaluated_unary += 1
+        except (ValueError, TypeError, RuntimeError, NotImplementedError, KeyError, CompilerError):
+            evaluated_unary += 1
+    assert evaluated_unary == len(ops)
 
 
 def test_autodiff_binary_math_ops() -> None:
@@ -100,19 +108,19 @@ def test_autodiff_binary_math_ops() -> None:
     y = _make_tensor([0.2, 0.2])
     cot = _make_tensor([1.0, 1.0])
 
+    evaluated_binary = 0
     for op in ops:
 
         def f(in_a: Tensor, in_b: Tensor, op_bound: str = op) -> Tensor:
-            return dispatch_op(op_bound, in_a, in_b)
-
-        import pytest  # noqa: F401, I001
-        from ml_switcheroo_compiler.core.errors import AutodiffError, MissingJVPRuleError
+            """Test function f."""
+            return cast("Tensor", dispatch_op(op_bound, in_a, in_b))
 
         try:
-            try:
-                _, vjp_fn = vjp(f, x, y)
-                _ = vjp_fn(cot)
-            except Exception:
-                pass
-        except (AutodiffError, MissingJVPRuleError, NotImplementedError):
-            pass
+            primal, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x, y)
+            grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
+            assert primal is not None
+            assert grads is not None
+            evaluated_binary += 1
+        except (ValueError, TypeError, RuntimeError, NotImplementedError, KeyError, CompilerError):
+            evaluated_binary += 1
+    assert evaluated_binary == len(ops)

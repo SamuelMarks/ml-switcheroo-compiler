@@ -1,5 +1,10 @@
+"""Tests for test_norms."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -8,14 +13,21 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.norms import _norm_out_shape, matrix_exp, matrix_exponential, matrix_power, norm, power_iteration
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_norm_out_shape() -> None:
+    """Test function test_norm_out_shape."""
     assert _norm_out_shape((2, 3), None, keepdims=True) == (1, 1)
     assert _norm_out_shape((2, 3), None, keepdims=False) == ()
     assert _norm_out_shape((2, 3), 0, keepdims=False) == (3,)
 
 
 def test_norms_eager() -> None:
+    """Test function test_norms_eager."""
     input_data = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "float32", "cpu"))
     config.eager_mode = True
@@ -30,13 +42,14 @@ def test_norms_eager() -> None:
         res = matrix_exp(t)
         assert isinstance(res, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2,)), np.zeros((2,)), np.zeros(()))
-        (res1, res2, res3) = power_iteration(t, num_iters=1, u=None)
+        (res1, res2, res3) = cast("Callable[..., EagerTensorProtocol]", power_iteration)(t, num_iters=1, u=None)
         assert isinstance(res1, Tensor)
-        (res1, res2, res3) = power_iteration(t, num_iters=1, u=t)
+        (res1, res2, res3) = cast("Callable[..., EagerTensorProtocol]", power_iteration)(t, num_iters=1, u=t)
         assert isinstance(res1, Tensor)
 
 
 def test_norms_trace() -> None:
+    """Test function test_norms_trace."""
     input_data = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "float32", "cpu"))
     config.eager_mode = False

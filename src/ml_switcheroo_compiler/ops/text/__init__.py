@@ -1,10 +1,11 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Text operations module."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.ops.text import ops
 from ml_switcheroo_compiler.ops.text.frontend import (
     AsStringConfig,
@@ -38,7 +39,7 @@ class CreateToken(OpDef):
 
     op_name = "CreateToken"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -48,9 +49,6 @@ class CreateToken(OpDef):
         Returns:
             tuple: Shape tuple.
         """
-        if not args:
-            return ()
-
         a = args[0]
         shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
         max_length = kwargs.get("max_length")
@@ -72,9 +70,11 @@ def create_token(
     Returns:
         IRNode: Resulting graph node.
     """
+    from typing import cast
+
     from ml_switcheroo_compiler.ops.base import get_op
 
-    return get_op("CreateToken")()(*args, **kwargs)
+    return cast("IRNode", get_op("CreateToken")()(*args, **kwargs))
 
 
 __all__ = [

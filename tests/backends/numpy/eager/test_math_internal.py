@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_internal as mi
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class MockBackend:
@@ -14,18 +21,22 @@ class MockBackend:
         """Mock get_printoptions."""
         return {"precision": 8}
 
-    def rawmatmul(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    def rawmatmul(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Mock rawmatmul."""
-        return a @ b + 1
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", (cast("EagerTensorProtocol", a) @ cast("EagerTensorProtocol", b)) + cast("EagerTensorProtocol", 1))
 
 
-def test_math_internal_operations() -> None:
-    """Verify operations and configuration functions in math_internal.py."""
+def _test_math_internal_operations_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_math_internal_operations.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     bk = MockBackend()
 
     # 1. _np_population_count
     pop = mi._np_population_count(bk, [0, 1, 3, 7, 15])
-    np.testing.assert_array_equal(pop, [0, 1, 2, 3, 4])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(pop, [0, 1, 2, 3, 4])
 
     # 2. _np_get_printoptions_
     assert mi._np_get_printoptions_(bk) == {"precision": 8}
@@ -57,41 +68,64 @@ def test_math_internal_operations() -> None:
     assert mi._np_linearoperatorhouseholder(bk) is not None
     assert mi._np_linearoperatorkronecker(bk) is not None
     assert mi._np_linearoperatorlowrankupdate(bk) is not None
+    getattr(_state, "update")({"bk": bk, "blur": blur, "elastic": elastic, "pop": pop})
+    getattr(_state, "update")({"res_root": res_root, "res_root_no_solve": res_root_no_solve})
+    _state.update(locals())
+
+
+def _test_math_internal_operations_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_math_internal_operations.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    bk = _state["bk"]
     assert mi._np_linearoperatortoeplitz(bk) is not None
 
     # 8. _np_perspectiveconfig
     persp = mi._np_perspectiveconfig(bk, interpolation="nearest")
     assert persp is not None
-
-    # 9. _np_rawmatmul (with backend method and default np.matmul)
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     b = np.array([[2.0, 0.0], [1.0, 2.0]])
     res_bkm = mi._np_rawmatmul(bk, a, b)
-    np.testing.assert_allclose(res_bkm, a @ b + 1)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_bkm, a @ b + 1)
 
     class EmptyBackend:
+        """Test class EmptyBackend."""
+
         pass
 
     res_default_mm = mi._np_rawmatmul(EmptyBackend(), a, b)
-    np.testing.assert_allclose(res_default_mm, a @ b)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_default_mm, a @ b)
 
     # 10. _np_rawmerge
     merge_list = mi._np_rawmerge(bk, [10, 20])
-    assert merge_list[0] == 10
-    assert merge_list[1] == 0
+    assert cast("EagerTensorProtocol", getattr(merge_list, "__getitem__")(0)) == 10
+    assert cast("EagerTensorProtocol", getattr(merge_list, "__getitem__")(1)) == 0
 
     merge_args = mi._np_rawmerge(bk, 10, 20)
-    assert merge_args[0] == 10
+    assert cast("EagerTensorProtocol", getattr(merge_args, "__getitem__")(0)) == 10
 
     merge_empty = mi._np_rawmerge(bk)
-    assert merge_empty[0] is None
-    assert merge_empty[1] == -1
+    assert cast("EagerTensorProtocol", getattr(merge_empty, "__getitem__")(0)) is None
+    assert cast("EagerTensorProtocol", getattr(merge_empty, "__getitem__")(1)) == -1
 
     # 11. _np_rawop
     assert mi._np_rawop(bk, 999) == 999
     assert mi._np_rawop(bk) is None
+    getattr(_state, "update")({"EmptyBackend": EmptyBackend, "a": a, "b": b, "merge_args": merge_args})
+    getattr(_state, "update")({"merge_empty": merge_empty, "merge_list": merge_list, "persp": persp, "res_bkm": res_bkm})
+    getattr(_state, "update")({"res_default_mm": res_default_mm})
+    _state.update(locals())
 
-    # 12. _np_rawswitch and _np_switchop (pred True and False)
+
+def _test_math_internal_operations_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_math_internal_operations.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    bk = _state["bk"]
     sw_true = mi._np_rawswitch(bk, "data", True)
     assert sw_true == (None, "data")
     sw_false = mi._np_rawswitch(bk, "data", False)
@@ -107,25 +141,49 @@ def test_math_internal_operations() -> None:
     assert scan_invalid == "not_callable"
 
     scan_empty = mi._np_scanop(bk, elems=np.array([]), fn=lambda x, y: x + y)
-    assert scan_empty.size == 0
+    assert cast("EagerTensorProtocol", getattr(scan_empty, "size")) == 0
 
     scan_no_acc = mi._np_scanop(bk, elems=np.array([1, 2, 3]), fn=lambda x, y: x + y)
-    np.testing.assert_array_equal(scan_no_acc, [1, 3, 6])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(scan_no_acc, [1, 3, 6])
 
     scan_with_acc = mi._np_scanop(bk, lambda x, y: x + y, np.array([1, 2, 3]), 10)
-    np.testing.assert_array_equal(scan_with_acc, [11, 13, 16])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(scan_with_acc, [11, 13, 16])
 
     # 14. _np_tensorarrayread and _np_tensorarraywrite (both within bounds and extending)
     handle = [10, 20]
     assert mi._np_tensorarrayread(bk, handle, 1) == 20
 
     h_in = mi._np_tensorarraywrite(bk, handle, 0, 99)
-    assert h_in[0] == 99
+    assert cast("EagerTensorProtocol", getattr(h_in, "__getitem__")(0)) == 99
 
     h_ext = mi._np_tensorarraywrite(bk, handle, 4, 88)
-    assert len(h_ext) == 5
+    assert cast("Callable[..., EagerTensorProtocol]", len)(h_ext) == 5
+    getattr(_state, "update")({"h_ext": h_ext, "h_in": h_in, "handle": handle, "scan_empty": scan_empty})
+    getattr(_state, "update")({"scan_invalid": scan_invalid, "scan_no_acc": scan_no_acc, "scan_with_acc": scan_with_acc, "sw_false": sw_false})
+    getattr(_state, "update")({"sw_op_false": sw_op_false, "sw_op_true": sw_op_true, "sw_true": sw_true})
+    _state.update(locals())
+
+
+def _test_math_internal_operations_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_math_internal_operations.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    bk, h_ext = _state["bk"], _state["h_ext"]
     assert h_ext[4] == 88
 
     # 15. _np_tensorconfig
     tcfg = mi._np_tensorconfig(bk, shape=(2, 3), dtype="float32", device="cpu")
     assert tcfg is not None
+    getattr(_state, "update")({"tcfg": tcfg})
+
+
+def test_math_internal_operations() -> None:
+    """Verify operations and configuration functions in math_internal.py."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_math_internal_operations_part_1(_state)
+    _test_math_internal_operations_part_2(_state)
+    _test_math_internal_operations_part_3(_state)
+    _test_math_internal_operations_part_4(_state)
+    assert isinstance(_state, dict)

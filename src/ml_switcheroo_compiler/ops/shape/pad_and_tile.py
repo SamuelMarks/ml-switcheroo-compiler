@@ -1,24 +1,23 @@
-"""Module pad_and_tile.py."""
+"""Shape operations for Tensor Anys."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Shape operations for Tensor Anys."""
 from collections.abc import Sequence
+from typing import Callable, Optional, Union, cast
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.shape_system import SymNode
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.reshape import Resize
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def tile(input: Tensor, reps: Sequence[int]):
+def tile(input: Tensor, reps: Sequence[int]) -> EagerValue:
     """Construct a new tensor by repeating the input tensor the specified number of times.
 
     Args:
@@ -31,10 +30,10 @@ def tile(input: Tensor, reps: Sequence[int]):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Tile", (input.data if type(input).__name__ == "Tensor" else input), reps)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input]
     in_shape = list(inputs[0].shape) if inputs[0].shape else [1]
-    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(reps)]
+    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(cast(int, reps))]
     while len(in_shape) < len(rep_list):
         in_shape.insert(0, 1)
     while len(rep_list) < len(in_shape):
@@ -53,7 +52,7 @@ def repeat(
     input: Tensor,
     repeats: int | Sequence[int],
     axis: int | None = None,
-):
+) -> EagerValue:
     """Repeat elements of the input tensor along a specified dimension.
 
     Args:
@@ -67,7 +66,7 @@ def repeat(
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Repeat", (input.data if type(input).__name__ == "Tensor" else input), repeats, axis=axis)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
     if axis is None:
@@ -75,7 +74,7 @@ def repeat(
         for dim in base_shape:
             num_elems *= int(dim)
         if isinstance(repeats, int):
-            out_shape = (num_elems * repeats,)
+            out_shape: tuple[int, ...] = (num_elems * repeats,)
         elif isinstance(repeats, (list, tuple)):
             out_shape = (sum(int(r) for r in repeats),)
         else:
@@ -98,7 +97,7 @@ def repeat(
     )
 
 
-def triu(input: Tensor, diagonal: int = 0):
+def triu(input: Tensor, diagonal: int = 0) -> EagerValue:
     """Return the upper triangular part of a matrix or batch of matrices.
 
     Args:
@@ -111,7 +110,7 @@ def triu(input: Tensor, diagonal: int = 0):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Triu", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input]
     out_shape = inputs[0].shape
     return _emit_shape_node(
@@ -123,7 +122,7 @@ def triu(input: Tensor, diagonal: int = 0):
     )
 
 
-def tril(input: Tensor, diagonal: int = 0):
+def tril(input: Tensor, diagonal: int = 0) -> EagerValue:
     """Return the lower triangular part of a matrix or batch of matrices.
 
     Args:
@@ -136,7 +135,7 @@ def tril(input: Tensor, diagonal: int = 0):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Tril", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input]
     out_shape = inputs[0].shape
     return _emit_shape_node(
@@ -181,14 +180,14 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     if config.eager_mode:
         backend = get_active_backend()
         datas = backend.execute_op("Meshgrid", *[(t.data if type(t).__name__ == "Tensor" else t) for t in tensors], indexing=indexing)
-        return tuple(Tensor(d, TensorConfig(d.shape, tensors[0].dtype, tensors[0].device)) for d in datas)
+        return tuple(Tensor(d, TensorConfig(getattr(d, "shape"), tensors[0].dtype, tensors[0].device)) for d in getattr(datas, "__iter__")())
     inputs = list(tensors)
     out_shape = _compute_meshgrid_shape(inputs, indexing)
     dtype = inputs[0].dtype if inputs else DType.Float32
     return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
 
 
-def _normalize_pad_width(pad_width, ndim: int):
+def _normalize_pad_width(pad_width: EagerValue, ndim: int) -> EagerValue:
     """Normalize pad width representation.
 
     Args:
@@ -205,7 +204,7 @@ def _normalize_pad_width(pad_width, ndim: int):
     return tuple(pad_width) if isinstance(pad_width, (list, tuple)) else ()
 
 
-def _compute_pad_dim(dim: int, pw) -> int:
+def _compute_pad_dim(dim: int, pw: EagerValue) -> int:
     """Evaluate _compute_pad_dim operation.
 
     Args:
@@ -218,7 +217,7 @@ def _compute_pad_dim(dim: int, pw) -> int:
     if isinstance(pw, int):
         return dim + pw * 2
     if isinstance(pw, tuple) and len(pw) == 2:
-        return dim + pw[0] + pw[1]
+        return dim + int(cast(int, pw[0])) + int(cast(int, pw[1]))
     return dim
 
 
@@ -228,7 +227,7 @@ class Pad(OpDef):
 
     op_name = "Pad"
 
-    def infer_shape(self, array, pad_width, mode: str = "constant", **kwargs):
+    def infer_shape(self, array: EagerTensorProtocol, pad_width: EagerTensorProtocol, mode: str = "constant", **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -246,8 +245,8 @@ class Pad(OpDef):
         normalized_pw = _normalize_pad_width(pad_width, len(in_shape))
         out_shape = []
         for i, dim in enumerate(in_shape):
-            if i < len(normalized_pw):
-                out_shape.append(_compute_pad_dim(dim, normalized_pw[i]))
+            if i < getattr(normalized_pw, "__len__")():
+                out_shape.append(_compute_pad_dim(dim, getattr(normalized_pw, "__getitem__")(i)))
             else:
                 out_shape.append(dim)
         return tuple(out_shape)
@@ -255,11 +254,11 @@ class Pad(OpDef):
 
 @dispatch_eager("Pad")
 def pad(
-    array,
-    pad_width,
+    array: EagerValue,
+    pad_width: EagerValue,
     mode: str = "constant",
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Pad an array with specified widths and values.
 
     Args:
@@ -272,14 +271,14 @@ def pad(
             tuple[int, ...]: Result.
     """
     op = Pad()
-    out_shape = op.infer_shape(array, pad_width, mode, **kwargs)
+    out_shape = getattr(op, "infer_shape")(array, pad_width, mode, **kwargs)
     attributes = {"pad_width": pad_width, "mode": mode}
     attributes.update(kwargs)
-    return _emit_shape_node("Pad", [array], attributes, out_shape, getattr(array, "dtype", None))
+    return _emit_shape_node("Pad", [array], attributes, cast("Sequence[Union[int, str]]", out_shape), getattr(array, "dtype", None))
 
 
 @dispatch_eager("TopK")
-def top_k(operand: Tensor, k: int):
+def top_k(operand: Tensor, k: int) -> EagerValue:
     """Return the top k values and their indices along the last dimension.
 
     Args:
@@ -289,10 +288,10 @@ def top_k(operand: Tensor, k: int):
     Returns:
         tuple: Result.
     """
-    out_shape = list(operand.shape) if operand.shape else []
-    if out_shape:
-        out_shape[-1] = k
-    out_shape = tuple(out_shape)
+    out_shape_list = list(operand.shape) if operand.shape else []
+    if out_shape_list:
+        out_shape_list[-1] = k
+    out_shape = tuple(out_shape_list)
     inputs = [operand]
     # We cheat a bit by returning two tensors pointing to the same node for now,
     # as handling multi-output nodes properly requires more IR scaffolding
@@ -305,7 +304,7 @@ def argsort(
     operand: Tensor,
     axis: int = -1,
     is_stable: bool = True,
-):
+) -> EagerValue:
     """Return the indices that would sort an array along a given dimension.
 
     Args:
@@ -330,7 +329,7 @@ def sort(
     operand: Tensor,
     axis: int = -1,
     is_stable: bool = True,
-):
+) -> EagerValue:
     """Sorts the elements of an array along a given dimension.
 
     Args:
@@ -347,7 +346,7 @@ def sort(
         data = backend.execute_op("Sort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=axis, kind=kind)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, operand.dtype, operand.device),
+            TensorConfig(getattr(backend.array(data), "shape"), operand.dtype, operand.device),
         )
     inputs = [operand]
     attributes = {"dimension": axis, "is_stable": is_stable}
@@ -355,7 +354,7 @@ def sort(
 
 
 @dispatch_eager("Resize")
-def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"):
+def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> EagerValue:
     """Resizes an image to the given target shape using interpolation.
 
     Args:
@@ -367,7 +366,7 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
         Tensor: Result.
     """
     op = Resize()
-    out_shape = op.infer_shape(image, shape, method)
+    out_shape = getattr(op, "infer_shape")(image, shape, method)
     return _emit_shape_node(
         "Resize",
         [image],
@@ -381,7 +380,7 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
 class DynamicShape(OpDef):
     """DynamicShape op."""
 
-    def infer_shape(self, x, **kwargs):
+    def infer_shape(self, x: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -400,7 +399,7 @@ class Rank(OpDef):
 
     op_name = "Rank"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -420,7 +419,7 @@ class Size(OpDef):
 
     op_name = "Size"
 
-    def infer_shape(self, a, axis=None, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, axis: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -434,7 +433,7 @@ class Size(OpDef):
         return ()
 
 
-def pad_constant(array, pad_width, value: float = 0.0, **kwargs):
+def pad_constant(array: EagerValue, pad_width: EagerValue, value: float = 0.0, **kwargs: EagerValue) -> EagerValue:
     """Pad an array with a constant value.
 
     Args:
@@ -449,7 +448,7 @@ def pad_constant(array, pad_width, value: float = 0.0, **kwargs):
     return pad(array, pad_width, mode="constant", constant_values=value, **kwargs)
 
 
-def pad_reflect(array, pad_width, **kwargs):
+def pad_reflect(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Pad an array with reflection.
 
     Args:
@@ -463,7 +462,7 @@ def pad_reflect(array, pad_width, **kwargs):
     return pad(array, pad_width, mode="reflect", **kwargs)
 
 
-def pad_replicate(array, pad_width, **kwargs):
+def pad_replicate(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Pad an array with edge replication.
 
     Args:
@@ -477,7 +476,7 @@ def pad_replicate(array, pad_width, **kwargs):
     return pad(array, pad_width, mode="edge", **kwargs)
 
 
-def pad_circular(array, pad_width, **kwargs):
+def pad_circular(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Pad an array with circular wrapping.
 
     Args:
@@ -497,7 +496,7 @@ class Flatnonzero(OpDef):
 
     op_name = "Flatnonzero"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -518,7 +517,7 @@ class Lexsort(OpDef):
 
     op_name = "Lexsort"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -543,7 +542,7 @@ class Nonzero(OpDef):
 
     op_name = "Nonzero"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -560,7 +559,7 @@ class Nonzero(OpDef):
         return tuple((SymVar("nonzero_count"),) for _ in in_shape)
 
 
-def _infer_shape_percentile_quantile(a, q, axis=None, keepdims: bool = False) -> tuple[int, ...]:
+def _infer_shape_percentile_quantile(a: EagerValue, q: EagerValue, axis: EagerValue = None, keepdims: bool = False) -> tuple[int, ...]:
     """Infer shape for percentile and quantile ops.
 
     Args:
@@ -582,7 +581,7 @@ def _infer_shape_percentile_quantile(a, q, axis=None, keepdims: bool = False) ->
         if keepdims:
             return q_shape + (1,) * len(in_shape)
         return q_shape
-    axis_tup = (axis,) if isinstance(axis, int) else tuple(axis)
+    axis_tup = (axis,) if isinstance(axis, int) else tuple(getattr(axis, "__iter__")())
     out_shape = list(in_shape)
     for ax in sorted(axis_tup, reverse=True):
         if keepdims:
@@ -598,7 +597,7 @@ class Percentile(OpDef):
 
     op_name = "Percentile"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -612,7 +611,7 @@ class Percentile(OpDef):
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, keepdims)
+        return _infer_shape_percentile_quantile(a, q, axis, cast("bool", keepdims))
 
 
 @register_op("Quantile")
@@ -621,7 +620,7 @@ class Quantile(OpDef):
 
     op_name = "Quantile"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -635,7 +634,7 @@ class Quantile(OpDef):
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, keepdims)
+        return _infer_shape_percentile_quantile(a, q, axis, cast("bool", keepdims))
 
 
 @register_op("RavelMultiIndex")
@@ -644,7 +643,7 @@ class RavelMultiIndex(OpDef):
 
     op_name = "RavelMultiIndex"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -663,7 +662,10 @@ class RavelMultiIndex(OpDef):
         return tuple(getattr(multi_index, "shape", getattr(multi_index, "shape_metadata", ())))
 
 
-def _repeat_infer_no_axis(in_shape, repeats):
+def _repeat_infer_no_axis(
+    in_shape: tuple[int | None, ...],
+    repeats: int | list[int] | tuple[int, ...] | None,
+) -> tuple[int | SymNode | None, ...]:
     """Infer shape for repeat without an axis.
 
     Args:
@@ -680,7 +682,7 @@ def _repeat_infer_no_axis(in_shape, repeats):
         if s is None:
             size = None
             break
-        size *= s
+        size = int(cast(int, size)) * s
     if isinstance(repeats, int) and size is not None:
         return (size * repeats,)
     if isinstance(repeats, (list, tuple)):
@@ -694,7 +696,7 @@ class Repeat(OpDef):
 
     op_name = "Repeat"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -709,14 +711,14 @@ class Repeat(OpDef):
         axis = kwargs.get("axis", None)
         in_shape = getattr(a, "shape", ())
         if axis is None:
-            return _repeat_infer_no_axis(in_shape, repeats)
+            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _repeat_infer_no_axis)(in_shape, repeats))
         out_shape = list(in_shape)
         if isinstance(repeats, int):
             out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None
         elif isinstance(repeats, (list, tuple)):
             out_shape[axis] = sum(repeats)
         else:
-            out_shape[axis] = None
+            cast(EagerTensorProtocol, out_shape)[axis] = None
         return tuple(out_shape)
 
 
@@ -726,7 +728,7 @@ class Searchsorted(OpDef):
 
     op_name = "Searchsorted"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -738,8 +740,8 @@ class Searchsorted(OpDef):
         """
         seq = args[0] if len(args) > 0 else None
         v = args[1] if len(args) > 1 else None
-        v_shape = getattr(v, "shape", ())
-        seq_shape = getattr(seq, "shape", ())
+        v_shape: tuple[int, ...] = getattr(v, "shape", ())
+        seq_shape: tuple[int, ...] = getattr(seq, "shape", ())
         if not v_shape and not seq_shape:
             return ()
         if not seq_shape or len(seq_shape) <= 1:
@@ -755,7 +757,7 @@ class SortComplex(OpDef):
 
     op_name = "SortComplex"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape strictly preserving input tensor shape.
 
         Args:
@@ -771,7 +773,10 @@ class SortComplex(OpDef):
         return tuple(getattr(a, "shape", ()))
 
 
-def _compute_tile_shape(in_shape, reps):
+def _compute_tile_shape(
+    in_shape: tuple[int | None, ...],
+    reps: tuple[int | None, ...],
+) -> tuple[int | None, ...]:
     """Evaluate _compute_tile_shape operation.
 
     Args:
@@ -796,7 +801,7 @@ class Tile(OpDef):
 
     op_name = "Tile"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -814,11 +819,11 @@ class Tile(OpDef):
         if isinstance(reps, int):
             reps = (reps,)
         else:
-            reps = tuple(reps)
-        return _compute_tile_shape(in_shape, reps)
+            reps = cast(EagerTensorProtocol, tuple(reps))
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _compute_tile_shape)(in_shape, reps))
 
 
-def _get_unique_inverse_shape(axis: int | None, in_shape):
+def _get_unique_inverse_shape(axis: int | None, in_shape: EagerValue) -> EagerValue:
     """Get the inverse shape for the unique operation.
 
     Args:
@@ -829,9 +834,9 @@ def _get_unique_inverse_shape(axis: int | None, in_shape):
         tuple: The inverse shape.
     """
     if axis is not None:
-        return (in_shape[axis],)
+        return (getattr(in_shape, "__getitem__")(axis),)
     size: int | None = 1
-    for s in in_shape:
+    for s in getattr(in_shape, "__iter__")():
         if s is None:
             size = None
             break
@@ -845,7 +850,7 @@ class Unique(OpDef):
 
     op_name = "Unique"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -867,13 +872,13 @@ class Unique(OpDef):
             ret_shape = (SymVar("unique_count"),)
         else:
             ret_shape_list = list(in_shape)
-            ret_shape_list[axis] = SymVar("unique_count")
+            cast(EagerTensorProtocol, ret_shape_list)[axis] = SymVar("unique_count")
             ret_shape = tuple(ret_shape_list)
         ret = [ret_shape]
         if return_index:
-            ret.append((SymVar("unique_count"),) if axis is None else (in_shape[axis],))
+            ret.append((SymVar("unique_count"),) if axis is None else (getattr(in_shape, "__getitem__")(axis),))
         if return_inverse:
-            ret.append(_get_unique_inverse_shape(axis, in_shape))
+            getattr(ret, "append")(_get_unique_inverse_shape(cast("Optional[int]", axis), in_shape))
         if return_counts:
             ret.append((SymVar("unique_count"),))
         if len(ret) == 1:
@@ -881,7 +886,7 @@ class Unique(OpDef):
         return tuple(ret)
 
 
-def percentile(*args, **kwargs):
+def percentile(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate percentile operation.
 
     Args:
@@ -896,7 +901,7 @@ def percentile(*args, **kwargs):
     return dispatch_op("Percentile", *args, **kwargs)
 
 
-def quantile(*args, **kwargs):
+def quantile(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate quantile operation.
 
     Args:
@@ -911,7 +916,7 @@ def quantile(*args, **kwargs):
     return dispatch_op("Quantile", *args, **kwargs)
 
 
-def flatnonzero(*args, **kwargs):
+def flatnonzero(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return indices that are non-zero in the flattened version of a.
 
     Args:
@@ -926,7 +931,7 @@ def flatnonzero(*args, **kwargs):
     return dispatch_op("Flatnonzero", *args, **kwargs)
 
 
-def nonzero(*args, **kwargs):
+def nonzero(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the indices of the elements that are non-zero.
 
     Args:
@@ -941,7 +946,7 @@ def nonzero(*args, **kwargs):
     return dispatch_op("Nonzero", *args, **kwargs)
 
 
-def ravel_multi_index(*args, **kwargs):
+def ravel_multi_index(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Convert a tuple of index arrays into an array of flat indices.
 
     Args:
@@ -956,7 +961,7 @@ def ravel_multi_index(*args, **kwargs):
     return dispatch_op("RavelMultiIndex", *args, **kwargs)
 
 
-def lexsort(*args, **kwargs):
+def lexsort(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Perform an indirect stable sort using a sequence of keys.
 
     Args:
@@ -971,7 +976,7 @@ def lexsort(*args, **kwargs):
     return dispatch_op("Lexsort", *args, **kwargs)
 
 
-def searchsorted(*args, **kwargs):
+def searchsorted(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Find indices where elements should be inserted to maintain order.
 
     Args:
@@ -986,7 +991,7 @@ def searchsorted(*args, **kwargs):
     return dispatch_op("Searchsorted", *args, **kwargs)
 
 
-def sort_complex(*args, **kwargs):
+def sort_complex(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Sort a complex array using the real part first, then the imaginary part.
 
     Args:
@@ -1001,7 +1006,7 @@ def sort_complex(*args, **kwargs):
     return dispatch_op("SortComplex", *args, **kwargs)
 
 
-def unique(*args, **kwargs):
+def unique(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Find the unique elements of an array.
 
     Args:

@@ -1,8 +1,11 @@
 """Unit tests for asynchronous and non-blocking I/O operations and future abstractions."""
 
+from __future__ import annotations
+
 import asyncio
 import os
 import tempfile
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -18,12 +21,15 @@ from ml_switcheroo_compiler.ops.io.async_io import (
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
 
 @pytest.mark.asyncio
 async def test_async_io_future_await_and_result() -> None:
     """Verify AsyncIOFuture behavior in an asyncio event loop."""
     loop = asyncio.get_running_loop()
-    async_fut: asyncio.Future[object] = loop.create_future()
+    async_fut: asyncio.Future[EagerValue] = loop.create_future()
     async_fut.set_result(42)
 
     future = AsyncIOFuture(asyncio_future=async_fut)

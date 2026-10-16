@@ -1,10 +1,7 @@
-# ruff: noqa: E402, E501, F403
-"""Module frontend.py."""
+"""Constants & Creation Operations."""
 
 
 # auto-generate-all
-
-"""Constants & Creation Operations."""
 
 from .frontend_basic import (
     array,

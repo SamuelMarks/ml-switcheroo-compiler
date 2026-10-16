@@ -1,51 +1,49 @@
-# ruff: noqa: E402, E501, F403
 """Define tensor creation operations for the ML Switcheroo framework.
 
 This module contains operations that generate new tensors, such as zeros, ones, full,
 and arange, along with their shape inference and NumPy evaluation implementations
 """
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from __future__ import annotations
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
+from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
+
+
+def _coerce_shape(val: OpArgValue) -> tuple[int, ...] | None:
+    """Coerce a raw shape argument into a tuple of integers or None.
+
+    Args:
+        val: Raw shape specification (tuple, list, int, or None).
+
+    Returns:
+        tuple[int, ...] | None: Coerced shape tuple or None.
+    """
+    return (val,) if isinstance(val, int) else (tuple(int(x) for x in val if isinstance(x, int)) if isinstance(val, (tuple, list)) else None)
 
 
 class CreationOp(OpDef):
     """Define base class for tensor creation operations.
 
     Provides common implementations for shape inference and NumPy evaluation
-    for operations that create tensors of a specified shape (e.g., Zeros, Ones)
+    for operations that create tensors of a specified shape (e.g., Zeros, Ones).
     """
 
     op_name: str = ""
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
+        """Infer the output shape of the tensor creation operation.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments containing the target shape.
+            **kwargs: Keyword arguments containing optional shape specification.
 
         Returns:
-        Any: Result.
+            tuple[int, ...] | None: The inferred output tensor shape.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
-        """Infer shape.
-
-        Args:
-            shape (Any): The shape parameter.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        return shape
+        return _coerce_shape(shape)
 
 
 @register_op("Zeros")
@@ -64,81 +62,40 @@ class Ones(CreationOp):
 
 @register_op("Full")
 class Full(CreationOp):
-    """Provide an operation that creates a tensor of a specified shape filled with a constant.
-
-    value
-    """
+    """Provide an operation that creates a tensor of a specified shape filled with a constant value."""
 
     op_name = "Full"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
+        """Infer the output shape of the Full operation.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments containing shape and fill_value.
+            **kwargs: Keyword arguments containing optional shape specification.
 
         Returns:
-        Any: Result.
+            tuple[int, ...] | None: The inferred output tensor shape.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
-        """Infer the output shape of the operation.
-
-        Args:
-            shape (Any): The shape of the tensor.
-            fill_value (Any): The fill_value to process.
-            **kwargs (Any): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        return shape
+        return _coerce_shape(shape)
 
 
 @register_op("Arange")
 class Arange(OpDef):
-    """Provide an operation that creates a 1-D tensor containing a sequence of evenly spaced.
+    """Provide an operation that creates a 1-D tensor containing evenly spaced values."""
 
-    values
-
-    within a given interval
-    """
-
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
+        """Infer the output shape of the Arange operation.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments (start, stop, step).
+            **kwargs: Keyword arguments.
 
         Returns:
-        Any: Result.
+            tuple[int, ...] | None: None because Arange output length depends on values.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer the output shape of the operation.
-
-        Args:
-            *args (Any): Additional keyword arguments.
-            **kwargs (Any): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        return None  # Dynamic shape depending on values
+        del args, kwargs
+        return None
 
 
 @register_op("Rand")
@@ -147,38 +104,21 @@ class Rand(CreationOp):
 
     op_name = "Rand"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer the output shape of the Rand operation.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Dimensions or shape tuple.
+            **kwargs: Keyword arguments containing optional size.
 
         Returns:
-        Any: Result.
-        """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer the output shape of the operation.
-
-        Args:
-            *args (Any): Additional keyword arguments.
-            **kwargs (Any): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
+            tuple[int, ...]: The inferred output shape.
         """
         if "size" in kwargs:
-            return kwargs["size"]
+            return _coerce_shape(kwargs["size"]) or ()
         if len(args) == 1 and isinstance(args[0], (tuple, list)):
-            return args[0]
-        return args
+            return _coerce_shape(args[0]) or ()
+        return _coerce_shape(args) or ()
 
 
 @register_op("Randn")
@@ -194,37 +134,20 @@ class Randint(CreationOp):
 
     op_name = "Randint"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer the output shape of the Randint operation.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments (low, high, size).
+            **kwargs: Keyword arguments containing optional size.
 
         Returns:
-        Any: Result.
-        """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer the output shape of the operation.
-
-        Args:
-            *args (Any): Additional keyword arguments.
-            **kwargs (Any): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
+            tuple[int, ...]: The inferred output shape.
         """
         if "size" in kwargs:
-            return kwargs["size"]
-        if len(args) == MAGIC_VAL_3:
-            return args[2]
+            return _coerce_shape(kwargs["size"]) or ()
+        if len(args) == MIN_CONV_RANK:
+            return _coerce_shape(args[2]) or ()
         return ()
 
 
@@ -234,7 +157,7 @@ class ManualSeed(OpDef):
 
     op_name = "ManualSeed"
 
-    def infer_shape(self, seed, **kwargs):
+    def infer_shape(self, seed: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -251,7 +174,7 @@ class ManualSeed(OpDef):
 class ConstantOfShape(OpDef):
     """ConstantOfShape operator."""
 
-    def infer_shape(self, *shapes, **kwargs):
+    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -268,7 +191,7 @@ class ConstantOfShape(OpDef):
 class Range(OpDef):
     """Range operator."""
 
-    def infer_shape(self, *shapes, **kwargs):
+    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -286,7 +209,7 @@ class Range(OpDef):
 class Blackman(OpDef):
     """Blackman window."""
 
-    def infer_shape(self, M, **kwargs):
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -303,7 +226,7 @@ class Blackman(OpDef):
 class Bartlett(OpDef):
     """Bartlett window."""
 
-    def infer_shape(self, M, **kwargs):
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -320,7 +243,7 @@ class Bartlett(OpDef):
 class Hamming(OpDef):
     """Hamming window."""
 
-    def infer_shape(self, M, **kwargs):
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -337,7 +260,7 @@ class Hamming(OpDef):
 class Hanning(OpDef):
     """Hanning window."""
 
-    def infer_shape(self, M, **kwargs):
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -354,7 +277,7 @@ class Hanning(OpDef):
 class Kaiser(OpDef):
     """Kaiser window."""
 
-    def infer_shape(self, M, **kwargs):
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape.
 
         Args:
@@ -373,33 +296,18 @@ class TrilIndices(OpDef):
 
     op_name = "TrilIndices"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer shape for TrilIndices.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
-        Any: Result.
+            tuple[int, ...]: Computed shape.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer shape.
-
-        Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return args[0] if args else ()
+        del kwargs
+        return (_coerce_shape(args[0]) or ()) if args else ()
 
 
 @register_op("TrilIndicesFrom")
@@ -408,33 +316,18 @@ class TrilIndicesFrom(OpDef):
 
     op_name = "TrilIndicesFrom"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer shape for TrilIndicesFrom.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
-        Any: Result.
+            tuple[int, ...]: Computed shape.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer shape.
-
-        Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return args[0] if args else ()
+        del kwargs
+        return (_coerce_shape(args[0]) or ()) if args else ()
 
 
 @register_op("TriuIndices")
@@ -443,33 +336,18 @@ class TriuIndices(OpDef):
 
     op_name = "TriuIndices"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer shape for TriuIndices.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
-        Any: Result.
+            tuple[int, ...]: Computed shape.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer shape.
-
-        Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return args[0] if args else ()
+        del kwargs
+        return (_coerce_shape(args[0]) or ()) if args else ()
 
 
 @register_op("TriuIndicesFrom")
@@ -478,33 +356,18 @@ class TriuIndicesFrom(OpDef):
 
     op_name = "TriuIndicesFrom"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer shape for TriuIndicesFrom.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
-        Any: Result.
+            tuple[int, ...]: Computed shape.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer shape.
-
-        Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return args[0] if args else ()
+        del kwargs
+        return (_coerce_shape(args[0]) or ()) if args else ()
 
 
 @register_op("Logspace")
@@ -513,68 +376,36 @@ class Logspace(CreationOp):
 
     op_name = "Logspace"
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer shape for Logspace.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments (start, stop, num).
+            **kwargs: Keyword arguments.
 
         Returns:
-        Any: Result.
+            tuple[int, ...]: Inferred 1-D output shape.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        return (kwargs.get("num", args[2] if len(args) > 2 and isinstance(args[2], int) else 50),)
+        num_val = kwargs.get("num", args[2] if len(args) > 2 and isinstance(args[2], int) else 50)
+        return (int(num_val) if isinstance(num_val, int) else 50,)
 
 
 @register_op("Frombuffer")
 class Frombuffer(OpDef):
     """Operator Frombuffer."""
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
+        """Infer shape for Frombuffer.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments containing optional count.
 
         Returns:
-        Any: Result.
+            tuple[int, ...] | None: Inferred 1-D shape if count is specified, else None.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
-        """Infer shape.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        # Typically 1D array of elements depending on dtype and buffer size
-        if "count" in kwargs and kwargs["count"] != -1:
-            return (kwargs["count"],)
-        return None  # Dynamic otherwise
+        del args
+        count_val = kwargs.get("count", -1)
+        if isinstance(count_val, int) and count_val != -1:
+            return (count_val,)
+        return None

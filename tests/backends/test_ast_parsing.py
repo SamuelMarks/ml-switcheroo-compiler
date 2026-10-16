@@ -43,5 +43,5 @@ def test_generated_code_ast_parses(generator_cls: type) -> None:
             ast.parse(code)
         except SyntaxError as e:
             pytest.fail(f"Generated code produced a SyntaxError: {e}\n\nCode:\n{code}")
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

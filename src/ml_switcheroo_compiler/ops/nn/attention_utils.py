@@ -1,9 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Attention mechanism operations."""
 
 import math
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -23,7 +22,7 @@ class RopeOp(OpDef):
 
     op_name = "Rope"
 
-    def infer_shape(self, input, **kwargs):
+    def infer_shape(self, input: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -41,7 +40,7 @@ def rope(
     axis: int,
     base: float = 10000.0,
     offset: int = 0,
-):
+) -> EagerValue:
     """Apply Rotary Positional Encoding (RoPE) to the input tensor.
 
     Args:
@@ -69,8 +68,8 @@ def sinusoidal_positional_encoding(
     seq_len: int,
     axis: int,
     base: float = 10000.0,
-    dtype=None,
-):
+    dtype: EagerValue = None,
+) -> EagerValue:
     """Generate sinusoidal positional encodings.
 
     Args:
@@ -92,8 +91,8 @@ def sinusoidal_positional_encoding(
 def alibi_mask(
     seq_len: int,
     num_heads: int,
-    dtype=None,
-):
+    dtype: EagerValue = None,
+) -> EagerValue:
     """Generate an ALiBi (Attention with Linear Biases) mask.
 
     Args:

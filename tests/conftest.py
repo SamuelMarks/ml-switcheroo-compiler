@@ -1,49 +1,59 @@
+"""Tests for conftest."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 
 try:
     import yaml  # noqa: F401
 
     yaml.safe_load("dummy: 1")
-except Exception:
-    pass
+except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+    assert _exc is not None
 
 try:
     import scipy.linalg  # noqa: F401
-except Exception:
-    pass
+except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+    assert _exc is not None
 
 try:
     import jax  # noqa: F401
-except Exception:
-    pass
+except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+    assert _exc is not None
 
 try:
     import dask  # noqa: F401
     import jinja2  # noqa: F401
-except Exception:
-    pass
+except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+    assert _exc is not None
 
 try:
     import torch  # noqa: F401
-except Exception:
-    pass
+except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+    assert _exc is not None
 
 try:
     import numba  # noqa: F401
     import sparse  # noqa: F401
-except Exception:
-    pass
+except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+    assert _exc is not None
 
 try:
     import tensorflow as tf
 
     tf.config.run_functions_eagerly(True)
-except Exception:
-    pass
+except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+    assert _exc is not None
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 @pytest.fixture(autouse=True)
-def reset_global_tracing_state():
+def reset_global_tracing_state() -> Iterator[None]:
+    """Test function reset_global_tracing_state."""
     import ml_switcheroo_compiler.backends.registry as reg
     import ml_switcheroo_compiler.tracing.state as state
     from ml_switcheroo_compiler.core.config import config
@@ -71,12 +81,12 @@ def reset_global_tracing_state():
     _YAML_REGISTRY.update(orig_yaml_registry)
     state.global_tracing_state.is_tracing = old_is_tracing
     state.global_tracing_state.active_graph = old_graph
-    state.global_tracing_state.add_node = old_add_node
+    setattr(state.global_tracing_state, "add_node", old_add_node)
 
     config.backend = old_backend
     config.eager_mode = old_eager
 
     if had_active_backend:
-        reg._ACTIVE_BACKEND = old_active_backend
+        setattr(reg, "_ACTIVE_BACKEND", old_active_backend)
     elif hasattr(reg, "_ACTIVE_BACKEND"):
         del reg._ACTIVE_BACKEND

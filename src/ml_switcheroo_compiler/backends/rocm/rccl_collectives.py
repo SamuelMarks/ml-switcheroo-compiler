@@ -1,10 +1,11 @@
-# ruff: noqa: E402, E501, F403
 """Ctypes-based RCCL collective driver bindings for ROCm/HIP."""
 
 from __future__ import annotations
 
 import ctypes
+import logging
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # RCCL Data types
@@ -36,7 +37,7 @@ class RCCLDriver:
             lib_path (str | None): Custom path to librccl.so or None for discovery.
         """
         self.rccl_lib: ctypes.CDLL | None = None
-        self._allocated_buffers: dict[int, object] = {}
+        self._allocated_buffers: dict[int, EagerValue] = {}
         self.hip_rt: ctypes.CDLL | None = None
         for rt in ["libamdhip64.so.6", "libamdhip64.so.5", "libamdhip64.so", "libhip_hcc.so", "hip.dll"]:
             try:
@@ -98,12 +99,12 @@ class RCCLDriver:
                 fn.argtypes = [ctypes.c_void_p]
                 fn.restype = ctypes.c_int
                 fn(ctypes.c_void_p(ptr))
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         else:
             self._allocated_buffers.pop(ptr, None)
 
-    def copy_host_to_device(self, host_array: object, dev_ptr: int) -> None:
+    def copy_host_to_device(self, host_array: EagerValue, dev_ptr: int) -> None:
         """Transfer memory buffer from host NumPy array to accelerator device pointer.
 
         Args:
@@ -120,11 +121,11 @@ class RCCLDriver:
                 # hipMemcpyHostToDevice = 1
                 fn(ctypes.c_void_p(dev_ptr), ctypes.c_void_p(buf_ptr), nbytes, 1)
                 return
-            except Exception:
-                pass
-        ctypes.memmove(dev_ptr, buf_ptr, nbytes)
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+        getattr(ctypes, "memmove")(dev_ptr, buf_ptr, nbytes)
 
-    def copy_device_to_host(self, dev_ptr: int, out_array: object) -> None:
+    def copy_device_to_host(self, dev_ptr: int, out_array: EagerValue) -> None:
         """Transfer memory buffer from accelerator device pointer to destination host NumPy array.
 
         Args:
@@ -141,9 +142,9 @@ class RCCLDriver:
                 # hipMemcpyDeviceToHost = 2
                 fn(ctypes.c_void_p(buf_ptr), ctypes.c_void_p(dev_ptr), nbytes, 2)
                 return
-            except Exception:
-                pass
-        ctypes.memmove(buf_ptr, dev_ptr, nbytes)
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+        getattr(ctypes, "memmove")(buf_ptr, dev_ptr, nbytes)
 
     def stream_synchronize(self, stream: int | None = None) -> int:
         """Synchronize HIP compute stream.

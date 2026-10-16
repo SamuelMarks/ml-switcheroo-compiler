@@ -5,6 +5,7 @@ from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import _inj
 
 
 def test_inject_broadcast_node() -> None:
+    """Test function test_inject_broadcast_node."""
     graph = IRGraph(name="test", nodes={}, outputs=[])
     input_id = "input1"
     target_shape = (2, 2)
@@ -18,6 +19,7 @@ def test_inject_broadcast_node() -> None:
 
 
 def test_needs_broadcast() -> None:
+    """Test function test_needs_broadcast."""
     assert _needs_broadcast(None, (1, 2)) is None
     assert _needs_broadcast((1, 2), None) is None
     assert _needs_broadcast((1, 2), (1, 2)) is None
@@ -27,6 +29,7 @@ def test_needs_broadcast() -> None:
 
 def test_process_broadcast_node() -> None:
     # Op doesn't exist
+    """Test function test_process_broadcast_node."""
     node1 = IRNode(id="node1", op_type="UnknownOp", inputs=[])
     graph = IRGraph(name="test", nodes={"node1": node1}, outputs=[])
 
@@ -69,6 +72,7 @@ def test_process_broadcast_node() -> None:
 
 
 def test_broadcast_explicitizer_pass() -> None:
+    """Test function test_broadcast_explicitizer_pass."""
     node1 = IRNode(id="node1", op_type="Add", inputs=["in1", "in2"])
     graph = IRGraph(name="test", nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)), "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(2, 2)), "node1": node1}, outputs=["node1"])
 

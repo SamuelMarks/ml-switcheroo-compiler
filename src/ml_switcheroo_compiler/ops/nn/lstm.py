@@ -1,11 +1,11 @@
-# ruff: noqa: E402, E501, F403
 """RNN operations."""
 
-from typing import Any, Optional  # noqa: F401
+from collections.abc import Callable, Sequence
+from typing import Optional, cast  # noqa: F401
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
-from ml_switcheroo_compiler.ops.linalg import matmul
+from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.splitting import split
 from ml_switcheroo_compiler.ops.unary import tanh
 
@@ -37,7 +37,7 @@ def lstm_cell(
         z = add(z, bias)
 
     # Split z into i, f, c_bar, o
-    i, f, c_bar, o = split(z, 4, axis=-1)
+    i, f, c_bar, o = cast(Callable[..., Sequence[Tensor]], split)(z, 4, axis=-1)
 
     i = _sigmoid(i)
     f = _sigmoid(f)
@@ -50,7 +50,7 @@ def lstm_cell(
     return h_new, (h_new, c_new)
 
 
-def _sigmoid(x):
+def _sigmoid(x: Tensor) -> Tensor:
     """Evaluate _sigmoid operation.
 
     Args:

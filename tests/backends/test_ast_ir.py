@@ -1,5 +1,9 @@
 """Tests for ast_to_ir and ir_to_ast."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import libcst as cst
 
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
@@ -9,8 +13,14 @@ from ml_switcheroo_compiler.backends.ir_to_ast import (
     emit_ir_to_class,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_ast_to_ir() -> None:
+    """Test function test_ast_to_ir."""
     source = "torch.add(x, y)"
     graph = parse_ast_to_ir(source)
     assert len(graph.nodes) == 1
@@ -18,13 +28,14 @@ def test_ast_to_ir() -> None:
     assert node.op_type == "Add"
 
     source2 = "add(x, y)"
-    graph2 = parse_ast_to_ir(source2)
+    parse_ast_to_ir(source2)
 
     source3 = "torch.nn.add(x, y)"
-    graph3 = parse_ast_to_ir(source3)
+    parse_ast_to_ir(source3)
 
 
 def test_ir_to_ast() -> None:
+    """Test function test_ir_to_ast."""
     source = "torch.add(x, y)"
     graph = parse_ast_to_ir(source)
 
@@ -44,6 +55,7 @@ def test_ir_to_ast() -> None:
 
 
 def test_ast_branches() -> None:
+    """Test function test_ast_branches."""
     from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
     from ml_switcheroo_compiler.backends.ir_to_ast import emit_ir_to_ast
     from ml_switcheroo_compiler.ir.core import IRNode
@@ -59,7 +71,7 @@ def test_ast_branches() -> None:
     assert len(graph.nodes) == 0
 
     # Emit missing op
-    graph.nodes["in0"] = IRNode("in0", "Input", [])
+    getattr(graph.nodes, "__setitem__")("in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("in0", "Input", []))
     graph.nodes["unknown"] = IRNode("unknown", "UnknownOp", inputs=["in0"])
     ast_module = emit_ir_to_ast(graph, "jax")
     assert len(ast_module.body) == 1  # Only the input node gets emitted
@@ -67,6 +79,7 @@ def test_ast_branches() -> None:
 
 def test_ast_to_ir_edge_cases() -> None:
     # hit line 34 false branch (call a function that is not Name or Attribute)
+    """Test function test_ast_to_ir_edge_cases."""
     source = "funcs[0](x, y)"
     graph = parse_ast_to_ir(source)
     assert len(graph.nodes) == 0
@@ -78,6 +91,7 @@ def test_ast_to_ir_edge_cases() -> None:
 
 
 def test_ast_to_ir_inline() -> None:
+    """Test function test_ast_to_ir_inline."""
     source = "torch.add(x, torch.add(y, z))"
     graph = parse_ast_to_ir(source)
     assert len(graph.nodes) == 2
@@ -88,6 +102,7 @@ def test_ast_to_ir_inline() -> None:
 
 
 def test_ast_to_ir_extra_nodes() -> None:
+    """Test function test_ast_to_ir_extra_nodes."""
     source = """
 x = 1
 y = 2.0
@@ -111,6 +126,7 @@ c = foo(1)
 
 def test_semantic_ast_to_ir_features() -> None:
     # 1. Nested calls and keyword arguments
+    """Test function test_semantic_ast_to_ir_features."""
     source_nested = "z = torch.add(torch.relu(x), y, dim=1)"
     graph_nested = parse_ast_to_ir(source_nested)
     assert len(graph_nested.nodes) >= 2
@@ -168,6 +184,7 @@ class MyMLP(torch.nn.Module):
 
 
 def test_roundtrip_transpilation_mlp() -> None:
+    """Test function test_roundtrip_transpilation_mlp."""
     import numpy as np
 
     from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
@@ -218,9 +235,9 @@ class MLP(nn.Module):
     expected_numerical = np.maximum(0.0, test_x + 1.0)
 
     input_node = next(n for n in ir_graph.nodes.values() if n.op_type == "Input")
-    eval_res = evaluate_graph(ir_graph, {input_node.id: test_x})
+    eval_res = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_graph, {input_node.id: test_x})
     actual_output = list(eval_res.values())[0]
-    np.testing.assert_allclose(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
 
 
 def test_ir_to_ast_defaults() -> None:
@@ -228,7 +245,7 @@ def test_ir_to_ast_defaults() -> None:
     from ml_switcheroo_compiler.backends.ir_to_ast import _get_class_base_expr, _get_compute_method_name
 
     assert _get_compute_method_name("unknown_fw") == "forward"
-    assert _get_class_base_expr("unknown_fw").value == "object"
+    assert cast("EagerTensorProtocol", getattr(_get_class_base_expr("unknown_fw"), "value")) == "object"
 
 
 def test_ir_to_ast_missing_branches() -> None:

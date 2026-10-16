@@ -1,9 +1,9 @@
 BatchMatMul:
   autodiff:
-    jvp: null
-    jvp_rule_id: Bmm_jvp
+    vjp_rule_id: BatchMatMul_vjp
+    jvp_rule_id: BatchMatMul_jvp
     vjp: null
-    vjp_rule_id: Bmm_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Performs a batch matrix-matrix product.
   domain: linalg
@@ -19,28 +19,43 @@ BatchMatMul:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     edge_wasm_simd:
       template: matmul
     llvm_cpp:
       template: matmul
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: matmul(in0, in1)
+    symbolic_expression: '[B, M, K], [B, K, N] -> [B, M, N]'
+    category: linalg
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Cholesky:
   autodiff:
-    jvp: MatMul($tangent[0], Transpose($input[0]))
+    vjp_rule_id: Cholesky_vjp
     jvp_rule_id: Cholesky_jvp
     vjp:
     - MatMul($cotangent, Transpose($input[0]))
-    vjp_rule_id: Cholesky_vjp
+    jvp: MatMul($tangent[0], Transpose($input[0]))
   broadcast_semantics: numpy
   description: The Cholesky operation.
   domain: linalg
@@ -54,15 +69,15 @@ Cholesky:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -87,12 +102,27 @@ Cholesky:
       generator: np.linalg.cholesky
     tensorflow:
       eager: tf.linalg.cholesky
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Determinant:
   autodiff:
-    jvp: null
-    jvp_rule_id: Det_jvp
+    vjp_rule_id: Determinant_vjp
+    jvp_rule_id: Determinant_jvp
     vjp: null
-    vjp_rule_id: Det_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Det operation.
   domain: linalg
@@ -106,15 +136,15 @@ Determinant:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     edge_wasm_simd:
@@ -133,12 +163,27 @@ Determinant:
       generator: np.linalg.det
     tensorflow:
       eager: tf.linalg.det
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Dot:
   autodiff:
-    jvp: null
+    vjp_rule_id: Dot_vjp
     jvp_rule_id: Dot_jvp
     vjp: null
-    vjp_rule_id: Dot_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Dot operation.
   domain: linalg
@@ -152,15 +197,15 @@ Dot:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -184,12 +229,27 @@ Dot:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: dot(in0, in1)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: contracting
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Eig:
   autodiff:
-    jvp: null
+    vjp_rule_id: Eig_vjp
     jvp_rule_id: Eig_jvp
     vjp: null
-    vjp_rule_id: Eig_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Eig operation.
   domain: linalg
@@ -203,15 +263,15 @@ Eig:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     edge_wasm_simd:
@@ -230,14 +290,29 @@ Eig:
       generator: np.linalg.eig
     tensorflow:
       eager: tf.eig
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 MatMul:
   autodiff:
-    jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+    vjp_rule_id: MatMul_vjp
     jvp_rule_id: MatMul_jvp
     vjp:
     - MatMul($cotangent, Transpose($input[1]))
     - MatMul(Transpose($input[0]), $cotangent)
-    vjp_rule_id: MatMul_vjp
+    jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
   broadcast_semantics: numpy
   description: The MatMul operation.
   domain: linalg
@@ -251,15 +326,15 @@ MatMul:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     edge_onnx:
@@ -272,12 +347,27 @@ MatMul:
       template: matmul
     llvm_cpp:
       template: matmul
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: matmul(in0, in1)
+    symbolic_expression: '[B, M, K], [B, K, N] -> [B, M, N]'
+    category: linalg
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 MatrixInverse:
   autodiff:
-    jvp: null
-    jvp_rule_id: Inv_jvp
+    vjp_rule_id: MatrixInverse_vjp
+    jvp_rule_id: MatrixInverse_jvp
     vjp: null
-    vjp_rule_id: Inv_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Inv operation.
   domain: linalg
@@ -291,15 +381,15 @@ MatrixInverse:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -322,12 +412,27 @@ MatrixInverse:
       generator: np.linalg.inv
     tensorflow:
       eager: tf.linalg.inv
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 QR:
   autodiff:
-    jvp: null
+    vjp_rule_id: QR_vjp
     jvp_rule_id: QR_jvp
     vjp: null
-    vjp_rule_id: QR_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Qr operation.
   domain: linalg
@@ -341,15 +446,15 @@ QR:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -372,13 +477,28 @@ QR:
       generator: np.linalg.qr
     tensorflow:
       eager: tf.linalg.qr
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 SVD:
   autodiff:
-    jvp: MatMul($tangent[0], Transpose($input[0]))
+    vjp_rule_id: SVD_vjp
     jvp_rule_id: SVD_jvp
     vjp:
     - MatMul($cotangent, Transpose($input[0]))
-    vjp_rule_id: SVD_vjp
+    jvp: MatMul($tangent[0], Transpose($input[0]))
   broadcast_semantics: numpy
   description: The Svd operation.
   domain: linalg
@@ -392,15 +512,15 @@ SVD:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -423,12 +543,27 @@ SVD:
       generator: np.linalg.svd
     tensorflow:
       eager: tf.linalg.svd
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Solve:
   autodiff:
-    jvp: null
+    vjp_rule_id: Solve_vjp
     jvp_rule_id: Solve_jvp
     vjp: null
-    vjp_rule_id: Solve_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Solve operation.
   domain: linalg
@@ -442,15 +577,15 @@ Solve:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -473,12 +608,27 @@ Solve:
       generator: np.linalg.solve
     tensorflow:
       eager: tf.linalg.solve
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 TensorDot:
   autodiff:
-    jvp: null
-    jvp_rule_id: Tensordot_jvp
+    vjp_rule_id: TensorDot_vjp
+    jvp_rule_id: TensorDot_jvp
     vjp: null
-    vjp_rule_id: Tensordot_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Tensordot operation.
   domain: linalg
@@ -492,15 +642,15 @@ TensorDot:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -529,12 +679,27 @@ TensorDot:
       eager: torch.tensordot
     tensorflow:
       eager: tf.tensordot
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Trace:
   autodiff:
-    jvp: null
+    vjp_rule_id: Trace_vjp
     jvp_rule_id: Trace_jvp
     vjp: null
-    vjp_rule_id: Trace_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Trace operation.
   domain: linalg
@@ -548,15 +713,15 @@ Trace:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -585,12 +750,27 @@ Trace:
       eager: torch.trace
     tensorflow:
       eager: tf.linalg.trace
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 VectorDot:
   autodiff:
-    jvp: null
-    jvp_rule_id: Vdot_jvp
+    vjp_rule_id: VectorDot_vjp
+    jvp_rule_id: VectorDot_jvp
     vjp: null
-    vjp_rule_id: Vdot_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Vdot operation.
   domain: linalg
@@ -604,15 +784,15 @@ VectorDot:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: a
-      type: Tensor
-    - is_variadic: false
-      name: b
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -641,3 +821,18 @@ VectorDot:
       eager: torch.vdot
     tensorflow:
       eager: tf.vdot
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

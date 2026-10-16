@@ -1,9 +1,11 @@
 """Tests for mlir_bytecode."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncoder
 
 
-def test_mlir_bytecode_encoder():
+def test_mlir_bytecode_encoder() -> None:
     """Test MLIRBytecodeEncoder basic operations."""
     encoder = MLIRBytecodeEncoder()
     assert encoder.strings == ["builtin", "func", "stablehlo"]
@@ -36,7 +38,7 @@ def test_mlir_bytecode_encoder():
     assert bytecode.startswith(b"ML\xefR\x01")
 
 
-def test_mlir_bytecode_encoder_ssa_and_types():
+def test_mlir_bytecode_encoder_ssa_and_types() -> None:
     """Test MLIRBytecodeEncoder SSA value tracking and type section encoding."""
     encoder = MLIRBytecodeEncoder()
 

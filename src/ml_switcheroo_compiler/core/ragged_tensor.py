@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module ragged_tensor.py."""
-
 """Ragged tensor."""
 
 from collections.abc import Sequence

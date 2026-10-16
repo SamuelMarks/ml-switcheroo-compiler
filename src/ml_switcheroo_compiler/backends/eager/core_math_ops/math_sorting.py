@@ -1,16 +1,16 @@
-# ruff: noqa: E402, E501, F403
 """math_sorting module."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import Any
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Argpartition")
-def _argpartition(backend_module: Any, a: object, kth: object, axis: int = -1, **kwargs: Any) -> Any:
+def _argpartition(backend_module: EagerValue, a: EagerValue, kth: EagerValue, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _argpartition operation.
 
     Args:
@@ -23,11 +23,11 @@ def _argpartition(backend_module: Any, a: object, kth: object, axis: int = -1, *
     Returns:
             object: Result.
     """
-    return backend_module.argsort(a, axis=axis) if hasattr(backend_module, "argsort") else a
+    return getattr(backend_module, "argsort")(a, axis=axis) if hasattr(backend_module, "argsort") else a
 
 
 @global_eager_registry.register("Median")
-def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _median(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _median operation.
 
     Args:
@@ -38,11 +38,11 @@ def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.median(*args, **kwargs)
+    return cast(EagerValue, getattr(backend_module, "median")(*args, **kwargs))
 
 
 @global_eager_registry.register("Percentile")
-def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _percentile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _percentile operation.
 
     Args:
@@ -53,11 +53,11 @@ def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.percentile(*args, **kwargs)
+    return cast(EagerValue, getattr(backend_module, "percentile")(*args, **kwargs))
 
 
 @global_eager_registry.register("Quantile")
-def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _quantile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _quantile operation.
 
     Args:
@@ -68,11 +68,11 @@ def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    return backend_module.quantile(*args, **kwargs)
+    return cast(EagerValue, getattr(backend_module, "quantile")(*args, **kwargs))
 
 
 @global_eager_registry.register("Partition")
-def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_partition(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_partition operation.
 
     Args:
@@ -85,7 +85,5 @@ def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
     if func is not None:
-        return func(*args, **kwargs)
-    import numpy as np
-
-    return np.partition(*args, **kwargs)
+        return cast(EagerValue, func(*args, **kwargs))
+    return cast(EagerValue, np.partition(*args, **kwargs))

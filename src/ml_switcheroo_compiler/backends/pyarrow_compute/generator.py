@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _unwrap_input_val(val: object) -> object:
+def _unwrap_input_val(val: EagerValue) -> EagerValue:
     """Unwrap Arrow object or Tensor to underlying raw array or scalar.
 
     Args:
@@ -64,7 +68,7 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
-    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
         """Retrieve operation formatting templates for PyArrow Compute operations.
 
         Args:
@@ -197,7 +201,7 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return "\n".join(self.code)
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Fallback for generic nodes emitting PyArrow Compute operations.
 
         Args:
@@ -210,7 +214,7 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         """
         return super().generic_visit(node, input_vars, **kwargs)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into an executable callable for Arrow columnar execution.
 
         Args:
@@ -225,7 +229,7 @@ class PyArrowComputeGenerator(PythonStringGenerator):
 
         zero_copy = self.zero_copy
 
-        def aot_arrow_runner(*w_args: object, **w_kw: object) -> object:
+        def aot_arrow_runner(*w_args: EagerValue, **w_kw: EagerValue) -> EagerValue:
             """Execute graph with Arrow columnar structures.
 
             Args:
@@ -236,18 +240,18 @@ class PyArrowComputeGenerator(PythonStringGenerator):
                 object: Output results.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
-            inputs: dict[str, object] = {inp_node.id: _unwrap_input_val(w_args[i]) for i, inp_node in enumerate(input_nodes) if i < len(w_args)}
+            inputs: dict[str, EagerValue] = {inp_node.id: _unwrap_input_val(w_args[i]) for i, inp_node in enumerate(input_nodes) if i < len(w_args)}
             for k, val in w_kw.items():
                 inputs[k] = _unwrap_input_val(val)
 
-            evaluated = evaluate_graph(graph, inputs=inputs)
+            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
                     res = evaluated.get(graph.outputs[0])
                     if zero_copy and is_arrow_object(w_args[0] if w_args else None):
                         return to_arrow(res, target_type="tensor")
-                    return res
+                    return cast(EagerValue, res)
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return evaluated
+            return cast(EagerValue, evaluated)
 
         return aot_arrow_runner

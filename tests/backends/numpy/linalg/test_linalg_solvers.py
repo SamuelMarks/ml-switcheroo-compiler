@@ -1,5 +1,9 @@
 """Tests for numpy eager linalg extras ops."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
@@ -19,6 +23,11 @@ from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _parse_dot_dimension_numbers,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_get_uncontracted_dims() -> None:
     """Test get uncontracted dims."""
@@ -32,7 +41,7 @@ def test_get_uncontracted_dims() -> None:
 def test_parse_dot_dimension_numbers() -> None:
     """Test parse dot dimension numbers."""
     dimension_numbers = (((1,), (0,)), ((2,), (3,)))
-    res = _parse_dot_dimension_numbers(dimension_numbers)
+    res = cast("Callable[..., EagerTensorProtocol]", _parse_dot_dimension_numbers)(dimension_numbers)
     assert res == ((1,), (0,), (2,), (3,))
 
 
@@ -54,7 +63,7 @@ def test_dot_general() -> None:
     dimension_numbers = (((1,), (0,)), ((), ()))
     res = _dot_general(a, b, dimension_numbers)
     expected = np.dot(a, b)
-    np.testing.assert_allclose(res, expected)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
 
 
 def test_trace() -> None:
@@ -76,14 +85,14 @@ def test_matrix_transpose() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_matrix_transpose(np, a)
     expected = a.T
-    np.testing.assert_allclose(res, expected)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
 
 
 def test_sqrtm() -> None:
     """Test sqrtm."""
     a = np.array([1, 2])
     res = _np_sqrtm(a)
-    assert np.array_equal(res, a)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, a)
 
 
 def test_adjoint() -> None:
@@ -91,21 +100,21 @@ def test_adjoint() -> None:
     a = np.array([[1 + 1j, 2], [3, 4]])
     res = _np_adjoint(np, a)
     expected = np.conj(a.T)
-    np.testing.assert_allclose(res, expected)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
 
 
 def test_cholesky_solve() -> None:
     """Test cholesky solve."""
     a = np.array([1, 2])
     res = _np_cholesky_solve(np, a)
-    assert np.array_equal(res, a)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, a)
 
 
 def test_eigh_tridiagonal() -> None:
     """Test eigh tridiagonal."""
     a = np.array([1, 2])
     res = _np_eigh_tridiagonal(np, a)
-    assert np.array_equal(res, a)
+    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, a)
 
 
 def test_qr() -> None:
@@ -113,8 +122,8 @@ def test_qr() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_qr(np, a)
     expected = np.linalg.qr(a)
-    np.testing.assert_allclose(res[0], expected[0])
-    np.testing.assert_allclose(res[1], expected[1])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(0)))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(1)))
 
 
 def test_cross() -> None:
@@ -123,13 +132,13 @@ def test_cross() -> None:
     b = np.array([0, 1, 0])
     res1 = _np_cross(np, a, b)
     expected = np.cross(a, b)
-    np.testing.assert_allclose(res1, expected)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res1, expected)
 
     res2 = _np_cross(np, a, b, axes={"axis": None})
-    np.testing.assert_allclose(res2, expected)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res2, expected)
 
     res3 = _np_cross(np, a, b, axis=None)
-    np.testing.assert_allclose(res3, expected)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res3, expected)
 
 
 def test_slogdet() -> None:
@@ -137,8 +146,8 @@ def test_slogdet() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_slogdet(np, a)
     expected = np.linalg.slogdet(a)
-    np.testing.assert_allclose(res[0], expected[0])
-    np.testing.assert_allclose(res[1], expected[1])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(0)))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(1)))
 
 
 def test_dynamically_registered_ops() -> None:
@@ -150,15 +159,15 @@ def test_dynamically_registered_ops() -> None:
     # test solve
     solve_fn = numpy_eager_registry.get("Solve")
     b = np.array([1, 2])
-    res_solve = solve_fn(np, a, b)
-    np.testing.assert_allclose(res_solve, np.linalg.solve(a, b))
+    res_solve = cast("Callable[..., EagerTensorProtocol]", solve_fn)(np, a, b)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_solve, cast("Callable[..., EagerTensorProtocol]", np.linalg.solve)(a, b))
 
     # test eig
     eig_fn = numpy_eager_registry.get("Eig")
-    res_eig = eig_fn(np, a)
-    np.testing.assert_allclose(res_eig[0], np.linalg.eig(a)[0])
+    res_eig = cast("Callable[..., EagerTensorProtocol]", eig_fn)(np, a)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res_eig, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", np.linalg.eig)(a), "__getitem__")(0)))
 
     # test norm
     norm_fn = numpy_eager_registry.get("Norm")
-    res_norm = norm_fn(np, a)
-    np.testing.assert_allclose(res_norm, np.linalg.norm(a))
+    res_norm = cast("Callable[..., EagerTensorProtocol]", norm_fn)(np, a)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_norm, cast("Callable[..., EagerTensorProtocol]", np.linalg.norm)(a))

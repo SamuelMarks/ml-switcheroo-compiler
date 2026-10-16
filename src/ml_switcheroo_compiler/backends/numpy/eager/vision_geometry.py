@@ -3,23 +3,23 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Union
+from typing import Callable, Union, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import iou_eager, nms_eager
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, numpy_eager_registry
 
 
 @numpy_eager_registry.register("AffineGenerator")
 def _np_affine_generator(
     backend_module: ModuleType,
     batch_size: int,
-    angles: Union[np.ndarray, list[float], float],
-    shears: Union[np.ndarray, list[float], float],
-    zooms: Union[np.ndarray, list[float], float],
+    angles: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[float], float],
+    shears: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[float], float],
+    zooms: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[float], float],
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Generate affine transformation matrices for a batch.
 
     Args:
@@ -42,10 +42,10 @@ def _np_affine_generator(
 @numpy_eager_registry.register("ElasticTransform")
 def _np_elastic_transform(
     backend_module: ModuleType,
-    images: np.ndarray,
-    displacement: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    displacement: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Apply elastic transformation to an image using displacement.
 
     Args:
@@ -62,8 +62,8 @@ def _np_elastic_transform(
     if disp.ndim < 1 or disp.size == 0 or disp.all() is None:
         return arr
     if arr.ndim >= 2:
-        shift_y = int(np.mean(disp[..., 0])) if disp.size > 0 else 0
-        shift_x = int(np.mean(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
+        shift_y = int(getattr(np, "mean")(disp[..., 0])) if disp.size > 0 else 0
+        shift_x = int(getattr(np, "mean")(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
         return np.roll(arr, shift=(shift_y, shift_x), axis=(0, 1))
     return arr
 
@@ -71,11 +71,11 @@ def _np_elastic_transform(
 @numpy_eager_registry.register("ExtractBoundingBoxes")
 def _np_extract_bounding_boxes(
     backend_module: ModuleType,
-    images: np.ndarray,
-    boxes: np.ndarray,
-    box_indices: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    boxes: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    box_indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Extract bounding box crops from images.
 
     Args:
@@ -94,10 +94,10 @@ def _np_extract_bounding_boxes(
 @numpy_eager_registry.register("IoU")
 def _np_iou(
     backend_module: ModuleType,
-    boxes1: np.ndarray,
-    boxes2: np.ndarray,
+    boxes1: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    boxes2: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Compute Intersection-over-Union between two sets of boxes.
 
     Args:
@@ -109,17 +109,17 @@ def _np_iou(
     Returns:
         np.ndarray: Pairwise IoU matrix.
     """
-    return iou_eager(backend_module, boxes1, boxes2, **kwargs)
+    return np.asarray(cast("Callable[..., EagerTensorProtocol]", iou_eager)(backend_module, boxes1, boxes2, **kwargs))
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
 def _np_nms(
     backend_module: ModuleType,
-    boxes: np.ndarray,
-    scores: np.ndarray,
+    boxes: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    scores: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     max_output_size: int,
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Perform non-maximum suppression on bounding boxes.
 
     Args:
@@ -132,18 +132,18 @@ def _np_nms(
     Returns:
         np.ndarray: Indices of selected bounding boxes.
     """
-    return nms_eager(backend_module, boxes, scores, **kwargs)
+    return np.asarray(cast("Callable[..., EagerTensorProtocol]", nms_eager)(backend_module, boxes, scores, **kwargs))
 
 
 @numpy_eager_registry.register("PerspectiveTransform")
 def _np_perspective_transform(
     backend_module: ModuleType,
-    images: np.ndarray,
-    start_points: np.ndarray,
-    end_points: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    start_points: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    end_points: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     config: Union[dict[str, float], float, None] = None,
     **kwargs: Union[float, int, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Apply perspective transformation to images.
 
     Args:
@@ -163,11 +163,11 @@ def _np_perspective_transform(
 @numpy_eager_registry.register("AffineGrid")
 def _np_affine_grid(
     backend_module: ModuleType,
-    theta: Union[np.ndarray, float],
+    theta: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float],
     size: tuple[int, ...],
     align_corners: bool = False,
     **kwargs: Union[bool, None],
-) -> Union[np.ndarray, float]:
+) -> Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float]:
     """Generate 2D flow field given a batch of affine matrices.
 
     Args:
@@ -191,11 +191,11 @@ def _np_affine_grid(
 @numpy_eager_registry.register("AffineTransform")
 def _np_affine_transform(
     backend_module: ModuleType,
-    images: np.ndarray,
-    transforms: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    transforms: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     interpolation: str = "nearest",
     **kwargs: Union[str, float, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Apply affine transform to image tensors.
 
     Args:

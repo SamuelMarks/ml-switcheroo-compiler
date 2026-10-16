@@ -3,13 +3,21 @@
 from __future__ import annotations
 
 import importlib
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core.dtype import DType
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_random_continuous_and_transformations() -> None:
-    """Verify random continuous distributions and transformations dispatch correctly."""
+
+def _test_random_continuous_and_transformations_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_random_continuous_and_transformations.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     distributions = [
         ("ball", (1, 2)),
         ("cauchy", (3,)),
@@ -60,6 +68,18 @@ def test_random_continuous_and_transformations() -> None:
         mock_emit.assert_called_with("RandomUniform", ["key"], (3, 3), DType.Float64, {"minval": -1.0, "maxval": 2.0})
 
     trunc_norm_mod = importlib.import_module("ml_switcheroo_compiler.random.continuous.truncated_normal")
+    getattr(_state, "update")({"distributions": distributions, "mock_emit": mock_emit, "normal_mod": normal_mod, "trunc_norm_mod": trunc_norm_mod})
+    getattr(_state, "update")({"uniform_mod": uniform_mod})
+    _state.update(locals())
+
+
+def _test_random_continuous_and_transformations_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_random_continuous_and_transformations.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    trunc_norm_mod = _state["trunc_norm_mod"]
     with patch.object(trunc_norm_mod, "_emit_random_node", return_value="mock_trunc") as mock_emit:
         assert trunc_norm_mod.truncated_normal("key", -2.0, 2.0, (2, 2)) == "mock_trunc"
         assert trunc_norm_mod.truncated_normal("key", -2.0, 2.0, (2, 2), dtype=DType.Float64) == "mock_trunc"
@@ -86,6 +106,18 @@ def test_random_continuous_and_transformations() -> None:
         mock_emit.assert_called_with("Dirichlet", ["key", 1.0], (3,), DType.Float64)
 
     mvn_mod = importlib.import_module("ml_switcheroo_compiler.random.continuous.multivariate_normal")
+    getattr(_state, "update")({"beta_mod": beta_mod, "dirichlet_mod": dirichlet_mod, "gamma_mod": gamma_mod, "mock_emit": mock_emit})
+    getattr(_state, "update")({"mvn_mod": mvn_mod})
+    _state.update(locals())
+
+
+def _test_random_continuous_and_transformations_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_random_continuous_and_transformations.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    mvn_mod = _state["mvn_mod"]
     with patch.object(mvn_mod, "_emit_random_node", return_value="mock_mvn") as mock_emit:
         assert mvn_mod.multivariate_normal("key", 0.0, 1.0) == "mock_mvn"
         mock_emit.assert_called_with("MultivariateNormal", ["key"], (), DType.Float32, {"method": "cholesky"})
@@ -97,7 +129,6 @@ def test_random_continuous_and_transformations() -> None:
         opts = mvn_mod.MultivariateNormalOptions(shape=(2,), dtype=DType.Float64, method="svd")
         assert mvn_mod.multivariate_normal("key", mean_t, cov_t, options=opts) == "mock_mvn"
         mock_emit.assert_called_with("MultivariateNormal", ["key", mean_t, cov_t], (2,), DType.Float64, {"method": "svd"})
-
     trans_mod = importlib.import_module("ml_switcheroo_compiler.random.transformations")
     with patch.object(trans_mod, "_emit_random_node", return_value="mock_shuffle") as mock_emit:
         mock_tensor = MagicMock()
@@ -106,3 +137,14 @@ def test_random_continuous_and_transformations() -> None:
         res = trans_mod.shuffle("prng_key", mock_tensor, axis=1)
         assert res == "mock_shuffle"
         mock_emit.assert_called_once_with("RandomShuffle", ["prng_key", mock_tensor], (4, 5), "float32", {"axis": 1})
+    getattr(_state, "update")({"Tensor": Tensor, "cov_t": cov_t, "mean_t": mean_t, "mock_emit": mock_emit})
+    getattr(_state, "update")({"mock_tensor": mock_tensor, "opts": opts, "res": res, "trans_mod": trans_mod})
+
+
+def test_random_continuous_and_transformations() -> None:
+    """Verify random continuous distributions and transformations dispatch correctly."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_random_continuous_and_transformations_part_1(_state)
+    _test_random_continuous_and_transformations_part_2(_state)
+    _test_random_continuous_and_transformations_part_3(_state)
+    assert isinstance(_state, dict)

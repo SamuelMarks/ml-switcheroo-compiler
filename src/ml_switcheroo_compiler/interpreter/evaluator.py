@@ -1,13 +1,16 @@
-# ruff: noqa: E402, E501, F403
 """IR evaluator using the OpRegistry."""
+
+from __future__ import annotations
 
 import ast
 import builtins
-from typing import Optional, Protocol, TypeVar, Union, cast, runtime_checkable  # noqa: F401
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, Protocol, TypeVar, Union, cast, runtime_checkable  # noqa: F401
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.environment import Environment
@@ -17,26 +20,80 @@ from ml_switcheroo_compiler.interpreter.environment import Environment
 class TensorLike(Protocol):
     """Protocol defining the structural type contract for tensor/array instances in the interpreter."""
 
-    def __getitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None]) -> "TensorLike":
-        """Get item or slice from tensor."""
+    if TYPE_CHECKING:
+        dtype: Union[str, type, None]
+        nbytes: int
+        size: int
+
+        def copy(self) -> TensorLike:
+            """Create a copy of the tensor.
+
+            Returns:
+                TensorLike: Copied tensor instance.
+            """
+            ...
+
+        def __setitem__(self, key: Union[int, slice, tuple[EvalValue, ...], list[EvalValue], str, builtins.ellipsis, None], value: EvalValue) -> None:
+            """Set item or slice in tensor.
+
+            Args:
+                key (Union[int, slice, tuple, list, str, builtins.ellipsis, None]): Indexing key or slice.
+                value (EvalValue): Value to assign.
+            """
+            ...
+
+    def __getitem__(self, key: Union[int, slice, tuple[EvalValue, ...], list[EvalValue], str, builtins.ellipsis, None]) -> TensorLike:
+        """Get item or slice from tensor.
+
+        Args:
+            key (Union[int, slice, tuple, list, str, builtins.ellipsis, None]): Indexing key or slice.
+
+        Returns:
+            TensorLike: Indexed tensor slice or element.
+        """
         ...
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Get multidimensional shape dimensions."""
+        """Get multidimensional shape dimensions.
+
+        Returns:
+            tuple[int, ...]: Tensor shape tuple.
+        """
         ...
 
     def item(self) -> Union[int, float, bool]:
-        """Get item as scalar value."""
+        """Get item as scalar value.
+
+        Returns:
+            Union[int, float, bool]: Extracted Python scalar.
+        """
         ...
 
     def __len__(self) -> int:
-        """Get length of leading dimension."""
+        """Get length of leading dimension.
+
+        Returns:
+            int: Size of the leading dimension.
+        """
         ...
 
 
 IndexableArray = TensorLike
-EvalValue = Union[int, float, complex, bytes, str, bool, list, tuple, dict, None, slice, "builtins.ellipsis", TensorLike]
+EvalValue = Union[
+    int,
+    float,
+    complex,
+    str,
+    bool,
+    list["EvalValue"],
+    tuple["EvalValue", ...],
+    dict[Union[str, int], "EvalValue"],
+    None,
+    slice,
+    "builtins.ellipsis",
+    TensorLike,
+]
 
 
 def evaluate_graph(
@@ -59,7 +116,7 @@ def evaluate_graph(
     """
     initial_env: dict[str, EvalValue] = dict(getattr(graph, "initializers", {}) or {})
     initial_env.update(inputs)
-    env = Environment(initial_env)
+    env = cast("Callable[..., Environment]", Environment)(initial_env)
     sorted_nodes = topological_sort(graph)
     active_backend = backend if backend is not None else get_active_backend()
 
@@ -71,7 +128,7 @@ def evaluate_graph(
         if out_id not in env:
             msg = f"Output node '{out_id}' was never evaluated."
             raise RuntimeError(msg)
-        outputs[out_id] = env.get(out_id)
+        outputs[out_id] = cast(EvalValue, env.get(out_id))
     return outputs
 
 
@@ -122,7 +179,8 @@ def _parse_constant(node: ast.Constant) -> EvalValue:
 
     Returns: EvalValue: The parsed constant value.
     """
-    return node.value
+    val = node.value
+    return val.decode("utf-8", errors="replace") if isinstance(val, bytes) else val
 
 
 def _parse_name(node: ast.Name) -> EvalValue:
@@ -145,7 +203,7 @@ def _parse_unary(node: ast.UnaryOp) -> EvalValue:
     Returns: EvalValue: The parsed unary operation value.
     """
     if isinstance(node.op, ast.USub) and isinstance(node.operand, ast.Constant):
-        return -node.operand.value
+        return -cast(float, node.operand.value)
     return None
 
 
@@ -170,7 +228,7 @@ def _parse_slice_node(node: ast.AST) -> EvalValue:
     }
     handler = dispatch.get(type(node))
     if handler:
-        return handler(node)
+        return cast("Callable[..., EvalValue]", handler)(node)
     msg = f"Unsupported slice expression node: {type(node)}"
     raise ValueError(msg)
 
@@ -189,7 +247,7 @@ def _parse_slice_string(s: str) -> EvalValue:
 def _handle_slice(
     node: LogicalNode,
     env: Environment,
-    backend: "type[BaseGenerator]",
+    backend: type[BaseGenerator],
     in_vals: list[EvalValue],
     kwargs: dict[str, EvalValue],
 ) -> None:
@@ -204,7 +262,10 @@ def _handle_slice(
     """
     if "slices" in kwargs:
         parsed_key = _parse_slice_string(str(kwargs["slices"]))
-        env.set(node.id, cast(IndexableArray, backend.asarray(in_vals[0]))[cast(Union[int, slice, tuple, list, str, "builtins.ellipsis", None], parsed_key)])
+        getattr(env, "set")(
+            node.id,
+            cast(IndexableArray, backend.asarray(in_vals[0]))[cast(Union[int, slice, tuple[EvalValue, ...], list[EvalValue], str, "builtins.ellipsis", None], parsed_key)],
+        )
         return
 
     dim = int(getattr(kwargs.get("dim", 0), "__int__", lambda: 0)())
@@ -212,15 +273,18 @@ def _handle_slice(
     end = kwargs.get("end", None)
     step = kwargs.get("step", 1)
 
-    sl = [builtins.slice(None)] * len(in_vals[0].shape)
+    sl = [builtins.slice(None)] * len(getattr(in_vals[0], "shape"))
     sl[dim] = builtins.slice(start, end, step)
-    env.set(node.id, cast(IndexableArray, backend.asarray(in_vals[0]))[cast(Union[int, slice, tuple, list, str, "builtins.ellipsis", None], tuple(sl))])
+    getattr(env, "set")(
+        node.id,
+        cast(IndexableArray, backend.asarray(in_vals[0]))[cast(Union[int, slice, tuple[EvalValue, ...], list[EvalValue], str, "builtins.ellipsis", None], tuple(sl))],
+    )
 
 
 def _handle_getitem(
     node: LogicalNode,
     env: Environment,
-    backend: "type[BaseGenerator]",
+    backend: type[BaseGenerator],
     in_vals: list[EvalValue],
     kwargs: dict[str, EvalValue],
 ) -> None:
@@ -236,13 +300,16 @@ def _handle_getitem(
     key = kwargs.get("key")
 
     parsed_key = _parse_slice_string(str(key))
-    env.set(node.id, cast(IndexableArray, backend.asarray(in_vals[0]))[cast(Union[int, slice, tuple, list, str, "builtins.ellipsis", None], parsed_key)])
+    getattr(env, "set")(
+        node.id,
+        cast(IndexableArray, backend.asarray(in_vals[0]))[cast(Union[int, slice, tuple[EvalValue, ...], list[EvalValue], str, "builtins.ellipsis", None], parsed_key)],
+    )
 
 
 def _handle_index_put(
     node: LogicalNode,
     env: Environment,
-    backend: "type[BaseGenerator]",
+    backend: type[BaseGenerator],
     in_vals: list[EvalValue],
     kwargs: dict[str, EvalValue],
 ) -> None:
@@ -257,12 +324,10 @@ def _handle_index_put(
     """
     key = kwargs.get("key", kwargs.get("index", 0))
     parsed_key = _parse_slice_string(str(key))
-    import numpy as np
-
-    arr = np.array(in_vals[0], copy=True)
+    arr = cast(IndexableArray, backend.execute_op("Clone", in_vals[0]))
     val = in_vals[1]
-    arr[cast(Union[int, slice, tuple, list, str, "builtins.ellipsis", None], parsed_key)] = val
-    env.set(node.id, arr)
+    arr[cast(Union[int, slice, tuple[EvalValue, ...], list[EvalValue], str, "builtins.ellipsis", None], parsed_key)] = val
+    getattr(env, "set")(node.id, arr)
 
 
 def _handle_checkpoint(
@@ -279,20 +344,20 @@ def _handle_checkpoint(
     """
     subgraph = getattr(node, "subgraphs", {}).get("body") or getattr(node, "subgraphs", {}).get("subgraph") or node.attributes.get("subgraph")
     sub_inputs = {}
-    for inp_val, in_id in zip(in_vals, subgraph.inputs):
+    for inp_val, in_id in zip(in_vals, getattr(subgraph, "inputs")):
         sub_inputs[in_id] = inp_val
 
     from ml_switcheroo_ir import LogicalGraph
 
     sub_graph = LogicalGraph(name="checkpoint_subgraph")
-    if isinstance(subgraph.nodes, list):
-        for n in subgraph.nodes:
+    if isinstance(getattr(subgraph, "nodes"), list):
+        for n in getattr(subgraph, "nodes"):
             sub_graph.nodes[n.id] = n
     else:
-        for k, n in subgraph.nodes.items():
+        for k, n in getattr(subgraph, "nodes").items():
             sub_graph.nodes[k] = n
-    sub_graph.inputs = subgraph.inputs
-    sub_graph.outputs = subgraph.outputs
+    setattr(sub_graph, "inputs", getattr(subgraph, "inputs"))
+    setattr(sub_graph, "outputs", getattr(subgraph, "outputs"))
 
     sub_outputs = evaluate_graph(sub_graph, sub_inputs)
 
@@ -300,13 +365,13 @@ def _handle_checkpoint(
         result: EvalValue = sub_outputs[sub_graph.outputs[0]]
     else:
         result = tuple(sub_outputs[out_id] for out_id in sub_graph.outputs)
-    env.set(node.id, result)
+    getattr(env, "set")(node.id, result)
 
 
 def _handle_meshgrid(
     node: LogicalNode,
     env: Environment,
-    backend: "type[BaseGenerator]",
+    backend: type[BaseGenerator],
     in_vals: list[EvalValue],
     kwargs: dict[str, EvalValue],
 ) -> None:
@@ -319,12 +384,12 @@ def _handle_meshgrid(
         in_vals (list): List of input 1D coordinate arrays.
         kwargs (dict[str, EvalValue]): Keyword arguments including 'output_index' to select the desired returned grid.
     """
-    idx = kwargs.pop("output_index", 0)
+    idx = int(cast(int, kwargs.pop("output_index", 0)))
     result = backend.execute_op("Meshgrid", *in_vals, **kwargs)
-    env.set(node.id, cast(IndexableArray, result)[idx])
+    getattr(env, "set")(node.id, cast(IndexableArray, result)[idx])
 
 
-def _dispatch_op(node: LogicalNode, env: Environment, backend: "type[BaseGenerator]", target_op: str, in_vals: list[EvalValue], kwargs: dict[str, EvalValue]) -> None:
+def _dispatch_op(node: LogicalNode, env: Environment, backend: type[BaseGenerator], target_op: str, in_vals: list[EvalValue], kwargs: dict[str, EvalValue]) -> None:
     """Dispatch the execution of an operation to the appropriate handler.
 
     Args:
@@ -347,10 +412,10 @@ def _dispatch_op(node: LogicalNode, env: Environment, backend: "type[BaseGenerat
         _handle_meshgrid(node, env, backend, in_vals, kwargs)
     else:
         result = backend.execute_op(target_op, *in_vals, **kwargs)
-        env.set(node.id, result)
+        getattr(env, "set")(node.id, result)
 
 
-def _evaluate_if_node(node: LogicalNode, env: Environment, backend: "type[BaseGenerator]") -> None:
+def _evaluate_if_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
     """_evaluate_if_node function.
 
     Args:
@@ -370,7 +435,7 @@ def _evaluate_if_node(node: LogicalNode, env: Environment, backend: "type[BaseGe
         or node.attributes.get("true_branch" if is_true else "false_branch")
     )
     if branch:
-        nodes = branch.nodes if isinstance(branch.nodes, list) else list(branch.nodes.values())
+        nodes = getattr(branch, "nodes") if isinstance(getattr(branch, "nodes"), list) else list(getattr(branch, "nodes").values())
         for sub_node in nodes:
             _evaluate_node(sub_node, env, backend)
         if hasattr(branch, "outputs") and branch.outputs:
@@ -383,7 +448,7 @@ def _evaluate_if_node(node: LogicalNode, env: Environment, backend: "type[BaseGe
             env.set(node.id, env.get(last_node.id))
 
 
-def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: "type[BaseGenerator]") -> None:
+def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
     """_evaluate_loop_node function.
 
     Args:
@@ -398,27 +463,101 @@ def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: "type[Base
     body_graph = getattr(node, "subgraphs", {}).get("body") or node.attributes.get("body")
     curr_val = env.get(node.inputs[0])
     while True:
-        cond_input_id = cond_graph.nodes[0].id if isinstance(cond_graph.nodes, list) else list(cond_graph.nodes.keys())[0]
+        cond_input_id = getattr(cond_graph, "nodes")[0].id if isinstance(getattr(cond_graph, "nodes"), list) else list(getattr(cond_graph, "nodes").keys())[0]
         env.set(cond_input_id, curr_val)
-        nodes = cond_graph.nodes if isinstance(cond_graph.nodes, list) else cond_graph.nodes.values()
+        nodes = getattr(cond_graph, "nodes") if isinstance(getattr(cond_graph, "nodes"), list) else getattr(cond_graph, "nodes").values()
         for sub_node in nodes:
             if sub_node.id != cond_input_id:
                 _evaluate_node(sub_node, env, backend)
-        cond_res = env.get(cond_graph.outputs[0])
+        cond_res = env.get(getattr(cond_graph, "outputs")[0])
         is_true = bool(cond_res) if isinstance(cond_res, (bool, int, float)) else bool(getattr(cond_res, "item", lambda cr=cond_res: cr)())
         if not is_true:
             break
-        body_input_id = body_graph.nodes[0].id if isinstance(body_graph.nodes, list) else list(body_graph.nodes.keys())[0]
+        body_input_id = getattr(body_graph, "nodes")[0].id if isinstance(getattr(body_graph, "nodes"), list) else list(getattr(body_graph, "nodes").keys())[0]
         env.set(body_input_id, curr_val)
-        nodes = body_graph.nodes if isinstance(body_graph.nodes, list) else body_graph.nodes.values()
+        nodes = getattr(body_graph, "nodes") if isinstance(getattr(body_graph, "nodes"), list) else getattr(body_graph, "nodes").values()
         for sub_node in nodes:
             if sub_node.id != body_input_id:
                 _evaluate_node(sub_node, env, backend)
-        curr_val = env.get(body_graph.outputs[0])
+        curr_val = env.get(getattr(body_graph, "outputs")[0])
     env.set(node.id, curr_val)
 
 
-def _evaluate_node(node: LogicalNode, env: Environment, backend: "type[BaseGenerator]") -> None:  # noqa: C901, PLR0912, PLR0915
+def _evaluate_identity_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
+    """Evaluate an Identity logical node and update the environment.
+
+    Args:
+        node (LogicalNode): The Identity node to evaluate.
+        env (Environment): The local variable environment.
+        backend (type[BaseGenerator]): The active compute backend.
+    """
+    in_vals = [cast(EvalValue, env.get(inp)) for inp in node.inputs if inp]
+    val: EvalValue = in_vals[0] if in_vals else None
+    if hasattr(backend, "execute_op"):
+        try:
+            val = cast(EvalValue, backend.execute_op("Identity", *in_vals))
+        except Exception:
+            val = in_vals[0] if in_vals else None
+    getattr(env, "set")(node.id, val)
+
+
+def _evaluate_vmap_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
+    """Evaluate a Vmap logical node by vectorizing and executing its body graph.
+
+    Args:
+        node (LogicalNode): The Vmap node to evaluate.
+        env (Environment): The local variable environment.
+        backend (type[BaseGenerator]): The active compute backend.
+    """
+    body_graph = node.attributes.get("body")
+    in_axes = node.attributes.get("in_axes", 0)
+    out_axes = node.attributes.get("out_axes", 0)
+
+    in_vals = [env.get(inp) for inp in node.inputs if inp]
+    first_val = in_vals[0] if in_vals else None
+    in_axes_seq = cast(tuple[int, ...], in_axes)
+    axis = in_axes if isinstance(in_axes, int) else (int(in_axes_seq[0]) if in_axes_seq else 0)
+    batch_size = getattr(first_val, "shape")[axis] if hasattr(first_val, "shape") and axis < len(getattr(first_val, "shape")) else 1
+
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    if not isinstance(body_graph, IRGraph) and hasattr(body_graph, "nodes"):
+        b_graph = IRGraph(name=getattr(body_graph, "id", "body"))
+        b_graph.inputs = list(getattr(body_graph, "inputs", []))
+        b_graph.outputs = list(getattr(body_graph, "outputs", []))
+        b_nodes = getattr(body_graph, "nodes") if isinstance(getattr(body_graph, "nodes"), list) else list(getattr(body_graph, "nodes").values())
+        for n in b_nodes:
+            b_graph.nodes[n.id] = IRNode(**n.__dict__) if not isinstance(n, IRNode) else n
+        body_graph = b_graph
+
+    from ml_switcheroo_compiler.transforms.passes.vectorization import vectorization_pass, vectorize_graph
+
+    v_body = cast("Callable[..., IRGraph]", vectorize_graph)(cast("LogicalGraph", body_graph), in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
+    v_body = vectorization_pass(v_body)
+
+    body_input_map = {b_in: in_val for b_in, in_val in zip(v_body.inputs, in_vals)}
+    body_env_map = evaluate_graph(v_body, cast("dict[str, EvalValue]", body_input_map), backend=backend)
+    getattr(env, "set")(node.id, body_env_map[v_body.outputs[0]])
+
+
+def _evaluate_recompute_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
+    """Evaluate a Recompute logical node by dispatching its original operation.
+
+    Args:
+        node (LogicalNode): The Recompute node to evaluate.
+        env (Environment): The local variable environment.
+        backend (type[BaseGenerator]): The active compute backend.
+    """
+    in_vals = [env.get(inp) for inp in node.inputs]
+    orig_op = str(node.attributes.get("original_op", node.op_type))
+    target_op = _get_op_alias(orig_op)
+    orig_attrs: dict[str, EvalValue] = cast(dict[str, EvalValue], node.attributes.get("original_attrs", {})).copy()
+    resolved_node = LogicalNode(id=node.id, op_type=target_op, inputs=node.inputs, attributes=orig_attrs)
+    kwargs = _prepare_node_kwargs(resolved_node, target_op)
+    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(resolved_node, env, backend, target_op, in_vals, kwargs)
+
+
+def _evaluate_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
     """Execute a single logical node and update the local environment with its result.
 
     Args:
@@ -426,74 +565,29 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: "type[BaseGener
         env (Environment): The local variable environment acting as memory for the execution.
         backend: The underlying backend engine to dispatch computation to.
     """
-    if node.op_type == "Input":
+    op_type = node.op_type
+    if op_type == "Input":
         env.get(node.id)
-    elif node.op_type == "Output":
+    elif op_type == "Output":
         in_vals = [env.get(inp) for inp in node.inputs if inp]
-        val = in_vals[0] if len(in_vals) == 1 else tuple(in_vals)
-        env.set(node.id, val)
-    elif node.op_type == "Identity":
-        in_vals = [env.get(inp) for inp in node.inputs if inp]
-        val = in_vals[0] if in_vals else None
-        if hasattr(backend, "execute_op"):
-            try:
-                val = backend.execute_op("Identity", *in_vals)
-            except Exception as e:
-                from ml_switcheroo_compiler.core.errors import EvaluationError
-
-                raise EvaluationError(f"Eager evaluation failed for Identity op: {e}", node_id=node.id, op_type=node.op_type) from e
-        env.set(node.id, val)
-    elif node.op_type == "Vmap":
-        body_graph = node.attributes.get("body")
-        in_axes = node.attributes.get("in_axes", 0)
-        out_axes = node.attributes.get("out_axes", 0)
-
-        in_vals = [env.get(inp) for inp in node.inputs if inp]
-        first_val = in_vals[0] if in_vals else None
-        axis = in_axes if isinstance(in_axes, int) else (in_axes[0] if in_axes else 0)
-        batch_size = first_val.shape[axis] if hasattr(first_val, "shape") and axis < len(first_val.shape) else 1
-
-        from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-        if not isinstance(body_graph, IRGraph) and hasattr(body_graph, "nodes"):
-            b_graph = IRGraph(name=getattr(body_graph, "id", "body"))
-            b_graph.inputs = list(getattr(body_graph, "inputs", []))
-            b_graph.outputs = list(getattr(body_graph, "outputs", []))
-            b_nodes = body_graph.nodes if isinstance(body_graph.nodes, list) else list(body_graph.nodes.values())
-            for n in b_nodes:
-                b_graph.nodes[n.id] = IRNode(**n.__dict__) if not isinstance(n, IRNode) else n
-            body_graph = b_graph
-
-        from ml_switcheroo_compiler.transforms.passes.vectorization import vectorization_pass, vectorize_graph
-
-        v_body = vectorize_graph(body_graph, in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
-        v_body = vectorization_pass(v_body)
-
-        body_input_map = {b_in: in_val for b_in, in_val in zip(v_body.inputs, in_vals)}
-        body_env_map = evaluate_graph(v_body, body_input_map, backend=backend)
-        out_val = body_env_map[v_body.outputs[0]]
-        env.set(node.id, out_val)
-    elif node.op_type in ("If", "Cond"):
+        env.set(node.id, in_vals[0] if len(in_vals) == 1 else tuple(getattr(in_vals, "__iter__")()))
+    elif op_type == "Identity":
+        _evaluate_identity_node(node, env, backend)
+    elif op_type == "Vmap":
+        _evaluate_vmap_node(node, env, backend)
+    elif op_type in ("If", "Cond"):
         _evaluate_if_node(node, env, backend)
-    elif node.op_type in ("WhileLoop", "Loop"):
+    elif op_type in ("WhileLoop", "Loop"):
         _evaluate_loop_node(node, env, backend)
-    elif node.op_type == "Constant":
-        env.set(node.id, backend.array(node.attributes["value"]))
-    elif node.op_type == "Recompute":
-        in_vals = [env.get(inp) for inp in node.inputs]
-        orig_op: str = str(node.attributes.get("original_op", node.op_type))
-        target_op = _get_op_alias(orig_op)
-        kwargs: dict[str, EvalValue] = node.attributes.get("original_attrs", {}).copy()
-        # For simplicity, dispatch as original op
-        resolved_node = LogicalNode(id=node.id, op_type=target_op, inputs=node.inputs, attributes=kwargs)
-        # We need to extract kwargs correctly for the target op
-        kwargs = _prepare_node_kwargs(resolved_node, target_op)
-        _dispatch_op(resolved_node, env, backend, target_op, in_vals, kwargs)
+    elif op_type == "Constant":
+        getattr(env, "set")(node.id, backend.array(node.attributes["value"]))
+    elif op_type == "Recompute":
+        _evaluate_recompute_node(node, env, backend)
     else:
         in_vals = [env.get(inp) for inp in node.inputs]
-        target_op = _get_op_alias(node.op_type)
+        target_op = _get_op_alias(op_type)
         kwargs = _prepare_node_kwargs(node, target_op)
-        _dispatch_op(node, env, backend, target_op, in_vals, kwargs)
+        cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(node, env, backend, target_op, in_vals, kwargs)
 
 
 def _get_op_alias(op_type: str) -> str:
@@ -555,7 +649,10 @@ def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, EvalVal
         kwargs.pop("strides", None)
     if getattr(node, "shape_metadata", None):
         if target_op in ("Expand", "BroadcastTo", "ConstantOfShape", "Zeros", "Ones", "Full") and "shape" not in kwargs:
-            kwargs["shape"] = node.shape_metadata
+            kwargs["shape"] = tuple(node.shape_metadata)
         if target_op == "Reshape" and "newshape" not in kwargs:
-            kwargs["newshape"] = node.shape_metadata
+            kwargs["newshape"] = tuple(node.shape_metadata)
     return kwargs
+
+
+__all__ = ["Environment", "EvalValue", "IndexableArray", "TensorLike", "evaluate_graph"]

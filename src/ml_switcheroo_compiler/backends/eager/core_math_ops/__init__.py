@@ -1,7 +1,6 @@
 """core_math_ops module."""
 
 import builtins  # noqa: F401
-from typing import Any  # noqa: F401
 
 from .math_arithmetic import (
     _accumulate_n,

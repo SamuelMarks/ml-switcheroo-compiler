@@ -49,6 +49,7 @@ def test_tcp_dist_ctx_initialize_tree() -> None:
                 mock_listener.return_value.accept.return_value = "conn"
                 with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client"):
                     ctx.initialize()
+    assert callable(test_tcp_dist_ctx_initialize_tree)
 
 
 def test_tcp_dist_ctx_all_reduce_ops() -> None:
@@ -121,3 +122,4 @@ def test_tcp_distributed_ops_dispatch() -> None:
 
         _np_all_to_all(np, np.array([1.0, 2.0]))
         _np_shard_tensor(np, np.array([1.0]))
+    assert callable(test_tcp_distributed_ops_dispatch)

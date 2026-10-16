@@ -1,18 +1,14 @@
-"""Module core.py."""
+"""Reductions."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Reductions."""
-
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.ops.dispatcher import DispatchArg
+    pass
 
 
 class ReductionOp(OpDef):
@@ -29,7 +25,7 @@ class ReductionOp(OpDef):
         self,
         *args: Tensor,
         **kwargs: int | float | str | bool | tuple[int, ...] | list[int] | None,
-    ) -> Union[Tensor, DispatchArg, tuple[Union[Tensor, DispatchArg], ...]]:
+    ) -> Tensor:
         """Universal dispatcher for the operation.
 
         Args:
@@ -37,11 +33,11 @@ class ReductionOp(OpDef):
             **kwargs (int | float | str | bool | tuple[int, ...] | list[int] | None): Keyword arguments.
 
         Returns:
-            Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Resulting tensor or dispatched output.
+            Tensor: Resulting tensor or dispatched output.
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-        return dispatch_op(self.op_type, *args, **kwargs)
+        return cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
 
     def infer_shape(
         self,

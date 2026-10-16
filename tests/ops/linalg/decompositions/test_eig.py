@@ -1,3 +1,5 @@
+"""Tests for test_eig."""
+
 # ruff: noqa: E501
 import sys
 from unittest.mock import patch
@@ -10,6 +12,7 @@ from ml_switcheroo_compiler.ops.linalg.decompositions.eig import Eig, Eigh, Eigv
 
 
 def test_eig_dummy_methods() -> None:
+    """Test function test_eig_dummy_methods."""
     assert Eig().infer_shape() == ()
     assert Eigh().infer_shape() == ()
     assert Eigvals().infer_shape() == ()
@@ -17,6 +20,7 @@ def test_eig_dummy_methods() -> None:
 
 
 def test_eigvals() -> None:
+    """Test function test_eigvals."""
     config.eager_mode = True
     input_data = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "float32", "cpu"))
@@ -32,6 +36,7 @@ def test_eigvals() -> None:
 
 
 def test_eig() -> None:
+    """Test function test_eig."""
     from ml_switcheroo_compiler.ops.linalg.decompositions.eig import eig
 
     config.eager_mode = True
@@ -49,6 +54,7 @@ def test_eig() -> None:
 
 
 def test_eigh() -> None:
+    """Test function test_eigh."""
     from ml_switcheroo_compiler.ops.linalg.decompositions.eig import eigh
 
     config.eager_mode = True
@@ -66,6 +72,7 @@ def test_eigh() -> None:
 
 
 def test_eigvalsh() -> None:
+    """Test function test_eigvalsh."""
     from ml_switcheroo_compiler.ops.linalg.decompositions.eig import eigvalsh
 
     config.eager_mode = True

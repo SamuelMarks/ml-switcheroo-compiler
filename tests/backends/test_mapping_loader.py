@@ -1,6 +1,9 @@
 """Tests for backend YAML mapping loader and dynamic eager dispatch."""
 
+from __future__ import annotations
+
 import pathlib
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -22,6 +25,11 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_kwarg_translation_model() -> None:
     """Test KwargTranslation model initialization."""
@@ -36,6 +44,7 @@ def test_load_backend_mappings_cache_and_paths() -> None:
 
     # Both mappings.yaml and eager_mappings.yaml exist
     def fake_exists(p: str) -> bool:
+        """Test function fake_exists."""
         return True
 
     mock_yaml_data = {"operations": {"add": {"target_api": "math.add"}}}
@@ -60,62 +69,65 @@ def test_load_backend_mappings_missing_files() -> None:
         assert len(schema.operations) == 0
 
 
-def test_read_and_merge_variations(tmp_path) -> None:
+def test_read_and_merge_variations(tmp_path: EagerTensorProtocol) -> None:
     """Test _read_and_merge with different YAML structures."""
     # Dict with operations key
     f1 = tmp_path / "f1.yaml"
     f1.write_text("operations:\n  op1:\n    target_api: a.b\n", encoding="utf-8")
-    t1 = {}
-    _read_and_merge(str(f1), t1)
+    t1 = cast("dict[str, EagerTensorProtocol]", {})
+    cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(cast("Callable[..., EagerTensorProtocol]", str)(f1), t1)
     assert "op1" in t1
 
     # Dict without operations key
     f2 = tmp_path / "f2.yaml"
     f2.write_text("op2:\n  target_api: c.d\n", encoding="utf-8")
-    t2 = {}
-    _read_and_merge(str(f2), t2)
+    t2 = cast("dict[str, EagerTensorProtocol]", {})
+    cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(cast("Callable[..., EagerTensorProtocol]", str)(f2), t2)
     assert "op2" in t2
 
     # Non-dict data (e.g. list)
     f3 = tmp_path / "f3.yaml"
     f3.write_text("- item1\n- item2\n", encoding="utf-8")
-    t3 = {}
-    _read_and_merge(str(f3), t3)
+    t3 = cast("dict[str, EagerTensorProtocol]", {})
+    cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(cast("Callable[..., EagerTensorProtocol]", str)(f3), t3)
     assert t3 == {}
 
 
-def test_load_yaml_dir(tmp_path) -> None:
+def test_load_yaml_dir(tmp_path: EagerTensorProtocol) -> None:
     """Test _load_yaml_dir with directory of yaml and non-yaml files."""
     d = tmp_path / "yamls"
     d.mkdir()
     (d / "ignored.txt").write_text("hello", encoding="utf-8")
     (d / "valid.yaml").write_text("opX: {target_api: x.y}\n", encoding="utf-8")
 
-    res = {}
-    _load_yaml_dir(str(d), res)
+    res = cast("dict[str, EagerTensorProtocol]", {})
+    cast("Callable[..., EagerTensorProtocol]", _load_yaml_dir)(cast("Callable[..., EagerTensorProtocol]", str)(d), res)
     assert "opX" in res
 
     # Non-directory
-    empty_res = {}
-    _load_yaml_dir(str(tmp_path / "not_a_dir"), empty_res)
+    empty_res = cast("dict[str, EagerTensorProtocol]", {})
+    cast("Callable[..., EagerTensorProtocol]", _load_yaml_dir)(cast("Callable[..., EagerTensorProtocol]", str)(tmp_path / "not_a_dir"), empty_res)
     assert empty_res == {}
 
 
 def test_resolve_custom_code() -> None:
     """Test _resolve_custom_code branches."""
     res = _resolve_custom_code("lambda x: x * 2", None)
-    assert res(5) == 10
+    assert cast("Callable[..., EagerTensorProtocol]", res)(5) == 10
 
     # With backend_module having globals and property raising error
     class MockBackend:
+        """Test class MockBackend."""
+
         MY_VAR = 7
 
         @property
-        def err(self):
+        def err(self) -> None:
+            """Test function err."""
             raise RuntimeError("Property access failed")
 
     res2 = _resolve_custom_code("lambda x: x + MY_VAR", MockBackend())
-    assert res2(3) == 10
+    assert cast("Callable[..., EagerTensorProtocol]", res2)(3) == 10
 
     # Invalid code
     assert _resolve_custom_code("lambda invalid syntax", None) is None
@@ -133,11 +145,17 @@ def test_resolve_from_backend_module() -> None:
     """Test _resolve_from_backend_module paths and branches."""
 
     class SubMod:
+        """Test class SubMod."""
+
         def my_target(self) -> int:
+            """Test function my_target."""
             return 42
 
     class ParentMod:
+        """Test class ParentMod."""
+
         def __init__(self) -> None:
+            """Test function __init__."""
             self.sub = SubMod()
             self.direct_target = lambda: 100
 
@@ -164,7 +182,10 @@ def test_resolve_from_backend_module() -> None:
 
     # dask.array.target to exercise sub_parts = parts[2:]
     class MockDaskMod:
+        """Test class MockDaskMod."""
+
         def my_sum(self) -> str:
+            """Test function my_sum."""
             return "dask_sum"
 
     dask_mod = MockDaskMod()
@@ -177,7 +198,7 @@ def test_resolve_target_api() -> None:
     """Test resolve_target_api paths and branches."""
     # custom_op
     res = resolve_target_api("custom_op", custom_code="lambda x: x * 2")
-    assert res(5) == 10
+    assert cast("Callable[..., EagerTensorProtocol]", res)(5) == 10
 
     # Empty api_str
     assert resolve_target_api("") is None
@@ -192,26 +213,38 @@ def test_resolve_target_api() -> None:
 
     # backend_module has dotted attribute directly via setattr (line 200 with backend_module)
     dummy = type("Dummy", (), {})()
-    dummy_func = lambda: 777
+
+    def dummy_func() -> EagerValue:
+        return 777
+
     setattr(dummy, "special.pkg.func", dummy_func)
     res_dotted = resolve_target_api("special.pkg.func", backend_module=dummy)
     assert res_dotted == dummy_func
 
     # backend_module has last part
     class MockBackend:
+        """Test class MockBackend."""
+
         def my_func(self) -> int:
+            """Test function my_func."""
             return 5
 
     res3 = resolve_target_api("some.prefix.my_func", backend_module=MockBackend())
-    assert res3.__name__ == "my_func"
+    assert cast("EagerTensorProtocol", getattr(res3, "__name__")) == "my_func"
 
     # backend_module has nested structure without root attribute (lines 198-200)
     class InnerMod:
+        """Test class InnerMod."""
+
         def target(self) -> int:
+            """Test function target."""
             return 999
 
     class OuterMod:
+        """Test class OuterMod."""
+
         def __init__(self) -> None:
+            """Test function __init__."""
             self.inner = InnerMod()
 
     res_mod_res = resolve_target_api("inner.target", backend_module=OuterMod())
@@ -280,7 +313,10 @@ def test_dispatch_eager_op() -> None:
 
     # is_method True and method exists
     class CallableObj:
+        """Test class CallableObj."""
+
         def do_method(self, val: int) -> int:
+            """Test function do_method."""
             return val * 10
 
     c_obj = CallableObj()
@@ -310,6 +346,6 @@ def test_read_and_merge_with_operation(tmp_path: pathlib.Path) -> None:
     """Test _read_and_merge when file contains top-level operation key."""
     yaml_file = tmp_path / "op.yaml"
     yaml_file.write_text("operation: test_single_op\ntarget_api: foo.bar\n")
-    target: dict[str, object] = {}
+    target: dict[str, EagerValue] = {}
     _read_and_merge(str(yaml_file), target)
     assert "test_single_op" in target

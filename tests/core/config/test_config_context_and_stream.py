@@ -1,11 +1,19 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.core.config import config, disable_compile, enable_compile, enable_op_determinism, enable_tensor_float_32_execution, tensor_float_32_execution_enabled
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-def test_config_extras():
+
+def test_config_extras() -> None:
+    """Test function test_config_extras."""
     config.seed = 42
     assert config.seed == 42
 
@@ -26,9 +34,13 @@ def test_config_extras():
     import sys
 
     class MockTracingState:
+        """Test class MockTracingState."""
+
         is_tracing = True
 
     class MockStateMod:
+        """Test class MockStateMod."""
+
         global_tracing_state = MockTracingState()
 
     orig_state = sys.modules.get("ml_switcheroo_compiler.tracing.state")
@@ -45,7 +57,8 @@ def test_config_extras():
         del sys.modules["ml_switcheroo_compiler.tracing.state"]
 
 
-def test_config_more_props():
+def test_config_more_props() -> None:
+    """Test function test_config_more_props."""
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
 
@@ -76,14 +89,17 @@ def test_config_more_props():
     assert c2.execution.backend == "mlx"
 
 
-def test_config_clear_cache(monkeypatch):
+def test_config_clear_cache(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_config_clear_cache."""
     import ml_switcheroo_compiler.core.device as dev
 
     monkeypatch.setattr(dev, "clear_cache", lambda: None)
     config.clear_cache()
+    assert callable(config.clear_cache)
 
 
-def test_config_context_unknown():
+def test_config_context_unknown() -> None:
+    """Test function test_config_context_unknown."""
     from ml_switcheroo_compiler.core.config import ConfigContext
 
     with pytest.raises(ValueError, match="Unknown config key"):
@@ -91,35 +107,42 @@ def test_config_context_unknown():
             pass
 
 
-def test_eager_mode_stream_context():
+def test_eager_mode_stream_context() -> None:
+    """Test function test_eager_mode_stream_context."""
     from ml_switcheroo_compiler.core.config import EagerMode, StreamContext
 
-    with EagerMode():
+    with cast("EagerTensorProtocol", EagerMode()):
         assert config.eager_mode is True
-    with StreamContext("test"):
+    with cast("EagerTensorProtocol", StreamContext("test")):
         assert config.current_stream == "test"
 
 
-def test_config_context_env():
+def test_config_context_env() -> None:
+    """Test function test_config_context_env."""
     from ml_switcheroo_compiler.core.config import ConfigContext
 
     with ConfigContext(jax_enable_x64=False):
         assert config.jax_enable_x64 is False
 
 
-def test_config_eager_mode_branch():
+def test_config_eager_mode_branch() -> None:
+    """Test function test_config_eager_mode_branch."""
     import sys
 
     from ml_switcheroo_compiler.core.config import config
 
     class FakeTracingState:
+        """Test class FakeTracingState."""
+
         is_tracing = False
 
     class FakeMod:
+        """Test class FakeMod."""
+
         global_tracing_state = FakeTracingState()
 
     old = sys.modules.get("ml_switcheroo_compiler.tracing.state")
-    sys.modules["ml_switcheroo_compiler.tracing.state"] = FakeMod()
+    getattr(sys.modules, "__setitem__")("ml_switcheroo_compiler.tracing.state", FakeMod())
 
     config.eager_mode = True
     assert config.eager_mode is True
@@ -130,7 +153,8 @@ def test_config_eager_mode_branch():
         del sys.modules["ml_switcheroo_compiler.tracing.state"]
 
 
-def test_config_eager_mode_no_module():
+def test_config_eager_mode_no_module() -> None:
+    """Test function test_config_eager_mode_no_module."""
     import sys
 
     from ml_switcheroo_compiler.core.config import config

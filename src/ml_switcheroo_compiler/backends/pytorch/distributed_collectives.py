@@ -1,16 +1,17 @@
-# ruff: noqa: E402, E501, F403
 """Native PyTorch distributed collective dispatch bindings."""
 
 from __future__ import annotations
 
-from typing import Any
+import logging
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def pytorch_all_reduce(
-    tensor: Any,
+    tensor: EagerValue,
     op: str = "SUM",
-    group: Any | None = None,
-) -> Any:
+    group: EagerValue | None = None,
+) -> EagerValue:
     """Execute native PyTorch all_reduce on a tensor.
 
     Args:
@@ -38,16 +39,16 @@ def pytorch_all_reduce(
             dist.all_reduce(t, op=reduce_op, group=group)
             return t
     except ImportError:
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return tensor
 
 
 def pytorch_all_gather(
-    tensor: Any,
+    tensor: EagerValue,
     axis: int = 0,
-    group: Any | None = None,
-) -> Any:
+    group: EagerValue | None = None,
+) -> EagerValue:
     """Execute native PyTorch all_gather on a tensor.
 
     Args:
@@ -63,23 +64,23 @@ def pytorch_all_gather(
         import torch.distributed as dist
 
         if dist.is_available() and dist.is_initialized():
-            world_size = dist.get_world_size(group)
+            world_size = getattr(dist, "get_world_size")(group)
             t = tensor if isinstance(tensor, torch.Tensor) else torch.as_tensor(tensor)
             gather_list = [torch.empty_like(t) for _ in range(world_size)]
             dist.all_gather(gather_list, t, group=group)
             return torch.cat(gather_list, dim=axis)
     except ImportError:
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return tensor
 
 
 def pytorch_reduce_scatter(
-    tensor: Any,
+    tensor: EagerValue,
     op: str = "SUM",
     scatter_dim: int = 0,
-    group: Any | None = None,
-) -> Any:
+    group: EagerValue | None = None,
+) -> EagerValue:
     """Execute native PyTorch reduce_scatter on a tensor.
 
     Args:
@@ -96,7 +97,7 @@ def pytorch_reduce_scatter(
         import torch.distributed as dist
 
         if dist.is_available() and dist.is_initialized():
-            world_size = dist.get_world_size(group)
+            world_size = getattr(dist, "get_world_size")(group)
             t = tensor if isinstance(tensor, torch.Tensor) else torch.as_tensor(tensor)
             input_list = list(torch.chunk(t, world_size, dim=scatter_dim))
             output = torch.empty_like(input_list[0])
@@ -106,16 +107,16 @@ def pytorch_reduce_scatter(
             dist.reduce_scatter(output, input_list, op=reduce_op, group=group)
             return output
     except ImportError:
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return tensor
 
 
 def pytorch_broadcast(
-    tensor: Any,
+    tensor: EagerValue,
     src: int = 0,
-    group: Any | None = None,
-) -> Any:
+    group: EagerValue | None = None,
+) -> EagerValue:
     """Execute native PyTorch broadcast on a tensor.
 
     Args:
@@ -132,9 +133,9 @@ def pytorch_broadcast(
 
         if dist.is_available() and dist.is_initialized():
             t = tensor if isinstance(tensor, torch.Tensor) else torch.as_tensor(tensor)
-            dist.broadcast(t, src=src, group=group)
+            getattr(dist, "broadcast")(t, src=src, group=group)
             return t
     except ImportError:
-        pass
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return tensor

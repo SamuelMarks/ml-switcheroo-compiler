@@ -1,11 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Mixins."""
+
+from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class PyTorchScatterVisitor:
     """Mixin."""
 
-    def visit_TensorScatterUpdate(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_TensorScatterUpdate(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Handle TensorScatterUpdate nodes.
 
         Args:
@@ -18,7 +21,7 @@ class PyTorchScatterVisitor:
         """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]})"
 
-    def visit_TensorScatterAdd(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_TensorScatterAdd(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Handle TensorScatterAdd nodes.
 
         Args:
@@ -31,7 +34,7 @@ class PyTorchScatterVisitor:
         """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]}, accumulate=True)"
 
-    def visit_TensorScatterMax(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_TensorScatterMax(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_TensorScatterMax operation.
 
         Args:
@@ -44,7 +47,7 @@ class PyTorchScatterVisitor:
         """
         return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
-    def visit_TensorScatterMin(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_TensorScatterMin(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Evaluate visit_TensorScatterMin operation.
 
         Args:
@@ -61,7 +64,7 @@ class PyTorchScatterVisitor:
 class PyTorchDistributedVisitor:
     """Mixin."""
 
-    def visit_AllGather(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_AllGather(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for all_gather.
 
         Args:
@@ -75,7 +78,7 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.all_gather_into_tensor(output, {tensor})"
 
-    def visit_ReduceScatter(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_ReduceScatter(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for reduce_scatter.
 
         Args:
@@ -89,7 +92,7 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.reduce_scatter_tensor(torch.empty_like({tensor}), {tensor})"
 
-    def visit_AllReduce(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_AllReduce(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for all_reduce.
 
         Args:
@@ -103,7 +106,7 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.all_reduce({tensor})"
 
-    def visit_AllToAll(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_AllToAll(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for all_to_all.
 
         Args:
@@ -117,7 +120,7 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.all_to_all_single(torch.empty_like({tensor}), {tensor})"
 
-    def visit_Broadcast(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_Broadcast(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for broadcast.
 
         Args:
@@ -134,15 +137,13 @@ class PyTorchDistributedVisitor:
 
 
 class PyTorchLinalgMixin:
-    """Linalg."""
-
     """Linalg Mixin."""
 
 
 class PyTorchNNMixin:
     """NN Mixin."""
 
-    def __init__(self, *args: object, generator: object = None, **kwargs: object) -> None:
+    def __init__(self, *args: EagerValue, generator: EagerValue = None, **kwargs: EagerValue) -> None:
         """Initialize PyTorchNNMixin.
 
         Args:
@@ -164,7 +165,7 @@ class PyTorchNNMixin:
         elif self.generator and hasattr(self.generator, "add_line"):
             self.generator.add_line(line)
 
-    def visit_Send(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_Send(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Send tensor.
 
         Args:
@@ -180,7 +181,7 @@ class PyTorchNNMixin:
         self._add_line(f"        torch.distributed.isend({input_vars[0]}, dst={dst}, tag={tag})")
         return ""
 
-    def visit_Recv(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_Recv(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Receive tensor.
 
         Args:
@@ -197,11 +198,11 @@ class PyTorchNNMixin:
         dtype = "torch." + str(node.attributes.get("dtype", "float32")).lower()
         nid = getattr(node, "id", "")
         res_var = f"v_{nid.replace('-', '_')}"
-        self._add_line(f"        {res_var} = torch.empty({list(shape)}, dtype={dtype}, device=self.device)")
+        self._add_line(f"        {res_var} = torch.empty({list(getattr(shape, '__iter__')())}, dtype={dtype}, device=self.device)")
         self._add_line(f"        torch.distributed.irecv({res_var}, src={src}, tag={tag})")
         return res_var
 
-    def visit_Conv1D(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Conv1D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for 1D convolution.
 
         Args:
@@ -220,7 +221,7 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.conv1d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
 
-    def visit_Conv2D(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Conv2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for 2D convolution.
 
         Args:
@@ -239,7 +240,7 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.conv2d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
 
-    def visit_Conv3D(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Conv3D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for 3D convolution.
 
         Args:
@@ -258,7 +259,7 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.conv3d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
 
-    def visit_MultiHeadAttention(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_MultiHeadAttention(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for MultiHeadAttention / ScaledDotProductAttention.
 
         Args:
@@ -274,7 +275,7 @@ class PyTorchNNMixin:
         q, k, v = input_vars[0], input_vars[1], input_vars[2]
         return f"torch.nn.functional.scaled_dot_product_attention({q}, {k}, {v}, is_causal={is_causal})"
 
-    def visit_ScaledDotProductAttention(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ScaledDotProductAttention(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for scaled dot product attention.
 
         Args:
@@ -287,7 +288,7 @@ class PyTorchNNMixin:
         """
         return self.visit_MultiHeadAttention(node, input_vars, **kwargs)
 
-    def visit_LayerNorm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_LayerNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for LayerNorm.
 
         Args:
@@ -305,7 +306,7 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.layer_norm({input_vars[0]}, {shape}, weight={weight}, bias={bias}, eps={eps})"
 
-    def visit_RMSNorm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_RMSNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for RMSNorm.
 
         Args:
@@ -322,7 +323,7 @@ class PyTorchNNMixin:
         weight = input_vars[1] if len(input_vars) > 1 else "None"
         return f"(torch.nn.functional.rms_norm({input_vars[0]}, {shape}, weight={weight}, eps={eps}) if hasattr(torch.nn.functional, 'rms_norm') else ({input_vars[0]} * torch.rsqrt(torch.mean({input_vars[0]} ** 2, dim=-1, keepdim=True) + {eps})))"
 
-    def visit_BatchNorm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_BatchNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for BatchNorm.
 
         Args:
@@ -339,7 +340,7 @@ class PyTorchNNMixin:
         var = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.batch_norm({input_vars[0]}, running_mean={mean}, running_var={var}, eps={eps})"
 
-    def visit_GroupNorm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_GroupNorm(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for GroupNorm.
 
         Args:
@@ -355,7 +356,7 @@ class PyTorchNNMixin:
         eps = attrs.get("eps", 1e-5)
         return f"torch.nn.functional.group_norm({input_vars[0]}, num_groups={num_groups}, eps={eps})"
 
-    def visit_MaxPool2D(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_MaxPool2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for MaxPool2D.
 
         Args:
@@ -371,7 +372,7 @@ class PyTorchNNMixin:
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.max_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
 
-    def visit_AvgPool2D(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AvgPool2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for AvgPool2D.
 
         Args:
@@ -387,7 +388,7 @@ class PyTorchNNMixin:
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.avg_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
 
-    def visit_AdaptiveAvgPool2D(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AdaptiveAvgPool2D(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for AdaptiveAvgPool2D.
 
         Args:
@@ -402,7 +403,7 @@ class PyTorchNNMixin:
         output_size = attrs.get("output_size", [1, 1])
         return f"torch.nn.functional.adaptive_avg_pool2d({input_vars[0]}, output_size={output_size})"
 
-    def visit_Linear(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Linear(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for Linear projection.
 
         Args:

@@ -1,8 +1,19 @@
+"""Tests for test_webgl."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_webgl_generator():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_webgl_generator() -> None:
     """Test WebGL code generation."""
     graph = IRGraph()
     graph.nodes = {"matmul": IRNode(id="matmul", op_type="MatMul", inputs=[])}
@@ -11,7 +22,7 @@ def test_webgl_generator():
     assert "shader_matmul" in out
 
 
-def test_webgl_generator_coverage():
+def test_webgl_generator_coverage() -> None:
     """Test WebGL generator coverage."""
     graph = IRGraph()
     graph.nodes = {"input": IRNode(id="input", op_type="Input", inputs=[])}
@@ -20,7 +31,8 @@ def test_webgl_generator_coverage():
     assert "shader_input" not in out
 
 
-def test_webgl_generator_shapes_and_inputs():
+def test_webgl_generator_shapes_and_inputs() -> None:
+    """Test function test_webgl_generator_shapes_and_inputs."""
     graph = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], shape_metadata=(16, 32))
     n1 = IRNode(id="n1", op_type="Input", inputs=[], shape_metadata=(32, 64))
@@ -36,7 +48,8 @@ def test_webgl_generator_shapes_and_inputs():
     assert "getUniformLocation" in out
 
 
-def test_webgl_generator_missing_op():
+def test_webgl_generator_missing_op() -> None:
+    """Test function test_webgl_generator_missing_op."""
     import pytest
 
     graph = IRGraph()
@@ -47,7 +60,8 @@ def test_webgl_generator_missing_op():
         gen.generate()
 
 
-def test_webgl_generator_custom_setup():
+def test_webgl_generator_custom_setup() -> None:
+    """Test function test_webgl_generator_custom_setup."""
     graph = IRGraph()
     n = IRNode(id="n", op_type="Add", inputs=[], shape_metadata=(16, 32))
     graph.nodes = {"n": n}
@@ -63,7 +77,8 @@ def test_webgl_generator_custom_setup():
     assert "test_string_body" in out2
 
 
-def test_webgl_generator_custom_setup_no_in_shape():
+def test_webgl_generator_custom_setup_no_in_shape() -> None:
+    """Test function test_webgl_generator_custom_setup_no_in_shape."""
     graph = IRGraph()
     n_in = IRNode(id="n_in", op_type="Input", inputs=[], shape_metadata=())
     n = IRNode(id="n", op_type="Add", inputs=["n_in"], shape_metadata=(16, 32))
@@ -76,7 +91,8 @@ def test_webgl_generator_custom_setup_no_in_shape():
     assert "let test = 32;" in out
 
 
-def test_webgl_missing_yaml(monkeypatch):
+def test_webgl_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_webgl_missing_yaml."""
     import os
 
     monkeypatch.setattr(os.path, "exists", lambda p: False)
@@ -85,7 +101,7 @@ def test_webgl_missing_yaml(monkeypatch):
     assert gen.config.templates == {}
 
 
-def test_webgl_expanded_ops():
+def test_webgl_expanded_ops() -> None:
     """Test emission of newly added WebGL operations."""
     ops = [
         ("conv", "Conv2D", [IRNode(id="in_x", op_type="Input", shape_metadata=(1, 32, 32)), IRNode(id="in_w", op_type="Input", shape_metadata=(3, 3))]),
@@ -112,7 +128,7 @@ def test_webgl_expanded_ops():
         assert f"shader_{prefix}_node" in out
 
 
-def test_webgl_texture_packing_schema():
+def test_webgl_texture_packing_schema() -> None:
     """Test Pydantic schema for WebGL float texture packing and framebuffer attachments."""
     import pytest
     from pydantic import ValidationError
@@ -163,7 +179,7 @@ def test_webgl_texture_packing_schema():
         WebglTexturePackingConfig(viewport_width=0)
 
 
-def test_webgl_multipass_pingpong():
+def test_webgl_multipass_pingpong() -> None:
     """Test multi-pass compute graph dispatch with FBO ping-ponging without CPU stalls."""
     graph = IRGraph()
     n_in = IRNode(id="inp", op_type="Input", shape_metadata=(32, 32))
@@ -184,7 +200,7 @@ def test_webgl_multipass_pingpong():
     assert out.count("return readPixels(gl,") == 1
 
 
-def test_webgl_generator_five_inputs_and_k_shape_variants():
+def test_webgl_generator_five_inputs_and_k_shape_variants() -> None:
     """Test webgl node with 5 inputs (exceeding uniform names) and k_shape variants."""
     from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplateConfig
 
@@ -218,7 +234,7 @@ def test_webgl_generator_five_inputs_and_k_shape_variants():
     assert "let kw = 3;" in out3
 
 
-def test_webgl_generator_missing_node_pass_template():
+def test_webgl_generator_missing_node_pass_template() -> None:
     """Verify fallback JS orchestration when node_pass template is missing, and blank lines in custom setup."""
     from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplateConfig
 
@@ -236,7 +252,7 @@ def test_webgl_generator_missing_node_pass_template():
     assert "let texOut_n0 = createTexture" in out
 
 
-def test_webgl_nd_packing_and_mrt():
+def test_webgl_nd_packing_and_mrt() -> None:
     """Verify arbitrary N-D tensor shape packing, stride descriptors, and MRT drawBuffers."""
     graph = IRGraph()
     in0 = IRNode(id="in0", op_type="Input", shape_metadata=(2, 3, 4, 5))
@@ -311,7 +327,7 @@ def test_webgl_new_operator_templates() -> None:
         out = gen.generate()
         assert f"shader_{nid}" in out
         bundle = gen._compile_aot_impl(graph)
-        assert nid in bundle["shaders"]
+        assert nid in getattr(bundle, "__getitem__")("shaders")
 
 
 def test_webgl_aot_runner_execution() -> None:
@@ -329,10 +345,10 @@ def test_webgl_aot_runner_execution() -> None:
     artifact = gen.compile_aot(graph)
     inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     res_single = artifact(inp)
-    np.testing.assert_allclose(res_single, inp + inp)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_single, inp + inp)
     # Extra argument branch coverage
     res_extra = artifact(inp, "extra_arg")
-    np.testing.assert_allclose(res_extra, inp + inp)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_extra, inp + inp)
 
     # 2. Multiple outputs
     n_sub = IRNode(id="z", op_type="Sub", inputs=["y", "x"], shape_metadata=(2, 2))
@@ -343,8 +359,8 @@ def test_webgl_aot_runner_execution() -> None:
     artifact_multi = gen_multi.compile_aot(graph, opt_level=1)
     res_multi = artifact_multi(inp)
     assert isinstance(res_multi, tuple) and len(res_multi) == 2
-    np.testing.assert_allclose(res_multi[0], inp + inp)
-    np.testing.assert_allclose(res_multi[1], inp)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_multi[0], inp + inp)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_multi[1], inp)
 
     # 3. Empty outputs
     graph_empty = IRGraph(name="test_webgl_runner_empty")

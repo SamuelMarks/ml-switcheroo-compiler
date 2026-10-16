@@ -10,6 +10,7 @@ import ml_switcheroo_compiler.core.errors as err_mod
 from ml_switcheroo_compiler.core.errors import (
     BackendNotSupportedError,
     CompilationError,
+    CompilerError,
     DTypePromotionError,
     MissingJVPRuleError,
     ShapeMismatchError,
@@ -21,9 +22,14 @@ from ml_switcheroo_compiler.core.errors import (
 
 def test_core_errors_exhaustive(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify SwitcherooError formatting, templates, KeyError fallback, and all subclasses."""
-    # 1. Base error with custom message
+    # 1. Base error with custom message and full context metadata
     e = SwitcherooError("Direct message")
     assert str(e) == "Direct message"
+    e_ctx = CompilerError("Ctx msg", node_id="n1", op_type="Add", backend_target="numpy", trace_context="line 1")
+    assert "Node ID: n1" in str(e_ctx)
+    assert "Op Type: Add" in str(e_ctx)
+    assert "Backend: numpy" in str(e_ctx)
+    assert "Context: line 1" in str(e_ctx)
 
     # 2. Template formatting with kwargs
     monkeypatch.setattr(err_mod, "_ERROR_TEMPLATES", {"ShapeMismatchError": "Expected {expected}, got {got}"})
@@ -51,5 +57,5 @@ def test_core_errors_exhaustive(monkeypatch: pytest.MonkeyPatch) -> None:
     ]
     for cls in classes:
         inst = cls("Test error")
-        assert True
+        assert isinstance(inst, CompilerError)
         assert str(inst) == "Test error"

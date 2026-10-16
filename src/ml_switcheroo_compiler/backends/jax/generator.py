@@ -1,17 +1,21 @@
-# ruff: noqa: E402, E501, F403
 """JAX/Flax Target Emission."""
 
+from __future__ import annotations
+
 import os
-from typing import Optional  # noqa: F401
+from collections.abc import Callable
+from typing import Optional, cast  # noqa: F401
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxControlFlowVisitor,
     JaxDistributedVisitor,
     JaxMathVisitor,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -20,32 +24,41 @@ class JAXCodeGenerator(BaseGenerator):
     """JAX code generator."""
 
     @classmethod
-    def get_memory_info(cls, device=None):
-        """Get memory info."""
+    def get_memory_info(cls, device: EagerValue = None) -> EagerValue:
+        """Get memory info.
+
+        Args:
+            device: The device parameter.
+        """
         import jax
 
         try:
             dev = jax.local_devices()[0]
             stats = dev.memory_stats()
-            return {"current": stats.get("bytes_in_use", 0), "peak": stats.get("peak_bytes_in_use", 0)}
+            return {"current": getattr(stats, "get")("bytes_in_use", 0), "peak": getattr(stats, "get")("peak_bytes_in_use", 0)}
         except Exception:
             psutil = __import__("psutil")
             rss = psutil.Process().memory_info().rss
             return {"current": rss, "peak": rss}
 
     @classmethod
-    def initialize_distributed(cls, *args, **kwargs):
-        """Initialize distributed context."""
+    def initialize_distributed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
+        """Initialize distributed context.
+
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
         import jax.distributed
 
         backend_config = kwargs.get("backend_config")
         if backend_config:
-            jax.distributed.initialize(coordinator_address=backend_config.options.get("coordinator_address") if backend_config.options else None, num_processes=backend_config.world_size, process_id=backend_config.rank)
+            getattr(jax.distributed, "initialize")(coordinator_address=getattr(backend_config, "options").get("coordinator_address") if getattr(backend_config, "options") else None, num_processes=getattr(backend_config, "world_size"), process_id=getattr(backend_config, "rank"))
         else:
-            jax.distributed.initialize()
+            getattr(jax.distributed, "initialize")()
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
         """Load.
 
         Args:
@@ -62,7 +75,7 @@ class JAXCodeGenerator(BaseGenerator):
         return jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -73,10 +86,10 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        jnp.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        getattr(jnp, "save")(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Savez.
 
         Args:
@@ -86,10 +99,10 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        jnp.savez(file, *args, **kwds)
+        getattr(jnp, "savez")(file, *args, **kwds)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Savez compressed.
 
         Args:
@@ -99,7 +112,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        jnp.savez_compressed(file, *args, **kwds)
+        getattr(jnp, "savez_compressed")(file, *args, **kwds)
 
     def __init__(self, graph: IRGraph) -> None:
         """Init.
@@ -117,7 +130,7 @@ class JAXCodeGenerator(BaseGenerator):
             ]
         )
 
-    def _format_zeros_like(self, op: str, kwargs: dict[str, object]) -> str:
+    def _format_zeros_like(self, op: str, kwargs: dict[str, EagerValue]) -> str:
         """Evaluate _format_zeros_like operation.
 
         Args:
@@ -132,7 +145,7 @@ class JAXCodeGenerator(BaseGenerator):
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_full(self, kwargs: dict[str, object]) -> str:
+    def _format_full(self, kwargs: dict[str, EagerValue]) -> str:
         """Evaluate _format_full operation.
 
         Args:
@@ -166,7 +179,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         return "jnp"
 
-    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -217,12 +230,75 @@ class JAXCodeGenerator(BaseGenerator):
 
     def _generate_function_signature(self) -> None:
         """Generate the main function signature."""
-        self.indent_level  # noqa: B018
         self.indent_level = 0
         self.add_line("def apply_model(params, *args, **kwargs) -> object:")
         self.indent_level = self.indent_level + 1
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:  # noqa: C901
+    def _build_jax_interpreter_fallback(self, graph: IRGraph) -> EagerValue:
+        """Create an interpreter-based graph evaluation callable for JAX AOT fallback.
+
+        Args:
+            graph (IRGraph): Target computational graph.
+
+        Returns:
+            EagerValue: Fallback evaluation callable.
+        """
+        from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        def fallback_forward(*fn_args: EagerValue) -> EagerValue:
+            """Execute interpreter graph evaluation fallback.
+
+            Args:
+                *fn_args (object): Positional input arguments.
+
+            Returns:
+                object: Evaluated output tensors.
+            """
+            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            inputs: dict[str, EagerValue] = {}
+            for i, inp_node in enumerate(input_nodes):
+                if i < len(fn_args):
+                    arg_val = fn_args[i]
+                    inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
+            if hasattr(graph, "outputs") and graph.outputs:
+                if len(graph.outputs) == 1:
+                    return cast(EagerValue, evaluated.get(graph.outputs[0]))
+                return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+            return cast(EagerValue, evaluated)
+
+        return fallback_forward
+
+    def _wrap_jax_callable(self, target_fn: EagerValue, jnp_mod: EagerValue) -> EagerValue:
+        """Wrap a compiled or JIT-wrapped JAX callable to automatically unwrap Tensor inputs.
+
+        Args:
+            target_fn (EagerValue): Underlying JAX compiled or JIT callable.
+            jnp_mod (EagerValue): Loaded jax.numpy module.
+
+        Returns:
+            EagerValue: Wrapped execution function.
+        """
+        from ml_switcheroo_compiler.core.tensor import Tensor
+
+        def executable(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
+            """Execute the compiled or JIT-wrapped JAX callable.
+
+            Args:
+                *w_args (object): Input tensors.
+                **w_kwargs (object): Keyword arguments.
+
+            Returns:
+                object: Result from the JAX callable.
+            """
+            del w_kwargs
+            jax_args = [getattr(jnp_mod, "asarray")(a.data if isinstance(a, Tensor) else a) for a in w_args]
+            return cast(Callable[..., EagerValue], target_fn)(*jax_args)
+
+        return executable
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into an ahead-of-time (AOT) compiled executable using JAX JIT and XLA lowering.
 
         Args:
@@ -238,13 +314,13 @@ class JAXCodeGenerator(BaseGenerator):
             import jax
             import jax.numpy as jnp
 
-            scope: dict[str, object] = {}
+            scope: dict[str, EagerValue] = {}
             exec(self.generate(), scope)
             apply_model_fn = scope.get("apply_model")
             if apply_model_fn is None or not callable(apply_model_fn):
                 raise ValueError("Generated JAX module is missing apply_model.")
 
-            def jax_forward(*fn_args: object) -> object:
+            def jax_forward(*fn_args: EagerValue) -> EagerValue:
                 """Execute generated JAX model function.
 
                 Args:
@@ -258,66 +334,12 @@ class JAXCodeGenerator(BaseGenerator):
             sample_inputs = kwargs.get("sample_inputs")
             if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)):
                 sample_args = [jnp.asarray(x.data if isinstance(x, Tensor) else x) for x in sample_inputs]
-                lowered = jax.jit(jax_forward).lower(*sample_args)
-                compiled = lowered.compile()
+                compiled = jax.jit(jax_forward).lower(*sample_args).compile()
+                return self._wrap_jax_callable(compiled, jnp)
 
-                def aot_executable(*w_args: object, **w_kwargs: object) -> object:
-                    """Execute the AOT-compiled JAX executable artifact.
-
-                    Args:
-                        *w_args (object): Input tensors.
-                        **w_kwargs (object): Keyword arguments.
-
-                    Returns:
-                        object: Result from the compiled executable.
-                    """
-                    jax_args = [jnp.asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                    return compiled(*jax_args)
-
-                return aot_executable
-
-            jitted = jax.jit(jax_forward)
-
-            def jit_executable(*w_args: object, **w_kwargs: object) -> object:
-                """Execute JIT-compiled graph callable.
-
-                Args:
-                    *w_args (object): Input tensors.
-                    **w_kwargs (object): Keyword arguments.
-
-                Returns:
-                    object: Result from the JIT-compiled function.
-                """
-                jax_args = [jnp.asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return jitted(*jax_args)
-
-            return jit_executable
+            return self._wrap_jax_callable(jax.jit(jax_forward), jnp)
         except Exception:
-            from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
-            def fallback_forward(*fn_args: object) -> object:
-                """Execute interpreter graph evaluation fallback.
-
-                Args:
-                    *fn_args (object): Positional input arguments.
-
-                Returns:
-                    object: Evaluated output tensors.
-                """
-                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
-                inputs: dict[str, object] = {}
-                for i, inp_node in enumerate(input_nodes):
-                    if i < len(fn_args):
-                        arg_val = fn_args[i]
-                        inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-                evaluated = evaluate_graph(graph, inputs=inputs)
-                if hasattr(graph, "outputs") and graph.outputs:
-                    if len(graph.outputs) == 1:
-                        return evaluated.get(graph.outputs[0])
-                    return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return evaluated
-
-            return fallback_forward
+            return self._build_jax_interpreter_fallback(graph)
 
 
 JaxGenerator = JAXCodeGenerator

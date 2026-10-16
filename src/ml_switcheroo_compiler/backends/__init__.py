@@ -1,5 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Backend code generators for ML Switcheroo Compiler."""
+
+import logging
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_backend
@@ -8,13 +9,17 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_b
 # Import all backends to register them with the backend registry dynamically
 # but gracefully handle missing dependencies by failing registry instead of import
 def _safe_import_backend(name: str) -> None:
-    """Safe import."""
+    """Safe import.
+
+    Args:
+        name: The name parameter.
+    """
     import importlib
 
     try:
         importlib.import_module(f"ml_switcheroo_compiler.backends.{name}")
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 # Force dynamic backend linking imports - only foundational numpy is loaded eagerly;

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 
@@ -14,9 +14,9 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 @numpy_eager_registry.register("Sum")
 def _np_sum(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate sum reduction.
 
     Args:
@@ -27,15 +27,15 @@ def _np_sum(
     Returns:
         np.ndarray: Computed sum reduction.
     """
-    return backend_module.sum(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.sum(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Mean")
 def _np_mean(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate mean reduction.
 
     Args:
@@ -46,15 +46,15 @@ def _np_mean(
     Returns:
         np.ndarray: Computed mean reduction.
     """
-    return backend_module.mean(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.mean(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Max")
 def _np_max(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate max reduction.
 
     Args:
@@ -65,15 +65,15 @@ def _np_max(
     Returns:
         np.ndarray: Computed max reduction.
     """
-    return backend_module.max(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.max(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Min")
 def _np_min(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate min reduction.
 
     Args:
@@ -84,15 +84,15 @@ def _np_min(
     Returns:
         np.ndarray: Computed min reduction.
     """
-    return backend_module.min(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.min(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Variance")
 def _np_variance(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate variance reduction.
 
     Args:
@@ -104,15 +104,15 @@ def _np_variance(
         np.ndarray: Computed variance reduction.
     """
     kwargs.setdefault("ddof", 0)
-    return backend_module.var(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.var(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Std")
 def _np_std(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate standard deviation reduction.
 
     Args:
@@ -123,15 +123,15 @@ def _np_std(
     Returns:
         np.ndarray: Computed standard deviation reduction.
     """
-    return backend_module.std(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.std(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Argmax")
 def _np_argmax(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate argmax reduction.
 
     Args:
@@ -142,15 +142,15 @@ def _np_argmax(
     Returns:
         np.ndarray: Indices of maximum values.
     """
-    return backend_module.argmax(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.argmax(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Argmin")
 def _np_argmin(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate argmin reduction.
 
     Args:
@@ -161,15 +161,15 @@ def _np_argmin(
     Returns:
         np.ndarray: Indices of minimum values.
     """
-    return backend_module.argmin(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.argmin(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Prod")
 def _np_prod(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate product reduction.
 
     Args:
@@ -180,15 +180,15 @@ def _np_prod(
     Returns:
         np.ndarray: Computed product reduction.
     """
-    return backend_module.prod(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.prod(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AnyOp")
 def _np_any_op(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate any boolean reduction.
 
     Args:
@@ -199,15 +199,15 @@ def _np_any_op(
     Returns:
         np.ndarray: Boolean reduction result.
     """
-    return backend_module.any(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.any(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Cumsum")
 def _np_cumsum(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, int, float, tuple[int, ...], None],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, tuple[int, ...], None],
     **kwargs: Union[int, float, tuple[int, ...], bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate cumulative sum.
 
     Args:
@@ -218,15 +218,15 @@ def _np_cumsum(
     Returns:
         np.ndarray: Cumulative sum array.
     """
-    return backend_module.cumsum(*args, **kwargs)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.cumsum(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AddN")
 def _np_add_n(
     backend_module: ModuleType,
-    inputs: Sequence[np.ndarray],
+    inputs: Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
     **kwargs: Union[int, float, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate addition of a sequence of tensors.
 
     Args:
@@ -251,9 +251,9 @@ def _np_add_n(
 @numpy_eager_registry.register("AccumulateN")
 def _np_accumulate_n(
     backend_module: ModuleType,
-    inputs: Sequence[np.ndarray],
+    inputs: Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
     **kwargs: Union[int, float, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate accumulation of a sequence of tensors.
 
     Args:
@@ -278,10 +278,10 @@ def _np_accumulate_n(
 @numpy_eager_registry.register("CumulativeLogsumexp")
 def _np_cumulative_logsumexp(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     axis: int = 0,
     **kwargs: Union[int, float, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate cumulative logsumexp along a specified axis.
 
     Args:
@@ -295,4 +295,4 @@ def _np_cumulative_logsumexp(
     """
     exp_x = backend_module.exp(x)
     cumsum_exp = backend_module.cumsum(exp_x, axis=axis)
-    return backend_module.log(cumsum_exp)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.log(cumsum_exp))

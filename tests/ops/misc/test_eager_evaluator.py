@@ -1,27 +1,48 @@
+"""Tests for test_eager_evaluator."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.eager_evaluator import BackendExecuteOpStrategy, CustomEagerEvalStrategy, EagerEvaluator, EvaluationContext
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_eager_evaluator():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_eager_evaluator() -> None:
+    """Test function test_eager_evaluator."""
+
     class DummyOpEager:
-        def eager_eval(self, *a, **k):
+        """Test class DummyOpEager."""
+
+        def eager_eval(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+            """Test function eager_eval."""
             return "custom_eager"
 
     class DummyOpBackend:
+        """Test class DummyOpBackend."""
+
         pass
 
     class DummyBackend:
-        def execute_op(self, op, *a, **k):
+        """Test class DummyBackend."""
+
+        def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
+            """Test function execute_op."""
             return op
 
-    ctx1 = EvaluationContext(DummyOpEager, "Op1", [], {}, DummyBackend())
-    assert CustomEagerEvalStrategy().evaluate(ctx1) == "custom_eager"
+    ctx1 = cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(DummyOpEager, "Op1", [], {}, cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
+    assert cast("Callable[..., EagerTensorProtocol]", CustomEagerEvalStrategy)().evaluate(ctx1) == "custom_eager"
 
-    ctx2 = EvaluationContext(DummyOpBackend, "Op2", [], {}, DummyBackend())
-    assert BackendExecuteOpStrategy().evaluate(ctx2) == "Op2"
+    ctx2 = cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(DummyOpBackend, "Op2", [], {}, cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
+    assert cast("Callable[..., EagerTensorProtocol]", BackendExecuteOpStrategy)().evaluate(ctx2) == "Op2"
 
-    assert isinstance(EagerEvaluator._get_strategy(DummyOpEager()), CustomEagerEvalStrategy)
-    assert isinstance(EagerEvaluator._get_strategy(DummyOpBackend()), BackendExecuteOpStrategy)
+    assert isinstance(cast("Callable[..., EagerTensorProtocol]", EagerEvaluator._get_strategy)(cast("Callable[..., EagerTensorProtocol]", DummyOpEager)()), CustomEagerEvalStrategy)
+    assert isinstance(cast("Callable[..., EagerTensorProtocol]", EagerEvaluator._get_strategy)(cast("Callable[..., EagerTensorProtocol]", DummyOpBackend)()), BackendExecuteOpStrategy)
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
@@ -34,17 +55,21 @@ def test_eager_evaluator():
     from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY as OpRegistry
 
     class Op1(OpDef):
+        """Test class Op1."""
+
         op_name = "Op1"
 
-        def eager_eval(self, *a, **k):
+        def eager_eval(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+            """Test function eager_eval."""
             return a[0] if a else None
 
-        def infer_shape(self, *a, **k):
+        def infer_shape(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+            """Test function infer_shape."""
             return ()
 
     try:
         OpRegistry["Op1"] = Op1
-        OpRegistry["Op2"] = DummyOpBackend
+        getattr(OpRegistry, "__setitem__")("Op2", DummyOpBackend)
 
         from unittest.mock import patch
 
@@ -60,12 +85,15 @@ def test_eager_evaluator():
         OpRegistry.pop("Op2", None)
 
 
-def test_eager_evaluator_pack_outputs():
+def test_eager_evaluator_pack_outputs() -> None:
+    """Test function test_eager_evaluator_pack_outputs."""
     from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
     class DummyData:
+        """Test class DummyData."""
+
         shape = (1,)
         dtype = "float32"
 

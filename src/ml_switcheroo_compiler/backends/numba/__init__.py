@@ -2,6 +2,9 @@
 
 import importlib.util
 import sys
+from typing import Callable, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 try:
     _has_pkg = importlib.util.find_spec("numba") is not None
@@ -15,11 +18,11 @@ from .eager import execute_op
 from .generator import NumbaGenerator
 from .types import array, asarray, item, zeros
 
-NumbaGenerator.zeros = classmethod(zeros)
-NumbaGenerator.array = classmethod(array)
-NumbaGenerator.asarray = classmethod(asarray)
-NumbaGenerator.item = classmethod(item)
-NumbaGenerator.execute_op = classmethod(execute_op)
+type.__setattr__(NumbaGenerator, "zeros", classmethod(zeros))
+type.__setattr__(NumbaGenerator, "array", classmethod(array))
+type.__setattr__(NumbaGenerator, "asarray", classmethod(asarray))
+type.__setattr__(NumbaGenerator, "item", classmethod(item))
+type.__setattr__(NumbaGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", classmethod)(execute_op))
 
 __all__ = [
     "NumbaGenerator",

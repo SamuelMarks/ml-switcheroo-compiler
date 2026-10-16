@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -28,30 +29,38 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
     vectorize_graph,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 device = Device(DeviceType.CPU, 0)
 
 
-def test_vmap_no_tensor_args():
+def test_vmap_no_tensor_args() -> None:
     """Test calling eager vmap when no arguments are Tensors."""
     with ConfigContext(eager_mode=True):
         f = vmap(lambda: 42)
-        assert f() == 42
+        assert cast("Callable[..., EagerTensorProtocol]", f)() == 42
 
 
-def test_vmap_backend_without_asarray():
+def test_vmap_backend_without_asarray() -> None:
     """Test _eager_vmap with a backend that lacks asarray."""
     x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
 
     class BackendNoAsarray:
-        def execute_op(self, name, *args, **kwargs):
+        """Test class BackendNoAsarray."""
+
+        def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function execute_op."""
             return np.array([2, 4])
 
     with patch("ml_switcheroo_compiler.ops.vmap.get_active_backend", return_value=BackendNoAsarray()):
         res = _eager_vmap(lambda t: t, 0, 0, (x,))
-        assert np.array_equal(res.data, np.array([1, 2]))
+        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("EagerTensorProtocol", getattr(res, "data")), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
 
 
-def test_evaluate_static_predicate_numpy_item():
+def test_evaluate_static_predicate_numpy_item() -> None:
     """Test evaluate_static_predicate with a numpy scalar having .item()."""
     g = IRGraph()
     np_bool = np.bool_(True)
@@ -59,7 +68,7 @@ def test_evaluate_static_predicate_numpy_item():
     assert evaluate_static_predicate(g, "c_np") is True
 
 
-def test_evaluate_static_predicate_comparisons():
+def test_evaluate_static_predicate_comparisons() -> None:
     """Test comparison branches in evaluate_static_predicate."""
     g = IRGraph()
     g.nodes["c1"] = IRNode(id="c1", op_type="Constant", attributes={"value": 1})
@@ -91,7 +100,7 @@ def test_evaluate_static_predicate_comparisons():
     assert evaluate_static_predicate(g, "eq_dyn") is None
 
 
-def test_control_flow_opt_edge_cases():
+def test_control_flow_opt_edge_cases() -> None:
     """Test edge cases in control_flow_optimization_pass."""
     g = IRGraph(name="test_edge")
 
@@ -116,7 +125,7 @@ def test_control_flow_opt_edge_cases():
     assert opt3.nodes["not_ir"] == "just_a_string"
 
 
-def test_parallel_scan_edge_cases():
+def test_parallel_scan_edge_cases() -> None:
     """Test parallel scan edge cases."""
     # Non-existent YAML path
     with patch("os.path.exists", return_value=False):
@@ -139,7 +148,7 @@ def test_parallel_scan_edge_cases():
     assert any("parallel_cumsum" in nid for nid in opt.nodes)
 
 
-def test_vectorization_edge_cases():
+def test_vectorization_edge_cases() -> None:
     """Test vectorization pass edge cases and rules branches."""
     # Non-existent YAML path
     with patch("os.path.exists", return_value=False):
@@ -183,7 +192,7 @@ def test_vectorization_edge_cases():
     assert "vmap_no_inputs" in outer_opt.nodes
 
 
-def test_vectorization_unbatched_subgraph_and_transpose():
+def test_vectorization_unbatched_subgraph_and_transpose() -> None:
     """Test vectorizing graph containing unbatched sub-computations and transpose."""
     g = IRGraph(name="unbatched_and_transpose")
     g.inputs = ["batched_x", "c1", "c2"]
@@ -209,7 +218,7 @@ def test_vectorization_unbatched_subgraph_and_transpose():
     assert vec.nodes["batched_trans"].attributes["permutation"] == (0, 2, 1)
 
 
-def test_control_flow_opt_input_output_skipping():
+def test_control_flow_opt_input_output_skipping() -> None:
     """Test skipping Input and Output nodes during hoisting and active branch inlining."""
     g = IRGraph(name="test_in_out")
     g.nodes["pred_const"] = IRNode(id="pred_const", op_type="Constant", attributes={"value": True})

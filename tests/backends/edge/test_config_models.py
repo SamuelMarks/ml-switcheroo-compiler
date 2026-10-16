@@ -1,3 +1,9 @@
+"""Tests for test_config_models."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.edge.config_models import (
     MemoryAlignmentRuleConfig,
     StorageBufferBindingConfig,
@@ -17,8 +23,14 @@ from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import (
     WasmTemplatesConfig,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_wgsl_config_model():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_wgsl_config_model() -> None:
+    """Test function test_wgsl_config_model."""
     wg_layout = WorkgroupLayoutConfig(workgroup_size=[64, 1, 1], max_workgroup_invocations=256)
     buf_bind = StorageBufferBindingConfig(group=0, binding=0, access="read", dtype="f32")
     uni_block = UniformBlockConfig(group=0, binding=2, fields={"batch_size": "u32"})
@@ -37,7 +49,7 @@ def test_wgsl_config_model():
             }
         }
     }
-    config = WgslTemplatesConfig(**data)
+    config = cast("Callable[..., EagerTensorProtocol]", WgslTemplatesConfig)(**data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["workgroup_size"] == [1, 2, 3]
     assert dumped["templates"]["test"]["workgroup_layout"]["max_workgroup_invocations"] == 256
@@ -60,7 +72,8 @@ def test_wgsl_config_model():
     assert dumped_kernels["templates"]["binary"]["workgroup_size"] == [64, 1, 1]
 
 
-def test_wasm_config_model():
+def test_wasm_config_model() -> None:
+    """Test function test_wasm_config_model."""
     data = {
         "templates": {
             "test": {
@@ -73,7 +86,7 @@ def test_wasm_config_model():
             }
         }
     }
-    config = WasmTemplatesConfig(**data)
+    config = cast("Callable[..., EagerTensorProtocol]", WasmTemplatesConfig)(**data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["simd_unroll_factor"] == 4
     assert dumped["templates"]["test"]["alignment"]["alignment_bytes"] == 16
@@ -94,10 +107,11 @@ def test_wasm_config_model():
 
     intrs_cfg = WasmIntrinsicsConfig(intrinsics={"test": intr_cfg}, scalars={"abs": "return std::abs(a);"})
     assert "test" in intrs_cfg.intrinsics
-    assert intrs_cfg.scalars["abs"] == "return std::abs(a);"
+    assert cast("EagerTensorProtocol", getattr(intrs_cfg.scalars, "__getitem__")("abs")) == "return std::abs(a);"
 
 
-def test_onnx_and_stablehlo_config_models():
+def test_onnx_and_stablehlo_config_models() -> None:
+    """Test function test_onnx_and_stablehlo_config_models."""
     from ml_switcheroo_compiler.backends.edge.config_models import (
         OnnxOpBuilderConfig,
         OnnxSchemaConfig,
@@ -235,7 +249,7 @@ def test_load_webrtc_collectives_default_path() -> None:
     assert cfg.schema_def is not None
 
 
-def test_load_edge_control_flow_templates(tmp_path: object) -> None:
+def test_load_edge_control_flow_templates(tmp_path: EagerTensorProtocol) -> None:
     """Test loading and validating edge control flow templates from YAML file.
 
     Args:

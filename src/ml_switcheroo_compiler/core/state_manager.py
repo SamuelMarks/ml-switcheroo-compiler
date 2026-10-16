@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module state_manager.py."""
-
 """State functionalization pass."""
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort

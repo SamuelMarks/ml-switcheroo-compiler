@@ -1,16 +1,18 @@
-# ruff: noqa: E402, E501, F403
-"""Module upsample_ops.py."""
-
 """Upsampling operations."""
 
 from collections.abc import Sequence
-from typing import Any, Optional, Union  # noqa: F401
+from typing import Callable, Optional, Union, cast  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops import image
 
 
-def _resolve_scale_factor(input, scale_factor, spatial_dims):
+def _resolve_scale_factor(
+    input: Tensor,
+    scale_factor: Union[float, Sequence[float]],
+    spatial_dims: int,
+) -> Optional[tuple[int, ...]]:
     """Resolve the scale factor for upsampling.
 
     Args:
@@ -69,8 +71,8 @@ def _upsample_resolve_size(
 
     spatial_dims = len(input.shape) - 2 if len(input.shape) >= 3 else 1
 
-    if has_sf:
-        return _resolve_scale_factor(input, scale_factor, spatial_dims)
+    if has_sf or size is None:
+        return cast("Callable[..., Optional[tuple[int, ...]]]", _resolve_scale_factor)(input, scale_factor, spatial_dims) or ()
 
     if isinstance(size, int):
         return tuple([size] * spatial_dims)
@@ -78,13 +80,13 @@ def _upsample_resolve_size(
     return tuple(size)
 
 
-def _upsample_dispatch(  # noqa: PLR0911
+def _upsample_dispatch(
     input: Tensor,
     mode: str,
     size: Optional[Union[int, Sequence[int]]],
     scale_factor: Optional[Union[float, Sequence[float]]],
     align_corners: bool,
-):
+) -> EagerValue:
     """Evaluate _upsample_dispatch operation.
 
     Args:
@@ -110,7 +112,7 @@ def _upsample_dispatch(  # noqa: PLR0911
             "bicubic": image.resize_bicubic,
         }
         fn = dispatch_map.get(mode, image.resize_nearest)
-        return fn(input, size=target_size, align_corners=align_corners)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", fn)(input, size=target_size, align_corners=align_corners))
 
     # 1D or 3D fallback
     dispatch_map_fallback = {
@@ -129,7 +131,7 @@ def upsample(
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
     mode: str = "nearest",
     align_corners: Optional[bool] = None,
-):
+) -> EagerValue:
     """Upsamples a given multi-channel data.
 
     Args:
@@ -146,7 +148,7 @@ def upsample(
     return _upsample_dispatch(input, mode, size, scale_factor, align_corners)
 
 
-def pixel_shuffle(input: Tensor, upscale_factor: int):
+def pixel_shuffle(input: Tensor, upscale_factor: int) -> EagerValue:
     """Rearranges elements in a tensor of shape (*, C, H, W) to a tensor of shape (*, C/r^2, H*r, W*r).
 
     Args:
@@ -167,7 +169,7 @@ def pixel_shuffle(input: Tensor, upscale_factor: int):
 
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, input.dtype, input.device),
+            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "PixelShuffle",
@@ -182,7 +184,7 @@ def upsample_nearest(
     input: Tensor,
     size: Optional[Union[int, Sequence[int]]] = None,
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
-):
+) -> EagerValue:
     """Upsamples the input using nearest-neighbor interpolation.
 
     Args:
@@ -205,7 +207,7 @@ def upsample_nearest(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, input.dtype, input.device),
+            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleNearest",
@@ -220,7 +222,7 @@ def upsample_bilinear(
     input: Tensor,
     size: Optional[Union[int, Sequence[int]]] = None,
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
-):
+) -> EagerValue:
     """Upsamples the input using bilinear interpolation.
 
     Args:
@@ -243,7 +245,7 @@ def upsample_bilinear(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, input.dtype, input.device),
+            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleBilinear",
@@ -258,7 +260,7 @@ def upsample_bicubic(
     input: Tensor,
     size: Optional[Union[int, Sequence[int]]] = None,
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
-):
+) -> EagerValue:
     """Upsamples the input using bicubic interpolation.
 
     Args:
@@ -281,7 +283,7 @@ def upsample_bicubic(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, input.dtype, input.device),
+            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleBicubic",

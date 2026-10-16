@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module conv.py."""
-
 """Convolution operations frontend."""
 
 from ml_switcheroo_compiler.ops.linalg.conv import conv_general_dilated as conv_general

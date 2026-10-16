@@ -1,28 +1,44 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FallbackHandler, FormatterContext, OpFormatter
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_formatter_context():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_formatter_context() -> None:
+    """Test function test_formatter_context."""
     ctx = FormatterContext("np", "Add", ["a"], {"axis": 0})
     assert ctx.prefix == "np"
 
 
-def test_op_formatter():
+def test_op_formatter() -> None:
+    """Test function test_op_formatter."""
     assert OpFormatter.format_backend_string("{0} + {val}", ["a"], {"val": 1}) == "a + 1"
 
     ctx1 = FormatterContext("np", "Sum", ["a"], {"axis": 0, "keepdims": True})
     assert OpFormatter.format_generic_fallback(ctx1) == "np.sum(a, axis=0, keepdims=True)"
 
 
-def test_fallback_handler():
+def test_fallback_handler() -> None:
+    """Test function test_fallback_handler."""
+
     class DummyNode:
+        """Test class DummyNode."""
+
         op_type = "Mean"
 
-    assert FallbackHandler.generate_fallback_code(DummyNode(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
+    assert cast("Callable[..., EagerTensorProtocol]", FallbackHandler.generate_fallback_code)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
 
 
-def test_code_formatter():
+def test_code_formatter() -> None:
+    """Test function test_code_formatter."""
     f = CodeFormatter()
     assert f.get_indent() == ""
     f.indent_level = 1
@@ -33,14 +49,16 @@ def test_code_formatter():
     assert f.assign_var_name("1") == "tensor_0"
 
 
-def test_op_formatter_edge_cases():
+def test_op_formatter_edge_cases() -> None:
+    """Test function test_op_formatter_edge_cases."""
     assert OpFormatter.format_backend_string("{0} + x", ["a"], {"val": 1}) == "a + x"
 
     ctx2 = FormatterContext("np", "Sum", ["a"], {"axis": None, "keepdims": False})
     assert OpFormatter.format_generic_fallback(ctx2) == "np.sum(a)"
 
 
-def test_op_formatter_edge_cases_extended():
+def test_op_formatter_edge_cases_extended() -> None:
+    """Test function test_op_formatter_edge_cases_extended."""
     ctx = FormatterContext("np", "Cast", ["a"], {"dtype": "float32"})
     assert OpFormatter.format_generic_fallback(ctx) == "np.cast(a, dtype='float32')"
 
@@ -51,18 +69,24 @@ def test_op_formatter_edge_cases_extended():
     assert OpFormatter.format_generic_fallback(ctx_int) == "np.add(a, val=1)"
 
 
-def test_op_formatter_inputs_placeholder():
+def test_op_formatter_inputs_placeholder() -> None:
+    """Test function test_op_formatter_inputs_placeholder."""
     assert OpFormatter.format_backend_string("func({__inputs__})", ["a", "b"], {}) == "func(a, b)"
 
 
-def test_fallback_handler_missing_op_type():
+def test_fallback_handler_missing_op_type() -> None:
+    """Test function test_fallback_handler_missing_op_type."""
+
     class DummyNodeNoOp:
+        """Test class DummyNodeNoOp."""
+
         pass
 
-    assert FallbackHandler.generate_fallback_code(DummyNodeNoOp(), ["a"], "np") == "np.unknown(a)"
+    assert cast("Callable[..., EagerTensorProtocol]", FallbackHandler.generate_fallback_code)(cast("Callable[..., EagerTensorProtocol]", DummyNodeNoOp)(), ["a"], "np") == "np.unknown(a)"
 
 
-def test_op_formatter_edge_cases_continue():
+def test_op_formatter_edge_cases_continue() -> None:
+    """Test function test_op_formatter_edge_cases_continue."""
     ctx = FormatterContext("np", "Cast", ["a"], {"node_id": "n1", "shape_metadata": ()})
     assert OpFormatter.format_generic_fallback(ctx) == "np.cast(a)"
 

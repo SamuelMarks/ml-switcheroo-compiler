@@ -1,19 +1,34 @@
+"""Tests for test_continuous_dirichlet."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.random.continuous.dirichlet import dirichlet
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_dirichlet(mocker):
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_dirichlet(mocker: EagerTensorProtocol) -> None:
     # Mock global_tracing_state.add_node inside random.state
+    """Test function test_dirichlet."""
     mocker.patch("ml_switcheroo_compiler.random.state.global_tracing_state.add_node")
 
     class MockTensor:
-        def __init__(self):
+        """Test class MockTensor."""
+
+        def __init__(self) -> None:
+            """Test function __init__."""
             self.data = type("M", (), {"id": "1"})()
             self.shape = ()
 
     t = MockTensor()
-    res = dirichlet(t, t)
+    res = cast("Callable[..., EagerTensorProtocol]", dirichlet)(t, t)
     assert res is not None
 
-    res2 = dirichlet(t, t, shape=(2, 3), dtype=DType.Float64)
+    res2 = cast("Callable[..., EagerTensorProtocol]", dirichlet)(t, t, shape=(2, 3), dtype=DType.Float64)
     assert res2 is not None

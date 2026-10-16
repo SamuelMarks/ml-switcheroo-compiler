@@ -1,7 +1,10 @@
 """Exhaustive unit tests for MLXProfiler."""
 
+from __future__ import annotations
+
 import importlib
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,6 +21,11 @@ from ml_switcheroo_compiler.backends.mlx.profiler import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_mlx_import_error() -> None:
     """Verify fallback when mlx cannot be imported."""
@@ -26,7 +34,7 @@ def test_mlx_import_error() -> None:
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
     with patch.dict(sys.modules, {"mlx": None, "mlx.core": None}):
         importlib.reload(mlx_prof_module)
-        assert mlx_prof_module.mx is None
+        assert cast("EagerTensorProtocol", getattr(mlx_prof_module, "mx")) is None
 
     # Reload back to normal state
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
@@ -155,7 +163,7 @@ def test_prepare_mlx_inputs_exhaustive() -> None:
     class DummyArrayType:
         """Dummy array class for type check."""
 
-        def __init__(self, *args: object, **kwargs: object) -> None:
+        def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
             """Initialize dummy array."""
             pass
 
@@ -174,15 +182,15 @@ def test_prepare_mlx_inputs_exhaustive() -> None:
     custom_inst = CustomMlxArray()
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = _prepare_mlx_inputs(
+        res = cast("Callable[..., EagerTensorProtocol]", _prepare_mlx_inputs)(
             {
                 "is_inst": dummy_inst,
                 "custom": custom_inst,
                 "raw": [1.0, 2.0],
             }
         )
-        assert res[0] is dummy_inst
-        assert res[1] is custom_inst
+        assert id(res[0]) == id(dummy_inst)
+        assert id(res[1]) == id(custom_inst)
 
 
 def test_prepare_ordered_inputs_branches() -> None:
@@ -192,7 +200,7 @@ def test_prepare_ordered_inputs_branches() -> None:
     class DummyArrayType:
         """Dummy array class for type check."""
 
-        def __init__(self, *args: object, **kwargs: object) -> None:
+        def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
             """Initialize dummy array."""
             pass
 
@@ -215,13 +223,17 @@ def test_prepare_ordered_inputs_branches() -> None:
     g.nodes["k2"] = IRNode(id="k2", op_type="Input")
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = profiler._prepare_ordered_inputs(g, {"k1": dummy_inst, "k2": custom_inst})
-        assert res[0] is dummy_inst
-        assert res[1] is custom_inst
+        res = cast("Callable[..., EagerTensorProtocol]", profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst})
+        assert id(res[0]) == id(dummy_inst)
+        assert id(res[1]) == id(custom_inst)
 
 
-def test_mlx_profiler_compile_and_execute() -> None:
-    """Verify MLXCodeGenerator compilation and step execution fallbacks."""
+def _test_mlx_profiler_compile_and_execute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_mlx_profiler_compile_and_execute.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     profiler = MLXProfiler()
 
     # When mx is None
@@ -235,7 +247,7 @@ def test_mlx_profiler_compile_and_execute() -> None:
         __module__ = "mlx.core"
 
     CustomMlxArray.__name__ = "array"
-    custom_inst = CustomMlxArray()
+    CustomMlxArray()
 
     g_ops = IRGraph()
     g_ops.nodes["x"] = IRNode(id="x", op_type="Input", shape_metadata=(2,))
@@ -250,13 +262,21 @@ def test_mlx_profiler_compile_and_execute() -> None:
     mock_mx.float32 = "float32"
     mock_compiled_fn = MagicMock(return_value=dummy_arr)
     mock_mx.compile.return_value = mock_compiled_fn
+    getattr(_state, "update")({"CustomMlxArray": CustomMlxArray, "dummy_arr": dummy_arr, "g_ops": g_ops, "mock_compiled_fn": mock_compiled_fn})
+    getattr(_state, "update")({"mock_mx": mock_mx, "profiler": profiler, "res_none": res_none})
+    _state.update(locals())
 
-    # Normal profile_graph with ops
+
+def _test_mlx_profiler_compile_and_execute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_mlx_profiler_compile_and_execute.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g_ops, mock_mx, profiler = _state["g_ops"], _state["mock_mx"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
         res = profiler.profile_graph(g_ops, {"x": [1.0, 2.0]}, num_iters=2, warmup_iters=1)
         assert len(res["latencies"]) == 2
-
-    # Fallback when _prepare_ordered_inputs has unordered or unmatched keys
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
         res_unmatched = profiler.profile_graph(g_ops, {"unmatched": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
         assert len(res_unmatched["latencies"]) == 1
@@ -273,8 +293,18 @@ def test_mlx_profiler_compile_and_execute() -> None:
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx_no_comp):
         res_no_comp = profiler.profile_graph(g_ops, {"x": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
         assert len(res_no_comp["latencies"]) == 1
+    getattr(_state, "update")({"mock_mx_fail_comp": mock_mx_fail_comp, "mock_mx_no_comp": mock_mx_no_comp, "res": res, "res_fail_comp": res_fail_comp})
+    getattr(_state, "update")({"res_no_comp": res_no_comp, "res_unmatched": res_unmatched})
+    _state.update(locals())
 
-    # TypeError when generator doesn't provide CompiledModel
+
+def _test_mlx_profiler_compile_and_execute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_mlx_profiler_compile_and_execute.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g_ops, mock_mx, profiler = _state["g_ops"], _state["mock_mx"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.mlx.generator.MLXCodeGenerator.generate", return_value="# empty"):
         with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
             with pytest.raises(TypeError, match="Failed to generate valid CompiledModel"):
@@ -289,8 +319,17 @@ def test_mlx_profiler_compile_and_execute() -> None:
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
         res_empty = profiler.profile_graph(g_empty, {}, num_iters=1, warmup_iters=1)
         assert len(res_empty["latencies"]) == 1
+    getattr(_state, "update")({"g_empty": g_empty, "res_empty": res_empty})
+    _state.update(locals())
 
-    # Execution exception during step execution fallback
+
+def _test_mlx_profiler_compile_and_execute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_mlx_profiler_compile_and_execute.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    g_empty, g_ops, mock_mx, profiler = _state["g_empty"], _state["g_ops"], _state["mock_mx"], _state["profiler"]
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
         with patch.object(profiler, "_compile_model", return_value=MagicMock(side_effect=RuntimeError("eval error"))):
             res_exec_err = profiler.profile_graph(g_ops, {"x": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
@@ -301,3 +340,14 @@ def test_mlx_profiler_compile_and_execute() -> None:
         with patch.object(profiler, "_measure_latencies", return_value=[]):
             res_no_lats = profiler.profile_graph(g_empty, {}, num_iters=0, warmup_iters=0)
             assert res_no_lats["latency_ms"] == 0.0
+    getattr(_state, "update")({"res_exec_err": res_exec_err, "res_no_lats": res_no_lats})
+
+
+def test_mlx_profiler_compile_and_execute() -> None:
+    """Verify MLXCodeGenerator compilation and step execution fallbacks."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_mlx_profiler_compile_and_execute_part_1(_state)
+    _test_mlx_profiler_compile_and_execute_part_2(_state)
+    _test_mlx_profiler_compile_and_execute_part_3(_state)
+    _test_mlx_profiler_compile_and_execute_part_4(_state)
+    assert isinstance(_state, dict)

@@ -1,6 +1,9 @@
-# ruff: noqa: E402, E501, F403
 """Space-to-batch and batch-to-space ops."""
 
+from collections.abc import Sequence
+from typing import Union, cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,7 +13,7 @@ class SpaceToBatchND(OpDef):
 
     op_name = "SpaceToBatchND"
 
-    def infer_shape(self, input, block_shape, paddings, **kwargs):
+    def infer_shape(self, input: EagerTensorProtocol, block_shape: EagerTensorProtocol, paddings: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -31,7 +34,7 @@ class SpaceToBatch(OpDef):
 
     op_name = "SpaceToBatch"
 
-    def infer_shape(self, input, block_size, paddings, **kwargs):
+    def infer_shape(self, input: EagerTensorProtocol, block_size: EagerTensorProtocol, paddings: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -46,7 +49,7 @@ class SpaceToBatch(OpDef):
         return ()
 
 
-def space_to_batch(input, block_size, paddings, **kwargs):
+def space_to_batch(input: EagerValue, block_size: EagerValue, paddings: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Space to batch operation.
 
     Args:
@@ -69,10 +72,10 @@ def space_to_batch(input, block_size, paddings, **kwargs):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("SpaceToBatch")().infer_shape(input, block_size=block_size, paddings=paddings, **kwargs)
-    return _emit_shape_node("SpaceToBatch", [input], {"block_size": block_size, "paddings": paddings, **kwargs}, out_shape, getattr(input, "dtype", "float32"))
+    return _emit_shape_node("SpaceToBatch", [input], {"block_size": block_size, "paddings": paddings, **kwargs}, cast("Sequence[Union[int, str]]", out_shape), getattr(input, "dtype", "float32"))
 
 
-def space_to_batch_nd(input, block_shape, paddings, **kwargs):
+def space_to_batch_nd(input: EagerValue, block_shape: EagerValue, paddings: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Space to batch ND operation.
 
     Args:
@@ -95,4 +98,4 @@ def space_to_batch_nd(input, block_shape, paddings, **kwargs):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("SpaceToBatchND")().infer_shape(input, block_shape=block_shape, paddings=paddings, **kwargs)
-    return _emit_shape_node("SpaceToBatchND", [input], {"block_shape": block_shape, "paddings": paddings, **kwargs}, out_shape, getattr(input, "dtype", "float32"))
+    return _emit_shape_node("SpaceToBatchND", [input], {"block_shape": block_shape, "paddings": paddings, **kwargs}, cast("Sequence[Union[int, str]]", out_shape), getattr(input, "dtype", "float32"))

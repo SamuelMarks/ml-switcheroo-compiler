@@ -1,7 +1,8 @@
 """Quantization passes."""
 
-# ruff: noqa: E402, E501, F403
+from typing import Callable, cast
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.dataset import Dataset
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
@@ -257,12 +258,12 @@ class IntegerQuantizationLoweringPass:
                 new_attrs["dtype"] = self.config.target_dtype.value
                 new_attrs["q_scale"] = q_scale
                 new_attrs["q_zero_point"] = q_zp
-                new_node = clone_logical_node(node, op_type=lowering_map[node.op_type], inputs=new_inputs, attributes=new_attrs)
+                new_node = cast("Callable[..., EagerTensorProtocol]", clone_logical_node)(node, op_type=lowering_map[node.op_type], inputs=new_inputs, attributes=new_attrs)
                 new_nodes[node_id] = new_node
                 modified = True
             else:
                 if new_inputs != node.inputs:
-                    new_nodes[node_id] = clone_logical_node(node, inputs=new_inputs)
+                    new_nodes[node_id] = cast("Callable[..., EagerTensorProtocol]", clone_logical_node)(node, inputs=new_inputs)
                 else:
                     new_nodes[node_id] = node
 

@@ -52,9 +52,7 @@ class Infeed(OpDef):
             tuple[int, ...]: Result.
         """
         shape_val = kwargs.get("shape", ())
-        if isinstance(shape_val, tuple):
-            return shape_val
-        return tuple(shape_val)  # type: ignore[arg-type]
+        return tuple(shape_val) if isinstance(shape_val, (tuple, list)) else ()
 
 
 @register_op("Vectorize")

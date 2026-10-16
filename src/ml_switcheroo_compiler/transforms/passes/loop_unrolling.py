@@ -4,21 +4,22 @@ import os
 from typing import Optional, cast
 
 import yaml
+from ml_switcheroo_ir import AttributeValue, LogicalGraph
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode, clone_logical_node
 
 
-def _load_config() -> dict[str, object]:
+def _load_config() -> dict[str, AttributeValue]:
     """Load the loop unrolling configuration.
 
     Returns:
-        dict[str, object]: The configuration dictionary.
+        dict[str, AttributeValue]: The configuration dictionary.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "loop_unrolling.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             res = yaml.safe_load(f)
-            return cast(dict[str, object], res) if res else {}
+            return cast(dict[str, AttributeValue], res) if res else {}
     return {}
 
 
@@ -60,12 +61,12 @@ def clone_subgraph(graph: IRGraph, prefix: str, id_map: dict[str, str]) -> list[
     return cloned_nodes
 
 
-def detect_static_bound(node: IRNode, heuristics: list[dict[str, object]]) -> Optional[int]:
+def detect_static_bound(node: IRNode, heuristics: list[dict[str, AttributeValue]]) -> Optional[int]:
     """Detect if a loop has a static bound based on heuristics.
 
     Args:
         node (IRNode): The node to check.
-        heuristics (list[dict[str, object]]): The heuristics to apply.
+        heuristics (list[dict[str, AttributeValue]]): The heuristics to apply.
 
     Returns:
         Optional[int]: The static bound if found, otherwise None.
@@ -102,7 +103,7 @@ def _unroll_single_node(
     node_id: str,
     node: IRNode,
     bound: int,
-    body_graph: object,
+    body_graph: IRGraph,
     new_nodes: dict[str, LogicalNode],
 ) -> None:
     """Unroll iterations of a single bounded loop node into new_nodes.
@@ -111,7 +112,7 @@ def _unroll_single_node(
         node_id (str): The node ID.
         node (IRNode): The loop IR node.
         bound (int): The number of unrolled iterations.
-        body_graph (object): The loop body graph or block.
+        body_graph (IRGraph): The loop body graph or block.
         new_nodes (dict[str, LogicalNode]): Target node map.
     """
     current_state_ids = list(node.inputs)
@@ -165,7 +166,7 @@ def unroll_loops(graph: IRGraph) -> IRGraph:
     """
     config = _load_config()
     default_limit = cast(int, config.get("default_unroll_limit", 10))
-    heuristics = cast(list[dict[str, object]], config.get("heuristics", []))
+    heuristics = cast(list[dict[str, AttributeValue]], config.get("heuristics", []))
 
     unrolled = False
     new_nodes: dict[str, LogicalNode] = {}
@@ -179,7 +180,7 @@ def unroll_loops(graph: IRGraph) -> IRGraph:
         body_graph = node.attributes.get("body")
         if bound is not None and bound <= default_limit and body_graph and hasattr(body_graph, "nodes"):
             unrolled = True
-            _unroll_single_node(node_id, node, bound, body_graph, new_nodes)
+            _unroll_single_node(node_id, node, bound, cast("LogicalGraph", body_graph), new_nodes)
             continue
 
         new_nodes[node_id] = node

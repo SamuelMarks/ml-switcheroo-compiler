@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 import os
+from typing import cast
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
 _WGSL_TEMPLATES: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None] = {}
-_WGSL_KERNELS: dict[str, object] = {}
+_WGSL_KERNELS: dict[str, EagerValue] = {}
 
 
-def _load_kernels() -> dict[str, object]:
+def _load_kernels() -> dict[str, EagerValue]:
     """Load declarative WGSL kernels configuration from wgsl_kernels.yaml.
 
     Returns:
@@ -47,11 +51,11 @@ def get_wgsl_op_mapping(op_name: str) -> dict[str, str | int | float | None]:
     if isinstance(mappings, dict) and op_name in mappings:
         val = mappings[op_name]
         if isinstance(val, dict):
-            return val
+            return cast("dict[str, str | int | float | None]", val)
     return {}
 
 
-def get_wgsl_kernels_config() -> dict[str, object]:
+def get_wgsl_kernels_config() -> dict[str, EagerValue]:
     """Retrieve the full WGSL kernels specification dictionary.
 
     Returns:
@@ -80,9 +84,9 @@ def _merge_modular_templates(
                         mod_data = yaml.safe_load(f)
                     if isinstance(mod_data, dict):
                         mod_dump = WgslTemplatesConfig(**mod_data).model_dump()
-                        loaded_templates.setdefault("templates", {}).update(mod_dump.get("templates") or {})
-                except Exception:
-                    pass
+                        getattr(loaded_templates.setdefault("templates", {}), "update")(mod_dump.get("templates") or {})
+                except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     modular_path: str = os.path.join(os.path.dirname(__file__), "templates.yaml")
     if not os.path.exists(modular_path):
@@ -93,8 +97,8 @@ def _merge_modular_templates(
         return
 
     mod_dump = WgslTemplatesConfig(**mod_data).model_dump()
-    loaded_templates.setdefault("templates", {}).update(mod_dump.get("templates") or {})
-    loaded_templates.setdefault("js_orchestration", {}).update(mod_dump.get("js_orchestration") or {})
+    getattr(loaded_templates.setdefault("templates", {}), "update")(mod_dump.get("templates") or {})
+    getattr(loaded_templates.setdefault("js_orchestration", {}), "update")(mod_dump.get("js_orchestration") or {})
     if mod_dump.get("global_bindings"):
         loaded_templates["global_bindings"] = mod_dump["global_bindings"]
 
@@ -123,10 +127,10 @@ def _load_templates() -> None:
         if isinstance(kernels, dict):
             k_templates = kernels.get("templates")
             if isinstance(k_templates, dict):
-                loaded.setdefault("templates", {}).update(k_templates)
+                getattr(loaded.setdefault("templates", {}), "update")(k_templates)
             k_bindings = kernels.get("bindings")
             if isinstance(k_bindings, dict) and k_bindings.get("global_bindings") and not loaded.get("global_bindings"):
-                loaded["global_bindings"] = k_bindings["global_bindings"]
+                loaded["global_bindings"] = cast("str | None", k_bindings["global_bindings"])
         _WGSL_TEMPLATES = loaded
 
 
@@ -201,7 +205,7 @@ def get_webgpu_ops() -> dict[str, str | dict[str, str] | dict[str, dict[str, str
     return _WEBGPU_OPS
 
 
-def get_bindgroup_schemas(path: str | None = None) -> dict[str, object]:
+def get_bindgroup_schemas(path: str | None = None) -> dict[str, EagerValue]:
     """Retrieve WebGPU bind group configuration schemas dictionary.
 
     Args:
@@ -215,7 +219,7 @@ def get_bindgroup_schemas(path: str | None = None) -> dict[str, object]:
     return load_bindgroup_schemas(path).model_dump()
 
 
-def get_dtype_emulation_config(path: str | None = None) -> dict[str, object]:
+def get_dtype_emulation_config(path: str | None = None) -> dict[str, EagerValue]:
     """Retrieve WGSL double-precision emulation configuration dictionary.
 
     Args:
@@ -268,10 +272,10 @@ def generate_dynamic_bindgroup_declarations(
     return "\n".join(lines)
 
 
-_WGSL_GROUNDING_SCHEMA: dict[str, object] | None = None
+_WGSL_GROUNDING_SCHEMA: dict[str, EagerValue] | None = None
 
 
-def get_wgsl_grounding_schema() -> dict[str, object]:
+def get_wgsl_grounding_schema() -> dict[str, EagerValue]:
     """Load and return the canonical WGSL grounding schema from ml_switcheroo_ir.schema.wgsl_ops.json.
 
     Returns:

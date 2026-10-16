@@ -1,5 +1,8 @@
 """Test module."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
@@ -7,16 +10,28 @@ import pytest
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dispatch import dispatch
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-def test_dispatch():
+
+def test_dispatch() -> None:
+    """Test function test_dispatch."""
+
     class DummySub:
-        def func(self, *a, **k):
+        """Test class DummySub."""
+
+        def func(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+            """Test function func."""
             return "res"
 
     class DummyMod:
+        """Test class DummyMod."""
+
         mod = DummySub()
 
     class DummyBackend:
+        """Test class DummyBackend."""
+
         module = DummyMod()
 
     config.eager_mode = True
@@ -32,4 +47,6 @@ def test_dispatch():
     config.eager_mode = False
 
     class DummyTensor:
+        """Test class DummyTensor."""
+
         dtype = "float32"

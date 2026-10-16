@@ -1,10 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Dispatcher for operation execution."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
@@ -13,18 +13,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-DispatchArg = Union[
-    int,
-    float,
-    str,
-    bool,
-    tuple[int, ...],
-    list[int],
-    list[float],
-    list[str],
-    dict[str, Union[int, str, float, bool]],
-    None,
-]
+DispatchArg = EagerValue
 
 
 def dispatch_op(

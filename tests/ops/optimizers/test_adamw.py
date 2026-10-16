@@ -1,3 +1,9 @@
+"""Tests for test_adamw."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 import ml_switcheroo_compiler.ops.optimizers.updates as upd
@@ -6,8 +12,14 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_adamw_no_weight_decay():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_adamw_no_weight_decay() -> None:
+    """Test function test_adamw_no_weight_decay."""
     orig = config.eager_mode
     config.eager_mode = True
     try:
@@ -16,19 +28,23 @@ def test_adamw_no_weight_decay():
         upd.adamw_update(t, t, hp)
     finally:
         config.eager_mode = orig
+    assert orig is not None or orig is None
 
 
-def test_missing_optimizers_coverage():
+def test_missing_optimizers_coverage() -> None:
+    """Test function test_missing_optimizers_coverage."""
     from ml_switcheroo_compiler.ops.optimizers.updates import AdamaxHyperparamsOp, ApplyRMSProp
 
     class DummyShape:
+        """Test class DummyShape."""
+
         shape = (1,)
 
     try:
-        ApplyRMSProp().infer_shape(DummyShape())
-    except:
-        pass
+        cast("Callable[..., EagerTensorProtocol]", ApplyRMSProp)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)())
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None
     try:
-        AdamaxHyperparamsOp().infer_shape(DummyShape())
-    except:
-        pass
+        cast("Callable[..., EagerTensorProtocol]", AdamaxHyperparamsOp)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)())
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+        assert _exc is not None

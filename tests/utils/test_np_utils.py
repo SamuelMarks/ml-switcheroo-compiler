@@ -1,7 +1,14 @@
 """Module test_np_utils.py."""
 
+from __future__ import annotations
 
-def test_np_utils():
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+
+def test_np_utils() -> None:
     """test_np_utils."""
     from unittest.mock import patch
 
@@ -39,8 +46,8 @@ def test_np_utils():
         class Dummy:
             """Dummy."""
 
-            def item(self):
-                """item."""
+            def item(self) -> EagerValue:
+                """Item."""
                 return 5.0
 
         mock_max.return_value = Dummy()

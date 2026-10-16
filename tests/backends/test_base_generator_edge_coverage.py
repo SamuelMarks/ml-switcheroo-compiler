@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.backends.base_generator import (
@@ -9,6 +11,11 @@ from ml_switcheroo_compiler.backends.base_generator import (
     CompiledArtifact,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_compiled_artifact_edge_cases() -> None:
@@ -44,7 +51,7 @@ def test_compiled_artifact_edge_cases() -> None:
             self.cleaned = True
 
     mock_dir = MockTempDir()
-    art_with_dir = CompiledArtifact(
+    art_with_dir = cast("Callable[..., EagerTensorProtocol]", CompiledArtifact)(
         callable_fn=lambda: None,
         temp_dir=mock_dir,
     )
@@ -69,14 +76,14 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
     class ConcreteAotGen(BaseGenerator):
         """Concrete generator for testing compile_aot on class."""
 
-        def _compile_aot_impl(self, graph: IRGraph | None, **kwargs: object) -> str:
+        def _compile_aot_impl(self, graph: IRGraph | None, **kwargs: EagerValue) -> str:
             """Compile AOT implementation."""
             del graph, kwargs
             return "compiled_output"
 
     g = IRGraph()
     res = ConcreteAotGen.compile_aot(g)
-    assert res == "compiled_output"
+    assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "compiled_output")
 
     # 1b. compile_aot caching behavior on generator instance
     gen_inst = ConcreteAotGen(g)
@@ -90,7 +97,7 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
 
         def __init__(self) -> None:
             """Initialize with None graph."""
-            self.graph = None
+            setattr(self, "graph", None)
 
     with pytest.raises(NotImplementedError):
         EmptyGen().compile_aot(None)

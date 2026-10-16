@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -9,6 +10,11 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.time_distributed as time_dist_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -35,9 +41,9 @@ def test_time_distributed_full_coverage() -> None:
     """Test full coverage for time distributed wrapper operations."""
     td_op = time_dist_mod.TimeDistributed()
     assert td_op.infer_shape(x=None) == ()
-    assert td_op.infer_shape(x=DummyWithShape((5,))) == (5,)
-    assert td_op.infer_shape(x=DummyWithShape((2, 3, 4)), wrapped_op_name=None) == (2, 3, 4)
-    assert td_op.infer_shape(x=DummyWithShape((2, 3, 4)), wrapped_op_name=123) == (2, 3, 4)  # type: ignore[arg-type]
+    assert cast("Callable[..., EagerTensorProtocol]", td_op.infer_shape)(x=cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((5,))) == (5,)
+    assert cast("Callable[..., EagerTensorProtocol]", td_op.infer_shape)(x=cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 3, 4)), wrapped_op_name=None) == (2, 3, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", td_op.infer_shape)(x=cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 3, 4)), wrapped_op_name=123) == (2, 3, 4)
 
     class MockInnerOpSuccess:
         """Mock inner operation returning a valid shape."""
@@ -71,13 +77,13 @@ def test_time_distributed_full_coverage() -> None:
 
     with patch("ml_switcheroo_compiler.ops.nn.time_distributed.get_op") as mock_get_op:
         mock_get_op.return_value = MockInnerOpSuccess
-        assert td_op.infer_shape(x=DummyWithShape((2, 3, 4)), wrapped_op_name="MockSuccess") == (2, 3, 8)
+        assert cast("Callable[..., EagerTensorProtocol]", td_op.infer_shape)(x=cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 3, 4)), wrapped_op_name="MockSuccess") == (2, 3, 8)
 
         mock_get_op.return_value = MockInnerOpEmptyShape
-        assert td_op.infer_shape(x=DummyWithShape((2, 3, 4)), wrapped_op_name="MockEmpty") == (2, 3, 4)
+        assert cast("Callable[..., EagerTensorProtocol]", td_op.infer_shape)(x=cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 3, 4)), wrapped_op_name="MockEmpty") == (2, 3, 4)
 
         mock_get_op.side_effect = RuntimeError("Operation not found")
-        assert td_op.infer_shape(x=DummyWithShape((2, 3, 4)), wrapped_op_name="FailingOp") == (2, 3, 4)
+        assert cast("Callable[..., EagerTensorProtocol]", td_op.infer_shape)(x=cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 3, 4)), wrapped_op_name="FailingOp") == (2, 3, 4)
 
     t_in = Tensor(np.ones((2, 3, 4), dtype=np.float32), TensorConfig((2, 3, 4), "float32", "cpu"))
 

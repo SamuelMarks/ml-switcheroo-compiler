@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Callable, Union, cast
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
@@ -46,12 +47,15 @@ def _ragged_op(
     op = op_cls()
     out_shape = op.infer_shape(*args, **kwargs)
     tensor_inputs = [a for a in args if isinstance(a, Tensor)]
-    return _emit_linalg_node(
-        op_name,
-        tensor_inputs,
-        kwargs,
-        [tuple(out_shape)],
-        [getattr(args[0], "dtype", "float32") if args else "float32"],
+    return cast(
+        "Tensor | tuple[Tensor, ...]",
+        cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)(
+            op_name,
+            tensor_inputs,
+            kwargs,
+            [tuple(getattr(out_shape, "__iter__")())],
+            [getattr(args[0], "dtype", "float32") if args else "float32"],
+        ),
     )
 
 

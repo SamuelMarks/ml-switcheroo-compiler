@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -9,6 +10,11 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.dropout as dropout_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -39,14 +45,14 @@ def test_dropout_ops_full_coverage() -> None:
     t_in = Tensor(np.ones((2, 2), dtype=np.float32), TensorConfig((2, 2), "float32", "cpu"))
 
     dp_op = dropout_mod.Dropout()
-    assert dp_op.infer_shape(t_in) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", dp_op.infer_shape)(t_in) == (2, 2)
 
     alpha_op = dropout_mod.AlphaDropout()
-    assert alpha_op.infer_shape(t_in) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", alpha_op.infer_shape)(t_in) == (2, 2)
 
     act_op = dropout_mod.ActivityRegularization()
-    assert act_op.infer_shape(t_in) == (2, 2)
-    assert act_op.infer_shape((t_in, t_in)) == (t_in, t_in)
+    assert cast("Callable[..., EagerTensorProtocol]", act_op.infer_shape)(t_in) == (2, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", act_op.infer_shape)((t_in, t_in)) == (t_in, t_in)
 
     with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
         mock_inst = MagicMock()
@@ -58,16 +64,16 @@ def test_dropout_ops_full_coverage() -> None:
         assert dropout_mod.activity_regularization(t_in, l1=0.01, l2=0.02) is t_in
 
     dp1d_op = dropout_mod.Dropout1d()
-    assert dp1d_op.infer_shape(DummyWithShape((2, 4))) == (2, 4)
-    assert dp1d_op.infer_shape(DummyWithoutShape()) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", dp1d_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 4))) == (2, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", dp1d_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()) == ()
 
     dp2d_op = dropout_mod.Dropout2d()
-    assert dp2d_op.infer_shape(DummyWithShape((2, 4, 4))) == (2, 4, 4)
-    assert dp2d_op.infer_shape(DummyWithoutShape()) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", dp2d_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 4, 4))) == (2, 4, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", dp2d_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()) == ()
 
     dp3d_op = dropout_mod.Dropout3d()
-    assert dp3d_op.infer_shape(DummyWithShape((2, 4, 4, 4))) == (2, 4, 4, 4)
-    assert dp3d_op.infer_shape(DummyWithoutShape()) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", dp3d_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((2, 4, 4, 4))) == (2, 4, 4, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", dp3d_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()) == ()
 
     original_eager = config.eager_mode
     try:

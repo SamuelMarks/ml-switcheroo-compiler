@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Generator
+from typing import Union, cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRNode
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+AsyncResultType = Union[Tensor, IRNode, OpArgValue]
 
 
 class AsyncIOFuture:
@@ -26,14 +29,14 @@ class AsyncIOFuture:
         self,
         node: IRNode | None = None,
         tensor: Tensor | None = None,
-        asyncio_future: asyncio.Future[object] | None = None,
+        asyncio_future: asyncio.Future[AsyncResultType] | None = None,
     ) -> None:
         """Initialize AsyncIOFuture.
 
         Args:
             node (IRNode | None): Associated IRNode.
             tensor (Tensor | None): Associated Tensor.
-            asyncio_future (Optional[asyncio.Future[object]]): Underlying asyncio Future if available.
+            asyncio_future (Optional[asyncio.Future[AsyncResultType]]): Underlying asyncio Future if available.
         """
         self.node = node
         self.tensor = tensor
@@ -49,11 +52,11 @@ class AsyncIOFuture:
             return self._asyncio_future.done()
         return True
 
-    def result(self) -> object:
+    def result(self) -> AsyncResultType:
         """Retrieve the resolved result or underlying IR node.
 
         Returns:
-            object: Evaluated tensor, loaded data, or symbolic IR node.
+            AsyncResultType: Evaluated tensor, loaded data, or symbolic IR node.
         """
         if self._asyncio_future is not None and self._asyncio_future.done():
             return self._asyncio_future.result()
@@ -61,20 +64,20 @@ class AsyncIOFuture:
             return self.tensor
         return self.node
 
-    def __await__(self) -> Generator[object, None, object]:
+    def __await__(self) -> Generator[AsyncResultType, None, AsyncResultType]:
         """Make AsyncIOFuture awaitable in asyncio event loops.
 
         Returns:
-            Generator[object, None, object]: Awaitable generator.
+            Generator[AsyncResultType, None, AsyncResultType]: Awaitable generator.
         """
         if self._asyncio_future is not None:
             return self._asyncio_future.__await__()
 
-        async def _resolve() -> object:
+        async def _resolve() -> AsyncResultType:
             """Resolve future result asynchronously.
 
             Returns:
-                object: Evaluated result.
+                AsyncResultType: Evaluated result.
             """
             return self.result()
 
@@ -87,19 +90,19 @@ class NonblockingLoad(OpDef):
 
     op_name = "NonblockingLoad"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer shape of loaded tensor.
 
         Args:
-            *args (object): Positional arguments.
-            **kwargs (object): Keyword arguments including optional 'shape'.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments including optional 'shape'.
 
         Returns:
             tuple[int, ...]: Inferred output shape.
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
         if shape is not None and isinstance(shape, (list, tuple)):
-            return tuple(int(d) for d in shape)
+            return tuple(int(cast(int, d)) for d in shape)
         return ()
 
 
@@ -109,12 +112,12 @@ class NonblockingSave(OpDef):
 
     op_name = "NonblockingSave"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Infer shape of nonblocking save result (scalar empty tuple).
 
         Args:
-            *args (object): Positional arguments.
-            **kwargs (object): Keyword arguments.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
             tuple[int, ...]: Empty tuple indicating no tensor payload output.
@@ -126,7 +129,7 @@ def nonblocking_load(
     file_path: str,
     shape: tuple[int, ...] | None = None,
     dtype: str = "float32",
-    **kwargs: object,
+    **kwargs: OpArgValue,
 ) -> AsyncIOFuture:
     """Asynchronously load a tensor from disk without blocking the main compute thread.
 
@@ -137,7 +140,7 @@ def nonblocking_load(
         file_path (str): Path to target file on disk.
         shape (tuple[int, ...] | None): Optional expected shape of tensor.
         dtype (str): Expected data type string.
-        **kwargs (object): Additional format or storage options.
+        **kwargs: Additional format or storage options.
 
     Returns:
         AsyncIOFuture: Awaitable future resolving to the loaded Tensor or IRNode.
@@ -151,7 +154,7 @@ def nonblocking_load(
         try:
             loop = asyncio.get_running_loop()
             ctx = contextvars.copy_context()
-            fut: asyncio.Future[object] = loop.run_in_executor(None, ctx.run, _fallback_load, file_path)
+            fut: asyncio.Future[AsyncResultType] = loop.run_in_executor(None, ctx.run, _fallback_load, file_path)
             return AsyncIOFuture(asyncio_future=fut)
         except RuntimeError:
             loaded_data = _fallback_load(file_path)
@@ -170,8 +173,8 @@ def nonblocking_load(
 
 def nonblocking_save(
     file_path: str,
-    tensor: object,
-    **kwargs: object,
+    tensor: OpArgValue,
+    **kwargs: OpArgValue,
 ) -> AsyncIOFuture:
     """Asynchronously save a tensor to disk without blocking the execution pipeline.
 
@@ -180,8 +183,8 @@ def nonblocking_save(
 
     Args:
         file_path (str): Target save destination path.
-        tensor (object): Tensor or numerical array to serialize.
-        **kwargs (object): Additional serializer options.
+        tensor: Tensor or numerical array to serialize.
+        **kwargs: Additional serializer options.
 
     Returns:
         AsyncIOFuture: Awaitable future resolving upon completion or graph execution.
@@ -195,7 +198,7 @@ def nonblocking_save(
         try:
             loop = asyncio.get_running_loop()
             ctx = contextvars.copy_context()
-            fut: asyncio.Future[object] = loop.run_in_executor(None, ctx.run, save, file_path, tensor)
+            fut: asyncio.Future[AsyncResultType] = loop.run_in_executor(None, ctx.run, save, file_path, tensor)
             return AsyncIOFuture(asyncio_future=fut)
         except RuntimeError:
             save(file_path, tensor)

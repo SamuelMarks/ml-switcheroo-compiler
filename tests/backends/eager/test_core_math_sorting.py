@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -21,6 +21,9 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_sorting import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_math_sort_coverage() -> None:
     """Test 100% lines and branches of math_sort.
@@ -32,19 +35,19 @@ def test_math_sort_coverage() -> None:
     class SortBackend:
         """Mock backend with sort operations."""
 
-        def argsort(self, a: Any, axis: int = -1) -> str:
+        def argsort(self, a: EagerValue, axis: int = -1) -> str:
             """Mock argsort."""
             return f"argsort_{axis}"
 
-        def lexsort(self, *args: Any, **kwargs: Any) -> str:
+        def lexsort(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock lexsort."""
             return "lexsort_val"
 
-        def searchsorted(self, *args: Any, **kwargs: Any) -> str:
+        def searchsorted(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock searchsorted."""
             return "searchsorted_val"
 
-        def sort_complex(self, *args: Any, **kwargs: Any) -> str:
+        def sort_complex(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock sort_complex."""
             return "sort_complex_val"
 
@@ -73,7 +76,7 @@ def test_math_sorting_coverage() -> None:
     class ArgpartBackend:
         """Backend with argsort."""
 
-        def argsort(self, a: Any, axis: int = -1) -> str:
+        def argsort(self, a: EagerValue, axis: int = -1) -> str:
             """Mock argsort."""
             return f"argpartition_{axis}"
 
@@ -91,15 +94,15 @@ def test_math_sorting_coverage() -> None:
     class StatBackend:
         """Backend with median, percentile, quantile."""
 
-        def median(self, *args: Any, **kwargs: Any) -> str:
+        def median(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock median."""
             return "median_val"
 
-        def percentile(self, *args: Any, **kwargs: Any) -> str:
+        def percentile(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock percentile."""
             return "percentile_val"
 
-        def quantile(self, *args: Any, **kwargs: Any) -> str:
+        def quantile(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock quantile."""
             return "quantile_val"
 
@@ -113,7 +116,7 @@ def test_math_sorting_coverage() -> None:
     class PartitionBackend:
         """Backend with partition."""
 
-        def partition(self, *args: Any, **kwargs: Any) -> str:
+        def partition(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock partition."""
             return "partition_val"
 
@@ -121,7 +124,7 @@ def test_math_sorting_coverage() -> None:
 
     # Case B: backend lacks partition -> fallback to np.partition
     part_res = _np_partition(EmptyBackend(), np.array([3, 1, 2]), 1)
-    assert part_res[1] == 2
+    assert cast("EagerTensorProtocol", getattr(part_res, "__getitem__")(1)) == 2
 
     # Registry
     assert global_eager_registry.get("Argpartition") is not None

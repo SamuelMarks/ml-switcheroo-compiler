@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,6 +27,11 @@ from ml_switcheroo_compiler.core.device import (
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ops.device import DeviceContextOp, DeviceTransferOp, device_transfer, get_peak_memory, synchronize
 from ml_switcheroo_compiler.ops.device import eval as ops_eval
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_exporter() -> None:
@@ -156,10 +162,12 @@ def test_ops_device_eval() -> None:
         del mock_backend.eval
 
         class Dummy:
+            """Test class Dummy."""
+
             data = "dummy_data"
 
         d = Dummy()
-        ops_eval(d)
+        cast("Callable[..., EagerTensorProtocol]", ops_eval)(d)
         assert d.data == "dummy_data"
 
 
@@ -194,6 +202,8 @@ def test_ops_device_infer_shapes() -> None:
     """Test ops.device infer_shape methods."""
 
     class Dummy:
+        """Test class Dummy."""
+
         shape = (1, 2)
 
     assert DeviceContextOp().infer_shape(Dummy()) == (1, 2)
@@ -204,13 +214,15 @@ def test_ops_device_device_transfer() -> None:
     """Test ops.device device_transfer dispatch."""
 
     class DummyTensor:
+        """Test class DummyTensor."""
+
         shape = (1, 2)
         dtype = "float32"
 
     with patch("ml_switcheroo_compiler.ops.device._emit_shape_node") as mock_emit:
         mock_emit.return_value = "emitted"
         t = DummyTensor()
-        assert device_transfer(t, "cuda:0") == "emitted"
+        assert cast("Callable[..., EagerTensorProtocol]", device_transfer)(t, "cuda:0") == "emitted"
         mock_emit.assert_called_once_with(
             "DeviceTransfer",
             [t],

@@ -1,7 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
 
-from typing import Optional
+from typing import Callable, Optional, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 try:
     import keras.ops as kops
@@ -16,7 +17,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     """Create a tensor of zeros.
 
     Args:
@@ -29,7 +30,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     return generic_zeros(kops, shape)
 
 
-def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
+def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
     """Create a tensor from data.
 
     Args:
@@ -40,10 +41,10 @@ def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
     Returns:
         object: The array tensor.
     """
-    return generic_array(kops, data, dtype)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(kops, data, dtype))
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data: EagerValue) -> EagerValue:
     """Convert data to an array.
 
     Args:
@@ -55,11 +56,11 @@ def asarray(cls: type, data: object) -> object:
     """
     del cls
     if hasattr(kops, "asarray"):
-        return generic_asarray(kops, data)
-    return generic_array(kops, data)
+        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(kops, data))
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(kops, data))
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data: EagerValue) -> float:
     """Get scalar item from tensor.
 
     Args:
@@ -69,4 +70,4 @@ def item(cls: type, data: object) -> float:
     Returns:
         float: The scalar value.
     """
-    return generic_item(kops, data)
+    return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(kops, data))

@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 import ml_switcheroo_compiler.core.assertions as asst_mod
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_core_assertions_exhaustive() -> None:
@@ -28,29 +35,42 @@ def test_core_assertions_exhaustive() -> None:
 
     # 3. _evaluate_single_condition with numpy() or all()
     class WithNumpy:
+        """Test class WithNumpy."""
+
         def numpy(self) -> list[int]:
+            """Test function numpy."""
             return [1, 1]
 
     class WithAll:
+        """Test class WithAll."""
+
         def all(self) -> bool:
+            """Test function all."""
             return True
 
     class WithAllFalse:
+        """Test class WithAllFalse."""
+
         def all(self) -> bool:
+            """Test function all."""
             return False
 
-    assert asst_mod._evaluate_single_condition(WithNumpy()) is True
-    assert asst_mod._evaluate_single_condition(WithAll()) is True
-    assert asst_mod._evaluate_single_condition(WithAllFalse()) is False
+    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", WithNumpy)())) is True
+    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", WithAll)())) is True
+    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", WithAllFalse)())) is False
 
     class ValueErrorBool:
+        """Test class ValueErrorBool."""
+
         def __bool__(self) -> bool:
+            """Test function __bool__."""
             raise ValueError("Boolean value ambiguous")
 
-        def __iter__(self):
-            return iter([True, True])
+        def __iter__(self) -> EagerValue:
+            """Test function __iter__."""
+            return cast("EagerTensorProtocol", iter([True, True]))
 
-    assert asst_mod._evaluate_single_condition(ValueErrorBool()) is True
+    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", ValueErrorBool)())) is True
 
     # 4. Failure in evaluate_assertions raises AssertionError
     asst_mod.record_assertion(False, "Failed assertion 1")

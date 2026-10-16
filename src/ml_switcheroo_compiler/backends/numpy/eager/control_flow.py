@@ -1,13 +1,17 @@
-# ruff: noqa: E402, E501, F403
 """Control flow ops."""
+
+from __future__ import annotations
+
+from types import ModuleType
+from typing import Callable, cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("AssociativeScan")
-def _np_associative_scan(backend_module, *args, **kwargs):
+def _np_associative_scan(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_associative_scan operation.
 
     Args:
@@ -20,28 +24,28 @@ def _np_associative_scan(backend_module, *args, **kwargs):
     """
     if len(args) < 2:
         return args[0]
-    fn: np.ndarray = args[0]
-    elems: list = args[1]
-    axis: int = kwargs.get("axis", 0)
+    fn = args[0]
+    elems: list[EagerValue] = cast(list[EagerValue], args[1])
+    axis: int = cast(int, kwargs.get("axis", 0))
 
-    elems_arr: np.ndarray = np.asarray(elems)
-    out: np.ndarray = np.empty_like(elems_arr)
+    elems_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(elems)
+    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.empty_like(elems_arr)
 
-    elems_arr: np.ndarray = np.moveaxis(elems_arr, axis, 0)
-    out: np.ndarray = np.moveaxis(out, axis, 0)
+    elems_arr = np.moveaxis(elems_arr, axis, 0)
+    out = np.moveaxis(out, axis, 0)
 
-    acc: np.ndarray = elems_arr[0]
+    acc: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = elems_arr[0]
     out[0] = acc
     for i in range(1, elems_arr.shape[0]):
-        acc: np.ndarray = fn(acc, elems_arr[i])
+        acc = cast("Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", fn)(acc, elems_arr[i])
         out[i] = acc
 
-    out: np.ndarray = np.moveaxis(out, 0, axis)
+    out = np.moveaxis(out, 0, axis)
     return out
 
 
 @numpy_eager_registry.register("StopGradient")
-def _stop_gradient(backend_module, x, *args, **kwargs):
+def _stop_gradient(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _stop_gradient operation.
 
     Args:
@@ -53,4 +57,4 @@ def _stop_gradient(backend_module, x, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.array(x)
+    return cast(EagerValue, backend_module.array(x))

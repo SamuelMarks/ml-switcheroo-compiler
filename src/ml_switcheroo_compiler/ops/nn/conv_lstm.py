@@ -1,9 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """RNN operations."""
 
-from typing import Any, Optional  # noqa: F401
+from typing import (
+    Optional,  # noqa: F401
+    cast,
+)
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3, MAGIC_VAL_4, MAGIC_VAL_5
+from ml_switcheroo_compiler.core.constants import (
+    CONV_2D_TENSOR_RANK,
+    CONV_3D_TENSOR_RANK,
+    MIN_CONV_RANK,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.nn.conv import (
@@ -38,11 +44,11 @@ def conv_lstm_cell(
         ValueError: An exception.
     """
     naxis = len(inputs.shape)
-    if naxis == MAGIC_VAL_3:
+    if naxis == MIN_CONV_RANK:
         return conv1d_lstm_cell(inputs, state, weights, config)
-    elif naxis == MAGIC_VAL_4:
+    elif naxis == CONV_2D_TENSOR_RANK:
         return conv2d_lstm_cell(inputs, state, weights, config)
-    elif naxis == MAGIC_VAL_5:
+    elif naxis == CONV_3D_TENSOR_RANK:
         return conv3d_lstm_cell(inputs, state, weights, config)
     else:
         raise ValueError(f"Unsupported input dimension for conv_lstm_cell: {naxis}. Expected 3, 4, or 5.")
@@ -73,7 +79,7 @@ def _apply_conv_lstm_gates(
         gates = add(gates, weights.bias)
 
     axis_val = -1 if data_format == "channels_last" else 1
-    i, f, c, o = split(gates, 4, axis=axis_val)
+    i, f, c, o = getattr(split(gates, 4, axis=axis_val), "__iter__")()
 
     i = _sigmoid(i)
     f = _sigmoid(f)
@@ -121,7 +127,7 @@ def conv1d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(cast("Tensor", x_conv), cast("Tensor", h_conv), state, weights, conf.data_format)
 
 
 def conv2d_lstm_cell(
@@ -159,7 +165,7 @@ def conv2d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(cast("Tensor", x_conv), cast("Tensor", h_conv), state, weights, conf.data_format)
 
 
 def conv3d_lstm_cell(
@@ -197,10 +203,10 @@ def conv3d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(cast("Tensor", x_conv), cast("Tensor", h_conv), state, weights, conf.data_format)
 
 
-def _sigmoid(x):
+def _sigmoid(x: Tensor) -> Tensor:
     """Sigmoid.
 
     Args:

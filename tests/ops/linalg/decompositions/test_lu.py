@@ -1,5 +1,10 @@
+"""Tests for test_lu."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -8,15 +13,23 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuPivotsToPermutation, lu_factor, lu_pivots_to_permutation
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_lu_dummy() -> None:
+    """Test function test_lu_dummy."""
 
     class MockTensor:
+        """Test class MockTensor."""
+
         shape = (2, 3)
 
     t = MockTensor()
-    assert LuPivotsToPermutation().infer_shape(t, permutation_size=4) == (2, 4)
-    assert LuPivotsToPermutation().infer_shape(t) == (2, 0)
+    assert cast("Callable[..., EagerTensorProtocol]", LuPivotsToPermutation)().infer_shape(t, permutation_size=4) == (2, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", LuPivotsToPermutation)().infer_shape(t) == (2, 0)
     assert LuPivotsToPermutation().infer_shape() == ()
     assert LuPivotsToPermutation().infer_shape(None) == ()
 
@@ -24,16 +37,19 @@ def test_lu_dummy() -> None:
 
     # 1D tensor (rank < 2) returns (shape, shape)
     class Mock1DTensor:
+        """Test class Mock1DTensor."""
+
         shape = (5,)
 
-    assert LuFactor().infer_shape(Mock1DTensor()) == ((5,), (5,))
+    assert cast("Callable[..., EagerTensorProtocol]", LuFactor)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Mock1DTensor)()) == ((5,), (5,))
 
     # kwargs 'a' and 'input'
-    assert LuFactor().infer_shape(a=MockTensor()) == ((2, 3), (2,))
-    assert LuFactor().infer_shape(input=MockTensor()) == ((2, 3), (2,))
+    assert cast("Callable[..., EagerTensorProtocol]", LuFactor)().infer_shape(a=cast("Callable[..., EagerTensorProtocol]", MockTensor)()) == ((2, 3), (2,))
+    assert cast("Callable[..., EagerTensorProtocol]", LuFactor)().infer_shape(input=cast("Callable[..., EagerTensorProtocol]", MockTensor)()) == ((2, 3), (2,))
 
 
 def test_lu_factor() -> None:
+    """Test function test_lu_factor."""
     input_data = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "float32", "cpu"))
     config.eager_mode = True
@@ -45,6 +61,7 @@ def test_lu_factor() -> None:
 
 
 def test_lu_pivots_to_permutation() -> None:
+    """Test function test_lu_pivots_to_permutation."""
     input_data = np.array([0, 1], dtype=np.int32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "int32", "cpu"))
     config.eager_mode = True
@@ -55,6 +72,7 @@ def test_lu_pivots_to_permutation() -> None:
 
 
 def test_lu_factor_trace() -> None:
+    """Test function test_lu_factor_trace."""
     from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuFactor
 
     assert LuFactor().infer_shape() == ()
@@ -65,17 +83,18 @@ def test_lu_factor_trace() -> None:
     with patch.object(lu_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_lu", "mock_piv")
         (res1, res2) = lu_factor(t)
-        assert res1 == "mock_lu"
-        assert res2 == "mock_piv"
+        assert cast("EagerTensorProtocol", res1) == cast("EagerTensorProtocol", "mock_lu")
+        assert cast("EagerTensorProtocol", res2) == cast("EagerTensorProtocol", "mock_piv")
 
         # Non-tuple fallback branch
         mock_emit.return_value = "single_res"
         (res3, res4) = lu_factor(t)
-        assert res3 == "single_res"
-        assert res4 == "single_res"
+        assert cast("EagerTensorProtocol", res3) == cast("EagerTensorProtocol", "single_res")
+        assert cast("EagerTensorProtocol", res4) == cast("EagerTensorProtocol", "single_res")
 
 
 def test_lu_pivots_trace() -> None:
+    """Test function test_lu_pivots_trace."""
     input_data = np.array([0, 1], dtype=np.int32)
     t = Tensor(input_data, TensorConfig(input_data.shape, "int32", "cpu"))
     config.eager_mode = False
@@ -83,9 +102,9 @@ def test_lu_pivots_trace() -> None:
     with patch.object(lu_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = "mock_perm"
         res = lu_pivots_to_permutation(t, 2)
-        assert res == "mock_perm"
+        assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "mock_perm")
 
         # Tuple branch
         mock_emit.return_value = ("tuple_perm",)
         res_tuple = lu_pivots_to_permutation(t, 2)
-        assert res_tuple == "tuple_perm"
+        assert cast("EagerTensorProtocol", res_tuple) == cast("EagerTensorProtocol", "tuple_perm")

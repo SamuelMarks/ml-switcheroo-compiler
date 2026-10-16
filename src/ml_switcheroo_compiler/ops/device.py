@@ -1,18 +1,17 @@
-"""Module device.py."""
+"""Device and system operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import cast
 
-"""Device and system operations."""
-
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def eval(*args) -> None:
+def eval(*args: EagerValue) -> None:
     """Force the evaluation of the given tensors.
 
     Args:
@@ -48,7 +47,7 @@ def get_peak_memory() -> int:
 
     backend = get_active_backend()
     if hasattr(backend, "get_peak_memory"):
-        return backend.get_peak_memory()
+        return cast(int, backend.get_peak_memory())
     return 0
 
 
@@ -63,7 +62,7 @@ __all__ = [
 class DeviceContextOp(OpDef):
     """Operation definition for setting or altering a generic device context."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -80,7 +79,7 @@ class DeviceContextOp(OpDef):
 class DeviceTransferOp(OpDef):
     """Operation definition for migrating data between logical devices (e.g., host-to-device)."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -93,7 +92,7 @@ class DeviceTransferOp(OpDef):
         return getattr(args[0], "shape", ())
 
 
-def device_transfer(input: Tensor, target_device: str, stream=None):
+def device_transfer(input: Tensor, target_device: str, stream: EagerValue = None) -> EagerValue:
     """Simulate data migration between devices for a tensor.
 
     Args:

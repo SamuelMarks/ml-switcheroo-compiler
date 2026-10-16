@@ -1,6 +1,9 @@
 # ruff: noqa: E501
 """Tests for upsample operations and interpolation routines."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -18,6 +21,11 @@ from ml_switcheroo_compiler.ops.nn.upsample_ops import (
     upsample_bilinear,
     upsample_nearest,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_upsample_coverage() -> None:
@@ -70,27 +78,27 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
         class DummyBackend:
             """Dummy backend for upsample testing."""
 
-            def execute_op(self, op: str, *args: object, **kwargs: object) -> np.ndarray:
+            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Execute op return dummy array."""
                 return np.zeros((1, 1, 4, 4), dtype=np.float32)
 
-            def array(self, x: object) -> np.ndarray:
+            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Convert array."""
                 return np.asarray(x)
 
         mock_backend.return_value = DummyBackend()
 
         ps_out = pixel_shuffle(t_2d, 2)
-        assert ps_out.shape == (1, 1, 4, 4)
+        assert cast("EagerTensorProtocol", getattr(ps_out, "shape")) == (1, 1, 4, 4)
 
         un_out = upsample_nearest(t_1d, size=(4,))
-        assert un_out.shape == (1, 1, 4, 4)
+        assert cast("EagerTensorProtocol", getattr(un_out, "shape")) == (1, 1, 4, 4)
 
         ub_out = upsample_bilinear(t_1d, size=(4,))
-        assert ub_out.shape == (1, 1, 4, 4)
+        assert cast("EagerTensorProtocol", getattr(ub_out, "shape")) == (1, 1, 4, 4)
 
         uc_out = upsample_bicubic(t_1d, size=(4,))
-        assert uc_out.shape == (1, 1, 4, 4)
+        assert cast("EagerTensorProtocol", getattr(uc_out, "shape")) == (1, 1, 4, 4)
 
     # 2. Non-eager (tracing) mode with mocked _emit_shape_node
     config.eager_mode = False
@@ -129,7 +137,7 @@ def test_upsample_brute() -> None:
 
         shape = (1, 1, 1)
 
-    _resolve_scale_factor(DummyTensorDynamic(), 2.0, 2)
+    cast("Callable[..., EagerTensorProtocol]", _resolve_scale_factor)(cast("Callable[..., EagerTensorProtocol]", DummyTensorDynamic)(), 2.0, 2)
 
     _upsample_resolve_size(t_2d, 8, None)
     _upsample_resolve_size(t_2d, (8, 8), None)
@@ -153,11 +161,11 @@ def test_upsample_brute() -> None:
         class DummyBackend1D:
             """Dummy backend for 1D upsampling."""
 
-            def execute_op(self, op: str, *args: object, **kwargs: object) -> np.ndarray:
+            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Execute op return dummy array."""
                 return np.zeros((2, 3, 8), dtype=np.float32)
 
-            def array(self, x: object) -> np.ndarray:
+            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Convert array."""
                 return np.asarray(x)
 

@@ -1,10 +1,13 @@
-# ruff: noqa: E402, E501, F403
 """Core abstractions and logic definitions for kernels.py."""
 
 from dataclasses import dataclass
-from typing import Any, Optional  # noqa: F401
+from typing import (
+    Callable,
+    Optional,  # noqa: F401
+    cast,
+)
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -18,7 +21,7 @@ class CudaKernelOp(OpDef):
 
     op_name = "CudaKernel"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
@@ -37,7 +40,7 @@ class MetalKernelOp(OpDef):
 
     op_name = "MetalKernel"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape for MetalKernel.
 
         Args:
@@ -56,7 +59,7 @@ class PrecompiledCudaKernelOp(OpDef):
 
     op_name = "PrecompiledCudaKernel"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
@@ -113,7 +116,7 @@ def _eager_custom_kernel(
         name=ctx.launch_config.name,
     )
     device = inputs[0].device if inputs else config.default_device
-    return [Tensor(d, TensorConfig(s, dt, device)) for d, s, dt in zip(data, ctx.output_shapes, ctx.output_dtypes)]
+    return [Tensor(d, TensorConfig(s, dt, device)) for d, s, dt in zip(getattr(data, "__iter__")(), ctx.output_shapes, ctx.output_dtypes)]
 
 
 def cuda_kernel(
@@ -149,7 +152,7 @@ def cuda_kernel(
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
-        outputs.append(_emit_shape_node("CudaKernel", inputs, attrs, shape, dtype))
+        outputs.append(cast("Callable[..., Tensor]", _emit_shape_node)("CudaKernel", inputs, attrs, shape, dtype))
     return outputs
 
 
@@ -186,7 +189,7 @@ def metal_kernel(
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
-        outputs.append(_emit_shape_node("MetalKernel", inputs, attrs, shape, dtype))
+        outputs.append(cast("Callable[..., Tensor]", _emit_shape_node)("MetalKernel", inputs, attrs, shape, dtype))
     return outputs
 
 
@@ -211,7 +214,7 @@ def precompiled_cuda_kernel(
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext("PrecompiledCudaKernel", binary, output_shapes, output_dtypes, conf))
+        return _eager_custom_kernel(inputs, KernelContext("PrecompiledCudaKernel", cast("str", binary), output_shapes, output_dtypes, conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
@@ -223,5 +226,5 @@ def precompiled_cuda_kernel(
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
-        outputs.append(_emit_shape_node("PrecompiledCudaKernel", inputs, attrs, shape, dtype))
+        outputs.append(cast("Callable[..., Tensor]", _emit_shape_node)("PrecompiledCudaKernel", inputs, attrs, shape, dtype))
     return outputs

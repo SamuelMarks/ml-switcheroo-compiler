@@ -1,11 +1,11 @@
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.transforms.passes.quantization import QATFakeQuantizePass, QuantizationConfig
+"""Tests for test_quantization."""
 
-"""Tests for quantization pass."""
+from __future__ import annotations
 
 from ml_switcheroo_compiler.core.dataset import Dataset
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.quantization import PTQPass
+from ml_switcheroo_compiler.transforms.passes.quantization import IntegerQuantizationLoweringPass, PTQCalibrationPass, PTQPass, QATFakeQuantizePass, QuantizationConfig
 
 
 def test_ptq_pass() -> None:
@@ -48,10 +48,8 @@ def test_ptq_pass_no_op() -> None:
     assert "ptq_target_dtype" not in optimized_graph.nodes["add"].attributes
 
 
-from ml_switcheroo_compiler.transforms.passes.quantization import IntegerQuantizationLoweringPass, PTQCalibrationPass
-
-
 def test_ptq_calibration_pass() -> None:
+    """Test function test_ptq_calibration_pass."""
     config = QuantizationConfig(target_dtype=DType.Int8, symmetric=False)
     dataset = Dataset()
 
@@ -76,6 +74,7 @@ def test_ptq_calibration_pass() -> None:
 
 
 def test_ptq_calibration_no_op() -> None:
+    """Test function test_ptq_calibration_no_op."""
     config = QuantizationConfig(target_dtype=DType.Int8)
     dataset = Dataset()
     nodes = {
@@ -88,6 +87,7 @@ def test_ptq_calibration_no_op() -> None:
 
 
 def test_qat_fake_quantize_pass() -> None:
+    """Test function test_qat_fake_quantize_pass."""
     config = QuantizationConfig(target_dtype=DType.Int8, symmetric=True)
 
     nodes = {
@@ -106,6 +106,7 @@ def test_qat_fake_quantize_pass() -> None:
 
 
 def test_qat_fake_quantize_no_op() -> None:
+    """Test function test_qat_fake_quantize_no_op."""
     config = QuantizationConfig(target_dtype=DType.Int8, symmetric=True)
     nodes = {
         "input": IRNode(id="input", op_type="Input", inputs=[]),
@@ -117,6 +118,7 @@ def test_qat_fake_quantize_no_op() -> None:
 
 
 def test_integer_quantization_lowering_pass() -> None:
+    """Test function test_integer_quantization_lowering_pass."""
     config = QuantizationConfig(target_dtype=DType.Int8, symmetric=False)
 
     nodes = {
@@ -137,6 +139,7 @@ def test_integer_quantization_lowering_pass() -> None:
 
 
 def test_integer_quantization_lowering_no_op() -> None:
+    """Test function test_integer_quantization_lowering_no_op."""
     config = QuantizationConfig(target_dtype=DType.Int8, symmetric=True)
     nodes = {
         "input": IRNode(id="input", op_type="Input", inputs=[]),
@@ -147,7 +150,8 @@ def test_integer_quantization_lowering_no_op() -> None:
     assert pass_obj(graph) is False
 
 
-def test_qat_pass_no_new_inputs():
+def test_qat_pass_no_new_inputs() -> None:
+    """Test function test_qat_pass_no_new_inputs."""
     g = IRGraph()
     n3 = IRNode(id="n3", op_type="MatMul", inputs=[])
     g.nodes["n3"] = n3
@@ -155,6 +159,7 @@ def test_qat_pass_no_new_inputs():
 
 
 def test_integer_quantization_drops_fake_quant() -> None:
+    """Test function test_integer_quantization_drops_fake_quant."""
     config = QuantizationConfig(target_dtype=DType.Int8, symmetric=False)
 
     nodes = {
@@ -176,8 +181,9 @@ def test_integer_quantization_drops_fake_quant() -> None:
     assert graph.nodes["matmul"].inputs == ["input", "input"]
 
 
-def test_quantization_missing_coverage():
+def test_quantization_missing_coverage() -> None:
     # Hit os.path.exists == False for all passes
+    """Test function test_quantization_missing_coverage."""
     from unittest.mock import MagicMock, mock_open, patch
 
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode

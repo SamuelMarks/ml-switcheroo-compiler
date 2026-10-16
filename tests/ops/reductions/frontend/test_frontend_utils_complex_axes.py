@@ -1,3 +1,9 @@
+"""Tests for test_frontend_utils_complex_axes."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
@@ -5,11 +11,19 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_utils import ReduceWindow, reduce_window
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_frontend_utils_extras():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_frontend_utils_extras() -> None:
+    """Test function test_frontend_utils_extras."""
     assert ReduceWindow().infer_shape() == ()
 
     class DummyConfig:
+        """Test class DummyConfig."""
+
         window_dimensions = (1, 1)
         window_strides = (1, 1)
         padding = "VALID"
@@ -17,10 +31,14 @@ def test_frontend_utils_extras():
         window_dilation = (1, 1)
 
     class MockData:
+        """Test class MockData."""
+
         id = "t1"
 
     class MockTensor(Tensor):
-        data = MockData()
+        """Test class MockTensor."""
+
+        data = cast("EagerTensorProtocol", MockData())
         shape = (1, 2)
         dtype = DType("float32")
         device = Device("cpu")
@@ -35,10 +53,10 @@ def test_frontend_utils_extras():
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    state.global_tracing_state.add_node = lambda node: None
+    setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        reduce_window(t, 0.0, "add", DummyConfig())
+        cast("Callable[..., EagerTensorProtocol]", reduce_window)(t, 0.0, "add", cast("Callable[..., EagerTensorProtocol]", DummyConfig)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        state.global_tracing_state.add_node = orig_add_node
+        setattr(state.global_tracing_state, "add_node", orig_add_node)

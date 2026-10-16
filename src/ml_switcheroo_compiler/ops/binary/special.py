@@ -1,105 +1,99 @@
-# ruff: noqa: E402, E501, F403
-"""Define special binary operations for the ml_switcheroo_compiler framework, including element-.
+"""Define special binary operations for the ml_switcheroo_compiler framework, including element-wise trigonometric, division, and comparison operations."""
 
-wise trigonometric, division, and comparison operations
-"""
+from __future__ import annotations
+
+from typing import cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
+
+
+def _infer_broadcast_shape(shapes: tuple[OpArgValue, ...]) -> tuple[int, ...]:
+    """Infer broadcasted shape across input shapes or objects.
+
+    Args:
+        shapes: Tuple of input shape tuples or tensor-like objects.
+
+    Returns:
+        tuple[int, ...]: Broadcasted output shape tuple.
+    """
+    if all(isinstance(s, tuple) for s in shapes):
+        return _bs(*cast("tuple[tuple[int, ...], ...]", shapes))
+
+    return cast("tuple[int, ...]", getattr(shapes[0], "shape", shapes[0]))
 
 
 @register_op("Atan2")
 class Atan2(OpDef):
     """Provide an operation class for computing the element-wise arc tangent of x/y."""
 
-    def infer_shape(self, *shapes, **kwargs):
-        """Evaluate infer_shape operation.
-
-        Args:
-        *shapes (Any): Positional args.
-        **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        """Infer the output shape of the operation.
+    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer the output shape of the Atan2 operation.
 
         Args:
             *shapes: The input shapes.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            The computed shape or evaluation result.
+            tuple[int, ...]: The broadcasted output shape.
         """
-        if all(isinstance(s, tuple) for s in shapes):
-            return _bs(*shapes)
-        return shapes[0] if shapes else ()
+        del kwargs
+        return _infer_broadcast_shape(shapes)
 
 
 @register_op("Divmod")
 class Divmod(OpDef):
     """Provide an operation class for computing element-wise quotient and remainder."""
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: OpArgValue, **kwargs: OpArgValue) -> Tensor:
         """Call Divmod.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            Tensor: Tuple of (quotient, remainder) tensors.
         """
         if config.eager_mode:
-            return EagerEvaluator.evaluate("Divmod", *args, **kwargs)
+            return cast(Tensor, EagerEvaluator.evaluate("Divmod", *args, **kwargs))
 
         from ml_switcheroo_compiler.ops.binary import floor_divide, remainder
 
-        return (floor_divide(*args, **kwargs), remainder(*args, **kwargs))
+        return cast(Tensor, (floor_divide(*args, **kwargs), remainder(*args, **kwargs)))
 
-    def infer_shape(self, *shapes, **kwargs):
-        """Evaluate infer_shape operation.
-
-        Args:
-            *shapes (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        """Infer the output shape of the operation.
+    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer the output shape of the Divmod operation.
 
         Args:
             *shapes: The input shapes.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            The computed shape or evaluation result.
+            tuple[int, ...]: The broadcasted output shape.
         """
-        if all(isinstance(s, tuple) for s in shapes):
-            return _bs(*shapes)
-        return shapes[0] if shapes else ()
+        del kwargs
+        return _infer_broadcast_shape(shapes)
 
 
 @register_op("Allclose")
 class Allclose(OpDef):
-    """Provide an operation class for checking if two arrays are element-wise equal within a.
+    """Provide an operation class for checking if two arrays are element-wise equal within a tolerance."""
 
-    tolerance
-    """
-
-    def infer_shape(self, *shapes, **kwargs):
+    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
         """Evaluate infer_shape operation.
 
         Args:
-            *shapes (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *shapes: Positional args.
+            **kwargs: Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Scalar empty shape tuple.
         """
+        del shapes, kwargs
         return ()
 
 
@@ -107,25 +101,15 @@ class Allclose(OpDef):
 class Isclose(OpDef):
     """Provide an operation class for checking element-wise equality within a tolerance."""
 
-    def infer_shape(self, *shapes, **kwargs):
-        """Evaluate infer_shape operation.
-
-        Args:
-            *shapes (Any): Positional args.
-            **kwargs (Any): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        """Infer the output shape of the operation.
+    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+        """Infer the output shape of the Isclose operation.
 
         Args:
             *shapes: The input shapes.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            The computed shape or evaluation result.
+            tuple[int, ...]: The broadcasted output shape.
         """
-        if all(isinstance(s, tuple) for s in shapes):
-            return _bs(*shapes)
-        return shapes[0] if shapes else ()
+        del kwargs
+        return _infer_broadcast_shape(shapes)

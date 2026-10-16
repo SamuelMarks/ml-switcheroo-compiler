@@ -1,22 +1,29 @@
 """Validation script for Rules 4 and 5."""
 
+from __future__ import annotations
+
+import argparse
 import glob
 import sys
 
 import yaml
 
 
-def validate_n_to_m() -> list[str]:
+def validate_n_to_m(snapshot_dir: str | None = None) -> list[str]:
     """Validate Rule 4 (N-to-M utility rule).
+
+    Args:
+        snapshot_dir (str | None): Optional path to snapshot directory.
 
     Returns:
         list[str]: A list of error messages describing operations that violate Rule 4.
     """
+    del snapshot_dir
     # Gather all operations registered across all mappings.yaml
     op_counts: dict[str, list[str]] = {}
     backend_maps: list[str] = glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True)
     for bp in backend_maps:
-        with open(bp) as f:
+        with open(bp, encoding="utf-8") as f:
             data = yaml.safe_load(f)
             be: str = data.get("backend_name", "")
             for op, spec in data.get("operations", {}).items():
@@ -40,7 +47,11 @@ def main() -> int:
     Returns:
         int: Exit code (0 for success, 1 for failure).
     """
-    errors: list[str] = validate_n_to_m()
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(description="Validate N-to-M universal utility rule.")
+    parser.add_argument("--snapshot-dir", type=str, default=None, help="Path to snapshot directory.")
+    args, _ = parser.parse_known_args()
+
+    errors: list[str] = validate_n_to_m(snapshot_dir=args.snapshot_dir)
     if errors:
         for err in errors:
             print(f"ERROR: {err}", file=sys.stderr)

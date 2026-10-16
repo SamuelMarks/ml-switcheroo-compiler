@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_random_sampling import (
     _np_gumbel,
@@ -11,6 +11,9 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_random_sampling im
     _pshuffle,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_math_random_sampling_coverage() -> None:
@@ -25,7 +28,7 @@ def test_math_random_sampling_coverage() -> None:
     class LaxObj:
         """Mock lax container."""
 
-        def pshuffle(self, *args: Any, **kwargs: Any) -> str:
+        def pshuffle(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock pshuffle."""
             return "pshuffle_val"
 
@@ -50,7 +53,7 @@ def test_math_random_sampling_coverage() -> None:
     class GumbelBackend:
         """Backend with gumbel."""
 
-        def gumbel(self, *args: Any, **kwargs: Any) -> str:
+        def gumbel(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock gumbel."""
             return "gumbel_val"
 
@@ -58,14 +61,14 @@ def test_math_random_sampling_coverage() -> None:
 
     # Case B: backend lacks gumbel -> fallback to np.random.gumbel
     g_res = _np_gumbel(EmptyBackend(), 0.0, 1.0, size=(2, 2))
-    assert g_res.shape == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(g_res, "shape")) == (2, 2)
 
     # 3. _np_rnguniform
     # Case A: backend has rnguniform
     class RngUniformBackend:
         """Backend with rnguniform."""
 
-        def rnguniform(self, *args: Any, **kwargs: Any) -> str:
+        def rnguniform(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock rnguniform."""
             return "rnguniform_val"
 
@@ -73,14 +76,14 @@ def test_math_random_sampling_coverage() -> None:
 
     # Case B: backend lacks rnguniform -> fallback to np.random.uniform
     u_res = _np_rnguniform(EmptyBackend(), 0.0, 1.0, size=(3,))
-    assert u_res.shape == (3,)
+    assert cast("EagerTensorProtocol", getattr(u_res, "shape")) == (3,)
 
     # 4. _np_wald
     # Case A: backend has wald
     class WaldBackend:
         """Backend with wald."""
 
-        def wald(self, *args: Any, **kwargs: Any) -> str:
+        def wald(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock wald."""
             return "wald_val"
 
@@ -88,7 +91,7 @@ def test_math_random_sampling_coverage() -> None:
 
     # Case B: backend lacks wald -> fallback to np.random.wald
     w_res = _np_wald(EmptyBackend(), 1.0, 1.0, size=(2,))
-    assert w_res.shape == (2,)
+    assert cast("EagerTensorProtocol", getattr(w_res, "shape")) == (2,)
 
     # Registry verification
     assert global_eager_registry.get("Pshuffle") is not None

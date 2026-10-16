@@ -1,5 +1,9 @@
 """Tests for scaled dot product attention in eager and tracing modes."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
@@ -7,8 +11,14 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention, scaled_dot_product_attention
 from ml_switcheroo_compiler.tracing.tracer import TracerTape
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_scaled_dot_product_attention_eager_singleton():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_scaled_dot_product_attention_eager_singleton() -> None:
+    """Test function test_scaled_dot_product_attention_eager_singleton."""
     q = Tensor(np.array([[[1.0]]]), TensorConfig((1, 1, 1), "float32", "cpu"))
     k = Tensor(np.array([[[1.0]]]), TensorConfig((1, 1, 1), "float32", "cpu"))
     v = Tensor(np.array([[[2.0]]]), TensorConfig((1, 1, 1), "float32", "cpu"))
@@ -19,7 +29,8 @@ def test_scaled_dot_product_attention_eager_singleton():
     assert isinstance(out, Tensor)
 
 
-def test_scaled_dot_product_attention_trace():
+def test_scaled_dot_product_attention_trace() -> None:
+    """Test function test_scaled_dot_product_attention_trace."""
     q = Tensor(np.array([[[1.0]]]), TensorConfig((1, 1, 1), "float32", "cpu"))
     k = Tensor(np.array([[[1.0]]]), TensorConfig((1, 1, 1), "float32", "cpu"))
     v = Tensor(np.array([[[2.0]]]), TensorConfig((1, 1, 1), "float32", "cpu"))
@@ -36,17 +47,21 @@ def test_scaled_dot_product_attention_trace():
         tracer.stop_tracing()
 
 
-def test_scaled_dot_product_attention_opdef():
+def test_scaled_dot_product_attention_opdef() -> None:
+    """Test function test_scaled_dot_product_attention_opdef."""
     op = ScaledDotProductAttention()
 
     class DummyShape:
+        """Test class DummyShape."""
+
         shape = (1, 1, 1)
 
-    res = op.infer_shape(DummyShape(), None, None, None)
+    res = cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), None, None, None)
     assert res == (1, 1, 1)
 
 
-def test_scaled_dot_product_attention_eager():
+def test_scaled_dot_product_attention_eager() -> None:
+    """Test function test_scaled_dot_product_attention_eager."""
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.core.config import config
@@ -74,13 +89,16 @@ def test_scaled_dot_product_attention_eager():
         config.eager_mode = False
 
 
-def test_scaled_dot_product_attention_infer_shape():
+def test_scaled_dot_product_attention_infer_shape() -> None:
+    """Test function test_scaled_dot_product_attention_infer_shape."""
     from ml_switcheroo_compiler.ops.registry import get_op
 
     opCls = get_op("ScaledDotProductAttention")
     op = opCls()
 
     class Dummy:
+        """Test class Dummy."""
+
         shape = (4, 4)
 
     assert op.infer_shape(q=Dummy(), k=None, v=None, scale_factor=None) == (4, 4)

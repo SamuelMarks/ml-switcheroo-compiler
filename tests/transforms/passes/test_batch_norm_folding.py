@@ -1,16 +1,18 @@
 """Unit tests for Batch Norm Folding pass."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.batch_norm_folding import batch_norm_folding_pass
 
 
-def test_batch_norm_folding_no_op():
+def test_batch_norm_folding_no_op() -> None:
     """Test on an empty graph."""
     graph = IRGraph()
     assert batch_norm_folding_pass(graph) is False
 
 
-def test_batch_norm_folding_basic():
+def test_batch_norm_folding_basic() -> None:
     """Test folding BatchNorm into Conv2D."""
     graph = IRGraph()
 
@@ -35,7 +37,7 @@ def test_batch_norm_folding_basic():
     assert relu.inputs == ["conv_1"]
 
 
-def test_batch_norm_folding_output_node():
+def test_batch_norm_folding_output_node() -> None:
     """Test folding when BatchNorm is an output node."""
     graph = IRGraph()
 
@@ -51,7 +53,7 @@ def test_batch_norm_folding_output_node():
     assert graph.outputs == ["conv_1"]
 
 
-def test_batch_norm_folding_no_conv2d():
+def test_batch_norm_folding_no_conv2d() -> None:
     """Test when BatchNorm is not preceded by Conv2D."""
     graph = IRGraph()
 
@@ -66,7 +68,7 @@ def test_batch_norm_folding_no_conv2d():
     assert "bn_1" in graph.nodes
 
 
-def test_batch_norm_folding_with_bias():
+def test_batch_norm_folding_with_bias() -> None:
     """Test folding BatchNorm into Conv2D when Conv2D already has a bias."""
     graph = IRGraph()
 

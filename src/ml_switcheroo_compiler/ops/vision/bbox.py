@@ -1,12 +1,11 @@
-"""Module bbox.py."""
+"""Vision operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Vision operations."""
 from dataclasses import dataclass
+from typing import Callable, Optional, cast
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -29,8 +28,8 @@ def crop_and_resize(
     boxes: Tensor,
     box_indices: Tensor,
     crop_size: tuple[int, int],
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
@@ -59,7 +58,7 @@ def crop_and_resize(
             method=method,
             extrapolation_value=extrapolation_value,
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "CropAndResize",
         [images, boxes, box_indices],
@@ -73,8 +72,8 @@ def _extract_bounding_boxes_eager(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj,
-):
+    config_obj: EagerValue,
+) -> EagerValue:
     """Evaluate _extract_bounding_boxes_eager operation.
 
     Args:
@@ -96,16 +95,16 @@ def _extract_bounding_boxes_eager(
         box_indices.data,
         config=config_obj,
     )
-    return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+    return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
 
 
 def extract_bounding_boxes(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj=None,
-    **kwargs,
-):
+    config_obj: EagerValue = None,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
@@ -124,11 +123,14 @@ def extract_bounding_boxes(
         crop_size = kwargs.get("crop_size", (0, 0))
         if isinstance(crop_size, int):
             crop_size = (crop_size, crop_size)
-        config_obj = BBoxConfig(
-            crop_size=crop_size,
-            interpolation=kwargs.get("interpolation", "bilinear"),
-            extrapolation_value=kwargs.get("extrapolation_value", 0.0),
-            data_format=kwargs.get("data_format", None),
+        config_obj = cast(
+            EagerValue,
+            cast("Callable[..., EagerTensorProtocol]", BBoxConfig)(
+                crop_size=crop_size,
+                interpolation=cast("str", kwargs.get("interpolation", "bilinear")),
+                extrapolation_value=cast("float", kwargs.get("extrapolation_value", 0.0)),
+                data_format=cast("Optional[str]", kwargs.get("data_format", None)),
+            ),
         )
 
     if config.eager_mode:
@@ -151,7 +153,7 @@ def crop(
     offset_width: int,
     target_height: int,
     target_width: int,
-):
+) -> EagerValue:
     """Crops an image to a specified bounding box.
 
     Args:
@@ -178,7 +180,7 @@ def crop(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "Crop",
@@ -200,7 +202,7 @@ def pad_to_bounding_box(
     offset_width: int,
     target_height: int,
     target_width: int,
-):
+) -> EagerValue:
     """Pad an image with zeros to the specified height and width.
 
     Args:
@@ -227,7 +229,7 @@ def pad_to_bounding_box(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "PadToBoundingBox",
@@ -248,7 +250,7 @@ def draw_bounding_boxes(
     boxes: Tensor,
     colors: Tensor | None = None,
     texts: list[str] | None = None,
-):
+) -> EagerValue:
     """Draw bounding boxes on a batch of images.
 
     Args:
@@ -268,7 +270,7 @@ def draw_bounding_boxes(
         data = backend.execute_op("DrawBoundingBoxes", images.data, boxes.data, colors=colors_data, texts=texts)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "DrawBoundingBoxes",
@@ -283,7 +285,7 @@ def crop_images(
     images: Tensor,
     cropping: tuple[int, int, int, int],
     data_format: str | None = None,
-):
+) -> EagerValue:
     """Crops images.
 
     Args:
@@ -309,7 +311,7 @@ def crop_images(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "CropImages",
@@ -330,8 +332,8 @@ def extract_patches(
     images: Tensor,
     size: int | tuple[int, int] | list[int],
     options: ExtractPatchesOptions | None = None,
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Extract patches from images.
 
     Args:
@@ -359,7 +361,7 @@ def extract_patches(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "ExtractPatches",
@@ -381,7 +383,7 @@ def pad_images(
     padding: tuple[int, int, int, int],
     target_shape: tuple[int | None, int | None],
     data_format: str | None = None,
-):
+) -> EagerValue:
     """Pad images.
 
     Args:
@@ -410,7 +412,7 @@ def pad_images(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "PadImages",
@@ -435,7 +437,7 @@ class ExtractBoundingBoxes(OpDef):
 
     op_name = "ExtractBoundingBoxes"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -455,7 +457,7 @@ class Iou(OpDef):
 
     op_name = "Iou"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -475,7 +477,7 @@ class Nms(OpDef):
 
     op_name = "Nms"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

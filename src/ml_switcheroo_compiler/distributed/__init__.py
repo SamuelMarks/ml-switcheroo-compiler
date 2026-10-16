@@ -1,11 +1,11 @@
-# ruff: noqa: E402, E501, F403
 """Distributed execution and sharding primitives."""
 
 import contextlib
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
-from typing import Optional
+from typing import Optional, cast
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.ops import distributed_ops
 
@@ -16,7 +16,7 @@ from .layout_map import LayoutMap, ShardingSpec
 class Distribution:
     """Base class for distributed strategies."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Initialize Distribution.
 
         Args:
@@ -53,7 +53,7 @@ class Distribution:
 class DataParallel(Distribution):
     """DataParallel strategy for distributed execution."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
         """Initialize the DataParallel distribution.
 
         Args:
@@ -71,8 +71,8 @@ class ModelParallel(Distribution):
         device_mesh: Optional[DeviceMesh] = None,
         layout_map: Optional[LayoutMap] = None,
         batch_dim_name: Optional[str] = None,
-        *args,
-        **kwargs,
+        *args: EagerValue,
+        **kwargs: EagerValue,
     ) -> None:
         """Initialize the ModelParallel distribution.
 
@@ -89,7 +89,7 @@ class ModelParallel(Distribution):
 class TensorLayoutClass:
     """Class representing TensorLayout."""
 
-    def __init__(self, axes) -> None:
+    def __init__(self, axes: EagerValue) -> None:
         """Initialize TensorLayoutClass.
 
         Args:
@@ -98,7 +98,7 @@ class TensorLayoutClass:
         self.axes = axes
 
 
-def TensorLayout(*args, **kwargs):
+def TensorLayout(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Create a TensorLayout.
 
     Args:
@@ -109,10 +109,10 @@ def TensorLayout(*args, **kwargs):
         TensorLayoutClass instance.
     """
     axes = kwargs.get("axes", args[0] if args else ())
-    return TensorLayoutClass(axes)
+    return cast(EagerValue, TensorLayoutClass(axes))
 
 
-def initialize(*args, **kwargs) -> None:
+def initialize(*args: EagerValue, **kwargs: EagerValue) -> None:
     """Initialize the distributed environment.
 
     Args:
@@ -129,7 +129,7 @@ def initialize(*args, **kwargs) -> None:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support initialize_distributed()")
 
 
-def list_devices(*args, **kwargs):
+def list_devices(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """List available devices.
 
     Args:
@@ -141,14 +141,14 @@ def list_devices(*args, **kwargs):
     """
     from ml_switcheroo_compiler.core.device import get_physical_devices
 
-    return get_physical_devices()
+    return cast(EagerValue, get_physical_devices())
 
 
-_dist = None
-_DIST_STATE = {"dist": None}
+_dist: Optional[Distribution] = None
+_DIST_STATE: dict[str, Optional[Distribution]] = {"dist": None}
 
 
-def distribution(*args, **kwargs) -> Optional[Distribution]:
+def distribution(*args: EagerValue, **kwargs: EagerValue) -> Optional[Distribution]:
     """Get the current distribution.
 
     Args:
@@ -161,7 +161,7 @@ def distribution(*args, **kwargs) -> Optional[Distribution]:
     return _DIST_STATE["dist"]
 
 
-def set_distribution(dist: Distribution, *args, **kwargs) -> None:
+def set_distribution(dist: Distribution, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Set the current distribution.
 
     Args:
@@ -172,7 +172,7 @@ def set_distribution(dist: Distribution, *args, **kwargs) -> None:
     _DIST_STATE["dist"] = dist
 
 
-def distribute_tensor(*args, **kwargs):
+def distribute_tensor(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Distribute a tensor across the active distribution.
 
     Args:
@@ -187,7 +187,7 @@ def distribute_tensor(*args, **kwargs):
     if config.eager_mode:
         return args[0] if args else kwargs.get("tensor")
 
-    return distributed_ops.shard_tensor(*args, **kwargs)
+    return cast(EagerValue, getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
 
 
 __all__ = [

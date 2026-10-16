@@ -1,14 +1,20 @@
-# ruff: noqa: E402, E501, F403
 # pylint: disable=duplicate-code
 
 """Define shape manipulation operations for the ML Switcheroo framework."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Callable, cast
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _get_shape_list(x):
+def _get_shape_list(x: Tensor | tuple[int, ...] | list[int] | int | None) -> list[int]:
     """Help to convert shape to list.
 
     Args:
@@ -19,9 +25,9 @@ def _get_shape_list(x):
     """
     if isinstance(x, (tuple, list)):
         return list(x)
-    if not hasattr(x, "shape") or x.shape is None:
+    if not hasattr(x, "shape") or getattr(x, "shape") is None:
         return []
-    s = x.shape
+    s = getattr(x, "shape")
     if isinstance(s, tuple):
         return list(s)
     if isinstance(s, int):
@@ -31,7 +37,7 @@ def _get_shape_list(x):
     return []
 
 
-def _normalize_axes(axes, length: int):
+def _normalize_axes(axes: int | Sequence[int], length: int) -> list[int]:
     """Help to normalize axes.
 
     Args:
@@ -45,7 +51,7 @@ def _normalize_axes(axes, length: int):
     return [x + length if x < 0 else x for x in a]
 
 
-def _resolve_reshape_minus_one(x_shape, newshape):
+def _resolve_reshape_minus_one(x_shape: Sequence[int | None], newshape: list[int]) -> list[int]:
     """Resolve the -1 dimension in a reshape operation.
 
     Args:
@@ -68,7 +74,7 @@ def _resolve_reshape_minus_one(x_shape, newshape):
 class Reshape(OpDef):
     """Provide an operator definition for reshaping a tensor to a new shape."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -86,7 +92,7 @@ class Reshape(OpDef):
 
         out_shape = list(newshape)
         if -1 in out_shape:
-            out_shape = _resolve_reshape_minus_one(x.shape, out_shape)
+            out_shape = _resolve_reshape_minus_one(getattr(x, "shape"), out_shape)
 
         return tuple(out_shape)
 
@@ -95,7 +101,7 @@ class Reshape(OpDef):
 class Transpose(OpDef):
     """Provide an operator definition for transposing the dimensions of a tensor."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -108,10 +114,10 @@ class Transpose(OpDef):
         x = args[0] if len(args) > 0 else kwargs["x"]
         axes = args[1] if len(args) > 1 else kwargs.get("axes", None)
         if isinstance(x, tuple) and axes is not None:
-            return tuple(x[i] for i in axes)
+            return tuple(x[i] for i in getattr(axes, "__iter__")())
         return tuple(reversed(x)) if isinstance(x, tuple) else None
 
-    def _format_args(self, x: str, axes) -> str:
+    def _format_args(self, x: str, axes: EagerValue) -> str:
         """Evaluate _format_args operation.
 
         Args:
@@ -128,7 +134,7 @@ class Transpose(OpDef):
 class BroadcastTo(OpDef):
     """Provide an operator definition for broadcasting a tensor to a new shape."""
 
-    def infer_shape(self, x, shape, **kwargs):
+    def infer_shape(self, x: EagerTensorProtocol, shape: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -163,11 +169,11 @@ class BroadcastInDim(OpDef):
 
     def infer_shape(
         self,
-        x,
-        shape,
-        broadcast_dimensions,
-        **kwargs,
-    ):
+        x: EagerTensorProtocol,
+        shape: EagerTensorProtocol,
+        broadcast_dimensions: EagerTensorProtocol,
+        **kwargs: EagerValue,
+    ) -> EagerValue:
         """Infer the output shape of the broadcasting operation.
 
         Args:
@@ -189,11 +195,11 @@ class Resize(OpDef):
 
     def infer_shape(
         self,
-        image,
-        shape,
-        method="bilinear",
-        **kwargs,
-    ):
+        image: EagerTensorProtocol,
+        shape: EagerTensorProtocol,
+        method: EagerValue = "bilinear",
+        **kwargs: EagerValue,
+    ) -> EagerValue:
         """Infer the output shape of the resizing operation.
 
         Args:
@@ -209,9 +215,9 @@ class Resize(OpDef):
         out_shape = list(image.shape)
         # assuming shape is (new_h, new_w) and image is either (..., H, W, C) or something.
         # Often it's (..., H, W, C) in Keras.
-        if len(out_shape) >= MAGIC_VAL_3:
-            out_shape[-3] = shape[0]
-            out_shape[-2] = shape[1]
+        if len(out_shape) >= MIN_CONV_RANK:
+            cast(EagerTensorProtocol, out_shape)[-3] = getattr(shape, "__getitem__")(0)
+            cast(EagerTensorProtocol, out_shape)[-2] = getattr(shape, "__getitem__")(1)
         return tuple(out_shape)
 
 
@@ -221,7 +227,7 @@ class Atleast1d(OpDef):
 
     op_name = "Atleast1d"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -232,9 +238,9 @@ class Atleast1d(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:
+        if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (1,)
-        shape = _get_shape_list(x)
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
         if len(shape) < 1:
             shape.insert(0, 1)
         return tuple(shape)
@@ -246,7 +252,7 @@ class Atleast2d(OpDef):
 
     op_name = "Atleast2d"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -257,9 +263,9 @@ class Atleast2d(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:
+        if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (1, 1)
-        shape = _get_shape_list(x)
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
         if len(shape) == 0:
             return (1, 1)
         if len(shape) == 1:
@@ -273,7 +279,7 @@ class Atleast3d(OpDef):
 
     op_name = "Atleast3d"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -284,9 +290,9 @@ class Atleast3d(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:
+        if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (1, 1, 1)
-        shape = _get_shape_list(x)
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
         if len(shape) == 0:
             return (1, 1, 1)
         if len(shape) == 1:
@@ -302,7 +308,7 @@ class ExpandDims(OpDef):
 
     op_name = "ExpandDims"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -314,14 +320,14 @@ class ExpandDims(OpDef):
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
-        if not hasattr(x, "shape") or x.shape is None:
+        if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (None,)
-        shape = _get_shape_list(x)
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
         if axis is None:
             return tuple(shape)
-        if axis < 0:
-            axis = axis + len(shape) + 1
-        shape.insert(axis, 1)
+        if int(cast(int, axis)) < 0:
+            axis = cast(EagerTensorProtocol, axis) + cast(EagerTensorProtocol, len(shape)) + 1
+        getattr(shape, "insert")(axis, 1)
         return tuple(shape)
 
 
@@ -331,7 +337,7 @@ class Block(OpDef):
 
     op_name = "Block"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -353,7 +359,7 @@ class C(OpDef):
 
     op_name = "C"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -372,7 +378,7 @@ class Collapse(OpDef):
 
     op_name = "Collapse"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -391,7 +397,7 @@ class Delete(OpDef):
 
     op_name = "Delete"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -413,7 +419,7 @@ class DiagIndices(OpDef):
 
     op_name = "DiagIndices"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -425,7 +431,7 @@ class DiagIndices(OpDef):
         """
         n = args[0] if args else kwargs.get("n")
         ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
-        return tuple([(n,)] * ndim)
+        return tuple([(n,)] * int(cast(int, ndim)))
 
 
 @register_op("DiagIndicesFrom")
@@ -434,7 +440,7 @@ class DiagIndicesFrom(OpDef):
 
     op_name = "DiagIndicesFrom"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -447,7 +453,7 @@ class DiagIndicesFrom(OpDef):
         arr = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
             return None
-        return tuple([(arr.shape[0],)] * len(arr.shape))
+        return tuple([(getattr(arr.shape, "__getitem__")(0),)] * len(arr.shape))
 
 
 @register_op("Diagflat")
@@ -456,7 +462,7 @@ class Diagflat(OpDef):
 
     op_name = "Diagflat"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -471,9 +477,9 @@ class Diagflat(OpDef):
             return None
         import math
 
-        size = math.prod(v.shape)
+        size = math.prod(getattr(v, "shape"))
         k = args[1] if len(args) > 1 else kwargs.get("k", 0)
-        s = size + abs(k)
+        s = size + cast("Callable[..., EagerTensorProtocol]", abs)(k)
         return (s, s)
 
 
@@ -483,7 +489,7 @@ class FillDiagonal(OpDef):
 
     op_name = "FillDiagonal"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -496,7 +502,7 @@ class FillDiagonal(OpDef):
         a = args[0] if args else kwargs.get("a")
         if not hasattr(a, "shape"):
             return None
-        return tuple(a.shape)
+        return tuple(getattr(a, "shape"))
 
 
 @register_op("Insert")
@@ -505,7 +511,7 @@ class Insert(OpDef):
 
     op_name = "Insert"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -527,7 +533,7 @@ class Moveaxis(OpDef):
 
     op_name = "Moveaxis"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -538,14 +544,14 @@ class Moveaxis(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:
+        if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return None
-        shape = _get_shape_list(x)
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
         source = args[1] if len(args) > 1 else kwargs.get("source")
         destination = args[2] if len(args) > 2 else kwargs.get("destination")
         return self._calc_shape(shape, source, destination)
 
-    def _calc_shape(self, shape: list[int], source, destination):
+    def _calc_shape(self, shape: list[int], source: EagerValue, destination: EagerValue) -> EagerValue:
         """Calculate the output shape for a moveaxis operation.
 
         Args:
@@ -557,8 +563,8 @@ class Moveaxis(OpDef):
             tuple: The calculated shape.
         """
         length = len(shape)
-        sl = _normalize_axes(source, length)
-        dl = _normalize_axes(destination, length)
+        sl = cast("Callable[..., list[int]]", _normalize_axes)(source, length)
+        dl = cast("Callable[..., list[int]]", _normalize_axes)(destination, length)
         order = [i for i in range(length) if i not in sl]
         for dest, src in sorted(zip(dl, sl)):
             order.insert(dest, src)
@@ -571,7 +577,7 @@ class Permute(OpDef):
 
     op_name = "Permute"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -584,11 +590,11 @@ class Permute(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = _get_shape_list(x)
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
         dims = args[1] if len(args) > 1 else kwargs.get("dims")
         if dims is None:
             return tuple(shape[::-1])
-        return tuple(shape[i] for i in dims)
+        return tuple(shape[i] for i in getattr(dims, "__iter__")())
 
 
 @register_op("Roll")
@@ -597,7 +603,7 @@ class Roll(OpDef):
 
     op_name = "Roll"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -610,7 +616,7 @@ class Roll(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(_get_shape_list(x))
+        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))
 
 
 @register_op("Squeeze")
@@ -619,7 +625,7 @@ class Squeeze(OpDef):
 
     op_name = "Squeeze"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -632,11 +638,11 @@ class Squeeze(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = _get_shape_list(x)
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
         return self._calc_shape(shape, axis)
 
-    def _calc_shape(self, shape: list[int], axis):
+    def _calc_shape(self, shape: list[int], axis: EagerValue) -> EagerValue:
         """Calculate the output shape for a squeeze operation.
 
         Args:
@@ -649,7 +655,7 @@ class Squeeze(OpDef):
         if axis is None:
             return tuple(s for s in shape if s != 1)
         axes = [axis] if isinstance(axis, int) else axis
-        n = {a + len(shape) if a < 0 else a for a in axes}
+        n = {a + len(shape) if a < 0 else a for a in getattr(axes, "__iter__")()}
         return tuple(shape[i] for i in range(len(shape)) if i not in n)
 
 
@@ -659,7 +665,7 @@ class Swapaxes(OpDef):
 
     op_name = "Swapaxes"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -672,9 +678,9 @@ class Swapaxes(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = _get_shape_list(x)
-        axis1 = args[1] if len(args) > 1 else kwargs.get("axis1")
-        axis2 = args[2] if len(args) > 2 else kwargs.get("axis2")
+        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        axis1 = int(cast(int, args[1] if len(args) > 1 else kwargs.get("axis1", 0)))
+        axis2 = int(cast(int, args[2] if len(args) > 2 else kwargs.get("axis2", 0)))
         a1 = axis1 + len(shape) if axis1 < 0 else axis1
         a2 = axis2 + len(shape) if axis2 < 0 else axis2
         shape[a1], shape[a2] = shape[a2], shape[a1]
@@ -687,7 +693,7 @@ class Flip(OpDef):
 
     op_name = "Flip"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -700,7 +706,7 @@ class Flip(OpDef):
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(_get_shape_list(x))
+        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))
 
 
 @register_op("Fliplr")
@@ -709,7 +715,7 @@ class Fliplr(OpDef):
 
     op_name = "Fliplr"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -722,7 +728,7 @@ class Fliplr(OpDef):
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(_get_shape_list(x))
+        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))
 
 
 @register_op("Flipud")
@@ -731,7 +737,7 @@ class Flipud(OpDef):
 
     op_name = "Flipud"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -744,4 +750,4 @@ class Flipud(OpDef):
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(_get_shape_list(x))
+        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))

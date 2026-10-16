@@ -1,9 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Sobol sequence generation operations."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -53,4 +52,4 @@ def generate_sobol(dim: int, num_results: int, skip: int = 0) -> Tensor | IRNode
     from ml_switcheroo_compiler import ops
 
     # Simplistic mathematical fallback when scipy is not available or outside backend dirs
-    return ops.rand(num_results, dim, dtype="float32")
+    return cast("Tensor", getattr(ops, "rand")(num_results, dim, dtype="float32"))

@@ -1,13 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
 
 import glob  # noqa: F401
+import gzip
 import os  # noqa: F401
 import shutil  # noqa: F401
-from typing import Any
+import zlib
+from types import TracebackType
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -17,7 +19,15 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
-def decode_csv(records: Tensor, record_defaults, field_delim=",", use_quote_delim=True, na_value="", select_cols=None, name=None) -> Any:
+def decode_csv(
+    records: Tensor,
+    record_defaults: EagerValue,
+    field_delim: str = ",",
+    use_quote_delim: bool = True,
+    na_value: str = "",
+    select_cols: EagerValue = None,
+    name: EagerValue = None,
+) -> Tensor | list[Tensor]:
     """Decode csv.
 
     Args:
@@ -30,20 +40,22 @@ def decode_csv(records: Tensor, record_defaults, field_delim=",", use_quote_deli
         name (str): The name parameter.
 
     Returns:
-        Any: Result.
+        Tensor | list[Tensor]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
+        from typing import cast
+
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("DecodeCsv", records, record_defaults=record_defaults, field_delim=field_delim, use_quote_delim=use_quote_delim, na_value=na_value, select_cols=select_cols, name=name)
+        return cast("Tensor | list[Tensor]", get_active_backend().execute_op("DecodeCsv", records, record_defaults=record_defaults, field_delim=field_delim, use_quote_delim=use_quote_delim, na_value=na_value, select_cols=select_cols, name=name))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("DecodeCsv", [records], {"record_defaults": record_defaults, "field_delim": field_delim, "use_quote_delim": use_quote_delim, "na_value": na_value, "select_cols": select_cols, "name": name}, getattr(records, "shape", ()), getattr(records, "dtype", "float32"))
 
 
-def parse_example(serialized: Tensor, features, example_names=None, name=None) -> Any:
+def parse_example(serialized: Tensor, features: EagerValue, example_names: EagerValue = None, name: EagerValue = None) -> Tensor | dict[str, Tensor]:
     """Parse example.
 
     Args:
@@ -53,20 +65,22 @@ def parse_example(serialized: Tensor, features, example_names=None, name=None) -
         name (str): The name parameter.
 
     Returns:
-        Any: Result.
+        Tensor | dict[str, Tensor]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
+        from typing import cast
+
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("ParseExample", serialized, features=features, example_names=example_names, name=name)
+        return cast("Tensor | dict[str, Tensor]", get_active_backend().execute_op("ParseExample", serialized, features=features, example_names=example_names, name=name))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("ParseExample", [serialized], {"features": features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
-def serialize_tensor(tensor: Tensor, name=None):
+def serialize_tensor(tensor: Tensor, name: EagerValue = None) -> EagerValue:
     """Serialize tensor.
 
     Args:
@@ -87,7 +101,7 @@ def serialize_tensor(tensor: Tensor, name=None):
     return _emit_shape_node("SerializeTensor", [tensor], {"name": name}, getattr(tensor, "shape", ()), getattr(tensor, "dtype", "float32"))
 
 
-def parse_tensor(serialized: Tensor, out_type: DType, name=None):
+def parse_tensor(serialized: Tensor, out_type: DType, name: EagerValue = None) -> EagerValue:
     """Parse tensor.
 
     Args:
@@ -109,7 +123,13 @@ def parse_tensor(serialized: Tensor, out_type: DType, name=None):
     return _emit_shape_node("ParseTensor", [serialized], {"out_type": out_type, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
-def parse_single_sequence_example(serialized: Tensor, context_features=None, sequence_features=None, example_names=None, name=None) -> Any:
+def parse_single_sequence_example(
+    serialized: Tensor,
+    context_features: EagerValue = None,
+    sequence_features: EagerValue = None,
+    example_names: EagerValue = None,
+    name: EagerValue = None,
+) -> Tensor | tuple[dict[str, Tensor], dict[str, Tensor]]:
     """Parse single sequence example.
 
     Args:
@@ -120,14 +140,16 @@ def parse_single_sequence_example(serialized: Tensor, context_features=None, seq
         name (str): The name parameter.
 
     Returns:
-        Any: Result.
+        Tensor | tuple[dict[str, Tensor], dict[str, Tensor]]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
+        from typing import cast
+
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("ParseSequenceExample", serialized, context_features=context_features, sequence_features=sequence_features, example_names=example_names, name=name)
+        return cast("Tensor | tuple[dict[str, Tensor], dict[str, Tensor]]", get_active_backend().execute_op("ParseSequenceExample", serialized, context_features=context_features, sequence_features=sequence_features, example_names=example_names, name=name))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("ParseSequenceExample", [serialized], {"context_features": context_features, "sequence_features": sequence_features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
@@ -172,14 +194,10 @@ class TFRecordWriter:
         actual_path = os.path.join(path, "records.tfrecord") if os.path.isdir(path) else path
 
         self._file = open(actual_path, "wb")
-        self._compressor: Any = None
+        self._compressor: gzip.GzipFile | zlib._Compress | None = None
         if self.options.compression_type == "GZIP":
-            import gzip
-
             self._compressor = gzip.GzipFile(fileobj=self._file, mode="wb")
         elif self.options.compression_type == "ZLIB":
-            import zlib
-
             self._compressor = zlib.compressobj()
 
     @staticmethod
@@ -223,10 +241,10 @@ class TFRecordWriter:
 
         framed_record = len_bytes + len_crc + data + data_crc
 
-        if self.options.compression_type == "GZIP":
-            self._compressor.write(framed_record)
-        elif self.options.compression_type == "ZLIB":
-            compressed = self._compressor.compress(framed_record)
+        if self.options.compression_type == "GZIP" and self._compressor is not None:
+            getattr(self._compressor, "write")(framed_record)
+        elif self.options.compression_type == "ZLIB" and self._compressor is not None:
+            compressed: bytes = getattr(self._compressor, "compress")(framed_record)
             if compressed:
                 self._file.write(compressed)
         else:
@@ -238,9 +256,9 @@ class TFRecordWriter:
             return
 
         if self.options.compression_type == "GZIP" and self._compressor is not None:
-            self._compressor.close()
+            getattr(self._compressor, "close")()
         elif self.options.compression_type == "ZLIB" and self._compressor is not None:
-            flushed = self._compressor.flush()
+            flushed: bytes = self._compressor.flush() if not isinstance(self._compressor, gzip.GzipFile) else b""
             if flushed:
                 self._file.write(flushed)
 
@@ -258,13 +276,18 @@ class TFRecordWriter:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Exit context manager and flush all buffers.
 
         Args:
-            exc_type (Any): Exception type if raised.
-            exc_val (Any): Exception value if raised.
-            exc_tb (Any): Exception traceback if raised.
+            exc_type (type[BaseException] | None): Exception type if raised.
+            exc_val (BaseException | None): Exception value if raised.
+            exc_tb (TracebackType | None): Exception traceback if raised.
         """
         self.close()
 
@@ -289,8 +312,8 @@ def read_tfrecords(path: str, compression_type: str = "") -> list[bytes]:
     if comp == "GZIP":
         import gzip
 
-        with gzip.open(path, "rb") as f:
-            content = f.read()
+        with gzip.open(path, "rb") as gf:
+            content = gf.read()
     elif comp == "ZLIB":
         with open(path, "rb") as f:
             content = zlib.decompress(f.read())
@@ -345,7 +368,7 @@ class DecodeCsv(OpDef):
 
     op_name = "DecodeCsv"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -372,7 +395,7 @@ class ParseExample(OpDef):
 
     op_name = "ParseExample"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -399,7 +422,7 @@ class SerializeTensor(OpDef):
 
     op_name = "SerializeTensor"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -426,7 +449,7 @@ class ParseTensor(OpDef):
 
     op_name = "ParseTensor"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -453,7 +476,7 @@ class ParseSequenceExample(OpDef):
 
     op_name = "ParseSequenceExample"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

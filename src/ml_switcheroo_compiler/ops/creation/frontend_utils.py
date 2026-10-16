@@ -1,16 +1,15 @@
-"""Module frontend_utils.py."""
+"""Constants & Creation Operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Constants & Creation Operations."""
+import logging
 import uuid
 from collections.abc import Sequence
+from typing import Callable, cast
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -22,8 +21,8 @@ def _emit_creation_node(
     op_type: str,
     shape: Sequence[int],
     dtype: DType,
-    attributes=None,
-):
+    attributes: EagerValue = None,
+) -> EagerValue:
     """Emit a creation node to the IR graph.
 
     Args:
@@ -47,12 +46,12 @@ def _emit_creation_node(
         id=out_id,
         op_type=op_type,
         inputs=[],
-        attributes={**(attributes or {}), "dtype": dtype.value},
+        attributes={**cast("dict[str, AttributeValue]", attributes or {}), "dtype": dtype.value},
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
 
-    proxy = ProxyTensor(
+    proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(
         id=out_id,
         shape=shape,
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
@@ -61,9 +60,9 @@ def _emit_creation_node(
 
 
 def _emit_constant_node(
-    value,
+    value: EagerValue,
     dtype: DType,
-):
+) -> EagerValue:
     """Emit a Constant node to the IR graph.
 
     Args:
@@ -82,13 +81,13 @@ def _emit_constant_node(
 
     out_id = str(uuid.uuid4())
     val_arr = get_active_backend().array(value, dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)))
-    shape = tuple(val_arr.shape)
+    shape = tuple(getattr(val_arr, "shape"))
 
     node = LogicalNode(
         id=out_id,
         op_type="Constant",
         inputs=[],
-        attributes={"value": val_arr.tolist() if val_arr.ndim > 0 else val_arr.item()},
+        attributes={"value": getattr(val_arr, "tolist")() if getattr(val_arr, "ndim") > 0 else getattr(val_arr, "item")()},
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
@@ -107,7 +106,7 @@ class FromDlpack(OpDef):
 
     op_name = "FromDlpack"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -127,7 +126,7 @@ class Frompyfunc(OpDef):
 
     op_name = "Frompyfunc"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -155,7 +154,7 @@ class Geomspace(OpDef):
 
     op_name = "Geomspace"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -170,15 +169,15 @@ class Geomspace(OpDef):
         raw_num = kwargs.get("num", args[2] if len(args) > 2 else 50)
         num: int = 50
         try:
-            num = int(raw_num)
+            num = int(cast(int, raw_num))
         except (TypeError, ValueError):
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         raw_axis = kwargs.get("axis", 0)
         axis: int = 0
         try:
-            axis = int(raw_axis)
+            axis = int(cast(int, raw_axis))
         except (TypeError, ValueError):
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         shape1 = getattr(start, "shape", getattr(start, "shape_metadata", ()))
         shape2 = getattr(stop, "shape", getattr(stop, "shape_metadata", ()))
         b_shape = shape1 if len(shape1) > len(shape2) else shape2
@@ -197,7 +196,7 @@ class Geometric(OpDef):
 
     op_name = "Geometric"
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -213,10 +212,10 @@ class Geometric(OpDef):
             return tuple(getattr(p, "shape", getattr(p, "shape_metadata", ())))
         if isinstance(size, int):
             return (size,)
-        return tuple(int(d) for d in size)
+        return tuple(int(d) for d in getattr(size, "__iter__")())
 
 
-def from_dlpack(obj):
+def from_dlpack(obj: EagerValue) -> EagerValue:
     """Create a switcheroo array from a DLPack capsule.
 
     Args:
@@ -230,7 +229,7 @@ def from_dlpack(obj):
     return dispatch_op("FromDlpack", obj)
 
 
-def frompyfunc(func, nin: int, nout: int):
+def frompyfunc(func: EagerValue, nin: int, nout: int) -> EagerValue:
     """Take an arbitrary Python function and returns a NumPy ufunc.
 
     Args:
@@ -246,7 +245,7 @@ def frompyfunc(func, nin: int, nout: int):
     return dispatch_op("Frompyfunc", func, nin, nout)
 
 
-def geomspace(start, stop, num: int = 50, endpoint: bool = True, dtype=None, axis: int = 0):
+def geomspace(start: EagerValue, stop: EagerValue, num: int = 50, endpoint: bool = True, dtype: EagerValue = None, axis: int = 0) -> EagerValue:
     """Return numbers spaced evenly on a log scale (a geometric progression).
 
     Args:
@@ -265,7 +264,7 @@ def geomspace(start, stop, num: int = 50, endpoint: bool = True, dtype=None, axi
     return dispatch_op("Geomspace", start, stop, num=num, endpoint=endpoint, dtype=dtype, axis=axis)
 
 
-def geometric(p, size=None):
+def geometric(p: EagerValue, size: EagerValue = None) -> EagerValue:
     """Draw samples from the geometric distribution.
 
     Args:

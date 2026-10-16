@@ -1,6 +1,10 @@
 # ruff: noqa: E501
 """Control flow tests."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import ConfigContext
@@ -10,6 +14,9 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import cond
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 device = Device(DeviceType.CPU, 0)
 
@@ -40,7 +47,7 @@ def test_cond_trace() -> None:
     with ConfigContext(eager_mode=False):
         pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
-        def true_fn():
+        def true_fn() -> EagerValue:
             """True fn.
 
             Returns:
@@ -48,7 +55,7 @@ def test_cond_trace() -> None:
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 
-        def false_fn():
+        def false_fn() -> EagerValue:
             """False fn.
 
             Returns:
@@ -58,5 +65,5 @@ def test_cond_trace() -> None:
 
         global_tracing_state.start_tracing()
         res = cond(pred, true_fn, false_fn)
-        assert res.dtype == DType.Float32
+        assert cast("EagerTensorProtocol", getattr(res, "dtype")) == DType.Float32
         global_tracing_state.stop_tracing()

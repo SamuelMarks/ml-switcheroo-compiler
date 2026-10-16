@@ -1,5 +1,7 @@
 """Test configs."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.configs import (
     ConvDimensionNumbers,
     ConvGeneralDilatedDimensionNumbers,
@@ -26,9 +28,11 @@ def test_configs() -> None:
     RandomAlgorithm()
     RoundingMethod()
     ScatterDimensionNumbers([1], [1], [1])
+    assert callable(ScatterDimensionNumbers)
 
 
-def test_root_registry_config_methods():
+def test_root_registry_config_methods() -> None:
+    """Test function test_root_registry_config_methods."""
     from ml_switcheroo_compiler.ops.config_models import OpRegistryConfig, OpsRegistry
 
     cfg = OpsRegistry(root={"TestOp": OpRegistryConfig(variants={})})

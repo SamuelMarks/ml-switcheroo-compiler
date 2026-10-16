@@ -14,11 +14,11 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_gau
 @numpy_eager_registry.register("RandomGaussianBlur")
 def _np_random_gaussian_blur(
     backend_module: ModuleType,
-    images: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     kernel_size: tuple[int, int] | int,
     sigma: tuple[float, float] | float,
     **kwargs: Union[float, int, str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_random_gaussian_blur operation.
 
     Args:
@@ -32,7 +32,7 @@ def _np_random_gaussian_blur(
         np.ndarray: Blurred images array.
     """
     return cast(
-        np.ndarray,
+        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
         _np_gaussian_blur(backend_module, images, kernel_size=kernel_size, sigma=sigma, **kwargs),
     )
 
@@ -40,10 +40,10 @@ def _np_random_gaussian_blur(
 @numpy_eager_registry.register("RandomSharpness")
 def _np_random_sharpness(
     backend_module: ModuleType,
-    images: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     factor: float,
     **kwargs: Union[float, int, str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_random_sharpness operation.
 
     Args:
@@ -56,6 +56,6 @@ def _np_random_sharpness(
         np.ndarray: Sharpened images array.
     """
     return cast(
-        np.ndarray,
+        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
         _np_sharpen(backend_module, images, factor=factor, **kwargs),
     )

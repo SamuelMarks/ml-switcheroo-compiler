@@ -1,8 +1,13 @@
+"""Tests for test_wasm_cond."""
+
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_wasm_cond_generation():
+def test_wasm_cond_generation() -> None:
+    """Test function test_wasm_cond_generation."""
     graph = IRGraph()
     node_in = IRNode(id="node_in", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=[3])
 
@@ -40,7 +45,7 @@ def test_wasm_cond_generation():
     assert "wasm_f32x4_sub" in code
 
 
-def test_wasm_generate_wat_and_control_flow():
+def test_wasm_generate_wat_and_control_flow() -> None:
     """Verify WAT emission and parameterized control flow generation."""
     import os
 

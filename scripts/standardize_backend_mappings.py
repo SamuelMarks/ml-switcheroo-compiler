@@ -6,6 +6,7 @@ import glob
 import os
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.mapping_loader import OpMappingSchema
 
@@ -37,17 +38,17 @@ def build_default_ast_template(target_api: str, op_name: str) -> str:
 def standardize_mapping_data(
     backend: str,
     op_name: str,
-    raw_spec: dict[str, object],
-) -> dict[str, object]:
+    raw_spec: dict[str, AttributeValue],
+) -> dict[str, AttributeValue]:
     """Standardize single operation mapping dictionary to unified schema.
 
     Args:
         backend (str): Backend framework name.
         op_name (str): Operation name.
-        raw_spec (dict[str, object]): Existing specification dictionary.
+        raw_spec (dict[str, AttributeValue]): Existing specification dictionary.
 
     Returns:
-        dict[str, object]: Standardized declarative mapping dictionary.
+        dict[str, AttributeValue]: Standardized declarative mapping dictionary.
     """
     target_api = str(raw_spec.get("target_api") or "")
     existing_template = str(raw_spec.get("ast_template") or "")
@@ -68,7 +69,7 @@ def standardize_mapping_data(
         for k, v in raw_dtype_overrides.items():
             dtype_overrides[str(k)] = str(v)
 
-    res: dict[str, object] = {
+    res: dict[str, AttributeValue] = {
         "operation": op_name,
         "backend": backend,
         "target_api": target_api,
@@ -111,7 +112,8 @@ def run_standardization() -> int:
             standardized = standardize_mapping_data(backend, op_name, content[filename])
         else:
             first_key = next(iter(content.keys()), filename)
-            spec = content.get(first_key) if isinstance(content.get(first_key), dict) else content
+            raw_spec = content.get(first_key)
+            spec = raw_spec if isinstance(raw_spec, dict) else content
             op_name = str(first_key)
             standardized = standardize_mapping_data(backend, op_name, spec)
 

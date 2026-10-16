@@ -1,6 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Misc operations."""
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,7 +10,7 @@ class Finfo(OpDef):
 
     op_name = "Finfo"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -29,7 +29,7 @@ class Iinfo(OpDef):
 
     op_name = "Iinfo"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -48,7 +48,7 @@ class GetPrintoptions(OpDef):
 
     op_name = "GetPrintoptions"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -67,7 +67,7 @@ class Isscalar(OpDef):
 
     op_name = "Isscalar"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -86,7 +86,7 @@ class Iterable(OpDef):
 
     op_name = "Iterable"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -105,7 +105,7 @@ class PromoteTypes(OpDef):
 
     op_name = "PromoteTypes"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -124,7 +124,7 @@ class ResultType(OpDef):
 
     op_name = "ResultType"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -137,7 +137,7 @@ class ResultType(OpDef):
         return ()
 
 
-def iinfo(*args, **kwargs):
+def iinfo(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Iinfo operation.
 
     Args:
@@ -152,7 +152,7 @@ def iinfo(*args, **kwargs):
     return dispatch_op("Iinfo", *args, **kwargs)
 
 
-def isscalar(*args, **kwargs):
+def isscalar(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return True if the type of num is a scalar type.
 
     Args:
@@ -167,7 +167,7 @@ def isscalar(*args, **kwargs):
     return dispatch_op("Isscalar", *args, **kwargs)
 
 
-def iterable(*args, **kwargs):
+def iterable(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Check whether or not an Any can be iterated over.
 
     Args:
@@ -182,7 +182,7 @@ def iterable(*args, **kwargs):
     return dispatch_op("Iterable", *args, **kwargs)
 
 
-def promote_types(*args, **kwargs):
+def promote_types(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the data type with the smallest size and smallest scalar kind.
 
     Args:
@@ -197,7 +197,7 @@ def promote_types(*args, **kwargs):
     return dispatch_op("PromoteTypes", *args, **kwargs)
 
 
-def result_type(*args, **kwargs):
+def result_type(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the type that results from applying the NumPy type promotion rules.
 
     Args:
@@ -212,7 +212,7 @@ def result_type(*args, **kwargs):
     return dispatch_op("ResultType", *args, **kwargs)
 
 
-def get_printoptions(*args, **kwargs):
+def get_printoptions(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Get the current print options.
 
     Args:

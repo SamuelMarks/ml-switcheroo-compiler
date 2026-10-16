@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.diagnostics.numerical_anomaly as num_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class _DummyBadShape:
@@ -66,7 +73,7 @@ def test_numerical_anomaly_exhaustive() -> None:
         class _NonArray:
             """Non-array dummy class for testing exception handling."""
 
-        bad_t = Tensor(_NonArray(), TensorConfig((1,), "float32", "cpu"))
-        num_mod.check_numerical_anomaly(bad_t)
+        bad_t = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", _NonArray)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((1,), "float32", "cpu"))
+        cast("Callable[..., EagerTensorProtocol]", num_mod.check_numerical_anomaly)(bad_t)
     finally:
         config.eager_mode = prev_eager

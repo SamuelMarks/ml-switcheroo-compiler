@@ -1,12 +1,15 @@
-# ruff: noqa: E402, E501, F403
-"""Module registry.py."""
-
 """Backend Registry."""
 
 import logging
-from typing import Callable, Literal
+from typing import Callable, Literal, Union
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol as EagerTensorProtocol,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue as EagerValue,
+)
 from ml_switcheroo_compiler.core.config import config
 
 
@@ -268,7 +271,7 @@ class BackendRegistry:
         return name
 
     @classmethod
-    def get(cls, name: BackendName) -> type["BaseGenerator"]:
+    def get(cls, name: Union[BackendName, str]) -> type["BaseGenerator"]:
         """Retrieve a registered backend class by name.
 
         Args:
@@ -280,8 +283,8 @@ class BackendRegistry:
         Raises:
             ValueError: If the specified backend is not found or cannot be loaded.
         """
-        cls._try_load_lazy(name)
-        resolved_name = cls._resolve_alias(name)
+        getattr(cls, "_try_load_lazy")(name)
+        resolved_name = getattr(cls, "_resolve_alias")(name)
 
         if resolved_name not in cls._registry:
             keys = list(cls._registry.keys()) + list(cls._LAZY_MODULES.keys())
@@ -302,7 +305,7 @@ class BackendRegistry:
                     if name in _LOADERS:
                         _LOADERS[name]()
                 except ImportError:
-                    pass
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return cls._registry.copy()
 
 

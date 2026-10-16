@@ -1,11 +1,11 @@
 Add:
   autodiff:
-    jvp: Add($tangent[0], $tangent[1])
+    vjp_rule_id: Add_vjp
     jvp_rule_id: Add_jvp
     vjp:
     - $cotangent
     - $cotangent
-    vjp_rule_id: Add_vjp
+    jvp: Add($tangent[0], $tangent[1])
   broadcast_semantics: numpy
   description: The Add operation.
   domain: binary
@@ -22,15 +22,15 @@ Add:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -81,12 +81,27 @@ Add:
     tensorflow:
       eager: tf.add
       macro_template: tf.math.add({input}, {other} * {alpha})
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: true
+    is_associative: true
+    is_idempotent: false
+    identity_value: 0
+    absorbing_value: null
 BitwiseAnd:
   autodiff:
-    jvp: null
+    vjp_rule_id: BitwiseAnd_vjp
     jvp_rule_id: BitwiseAnd_jvp
     vjp: null
-    vjp_rule_id: BitwiseAnd_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The BitwiseAnd operation.
   domain: binary
@@ -100,15 +115,15 @@ BitwiseAnd:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -136,12 +151,27 @@ BitwiseAnd:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: integer
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: true
+    is_associative: true
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: 0
 BitwiseOr:
   autodiff:
-    jvp: null
+    vjp_rule_id: BitwiseOr_vjp
     jvp_rule_id: BitwiseOr_jvp
     vjp: null
-    vjp_rule_id: BitwiseOr_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The BitwiseOr operation.
   domain: binary
@@ -155,15 +185,15 @@ BitwiseOr:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -191,12 +221,27 @@ BitwiseOr:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: integer
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: true
+    is_associative: true
+    is_idempotent: false
+    identity_value: 0
+    absorbing_value: null
 BitwiseXor:
   autodiff:
-    jvp: null
+    vjp_rule_id: BitwiseXor_vjp
     jvp_rule_id: BitwiseXor_jvp
     vjp: null
-    vjp_rule_id: BitwiseXor_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The BitwiseXor operation.
   domain: binary
@@ -210,15 +255,15 @@ BitwiseXor:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -246,15 +291,30 @@ BitwiseXor:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: integer
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: true
+    is_associative: true
+    is_idempotent: false
+    identity_value: 0
+    absorbing_value: null
 Div:
   autodiff:
-    jvp: TrueDivide(Subtract(Multiply($tangent[0], $input[1]), Multiply($tangent[1],
-      $input[0])), Multiply($input[1], $input[1]))
+    vjp_rule_id: Div_vjp
     jvp_rule_id: Div_jvp
     vjp:
     - TrueDivide($cotangent, $input[1])
     - Multiply($cotangent, Negative(TrueDivide($input[0], Multiply($input[1], $input[1]))))
-    vjp_rule_id: Div_vjp
+    jvp: TrueDivide(Subtract(Multiply($tangent[0], $input[1]), Multiply($tangent[1],
+      $input[0])), Multiply($input[1], $input[1]))
   broadcast_semantics: numpy
   description: The Div operation.
   domain: binary
@@ -268,15 +328,15 @@ Div:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -301,12 +361,27 @@ Div:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Equal:
   autodiff:
-    jvp: null
-    jvp_rule_id: equal_jvp
+    vjp_rule_id: Equal_vjp
+    jvp_rule_id: Equal_jvp
     vjp: null
-    vjp_rule_id: equal_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Equal operation.
   domain: binary
@@ -320,15 +395,15 @@ Equal:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -361,12 +436,27 @@ Equal:
     pytorch: {}
     tensorflow:
       eager: tf.equal
+  dtype_rules:
+    promotion_matrix: boolean
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: bool
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: true
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 FloorDiv:
   autodiff:
-    jvp: null
-    jvp_rule_id: FloorDivide_jvp
+    vjp_rule_id: FloorDiv_vjp
+    jvp_rule_id: FloorDiv_jvp
     vjp: null
-    vjp_rule_id: FloorDivide_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The FloorDivide operation.
   domain: binary
@@ -380,15 +470,15 @@ FloorDiv:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -419,14 +509,29 @@ FloorDiv:
       eager: torch.floordivide
     tensorflow:
       eager: tf.floordivide
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Greater:
   autodiff:
-    jvp: Constant(0.0)
+    vjp_rule_id: Greater_vjp
     jvp_rule_id: Greater_jvp
     vjp:
     - Constant(0.0)
     - Constant(0.0)
-    vjp_rule_id: Greater_vjp
+    jvp: Constant(0.0)
   broadcast_semantics: numpy
   description: The Greater operation.
   domain: binary
@@ -440,15 +545,15 @@ Greater:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -484,12 +589,27 @@ Greater:
       eager: torch.greater
     tensorflow:
       eager: tf.greater
+  dtype_rules:
+    promotion_matrix: boolean
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: bool
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 GreaterEqual:
   autodiff:
-    jvp: null
+    vjp_rule_id: GreaterEqual_vjp
     jvp_rule_id: GreaterEqual_jvp
     vjp: null
-    vjp_rule_id: GreaterEqual_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The GreaterEqual operation.
   domain: binary
@@ -503,15 +623,15 @@ GreaterEqual:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -543,12 +663,27 @@ GreaterEqual:
       eager: torch.greaterequal
     tensorflow:
       eager: tf.greater_equal
+  dtype_rules:
+    promotion_matrix: boolean
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: bool
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Less:
   autodiff:
-    jvp: null
-    jvp_rule_id: less_jvp
+    vjp_rule_id: Less_vjp
+    jvp_rule_id: Less_jvp
     vjp: null
-    vjp_rule_id: less_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Less operation.
   domain: binary
@@ -562,15 +697,15 @@ Less:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -606,12 +741,27 @@ Less:
       eager: torch.less
     tensorflow:
       eager: tf.less
+  dtype_rules:
+    promotion_matrix: boolean
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: bool
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 LessEqual:
   autodiff:
-    jvp: null
+    vjp_rule_id: LessEqual_vjp
     jvp_rule_id: LessEqual_jvp
     vjp: null
-    vjp_rule_id: LessEqual_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The LessEqual operation.
   domain: binary
@@ -625,15 +775,15 @@ LessEqual:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -665,12 +815,27 @@ LessEqual:
       eager: torch.lessequal
     tensorflow:
       eager: tf.less_equal
+  dtype_rules:
+    promotion_matrix: boolean
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: bool
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Mod:
   autodiff:
-    jvp: null
-    jvp_rule_id: mod_jvp
+    vjp_rule_id: Mod_vjp
+    jvp_rule_id: Mod_jvp
     vjp: null
-    vjp_rule_id: mod_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Mod operation.
   domain: binary
@@ -684,15 +849,15 @@ Mod:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -720,14 +885,29 @@ Mod:
     pytorch: {}
     tensorflow:
       eager: tf.math.mod
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Mul:
   autodiff:
-    jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
-    jvp_rule_id: mul_jvp
+    vjp_rule_id: Mul_vjp
+    jvp_rule_id: Mul_jvp
     vjp:
     - Mul($cotangent, $input[1])
     - Mul($cotangent, $input[0])
-    vjp_rule_id: mul_vjp
+    jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
   broadcast_semantics: numpy
   description: Elementwise multiplication operation (alias of Multiply).
   domain: binary
@@ -742,15 +922,15 @@ Mul:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -783,12 +963,27 @@ Mul:
       eager: torch.multiply
     tensorflow:
       eager: tf.multiply
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: true
+    is_associative: true
+    is_idempotent: false
+    identity_value: 1
+    absorbing_value: 0
 NotEqual:
   autodiff:
-    jvp: null
+    vjp_rule_id: NotEqual_vjp
     jvp_rule_id: NotEqual_jvp
     vjp: null
-    vjp_rule_id: NotEqual_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The NotEqual operation.
   domain: binary
@@ -802,15 +997,15 @@ NotEqual:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -841,12 +1036,27 @@ NotEqual:
     pytorch: {}
     tensorflow:
       eager: tf.not_equal
+  dtype_rules:
+    promotion_matrix: boolean
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: bool
+  shape_signature:
+    pattern: broadcast(in0, in1)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: true
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Pow:
   autodiff:
-    jvp: null
-    jvp_rule_id: pow_jvp
+    vjp_rule_id: Pow_vjp
+    jvp_rule_id: Pow_jvp
     vjp: null
-    vjp_rule_id: pow_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Calculates an implementation-dependent approximation of exponentiation
     by raising each element ``x1_i`` (the base) of the input array ``x1`` to the power
@@ -863,15 +1073,15 @@ Pow:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     edge_onnx:
@@ -879,12 +1089,27 @@ Pow:
     llvm_cpp:
       scalar_expr: std::pow(in0_val, in1_val)
       template: binary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Sub:
   autodiff:
-    jvp: null
-    jvp_rule_id: sub_jvp
+    vjp_rule_id: Sub_vjp
+    jvp_rule_id: Sub_jvp
     vjp: null
-    vjp_rule_id: sub_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Auto-generated mapping for sub.
   domain: binary
@@ -898,15 +1123,15 @@ Sub:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x1
-      type: Tensor
-    - is_variadic: false
-      name: x2
-      type: Tensor
-    output_dtype_formula: promote(x1.dtype, x2.dtype)
-    output_shape_formula: broadcast(x1.shape, x2.shape)
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     edge_onnx:
@@ -914,3 +1139,18 @@ Sub:
     llvm_cpp:
       scalar_expr: in0_val - in1_val
       template: binary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: 0
+    absorbing_value: null

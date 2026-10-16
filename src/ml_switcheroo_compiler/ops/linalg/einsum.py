@@ -1,11 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Einstein summation operations."""
+
+from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any, Optional  # noqa: F401
+from typing import Optional  # noqa: F401
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -325,7 +328,7 @@ class EinsumPlanner:
             raise ValueError("Multiple ellipses in output subscript")
 
         parts = out_sub.split("...")
-        if len(parts) == MAGIC_VAL_2:
+        if len(parts) == BINARY_OP_ARITY:
             out_shape = EinsumPlanner._compute_output_shape_with_ellipsis(parts, axis_map, broadcast_shape)
         else:
             out_shape = EinsumPlanner._resolve_chars(out_sub, axis_map)
@@ -423,7 +426,10 @@ class Einsum(OpDef):
     """
 
     @staticmethod
-    def _extract_equation(args, kwargs):
+    def _extract_equation(
+        args: tuple[str | tuple[int, ...] | Tensor | None, ...],
+        kwargs: dict[str, str | tuple[int, ...] | Tensor | None],
+    ) -> tuple[str, tuple[str | tuple[int, ...] | Tensor | None, ...]]:
         """Evaluate _extract_equation operation.
 
         Args:
@@ -444,7 +450,7 @@ class Einsum(OpDef):
         raise ValueError("Einsum requires an 'equation' string attribute.")
 
     @staticmethod
-    def _extract_shapes(args) -> Optional[list[tuple[int, ...]]]:
+    def _extract_shapes(args: EagerValue) -> Optional[list[tuple[int, ...]]]:
         """Evaluate _extract_shapes operation.
 
         Args:
@@ -454,7 +460,7 @@ class Einsum(OpDef):
             tuple[int, ...]: Result.
         """
         shapes: list[tuple[int, ...]] = []
-        for arg in args:
+        for arg in getattr(args, "__iter__")():
             if arg is None:
                 continue
             if not isinstance(arg, tuple):
@@ -466,9 +472,9 @@ class Einsum(OpDef):
 
     def infer_shape(
         self,
-        *args,
-        **kwargs,
-    ):
+        *args: EagerTensorProtocol,
+        **kwargs: EagerValue,
+    ) -> EagerValue:
         """Infer the output shape of the operation.
 
         Args:
@@ -478,7 +484,7 @@ class Einsum(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        equation, remaining_args = self._extract_equation(args, kwargs)
+        equation, remaining_args = getattr(self, "_extract_equation")(args, kwargs)
         shapes = self._extract_shapes(remaining_args)
         if shapes is None:
             return ()

@@ -1,7 +1,10 @@
 """Tests for lint_numpy_leak.py."""
 
+from __future__ import annotations
+
 import os
 import tempfile
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 from pytest import CaptureFixture
@@ -12,6 +15,11 @@ from scripts.lint_numpy_leak import (
     check_for_third_party_leaks,
     main,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_check_for_numpy_leaks() -> None:
@@ -44,15 +52,12 @@ def test_check_for_numpy_leaks() -> None:
             f.write("import numpy\n")
 
         with open(os.path.join(eager_dir, "good.py"), "w") as f:
-            f.write("import numpy as np\n")
-
-        with open(os.path.join(backends_dir, "generator_mixins.py"), "w") as f:
-            f.write("import numpy as np\n")
+            f.write("res = np.add(1, 2)\n")
 
         webrtc_dir: str = os.path.join(backends_dir, "distributed_webrtc")
         os.makedirs(webrtc_dir)
         with open(os.path.join(webrtc_dir, "good.py"), "w") as f:
-            f.write("import numpy as np\n")
+            f.write("res = np.add(1, 2)\n")
 
         with open(os.path.join(grad_dir, "bad.py"), "w") as f:
             f.write("import numpy\n")
@@ -156,17 +161,17 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
     """Test fallback import path when scripts.lint_dependencies raises ImportError on initial import."""
     import builtins
     import sys
-    from typing import Any
 
     orig_import = builtins.__import__
     first_call = True
 
-    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+    def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Test function mock_import."""
         nonlocal first_call
         if "scripts.lint_dependencies" in name and first_call:
             first_call = False
             raise ImportError("Mocked initial import error")
-        return orig_import(name, *args, **kwargs)
+        return cast("Callable[..., EagerTensorProtocol]", orig_import)(name, *args, **kwargs)
 
     if "scripts.lint_dependencies" in sys.modules:
         del sys.modules["scripts.lint_dependencies"]

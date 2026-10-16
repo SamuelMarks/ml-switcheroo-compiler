@@ -1,9 +1,10 @@
-# ruff: noqa: E402, E501, F403
-"""Module tracer_mixins.py."""
-
 """Mixins for Tracer."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -17,7 +18,11 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 class ProxyMathOverloadsMixin:
     """Math Overloads Mixin."""
 
-    def _binary_op(self, other, op_type: str) -> "ProxyTensor":
+    id: str
+    shape: tuple[int | str, ...]
+    dtype: str
+
+    def _binary_op(self, other: EagerValue, op_type: str) -> ProxyTensor:
         """Trace a binary mathematical operation and append it to the computation graph.
 
         Args:
@@ -75,9 +80,9 @@ class ProxyMathOverloadsMixin:
 
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+        return cast(ProxyTensor, cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
 
-    def _unary_op(self, op_type: str) -> "ProxyTensor":
+    def _unary_op(self, op_type: str) -> ProxyTensor:
         """Trace a unary mathematical operation and append it to the computation graph.
 
         Args:
@@ -112,7 +117,7 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __getitem__(self, key) -> "ProxyTensor":
+    def __getitem__(self, key: EagerValue) -> ProxyTensor:
         """Trace a tensor slicing or indexing operation.
 
         Args:
@@ -148,7 +153,7 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __matmul__(self, other) -> "ProxyTensor":
+    def __matmul__(self, other: EagerValue) -> ProxyTensor:
         """Trace a matrix multiplication operation.
 
         Args:
@@ -193,9 +198,9 @@ class ProxyMathOverloadsMixin:
 
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+        return cast(ProxyTensor, cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
 
-    def assign(self, value: "ProxyTensor") -> "ProxyTensor":
+    def assign(self, value: ProxyTensor) -> ProxyTensor:
         """Trace an assignment operation, updating a variable's state.
 
         Args:
@@ -208,7 +213,7 @@ class ProxyMathOverloadsMixin:
             TracingError: If invoked outside of an active tracing context.
             ValueError: If the current proxy is not bound to a variable.
         """
-        if not global_tracing_state.is_tracing:
+        if not global_tracing_state.is_tracing or global_tracing_state.active_graph is None:
             msg = "Cannot perform assign outside of a tracing context."
             from ml_switcheroo_compiler.core.errors import TracingError
 
@@ -256,7 +261,7 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=value_shape, dtype=value_dtype)
 
-    def assign_add(self, value: "ProxyTensor") -> "ProxyTensor":
+    def assign_add(self, value: ProxyTensor) -> ProxyTensor:
         """Add value to variable proxy and return updated proxy.
 
         Args:
@@ -265,9 +270,9 @@ class ProxyMathOverloadsMixin:
         Returns:
             ProxyTensor: A proxy tensor representing the updated variable
         """
-        return self.assign(self + value)
+        return cast("ProxyTensor", getattr(self, "assign")(self + value))
 
-    def assign_sub(self, value: "ProxyTensor") -> "ProxyTensor":
+    def assign_sub(self, value: ProxyTensor) -> ProxyTensor:
         """Subtract value from variable proxy and return updated proxy.
 
         Args:
@@ -276,4 +281,4 @@ class ProxyMathOverloadsMixin:
         Returns:
             ProxyTensor: A proxy tensor representing the updated variable
         """
-        return self.assign(self - value)
+        return cast("ProxyTensor", getattr(self, "assign")(self - value))

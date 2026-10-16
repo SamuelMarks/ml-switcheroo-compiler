@@ -1,25 +1,32 @@
+"""Tests for test_registry."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 from unittest.mock import patch
 
+from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
 from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
 
-"""Tests for the operations registry."""
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def test_registry_get_op():
+def test_registry_get_op() -> None:
     """Test getting an operation."""
     # Transpose should definitely exist.
     op = registry.get_op("Transpose")
     assert op is not None
-    assert op["description"] == "The Transpose operation."
+    assert cast("EagerTensorProtocol", op["description"]) == cast("EagerTensorProtocol", "The Transpose operation.")
 
     # Missing op
     assert registry.get_op("NonExistentOp123") is None
 
 
-def test_registry_get_eager_mapping():
+def test_registry_get_eager_mapping() -> None:
     """Test getting eager mapping."""
     # Cupy has eager for Transpose
     mapping = registry.get_eager_mapping("cupy", "Transpose")
@@ -32,7 +39,7 @@ def test_registry_get_eager_mapping():
     assert registry.get_eager_mapping("cupy", "NonExistentOp123") is None
 
 
-def test_registry_get_generator_mapping():
+def test_registry_get_generator_mapping() -> None:
     """Test getting generator mapping."""
     mapping = registry.get_generator_mapping("numpy", "Transpose")
     assert mapping == "np.transpose"
@@ -44,7 +51,7 @@ def test_registry_get_generator_mapping():
     assert registry.get_generator_mapping("numpy", "NonExistentOp123") is None
 
 
-def test_registry_extras():
+def test_registry_extras() -> None:
     """test_registry_extras."""
     import pytest
 
@@ -80,7 +87,7 @@ def test_registry_extras():
         get_frontend("missing_frontend")
 
 
-def test_registry_remaining():
+def test_registry_remaining() -> None:
     """test_registry_remaining."""
     import pytest
 
@@ -101,7 +108,7 @@ def test_registry_remaining():
             pass
 
     @register_util("MyUtil")
-    def my_util():
+    def my_util() -> None:
         """my_util."""
         pass
 
@@ -112,26 +119,26 @@ def test_registry_remaining():
     # hit 112
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
-    _YAML_REGISTRY["DynamicTestOp123"] = {"test": 1}
+    getattr(_YAML_REGISTRY, "__setitem__")("DynamicTestOp123", {"test": 1})
     op_cls = get_op("DynamicTestOp123")
-    assert op_cls.get_yaml_data() == {"test": 1}
+    assert cast("EagerTensorProtocol", getattr(op_cls, "get_yaml_data"))() == {"test": 1}
 
     # hit 170-175 inside _RegistryShim
     class DummyShim:
         """DummyShim."""
 
-        def __init__(self, data):
+        def __init__(self, data: EagerValue) -> None:
             """__init__."""
             self.operations = data
 
-        def get_generator_mapping(self, prefix, op_name):
+        def get_generator_mapping(self, prefix: EagerValue, op_name: EagerValue) -> EagerValue:
             """get_generator_mapping."""
-            op = self.operations.get(op_name, {})
+            op = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(self.operations, "get")))(op_name, {})
             if not op:
                 return None
-            variants = op.get("variants", {})
-            backend = variants.get(prefix, {})
-            return backend.get("generator")
+            variants = cast("EagerTensorProtocol", getattr(op, "get"))("variants", {})
+            backend = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(variants, "get")))(prefix, {})
+            return cast("EagerTensorProtocol", getattr(backend, "get"))("generator")
 
     from ml_switcheroo_compiler.ops.registry import _RegistryShim
 

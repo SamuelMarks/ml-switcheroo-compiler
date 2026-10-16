@@ -1,6 +1,8 @@
 # ruff: noqa: E501
 """Edge case and exhaustive unit tests for buffer allocation and graph coloring allocator."""
 
+from __future__ import annotations
+
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
@@ -113,7 +115,7 @@ def test_buffer_allocation_run_branches() -> None:
     n1 = IRNode(id="n1", op_type="Input", shape_metadata=(8, 8))
     n1.attributes["dtype"] = "float32"
     g.nodes = {"n1": n1}
-    g.attributes = {"skip_coloring": True}
+    setattr(g, "attributes", {"skip_coloring": True})
     res = pass_obj.run(g)
     assert res is True
     assert "buffer_color" not in n1.attributes
@@ -123,7 +125,7 @@ def test_buffer_allocation_run_branches() -> None:
     n2 = IRNode(id="n2", op_type="Input", shape_metadata=(8, 8))
     n2.attributes["dtype"] = "float32"
     g2.nodes = {"n2": n2}
-    g2.attributes = None  # type: ignore[assignment]
+    setattr(g2, "attributes", None)
     res2 = pass_obj.run(g2)
     assert res2 is True
     assert "buffer_color" in n2.attributes

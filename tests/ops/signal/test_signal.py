@@ -1,47 +1,67 @@
+"""Tests for test_signal."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 import pytest
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_signal_missing():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_signal_missing() -> None:
+    """Test function test_signal_missing."""
     import ml_switcheroo_compiler.ops.signal as sig
 
     class FakeShape:
+        """Test class FakeShape."""
+
         shape = None
 
     with pytest.raises(ValueError):
-        sig._validate_conv2d_args(FakeShape(), FakeShape())
+        cast("Callable[..., EagerTensorProtocol]", sig._validate_conv2d_args)(cast("Callable[..., EagerTensorProtocol]", FakeShape)(), cast("Callable[..., EagerTensorProtocol]", FakeShape)())
 
     class FakeShape2:
+        """Test class FakeShape2."""
+
         shape = (1, 1)
 
     with pytest.raises(ValueError):
-        sig._validate_conv2d_args(FakeShape2(), FakeShape())
+        cast("Callable[..., EagerTensorProtocol]", sig._validate_conv2d_args)(cast("Callable[..., EagerTensorProtocol]", FakeShape2)(), cast("Callable[..., EagerTensorProtocol]", FakeShape)())
 
     with pytest.raises(ValueError):
-        sig._validate_conv2d_args(FakeShape(), FakeShape2())
+        cast("Callable[..., EagerTensorProtocol]", sig._validate_conv2d_args)(cast("Callable[..., EagerTensorProtocol]", FakeShape)(), cast("Callable[..., EagerTensorProtocol]", FakeShape2)())
 
 
-def test_signal_classes_infer_shape():
+def test_signal_classes_infer_shape() -> None:
+    """Test function test_signal_classes_infer_shape."""
     import ml_switcheroo_compiler.ops.signal as sig
 
     class DummyData:
+        """Test class DummyData."""
+
         shape = (1, 1)
 
-    assert sig.Rfft().infer_shape(DummyData()) == (1, 1)
-    assert sig.Fft2().infer_shape(DummyData()) == (1, 1)
-    assert sig.Fftfreq().infer_shape(5) == (5,)
-    assert sig.Fftfreq().infer_shape(DummyData()) == ()
-    assert sig.Irfft().infer_shape(DummyData()) == (1, 1)
-    assert sig.Ihfft().infer_shape(DummyData()) == (1, 1)
+    assert cast("Callable[..., EagerTensorProtocol]", sig.Rfft)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
+    assert cast("Callable[..., EagerTensorProtocol]", sig.Fft2)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
+    assert cast("Callable[..., EagerTensorProtocol]", sig.Fftfreq)().infer_shape(5) == (5,)
+    assert cast("Callable[..., EagerTensorProtocol]", sig.Fftfreq)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", sig.Irfft)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
+    assert cast("Callable[..., EagerTensorProtocol]", sig.Ihfft)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
 
 
-def test_signal_real_dsp_validation():
+def test_signal_real_dsp_validation() -> None:
+    """Test function test_signal_real_dsp_validation."""
     import unittest.mock as mock
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.signal import fftn, ifft2, ifftn, irfft2, irfftn
 
-    t_1d = Tensor(np.array([1.0, 2.0, 3.0, 4.0]), TensorConfig((4,), "float32", "cpu"))
+    Tensor(np.array([1.0, 2.0, 3.0, 4.0]), TensorConfig((4,), "float32", "cpu"))
     t_2d = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
 
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):

@@ -1,5 +1,9 @@
 """Tests for numpy eager math scatter ops."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -17,89 +21,128 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import (
     _np_tensor_scatter_update,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_np_tensor_scatter_update():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_np_tensor_scatter_update() -> None:
+    """Test function test_np_tensor_scatter_update."""
     tensor = np.zeros((2, 2))
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
 
     @global_eager_registry.register("TensorScatterUpdate")
-    def dummy_update(bm, t, idx, u):
-        out = np.copy(t)
+    def dummy_update(bm: EagerValue, t: EagerValue, idx: EagerValue, u: EagerValue) -> EagerValue:
+        """Test function dummy_update."""
+        out = cast("Callable[..., EagerTensorProtocol]", np.copy)(t)
         idx_tuple = tuple(np.moveaxis(np.asarray(idx), -1, 0))
         out[idx_tuple] = u
         return out
 
     res = _np_tensor_scatter_update(np, tensor, indices, updates)
-    np.testing.assert_allclose(res, [[1, 0], [0, 4]])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[1, 0], [0, 4]])
 
 
-def test_np_tensor_scatter_add():
+def test_np_tensor_scatter_add() -> None:
+    """Test function test_np_tensor_scatter_add."""
     tensor = np.zeros((2, 2))
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
     res = _np_tensor_scatter_add(np, tensor, indices, updates)
-    np.testing.assert_allclose(res, [[1, 0], [0, 4]])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[1, 0], [0, 4]])
 
 
-def test_np_tensor_scatter_max():
+def test_np_tensor_scatter_max() -> None:
+    """Test function test_np_tensor_scatter_max."""
     tensor = np.zeros((2, 2))
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
     res = _np_tensor_scatter_max(np, tensor, indices, updates)
-    np.testing.assert_allclose(res, [[1, 0], [0, 4]])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[1, 0], [0, 4]])
 
 
-def test_np_tensor_scatter_min():
+def test_np_tensor_scatter_min() -> None:
+    """Test function test_np_tensor_scatter_min."""
     tensor = np.ones((2, 2)) * 5
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
     res = _np_tensor_scatter_min(np, tensor, indices, updates)
-    np.testing.assert_allclose(res, [[1, 5], [5, 4]])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[1, 5], [5, 4]])
 
 
-def test_np_scatter_nd():
+def test_np_scatter_nd() -> None:
+    """Test function test_np_scatter_nd."""
     indices = np.array([[0, 0], [1, 1]])
     updates = np.array([1, 4])
     res = _np_scatter_nd(np, indices, updates, shape=(2, 2))
-    np.testing.assert_allclose(res, [[1, 0], [0, 4]])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[1, 0], [0, 4]])
 
 
-def test_np_scatter():
+def test_np_scatter() -> None:
+    """Test function test_np_scatter."""
     x = np.zeros((2, 2))
     index = np.array([[0, 0], [1, 1]])
     src = np.array([[1, 2], [3, 4]])
     res = _np_scatter(np, x, index, src, dim=1)
-    np.testing.assert_allclose(res, [[2, 0], [0, 4]])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[2, 0], [0, 4]])
 
 
-def test_band_part():
-    res = _band_part([[1, 2], [3, 4]], 1, 1)
-    np.testing.assert_allclose(res, [[1, 2], [3, 4]])
+def test_band_part() -> None:
+    """Test function test_band_part."""
+    res = cast("Callable[..., EagerTensorProtocol]", _band_part)([[1, 2], [3, 4]], 1, 1)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[1, 2], [3, 4]])
 
 
-def test_np_gather_nd():
+def test_np_gather_nd() -> None:
+    """Test function test_np_gather_nd."""
     params = np.array([[1, 2], [3, 4]])
     indices = np.array([[0, 0], [1, 1]])
     res = _np_gather_nd(np, params, indices)
-    np.testing.assert_allclose(res, [1, 4])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 4])
 
 
-def test_np_take_along_axis():
+def test_np_take_along_axis() -> None:
+    """Test function test_np_take_along_axis."""
     x = np.array([[1, 2], [3, 4]])
     indices = np.array([[1, 0], [0, 1]])
     res = _np_take_along_axis(np, x, indices, axis=1)
-    np.testing.assert_allclose(res, np.take_along_axis(x, indices, axis=1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, cast("Callable[..., EagerTensorProtocol]", np.take_along_axis)(x, indices, axis=1))
 
 
-def test_np_dynamic_slice():
+def test_np_dynamic_slice() -> None:
+    """Test function test_np_dynamic_slice."""
     x = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     res = _np_dynamic_slice(np, x, start_indices=[1, 1], slice_sizes=[2, 2])
-    np.testing.assert_allclose(res, [[5, 6], [8, 9]])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [[5, 6], [8, 9]])
 
 
-def test_np_dynamic_update_slice():
+def test_np_dynamic_update_slice() -> None:
+    """Test function test_np_dynamic_update_slice."""
     x = np.zeros((3, 3))
     res = _np_dynamic_update_slice(np, x, np.ones((2, 2)), [1, 1])
-    assert res[1, 1] == 1.0
-    assert res[0, 0] == 0.0
+    assert (
+        cast(
+            "EagerTensorProtocol",
+            getattr(res, "__getitem__")(
+                (
+                    1,
+                    1,
+                )
+            ),
+        )
+        == 1.0
+    )
+    assert (
+        cast(
+            "EagerTensorProtocol",
+            getattr(res, "__getitem__")(
+                (
+                    0,
+                    0,
+                )
+            ),
+        )
+        == 0.0
+    )

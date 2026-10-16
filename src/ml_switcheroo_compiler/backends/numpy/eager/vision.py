@@ -1,15 +1,19 @@
-# ruff: noqa: E402, E501, F403
 """Vision operations for the numpy backend."""
 
 from __future__ import annotations
 
 import typing  # noqa: F401
 from dataclasses import dataclass
-from typing import Optional  # noqa: F401
+from types import ModuleType
+from typing import (
+    Callable,
+    Optional,  # noqa: F401
+    cast,
+)
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
 
 
 @dataclass
@@ -43,14 +47,14 @@ class InterpolationConfig:
         W: Original width.
     """
 
-    images: np.ndarray | None = None
-    src_y: np.ndarray | None = None
-    src_x: np.ndarray | None = None
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
+    src_y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
+    src_x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
     H: int = 0
     W: int = 0
 
 
-def _calculate_bilinear_coords(np, cfg: ResizeConfig):
+def _calculate_bilinear_coords(np: ModuleType, cfg: ResizeConfig) -> EagerValue:
     """Calculate coords for bilinear resize.
 
     Args:
@@ -81,13 +85,13 @@ def _calculate_bilinear_coords(np, cfg: ResizeConfig):
 class BilinearCoords:
     """Coordinates for bilinear interpolation."""
 
-    y0: np.ndarray | None = None
-    y1: np.ndarray | None = None
-    x0: np.ndarray | None = None
-    x1: np.ndarray | None = None
+    y0: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    y1: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    x0: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    x1: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
 
 
-def _compute_bilinear_pixels(np, images, coords: BilinearCoords):
+def _compute_bilinear_pixels(np: ModuleType, images: EagerValue, coords: BilinearCoords) -> EagerValue:
     """Fetch pixels for bilinear interpolation.
 
     Args:
@@ -99,14 +103,17 @@ def _compute_bilinear_pixels(np, images, coords: BilinearCoords):
         tuple: Pixels Ia, Ib, Ic, Id.
     """
     y0, y1, x0, x1 = coords.y0, coords.y1, coords.x0, coords.x1
-    Ia = images[:, y0[:, None], x0[None, :], :]
-    Ib = images[:, y1[:, None], x0[None, :], :]
-    Ic = images[:, y0[:, None], x1[None, :], :]
-    Id = images[:, y1[:, None], x1[None, :], :]
+    Ia = cast(EagerTensorProtocol, images)[:, cast(EagerTensorProtocol, y0)[:, None], cast(EagerTensorProtocol, x0)[None, :], :]
+    Ib = cast(EagerTensorProtocol, images)[:, cast(EagerTensorProtocol, y1)[:, None], cast(EagerTensorProtocol, x0)[None, :], :]
+    Ic = cast(EagerTensorProtocol, images)[:, cast(EagerTensorProtocol, y0)[:, None], cast(EagerTensorProtocol, x1)[None, :], :]
+    Id = cast(EagerTensorProtocol, images)[:, cast(EagerTensorProtocol, y1)[:, None], cast(EagerTensorProtocol, x1)[None, :], :]
     return Ia, Ib, Ic, Id
 
 
-def _compute_bilinear_weights(dy, dx):
+def _compute_bilinear_weights(
+    dy: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    dx: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Evaluate _compute_bilinear_weights operation.
 
     Args:
@@ -123,7 +130,7 @@ def _compute_bilinear_weights(dy, dx):
     return wa, wb, wc, wd
 
 
-def _apply_bilinear_interpolation(np, cfg: InterpolationConfig):
+def _apply_bilinear_interpolation(np: ModuleType, cfg: InterpolationConfig) -> EagerValue:
     """Apply bilinear interpolation.
 
     Args:
@@ -144,11 +151,13 @@ def _apply_bilinear_interpolation(np, cfg: InterpolationConfig):
     pixels = _compute_bilinear_pixels(np, cfg.images, BilinearCoords(y0, y1, x0, x1))
     weights = _compute_bilinear_weights(dy, dx)
 
-    return (pixels[0] * weights[0] + pixels[1] * weights[1] + pixels[2] * weights[2] + pixels[3] * weights[3]).astype(cfg.images.dtype)
+    p0, p1, p2, p3 = getattr(pixels, "__iter__")()
+    w0, w1, w2, w3 = getattr(weights, "__iter__")()
+    return cast(EagerValue, (p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3).astype(getattr(cfg.images, "dtype")))
 
 
 @numpy_eager_registry.register("ResizeBilinear")
-def resize_bilinear(np_mod, images, size: tuple[int, int], align_corners: bool = False):
+def resize_bilinear(np_mod: ModuleType, images: EagerValue, size: tuple[int, int], align_corners: bool = False) -> EagerValue:
     """Resize images using bilinear interpolation.
 
     Args:
@@ -161,23 +170,23 @@ def resize_bilinear(np_mod, images, size: tuple[int, int], align_corners: bool =
             tuple[int, ...]: Result.
     """
     images = np_mod.asarray(images)
-    rank = len(images.shape)
+    rank = len(getattr(images, "shape"))
     if rank == 3:
         images = np_mod.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    shape = images.shape
+    shape = getattr(images, "shape")
     resize_cfg = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
-    src_y, src_x = _calculate_bilinear_coords(np_mod, resize_cfg)
+    src_y, src_x = getattr(_calculate_bilinear_coords(np_mod, resize_cfg), "__iter__")()
 
-    interp_cfg = InterpolationConfig(images=images, src_y=src_y, src_x=src_x, H=shape[1], W=shape[2])
+    interp_cfg = cast("Callable[..., InterpolationConfig]", InterpolationConfig)(images=images, src_y=src_y, src_x=src_x, H=shape[1], W=shape[2])
     out = _apply_bilinear_interpolation(np_mod, interp_cfg)
 
-    return out[0] if rank == 3 else out
+    return getattr(out, "__getitem__")(0) if rank == 3 else out
 
 
-def _calculate_nearest_coords(np, cfg: ResizeConfig):
+def _calculate_nearest_coords(np: ModuleType, cfg: ResizeConfig) -> EagerValue:
     """Calculate coords for nearest resize.
 
     Args:
@@ -205,7 +214,7 @@ def _calculate_nearest_coords(np, cfg: ResizeConfig):
 
 
 @numpy_eager_registry.register("ResizeNearest")
-def resize_nearest(np_mod, images, size: tuple[int, int], align_corners: bool = False):
+def resize_nearest(np_mod: ModuleType, images: EagerValue, size: tuple[int, int], align_corners: bool = False) -> EagerValue:
     """Resize images using nearest-neighbor interpolation.
 
     Args:
@@ -218,23 +227,23 @@ def resize_nearest(np_mod, images, size: tuple[int, int], align_corners: bool = 
             tuple[int, ...]: Result.
     """
     images = np_mod.asarray(images)
-    rank = len(images.shape)
+    rank = len(getattr(images, "shape"))
     if rank == 3:
         images = np_mod.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    shape = images.shape
+    shape = getattr(images, "shape")
     resize_cfg = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
-    src_y, src_x = _calculate_nearest_coords(np_mod, resize_cfg)
+    src_y, src_x = getattr(_calculate_nearest_coords(np_mod, resize_cfg), "__iter__")()
 
-    out = images[:, src_y[:, None], src_x[None, :], :]
+    out = cast(EagerTensorProtocol, images)[:, cast(EagerTensorProtocol, src_y)[:, None], cast(EagerTensorProtocol, src_x)[None, :], :]
 
-    return out[0] if rank == 3 else out
+    return getattr(out, "__getitem__")(0) if rank == 3 else out
 
 
 @numpy_eager_registry.register("ResizeBicubic")
-def resize_bicubic(np_mod, images, size: tuple[int, int], align_corners: bool = False):
+def resize_bicubic(np_mod: ModuleType, images: EagerValue, size: tuple[int, int], align_corners: bool = False) -> EagerValue:
     """Resize images using bicubic interpolation.
 
     Args:
@@ -250,7 +259,7 @@ def resize_bicubic(np_mod, images, size: tuple[int, int], align_corners: bool = 
 
 
 @numpy_eager_registry.register("ResizeLanczos3")
-def resize_lanczos3(np_mod, images, size: tuple[int, int], align_corners: bool = False):
+def resize_lanczos3(np_mod: ModuleType, images: EagerValue, size: tuple[int, int], align_corners: bool = False) -> EagerValue:
     """Resize images using Lanczos3 interpolation.
 
     Args:
@@ -266,7 +275,7 @@ def resize_lanczos3(np_mod, images, size: tuple[int, int], align_corners: bool =
 
 
 @numpy_eager_registry.register("RandomFlip")
-def random_flip_numpy(np_mod, images, mode="horizontal_and_vertical", seed=None, **kwargs):
+def random_flip_numpy(np_mod: ModuleType, images: EagerValue, mode: EagerValue = "horizontal_and_vertical", seed: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Generate random flip.
 
     Args:
@@ -285,7 +294,7 @@ def random_flip_numpy(np_mod, images, mode="horizontal_and_vertical", seed=None,
     if rank == 3:
         x = np.expand_dims(x, 0)
     elif rank != 4:
-        return x
+        return cast(EagerValue, x)
 
     rng = np.random.default_rng(seed)
     out = np.copy(x)
@@ -299,11 +308,11 @@ def random_flip_numpy(np_mod, images, mode="horizontal_and_vertical", seed=None,
         out[mask_v] = out[mask_v, ::-1, :, :]
 
     if rank == 3:
-        return out[0]
-    return out
+        return cast(EagerValue, out[0])
+    return cast(EagerValue, out)
 
 
-def _compute_rotation_coords(np, H: int, W: int, angle: float):
+def _compute_rotation_coords(np: ModuleType, H: int, W: int, angle: float) -> EagerValue:
     """Evaluate _compute_rotation_coords operation.
 
     Args:
@@ -338,14 +347,14 @@ class RotationInterpolationConfig:
         fill_value: Fill value.
     """
 
-    img: np.ndarray | None = None
-    src_x: np.ndarray | None = None
-    src_y: np.ndarray | None = None
+    img: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
+    src_x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
+    src_y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
     fill_mode: str = "nearest"
     fill_value: float = 0.0
 
 
-def _get_rotation_coords(np, src_x_clip, src_y_clip, W: int, H: int):
+def _get_rotation_coords(np: ModuleType, src_x_clip: EagerValue, src_y_clip: EagerValue, W: int, H: int) -> EagerValue:
     """Get the bounding coordinates for rotation interpolation.
 
     Args:
@@ -365,7 +374,10 @@ def _get_rotation_coords(np, src_x_clip, src_y_clip, W: int, H: int):
     return x0, x1, y0, y1
 
 
-def _gather_rotation_pixels(img, coords):
+def _gather_rotation_pixels(
+    img: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    coords: tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Gather pixels for rotation.
 
     Args:
@@ -381,7 +393,10 @@ def _gather_rotation_pixels(img, coords):
     return Ia, Ib, Ic, Id
 
 
-def _compute_rotation_weights(dx, dy):
+def _compute_rotation_weights(
+    dx: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    dy: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Evaluate _compute_rotation_weights operation.
 
     Args:
@@ -398,7 +413,7 @@ def _compute_rotation_weights(dx, dy):
     return wa, wb, wc, wd
 
 
-def _interpolate_rotation(np, cfg: RotationInterpolationConfig):
+def _interpolate_rotation(np: ModuleType, cfg: RotationInterpolationConfig) -> EagerValue:
     """Interpolate rotated image.
 
     Args:
@@ -408,25 +423,25 @@ def _interpolate_rotation(np, cfg: RotationInterpolationConfig):
     Returns:
             tuple[int, ...]: Result.
     """
-    H, W, _ = cfg.img.shape
+    H, W, _ = getattr(cfg.img, "shape")
     src_x_clip = np.clip(cfg.src_x, 0, W - 1)
     src_y_clip = np.clip(cfg.src_y, 0, H - 1)
 
     coords = _get_rotation_coords(np, src_x_clip, src_y_clip, W, H)
-    dx = src_x_clip - coords[0]
-    dy = src_y_clip - coords[2]
+    dx = src_x_clip - getattr(coords, "__getitem__")(0)
+    dy = src_y_clip - getattr(coords, "__getitem__")(2)
 
-    pixels = _gather_rotation_pixels(cfg.img, coords)
+    pixels = cast("Callable[..., EagerTensorProtocol]", _gather_rotation_pixels)(cfg.img, coords)
     weights = _compute_rotation_weights(dx, dy)
 
-    interp = pixels[0] * weights[0] + pixels[1] * weights[1] + pixels[2] * weights[2] + pixels[3] * weights[3]
-    valid_mask = (cfg.src_x >= 0) & (cfg.src_x <= W - 1) & (cfg.src_y >= 0) & (cfg.src_y <= H - 1)
+    interp = np.multiply(pixels[0], weights[0]) + np.multiply(pixels[1], weights[1]) + np.multiply(pixels[2], weights[2]) + np.multiply(pixels[3], weights[3])
+    valid_mask = (np.asarray(cfg.src_x, dtype=float) >= 0) & (np.asarray(cfg.src_x, dtype=float) <= W - 1) & (np.asarray(cfg.src_y, dtype=float) >= 0) & (np.asarray(cfg.src_y, dtype=float) <= H - 1)
     if cfg.fill_mode == "constant":
         interp[~valid_mask] = cfg.fill_value
-    return interp.astype(cfg.img.dtype)
+    return cast(EagerValue, interp.astype(getattr(cfg.img, "dtype")))
 
 
-def _apply_random_rotation_single(np, img, angle: float, fill_mode: str, fill_value: float):
+def _apply_random_rotation_single(np: ModuleType, img: EagerValue, angle: float, fill_mode: str, fill_value: float) -> EagerValue:
     """Apply random rotation to a single image.
 
     Args:
@@ -439,9 +454,9 @@ def _apply_random_rotation_single(np, img, angle: float, fill_mode: str, fill_va
     Returns:
             tuple[int, ...]: Result.
     """
-    H, W, _ = img.shape
-    src_x, src_y = _compute_rotation_coords(np, H, W, angle)
-    cfg = RotationInterpolationConfig(img=img, src_x=src_x, src_y=src_y, fill_mode=fill_mode, fill_value=fill_value)
+    H, W, _ = getattr(getattr(img, "shape"), "__iter__")()
+    src_x, src_y = getattr(_compute_rotation_coords(np, H, W, angle), "__iter__")()
+    cfg = cast("Callable[..., RotationInterpolationConfig]", RotationInterpolationConfig)(img=img, src_x=src_x, src_y=src_y, fill_mode=fill_mode, fill_value=fill_value)
     return _interpolate_rotation(np, cfg)
 
 
@@ -455,7 +470,7 @@ class TransformOptions:
     fill_value: float = 0.0
 
 
-def _apply_rotation_to_batch(np, x, rng, angles: tuple[float, float], options: TransformOptions):
+def _apply_rotation_to_batch(np: ModuleType, x: EagerValue, rng: EagerValue, angles: tuple[float, float], options: TransformOptions) -> EagerValue:
     """Apply rotation to batch of images.
 
     Args:
@@ -468,16 +483,16 @@ def _apply_rotation_to_batch(np, x, rng, angles: tuple[float, float], options: T
     Returns:
             tuple[int, ...]: Result.
     """
-    B = x.shape[0]
+    B = getattr(x, "shape")[0]
     out = np.zeros_like(x)
     for i in range(B):
-        angle = rng.uniform(angles[0], angles[1]) * 2 * np.pi
-        out[i] = _apply_random_rotation_single(np, x[i], angle, options.fill_mode, options.fill_value)
-    return out
+        angle = getattr(rng, "uniform")(getattr(angles, "__getitem__")(0), getattr(angles, "__getitem__")(1)) * 2 * np.pi
+        cast(EagerTensorProtocol, out)[i] = _apply_random_rotation_single(np, getattr(x, "__getitem__")(i), angle, options.fill_mode, options.fill_value)
+    return cast(EagerValue, out)
 
 
 @numpy_eager_registry.register("RandomRotation")
-def random_rotation_numpy(np_mod, images, factor: float, options: TransformOptions | None = None, **kwargs):
+def random_rotation_numpy(np_mod: ModuleType, images: EagerValue, factor: float, options: TransformOptions | None = None, **kwargs: EagerValue) -> EagerValue:
     """Generate random rotation.
 
     Args:
@@ -497,7 +512,7 @@ def random_rotation_numpy(np_mod, images, factor: float, options: TransformOptio
     if rank == 3:
         x = np.expand_dims(x, 0)
     elif rank != 4:
-        return x
+        return cast(EagerValue, x)
 
     rng = np.random.default_rng(options.seed)
 
@@ -509,5 +524,5 @@ def random_rotation_numpy(np_mod, images, factor: float, options: TransformOptio
     out = _apply_rotation_to_batch(np, x, rng, (lower, upper), options)
 
     if rank == 3:
-        return out[0]
+        return cast(EagerValue, getattr(out, "__getitem__")(0))
     return out

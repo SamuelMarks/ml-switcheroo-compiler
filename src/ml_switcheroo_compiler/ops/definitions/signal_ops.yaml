@@ -1,9 +1,9 @@
 FFT:
   autodiff:
-    jvp: null
-    jvp_rule_id: fft_jvp
+    vjp_rule_id: FFT_vjp
+    jvp_rule_id: FFT_jvp
     vjp: null
-    vjp_rule_id: fft_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Fft operation.
   domain: signal
@@ -18,12 +18,15 @@ FFT:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -50,12 +53,27 @@ FFT:
       generator: np.fft.fft
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 IFFT:
   autodiff:
-    jvp: null
-    jvp_rule_id: ifft_jvp
+    vjp_rule_id: IFFT_vjp
+    jvp_rule_id: IFFT_jvp
     vjp: null
-    vjp_rule_id: ifft_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Ifft operation.
   domain: signal
@@ -69,12 +87,15 @@ IFFT:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -103,12 +124,27 @@ IFFT:
       generator: torch.fft.ifft({0}, n={n}, dim={axis})
     tensorflow:
       eager: tf.ifft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 IRFFT:
   autodiff:
-    jvp: null
-    jvp_rule_id: irfft_jvp
+    vjp_rule_id: IRFFT_vjp
+    jvp_rule_id: IRFFT_jvp
     vjp: null
-    vjp_rule_id: irfft_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Irfft operation.
   domain: signal
@@ -122,12 +158,15 @@ IRFFT:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -156,12 +195,27 @@ IRFFT:
       generator: torch.fft.irfft({0}, n={n}, dim={axis})
     tensorflow:
       eager: tf.irfft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 ISTFT:
   autodiff:
-    jvp: null
-    jvp_rule_id: istft_jvp
+    vjp_rule_id: ISTFT_vjp
+    jvp_rule_id: ISTFT_jvp
     vjp: null
-    vjp_rule_id: istft_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Istft operation.
   domain: signal
@@ -175,12 +229,15 @@ ISTFT:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -209,12 +266,27 @@ ISTFT:
         length={length}, return_complex={return_complex})
     tensorflow:
       eager: tf.istft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 RFFT:
   autodiff:
-    jvp: null
-    jvp_rule_id: rfft_jvp
+    vjp_rule_id: RFFT_vjp
+    jvp_rule_id: RFFT_jvp
     vjp: null
-    vjp_rule_id: rfft_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Rfft operation.
   domain: signal
@@ -228,12 +300,15 @@ RFFT:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -262,12 +337,27 @@ RFFT:
       eager: torch.rfft
     tensorflow:
       eager: tf.rfft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 STFT:
   autodiff:
-    jvp: null
-    jvp_rule_id: Stft_jvp
+    vjp_rule_id: STFT_vjp
+    jvp_rule_id: STFT_jvp
     vjp: null
-    vjp_rule_id: Stft_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Stft operation.
   domain: signal
@@ -281,12 +371,15 @@ STFT:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -315,3 +408,18 @@ STFT:
         return_complex={return_complex})
     tensorflow:
       eager: tf.stft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

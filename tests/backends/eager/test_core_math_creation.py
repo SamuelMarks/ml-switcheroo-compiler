@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_creation import (
     _from_dlpack,
@@ -18,6 +18,11 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_creation import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def test_math_creation_coverage() -> None:
     """Test 100% lines and branches of math_creation.
@@ -29,31 +34,31 @@ def test_math_creation_coverage() -> None:
     class MockBackend:
         """Mock backend providing creation functions."""
 
-        def fromfunction(self, *args: Any, **kwargs: Any) -> str:
+        def fromfunction(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock fromfunction."""
             return "fromfunction_res"
 
-        def from_dlpack(self, *args: Any, **kwargs: Any) -> str:
+        def from_dlpack(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock from_dlpack."""
             return "from_dlpack_res"
 
-        def fromiter(self, *args: Any, **kwargs: Any) -> str:
+        def fromiter(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock fromiter."""
             return "fromiter_res"
 
-        def frompyfunc(self, *args: Any, **kwargs: Any) -> str:
+        def frompyfunc(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock frompyfunc."""
             return "frompyfunc_res"
 
-        def geomspace(self, *args: Any, **kwargs: Any) -> str:
+        def geomspace(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock geomspace."""
             return "geomspace_res"
 
-        def mgrid(self, *args: Any, **kwargs: Any) -> str:
+        def mgrid(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock mgrid."""
             return "mgrid_res"
 
-        def ogrid(self, *args: Any, **kwargs: Any) -> str:
+        def ogrid(self, *args: EagerValue, **kwargs: EagerValue) -> str:
             """Mock ogrid."""
             return "ogrid_res"
 
@@ -80,13 +85,13 @@ def test_math_creation_coverage() -> None:
 
     empty_backend = EmptyBackend()
     fn_res = _np_fromfunction(empty_backend, lambda i, j: i + j, (2, 2), dtype=int)
-    assert fn_res.shape == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(fn_res, "shape")) == (2, 2)
 
     it_res = _np_fromiter(empty_backend, (x * 2 for x in range(3)), dtype=int)
-    assert list(it_res) == [0, 2, 4]
+    assert cast("Callable[..., EagerTensorProtocol]", list)(it_res) == [0, 2, 4]
 
     pyf = _np_frompyfunc(empty_backend, lambda x: x * 3, 1, 1)
-    assert pyf(5) == 15
+    assert cast("Callable[..., EagerTensorProtocol]", pyf)(5) == 15
 
     # Registry verification
     for op_name in [

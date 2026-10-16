@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """Pass Manager Infrastructure for Middle-End Transformations.
 
 This module provides components for managing, validating, and executing optimization and
@@ -11,7 +10,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Sequence  # noqa: F401
+from collections.abc import Callable, Iterable, Sequence  # noqa: F401
+from typing import TYPE_CHECKING
+
+from ml_switcheroo_ir import AttributeValue
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.transforms.passes.config_models import ConvergenceCriteria
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
@@ -40,9 +45,7 @@ class IRValidator:
         Raises:
             CompilationError: If a node is missing shape metadata.
         """
-        nodes_iterable = graph.nodes
-        if isinstance(nodes_iterable, dict):
-            nodes_iterable = nodes_iterable.values()
+        nodes_iterable: Iterable[IRNode] = graph.nodes.values() if isinstance(graph.nodes, dict) else graph.nodes
         for node in nodes_iterable:
             if getattr(node, "shape_metadata", None) is None:
                 msg = f"Node {getattr(node, 'id', '')} is missing shape_metadata."
@@ -59,13 +62,11 @@ def _graph_hash(graph: IRGraph) -> str:
         str: MD5 hash digest of the serialized graph structure.
     """
     state: dict[str, dict[str, str | list[str]]] = {}
-    nodes_iterable = graph.nodes
-    if isinstance(nodes_iterable, dict):
-        nodes_iterable = nodes_iterable.values()
+    nodes_iterable: Iterable[IRNode] = graph.nodes.values() if isinstance(graph.nodes, dict) else graph.nodes
     for node in nodes_iterable:
         state[getattr(node, "id", "")] = {
-            "op": str(node.op_type),
-            "inputs": list(node.inputs),
+            "op": str(getattr(node, "op_type", "")),
+            "inputs": list(getattr(node, "inputs", [])),
         }
     return hashlib.md5(json.dumps(state, sort_keys=True).encode("utf-8")).hexdigest()
 
@@ -125,7 +126,7 @@ class PassManager:
         """Initialize the PassManager."""
         self.passes: list[Callable[[IRGraph], bool]] = []
         self.pass_names: list[str] = []
-        self.convergence_criteria = None
+        self.convergence_criteria: ConvergenceCriteria | None = None
         self.validators: list[Callable[[IRGraph], None]] = [
             IRValidator.check_cycles,
             IRValidator.check_shapes,
@@ -141,9 +142,87 @@ class PassManager:
             name (str, optional): The name of the pass.
         """
         self.passes.append(ir_pass)
-        self.pass_names.append(name or getattr(ir_pass, "__name__", "unknown_pass"))
+        getattr(self.pass_names, "append")(name or getattr(ir_pass, "__name__", "unknown_pass"))
 
-    def load_from_config(self, config_path: str | None = None, opt_level: str | None = None) -> None:  # noqa: C901, PLR0912
+    @staticmethod
+    def _resolve_config_path(config_path: str | None) -> str:
+        """Resolve the configuration YAML path for pass loading.
+
+        Args:
+            config_path (str | None): Explicit configuration path or None for default lookup.
+
+        Returns:
+            str: Resolved filesystem path to the YAML configuration file.
+        """
+        import os
+
+        if config_path is not None:
+            return config_path
+        default_pipeline = os.path.join(os.path.dirname(__file__), "passes", "pass_pipeline.yaml")
+        if os.path.exists(default_pipeline):
+            return default_pipeline
+        return os.path.join(os.path.dirname(__file__), "pass_config.yaml")
+
+    @staticmethod
+    def _validate_prerequisites(execution_order: list[str], prerequisites: dict[str, list[str]]) -> None:
+        """Validate that all pass prerequisites appear earlier in the execution order.
+
+        Args:
+            execution_order (list[str]): Ordered list of pass names to execute.
+            prerequisites (dict[str, list[str]]): Mapping of pass name to required prior passes.
+
+        Raises:
+            CompilationError: If a required prerequisite pass has not executed prior to its dependent.
+        """
+        seen_passes: set[str] = set()
+        for p_name in execution_order:
+            for prereq in prerequisites.get(p_name, []):
+                if prereq not in seen_passes:
+                    msg = f"Pass '{p_name}' requires prerequisite '{prereq}' which has not executed."
+                    raise CompilationError(msg)
+            seen_passes.add(p_name)
+
+    def _extract_execution_order(
+        self,
+        res: AttributeValue,
+        opt_level: str | None,
+    ) -> list[str]:
+        """Extract the pass execution order from parsed YAML configuration data.
+
+        Args:
+            res (AttributeValue): Parsed YAML config object.
+            opt_level (str | None): Optional optimization level ('O0', 'O1', 'O2', 'O3').
+
+        Returns:
+            list[str]: Ordered list of pass names to register.
+        """
+        from ml_switcheroo_compiler.transforms.passes.config_models import (
+            PassConfig,
+            PassPipelineConfig,
+        )
+
+        if not isinstance(res, dict):
+            return []
+
+        if "prerequisites" in res:
+            pipeline_config = PassPipelineConfig(**res)
+            self.convergence_criteria = pipeline_config.convergence_criteria
+            if opt_level and opt_level in pipeline_config.optimization_levels:
+                execution_order = pipeline_config.optimization_levels[opt_level].execution_order
+            else:
+                execution_order = pipeline_config.execution_order
+            self._validate_prerequisites(execution_order, pipeline_config.prerequisites)
+            return execution_order
+
+        if "cost_model" in res:
+            return PassConfig(**res).execution_order
+
+        if "execution_order" in res and isinstance(res["execution_order"], list):
+            return [str(p) for p in res["execution_order"]]
+
+        return []
+
+    def load_from_config(self, config_path: str | None = None, opt_level: str | None = None) -> None:
         """Load passes based on pass pipeline configuration or pass_config.yaml.
 
         Args:
@@ -158,20 +237,8 @@ class PassManager:
         import yaml
 
         import ml_switcheroo_compiler.transforms.passes as passes_module
-        from ml_switcheroo_compiler.transforms.passes.config_models import (
-            PassConfig,
-            PassPipelineConfig,
-        )
 
-        if config_path is not None:
-            yaml_path = config_path
-        else:
-            default_pipeline = os.path.join(os.path.dirname(__file__), "passes", "pass_pipeline.yaml")
-            if os.path.exists(default_pipeline):
-                yaml_path = default_pipeline
-            else:
-                yaml_path = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
-
+        yaml_path = self._resolve_config_path(config_path)
         if not os.path.exists(yaml_path):
             return
 
@@ -180,37 +247,10 @@ class PassManager:
 
         self.passes = []
         self.pass_names = []
-        execution_order: list[str] = []
-
-        if isinstance(res, dict) and "prerequisites" in res:
-            pipeline_config = PassPipelineConfig(**res)
-            self.convergence_criteria = pipeline_config.convergence_criteria
-
-            if opt_level and opt_level in pipeline_config.optimization_levels:
-                execution_order = pipeline_config.optimization_levels[opt_level].execution_order
-            else:
-                execution_order = pipeline_config.execution_order
-
-            seen_passes: set[str] = set()
-            for p_name in execution_order:
-                prereqs = pipeline_config.prerequisites.get(p_name, [])
-                for prereq in prereqs:
-                    if prereq not in seen_passes:
-                        msg = f"Pass '{p_name}' requires prerequisite '{prereq}' which has not executed."
-                        raise CompilationError(msg)
-                seen_passes.add(p_name)
-        elif isinstance(res, dict) and "cost_model" in res:
-            config = PassConfig(**res)
-            execution_order = config.execution_order
-        elif isinstance(res, dict) and "execution_order" in res:
-            execution_order = res["execution_order"]
-        else:
-            return
+        execution_order = self._extract_execution_order(res, opt_level)
 
         for pass_name in execution_order:
-            pass_func = getattr(passes_module, f"{pass_name}_pass", None)
-            if pass_func is None:
-                pass_func = getattr(passes_module, pass_name, None)
+            pass_func = getattr(passes_module, f"{pass_name}_pass", None) or getattr(passes_module, pass_name, None)
             if pass_func and callable(pass_func):
                 self.add_pass(pass_func, name=pass_name)
 

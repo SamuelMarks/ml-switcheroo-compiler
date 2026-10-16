@@ -1,11 +1,19 @@
-# ruff: noqa: E402, E501, F403
 """Convolution operations."""
+
+from __future__ import annotations
 
 import math
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Union  # noqa: F401
+from typing import (
+    Callable,
+    Optional,
+    Union,  # noqa: F401
+    cast,
+)
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -90,7 +98,10 @@ def _calculate_conv_transpose_padding(
     return pads
 
 
-def _build_conv_config(kwargs, dimension_numbers):
+def _build_conv_config(
+    kwargs: dict[str, int | str | Sequence[int] | Sequence[tuple[int, int]] | None],
+    dimension_numbers: tuple[str, str, str] | tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
+) -> ConvConfig:
     """Evaluate _build_conv_config operation.
 
     Args:
@@ -109,12 +120,15 @@ def _build_conv_config(kwargs, dimension_numbers):
     rhs_dilation = kwargs.get("rhs_dilation", None)
     if isinstance(rhs_dilation, int):
         rhs_dilation = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
-    return ConvConfig(
-        window_strides=strides,
-        padding=kwargs.get("padding", "VALID"),
-        lhs_dilation=lhs_dilation,
-        rhs_dilation=rhs_dilation,
-        dimension_numbers=dimension_numbers,
+    return cast(
+        ConvConfig,
+        cast("Callable[..., EagerTensorProtocol]", ConvConfig)(
+            window_strides=cast("Sequence[int]", strides),
+            padding=kwargs.get("padding", "VALID"),
+            lhs_dilation=cast("Optional[Sequence[int]]", lhs_dilation),
+            rhs_dilation=cast("Optional[Sequence[int]]", rhs_dilation),
+            dimension_numbers=dimension_numbers,
+        ),
     )
 
 
@@ -123,9 +137,9 @@ def _prepare_depthwise_conv(
     rhs: Tensor,
     spatial_dims: int,
     dimension_numbers: tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
-    config_obj=None,
-    **kwargs,
-):
+    config_obj: EagerValue = None,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Prepare configuration and reshape weights for depthwise convolution.
 
     Args:
@@ -152,13 +166,16 @@ def _prepare_depthwise_conv(
 
         in_channels = lhs.shape[-1]
 
-        config_obj = ConvConfig(
-            window_strides=strides,
-            padding=kwargs.get("padding", "VALID"),
-            lhs_dilation=lhs_dilation,
-            rhs_dilation=rhs_dilation,
-            dimension_numbers=dimension_numbers,
-            feature_group_count=in_channels,
+        config_obj = cast(
+            EagerValue,
+            cast("Callable[..., EagerTensorProtocol]", ConvConfig)(
+                window_strides=cast("Sequence[int]", strides),
+                padding=kwargs.get("padding", "VALID"),
+                lhs_dilation=cast("Optional[Sequence[int]]", lhs_dilation),
+                rhs_dilation=cast("Optional[Sequence[int]]", rhs_dilation),
+                dimension_numbers=dimension_numbers,
+                feature_group_count=in_channels,
+            ),
         )
 
     in_channels = rhs.shape[-2]
@@ -170,7 +187,7 @@ def _prepare_depthwise_conv(
     return rhs_reshaped, config_obj
 
 
-def atrous_conv2d(value, filters, rate, padding, name=None):
+def atrous_conv2d(value: EagerValue, filters: EagerValue, rate: EagerValue, padding: EagerValue, name: EagerValue = None) -> EagerValue:
     """Atrous convolution.
 
     Args:
@@ -189,12 +206,12 @@ def atrous_conv2d(value, filters, rate, padding, name=None):
 
 
 def atrous_conv2d_transpose(
-    value,
-    filters,
-    output_shape,
+    value: EagerValue,
+    filters: EagerValue,
+    output_shape: EagerValue,
     config: typing.Optional[GenericConvConfig] = None,
-    name=None,
-):
+    name: EagerValue = None,
+) -> EagerValue:
     """Atrous convolution transpose.
 
     Args:
@@ -214,7 +231,7 @@ def atrous_conv2d_transpose(
     return conv2d_transpose(value, filters, strides=1, padding=conf.padding, dilation_rate=conf.dilation_rate)
 
 
-def bias_add(value, bias, data_format=None, name=None):
+def bias_add(value: EagerValue, bias: EagerValue, data_format: EagerValue = None, name: EagerValue = None) -> EagerValue:
     """Add `bias` to `value`.
 
     Args:
@@ -229,7 +246,7 @@ def bias_add(value, bias, data_format=None, name=None):
     return add(value, bias)
 
 
-def collapse_repeated(labels, seq_length, name=None):
+def collapse_repeated(labels: EagerValue, seq_length: EagerValue, name: EagerValue = None) -> EagerValue:
     """Merge repeated labels into single labels.
 
     Args:
@@ -253,7 +270,7 @@ def collapse_repeated(labels, seq_length, name=None):
     return out, Tensor(None, TensorConfig(getattr(labels, "shape", ()), "int32", "cpu"))
 
 
-def compute_average_loss(per_example_loss, sample_weight=None, global_batch_size=None):
+def compute_average_loss(per_example_loss: EagerValue, sample_weight: EagerValue = None, global_batch_size: EagerValue = None) -> EagerValue:
     """Compute the average loss.
 
     Args:
@@ -274,7 +291,7 @@ def depthwise_conv2d(
     filter: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
     name: typing.Optional[str] = None,
-):
+) -> EagerValue:
     """Depthwise 2-D convolution.
 
     Args:
@@ -301,12 +318,12 @@ def depthwise_conv2d(
 
 
 def depthwise_conv2d_backprop_filter(
-    input,
-    filter_sizes,
-    out_backprop,
+    input: EagerValue,
+    filter_sizes: EagerValue,
+    out_backprop: EagerValue,
     config: typing.Optional[GenericConvConfig] = None,
-    name=None,
-):
+    name: EagerValue = None,
+) -> EagerValue:
     """Compute the gradients of depthwise convolution with respect to the filter.
 
     Args:
@@ -319,16 +336,16 @@ def depthwise_conv2d_backprop_filter(
     Returns:
             tuple[int, ...]: Result.
     """
-    return Tensor(None, TensorConfig(filter_sizes, "float32", "cpu"))
+    return Tensor(None, cast("Callable[..., TensorConfig]", TensorConfig)(filter_sizes, "float32", "cpu"))
 
 
 def depthwise_conv2d_backprop_input(
-    input_sizes,
-    filter,
-    out_backprop,
+    input_sizes: EagerValue,
+    filter: EagerValue,
+    out_backprop: EagerValue,
     config: typing.Optional[GenericConvConfig] = None,
-    name=None,
-):
+    name: EagerValue = None,
+) -> EagerValue:
     """Compute the gradients of depthwise convolution with respect to the input.
 
     Args:
@@ -341,7 +358,7 @@ def depthwise_conv2d_backprop_input(
     Returns:
             tuple[int, ...]: Result.
     """
-    return Tensor(None, TensorConfig(input_sizes, "float32", "cpu"))
+    return Tensor(None, cast("Callable[..., TensorConfig]", TensorConfig)(input_sizes, "float32", "cpu"))
 
 
 @dataclass
@@ -357,10 +374,10 @@ class ConvSpatialArgs:
 
 
 def dilation2d(
-    input,
-    filter,
+    input: EagerValue,
+    filter: EagerValue,
     args: typing.Optional[ConvSpatialArgs] = None,
-):
+) -> EagerValue:
     """Compute the grayscale dilation of 4-D `input` and 3-D `filter` tensors.
 
     Args:
@@ -383,10 +400,10 @@ def dilation2d(
 
 
 def erosion2d(
-    value,
-    kernel,
+    value: EagerValue,
+    kernel: EagerValue,
     args: typing.Optional[ConvSpatialArgs] = None,
-):
+) -> EagerValue:
     """Compute the grayscale erosion of 4-D `value` and 3-D `kernel` tensors.
 
     Args:
@@ -409,10 +426,10 @@ def erosion2d(
 
 
 def convolution(
-    input,
-    filters,
+    input: EagerValue,
+    filters: EagerValue,
     args: typing.Optional[ConvSpatialArgs] = None,
-):
+) -> EagerValue:
     """Compute sums of N-D convolutions (actually cross-correlation).
 
     Args:
@@ -426,7 +443,7 @@ def convolution(
     args = args or ConvSpatialArgs()
     _conv_nd = get_op("_ConvNd")()
 
-    num_spatial_dims = len(input.shape) - 2
+    num_spatial_dims = len(getattr(input, "shape")) - 2
     return _conv_nd(
         input,
         filters,
@@ -439,11 +456,11 @@ def convolution(
 
 
 def conv_transpose(
-    input,
-    filters,
-    output_shape,
+    input: EagerValue,
+    filters: EagerValue,
+    output_shape: EagerValue,
     args: typing.Optional[ConvSpatialArgs] = None,
-):
+) -> EagerValue:
     """Return the transpose of `convolution`.
 
     Args:
@@ -463,4 +480,4 @@ def conv_transpose(
         return get_active_backend().execute_op("ConvTranspose", input, filters, output_shape=output_shape, args=args)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, output_shape, getattr(input, "dtype", "float32"))
+    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, cast("Sequence[Union[int, str]]", output_shape), getattr(input, "dtype", "float32"))

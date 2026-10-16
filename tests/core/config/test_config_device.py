@@ -1,12 +1,23 @@
 """Tests for config and device additions."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+import pytest
+
 from ml_switcheroo_compiler.core.config import (
     config,
+    disable_compile,
+    enable_compile,
     enable_op_determinism,
     enable_tensor_float_32_execution,
     tensor_float_32_execution_enabled,
 )
-from ml_switcheroo_compiler.core.device import DeviceType, get_logical_devices, get_memory_info, get_physical_devices
+from ml_switcheroo_compiler.core.device import Device, DeviceType, Stream, StreamContext, exporter, get_logical_devices, get_memory_info, get_physical_devices
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_config_flags() -> None:
@@ -45,13 +56,14 @@ def test_device_queries() -> None:
     assert mem_info["current"] == 0
 
 
-def test_clear_cache():
+def test_clear_cache() -> None:
     """Test."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.device import clear_cache
 
     clear_cache()
     config.clear_cache()
+    assert callable(config.clear_cache)
 
 
 def test_function_exporter() -> None:
@@ -63,15 +75,10 @@ def test_function_exporter() -> None:
     with exporter():
         pass
     export_function()
+    assert callable(export_function)
 
 
-import pytest
-
-from ml_switcheroo_compiler.core.config import disable_compile, enable_compile
-from ml_switcheroo_compiler.core.device import Device, Stream, StreamContext, exporter
-
-
-def test_stream_context_extra():
+def test_stream_context_extra() -> None:
     """Test."""
     stream = Stream(Device(DeviceType.CPU))
     with StreamContext(stream):
@@ -79,7 +86,7 @@ def test_stream_context_extra():
     assert repr(Device(DeviceType.CPU)) == "Device(cpu:0)"
 
 
-def test_config_methods_extra():
+def test_config_methods_extra() -> None:
     """Test."""
     config.seed = 42
     assert config.seed == 42
@@ -117,7 +124,7 @@ def test_config_methods_extra():
     assert not tensor_float_32_execution_enabled()
 
 
-def test_eager_mode_with_tracing_state_extra():
+def test_eager_mode_with_tracing_state_extra() -> None:
     """Test."""
     config.eager_mode = True
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -131,7 +138,7 @@ def test_eager_mode_with_tracing_state_extra():
     global_tracing_state.is_tracing = orig
 
 
-def test_config_context_exceptions_extra():
+def test_config_context_exceptions_extra() -> None:
     """Test."""
     from ml_switcheroo_compiler.core.config import ConfigContext, EagerMode
     from ml_switcheroo_compiler.core.config import StreamContext as ConfigStreamContext
@@ -139,9 +146,9 @@ def test_config_context_exceptions_extra():
     with pytest.raises(ValueError):
         with ConfigContext(unknown_key="val"):
             pass
-    with EagerMode():
+    with cast("EagerTensorProtocol", EagerMode()):
         pass
-    with ConfigStreamContext("stream_name"):
+    with cast("EagerTensorProtocol", ConfigStreamContext("stream_name")):
         pass
 
 
@@ -167,7 +174,7 @@ def test_device_functions_extra() -> None:
     assert info["current"] == 0
 
 
-def test_config_missing_lines():
+def test_config_missing_lines() -> None:
     """Test."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.device import Device, DeviceType
@@ -183,7 +190,7 @@ def test_config_missing_lines():
     assert cloned.env.default_float_dtype == DType.Float32
 
 
-def test_config_context_env():
+def test_config_context_env() -> None:
     """Test."""
     from ml_switcheroo_compiler.core.config import ConfigContext, config
 

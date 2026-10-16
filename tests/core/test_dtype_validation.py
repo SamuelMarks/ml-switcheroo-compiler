@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import (
@@ -10,6 +12,9 @@ from ml_switcheroo_compiler.core.dtype import (
     check_dtype_for_op,
     validate_dtype_for_op,
 )
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_transcendental_ops_accept_floats_and_complex() -> None:
@@ -76,7 +81,8 @@ def test_validate_dtype_fallback_and_string_inputs(monkeypatch: pytest.MonkeyPat
 
     real_import = importlib.import_module
 
-    def mock_import(name: str, package: str | None = None) -> object:
+    def mock_import(name: str, package: str | None = None) -> EagerValue:
+        """Test function mock_import."""
         if "ml_ecosystem_snapshots" in name:
             raise ImportError("Simulated missing module")
         return real_import(name, package)
@@ -110,11 +116,14 @@ def test_validate_dtype_fn_is_none(monkeypatch: pytest.MonkeyPatch) -> None:
     real_import = importlib.import_module
 
     class DummyMod:
+        """Test class DummyMod."""
+
         validate_dtype_for_op = None
 
-    def mock_import(name: str, package: str | None = None) -> object:
+    def mock_import(name: str, package: str | None = None) -> EagerValue:
+        """Test function mock_import."""
         if "ml_ecosystem_snapshots" in name:
-            return DummyMod()
+            return cast("EagerTensorProtocol", DummyMod())
         return real_import(name, package)
 
     monkeypatch.setattr(importlib, "import_module", mock_import)

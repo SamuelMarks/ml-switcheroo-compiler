@@ -1,22 +1,24 @@
-"""Module qr.py."""
+"""Core abstractions and logic definitions for qr.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import TYPE_CHECKING, cast
 
-"""Core abstractions and logic definitions for qr.py."""
-
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 @register_op("Qr")
 class Qr(OpDef):
     """Qr Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -43,7 +45,7 @@ class Qr(OpDef):
 class Hessenberg(OpDef):
     """Hessenberg Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -60,7 +62,7 @@ class Hessenberg(OpDef):
 class HouseholderProduct(OpDef):
     """HouseholderProduct Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
         """Infer shape for HouseholderProduct.
 
         Args:
@@ -79,7 +81,7 @@ class HouseholderProduct(OpDef):
 class Schur(OpDef):
     """Schur Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -96,7 +98,7 @@ class Schur(OpDef):
 class Tridiagonal(OpDef):
     """Tridiagonal Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -112,7 +114,7 @@ class Tridiagonal(OpDef):
         return diag_shape, off_diag_shape, a_shape
 
 
-def qr(input: Tensor, mode: str = "reduced"):
+def qr(input: Tensor, mode: str = "reduced") -> EagerValue:
     """Compute the QR decomposition of a matrix.
 
     Args:
@@ -128,25 +130,26 @@ def qr(input: Tensor, mode: str = "reduced"):
         backend = get_active_backend()
         res = backend.execute_op("Qr", input.data, mode=mode)
         if mode == "r":
-            return Tensor(res, TensorConfig(res.shape, input.dtype, input.device))
-        q, r = res
+            res_t = cast("TensorLike", res)
+            return Tensor(res_t, TensorConfig(res_t.shape, input.dtype, input.device))
+        q, r = cast("tuple[TensorLike, TensorLike]", res)
         return (
             Tensor(q, TensorConfig(q.shape, input.dtype, input.device)),
             Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
         )
-    m, n = input.shape[-2], input.shape[-1]
+    m, n = int(input.shape[-2]), int(input.shape[-1])
     k = min(m, n)
     if mode == "complete":
         q_shape, r_shape = input.shape[:-2] + (m, m), input.shape[:-2] + (m, n)
     elif mode == "r":
-        r_shape = (input.shape[:-2] + (k, n),)
-        return _emit_linalg_node("Qr", [input], {"mode": mode}, [r_shape[0]], [input.dtype])
+        r_shape = input.shape[:-2] + (k, n)
+        return _emit_linalg_node("Qr", [input], {"mode": mode}, [r_shape], [input.dtype])
     else:
         q_shape, r_shape = input.shape[:-2] + (m, k), input.shape[:-2] + (k, n)
     return _emit_linalg_node("Qr", [input], {"mode": mode}, [q_shape, r_shape], [input.dtype] * 2)
 
 
-def hessenberg(a: Tensor):
+def hessenberg(a: Tensor) -> EagerValue:
     """Compute the Hessenberg decomposition of a matrix.
 
     Args:
@@ -159,7 +162,7 @@ def hessenberg(a: Tensor):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        h, q = backend.execute_op("Hessenberg", a.data)
+        h, q = cast("tuple[TensorLike, TensorLike]", backend.execute_op("Hessenberg", a.data))
         return (
             Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
@@ -167,7 +170,7 @@ def hessenberg(a: Tensor):
     return _emit_linalg_node("Hessenberg", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def householder_product(a: Tensor, tau: Tensor):
+def householder_product(a: Tensor, tau: Tensor) -> EagerValue:
     """Compute the product of Householder reflectors.
 
     Args:
@@ -181,12 +184,12 @@ def householder_product(a: Tensor, tau: Tensor):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("HouseholderProduct", a.data, tau.data)
+        data = cast("TensorLike", backend.execute_op("HouseholderProduct", a.data, tau.data))
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
 
-def schur(a: Tensor):
+def schur(a: Tensor) -> EagerValue:
     """Compute the Schur decomposition of a matrix.
 
     Args:
@@ -199,7 +202,7 @@ def schur(a: Tensor):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        t, z = backend.execute_op("Schur", a.data)
+        t, z = cast("tuple[TensorLike, TensorLike]", backend.execute_op("Schur", a.data))
         return (
             Tensor(t, TensorConfig(t.shape, a.dtype, a.device)),
             Tensor(z, TensorConfig(z.shape, a.dtype, a.device)),
@@ -207,7 +210,7 @@ def schur(a: Tensor):
     return _emit_linalg_node("Schur", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal(a: Tensor):
+def tridiagonal(a: Tensor) -> EagerValue:
     """Compute the tridiagonal decomposition of a symmetric matrix.
 
     Args:
@@ -220,14 +223,14 @@ def tridiagonal(a: Tensor):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        diag, off_diag, q = backend.execute_op("Tridiagonal", a.data)
+        diag, off_diag, q = cast("tuple[TensorLike, TensorLike, TensorLike]", backend.execute_op("Tridiagonal", a.data))
         return (
             Tensor(diag, TensorConfig(diag.shape, a.dtype, a.device)),
             Tensor(off_diag, TensorConfig(off_diag.shape, a.dtype, a.device)),
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
         )
     diag_shape = a.shape[:-1]
-    off_diag_shape = a.shape[:-2] + (a.shape[-1] - 1,) if a.shape[-1] > 0 else a.shape[:-1]
+    off_diag_shape = a.shape[:-2] + (int(a.shape[-1]) - 1,) if int(a.shape[-1]) > 0 else a.shape[:-1]
     return _emit_linalg_node("Tridiagonal", [a], {}, [diag_shape, off_diag_shape, a.shape], [a.dtype] * 3)
 
 
@@ -235,7 +238,7 @@ def tridiagonal(a: Tensor):
 class Qdwh(OpDef):
     """Qdwh Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -248,7 +251,7 @@ class Qdwh(OpDef):
         return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
 
 
-def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10):
+def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> EagerValue:
     """Compute the QR-based dynamically weighted Halley iteration.
 
     Args:
@@ -263,7 +266,10 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        q, h, num_iters, is_converged = backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations)
+        q, h, num_iters, is_converged = cast(
+            "tuple[TensorLike, TensorLike, TensorLike, TensorLike]",
+            backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations),
+        )
         return (
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
             Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),

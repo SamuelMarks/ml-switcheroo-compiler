@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
 import os
-from typing import TYPE_CHECKING, Union
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Union, cast
 
 import yaml
 from pydantic import BaseModel, Field
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY, MATRIX_RANK
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.ir.core import TensorSpec
+    from ml_switcheroo_compiler.ir.core import LogicalGraph, TensorSpec
 
 MAX_DIMENSIONS: int = 4
 MAX_RANK: int = 5
@@ -212,7 +212,51 @@ class Polynomial:
                     new_terms[merged_mono] = curr
         return Polynomial(new_terms)
 
-    def div_exact(self, other: Polynomial) -> Polynomial | None:  # noqa: C901, PLR0911
+    def _div_by_const(self, c: int) -> Polynomial | None:
+        """Divide all terms of the polynomial by a non-zero integer constant if exact.
+
+        Args:
+            c (int): Non-zero integer divisor.
+
+        Returns:
+            Optional[Polynomial]: Quotient polynomial if all coefficients are divisible by c, else None.
+        """
+        if c == 0:
+            return None
+        new_terms: dict[MonomialType, int] = {}
+        for mono, coeff in self.terms.items():
+            if coeff % c != 0:
+                return None
+            new_terms[mono] = coeff // c
+        return Polynomial(new_terms)
+
+    def _div_by_monomial(self, div_mono: MonomialType, div_coeff: int) -> Polynomial | None:
+        """Divide all terms of the polynomial by a single monomial term if exact.
+
+        Args:
+            div_mono (MonomialType): Divisor monomial powers.
+            div_coeff (int): Divisor integer coefficient.
+
+        Returns:
+            Optional[Polynomial]: Quotient polynomial if exact division succeeds, else None.
+        """
+        new_terms: dict[MonomialType, int] = {}
+        div_dict = dict(div_mono)
+        for mono, coeff in self.terms.items():
+            if coeff % div_coeff != 0:
+                return None
+            mono_dict = dict(mono)
+            for var, power in div_dict.items():
+                if mono_dict.get(var, 0) < power:
+                    return None
+                mono_dict[var] -= power
+                if mono_dict[var] == 0:
+                    del mono_dict[var]
+            quot_mono = tuple(sorted(mono_dict.items()))
+            new_terms[quot_mono] = coeff // div_coeff
+        return Polynomial(new_terms)
+
+    def div_exact(self, other: Polynomial) -> Polynomial | None:
         """Attempt exact polynomial division.
 
         Args:
@@ -226,37 +270,50 @@ class Polynomial:
         if self == other:
             return Polynomial.from_const(1)
         if other.is_const():
-            c = other.get_const()
-            if c == 0:
-                return None
-            new_terms: dict[MonomialType, int] = {}
-            for mono, coeff in self.terms.items():
-                if coeff % c != 0:
-                    return None
-                new_terms[mono] = coeff // c
-            return Polynomial(new_terms)
-
+            return self._div_by_const(other.get_const())
         if len(other.terms) == 1:
             div_mono, div_coeff = next(iter(other.terms.items()))
-            new_terms = {}
-            for mono, coeff in self.terms.items():
-                if coeff % div_coeff != 0:
-                    return None
-                mono_dict = dict(mono)
-                div_dict = dict(div_mono)
-                for var, power in div_dict.items():
-                    if mono_dict.get(var, 0) < power:
-                        return None
-                    mono_dict[var] -= power
-                    if mono_dict[var] == 0:
-                        del mono_dict[var]
-                quot_mono = tuple(sorted(mono_dict.items()))
-                new_terms[quot_mono] = coeff // div_coeff
-            return Polynomial(new_terms)
-
+            return self._div_by_monomial(div_mono, div_coeff)
         return None
 
-    def canonical_str(self) -> str:  # noqa: C901, PLR0912
+    @staticmethod
+    def _monomial_sort_key(mono: MonomialType) -> tuple[int, list[str]]:
+        """Compute sort key for monomial terms by descending total degree and variable names.
+
+        Args:
+            mono (MonomialType): Monomial representation.
+
+        Returns:
+            tuple[int, list[str]]: Comparison sort key.
+        """
+        return (-sum(p for _, p in mono), [v for v, _ in mono])
+
+    @staticmethod
+    def _format_monomial_term(index: int, mono: MonomialType, coeff: int) -> str:
+        """Format a single signed monomial term for canonical string output.
+
+        Args:
+            index (int): Position of term in the sorted polynomial sequence.
+            mono (MonomialType): Canonical monomial powers.
+            coeff (int): Non-zero integer coefficient.
+
+        Returns:
+            str: Formatted signed term string.
+        """
+        if index > 0:
+            sign = " + " if coeff > 0 else " - "
+        else:
+            sign = "-" if coeff < 0 else ""
+        abs_coeff = abs(coeff)
+
+        if len(mono) == 0:
+            return f"{sign}{abs_coeff}"
+
+        var_str = "*".join(var if pow_val == 1 else f"{var}^{pow_val}" for var, pow_val in mono)
+        part = var_str if abs_coeff == 1 else f"{abs_coeff}*{var_str}"
+        return f"{sign}{part}"
+
+    def canonical_str(self) -> str:
         """Return canonical deterministic string representation of polynomial.
 
         Returns:
@@ -264,52 +321,8 @@ class Polynomial:
         """
         if self.is_zero():
             return "0"
-
-        def sort_key(mono: MonomialType) -> tuple[int, list[str]]:
-            """Sort key for monomial terms by descending degree and variable names.
-
-            Args:
-                mono (MonomialType): Monomial representation.
-
-            Returns:
-                tuple[int, list[str]]: Comparison sort key.
-            """
-            degree = sum(p for _, p in mono)
-            vars_sorted = [v for v, _ in mono]
-            return (-degree, vars_sorted)
-
-        sorted_monos = sorted(self.terms.keys(), key=sort_key)
-        parts: list[str] = []
-        for i, mono in enumerate(sorted_monos):
-            coeff = self.terms[mono]
-            sign = ""
-            if i > 0:
-                if coeff > 0:
-                    sign = " + "
-                else:
-                    sign = " - "
-                    coeff = abs(coeff)
-            elif coeff < 0:
-                sign = "-"
-                coeff = abs(coeff)
-
-            if len(mono) == 0:
-                part = f"{coeff}"
-            else:
-                var_factors = []
-                for var, pow_val in mono:
-                    if pow_val == 1:
-                        var_factors.append(var)
-                    else:
-                        var_factors.append(f"{var}^{pow_val}")
-                var_str = "*".join(var_factors)
-                if coeff == 1:
-                    part = var_str
-                else:
-                    part = f"{coeff}*{var_str}"
-            parts.append(f"{sign}{part}")
-
-        return "".join(parts)
+        sorted_monos = sorted(self.terms.keys(), key=self._monomial_sort_key)
+        return "".join(self._format_monomial_term(i, mono, self.terms[mono]) for i, mono in enumerate(sorted_monos))
 
     def __eq__(self, other: object) -> bool:
         """Evaluate equality between two polynomials.
@@ -348,7 +361,7 @@ class Polynomial:
         """
         return f"Polynomial({self.canonical_str()})"
 
-    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def eval(self, env: dict[str, int]) -> int:
         """Evaluate polynomial expression given variable bindings.
 
         Args:
@@ -370,6 +383,55 @@ class Polynomial:
                 term_val *= env[var] ** power
             total += term_val
         return total
+
+
+_BINARY_INT_OPS: dict[str, Callable[[int, int], int]] = {
+    "+": lambda a, b: a + b,
+    "-": lambda a, b: a - b,
+    "*": lambda a, b: a * b,
+    "**": lambda a, b: int(a**b),
+    "min": min,
+    "max": max,
+    "==": lambda a, b: int(a == b),
+    "!=": lambda a, b: int(a != b),
+    "<": lambda a, b: int(a < b),
+    "<=": lambda a, b: int(a <= b),
+    ">": lambda a, b: int(a > b),
+    ">=": lambda a, b: int(a >= b),
+}
+
+_UNARY_INT_OPS: dict[str, Callable[[int], int]] = {
+    "abs": abs,
+    "-": lambda v: -v,
+    "floor": lambda v: v,
+    "ceil": lambda v: v,
+}
+
+
+def _eval_binary_int_op(op: str, v1: int, v2: int) -> int | None:
+    """Evaluate a binary integer operation on two concrete integers.
+
+    Args:
+        op (str): Binary operator string.
+        v1 (int): Left integer operand.
+        v2 (int): Right integer operand.
+
+    Returns:
+        Optional[int]: Computed integer result if operator is recognized, else None.
+
+    Raises:
+        ZeroDivisionError: If dividing or taking modulo by zero.
+    """
+    if op in ("//", "/"):
+        if v2 == 0:
+            raise ZeroDivisionError("Division by zero in symbolic evaluation.")
+        return v1 // v2
+    if op == "%":
+        if v2 == 0:
+            raise ZeroDivisionError("Modulo by zero in symbolic evaluation.")
+        return v1 % v2
+    fn = _BINARY_INT_OPS.get(op)
+    return fn(v1, v2) if fn is not None else None
 
 
 class SymNode:
@@ -396,7 +458,7 @@ class SymNode:
         msg = f"Cannot convert {type(val)} to SymNode"
         raise TypeError(msg)
 
-    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def simplify(self) -> SymNode:
         """Apply algebraic simplification rules recursively.
 
         Returns:
@@ -423,7 +485,7 @@ class SymNode:
         """
         return None
 
-    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def eval(self, env: dict[str, int]) -> int:
         """Evaluate expression given variable bindings.
 
         Args:
@@ -434,6 +496,7 @@ class SymNode:
 
         Raises:
             KeyError: If an unbound variable is encountered.
+            NotImplementedError: If node type does not support evaluation.
         """
         poly = self.to_polynomial()
         if poly is not None:
@@ -441,51 +504,18 @@ class SymNode:
         simplified = self.simplify()
         if simplified is not self:
             return simplified.eval(env)
-        if hasattr(self, "left") and hasattr(self, "right") and hasattr(self, "op"):
-            v1 = self.left.eval(env)
-            v2 = self.right.eval(env)
-            op = self.op
-            if op == "+":
-                return v1 + v2
-            if op == "-":
-                return v1 - v2
-            if op == "*":
-                return v1 * v2
-            if op in ("//", "/"):
-                if v2 == 0:
-                    raise ZeroDivisionError("Division by zero in symbolic evaluation.")
-                return v1 // v2
-            if op == "%":
-                if v2 == 0:
-                    raise ZeroDivisionError("Modulo by zero in symbolic evaluation.")
-                return v1 % v2
-            if op == "**":
-                return int(v1**v2)
-            if op == "min":
-                return min(v1, v2)
-            if op == "max":
-                return max(v1, v2)
-            if op == "==":
-                return int(v1 == v2)
-            if op == "!=":
-                return int(v1 != v2)
-            if op == "<":
-                return int(v1 < v2)
-            if op == "<=":
-                return int(v1 <= v2)
-            if op == ">":
-                return int(v1 > v2)
-            if op == ">=":
-                return int(v1 >= v2)
-        if hasattr(self, "operand") and hasattr(self, "op"):
-            val = self.operand.eval(env)
-            op = self.op
-            if op == "abs":
-                return abs(val)
-            if op == "-":
-                return -val
-            if op in ("floor", "ceil"):
-                return val
+        left = getattr(self, "left", None)
+        right = getattr(self, "right", None)
+        op = getattr(self, "op", None)
+        if isinstance(left, SymNode) and isinstance(right, SymNode) and op is not None:
+            res = _eval_binary_int_op(str(op), left.eval(env), right.eval(env))
+            if res is not None:
+                return res
+        operand = getattr(self, "operand", None)
+        if isinstance(operand, SymNode) and op is not None:
+            u_fn = _UNARY_INT_OPS.get(str(op))
+            if u_fn is not None:
+                return u_fn(operand.eval(env))
         msg = f"Evaluation not implemented for node of type {type(self).__name__}"
         raise NotImplementedError(msg)
 
@@ -508,11 +538,11 @@ class SymNode:
         """
         return SymBinaryOp("+", self, SymNode.to_node(other))
 
-    def __radd__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
+    def __radd__(self, other: int | str) -> SymBinaryOp:
         """Right-add two symbolic expressions.
 
         Args:
-            other (Union[int, str, SymNode, SymInt]): Left operand.
+            other (Union[int, str]): Left operand.
 
         Returns:
             SymBinaryOp: Addition expression node.
@@ -552,11 +582,11 @@ class SymNode:
         """
         return SymBinaryOp("*", self, SymNode.to_node(other))
 
-    def __rmul__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
+    def __rmul__(self, other: int | str) -> SymBinaryOp:
         """Right-multiply symbolic expressions.
 
         Args:
-            other (Union[int, str, SymNode, SymInt]): Left operand.
+            other (Union[int, str]): Left operand.
 
         Returns:
             SymBinaryOp: Multiplication expression node.
@@ -677,7 +707,7 @@ class SymConst(SymNode):
         """
         return Polynomial.from_const(self.value)
 
-    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def eval(self, env: dict[str, int]) -> int:
         """Evaluate constant value.
 
         Args:
@@ -767,7 +797,7 @@ class SymVar(SymNode):
         """
         return Polynomial.from_var(self.name)
 
-    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def eval(self, env: dict[str, int]) -> int:
         """Evaluate variable given environment.
 
         Args:
@@ -830,6 +860,202 @@ class SymVar(SymNode):
         return hash(self.name)
 
 
+def _is_nonneg_const(node: SymNode) -> bool:
+    """Check if a SymNode is a non-negative integer constant.
+
+    Args:
+        node (SymNode): Node to inspect.
+
+    Returns:
+        bool: True if node is a SymConst with value >= 0.
+    """
+    return isinstance(node, SymConst) and node.value >= 0
+
+
+def _has_nonneg_offset(expr: SymNode, target: SymNode) -> bool:
+    """Check if expr is of the form (target + c) or (c + target) with c >= 0.
+
+    Args:
+        expr (SymNode): Candidate additive expression.
+        target (SymNode): Base expression to match against.
+
+    Returns:
+        bool: True if expr equals target plus a non-negative constant.
+    """
+    if not isinstance(expr, SymBinaryOp) or expr.op != "+":
+        return False
+    return (expr.left == target and _is_nonneg_const(expr.right)) or (expr.right == target and _is_nonneg_const(expr.left))
+
+
+def _has_nonneg_decrement(expr: SymNode, target: SymNode) -> bool:
+    """Check if expr is of the form (target - c) with c >= 0.
+
+    Args:
+        expr (SymNode): Candidate subtractive expression.
+        target (SymNode): Base expression to match against.
+
+    Returns:
+        bool: True if expr equals target minus a non-negative constant.
+    """
+    return isinstance(expr, SymBinaryOp) and expr.op == "-" and expr.left == target and _is_nonneg_const(expr.right)
+
+
+def _simplify_add(s_left: SymNode, s_right: SymNode) -> SymNode | None:
+    """Simplify addition identity cases.
+
+    Args:
+        s_left (SymNode): Simplified left operand.
+        s_right (SymNode): Simplified right operand.
+
+    Returns:
+        Optional[SymNode]: Simplified node if an identity applies, else None.
+    """
+    if isinstance(s_right, SymConst) and s_right.value == 0:
+        return s_left
+    if isinstance(s_left, SymConst) and s_left.value == 0:
+        return s_right
+    return None
+
+
+def _simplify_sub(s_left: SymNode, s_right: SymNode) -> SymNode | None:
+    """Simplify subtraction identity and cancellation cases.
+
+    Args:
+        s_left (SymNode): Simplified left operand.
+        s_right (SymNode): Simplified right operand.
+
+    Returns:
+        Optional[SymNode]: Simplified node if a rule applies, else None.
+    """
+    if isinstance(s_right, SymConst) and s_right.value == 0:
+        return s_left
+    if s_left == s_right:
+        return SymConst(0)
+    if isinstance(s_left, SymBinaryOp) and s_left.op == "+":
+        if s_left.right == s_right:
+            return s_left.left
+        if s_left.left == s_right:
+            return s_left.right
+    return None
+
+
+def _simplify_mul(s_left: SymNode, s_right: SymNode) -> SymNode | None:
+    """Simplify multiplication identity and zero annihilation cases.
+
+    Args:
+        s_left (SymNode): Simplified left operand.
+        s_right (SymNode): Simplified right operand.
+
+    Returns:
+        Optional[SymNode]: Simplified node if a rule applies, else None.
+    """
+    if (isinstance(s_right, SymConst) and s_right.value == 0) or (isinstance(s_left, SymConst) and s_left.value == 0):
+        return SymConst(0)
+    if isinstance(s_right, SymConst) and s_right.value == 1:
+        return s_left
+    if isinstance(s_left, SymConst) and s_left.value == 1:
+        return s_right
+    return None
+
+
+def _simplify_floordiv_mul(s_left: SymBinaryOp, s_right: SymNode) -> SymNode | None:
+    """Simplify floor division when dividend is a multiplication expression.
+
+    Args:
+        s_left (SymBinaryOp): Multiplication expression on the left.
+        s_right (SymNode): Simplified divisor operand.
+
+    Returns:
+        Optional[SymNode]: Simplified node if cancellation applies, else None.
+    """
+    if s_left.right == s_right:
+        return s_left.left
+    if s_left.left == s_right:
+        return s_left.right
+    if isinstance(s_right, SymConst) and s_right.value != 0:
+        if isinstance(s_left.right, SymConst) and s_left.right.value % s_right.value == 0:
+            return SymBinaryOp("*", s_left.left, SymConst(s_left.right.value // s_right.value)).simplify()
+        if isinstance(s_left.left, SymConst) and s_left.left.value % s_right.value == 0:
+            return SymBinaryOp("*", s_left.right, SymConst(s_left.left.value // s_right.value)).simplify()
+    return None
+
+
+def _simplify_floordiv(s_left: SymNode, s_right: SymNode) -> SymNode | None:
+    """Simplify floor division identity and factor cancellation cases.
+
+    Args:
+        s_left (SymNode): Simplified dividend operand.
+        s_right (SymNode): Simplified divisor operand.
+
+    Returns:
+        Optional[SymNode]: Simplified node if a rule applies, else None.
+    """
+    if isinstance(s_right, SymConst) and s_right.value == 1:
+        return s_left
+    if isinstance(s_left, SymConst) and s_left.value == 0:
+        return SymConst(0)
+    if s_left == s_right and not (isinstance(s_right, SymConst) and s_right.value == 0):
+        return SymConst(1)
+    if isinstance(s_left, SymBinaryOp) and s_left.op == "*":
+        return _simplify_floordiv_mul(s_left, s_right)
+    return None
+
+
+def _simplify_mod(s_left: SymNode, s_right: SymNode) -> SymNode | None:
+    """Simplify modulo identity cases.
+
+    Args:
+        s_left (SymNode): Simplified dividend operand.
+        s_right (SymNode): Simplified divisor operand.
+
+    Returns:
+        Optional[SymNode]: SymConst(0) if divisible, else None.
+    """
+    if (isinstance(s_right, SymConst) and s_right.value == 1) or (isinstance(s_left, SymConst) and s_left.value == 0):
+        return SymConst(0)
+    if s_left == s_right and not (isinstance(s_right, SymConst) and s_right.value == 0):
+        return SymConst(0)
+    return None
+
+
+def _simplify_min_max(op: str, s_left: SymNode, s_right: SymNode) -> SymNode | None:
+    """Simplify min and max idempotence, absorption, and monotonic offset rules.
+
+    Args:
+        op (str): Operator string ('min' or 'max').
+        s_left (SymNode): Simplified left operand.
+        s_right (SymNode): Simplified right operand.
+
+    Returns:
+        Optional[SymNode]: Simplified node if a rule applies, else None.
+    """
+    if s_left == s_right:
+        return s_left
+    if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
+        return SymConst(min(s_left.value, s_right.value) if op == "min" else max(s_left.value, s_right.value))
+    if isinstance(s_left, SymBinaryOp) and s_left.op == op and (s_left.left == s_right or s_left.right == s_right):
+        return s_left
+    if isinstance(s_right, SymBinaryOp) and s_right.op == op and (s_right.left == s_left or s_right.right == s_left):
+        return s_right
+    res: SymNode | None = None
+    if _has_nonneg_offset(s_left, s_right) or _has_nonneg_decrement(s_right, s_left):
+        res = s_right if op == "min" else s_left
+    elif _has_nonneg_offset(s_right, s_left) or _has_nonneg_decrement(s_left, s_right):
+        res = s_left if op == "min" else s_right
+    return res
+
+
+_BINARY_SIMPLIFIERS: dict[str, Callable[[SymNode, SymNode], SymNode | None]] = {
+    "+": _simplify_add,
+    "-": _simplify_sub,
+    "*": _simplify_mul,
+    "//": _simplify_floordiv,
+    "%": _simplify_mod,
+    "min": lambda l_node, r_node: _simplify_min_max("min", l_node, r_node),
+    "max": lambda l_node, r_node: _simplify_min_max("max", l_node, r_node),
+}
+
+
 class SymBinaryOp(SymNode):
     """Binary operation node in symbolic expression tree.
 
@@ -851,7 +1077,28 @@ class SymBinaryOp(SymNode):
         self.left: SymNode = left
         self.right: SymNode = right
 
-    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    @staticmethod
+    def _fold_constants(op: str, s_left: SymNode, s_right: SymNode) -> SymConst | None:
+        """Fold binary arithmetic operations on two constant operands.
+
+        Args:
+            op (str): Binary operator string.
+            s_left (SymNode): Simplified left operand.
+            s_right (SymNode): Simplified right operand.
+
+        Returns:
+            Optional[SymConst]: Folded constant node if applicable, else None.
+        """
+        if not (isinstance(s_left, SymConst) and isinstance(s_right, SymConst)):
+            return None
+        v1, v2 = s_left.value, s_right.value
+        if op in ("+", "-", "*"):
+            return SymConst(_BINARY_INT_OPS[op](v1, v2))
+        if op == "//" and v2 != 0:
+            return SymConst(v1 // v2)
+        return None
+
+    def simplify(self) -> SymNode:
         """Apply algebraic rewrite rules to simplify binary operation.
 
         Returns:
@@ -860,107 +1107,15 @@ class SymBinaryOp(SymNode):
         s_left = self.left.simplify()
         s_right = self.right.simplify()
 
-        if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
-            v1, v2 = s_left.value, s_right.value
-            if self.op == "+":
-                return SymConst(v1 + v2)
-            if self.op == "-":
-                return SymConst(v1 - v2)
-            if self.op == "*":
-                return SymConst(v1 * v2)
-            if self.op == "//" and v2 != 0:
-                return SymConst(v1 // v2)
+        folded = self._fold_constants(self.op, s_left, s_right)
+        if folded is not None:
+            return folded
 
-        if self.op == "+":
-            if isinstance(s_right, SymConst) and s_right.value == 0:
-                return s_left
-            if isinstance(s_left, SymConst) and s_left.value == 0:
-                return s_right
-
-        elif self.op == "-":
-            if isinstance(s_right, SymConst) and s_right.value == 0:
-                return s_left
-            if s_left == s_right:
-                return SymConst(0)
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "+":
-                if s_left.right == s_right:
-                    return s_left.left
-                if s_left.left == s_right:
-                    return s_left.right
-
-        elif self.op == "*":
-            if isinstance(s_right, SymConst) and s_right.value == 1:
-                return s_left
-            if isinstance(s_left, SymConst) and s_left.value == 1:
-                return s_right
-            if (isinstance(s_right, SymConst) and s_right.value == 0) or (isinstance(s_left, SymConst) and s_left.value == 0):
-                return SymConst(0)
-
-        elif self.op == "//":
-            if isinstance(s_right, SymConst) and s_right.value == 1:
-                return s_left
-            if isinstance(s_left, SymConst) and s_left.value == 0:
-                return SymConst(0)
-            if s_left == s_right and not (isinstance(s_right, SymConst) and s_right.value == 0):
-                return SymConst(1)
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "*":
-                if s_left.right == s_right:
-                    return s_left.left
-                if s_left.left == s_right:
-                    return s_left.right
-                if isinstance(s_right, SymConst) and s_right.value != 0:
-                    if isinstance(s_left.right, SymConst) and s_left.right.value % s_right.value == 0:
-                        return SymBinaryOp("*", s_left.left, SymConst(s_left.right.value // s_right.value)).simplify()
-                    if isinstance(s_left.left, SymConst) and s_left.left.value % s_right.value == 0:
-                        return SymBinaryOp("*", s_left.right, SymConst(s_left.left.value // s_right.value)).simplify()
-
-        elif self.op == "%":
-            if isinstance(s_right, SymConst) and s_right.value == 1:
-                return SymConst(0)
-            if isinstance(s_left, SymConst) and s_left.value == 0:
-                return SymConst(0)
-            if s_left == s_right and not (isinstance(s_right, SymConst) and s_right.value == 0):
-                return SymConst(0)
-
-        elif self.op == "min":
-            if s_left == s_right:
-                return s_left
-            if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
-                return SymConst(min(s_left.value, s_right.value))
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "min" and (s_left.left == s_right or s_left.right == s_right):
-                return s_left
-            if isinstance(s_right, SymBinaryOp) and s_right.op == "min" and (s_right.left == s_left or s_right.right == s_left):
-                return s_right
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "+":
-                if (s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0) or (s_left.right == s_right and isinstance(s_left.left, SymConst) and s_left.left.value >= 0):
-                    return s_right
-            if isinstance(s_right, SymBinaryOp) and s_right.op == "+":
-                if (s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0) or (s_right.right == s_left and isinstance(s_right.left, SymConst) and s_right.left.value >= 0):
-                    return s_left
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "-" and s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0:
-                return s_left
-            if isinstance(s_right, SymBinaryOp) and s_right.op == "-" and s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0:
-                return s_right
-
-        elif self.op == "max":
-            if s_left == s_right:
-                return s_left
-            if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
-                return SymConst(max(s_left.value, s_right.value))
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "max" and (s_left.left == s_right or s_left.right == s_right):
-                return s_left
-            if isinstance(s_right, SymBinaryOp) and s_right.op == "max" and (s_right.left == s_left or s_right.right == s_left):
-                return s_right
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "+":
-                if (s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0) or (s_left.right == s_right and isinstance(s_left.left, SymConst) and s_left.left.value >= 0):
-                    return s_left
-            if isinstance(s_right, SymBinaryOp) and s_right.op == "+":
-                if (s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0) or (s_right.right == s_left and isinstance(s_right.left, SymConst) and s_right.left.value >= 0):
-                    return s_right
-            if isinstance(s_left, SymBinaryOp) and s_left.op == "-" and s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0:
-                return s_right
-            if isinstance(s_right, SymBinaryOp) and s_right.op == "-" and s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0:
-                return s_left
+        rule_fn = _BINARY_SIMPLIFIERS.get(self.op)
+        if rule_fn is not None:
+            res = rule_fn(s_left, s_right)
+            if res is not None:
+                return res
 
         poly = self.to_polynomial()
         if poly is not None:
@@ -989,7 +1144,7 @@ class SymBinaryOp(SymNode):
             return p_left.div_exact(p_right)
         return None
 
-    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def eval(self, env: dict[str, int]) -> int:
         """Evaluate binary operation given variable bindings.
 
         Args:
@@ -1004,38 +1159,9 @@ class SymBinaryOp(SymNode):
         """
         v1 = self.left.eval(env)
         v2 = self.right.eval(env)
-        if self.op == "+":
-            return v1 + v2
-        if self.op == "-":
-            return v1 - v2
-        if self.op == "*":
-            return v1 * v2
-        if self.op == "//":
-            if v2 == 0:
-                raise ZeroDivisionError("Division by zero in symbolic evaluation.")
-            return v1 // v2
-        if self.op == "%":
-            if v2 == 0:
-                raise ZeroDivisionError("Modulo by zero in symbolic evaluation.")
-            return v1 % v2
-        if self.op == "**":
-            return int(v1**v2)
-        if self.op == "min":
-            return min(v1, v2)
-        if self.op == "max":
-            return max(v1, v2)
-        if self.op == "==":
-            return int(v1 == v2)
-        if self.op == "!=":
-            return int(v1 != v2)
-        if self.op == "<":
-            return int(v1 < v2)
-        if self.op == "<=":
-            return int(v1 <= v2)
-        if self.op == ">":
-            return int(v1 > v2)
-        if self.op == ">=":
-            return int(v1 >= v2)
+        res = _eval_binary_int_op(self.op, v1, v2)
+        if res is not None:
+            return res
         raise ValueError(f"Unsupported operator '{self.op}'.")
 
     def free_vars(self) -> set[str]:
@@ -1102,7 +1228,7 @@ class SymUnaryOp(SymNode):
         self.op = str(op)
         self.operand = operand
 
-    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def simplify(self) -> SymNode:
         """Simplify unary operation.
 
         Returns:
@@ -1119,7 +1245,7 @@ class SymUnaryOp(SymNode):
                 return SymConst(-v)
         return SymUnaryOp(self.op, s_op)
 
-    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def eval(self, env: dict[str, int]) -> int:
         """Evaluate unary operation with variable bindings.
 
         Args:
@@ -1171,21 +1297,25 @@ class SymPiecewise(SymNode):
     """Piecewise conditional symbolic node.
 
     Attributes:
-        cases (list[tuple[object, SymNode]]): Sequence of (condition, expr) pairs.
+        cases (Sequence[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]]): Sequence of (condition, expr) pairs.
         default (SymNode): Default fallback expression node.
     """
 
-    def __init__(self, cases: list[tuple[object, SymNode]], default: SymNode) -> None:
+    def __init__(
+        self,
+        cases: Sequence[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]],
+        default: SymNode,
+    ) -> None:
         """Initialize SymPiecewise.
 
         Args:
-            cases (list[tuple[object, SymNode]]): List of (condition_fn_or_node, expr_node).
+            cases (Sequence[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]]): List of (condition_fn_or_node, expr_node).
             default (SymNode): Fallback node when no conditions are met.
         """
-        self.cases = cases
+        self.cases = list(cases)
         self.default = default
 
-    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def simplify(self) -> SymNode:
         """Simplify piecewise expression.
 
         Returns:
@@ -1196,7 +1326,7 @@ class SymPiecewise(SymNode):
             simplified_cases.append((cond, expr.simplify()))
         return SymPiecewise(simplified_cases, self.default.simplify())
 
-    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def eval(self, env: dict[str, int]) -> int:
         """Evaluate piecewise expression given environment bindings.
 
         Args:
@@ -1252,7 +1382,31 @@ class SymPiecewise(SymNode):
         return hash((tuple(self.cases), self.default))
 
 
-def _poly_to_symnode(poly: Polynomial) -> SymNode:  # noqa: C901, PLR0912
+def _build_monomial_node(mono: MonomialType, abs_coeff: int) -> SymNode:
+    """Build a product SymNode for a single monomial with positive coefficient.
+
+    Args:
+        mono (MonomialType): Canonical monomial powers.
+        abs_coeff (int): Positive integer coefficient.
+
+    Returns:
+        SymNode: Product expression tree for the monomial term.
+    """
+    factors: list[SymNode] = []
+    if abs_coeff != 1:
+        factors.append(SymConst(abs_coeff))
+    for var, power in mono:
+        factors.extend(SymVar(var) for _ in range(power))
+    if not factors:
+        factors.append(SymConst(abs_coeff))
+
+    term_node = factors[0]
+    for factor in factors[1:]:
+        term_node = SymBinaryOp("*", term_node, factor)
+    return term_node
+
+
+def _poly_to_symnode(poly: Polynomial) -> SymNode:
     """Convert a canonical Polynomial back into a simplified SymNode expression tree.
 
     Args:
@@ -1266,57 +1420,56 @@ def _poly_to_symnode(poly: Polynomial) -> SymNode:  # noqa: C901, PLR0912
     if poly.is_const():
         return SymConst(poly.get_const())
 
-    def sort_key(mono: MonomialType) -> tuple[int, list[str]]:
-        """Sort key for monomial terms by descending degree and variable names.
+    sorted_monos = sorted(poly.terms.keys(), key=Polynomial._monomial_sort_key)
+    first_mono = sorted_monos[0]
+    first_coeff = poly.terms[first_mono]
+    if first_coeff < 0:
+        res_node: SymNode = SymBinaryOp("-", SymConst(0), _build_monomial_node(first_mono, -first_coeff))
+    else:
+        res_node = _build_monomial_node(first_mono, first_coeff)
 
-        Args:
-            mono (MonomialType): Monomial representation.
-
-        Returns:
-            tuple[int, list[str]]: Comparison sort key.
-        """
-        degree = sum(p for _, p in mono)
-        vars_sorted = [v for v, _ in mono]
-        return (-degree, vars_sorted)
-
-    sorted_monos = sorted(poly.terms.keys(), key=sort_key)
-    res_node: SymNode | None = None
-
-    for mono in sorted_monos:
+    for mono in sorted_monos[1:]:
         coeff = poly.terms[mono]
-        is_sub = False
-        if res_node is not None and coeff < 0:
-            is_sub = True
-            coeff = abs(coeff)
+        op = "-" if coeff < 0 else "+"
+        term_node = _build_monomial_node(mono, abs(coeff))
+        res_node = SymBinaryOp(op, res_node, term_node)
 
-        term_node: SymNode | None = None
-        if coeff != 1 or len(mono) == 0:
-            term_node = SymConst(coeff)
-
-        for var, power in mono:
-            for _ in range(power):
-                if term_node is None:
-                    term_node = SymVar(var)
-                else:
-                    term_node = SymBinaryOp("*", term_node, SymVar(var))
-
-        if term_node is None:
-            term_node = SymConst(0)
-
-        if res_node is None:
-            if coeff < 0:
-                res_node = SymBinaryOp("-", SymConst(0), term_node)
-            else:
-                res_node = term_node
-        elif is_sub:
-            res_node = SymBinaryOp("-", res_node, term_node)
-        else:
-            res_node = SymBinaryOp("+", res_node, term_node)
-
-    return res_node or SymConst(0)
+    return res_node
 
 
-def _tokenize_expr(expr_str: str) -> list[str]:  # noqa: C901
+def _scan_token(s: str, i: int) -> tuple[str | None, int]:
+    """Scan a single lexical token starting at index i in expression string s.
+
+    Args:
+        s (str): Stripped expression string.
+        i (int): Current scan index.
+
+    Returns:
+        tuple[Optional[str], int]: Tuple of (token_or_none, next_index).
+    """
+    n = len(s)
+    c = s[i]
+    if c.isspace():
+        return None, i + 1
+    if c in "()+*-":
+        return c, i + 1
+    if c == "/":
+        step = 2 if (i + 1 < n and s[i + 1] == "/") else 1
+        return "//", i + step
+    if c.isdigit():
+        end = i
+        while end < n and s[end].isdigit():
+            end += 1
+        return s[i:end], end
+    if c.isalpha() or c == "_":
+        end = i
+        while end < n and (s[end].isalnum() or s[end] == "_"):
+            end += 1
+        return s[i:end], end
+    return None, i + 1
+
+
+def _tokenize_expr(expr_str: str) -> list[str]:
     """Tokenize a symbolic expression string into component tokens.
 
     Args:
@@ -1326,43 +1479,76 @@ def _tokenize_expr(expr_str: str) -> list[str]:  # noqa: C901
         list[str]: Sequence of string tokens.
     """
     tokens: list[str] = []
-    i = 0
     s = expr_str.strip()
-    n = len(s)
-    while i < n:
-        c = s[i]
-        if c.isspace():
-            i += 1
-            continue
-        if c in "()+*":
-            tokens.append(c)
-            i += 1
-        elif c == "-":
-            tokens.append(c)
-            i += 1
-        elif c == "/":
-            if i + 1 < n and s[i + 1] == "/":
-                tokens.append("//")
-                i += 2
-            else:
-                tokens.append("//")
-                i += 1
-        elif c.isdigit():
-            start = i
-            while i < n and s[i].isdigit():
-                i += 1
-            tokens.append(s[start:i])
-        elif c.isalpha() or c == "_":
-            start = i
-            while i < n and (s[i].isalnum() or s[i] == "_"):
-                i += 1
-            tokens.append(s[start:i])
-        else:
-            i += 1
+    i = 0
+    while i < len(s):
+        tok, i = _scan_token(s, i)
+        if tok is not None:
+            tokens.append(tok)
     return tokens
 
 
-def _parse_sym_str(s: str) -> SymNode:  # noqa: C901
+class _SymExprParser:
+    """Recursive descent parser for symbolic dimension expressions."""
+
+    def __init__(self, tokens: list[str]) -> None:
+        """Initialize _SymExprParser with a token list.
+
+        Args:
+            tokens (list[str]): Sequence of lexical tokens.
+        """
+        self.tokens = tokens
+        self.idx = 0
+
+    def parse_expr(self) -> SymNode:
+        """Parse additive binary expressions.
+
+        Returns:
+            SymNode: Root parsed expression node.
+        """
+        node = self.parse_term()
+        while self.idx < len(self.tokens) and self.tokens[self.idx] in ("+", "-"):
+            op = self.tokens[self.idx]
+            self.idx += 1
+            node = SymBinaryOp(op, node, self.parse_term())
+        return node
+
+    def parse_term(self) -> SymNode:
+        """Parse multiplicative binary expressions.
+
+        Returns:
+            SymNode: Root parsed term node.
+        """
+        node = self.parse_factor()
+        while self.idx < len(self.tokens) and self.tokens[self.idx] in ("*", "//"):
+            op = self.tokens[self.idx]
+            self.idx += 1
+            node = SymBinaryOp(op, node, self.parse_factor())
+        return node
+
+    def parse_factor(self) -> SymNode:
+        """Parse factor, parenthesized expression, or unary negative.
+
+        Returns:
+            SymNode: Root parsed factor node.
+        """
+        if self.idx >= len(self.tokens):
+            return SymConst(0)
+        tok = self.tokens[self.idx]
+        if tok == "(":
+            self.idx += 1
+            node = self.parse_expr()
+            if self.idx < len(self.tokens) and self.tokens[self.idx] == ")":
+                self.idx += 1
+            return node
+        if tok == "-":
+            self.idx += 1
+            return SymBinaryOp("-", SymConst(0), self.parse_factor())
+        self.idx += 1
+        return SymConst(int(tok)) if tok.isdigit() else SymVar(tok)
+
+
+def _parse_sym_str(s: str) -> SymNode:
     """Parse an algebraic string expression into a structured SymNode.
 
     Args:
@@ -1375,70 +1561,13 @@ def _parse_sym_str(s: str) -> SymNode:  # noqa: C901
     if not tokens:
         return SymVar(s)
 
-    idx = 0
-
-    def parse_expr() -> SymNode:
-        """Parse additive binary expressions.
-
-        Returns:
-            SymNode: Root parsed expression node.
-        """
-        nonlocal idx
-        node = parse_term()
-        while idx < len(tokens) and tokens[idx] in ("+", "-"):
-            op = tokens[idx]
-            idx += 1
-            right = parse_term()
-            node = SymBinaryOp(op, node, right)
-        return node
-
-    def parse_term() -> SymNode:
-        """Parse multiplicative binary expressions.
-
-        Returns:
-            SymNode: Root parsed term node.
-        """
-        nonlocal idx
-        node = parse_factor()
-        while idx < len(tokens) and tokens[idx] in ("*", "//"):
-            op = tokens[idx]
-            idx += 1
-            right = parse_factor()
-            node = SymBinaryOp(op, node, right)
-        return node
-
-    def parse_factor() -> SymNode:
-        """Parse factor, parenthesized expression, or unary negative.
-
-        Returns:
-            SymNode: Root parsed factor node.
-        """
-        nonlocal idx
-        if idx >= len(tokens):
-            return SymConst(0)
-        tok = tokens[idx]
-        if tok == "(":
-            idx += 1
-            node = parse_expr()
-            if idx < len(tokens) and tokens[idx] == ")":
-                idx += 1
-            return node
-        if tok == "-":
-            idx += 1
-            inner = parse_factor()
-            return SymBinaryOp("-", SymConst(0), inner)
-        idx += 1
-        if tok.isdigit():
-            return SymConst(int(tok))
-        return SymVar(tok)
-
+    parser = _SymExprParser(tokens)
     try:
-        node = parse_expr()
-        if idx == len(tokens):
+        node = parser.parse_expr()
+        if parser.idx == len(tokens):
             return node
-    except (ValueError, IndexError):
-        pass
-
+    except Exception:
+        return SymVar(s)
     return SymVar(s)
 
 
@@ -1503,11 +1632,11 @@ class SymInt:
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("+", self.node, other_node))
 
-    def __radd__(self, other: int | SymNode | str) -> SymInt:
+    def __radd__(self, other: int | str) -> SymInt:
         """Evaluate __radd__ operation.
 
         Args:
-            other (Union[int, SymNode, str]): The other operand.
+            other (Union[int, str]): The other operand.
 
         Returns:
             SymInt: Result of addition.
@@ -1551,11 +1680,11 @@ class SymInt:
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("*", self.node, other_node))
 
-    def __rmul__(self, other: int | SymNode | str) -> SymInt:
+    def __rmul__(self, other: int | str) -> SymInt:
         """Evaluate __rmul__ operation.
 
         Args:
-            other (Union[int, SymNode, str]): The other operand.
+            other (Union[int, str]): The other operand.
 
         Returns:
             SymInt: Result of multiplication.
@@ -1702,7 +1831,31 @@ class SymbolicConstraintTracker:
             self._parent[key] = self._find(self._parent[key])
         return self._parent[key]
 
-    def record_equality(  # noqa: C901, PLR0912
+    def _resolve_const_dim(
+        self,
+        dim: int | str | SymNode | SymInt,
+        key: str,
+        root: str,
+    ) -> int | None:
+        """Resolve a dimension or its equivalence class root to a known constant integer.
+
+        Args:
+            dim (Union[int, str, SymNode, SymInt]): Dimension expression.
+            key (str): Canonical key string for the dimension.
+            root (str): Disjoint-set representative key.
+
+        Returns:
+            Optional[int]: Resolved constant integer if known, else None.
+        """
+        if isinstance(dim, int):
+            return dim
+        if isinstance(dim, SymConst):
+            return dim.value
+        if key.isdigit():
+            return int(key)
+        return self._const_map.get(root)
+
+    def record_equality(
         self,
         a: int | str | SymNode | SymInt,
         b: int | str | SymNode | SymInt,
@@ -1729,26 +1882,8 @@ class SymbolicConstraintTracker:
         root_a = self._find(key_a)
         root_b = self._find(key_b)
 
-        const_a: int | None = None
-        const_b: int | None = None
-
-        if isinstance(a, int):
-            const_a = a
-        elif isinstance(a, SymConst):
-            const_a = a.value
-        elif key_a.isdigit():
-            const_a = int(key_a)
-        elif root_a in self._const_map:
-            const_a = self._const_map[root_a]
-
-        if isinstance(b, int):
-            const_b = b
-        elif isinstance(b, SymConst):
-            const_b = b.value
-        elif key_b.isdigit():
-            const_b = int(key_b)
-        elif root_b in self._const_map:
-            const_b = self._const_map[root_b]
+        const_a = self._resolve_const_dim(a, key_a, root_a)
+        const_b = self._resolve_const_dim(b, key_b, root_b)
 
         if const_a is not None and const_b is not None and const_a != const_b:
             self._contradiction = True
@@ -1757,11 +1892,9 @@ class SymbolicConstraintTracker:
 
         if root_a != root_b:
             self._parent[root_b] = root_a
-            chosen_const = const_a if const_a is not None else const_b
-            if chosen_const is not None:
-                self._const_map[root_a] = chosen_const
-        elif const_a is not None:
-            self._const_map[root_a] = const_a
+        chosen_const = const_a if const_a is not None else const_b
+        if chosen_const is not None:
+            self._const_map[root_a] = chosen_const
 
     def unify(
         self,
@@ -1841,7 +1974,7 @@ class SymbolicConstraintTracker:
             Union[int, str, SymNode, SymInt, tuple[...]]: Substituted dimension or shape.
         """
         if isinstance(dim_or_shape, tuple):
-            return tuple(self.substitute(d) for d in dim_or_shape)
+            return tuple(cast("int | str | SymNode | SymInt", self.substitute(d)) for d in dim_or_shape)
 
         key = self._canonical_key(dim_or_shape)
         root = self._find(key)
@@ -1857,23 +1990,23 @@ class SymbolicConstraintTracker:
 
         return dim_or_shape
 
-    def track_graph(self, graph: object) -> None:
+    def track_graph(self, graph: LogicalGraph) -> None:
         """Traverse a logical graph to extract and unify dimension equality constraints.
 
         Args:
-            graph (object): LogicalGraph or IRGraph instance.
+            graph (LogicalGraph): LogicalGraph or IRGraph instance.
         """
         nodes = getattr(graph, "nodes", [])
         for node in nodes:
             inputs = getattr(node, "inputs", [])
             output_shape = getattr(node, "shape", None)
             op = getattr(node, "op", "")
-            if op == "matmul" and len(inputs) == MAGIC_VAL_2:
+            if op == "matmul" and len(inputs) == BINARY_OP_ARITY:
                 s1 = getattr(inputs[0], "shape", None)
                 s2 = getattr(inputs[1], "shape", None)
                 if s1 and s2 and len(s1) >= 1 and len(s2) >= 1:
                     self.record_equality(s1[-1], s2[-2 if len(s2) > 1 else -1])
-            elif op in ("add", "sub", "mul", "div") and len(inputs) == MAGIC_VAL_2:
+            elif op in ("add", "sub", "mul", "div") and len(inputs) == BINARY_OP_ARITY:
                 s1 = getattr(inputs[0], "shape", None)
                 s2 = getattr(inputs[1], "shape", None)
                 if s1 and s2:
@@ -1928,9 +2061,9 @@ class ShapeTracker:
         if not inputs:
             return ()
 
-        shape = _to_str_shape(inputs[0].shape)
+        shape = cast("Callable[..., tuple[Union[int, str], ...]]", _to_str_shape)(inputs[0].shape)
         for i in range(1, len(inputs)):
-            shape = broadcast_shapes(shape, _to_str_shape(inputs[i].shape))
+            shape = cast("Callable[..., tuple[Union[int, str], ...]]", _to_str_shape)(broadcast_shapes(shape, cast("Callable[..., tuple[Union[int, str], ...]]", _to_str_shape)(inputs[i].shape)))
 
         return _from_str_shape(shape)
 
@@ -1948,12 +2081,12 @@ class ShapeTracker:
         Returns:
             tuple[Union[int, SymInt], ...]: The inferred shape or computed result.
         """
-        s1 = _to_str_shape(input1.shape)
-        s2 = _to_str_shape(input2.shape)
+        s1 = cast("Callable[..., tuple[Union[int, str], ...]]", _to_str_shape)(input1.shape)
+        s2 = cast("Callable[..., tuple[Union[int, str], ...]]", _to_str_shape)(input2.shape)
 
         out_shape_str = matmul_shape(s1, s2)
 
-        return _from_str_shape(out_shape_str)
+        return cast("Callable[..., tuple[Union[int, SymInt], ...]]", _from_str_shape)(out_shape_str)
 
     @staticmethod
     def update_from_feedback(
@@ -1972,7 +2105,7 @@ class ShapeTracker:
         """
         raw_shapes: dict[str, list[int] | tuple[int, ...]] = {}
         if "shapes" in feedback_telemetry and isinstance(feedback_telemetry["shapes"], dict):
-            raw_shapes = feedback_telemetry["shapes"]
+            raw_shapes = dict(feedback_telemetry["shapes"])
         else:
             for k, v in feedback_telemetry.items():
                 if isinstance(v, (list, tuple)):
@@ -1989,15 +2122,46 @@ class ShapeTracker:
         return resolved
 
     @staticmethod
-    def resolve_dynamic_bounds(  # noqa: C901, PLR0912
-        graph: object,
+    def _record_symbolic_dim_bound(
+        dim: int | str | SymNode | SymInt,
+        concrete_val: int,
+        resolved_bounds: dict[str, int],
+        tracker: SymbolicConstraintTracker | None,
+    ) -> None:
+        """Record a resolved concrete bound for a single symbolic dimension if applicable.
+
+        Args:
+            dim (Union[int, str, SymNode, SymInt]): Symbolic or static dimension entry.
+            concrete_val (int): Concrete integer bound from telemetry.
+            resolved_bounds (dict[str, int]): Mapping of symbolic names to resolved bounds to mutate.
+            tracker (SymbolicConstraintTracker | None): Optional constraint tracker for unification.
+
+        Returns:
+            None: Updates resolved_bounds and tracker in-place.
+        """
+        var_name: str | None = None
+        if isinstance(dim, SymInt):
+            var_name = dim.name
+        elif isinstance(dim, SymNode):
+            var_name = str(dim)
+        elif isinstance(dim, str) and not dim.isdigit():
+            var_name = dim
+
+        if var_name is not None:
+            resolved_bounds[var_name] = concrete_val
+            if tracker is not None:
+                tracker.record_equality(dim, concrete_val)
+
+    @staticmethod
+    def resolve_dynamic_bounds(
+        graph: LogicalGraph,
         feedback_telemetry: dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]],
         tracker: SymbolicConstraintTracker | None = None,
     ) -> dict[str, int]:
         """Resolve dynamic SymInt variables across an IR graph into static integer bounds using telemetry.
 
         Args:
-            graph (object): LogicalGraph or IRGraph instance containing nodes with symbolic dimensions.
+            graph (LogicalGraph): LogicalGraph or IRGraph instance containing nodes with symbolic dimensions.
             feedback_telemetry (dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]]):
                 In-browser execution telemetry with observed concrete shapes.
             tracker (SymbolicConstraintTracker | None): Optional constraint tracker for unification.
@@ -2025,20 +2189,7 @@ class ShapeTracker:
                 new_shape: list[int] = []
                 for idx, dim in enumerate(shape_meta):
                     concrete_val = observed_shape[idx] if idx < len(observed_shape) else 1
-                    if isinstance(dim, SymInt):
-                        var_name = dim.name
-                        resolved_bounds[var_name] = concrete_val
-                        if tracker is not None:
-                            tracker.record_equality(dim, concrete_val)
-                    elif isinstance(dim, SymNode):
-                        var_name = str(dim)
-                        resolved_bounds[var_name] = concrete_val
-                        if tracker is not None:
-                            tracker.record_equality(dim, concrete_val)
-                    elif isinstance(dim, str) and not dim.isdigit():
-                        resolved_bounds[dim] = concrete_val
-                        if tracker is not None:
-                            tracker.record_equality(dim, concrete_val)
+                    ShapeTracker._record_symbolic_dim_bound(dim, concrete_val, resolved_bounds, tracker)
                     new_shape.append(concrete_val)
 
                 if hasattr(node, "shape_metadata"):
@@ -2192,7 +2343,7 @@ def _get_batch_dims(shape: ShapeType) -> ShapeType:
     Returns:
         ShapeType: Batch dimensions.
     """
-    return shape[:-2] if len(shape) > MAGIC_VAL_2 else ()
+    return shape[:-2] if len(shape) > MATRIX_RANK else ()
 
 
 def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
@@ -2247,7 +2398,7 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     if len(shape_a) == 1 and len(shape_b) == 1:
         return _matmul_shape_1d(shape_a, shape_b)
 
-    if len(shape_a) == MAGIC_VAL_2 and len(shape_b) == MAGIC_VAL_2:
+    if len(shape_a) == MATRIX_RANK and len(shape_b) == MATRIX_RANK:
         return _matmul_shape_2d(shape_a, shape_b)
 
     return _matmul_shape_batched(shape_a, shape_b)

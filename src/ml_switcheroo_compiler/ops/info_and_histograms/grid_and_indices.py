@@ -1,6 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Misc operations."""
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,7 +10,7 @@ class Indices(OpDef):
 
     op_name = "Indices"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -33,7 +33,7 @@ class Ix(OpDef):
 
     op_name = "Ix"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -61,7 +61,7 @@ class MaskIndices(OpDef):
 
     op_name = "MaskIndices"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -80,7 +80,7 @@ class Mgrid(OpDef):
 
     op_name = "Mgrid"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -99,7 +99,7 @@ class Ogrid(OpDef):
 
     op_name = "Ogrid"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -118,7 +118,7 @@ class R(OpDef):
 
     op_name = "R"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -131,7 +131,7 @@ class R(OpDef):
         return (None,)
 
 
-def mgrid(*args, **kwargs):
+def mgrid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """nd_grid instance which returns a dense multi-dimensional 'meshgrid'.
 
     Args:
@@ -146,7 +146,7 @@ def mgrid(*args, **kwargs):
     return dispatch_op("Mgrid", *args, **kwargs)
 
 
-def ogrid(*args, **kwargs):
+def ogrid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """nd_grid instance which returns an open multi-dimensional 'meshgrid'.
 
     Args:
@@ -161,7 +161,7 @@ def ogrid(*args, **kwargs):
     return dispatch_op("Ogrid", *args, **kwargs)
 
 
-def r_(*args, **kwargs):
+def r_(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Translate slice Anys to concatenation along the first axis.
 
     Args:
@@ -176,7 +176,7 @@ def r_(*args, **kwargs):
     return dispatch_op("R", *args, **kwargs)
 
 
-def indices(*args, **kwargs):
+def indices(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return an array representing the indices of a grid.
 
     Args:
@@ -191,7 +191,7 @@ def indices(*args, **kwargs):
     return dispatch_op("Indices", *args, **kwargs)
 
 
-def ix_(*args, **kwargs):
+def ix_(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Construct an open mesh from multiple sequences.
 
     Args:
@@ -206,7 +206,7 @@ def ix_(*args, **kwargs):
     return dispatch_op("Ix", *args, **kwargs)
 
 
-def mask_indices(*args, **kwargs):
+def mask_indices(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the indices to access (n, n) arrays.
 
     Args:

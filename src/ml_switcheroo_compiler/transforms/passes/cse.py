@@ -1,10 +1,10 @@
-# ruff: noqa: E402, E501, F403
 """Common Subexpression Elimination pass using structural hashing."""
 
 from __future__ import annotations
 
 import hashlib
-from typing import Any
+
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
@@ -27,11 +27,11 @@ COMMUTATIVE_OPS: frozenset[str] = frozenset(
 )
 
 
-def _hash_attribute_value(val: Any) -> str:
+def _hash_attribute_value(val: AttributeValue | IRGraph) -> str:
     """Recursively compute a canonical structural representation of attribute values.
 
     Args:
-        val (Any): Attribute value (scalar, list, dict, IRGraph).
+        val (AttributeValue | IRGraph): Attribute value (scalar, list, dict, IRGraph).
 
     Returns:
         str: Canonical structural representation.

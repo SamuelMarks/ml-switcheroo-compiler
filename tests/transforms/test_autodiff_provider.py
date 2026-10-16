@@ -1,5 +1,8 @@
 """Comprehensive unit and branch coverage tests for autodiff_provider."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 from unittest.mock import mock_open, patch
 
 import yaml
@@ -19,6 +22,9 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import (
     get_jvp_from_data,
     get_vjp_from_data,
 )
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_split_nested_args() -> None:
@@ -137,8 +143,8 @@ def test_fallback_finite_difference_jvp() -> None:
 def test_get_autodiff_manifest_branches() -> None:
     """Test _get_autodiff_manifest caching, missing file, and exception handling."""
     # 1. Cache hit
-    autodiff_provider._MANIFEST_MODEL_CACHE = "cached_manifest"
-    assert _get_autodiff_manifest() == "cached_manifest"
+    setattr(autodiff_provider, "_MANIFEST_MODEL_CACHE", "cached_manifest")
+    assert cast("EagerTensorProtocol", _get_autodiff_manifest()) == cast("EagerTensorProtocol", "cached_manifest")
     autodiff_provider._MANIFEST_MODEL_CACHE = None
 
     # 2. File not found
@@ -221,7 +227,7 @@ def test_load_autodiff_rule_hierarchy() -> None:
     class DummyRule:
         """Dummy rule model with VJP and JVP attributes."""
 
-        def __init__(self, vjp=None, jvp=None):
+        def __init__(self, vjp: EagerValue = None, jvp: EagerValue = None) -> None:
             """Initialize dummy rule with optional vjp and jvp strings."""
             self.vjp = vjp
             self.jvp = jvp
@@ -229,7 +235,7 @@ def test_load_autodiff_rule_hierarchy() -> None:
     class DummyManifest:
         """Dummy manifest model with vjp_rules and jvp_rules dictionaries."""
 
-        def __init__(self):
+        def __init__(self) -> None:
             """Initialize dummy manifest with test rule mappings."""
             self.vjp_rules = {"str_vjp_op": DummyRule(vjp="x_cot"), "empty_vjp": DummyRule(vjp=None)}
             self.jvp_rules = {"sample_jvp_op": DummyRule(jvp="x_tan"), "empty_jvp": DummyRule(vjp=None)}
@@ -269,7 +275,7 @@ def test_load_autodiff_rule_hierarchy() -> None:
             with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.load_primitive_jvp_rules", return_value={"prim_op": DummyRule(jvp="tan_prim")}):
                 assert _load_autodiff_rule("prim_op", "jvp") == {"jvp": "tan_prim"}
                 # Missing JVP primitive falls through (branch 329->337)
-                assert _load_autodiff_rule("non_prim_op", "jvp") == _fallback_finite_difference_jvp or _load_autodiff_rule("non_prim_op", "jvp") is None
+                assert cast("EagerTensorProtocol", _load_autodiff_rule("non_prim_op", "jvp")) == cast("EagerTensorProtocol", _fallback_finite_difference_jvp) or cast("EagerTensorProtocol", _load_autodiff_rule("non_prim_op", "jvp")) is cast("EagerTensorProtocol", None)
 
     # 4. Stage 4: OPS_REGISTRY fallback (including non-dict and missing autodiff branch 340->345)
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None):

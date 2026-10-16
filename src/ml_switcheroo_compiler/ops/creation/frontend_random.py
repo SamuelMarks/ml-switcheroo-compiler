@@ -1,15 +1,10 @@
-"""Module frontend_random.py."""
+"""Constants & Creation Operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Constants & Creation Operations."""
-
-
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -22,7 +17,7 @@ def rand(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-):
+) -> EagerValue:
     """Return a tensor filled with random numbers from a uniform distribution.
 
     Args:
@@ -47,7 +42,7 @@ def randn(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-):
+) -> EagerValue:
     """Return a tensor filled with random numbers from a standard normal distribution.
 
     Args:
@@ -74,7 +69,7 @@ def randint(
     size: Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-):
+) -> EagerValue:
     """Return a tensor filled with random integers from [low, high).
 
     Args:

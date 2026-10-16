@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 import scipy.special as sc
@@ -14,9 +14,9 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 @numpy_eager_registry.register("BesselJ0")
 def _np_bessel_j0(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Bessel function of the first kind of order 0.
 
     Args:
@@ -28,15 +28,15 @@ def _np_bessel_j0(
         np.ndarray: Evaluated Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.j0(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.j0(x)))
 
 
 @numpy_eager_registry.register("BesselJ1")
 def _np_bessel_j1(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Bessel function of the first kind of order 1.
 
     Args:
@@ -48,15 +48,15 @@ def _np_bessel_j1(
         np.ndarray: Evaluated Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.j1(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.j1(x)))
 
 
 @numpy_eager_registry.register("BesselK0")
 def _np_bessel_k0(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate modified Bessel function of the second kind of order 0.
 
     Args:
@@ -68,15 +68,15 @@ def _np_bessel_k0(
         np.ndarray: Evaluated modified Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.k0(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k0(x)))
 
 
 @numpy_eager_registry.register("BesselK0e")
 def _np_bessel_k0e(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate exponentially scaled modified Bessel function K0e.
 
     Args:
@@ -88,15 +88,15 @@ def _np_bessel_k0e(
         np.ndarray: Evaluated exponentially scaled Bessel array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.k0e(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k0e(x)))
 
 
 @numpy_eager_registry.register("BesselK1")
 def _np_bessel_k1(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate modified Bessel function of the second kind of order 1.
 
     Args:
@@ -108,15 +108,15 @@ def _np_bessel_k1(
         np.ndarray: Evaluated modified Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.k1(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k1(x)))
 
 
 @numpy_eager_registry.register("BesselK1e")
 def _np_bessel_k1e(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate exponentially scaled modified Bessel function K1e.
 
     Args:
@@ -128,15 +128,15 @@ def _np_bessel_k1e(
         np.ndarray: Evaluated exponentially scaled Bessel array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.k1e(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k1e(x)))
 
 
 @numpy_eager_registry.register("BesselY0")
 def _np_bessel_y0(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Bessel function of the second kind of order 0.
 
     Args:
@@ -148,15 +148,15 @@ def _np_bessel_y0(
         np.ndarray: Evaluated Bessel Y0 array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.y0(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.y0(x)))
 
 
 @numpy_eager_registry.register("BesselY1")
 def _np_bessel_y1(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Bessel function of the second kind of order 1.
 
     Args:
@@ -168,15 +168,15 @@ def _np_bessel_y1(
         np.ndarray: Evaluated Bessel Y1 array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.y1(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.y1(x)))
 
 
 @numpy_eager_registry.register("Dawsn")
 def _np_dawsn(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Dawson's integral.
 
     Args:
@@ -188,15 +188,15 @@ def _np_dawsn(
         np.ndarray: Evaluated Dawson's integral array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.dawsn(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.dawsn(x)))
 
 
 @numpy_eager_registry.register("Expint")
 def _np_expint(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate exponential integral E_n(x).
 
     Args:
@@ -208,18 +208,18 @@ def _np_expint(
         np.ndarray: Evaluated exponential integral array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    n = kwargs.get("n", 1)
+    n: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int, str, bool, None] = kwargs.get("n", 1)
     if len(args) > 1:
         n = args[1]
-    return backend_module.array(sc.expn(n, x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.expn(n, x)))
 
 
 @numpy_eager_registry.register("FresnelCos")
 def _np_fresnel_cos(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Fresnel cosine integral.
 
     Args:
@@ -231,15 +231,15 @@ def _np_fresnel_cos(
         np.ndarray: Evaluated Fresnel cosine integral array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.fresnel(x)[1])
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.fresnel(x)[1]))
 
 
 @numpy_eager_registry.register("FresnelSin")
 def _np_fresnel_sin(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Fresnel sine integral.
 
     Args:
@@ -251,15 +251,15 @@ def _np_fresnel_sin(
         np.ndarray: Evaluated Fresnel sine integral array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.fresnel(x)[0])
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.fresnel(x)[0]))
 
 
 @numpy_eager_registry.register("Spence")
 def _np_spence(
     backend_module: ModuleType,
-    *args: Union[np.ndarray, float, int],
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Spence's function (dilogarithm).
 
     Args:
@@ -271,15 +271,15 @@ def _np_spence(
         np.ndarray: Evaluated Spence's function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return backend_module.array(sc.spence(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.spence(x)))
 
 
 @numpy_eager_registry.register("BesselI0")
 def _np_bessel_i0(
     backend_module: ModuleType,
-    x: Union[np.ndarray, float, int],
+    x: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate modified Bessel function of the first kind of order 0.
 
     Args:
@@ -290,15 +290,15 @@ def _np_bessel_i0(
     Returns:
         np.ndarray: Evaluated modified Bessel I0 array.
     """
-    return backend_module.array(sc.i0(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.i0(x)))
 
 
 @numpy_eager_registry.register("BesselI1")
 def _np_bessel_i1(
     backend_module: ModuleType,
-    x: Union[np.ndarray, float, int],
+    x: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate modified Bessel function of the first kind of order 1.
 
     Args:
@@ -309,16 +309,16 @@ def _np_bessel_i1(
     Returns:
         np.ndarray: Evaluated modified Bessel I1 array.
     """
-    return backend_module.array(sc.i1(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.i1(x)))
 
 
 @numpy_eager_registry.register("BesselJn")
 def _np_bessel_jn(
     backend_module: ModuleType,
-    x: Union[np.ndarray, float, int],
-    y: Union[np.ndarray, float, int],
+    x: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    y: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate Bessel function of the first kind of real order.
 
     Args:
@@ -330,7 +330,7 @@ def _np_bessel_jn(
     Returns:
         np.ndarray: Evaluated Bessel Jn array.
     """
-    return backend_module.array(sc.jv(x, y))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.jv(x, y)))
 
 
 @numpy_eager_registry.register("Bartlett")
@@ -338,7 +338,7 @@ def _np_bartlett(
     backend_module: ModuleType,
     M: int,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Return the Bartlett window.
 
     Args:

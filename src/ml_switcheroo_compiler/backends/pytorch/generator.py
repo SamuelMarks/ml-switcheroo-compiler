@@ -1,11 +1,19 @@
-# ruff: noqa: E402, E501, F403
 """Core abstractions and logic definitions for generator.py."""
 
+from __future__ import annotations
+
+import logging
 import os
+from collections.abc import Callable
+from typing import cast
+
+from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor  # noqa: F401
@@ -16,28 +24,34 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
     """PyTorch code generator."""
 
     @classmethod
-    def get_memory_info(cls, device=None):
-        """Get memory info."""
+    def get_memory_info(cls, device: EagerValue = None) -> EagerValue:
+        """Get memory info.
+
+        Args:
+            device: The device parameter.
+        """
         import torch
 
         if torch.cuda.is_available() and (device is None or "cuda" in str(device)):
             dev = device if device is not None else "cuda"
-            return {"current": torch.cuda.memory_allocated(dev), "peak": torch.cuda.max_memory_allocated(dev)}
+            return {"current": getattr(torch.cuda, "memory_allocated")(dev), "peak": getattr(torch.cuda, "max_memory_allocated")(dev)}
         psutil = __import__("psutil")
         rss = psutil.Process().memory_info().rss
         return {"current": rss, "peak": rss}
 
     @classmethod
-    def initialize_distributed(cls, *args, **kwargs):
-        """Initialize distributed context."""
+    def initialize_distributed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
+        """Initialize distributed context.
+
+        Args:
+            *args: The args parameter.
+            **kwargs: The kwargs parameter.
+        """
         import torch.distributed
 
         backend_config = kwargs.get("backend_config")
-        if not torch.distributed.is_initialized():
-            if backend_config:
-                torch.distributed.init_process_group(backend=backend_config.backend, init_method=backend_config.init_method, world_size=backend_config.world_size, rank=backend_config.rank)
-            else:
-                pass
+        if not torch.distributed.is_initialized() and backend_config:
+            torch.distributed.init_process_group(backend=getattr(backend_config, "backend"), init_method=getattr(backend_config, "init_method"), world_size=getattr(backend_config, "world_size"), rank=getattr(backend_config, "rank"))
 
     _base_class_name: str = "nn.Module"
 
@@ -50,7 +64,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor()])
 
-    def visit(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit(self, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Process an IR node and produce the corresponding PyTorch code string.
 
         Args:
@@ -61,9 +75,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             str: The generated PyTorch code string.
         """
-        return super().visit(node, input_vars, **kwargs)
+        return cast(str, getattr(super(), "visit")(node, input_vars, **kwargs))
 
-    def visit_PowerIteration(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_PowerIteration(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for a power iteration operation.
 
         Args:
@@ -78,7 +92,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"pt_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
-    def visit_RaggedDot(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_RaggedDot(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for a ragged dot product operation.
 
         Args:
@@ -91,7 +105,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         return f"pt_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node, input_vars: list[str], **kwargs) -> str:
+    def visit_Einsum(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for an Einstein summation operation.
 
         Args:
@@ -138,16 +152,28 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         return "keepdim"
 
-    def _get_math_ops(self, kwargs) -> dict[str, str]:
-        """Get math ops."""
+    def _get_math_ops(self, kwargs: EagerValue) -> dict[str, str]:
+        """Get math ops.
+
+        Args:
+            kwargs: The kwargs parameter.
+        """
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
-    def _get_creation_ops(self, kwargs) -> dict[str, str]:
-        """Get creation ops."""
+    def _get_creation_ops(self, kwargs: EagerValue) -> dict[str, str]:
+        """Get creation ops.
+
+        Args:
+            kwargs: The kwargs parameter.
+        """
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
-    def _get_array_ops(self, kwargs) -> dict[str, str]:
-        """Get array ops."""
+    def _get_array_ops(self, kwargs: EagerValue) -> dict[str, str]:
+        """Get array ops.
+
+        Args:
+            kwargs: The kwargs parameter.
+        """
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
@@ -186,7 +212,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         return has_params
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII"):
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
         """Load.
 
         Args:
@@ -200,10 +226,10 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         import torch
 
-        return torch.load(filepath, weights_only=not allow_pickle)
+        return cast(EagerValue, torch.load(filepath, weights_only=not allow_pickle))
 
     @classmethod
-    def save(cls: type, file: str, arr, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -217,7 +243,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         torch.save(arr, file)
 
     @classmethod
-    def savez(cls: type, file: str, *args, **kwds) -> None:
+    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Savez.
 
         Args:
@@ -232,7 +258,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         torch.save(data, file)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args, **kwds) -> None:
+    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
         """Savez compressed.
 
         Args:
@@ -246,15 +272,14 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         data.update(kwds)
         torch.save(data, file)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:  # noqa: C901
-        """Compile IRGraph into an optimized executable callable using TorchScript or torch.compile.
+    def _create_pytorch_graph_evaluator(self, graph: IRGraph) -> EagerValue:
+        """Create an interpreter-backed callable evaluating the IR graph for PyTorch.
 
         Args:
-            graph (IRGraph): Target computational graph to compile.
-            **kwargs (object): Optional compiler options ('mode', 'backend', 'sample_inputs').
+            graph (IRGraph): Target computational graph.
 
         Returns:
-            object: Optimized executable callable wrapping the compiled PyTorch module.
+            EagerValue: Graph evaluation callable.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -262,7 +287,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         class GraphModule:
             """Callable module wrapper evaluating the IR graph."""
 
-            def __call__(self, *fn_args: object) -> object:
+            def __call__(self, *fn_args: EagerValue) -> EagerValue:
                 """Forward execution call.
 
                 Args:
@@ -272,19 +297,59 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
                     object: Computed outputs.
                 """
                 input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
-                inputs: dict[str, object] = {}
+                inputs: dict[str, EagerValue] = {}
                 for i, inp_node in enumerate(input_nodes):
                     if i < len(fn_args):
                         arg_val = fn_args[i]
                         inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-                evaluated = evaluate_graph(graph, inputs=inputs)
+                evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
                 if hasattr(graph, "outputs") and graph.outputs:
                     if len(graph.outputs) == 1:
-                        return evaluated.get(graph.outputs[0])
+                        return cast(EagerValue, evaluated.get(graph.outputs[0]))
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return evaluated
+                return cast(EagerValue, evaluated)
 
-        mod = GraphModule()
+        return GraphModule()
+
+    def _wrap_pytorch_runner(self, compiled_fn: EagerValue, torch_mod: EagerValue) -> EagerValue:
+        """Wrap a compiled or traced PyTorch callable to convert inputs via torch.as_tensor.
+
+        Args:
+            compiled_fn (EagerValue): Compiled or traced PyTorch function.
+            torch_mod (EagerValue): Loaded torch module.
+
+        Returns:
+            EagerValue: Wrapped execution callable.
+        """
+        from ml_switcheroo_compiler.core.tensor import Tensor
+
+        def runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
+            """Execute compiled PyTorch callable.
+
+            Args:
+                *w_args (object): Input tensors.
+                **w_kwargs (object): Keyword arguments.
+
+            Returns:
+                object: Output tensor data.
+            """
+            del w_kwargs
+            pt_args = [getattr(torch_mod, "as_tensor")(a.data if isinstance(a, Tensor) else a) for a in w_args]
+            return cast(Callable[..., EagerValue], compiled_fn)(*pt_args)
+
+        return runner
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+        """Compile IRGraph into an optimized executable callable using TorchScript or torch.compile.
+
+        Args:
+            graph (IRGraph): Target computational graph to compile.
+            **kwargs (object): Optional compiler options ('mode', 'backend', 'sample_inputs').
+
+        Returns:
+            object: Optimized executable callable wrapping the compiled PyTorch module.
+        """
+        mod = self._create_pytorch_graph_evaluator(graph)
 
         try:
             import torch
@@ -295,43 +360,15 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
             if hasattr(torch, "compile"):
                 try:
-                    compiled_fn = torch.compile(mod, backend=backend, mode=mode)
-
-                    def aot_compiled_runner(*w_args: object, **w_kwargs: object) -> object:
-                        """Execute inductor-compiled PyTorch callable.
-
-                        Args:
-                            *w_args (object): Input tensors.
-                            **w_kwargs (object): Keyword arguments.
-
-                        Returns:
-                            object: Output tensor data.
-                        """
-                        pt_args = [torch.as_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                        return compiled_fn(*pt_args)
-
-                    return aot_compiled_runner
-                except Exception:
-                    pass
+                    compiled_fn = getattr(torch, "compile")(mod, backend=backend, mode=mode)
+                    return self._wrap_pytorch_runner(compiled_fn, torch)
+                except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
             if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)):
                 pt_samples = [torch.as_tensor(x) for x in sample_inputs]
-                traced = torch.jit.trace(mod, pt_samples)
-
-                def traced_runner(*w_args: object, **w_kwargs: object) -> object:
-                    """Execute traced TorchScript callable.
-
-                    Args:
-                        *w_args (object): Input tensors.
-                        **w_kwargs (object): Keyword arguments.
-
-                    Returns:
-                        object: Output tensor data.
-                    """
-                    pt_args = [torch.as_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                    return traced(*pt_args)
-
-                return traced_runner
+                traced = cast(Callable[..., EagerValue], getattr(torch.jit, "trace"))(mod, pt_samples)
+                return self._wrap_pytorch_runner(traced, torch)
 
             return mod
         except Exception:

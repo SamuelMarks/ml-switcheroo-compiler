@@ -1,4 +1,17 @@
-def test_shape_debugger():
+"""Tests for test_shape_debugger."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_shape_debugger() -> None:
+    """Test function test_shape_debugger."""
     from unittest.mock import mock_open, patch
 
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -30,30 +43,36 @@ def test_shape_debugger():
             assert "markdown_table" in sd._FORMATTERS
 
     # Test debug_shapes success
-    def dummy_model(x):
+    def dummy_model(x: EagerValue) -> EagerValue:
+        """Test function dummy_model."""
         return x
 
-    res = debug_shapes(dummy_model, (2, 2))
+    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model, (2, 2))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" in res
     assert "| output | (2, 2) |" in res
 
     # Test debug_shapes error
-    def error_model(x):
+    def error_model(x: EagerValue) -> None:
+        """Test function error_model."""
         raise RuntimeError("boom")
 
-    res = debug_shapes(error_model, (2, 2))
+    res = cast("EagerTensorProtocol", debug_shapes(error_model, (2, 2)))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" not in res  # because error happens and it resets
 
     # Test debug_shapes unknown shape
-    def unknown_model(x):
+    def unknown_model(x: EagerValue) -> EagerValue:
+        """Test function unknown_model."""
+
         class Dummy:
+            """Test class Dummy."""
+
             pass
 
-        return Dummy()
+        return cast("EagerTensorProtocol", Dummy())
 
-    res = debug_shapes(unknown_model, (2, 2))
+    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(unknown_model, (2, 2))
     assert "| output | unknown |" in res
 
     # Test to_graphviz

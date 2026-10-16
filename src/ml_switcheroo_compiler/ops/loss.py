@@ -1,6 +1,7 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Calculate loss operations."""
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 # y_true * (log(y_true) - y_pred)
@@ -23,7 +24,7 @@ from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis, where
 from ml_switcheroo_compiler.ops.unary import abs, log, square
 
 
-def l1_loss(y_true: Tensor, y_pred: Tensor):
+def l1_loss(y_true: Tensor, y_pred: Tensor) -> EagerValue:
     """L1 Loss.
 
     Args:
@@ -36,7 +37,7 @@ def l1_loss(y_true: Tensor, y_pred: Tensor):
     return mean(abs(subtract(y_true, y_pred)))
 
 
-def mse_loss(y_true: Tensor, y_pred: Tensor):
+def mse_loss(y_true: Tensor, y_pred: Tensor) -> EagerValue:
     """Mean Squared Error Loss.
 
     Args:
@@ -49,7 +50,7 @@ def mse_loss(y_true: Tensor, y_pred: Tensor):
     return mean(square(subtract(y_true, y_pred)))
 
 
-def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0):
+def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> EagerValue:
     """Huber Loss.
 
     Args:
@@ -72,7 +73,7 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0):
     return mean(loss)
 
 
-def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0):
+def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> EagerValue:
     """Smooth L1 Loss (similar to Huber with beta).
 
     Args:
@@ -96,7 +97,7 @@ def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0):
     return mean(loss)
 
 
-def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1):
+def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> EagerValue:
     """Cosine Similarity Loss.
 
     Args:
@@ -115,7 +116,7 @@ def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1):
     return mean(subtract(1.0, cos_sim))
 
 
-def kl_div_loss(y_true: Tensor, y_pred: Tensor):
+def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> EagerValue:
     """Kullback-Leibler divergence loss.
 
     Args:
@@ -133,7 +134,7 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor):
     return mean(kl)
 
 
-def hinge_loss(y_true: Tensor, y_pred: Tensor):
+def hinge_loss(y_true: Tensor, y_pred: Tensor) -> EagerValue:
     """Hinge loss. y_true should be -1 or 1.
 
     Args:
@@ -147,7 +148,7 @@ def hinge_loss(y_true: Tensor, y_pred: Tensor):
     return mean(maximum(0.0, margin))
 
 
-def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6):
+def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> EagerValue:
     """Gaussian Negative Log Likelihood loss.
 
     Args:
@@ -169,7 +170,7 @@ def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 
     return mean(loss)
 
 
-def log_cosh_loss(y_true: Tensor, y_pred: Tensor):
+def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> EagerValue:
     """Log-Cosh loss.
 
     Args:
@@ -193,7 +194,7 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor):
     return mean(stable_logcosh)
 
 
-def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0):
+def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> EagerValue:
     """Margin Ranking Loss.
 
     Args:
@@ -211,7 +212,7 @@ def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: 
     return mean(maximum(0.0, loss))
 
 
-def nll_loss(y_pred: Tensor, y_true: Tensor):
+def nll_loss(y_pred: Tensor, y_true: Tensor) -> EagerValue:
     """Negative log likelihood loss.
 
     Args:
@@ -228,7 +229,7 @@ def nll_loss(y_pred: Tensor, y_true: Tensor):
     return mean(multiply(-1.0, gathered))
 
 
-def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0):
+def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0) -> EagerValue:
     """Triplet margin loss.
 
     Args:
@@ -278,7 +279,7 @@ __all__ = [
 ]
 
 
-def msle_loss(y_true: Tensor, y_pred: Tensor):
+def msle_loss(y_true: Tensor, y_pred: Tensor) -> EagerValue:
     """Mean Squared Logarithmic Error.
 
     Args:
@@ -296,7 +297,7 @@ def msle_loss(y_true: Tensor, y_pred: Tensor):
     return mean(square(subtract(log_pred, log_true)))
 
 
-def mape_loss(y_true: Tensor, y_pred: Tensor):
+def mape_loss(y_true: Tensor, y_pred: Tensor) -> EagerValue:
     """Mean Absolute Percentage Error.
 
     Args:
@@ -329,7 +330,7 @@ class CircleLoss(OpDef):
 
     op_name = "CircleLoss"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -348,7 +349,7 @@ class CategoricalGeneralizedCrossEntropy(OpDef):
 
     op_name = "CategoricalGeneralizedCrossEntropy"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -361,7 +362,7 @@ class CategoricalGeneralizedCrossEntropy(OpDef):
         return ()
 
 
-def ctc_loss(*args, **kwargs):
+def ctc_loss(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """ctc_loss function.
 
     Args:
@@ -376,7 +377,7 @@ def ctc_loss(*args, **kwargs):
     return get_op("CtcLoss")()(*args, **kwargs)
 
 
-def circle_loss(*args, **kwargs):
+def circle_loss(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """circle_loss function.
 
     Args:
@@ -391,7 +392,7 @@ def circle_loss(*args, **kwargs):
     return get_op("CircleLoss")()(*args, **kwargs)
 
 
-def categorical_generalized_cross_entropy(*args, **kwargs):
+def categorical_generalized_cross_entropy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """categorical_generalized_cross_entropy function.
 
     Args:

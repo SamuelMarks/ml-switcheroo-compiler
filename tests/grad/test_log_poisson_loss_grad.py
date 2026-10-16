@@ -1,5 +1,9 @@
 """Tests for LogPoissonLoss autodiff VJP/JVP rules and numerical gradient verification."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
@@ -12,6 +16,11 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
     log_poisson_loss_jvp,
     log_poisson_loss_vjp,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_stirling_gammaln_accuracy() -> None:
@@ -39,16 +48,16 @@ def test_log_poisson_loss_eager_modes() -> None:
     # log_input=True: exp(pred) - targets * pred
     loss_log = _np_log_poisson_loss(np, targets, predictions, log_input=True)
     expected_log = np.exp(predictions) - targets * predictions
-    np.testing.assert_allclose(loss_log, expected_log, rtol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(loss_log, expected_log, rtol=1e-5)
 
     # log_input=False: pred - targets * log(pred)
     loss_nonlog = _np_log_poisson_loss(np, targets, predictions, log_input=False)
     expected_nonlog = predictions - targets * np.log(predictions)
-    np.testing.assert_allclose(loss_nonlog, expected_nonlog, rtol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(loss_nonlog, expected_nonlog, rtol=1e-5)
 
     # compute_full_loss=True
     loss_full = _np_log_poisson_loss(np, targets, predictions, log_input=True, compute_full_loss=True)
-    assert np.all(loss_full >= loss_log)
+    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("EagerTensorProtocol", loss_full) >= cast("EagerTensorProtocol", loss_log))
 
 
 def test_log_poisson_loss_vjp_rule() -> None:
@@ -69,8 +78,8 @@ def test_log_poisson_loss_vjp_rule() -> None:
 
     assert target_grad_id in graph.nodes
     assert pred_grad_id in graph.nodes
-    assert graph.nodes[target_grad_id].op_type == "ZerosLike"
-    assert graph.nodes[pred_grad_id].op_type == "Mul"
+    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(target_grad_id)).op_type == "ZerosLike"
+    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(pred_grad_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_vjp_nonlog_rule() -> None:
@@ -88,7 +97,7 @@ def test_log_poisson_loss_vjp_nonlog_rule() -> None:
     vjp_ids = log_poisson_loss_vjp(graph, node, "cotangent_2")
     assert len(vjp_ids) == 2
     assert vjp_ids[1] in graph.nodes
-    assert graph.nodes[vjp_ids[1]].op_type == "Mul"
+    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(cast("EagerTensorProtocol", getattr(vjp_ids, "__getitem__")(1)))).op_type == "Mul"
 
 
 def test_log_poisson_loss_jvp_rule() -> None:
@@ -105,7 +114,7 @@ def test_log_poisson_loss_jvp_rule() -> None:
 
     jvp_id = log_poisson_loss_jvp(graph, node, ["tan_targets", "tan_log_inputs"])
     assert jvp_id in graph.nodes
-    assert graph.nodes[jvp_id].op_type == "Mul"
+    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_jvp_nonlog_rule() -> None:
@@ -122,7 +131,7 @@ def test_log_poisson_loss_jvp_nonlog_rule() -> None:
 
     jvp_id = log_poisson_loss_jvp(graph, node, ["tan_targets", "tan_inputs"])
     assert jvp_id in graph.nodes
-    assert graph.nodes[jvp_id].op_type == "Mul"
+    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_numerical_gradcheck() -> None:
@@ -141,8 +150,8 @@ def test_log_poisson_loss_numerical_gradcheck() -> None:
         minus = log_input.copy()
         plus[i] += eps
         minus[i] -= eps
-        l_plus = np.sum(_np_log_poisson_loss(np, targets, plus, log_input=True))
-        l_minus = np.sum(_np_log_poisson_loss(np, targets, minus, log_input=True))
+        l_plus = cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("Callable[..., EagerTensorProtocol]", _np_log_poisson_loss)(np, targets, plus, log_input=True))
+        l_minus = cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("Callable[..., EagerTensorProtocol]", _np_log_poisson_loss)(np, targets, minus, log_input=True))
         numerical_grad[i] = (l_plus - l_minus) / (2.0 * eps)
 
     np.testing.assert_allclose(analytical_grad, numerical_grad, rtol=1e-4, atol=1e-4)

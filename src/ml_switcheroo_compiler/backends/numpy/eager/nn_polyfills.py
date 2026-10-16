@@ -1,16 +1,15 @@
-# ruff: noqa: E402, E501, F403
 """Numpy eager fallback implementations for stubbed NN operations."""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Callable, cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 
 
-def _stirling_gammaln(x: np.ndarray) -> np.ndarray:
+def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Vectorized Ramanujan/Stirling approximation of log(gamma(x)) for x > 0 in pure NumPy.
 
     Args:
@@ -27,11 +26,11 @@ def _stirling_gammaln(x: np.ndarray) -> np.ndarray:
         xs = x_safe[small_mask] + 1.0
         g_next = (xs - 0.5) * np.log(xs) - xs + c0 + (1.0 / (12.0 * xs)) - (1.0 / (360.0 * np.power(xs, 3)))
         res[small_mask] = g_next - np.log(x_safe[small_mask])
-    return res
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
 
 
 @numpy_eager_registry.register("LogPoissonLoss")
-def _np_log_poisson_loss(backend_module: Any, targets: Any, predictions: Any, **kwargs: Any) -> np.ndarray:
+def _np_log_poisson_loss(backend_module: EagerValue, targets: EagerValue, predictions: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Numerically stable vectorized LogPoissonLoss computation.
 
     Args:
@@ -60,11 +59,11 @@ def _np_log_poisson_loss(backend_module: Any, targets: Any, predictions: Any, **
             res = res + scipy.special.gammaln(t + 1.0)
         except ImportError:
             res = res + _stirling_gammaln(t + 1.0)
-    return res
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
 
 
 @numpy_eager_registry.register("AllCandidateSampler")
-def _np_all_candidate_sampler(backend_module: Any, true_classes: Any, **kwargs: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _np_all_candidate_sampler(backend_module: EagerValue, true_classes: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Numerically stable vectorized eager fallback for AllCandidateSampler.
 
     Args:
@@ -76,12 +75,12 @@ def _np_all_candidate_sampler(backend_module: Any, true_classes: Any, **kwargs: 
         tuple[np.ndarray, np.ndarray, np.ndarray]: (sampled_candidates, true_expected_count, sampled_expected_count).
     """
     t = np.asarray(true_classes, dtype=np.int64)
-    num_sampled = int(kwargs.get("num_sampled", 1))
-    num_classes = int(kwargs.get("num_classes", 10))
+    num_sampled = int(cast(int, kwargs.get("num_sampled", 1)))
+    num_classes = int(cast(int, kwargs.get("num_classes", 10)))
     unique = bool(kwargs.get("unique", True))
     seed = kwargs.get("seed")
 
-    rng = np.random.default_rng(seed)
+    rng = getattr(np.random, "default_rng")(seed)
     replace = not unique
     sampled = rng.choice(num_classes, size=num_sampled, replace=replace)
 
@@ -93,7 +92,7 @@ def _np_all_candidate_sampler(backend_module: Any, true_classes: Any, **kwargs: 
 
 def _np_ctc_beam_step(
     beam: dict[tuple[int, ...], tuple[float, float]],
-    log_p: Any,
+    log_p: EagerValue,
     num_classes: int,
     blank: int,
     beam_width: int,
@@ -147,7 +146,7 @@ def _np_ctc_beam_step(
 
 
 @numpy_eager_registry.register("CtcBeamSearchDecoder")
-def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_length: Any, **kwargs: Any) -> Any:
+def _np_ctc_beam_search_decoder(backend_module: EagerValue, inputs: EagerValue, sequence_length: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager fallback for _np_ctc_beam_search_decoder.
 
     Args:
@@ -178,15 +177,15 @@ def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_lengt
             probs = arr[t, b]
             max_p = np.max(probs)
             log_p = probs - max_p - np.log(np.sum(np.exp(probs - max_p)))
-            beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, beam_width)
+            beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, cast("int", beam_width))
 
         best_paths = sorted(beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
         best_paths_by_batch.append(best_paths)
 
-    sparse_list: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
-    log_probs_matrix = np.zeros((batch_size, top_paths), dtype=np.float32)
+    sparse_list: list[tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]] = []
+    log_probs_matrix = getattr(np, "zeros")((batch_size, top_paths), dtype=np.float32)
 
-    for p in range(top_paths):
+    for p in range(cast("int", top_paths)):
         indices_p: list[list[int]] = []
         values_p: list[int] = []
         max_len = 0
@@ -214,7 +213,7 @@ def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_lengt
 
 
 @numpy_eager_registry.register("CtcUniqueLabels")
-def _np_ctc_unique_labels(backend_module: Any, labels: Any, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+def _np_ctc_unique_labels(backend_module: EagerValue, labels: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Eager fallback for _np_ctc_unique_labels.
 
     Args:
@@ -231,7 +230,7 @@ def _np_ctc_unique_labels(backend_module: Any, labels: Any, **kwargs: Any) -> tu
 
 
 @numpy_eager_registry.register("NormalizeMoments")
-def _np_normalize_moments(backend_module: Any, counts: Any, mean_ss: Any, variance_ss: Any, shift: Any, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+def _np_normalize_moments(backend_module: EagerValue, counts: EagerValue, mean_ss: EagerValue, variance_ss: EagerValue, shift: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Eager fallback for _np_normalize_moments.
 
     Args:
@@ -255,7 +254,9 @@ def _np_normalize_moments(backend_module: Any, counts: Any, mean_ss: Any, varian
 
 
 @numpy_eager_registry.register("SufficientStatistics")
-def _np_sufficient_statistics(backend_module: Any, x: Any, axes: Any, **kwargs: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _np_sufficient_statistics(
+    backend_module: EagerValue, x: EagerValue, axes: EagerValue, **kwargs: EagerValue
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Eager fallback for _np_sufficient_statistics.
 
     Args:
@@ -268,18 +269,19 @@ def _np_sufficient_statistics(backend_module: Any, x: Any, axes: Any, **kwargs: 
         tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Result.
     """
     arr = np.asarray(x)
-    axes = tuple(np.asarray(axes).tolist()) if axes is not None else None
-    divisor = np.prod([arr.shape[i] for i in range(arr.ndim) if i not in (axes or [])]) if axes else 1
+    axes_tup: tuple[int, ...] | None = tuple(np.asarray(axes).tolist()) if axes is not None else None
+    keepdims = bool(kwargs.get("keepdims", False))
+    divisor = np.prod([arr.shape[i] for i in range(arr.ndim) if i not in (axes_tup or ())]) if axes_tup else 1
     counts = np.array(arr.size / divisor, dtype=np.float32)
-    counts = np.broadcast_to(counts, np.mean(arr, axis=axes, keepdims=kwargs.get("keepdims", False)).shape)
-    shift = np.mean(arr, axis=axes, keepdims=True)
-    m_ss = np.sum(arr - shift, axis=axes, keepdims=kwargs.get("keepdims", False))
-    v_ss = np.sum(np.square(arr - shift), axis=axes, keepdims=kwargs.get("keepdims", False))
-    return counts, m_ss, v_ss, np.squeeze(shift) if not kwargs.get("keepdims", False) else shift
+    counts = np.broadcast_to(counts, np.mean(arr, axis=axes_tup, keepdims=keepdims).shape)
+    shift = np.mean(arr, axis=axes_tup, keepdims=True)
+    m_ss = np.sum(arr - shift, axis=axes_tup, keepdims=keepdims)
+    v_ss = np.sum(np.square(arr - shift), axis=axes_tup, keepdims=keepdims)
+    return counts, m_ss, v_ss, np.squeeze(shift) if not keepdims else shift
 
 
 @numpy_eager_registry.register("WeightedMoments")
-def _np_weighted_moments(backend_module: Any, x: Any, axes: Any, frequency_weights: Any, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+def _np_weighted_moments(backend_module: EagerValue, x: EagerValue, axes: EagerValue, frequency_weights: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Eager fallback for _np_weighted_moments.
 
     Args:
@@ -294,16 +296,16 @@ def _np_weighted_moments(backend_module: Any, x: Any, axes: Any, frequency_weigh
     """
     arr = np.asarray(x)
     fw = np.asarray(frequency_weights)
-    axes = tuple(np.asarray(axes).tolist()) if axes is not None else None
-    keepdims = kwargs.get("keepdims", False)
-    sum_w = np.sum(fw, axis=axes, keepdims=keepdims)
-    mean = np.sum(arr * fw, axis=axes, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
-    var = np.sum(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes)), axis=axes, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    axes_tup: tuple[int, ...] | None = tuple(np.asarray(axes).tolist()) if axes is not None else None
+    keepdims = bool(kwargs.get("keepdims", False))
+    sum_w = np.sum(fw, axis=axes_tup, keepdims=keepdims)
+    mean = np.sum(arr * fw, axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    var = np.sum(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes_tup or 0)), axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
     return mean, var
 
 
 @numpy_eager_registry.register("MaxPoolWithArgmax")
-def _np_max_pool_with_argmax(backend_module: Any, input: Any, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+def _np_max_pool_with_argmax(backend_module: EagerValue, input: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Eager fallback for _np_max_pool_with_argmax.
 
     Args:
@@ -330,7 +332,7 @@ def _np_max_pool_with_argmax(backend_module: Any, input: Any, **kwargs: Any) -> 
 
 
 @numpy_eager_registry.register("CollapseRepeated")
-def _np_collapse_repeated(backend_module: Any, labels: Any, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+def _np_collapse_repeated(backend_module: EagerValue, labels: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Eager fallback for _np_collapse_repeated.
 
     Args:
@@ -351,7 +353,7 @@ def _np_collapse_repeated(backend_module: Any, labels: Any, **kwargs: Any) -> tu
 
 
 @numpy_eager_registry.register("QuantizedConv")
-def _np_quantized_conv(backend_module: Any, *args: Any, **kwargs: Any) -> np.ndarray:
+def _np_quantized_conv(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """NumPy eager evaluation fallback for QuantizedConv.
 
     Args:
@@ -380,8 +382,8 @@ def _np_quantized_conv(backend_module: Any, *args: Any, **kwargs: Any) -> np.nda
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     spatial_dims = w_float.ndim - 2
-    strides_tuple = (stride,) * spatial_dims if isinstance(stride, int) else tuple(stride)
-    dilation_tuple = (dilation,) * spatial_dims if isinstance(dilation, int) else tuple(dilation)
+    strides_tuple = (stride,) * spatial_dims if isinstance(stride, int) else tuple(getattr(stride, "__iter__")())
+    dilation_tuple = (dilation,) * spatial_dims if isinstance(dilation, int) else tuple(getattr(dilation, "__iter__")())
 
     pad_arg = padding
     if isinstance(padding, int):
@@ -394,16 +396,16 @@ def _np_quantized_conv(backend_module: Any, *args: Any, **kwargs: Any) -> np.nda
     rhs_spec = (spatial_dims + 1, spatial_dims) + tuple(range(0, spatial_dims))
     out_spec = lhs_spec
 
-    config_obj = ConvConfig(
+    config_obj = cast("Callable[..., ConvConfig]", ConvConfig)(
         window_strides=strides_tuple,
         padding=pad_arg,
         lhs_dilation=(1,) * spatial_dims,
         rhs_dilation=dilation_tuple,
-        feature_group_count=groups,
+        dimension_numbers=(lhs_spec, rhs_spec, out_spec),
+        feature_group_count=cast("int", groups),
     )
-    config_obj.dimension_numbers = (lhs_spec, rhs_spec, out_spec)
 
     from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated
 
     res = _conv_general_dilated(input_val, w_float, config_obj)
-    return res
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)

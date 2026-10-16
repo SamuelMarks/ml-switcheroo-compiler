@@ -1,14 +1,13 @@
-"""Module conv.py."""
+"""Core abstractions and logic definitions for conv.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Core abstractions and logic definitions for conv.py."""
 import typing  # noqa: F401
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Callable, cast
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 from ml_switcheroo_compiler.ops.configs import ConvConfig
@@ -25,9 +24,9 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class ConvLocalHyperparams:
     """ConvLocalHyperparams."""
 
-    window_strides: Any | None = None
-    padding: Any | None = None
-    filter_shape: Any | None = None
+    window_strides: Sequence[int] | None = None
+    padding: str | Sequence[tuple[int, int]] | None = None
+    filter_shape: Sequence[int] | None = None
 
 
 @dispatch_eager("ConvGeneralDilated")
@@ -35,7 +34,7 @@ def conv_general_dilated(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvConfig,
-):
+) -> EagerValue:
     """General N-dimensional convolution with support for strides, padding, and dilations.
 
     Args:
@@ -63,7 +62,7 @@ def conv_general_dilated(
     )
     out_shape = op.infer_shape(lhs, rhs, cfg)
 
-    return _emit_linalg_node("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype])
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
 
 
 @dispatch_eager("ConvGeneralDilatedLocal")
@@ -71,8 +70,8 @@ def conv_general_dilated_local(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvLocalHyperparams,
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """ConvGeneralDilatedLocal.
 
     Args:
@@ -93,12 +92,12 @@ def conv_general_dilated_local(
         **kwargs,
     }
 
-    out_shape = ConvGeneralDilatedLocal().infer_shape(lhs, rhs, **attributes)
+    out_shape = getattr(ConvGeneralDilatedLocal(), "infer_shape")(lhs, rhs, **attributes)
     return _emit_linalg_node("ConvGeneralDilatedLocal", inputs, attributes, [out_shape], [lhs.dtype])
 
 
 @dispatch_eager("ConvGeneralDilatedPatches")
-def conv_general_dilated_patches(lhs: Tensor, filter_shape, window_strides, padding, **kwargs):
+def conv_general_dilated_patches(lhs: Tensor, filter_shape: EagerValue, window_strides: EagerValue, padding: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """ConvGeneralDilatedPatches.
 
     Args:
@@ -119,12 +118,12 @@ def conv_general_dilated_patches(lhs: Tensor, filter_shape, window_strides, padd
         **kwargs,
     }
 
-    out_shape = ConvGeneralDilatedPatches().infer_shape(lhs, **attributes)
+    out_shape = getattr(ConvGeneralDilatedPatches(), "infer_shape")(lhs, **attributes)
     return _emit_linalg_node("ConvGeneralDilatedPatches", inputs, attributes, [out_shape], [lhs.dtype])
 
 
 @dispatch_eager("ConvWithGeneralPadding")
-def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides, padding, **kwargs):
+def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: EagerValue, padding: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """ConvWithGeneralPadding.
 
     Args:
@@ -140,5 +139,5 @@ def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides, padding,
     inputs = [lhs, rhs]
     attributes = {"window_strides": window_strides, "padding": padding, **kwargs}
 
-    out_shape = ConvWithGeneralPadding().infer_shape(lhs, rhs, **attributes)
+    out_shape = getattr(ConvWithGeneralPadding(), "infer_shape")(lhs, rhs, **attributes)
     return _emit_linalg_node("ConvWithGeneralPadding", inputs, attributes, [out_shape], [lhs.dtype])

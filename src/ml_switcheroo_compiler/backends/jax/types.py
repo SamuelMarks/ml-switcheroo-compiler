@@ -1,7 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Backend utilities."""
 
-from typing import Optional
+from typing import Callable, Optional, cast
 
 import jax.numpy as jnp
 
@@ -11,9 +10,11 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
+from ml_switcheroo_compiler.backends.eager.types_utils import ZerosModule
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     """Evaluate zeros operation.
 
     Args:
@@ -23,10 +24,10 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     Returns:
             object: Result.
     """
-    return generic_zeros(jnp, shape)
+    return generic_zeros(cast(ZerosModule, jnp), shape)
 
 
-def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
+def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
     """Evaluate array operation.
 
     Args:
@@ -37,10 +38,10 @@ def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
     Returns:
             object: Result.
     """
-    return generic_array(jnp, data, dtype)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(jnp, data, dtype))
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data: EagerValue) -> EagerValue:
     """Evaluate asarray operation.
 
     Args:
@@ -50,10 +51,10 @@ def asarray(cls: type, data: object) -> object:
     Returns:
             object: Result.
     """
-    return generic_asarray(jnp, data)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(jnp, data))
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data: EagerValue) -> float:
     """Evaluate item operation.
 
     Args:
@@ -63,4 +64,4 @@ def item(cls: type, data: object) -> float:
     Returns:
         float: Result.
     """
-    return generic_item(jnp, data)
+    return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(jnp, data))

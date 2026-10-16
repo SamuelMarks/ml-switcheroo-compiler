@@ -1,9 +1,12 @@
 """Sparse COO backend type definitions and array creation utilities."""
 
-from collections.abc import Sequence
-from typing import Optional, Union
+from __future__ import annotations
 
-import numpy as np
+from collections.abc import Sequence
+from typing import Union, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 class COOTensor:
@@ -11,8 +14,8 @@ class COOTensor:
 
     def __init__(
         self,
-        indices: np.ndarray,
-        values: np.ndarray,
+        indices: EagerValue,
+        values: EagerValue,
         shape: tuple[int, ...],
     ) -> None:
         """Initialize a Sparse COO Tensor.
@@ -25,7 +28,7 @@ class COOTensor:
         self.shape: tuple[int, ...] = tuple(int(s) for s in shape)
         self.ndim: int = len(self.shape)
 
-        indices_arr: np.ndarray = np.asarray(indices)
+        indices_arr: EagerTensorProtocol = np.asarray(indices)
         if not np.issubdtype(indices_arr.dtype, np.integer):
             indices_arr = indices_arr.astype(np.int64)
         if indices_arr.ndim == 1:
@@ -34,14 +37,14 @@ class COOTensor:
             else:
                 indices_arr = indices_arr.reshape(self.ndim, -1)
 
-        self.indices: np.ndarray = indices_arr
-        self.values: np.ndarray = np.asarray(values)
-        self.coords: np.ndarray = self.indices
-        self.data: np.ndarray = self.values
+        self.indices: EagerTensorProtocol = indices_arr
+        self.values: EagerTensorProtocol = np.asarray(values)
+        self.coords: EagerTensorProtocol = self.indices
+        self.data: EagerTensorProtocol = self.values
         self.nnz: int = int(self.values.shape[0])
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> EagerValue:
         """Get the data type of the sparse tensor values.
 
         Returns:
@@ -62,7 +65,7 @@ class COOTensor:
         return prod
 
     @classmethod
-    def from_dense(cls, arr: np.ndarray) -> "COOTensor":
+    def from_dense(cls, arr: EagerValue) -> COOTensor:
         """Construct a COOTensor from a dense NumPy array.
 
         Args:
@@ -71,20 +74,20 @@ class COOTensor:
         Returns:
             COOTensor: Sparse COO representation of non-zero elements.
         """
-        arr_np: np.ndarray = np.asarray(arr)
+        arr_np: EagerTensorProtocol = np.asarray(arr)
         if arr_np.ndim == 0:
-            arr_np_1d: np.ndarray = np.atleast_1d(arr_np)
-            nonzero_mask_0d: np.ndarray = arr_np_1d != 0
-            indices_0d: np.ndarray = np.empty((0, int(nonzero_mask_0d.sum())), dtype=np.int64)
-            values_0d: np.ndarray = arr_np_1d[nonzero_mask_0d]
+            arr_np_1d: EagerTensorProtocol = np.atleast_1d(arr_np)
+            nonzero_mask_0d = cast(EagerTensorProtocol, cast(EagerValue, arr_np_1d) != 0)
+            indices_0d: EagerTensorProtocol = np.empty((0, int(nonzero_mask_0d.sum())), dtype=np.int64)
+            values_0d: EagerTensorProtocol = arr_np_1d[nonzero_mask_0d]
             return cls(indices=indices_0d, values=values_0d, shape=())
 
-        nonzero_mask: np.ndarray = arr_np != 0
-        indices: np.ndarray = np.vstack(np.nonzero(nonzero_mask))
-        values: np.ndarray = arr_np[nonzero_mask]
+        nonzero_mask = cast(EagerTensorProtocol, cast(EagerValue, arr_np) != 0)
+        indices: EagerTensorProtocol = np.vstack(np.nonzero(nonzero_mask))
+        values: EagerTensorProtocol = arr_np[nonzero_mask]
         return cls(indices=indices, values=values, shape=arr_np.shape)
 
-    def to_dense(self) -> np.ndarray:
+    def to_dense(self) -> EagerTensorProtocol:
         """Convert this sparse COO tensor into a dense NumPy array.
 
         Returns:
@@ -92,15 +95,15 @@ class COOTensor:
         """
         if self.ndim == 0:
             val = self.values[0] if self.nnz > 0 else 0
-            return np.array(val, dtype=self.dtype)
+            return cast(EagerTensorProtocol, np.array(val, dtype=self.dtype))
 
-        dense: np.ndarray = np.zeros(self.shape, dtype=self.dtype)
+        dense: EagerTensorProtocol = np.zeros(self.shape, dtype=self.dtype)
         if self.nnz > 0:
-            coords_tuple: tuple[np.ndarray, ...] = tuple(self.indices[i] for i in range(self.ndim))
+            coords_tuple: tuple[EagerValue, ...] = tuple(self.indices[i] for i in range(self.ndim))
             dense[coords_tuple] = self.values
         return dense
 
-    def astype(self, dtype: Union[np.dtype, str]) -> "COOTensor":
+    def astype(self, dtype: Union[EagerValue, str]) -> COOTensor:
         """Cast tensor values to a new data type.
 
         Args:
@@ -115,7 +118,7 @@ class COOTensor:
             shape=self.shape,
         )
 
-    def to_csr(self) -> "CSRTensor":
+    def to_csr(self) -> CSRTensor:
         """Convert this COOTensor directly to a CSRTensor without dense materialization.
 
         Returns:
@@ -123,7 +126,7 @@ class COOTensor:
         """
         return coo_to_csr(self)
 
-    def to_csc(self) -> "CSCTensor":
+    def to_csc(self) -> CSCTensor:
         """Convert this COOTensor directly to a CSCTensor without dense materialization.
 
         Returns:
@@ -145,9 +148,9 @@ class CSRTensor:
 
     def __init__(
         self,
-        data: np.ndarray,
-        indices: np.ndarray,
-        indptr: np.ndarray,
+        data: EagerValue,
+        indices: EagerValue,
+        indptr: EagerValue,
         shape: tuple[int, int],
     ) -> None:
         """Initialize a CSRTensor.
@@ -158,15 +161,15 @@ class CSRTensor:
             indptr (np.ndarray): Row index pointers of shape (nrows + 1,).
             shape (tuple[int, int]): Matrix dimensions (nrows, ncols).
         """
-        self.data: np.ndarray = np.asarray(data)
-        self.indices: np.ndarray = np.asarray(indices, dtype=np.int64)
-        self.indptr: np.ndarray = np.asarray(indptr, dtype=np.int64)
+        self.data: EagerTensorProtocol = np.asarray(data)
+        self.indices: EagerTensorProtocol = np.asarray(indices, dtype=np.int64)
+        self.indptr: EagerTensorProtocol = np.asarray(indptr, dtype=np.int64)
         self.shape: tuple[int, int] = (int(shape[0]), int(shape[1]))
         self.ndim: int = 2
         self.nnz: int = int(self.data.shape[0])
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> EagerValue:
         """Get the data type of the sparse tensor values.
 
         Returns:
@@ -175,7 +178,7 @@ class CSRTensor:
         return self.data.dtype
 
     @classmethod
-    def from_dense(cls, arr: np.ndarray) -> "CSRTensor":
+    def from_dense(cls, arr: EagerValue) -> CSRTensor:
         """Construct a CSRTensor from a dense 2D NumPy array.
 
         Args:
@@ -191,7 +194,7 @@ class CSRTensor:
         data = []
         for r in range(nrows):
             for c in range(ncols):
-                val = arr_2d[r, c]
+                val: EagerValue = arr_2d[r, c]
                 if val != 0:
                     indices.append(c)
                     data.append(val)
@@ -204,7 +207,7 @@ class CSRTensor:
         )
 
     @classmethod
-    def from_coo(cls, coo: COOTensor) -> "CSRTensor":
+    def from_coo(cls, coo: COOTensor) -> CSRTensor:
         """Construct a CSRTensor directly from a COOTensor without dense materialization.
 
         Args:
@@ -215,7 +218,7 @@ class CSRTensor:
         """
         return coo_to_csr(coo)
 
-    def to_dense(self) -> np.ndarray:
+    def to_dense(self) -> EagerTensorProtocol:
         """Convert this CSRTensor into a dense 2D NumPy array.
 
         Returns:
@@ -224,11 +227,11 @@ class CSRTensor:
         nrows, ncols = self.shape
         dense = np.zeros((nrows, ncols), dtype=self.dtype)
         for r in range(nrows):
-            start = self.indptr[r]
-            end = self.indptr[r + 1]
+            start = int(self.indptr[r])
+            end = int(self.indptr[r + 1])
             for idx in range(start, end):
                 dense[r, self.indices[idx]] = self.data[idx]
-        return dense
+        return cast(EagerTensorProtocol, dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSRTensor directly to a COOTensor without dense materialization.
@@ -238,7 +241,7 @@ class CSRTensor:
         """
         return csr_to_coo(self)
 
-    def to_csc(self) -> "CSCTensor":
+    def to_csc(self) -> CSCTensor:
         """Convert this CSRTensor directly to a CSCTensor without dense materialization.
 
         Returns:
@@ -260,9 +263,9 @@ class CSCTensor:
 
     def __init__(
         self,
-        data: np.ndarray,
-        indices: np.ndarray,
-        indptr: np.ndarray,
+        data: EagerValue,
+        indices: EagerValue,
+        indptr: EagerValue,
         shape: tuple[int, int],
     ) -> None:
         """Initialize a CSCTensor.
@@ -273,15 +276,15 @@ class CSCTensor:
             indptr (np.ndarray): Column index pointers of shape (ncols + 1,).
             shape (tuple[int, int]): Matrix dimensions (nrows, ncols).
         """
-        self.data: np.ndarray = np.asarray(data)
-        self.indices: np.ndarray = np.asarray(indices, dtype=np.int64)
-        self.indptr: np.ndarray = np.asarray(indptr, dtype=np.int64)
+        self.data: EagerTensorProtocol = np.asarray(data)
+        self.indices: EagerTensorProtocol = np.asarray(indices, dtype=np.int64)
+        self.indptr: EagerTensorProtocol = np.asarray(indptr, dtype=np.int64)
         self.shape: tuple[int, int] = (int(shape[0]), int(shape[1]))
         self.ndim: int = 2
         self.nnz: int = int(self.data.shape[0])
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> EagerValue:
         """Get the data type of the sparse tensor values.
 
         Returns:
@@ -290,7 +293,7 @@ class CSCTensor:
         return self.data.dtype
 
     @classmethod
-    def from_dense(cls, arr: np.ndarray) -> "CSCTensor":
+    def from_dense(cls, arr: EagerValue) -> CSCTensor:
         """Construct a CSCTensor from a dense 2D NumPy array.
 
         Args:
@@ -306,7 +309,7 @@ class CSCTensor:
         data = []
         for c in range(ncols):
             for r in range(nrows):
-                val = arr_2d[r, c]
+                val: EagerValue = arr_2d[r, c]
                 if val != 0:
                     indices.append(r)
                     data.append(val)
@@ -319,7 +322,7 @@ class CSCTensor:
         )
 
     @classmethod
-    def from_coo(cls, coo: COOTensor) -> "CSCTensor":
+    def from_coo(cls, coo: COOTensor) -> CSCTensor:
         """Construct a CSCTensor directly from a COOTensor without dense materialization.
 
         Args:
@@ -330,7 +333,7 @@ class CSCTensor:
         """
         return coo_to_csc(coo)
 
-    def to_dense(self) -> np.ndarray:
+    def to_dense(self) -> EagerTensorProtocol:
         """Convert this CSCTensor into a dense 2D NumPy array.
 
         Returns:
@@ -339,11 +342,11 @@ class CSCTensor:
         nrows, ncols = self.shape
         dense = np.zeros((nrows, ncols), dtype=self.dtype)
         for c in range(ncols):
-            start = self.indptr[c]
-            end = self.indptr[c + 1]
+            start = int(self.indptr[c])
+            end = int(self.indptr[c + 1])
             for idx in range(start, end):
                 dense[self.indices[idx], c] = self.data[idx]
-        return dense
+        return cast(EagerTensorProtocol, dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSCTensor directly to a COOTensor without dense materialization.
@@ -522,15 +525,15 @@ def zeros(cls: type, shape: tuple[int, ...]) -> COOTensor:
     """
     del cls
     ndim: int = len(shape)
-    indices: np.ndarray = np.empty((ndim, 0), dtype=np.int64)
-    values: np.ndarray = np.empty((0,), dtype=np.float32)
+    indices: EagerTensorProtocol = np.empty((ndim, 0), dtype=np.int64)
+    values: EagerTensorProtocol = np.empty((0,), dtype=np.float32)
     return COOTensor(indices=indices, values=values, shape=shape)
 
 
 def array(
     cls: type,
-    data: Union[Sequence[float], np.ndarray, COOTensor],
-    dtype: Optional[Union[np.dtype, str]] = None,
+    data: Union[Sequence[float], EagerValue, COOTensor],
+    dtype: Union[EagerValue, str] | None = None,
 ) -> COOTensor:
     """Create a Sparse COO tensor from input data.
 
@@ -548,13 +551,13 @@ def array(
             return data.astype(dtype)
         return data
 
-    dense: np.ndarray = np.asarray(data)
+    dense: EagerTensorProtocol = np.asarray(data)
     if dtype is not None:
         dense = dense.astype(dtype)
     return COOTensor.from_dense(dense)
 
 
-def asarray(cls: type, data: Union[Sequence[float], np.ndarray, COOTensor]) -> COOTensor:
+def asarray(cls: type, data: Union[Sequence[float], EagerValue, COOTensor]) -> COOTensor:
     """Convert input data to a Sparse COO tensor.
 
     Args:
@@ -570,7 +573,7 @@ def asarray(cls: type, data: Union[Sequence[float], np.ndarray, COOTensor]) -> C
     return COOTensor.from_dense(np.asarray(data))
 
 
-def item(cls: type, data: Union[COOTensor, np.ndarray]) -> float:
+def item(cls: type, data: Union[COOTensor, EagerValue]) -> float:
     """Extract a scalar item value from a single-element tensor.
 
     Args:
@@ -583,5 +586,5 @@ def item(cls: type, data: Union[COOTensor, np.ndarray]) -> float:
     del cls
     if isinstance(data, COOTensor):
         dense = data.to_dense()
-        return float(dense.item())
+        return float(cast(float, dense.item()))
     return float(np.asarray(data).item())

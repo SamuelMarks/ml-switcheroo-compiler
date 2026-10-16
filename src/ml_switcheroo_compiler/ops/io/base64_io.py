@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -6,7 +5,9 @@ from __future__ import annotations
 import glob  # noqa: F401
 import os  # noqa: F401
 import shutil  # noqa: F401
+from typing import cast
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -16,7 +17,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
-def _eager_base64(op: str, data, pad: bool = False):
+def _eager_base64(op: str, data: EagerValue, pad: bool = False) -> EagerValue:
     """Evaluate _eager_base64 operation.
 
     Args:
@@ -29,7 +30,7 @@ def _eager_base64(op: str, data, pad: bool = False):
     """
     import base64
 
-    def _proc(d) -> bytes:
+    def _proc(d: EagerValue) -> bytes:
         """Process a single element for base64 operation.
 
         Args:
@@ -41,17 +42,17 @@ def _eager_base64(op: str, data, pad: bool = False):
         if d is None:
             return b""
         b = d.encode("utf-8") if isinstance(d, str) else d
-        res = base64.b64encode(b) if op == "encode" else base64.b64decode(b)
+        res = getattr(base64, "b64encode")(b) if op == "encode" else getattr(base64, "b64decode")(b)
         if op == "encode" and not pad:
             res = res.rstrip(b"=")
-        return res
+        return cast(bytes, res)
 
     if isinstance(data, (list, tuple)):
         return [_proc(d) for d in data]
     return _proc(data)
 
 
-def encode_base64(input: Tensor, pad=False, name=None):
+def encode_base64(input: Tensor, pad: EagerValue = False, name: EagerValue = None) -> EagerValue:
     """Encode base64.
 
     Args:
@@ -73,7 +74,7 @@ def encode_base64(input: Tensor, pad=False, name=None):
     return _emit_shape_node("EncodeBase64", [input], {"pad": pad, "name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
 
-def decode_base64(input: Tensor, name=None):
+def decode_base64(input: Tensor, name: EagerValue = None) -> EagerValue:
     """Decode base64.
 
     Args:
@@ -100,7 +101,7 @@ class EncodeBase64(OpDef):
 
     op_name = "EncodeBase64"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -127,7 +128,7 @@ class DecodeBase64(OpDef):
 
     op_name = "DecodeBase64"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

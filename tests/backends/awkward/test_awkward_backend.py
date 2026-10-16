@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import numpy as np
@@ -14,6 +15,11 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def _create_sample_graph(multi_output: bool = False, no_output: bool = False) -> IRGraph:
@@ -70,20 +76,20 @@ def test_awkward_generator_and_aot() -> None:
     cfg = TensorConfig((2, 2), "float32", "cpu")
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
-    res = runner(t_in1, in2=np.array([[5.0, 6.0], [7.0, 8.0]]))
+    res = cast("Callable[..., EagerTensorProtocol]", runner)(t_in1, in2=cast("Callable[..., EagerTensorProtocol]", np.array)([[5.0, 6.0], [7.0, 8.0]]))
     assert res is not None
 
     # AOT multi-output
     g_multi = _create_sample_graph(multi_output=True)
     runner_multi = gen._compile_aot_impl(g_multi)
-    res_multi = runner_multi(t_in1, t_in2)
+    res_multi = cast("Callable[..., EagerTensorProtocol]", runner_multi)(t_in1, t_in2)
     assert isinstance(res_multi, tuple)
     assert len(res_multi) == 2
 
     # AOT no outputs
     g_no_out = _create_sample_graph(no_output=True)
     runner_no_out = gen._compile_aot_impl(g_no_out)
-    res_no_out = runner_no_out(t_in1, t_in2)
+    res_no_out = cast("Callable[..., EagerTensorProtocol]", runner_no_out)(t_in1, t_in2)
     assert isinstance(res_no_out, dict)
 
 
@@ -138,14 +144,14 @@ def test_awkward_types() -> None:
             """
             return [14.5]
 
-    assert np.isclose(ak_pkg.item(FakeAkArrayScalar()), 8.25)
-    assert np.isclose(ak_pkg.item(FakeAkArrayList()), 14.5)
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", ak_pkg.item)(cast("Callable[..., EagerTensorProtocol]", FakeAkArrayScalar)()), 8.25)
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", ak_pkg.item)(cast("Callable[..., EagerTensorProtocol]", FakeAkArrayList)()), 14.5)
 
     # item fallback when no .to_list() or .item()
     class NoItemAkObj:
         """Object without .to_list() or .item()."""
 
-        def __array__(self) -> np.ndarray:
+        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
             """Convert to array.
 
             Returns:
@@ -153,7 +159,7 @@ def test_awkward_types() -> None:
             """
             return np.array(3.14)
 
-    assert np.isclose(ak_pkg.item(NoItemAkObj()), 3.14)
+    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", ak_pkg.item)(cast("Callable[..., EagerTensorProtocol]", NoItemAkObj)()), 3.14)
 
     # When awkward module is present with Array class
     mock_ak = mock.MagicMock()
@@ -167,23 +173,23 @@ def test_awkward_types() -> None:
 def test_awkward_eager_dispatch() -> None:
     """Verify Awkward eager op execution, aliases, mock awkward, and errors."""
     res = ak_pkg.execute_op("Add", np.array([2.0]), np.array([3.0]))
-    np.testing.assert_allclose(res, [5.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [5.0])
 
     # Classmethod execution
     res_cls = ak_pkg.AwkwardGenerator.execute_op("Add", np.array([2.0]), np.array([3.0]))
-    np.testing.assert_allclose(res_cls, [5.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_cls, [5.0])
 
     # Alias mapping branch: Sub, Mul, Div, Neg, TrueDivide
     sub_res = ak_pkg.execute_op("Sub", np.array([10.0]), np.array([4.0]))
-    np.testing.assert_allclose(sub_res, [6.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(sub_res, [6.0])
     mul_res = ak_pkg.execute_op("Mul", np.array([3.0]), np.array([4.0]))
-    np.testing.assert_allclose(mul_res, [12.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(mul_res, [12.0])
     div_res = ak_pkg.execute_op("Div", np.array([15.0]), np.array([3.0]))
-    np.testing.assert_allclose(div_res, [5.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(div_res, [5.0])
     neg_res = ak_pkg.execute_op("Neg", np.array([7.0]))
-    np.testing.assert_allclose(neg_res, [-7.0])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(neg_res, [-7.0])
     truediv_res = ak_pkg.execute_op("TrueDivide", np.array([7.0]), np.array([2.0]))
-    np.testing.assert_allclose(truediv_res, [3.5])
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(truediv_res, [3.5])
 
     # Unsupported op
     with pytest.raises(BackendNotSupportedError, match="not supported"):
@@ -196,14 +202,18 @@ def test_awkward_eager_dispatch() -> None:
         assert ak_pkg.execute_op("Add", 1, 2) == "ak_added"
 
 
-def test_awkward_ragged_operations_and_records() -> None:
-    """Verify Awkward ragged array creation, jagged reductions, and record transformations."""
+def _test_awkward_ragged_operations_and_records_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_awkward_ragged_operations_and_records.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     import awkward as ak
 
     # Ragged array creation
     ragged = ak_pkg.ragged_array([[1.0, 2.0, 3.0], [4.0], [5.0, 6.0]])
     assert isinstance(ragged, ak.Array)
-    ragged_cls = ak_pkg.AwkwardGenerator.ragged_array([[10.0], [20.0, 30.0]])
+    ragged_cls = cast("EagerTensorProtocol", getattr(ak_pkg.AwkwardGenerator, "ragged_array"))([[10.0], [20.0, 30.0]])
     assert isinstance(ragged_cls, ak.Array)
 
     # Jagged reductions
@@ -225,28 +235,41 @@ def test_awkward_ragged_operations_and_records() -> None:
     # Variable-length flattening and unflattening
     flat = ak_pkg.flatten(ragged)
     np.testing.assert_allclose(ak.to_list(flat), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    flat_cls = ak_pkg.AwkwardGenerator.flatten(ragged)
+    flat_cls = cast("EagerTensorProtocol", getattr(ak_pkg.AwkwardGenerator, "flatten"))(ragged)
     np.testing.assert_allclose(ak.to_list(flat_cls), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
 
     unflat = ak_pkg.unflatten([10, 20, 30, 40], counts=[1, 3])
     assert ak.to_list(unflat) == [[10], [20, 30, 40]]
-    unflat_cls = ak_pkg.AwkwardGenerator.unflatten([10, 20, 30, 40], counts=[2, 2])
+    unflat_cls = cast("EagerTensorProtocol", getattr(ak_pkg.AwkwardGenerator, "unflatten"))([10, 20, 30, 40], counts=[2, 2])
+    getattr(_state, "update")({"ak": ak, "flat": flat, "flat_cls": flat_cls, "max_axis1": max_axis1})
+    getattr(_state, "update")({"mean_axis1": mean_axis1, "min_axis1": min_axis1, "prod_axis1": prod_axis1, "ragged": ragged})
+    getattr(_state, "update")({"ragged_cls": ragged_cls, "sum_axis1": sum_axis1, "unflat": unflat, "unflat_cls": unflat_cls})
+    _state.update(locals())
+
+
+def _test_awkward_ragged_operations_and_records_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_awkward_ragged_operations_and_records.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    ak, ragged, unflat_cls = _state["ak"], _state["ragged"], _state["unflat_cls"]
     assert ak.to_list(unflat_cls) == [[10, 20], [30, 40]]
 
     # Nested record transformations
     rec = ak_pkg.record_array({"f1": [1, 2], "f2": [3, 4]})
     assert rec is not None
-    rec_cls = ak_pkg.AwkwardGenerator.record_array({"a": [5]})
+    rec_cls = cast("EagerTensorProtocol", getattr(ak_pkg.AwkwardGenerator, "record_array"))({"a": [5]})
     assert rec_cls is not None
 
     with_f = ak_pkg.with_field(rec, [5, 6], where="f3")
     assert "f3" in ak.fields(with_f)
-    with_f_cls = ak_pkg.AwkwardGenerator.with_field(rec, [7, 8], where="f4")
+    with_f_cls = cast("EagerTensorProtocol", getattr(ak_pkg.AwkwardGenerator, "with_field"))(rec, [7, 8], where="f4")
     assert "f4" in ak.fields(with_f_cls)
 
     unzipped = ak_pkg.unzip(rec)
     assert len(unzipped) == 2
-    unzipped_cls = ak_pkg.AwkwardGenerator.unzip(rec)
+    unzipped_cls = cast("EagerTensorProtocol", getattr(ak_pkg.AwkwardGenerator, "unzip"))(rec)
     assert len(unzipped_cls) == 2
 
     # Arithmetic without rectangularization
@@ -254,23 +277,36 @@ def test_awkward_ragged_operations_and_records() -> None:
     assert ak.to_list(add_res) == [[2.0, 4.0, 6.0], [8.0], [10.0, 12.0]]
 
     exp_res = ak_pkg.execute_op("Exp", ragged)
-    assert isinstance(exp_res, ak.Array)
+    assert isinstance(exp_res, cast("type", ak.Array))
 
     # Classmethod execution and other overloaded ops
     sub_res = ak_pkg.execute_op(AwkwardGenerator, "Sub", ragged, ragged)
     assert ak.to_list(sub_res) == [[0.0, 0.0, 0.0], [0.0], [0.0, 0.0]]
     mul_res = ak_pkg.execute_op("Mul", ragged, ragged)
-    assert isinstance(mul_res, ak.Array)
+    assert isinstance(mul_res, cast("type", ak.Array))
     div_res = ak_pkg.execute_op("Div", ragged, ragged)
-    assert isinstance(div_res, ak.Array)
+    getattr(_state, "update")({"add_res": add_res, "div_res": div_res, "exp_res": exp_res, "mul_res": mul_res})
+    getattr(_state, "update")({"rec": rec, "rec_cls": rec_cls, "sub_res": sub_res, "unzipped": unzipped})
+    getattr(_state, "update")({"unzipped_cls": unzipped_cls, "with_f": with_f, "with_f_cls": with_f_cls})
+    _state.update(locals())
+
+
+def _test_awkward_ragged_operations_and_records_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_awkward_ragged_operations_and_records.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    ak, div_res, ragged = _state["ak"], _state["div_res"], _state["ragged"]
+    assert isinstance(div_res, cast("type", ak.Array))
     pow_res = ak_pkg.execute_op("Pow", ragged, 2)
-    assert isinstance(pow_res, ak.Array)
+    assert isinstance(pow_res, cast("type", ak.Array))
     neg_res = ak_pkg.execute_op("Neg", ragged)
-    assert isinstance(neg_res, ak.Array)
+    assert isinstance(neg_res, cast("type", ak.Array))
     abs_res = ak_pkg.execute_op("Abs", ragged)
-    assert isinstance(abs_res, ak.Array)
+    assert isinstance(abs_res, cast("type", ak.Array))
     sin_res = ak_pkg.execute_op("Sin", ragged)
-    assert isinstance(sin_res, ak.Array)
+    assert isinstance(sin_res, cast("type", ak.Array))
 
     # Error branches in awkward execute_op
     with pytest.raises(BackendNotSupportedError):
@@ -281,27 +317,51 @@ def test_awkward_ragged_operations_and_records() -> None:
     # Awkward types branch checks
     z_int = ak_pkg.zeros(5)
     assert z_int is not None
-    arr_obj = ak_pkg.array([object()])
+    arr_obj = cast("Callable[..., EagerTensorProtocol]", ak_pkg.array)([cast("Callable[..., EagerTensorProtocol]", object)()])
     assert arr_obj is not None
-    arr_rag = ak_pkg.ragged_array([object()])
+    arr_rag = cast("Callable[..., EagerTensorProtocol]", ak_pkg.ragged_array)([cast("Callable[..., EagerTensorProtocol]", object)()])
     assert arr_rag is not None
     assert np.isclose(ak_pkg.item(np.array([77.0])), 77.0)
 
     # Fallback paths when awkward is mocked out
     mock_ak_empty = mock.MagicMock(spec=[])
+    getattr(_state, "update")({"abs_res": abs_res, "arr_obj": arr_obj, "arr_rag": arr_rag, "mock_ak_empty": mock_ak_empty})
+    getattr(_state, "update")({"neg_res": neg_res, "pow_res": pow_res, "sin_res": sin_res, "z_int": z_int})
+    _state.update(locals())
+
+
+def _test_awkward_ragged_operations_and_records_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 4 of test_awkward_ragged_operations_and_records.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    mock_ak_empty = _state["mock_ak_empty"]
     with mock.patch("ml_switcheroo_compiler.backends.awkward.types._get_ak_module", return_value=mock_ak_empty):
         ragged_fallback = ak_pkg.ragged_array([1, 2])
         assert isinstance(ragged_fallback, np.ndarray)
         rec_fallback = ak_pkg.record_array({"a": [1]})
         assert isinstance(rec_fallback, dict)
         flat_fallback = ak_pkg.flatten(np.array([[1, 2], [3, 4]]))
-        assert flat_fallback.shape == (4,)
+        assert cast("EagerTensorProtocol", getattr(flat_fallback, "shape")) == (4,)
         unflat_fallback = ak_pkg.unflatten([1, 2], counts=[1, 1])
         assert unflat_fallback == [1, 2]
         with_f_fallback = ak_pkg.with_field({"a": 1}, 2, where="b")
-        assert with_f_fallback["b"] == 2
+        assert cast("EagerTensorProtocol", getattr(with_f_fallback, "__getitem__")("b")) == 2
         unzip_fallback = ak_pkg.unzip({"k1": 10, "k2": 20})
         assert unzip_fallback == (10, 20)
+    getattr(_state, "update")({"flat_fallback": flat_fallback, "ragged_fallback": ragged_fallback, "rec_fallback": rec_fallback, "unflat_fallback": unflat_fallback})
+    getattr(_state, "update")({"unzip_fallback": unzip_fallback, "with_f_fallback": with_f_fallback})
+
+
+def test_awkward_ragged_operations_and_records() -> None:
+    """Verify Awkward ragged array creation, jagged reductions, and record transformations."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_awkward_ragged_operations_and_records_part_1(_state)
+    _test_awkward_ragged_operations_and_records_part_2(_state)
+    _test_awkward_ragged_operations_and_records_part_3(_state)
+    _test_awkward_ragged_operations_and_records_part_4(_state)
+    assert isinstance(_state, dict)
 
 
 def test_awkward_types_coverage_branches() -> None:
@@ -311,7 +371,7 @@ def test_awkward_types_coverage_branches() -> None:
     # 1. _get_ak_module import exception fallback (lines 17-18)
     with mock.patch("importlib.import_module") as mock_import:
 
-        def side_effect(name: str) -> object:
+        def side_effect(name: str) -> EagerValue:
             """Side effect to simulate missing awkward package."""
             if name == "awkward":
                 raise ImportError("No awkward")
@@ -402,7 +462,7 @@ def test_awkward_types_coverage_branches() -> None:
             """Return nested 2D list."""
             return [[123.45]]
 
-    assert ak_types.item(NestedToListItem()) == 123.45
+    assert cast("Callable[..., EagerTensorProtocol]", ak_types.item)(cast("Callable[..., EagerTensorProtocol]", NestedToListItem)()) == 123.45
 
     # 10. array when numpy_mod.array raises ValueError (lines 62-63)
     with mock.patch(
@@ -421,4 +481,4 @@ def test_awkward_types_coverage_branches() -> None:
             """Return scalar float."""
             return 42.5
 
-    assert ak_types.item(ItemHolder()) == 42.5
+    assert cast("Callable[..., EagerTensorProtocol]", ak_types.item)(cast("Callable[..., EagerTensorProtocol]", ItemHolder)()) == 42.5

@@ -1,33 +1,36 @@
 """Loop tiling preparation pass for edge optimization heuristics."""
 
+from __future__ import annotations
+
 import os
 from typing import cast
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-def _load_heuristics() -> dict[str, object]:
+def _load_heuristics() -> dict[str, AttributeValue]:
     """Load optimization heuristics.
 
     Returns:
-        dict[str, object]: The loaded heuristics.
+        dict[str, AttributeValue]: The loaded heuristics.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             res = yaml.safe_load(f)
-            return cast(dict[str, object], res) if res else {}
+            return cast(dict[str, AttributeValue], res) if res else {}
     return {}
 
 
-def _get_tiling_config() -> dict[str, object]:
+def _get_tiling_config() -> dict[str, AttributeValue]:
     """Get the tiling configuration based on active backend.
 
     Returns:
-        dict[str, object]: The tiling configuration.
+        dict[str, AttributeValue]: The tiling configuration.
     """
     heuristics = _load_heuristics()
     if not heuristics:
@@ -37,19 +40,19 @@ def _get_tiling_config() -> dict[str, object]:
     backend_name = getattr(backend, "__name__", type(backend).__name__).lower() if backend else ""
 
     profile_name = "default_wgsl" if ("wgsl" in backend_name or "webgpu" in backend_name) else "default_wasm"
-    profiles = cast(dict[str, object], heuristics.get("tiling_profiles", {}))
+    profiles = cast(dict[str, AttributeValue], heuristics.get("tiling_profiles", {}))
 
-    prof = cast(dict[str, object], profiles.get(profile_name, profiles.get("default_wasm", {})))
-    return cast(dict[str, object], prof.get("tiling", {}))
+    prof = cast(dict[str, AttributeValue], profiles.get(profile_name, profiles.get("default_wasm", {})))
+    return cast(dict[str, AttributeValue], prof.get("tiling", {}))
 
 
-def _should_tile(op_type: str, shape: object, op_config: dict[str, object]) -> bool:
+def _should_tile(op_type: str, shape: tuple[AttributeValue, ...] | list[AttributeValue] | dict[str, AttributeValue] | None, op_config: dict[str, AttributeValue]) -> bool:
     """Determine if a node should be tiled based on shape and thresholds.
 
     Args:
         op_type (str): The operation type.
-        shape (object): The node's shape metadata.
-        op_config (dict[str, object]): The operation's configuration.
+        shape (tuple | list | None): The node's shape metadata.
+        op_config (dict[str, AttributeValue]): The operation's configuration.
 
     Returns:
         bool: True if the node should be tiled.
@@ -73,7 +76,7 @@ def _should_tile(op_type: str, shape: object, op_config: dict[str, object]) -> b
     return False
 
 
-def _split_shape(op_type: str, shape: tuple, op_config: dict[str, object]) -> tuple:
+def _split_shape(op_type: str, shape: tuple[AttributeValue, ...], op_config: dict[str, AttributeValue]) -> tuple[AttributeValue, ...]:
     """Split multi-dimensional shape into outer/inner tile chunks.
 
     Args:
@@ -129,7 +132,7 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
         if op_type not in tiling_config:
             continue
 
-        op_config = cast(dict[str, object], tiling_config[op_type])
+        op_config = cast(dict[str, AttributeValue], tiling_config[op_type])
         shape = getattr(node, "shape_metadata", None)
 
         if not op_config or not shape:

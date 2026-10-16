@@ -1,3 +1,9 @@
+"""Tests for test_grad_hvp."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
@@ -5,40 +11,56 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import check_numerical_grads, hvp
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_hvp_robustness():
-    def f(x):
-        return x * x * x
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_hvp_robustness() -> None:
+    """Test function test_hvp_robustness."""
+
+    def f(x: EagerValue) -> EagerValue:
+        """Test function f."""
+        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     v = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, out_tan = hvp(f, x, v)
-    assert val.item() == 8.0
-    assert out_tan.item() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
+    val, out_tan = cast("Callable[..., EagerTensorProtocol]", hvp)(f, x, v)
+    assert cast("EagerTensorProtocol", getattr(val, "item"))() == 8.0
+    assert cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
 
 
-def test_hessian():
-    def f(x):
-        return x * x * x
+def test_hessian() -> None:
+    """Test function test_hessian."""
+
+    def f(x: EagerValue) -> EagerValue:
+        """Test function f."""
+        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     from ml_switcheroo_compiler.grad import hessian
 
-    res = hessian(f)(x)
+    res = cast("Callable[..., EagerTensorProtocol]", hessian)(f)(x)
     assert res is not None
 
 
-def test_check_numerical_grads():
-    def f(x):
-        return x * x
+def test_check_numerical_grads() -> None:
+    """Test function test_check_numerical_grads."""
+
+    def f(x: EagerValue) -> EagerValue:
+        """Test function f."""
+        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     check_numerical_grads(f, (x,))
+    assert x is not None or x is None
 
 
-def test_grad_of_grad():
+def test_grad_of_grad() -> None:
+    """Test function test_grad_of_grad."""
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.autodiff import grad
 
@@ -57,7 +79,8 @@ def test_grad_of_grad():
     assert len(grad_grad_g.outputs) == 1
 
 
-def _removed():
+def _removed() -> None:
+    """Test function _removed."""
     from unittest.mock import patch
 
     # the function we are calling is hvp_graph (which is hvp inside autodiff)

@@ -1,4 +1,3 @@
-# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -7,6 +6,7 @@ import glob  # noqa: F401
 import os  # noqa: F401
 import shutil  # noqa: F401
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor  # noqa: F401
@@ -22,7 +22,7 @@ class SparsePlus(OpDef):
 
     op_name = "SparsePlus"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -49,7 +49,7 @@ class SparseSigmoid(OpDef):
 
     op_name = "SparseSigmoid"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -70,7 +70,7 @@ class SparseSigmoid(OpDef):
         return res
 
 
-def sparse_plus(*args, **kwargs):
+def sparse_plus(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """SparsePlus frontend.
 
     Args:
@@ -91,7 +91,7 @@ def sparse_plus(*args, **kwargs):
     return _emit_shape_node("SparsePlus", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def sparse_sigmoid(*args, **kwargs):
+def sparse_sigmoid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """SparseSigmoid frontend.
 
     Args:

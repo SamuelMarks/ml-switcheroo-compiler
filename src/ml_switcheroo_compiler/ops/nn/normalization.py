@@ -1,9 +1,12 @@
-# ruff: noqa: E402, E501, F403
 """Apply normalization operations."""
+
+from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Optional, Union  # noqa: F401
+from typing import Optional, Union, cast  # noqa: F401
+
+from ml_switcheroo_compiler.backends.registry import EagerValue
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import (
@@ -15,6 +18,7 @@ from ml_switcheroo_compiler.ops import (
     multiply,
     true_divide,
 )
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, divide, power, subtract
 from ml_switcheroo_compiler.ops.configs import WindowConfig
 from ml_switcheroo_compiler.ops.creation import full_like
@@ -53,7 +57,7 @@ def local_response_normalization(
     bias: float = 1.0,
     alpha: float = 1.0,
     beta: float = 0.5,
-):
+) -> EagerValue:
     """Local Response Normalization.
 
     Args:
@@ -84,7 +88,7 @@ def batch_normalization(
     variance: Tensor,
     axis: Union[int, Sequence[int]],
     config: Optional[BatchNormConfig] = None,
-):
+) -> EagerValue:
     """Batch normalization.
 
     Args:
@@ -118,7 +122,7 @@ def rms_normalization(
     x: Tensor,
     scale: Tensor,
     epsilon: float = 1e-3,
-):
+) -> EagerValue:
     """RMS normalization.
 
     Args:
@@ -149,13 +153,13 @@ class BatchNormGlobalConfig:
 
 
 def batch_norm_with_global_normalization(
-    t,
-    m,
-    v,
-    beta,
-    gamma,
-    **kwargs,
-):
+    t: EagerValue,
+    m: EagerValue,
+    v: EagerValue,
+    beta: EagerValue,
+    gamma: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Batch normalization with global normalization.
 
     Args:
@@ -171,20 +175,20 @@ def batch_norm_with_global_normalization(
     """
     config = kwargs.get("config", BatchNormGlobalConfig())
     bn_config = BatchNormConfig(
-        offset=beta,
-        scale=gamma if config.scale_after_normalization else None,
-        epsilon=config.variance_epsilon,
+        offset=cast("Optional[Tensor]", beta),
+        scale=cast("Optional[Tensor]", gamma if getattr(config, "scale_after_normalization") else None),
+        epsilon=getattr(config, "variance_epsilon"),
     )
     return batch_normalization(
-        t,
-        m,
-        v,
+        cast("Tensor", t),
+        cast("Tensor", m),
+        cast("Tensor", v),
         axis=-1,  # Default to last axis if not provided
         config=bn_config,
     )
 
 
-def lrn(input, config=None, name=None):
+def lrn(input: EagerValue, config: EagerValue = None, name: EagerValue = None) -> EagerValue:
     """Evaluate lrn operation.
 
     Args:
@@ -195,18 +199,21 @@ def lrn(input, config=None, name=None):
     Returns:
             tuple[int, ...]: Result.
     """
-    config = config or LRNConfig()
-    depth_radius = config.depth_radius
-    bias = config.bias
-    alpha = config.alpha
-    beta = config.beta
+    config = cast(EagerValue, config or LRNConfig())
+    depth_radius = getattr(config, "depth_radius")
+    bias = getattr(config, "bias")
+    alpha = getattr(config, "alpha")
+    beta = getattr(config, "beta")
 
-    """Local Response Normalization."""
-
-    return local_response_normalization(input, depth_radius, bias, alpha, beta)
+    return local_response_normalization(cast("Tensor", input), depth_radius, bias, alpha, beta)
 
 
-def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
+def l2_normalize(
+    x: Tensor,
+    axis: int | Sequence[int] | None = None,
+    epsilon: float = 1e-12,
+    name: str | None = None,
+) -> Tensor:
     """Normalize along dimension axis using an L2 norm.
 
     Args:
@@ -224,7 +231,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
     return multiply(x, x_inv_norm)
 
 
-def moments(x, axes, shift=None, keepdims=False, name=None):
+def moments(x: EagerValue, axes: EagerValue, shift: EagerValue = None, keepdims: EagerValue = False, name: EagerValue = None) -> EagerValue:
     """Calculate the mean and variance of x.
 
     Args:
@@ -240,7 +247,7 @@ def moments(x, axes, shift=None, keepdims=False, name=None):
     return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
 
-def normalize_moments(counts, mean_ss, variance_ss, shift, name=None):
+def normalize_moments(counts: EagerValue, mean_ss: EagerValue, variance_ss: EagerValue, shift: EagerValue, name: EagerValue = None) -> EagerValue:
     """Calculate the mean and variance of based on the sufficient statistics.
 
     Args:
@@ -273,7 +280,7 @@ def normalize_moments(counts, mean_ss, variance_ss, shift, name=None):
     node = LogicalNode(
         id=out_id_mean,
         op_type="NormalizeMoments",
-        inputs=[getattr(counts, "id", counts), getattr(mean_ss, "id", mean_ss), getattr(variance_ss, "id", variance_ss), getattr(shift, "id", shift)],
+        inputs=[str(getattr(counts, "id", counts)), str(getattr(mean_ss, "id", mean_ss)), str(getattr(variance_ss, "id", variance_ss)), str(getattr(shift, "id", shift))],
         attributes={"name": name, "secondary_id": out_id_variance},
         shape_metadata=getattr(counts, "shape", ()),
     )
@@ -288,7 +295,7 @@ def normalize_moments(counts, mean_ss, variance_ss, shift, name=None):
     )
 
 
-def sufficient_statistics(x, axes, shift=None, keepdims=False, name=None):
+def sufficient_statistics(x: EagerValue, axes: EagerValue, shift: EagerValue = None, keepdims: EagerValue = False, name: EagerValue = None) -> EagerValue:
     """Calculate the sufficient statistics for the mean and variance of x.
 
     Args:
@@ -323,7 +330,7 @@ def sufficient_statistics(x, axes, shift=None, keepdims=False, name=None):
     node = LogicalNode(
         id=out_id_counts,
         op_type="SufficientStatistics",
-        inputs=[getattr(x, "id", x), getattr(axes, "id", axes)],
+        inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes))],
         attributes={"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]},
         shape_metadata=getattr(x, "shape", ()),
     )
@@ -339,12 +346,12 @@ def sufficient_statistics(x, axes, shift=None, keepdims=False, name=None):
 
 
 def weighted_moments(
-    x,
-    axes,
-    frequency_weights,
-    name=None,
-    keepdims=False,
-):
+    x: EagerValue,
+    axes: EagerValue,
+    frequency_weights: EagerValue,
+    name: EagerValue = None,
+    keepdims: EagerValue = False,
+) -> EagerValue:
     """Return the frequency-weighted mean and variance of x.
 
     Args:
@@ -377,7 +384,7 @@ def weighted_moments(
     node = LogicalNode(
         id=out_id_mean,
         op_type="WeightedMoments",
-        inputs=[getattr(x, "id", x), getattr(axes, "id", axes), getattr(frequency_weights, "id", frequency_weights)],
+        inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes)), str(getattr(frequency_weights, "id", frequency_weights))],
         attributes={"name": name, "keepdims": keepdims, "secondary_id": out_id_variance},
         shape_metadata=getattr(x, "shape", ()),
     )
@@ -392,7 +399,7 @@ def weighted_moments(
     )
 
 
-def zero_fraction(value, name=None):
+def zero_fraction(value: EagerValue, name: EagerValue = None) -> EagerValue:
     """Return the fraction of zeros in value.
 
     Args:
@@ -411,7 +418,7 @@ def layer_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-):
+) -> EagerValue:
     """Layer normalization.
 
     Args:
@@ -449,7 +456,7 @@ def group_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-):
+) -> EagerValue:
     """Group normalization.
 
     Args:
@@ -493,7 +500,7 @@ def instance_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-):
+) -> EagerValue:
     """Instance normalization.
 
     Args:
@@ -509,6 +516,26 @@ def instance_norm(
     original_shape = x.shape
     C = original_shape[1]
     return group_norm(x, num_groups=C, scale=scale, offset=offset, epsilon=epsilon)
+
+
+@register_op("Normalization")
+class Normalization(OpDef):
+    """Generic Normalization operation."""
+
+    op_name = "Normalization"
+
+    def infer_shape(self, *args: Tensor, **kwargs: Tensor | float | int | None) -> tuple[int, ...]:
+        """Infer output shape for Normalization.
+
+        Args:
+            *args: Positional arguments (first argument is input tensor).
+            **kwargs: Optional keyword arguments.
+
+        Returns:
+            tuple[int, ...]: Shape of the input tensor.
+        """
+        del kwargs
+        return getattr(args[0], "shape", ()) if args else ()
 
 
 batch_norm = batch_normalization

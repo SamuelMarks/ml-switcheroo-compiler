@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
-
-import numpy as np
+from types import ModuleType
+from typing import cast
 
 from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _to_numpy_array
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
 
@@ -31,7 +32,7 @@ class RandomCropConfig:
     c: int
     H: int
     W: int
-    rng: Any | None = None
+    rng: EagerValue | None = None
 
 
 @dataclass
@@ -48,9 +49,9 @@ class GeometricGridConfig:
 
     H: int
     W: int
-    rng: Any | None = None
-    factor1: Any | None = None
-    factor2: Any | None = None
+    rng: EagerValue | None = None
+    factor1: EagerValue | None = None
+    factor2: EagerValue | None = None
 
 
 @dataclass
@@ -73,16 +74,16 @@ class EagerTransformContext:
     W: int
     C: int
     name: str
-    np_mod: Any | None = None
-    imgs: Any | None = None
-    rng: Any | None = None
+    np_mod: EagerValue | None = None
+    imgs: EagerValue | None = None
+    rng: EagerValue | None = None
 
 
 def _prepare_eager_transform(
-    backend_module: Any,
-    images: Any,
-    seed: Any | None,
-    data_format: Any | None,
+    backend_module: EagerValue,
+    images: EagerValue,
+    seed: EagerValue | None,
+    data_format: EagerValue | None,
 ) -> EagerTransformContext:
     """Prepare and standardize input images and execution context for eager transformations.
 
@@ -141,8 +142,8 @@ class TransformInterpolationConfig:
 
     order: int
     fill_value: float
-    new_y: Any | None = None
-    new_x: Any | None = None
+    new_y: EagerValue | None = None
+    new_x: EagerValue | None = None
 
 
 @dataclass
@@ -178,14 +179,14 @@ class MapCoordsContext:
         valid: Optional boolean mask specifying in-bounds coordinates.
     """
 
-    np_mod: Any | None = None
-    image: Any | None = None
-    y: Any | None = None
-    x: Any | None = None
-    valid: Any | None = None
+    np_mod: EagerValue | None = None
+    image: EagerValue | None = None
+    y: EagerValue | None = None
+    x: EagerValue | None = None
+    valid: EagerValue | None = None
 
 
-def _map_coords_nearest(ctx: MapCoordsContext) -> Any:
+def _map_coords_nearest(ctx: MapCoordsContext) -> EagerValue:
     """Perform nearest-neighbor spatial interpolation.
 
     Args:
@@ -197,13 +198,13 @@ def _map_coords_nearest(ctx: MapCoordsContext) -> Any:
     if ctx is None or ctx.image is None or ctx.y is None or ctx.x is None:
         return 0
 
-    np_mod = np if ctx.np_mod is None else ctx.np_mod
-    img = ctx.image
+    np_mod = cast(ModuleType, np if ctx.np_mod is None else ctx.np_mod)
+    img = cast(EagerTensorProtocol, ctx.image)
     h, w = img.shape[:2]
 
     eps = 1e-5
-    y = ctx.y
-    x = ctx.x
+    y = cast(EagerTensorProtocol, ctx.y)
+    x = cast(EagerTensorProtocol, ctx.x)
 
     in_bounds = (y >= -eps) & (y <= float(h - 1) + eps) & (x >= -eps) & (x <= float(w - 1) + eps)
     y_clamped = np_mod.clip(y, 0.0, float(h - 1))
@@ -214,11 +215,11 @@ def _map_coords_nearest(ctx: MapCoordsContext) -> Any:
 
     sampled = img[y_round, x_round]
     if ctx.valid is not None:
-        in_bounds = in_bounds & ctx.valid
-    return np_mod.where(in_bounds, sampled, 0.0)
+        in_bounds = in_bounds & cast(EagerTensorProtocol, ctx.valid)
+    return cast(EagerValue, np_mod.where(in_bounds, sampled, 0.0))
 
 
-def _map_coords_bilinear(ctx: MapCoordsContext) -> Any:
+def _map_coords_bilinear(ctx: MapCoordsContext) -> EagerValue:
     """Perform bilinear spatial subpixel interpolation.
 
     Args:
@@ -230,21 +231,21 @@ def _map_coords_bilinear(ctx: MapCoordsContext) -> Any:
     if ctx is None or ctx.image is None or ctx.y is None or ctx.x is None:
         return 0
 
-    np_mod = np if ctx.np_mod is None else ctx.np_mod
-    img = ctx.image
+    np_mod = cast(ModuleType, np if ctx.np_mod is None else ctx.np_mod)
+    img = cast(EagerTensorProtocol, ctx.image)
     h, w = img.shape[:2]
 
     eps = 1e-5
-    y = ctx.y
-    x = ctx.x
+    y = cast(EagerTensorProtocol, ctx.y)
+    x = cast(EagerTensorProtocol, ctx.x)
 
     in_bounds = (y >= -eps) & (y <= float(h - 1) + eps) & (x >= -eps) & (x <= float(w - 1) + eps)
 
     y_clamped = np_mod.clip(y, 0.0, float(h - 1))
     x_clamped = np_mod.clip(x, 0.0, float(w - 1))
 
-    y0 = np_mod.clip(np_mod.floor(y_clamped).astype(int), 0, max(h - 2, 0))
-    x0 = np_mod.clip(np_mod.floor(x_clamped).astype(int), 0, max(w - 2, 0))
+    y0 = np_mod.clip(np_mod.floor(y_clamped).astype(int), 0, max(int(h) - 2, 0))
+    x0 = np_mod.clip(np_mod.floor(x_clamped).astype(int), 0, max(int(w) - 2, 0))
     y1 = np_mod.minimum(y0 + 1, h - 1)
     x1 = np_mod.minimum(x0 + 1, w - 1)
 
@@ -264,11 +265,11 @@ def _map_coords_bilinear(ctx: MapCoordsContext) -> Any:
     interpolated = w00 * ia + w01 * ib + w10 * ic + w11 * id_val
 
     if ctx.valid is not None:
-        in_bounds = in_bounds & ctx.valid
-    return np_mod.where(in_bounds, interpolated, 0.0)
+        in_bounds = in_bounds & cast(EagerTensorProtocol, ctx.valid)
+    return cast(EagerValue, np_mod.where(in_bounds, interpolated, 0.0))
 
 
-def _cubic_kernel(t: Any, a: float = -0.5) -> Any:
+def _cubic_kernel(t: EagerValue, a: float = -0.5) -> EagerValue:
     """Evaluate Catmull-Rom cubic interpolation weights.
 
     Args:
@@ -278,17 +279,17 @@ def _cubic_kernel(t: Any, a: float = -0.5) -> Any:
     Returns:
         Any: Evaluated cubic weights.
     """
-    abs_t = np.abs(t)
+    abs_t: EagerTensorProtocol = np.abs(t)
     abs_t2 = abs_t * abs_t
     abs_t3 = abs_t2 * abs_t
 
     w1 = (a + 2.0) * abs_t3 - (a + 3.0) * abs_t2 + 1.0
     w2 = a * abs_t3 - 5.0 * a * abs_t2 + 8.0 * a * abs_t - 4.0 * a
 
-    return np.where(abs_t <= 1.0, w1, np.where(abs_t < 2.0, w2, 0.0))
+    return cast(EagerValue, np.where(abs_t <= 1.0, w1, np.where(abs_t < 2.0, w2, 0.0)))
 
 
-def _map_coords_bicubic(ctx: MapCoordsContext) -> Any:
+def _map_coords_bicubic(ctx: MapCoordsContext) -> EagerValue:
     """Perform bicubic Catmull-Rom spatial subpixel interpolation.
 
     Args:
@@ -300,12 +301,12 @@ def _map_coords_bicubic(ctx: MapCoordsContext) -> Any:
     if ctx is None or ctx.image is None or ctx.y is None or ctx.x is None:
         return 0
 
-    np_mod = np if ctx.np_mod is None else ctx.np_mod
-    img = ctx.image
+    np_mod = cast(ModuleType, np if ctx.np_mod is None else ctx.np_mod)
+    img = cast(EagerTensorProtocol, ctx.image)
     h, w = img.shape[:2]
 
-    y = ctx.y
-    x = ctx.x
+    y = cast(EagerTensorProtocol, ctx.y)
+    x = cast(EagerTensorProtocol, ctx.x)
 
     in_bounds = (y >= 0.0) & (y <= float(h - 1)) & (x >= 0.0) & (x <= float(w - 1))
 
@@ -317,27 +318,27 @@ def _map_coords_bicubic(ctx: MapCoordsContext) -> Any:
     for m in range(-1, 3):
         ym = y_floor + m
         ym_c = np_mod.clip(ym, 0, h - 1)
-        wy = _cubic_kernel(y - ym.astype(np_mod.float32))
+        wy = cast(EagerTensorProtocol, _cubic_kernel(y - ym.astype(np_mod.float32)))
 
         for n in range(-1, 3):
             xn = x_floor + n
             xn_c = np_mod.clip(xn, 0, w - 1)
-            wx = _cubic_kernel(x - xn.astype(np_mod.float32))
+            wx = cast(EagerTensorProtocol, _cubic_kernel(x - xn.astype(np_mod.float32)))
 
             out = out + wy * wx * img[ym_c, xn_c]
 
     if ctx.valid is not None:
-        in_bounds = in_bounds & ctx.valid
-    return np_mod.where(in_bounds, out, 0.0)
+        in_bounds = in_bounds & cast(EagerTensorProtocol, ctx.valid)
+    return cast(EagerValue, np_mod.where(in_bounds, out, 0.0))
 
 
 def _np_map_coordinates(
-    np_mod: Any,
-    image: Any,
-    coords: Any,
+    np_mod: EagerValue,
+    image: EagerValue,
+    coords: EagerValue,
     order: int = 1,
     fill_value: float = 0.0,
-) -> Any:
+) -> EagerValue:
     """Sample an image array at arbitrary continuous coordinates with specified order.
 
     Args:
@@ -353,14 +354,15 @@ def _np_map_coordinates(
     if image is None or coords is None:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
-    y = np_mod.asarray(coords[0], dtype=np_mod.float32)
-    x = np_mod.asarray(coords[1], dtype=np_mod.float32)
+    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    coords_t = cast(EagerTensorProtocol, coords)
+    y: EagerTensorProtocol = mod.asarray(coords_t[0], dtype=mod.float32)
+    x: EagerTensorProtocol = mod.asarray(coords_t[1], dtype=mod.float32)
 
-    h, w = image.shape[:2]
+    h, w = cast(EagerTensorProtocol, image).shape[:2]
     eps = 1e-5
     valid_mask = (y >= -eps) & (y <= float(h - 1) + eps) & (x >= -eps) & (x <= float(w - 1) + eps)
-    ctx = MapCoordsContext(np_mod=np_mod, image=image, y=y, x=x, valid=valid_mask)
+    ctx = MapCoordsContext(np_mod=mod, image=image, y=y, x=x, valid=valid_mask)
 
     if order == 0:
         res = _map_coords_nearest(ctx)
@@ -370,11 +372,11 @@ def _np_map_coordinates(
         res = _map_coords_bilinear(ctx)
 
     if fill_value != 0.0:
-        res = np_mod.where(valid_mask, res, fill_value)
+        res = mod.where(valid_mask, res, fill_value)
     return res
 
 
-def _check_collinear_quad(points: np.ndarray) -> bool:
+def _check_collinear_quad(points: EagerValue) -> bool:
     """Check if any triplet of four 2D points is collinear.
 
     Args:
@@ -383,11 +385,12 @@ def _check_collinear_quad(points: np.ndarray) -> bool:
     Returns:
         bool: True if collinearity is detected among any 3 points, False otherwise.
     """
+    pts = cast(EagerTensorProtocol, points)
     triplets = ((0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3))
     for i, j, k in triplets:
-        p1 = points[i]
-        p2 = points[j]
-        p3 = points[k]
+        p1 = pts[i]
+        p2 = pts[j]
+        p3 = pts[k]
         # Signed triangle area: 0.5 * ((x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1))
         area2 = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0])
         if abs(area2) < 1e-7:
@@ -395,7 +398,7 @@ def _check_collinear_quad(points: np.ndarray) -> bool:
     return False
 
 
-def _compute_single_homography(np_mod: Any, src: np.ndarray, dst: np.ndarray) -> np.ndarray:
+def _compute_single_homography(np_mod: EagerValue, src: EagerValue, dst: EagerValue) -> EagerValue:
     """Compute 3x3 homography matrix from 4 corresponding point pairs via SVD.
 
     Args:
@@ -412,18 +415,19 @@ def _compute_single_homography(np_mod: Any, src: np.ndarray, dst: np.ndarray) ->
     if _check_collinear_quad(src) or _check_collinear_quad(dst):
         raise ValueError("Collinear points detected: 3 points lie on the same line in perspective transform")
 
+    mod = cast(ModuleType, np_mod)
     # Direct Linear Transformation (DLT) matrix A (8 x 9)
-    A = np_mod.zeros((8, 9), dtype=np_mod.float64)
+    A = mod.zeros((8, 9), dtype=mod.float64)
     for i in range(4):
-        x = float(src[i, 0])
-        y = float(src[i, 1])
-        u = float(dst[i, 0])
-        v = float(dst[i, 1])
+        x = float(cast(EagerTensorProtocol, src)[i, 0])
+        y = float(cast(EagerTensorProtocol, src)[i, 1])
+        u = float(cast(EagerTensorProtocol, dst)[i, 0])
+        v = float(cast(EagerTensorProtocol, dst)[i, 1])
 
         A[2 * i] = [-x, -y, -1.0, 0.0, 0.0, 0.0, u * x, u * y, u]
         A[2 * i + 1] = [0.0, 0.0, 0.0, -x, -y, -1.0, v * x, v * y, v]
 
-    _, s, vh = np_mod.linalg.svd(A)
+    _, s, vh = mod.linalg.svd(A)
 
     # Validate non-singularity: rank must be 8 (second smallest singular value > 0)
     if s[6] < 1e-8 or (s[0] / max(float(s[6]), 1e-12)) > 1e9:
@@ -432,10 +436,10 @@ def _compute_single_homography(np_mod: Any, src: np.ndarray, dst: np.ndarray) ->
     h = vh[-1]
     if abs(h[-1]) > 1e-12:
         h = h / h[-1]
-    return h.reshape(3, 3).astype(np_mod.float32)
+    return cast(EagerValue, h.reshape(3, 3).astype(mod.float32))
 
 
-def _compute_perspective_matrix(np_mod: Any, src: Any, dst: Any) -> Any:
+def _compute_perspective_matrix(np_mod: EagerValue, src: EagerValue, dst: EagerValue) -> EagerValue:
     """Compute 3x3 homography matrices for single or batched point correspondences.
 
     Args:
@@ -452,19 +456,19 @@ def _compute_perspective_matrix(np_mod: Any, src: Any, dst: Any) -> Any:
     if src is None or dst is None:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
-    src_arr = np_mod.asarray(src, dtype=np_mod.float64)
-    dst_arr = np_mod.asarray(dst, dtype=np_mod.float64)
+    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    src_arr = mod.asarray(src, dtype=mod.float64)
+    dst_arr = mod.asarray(dst, dtype=mod.float64)
 
     if src_arr.ndim == 2:
-        return _compute_single_homography(np_mod, src_arr, dst_arr)
+        return _compute_single_homography(mod, src_arr, dst_arr)
 
     b_count = src_arr.shape[0]
-    matrices = [_compute_single_homography(np_mod, src_arr[b], dst_arr[b]) for b in range(b_count)]
-    return np_mod.stack(matrices, axis=0)
+    matrices = [_compute_single_homography(mod, src_arr[b], dst_arr[b]) for b in range(b_count)]
+    return cast(EagerValue, mod.stack(matrices, axis=0))
 
 
-def _generate_perspective_coords(np_mod: Any, h_batch: Any, coords: Any) -> Any:
+def _generate_perspective_coords(np_mod: EagerValue, h_batch: EagerValue, coords: EagerValue) -> EagerValue:
     """Generate source x and y coordinates for a given batch from homography matrix.
 
     Args:
@@ -478,14 +482,14 @@ def _generate_perspective_coords(np_mod: Any, h_batch: Any, coords: Any) -> Any:
     if h_batch is None or coords is None:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
-    h = np_mod.asarray(h_batch, dtype=np_mod.float32)
-    c = np_mod.asarray(coords, dtype=np_mod.float32)
+    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    h = mod.asarray(h_batch, dtype=mod.float32)
+    c = mod.asarray(coords, dtype=mod.float32)
 
     if h.ndim == 2:
         flat_c = c.reshape(-1, 3)
         transformed = flat_c @ h.T
-        denom = np_mod.where(np_mod.abs(transformed[:, 2]) < 1e-12, 1e-12, transformed[:, 2])
+        denom = mod.where(mod.abs(transformed[:, 2]) < 1e-12, 1e-12, transformed[:, 2])
         xs = (transformed[:, 0] / denom).reshape(c.shape[0], c.shape[1])
         ys = (transformed[:, 1] / denom).reshape(c.shape[0], c.shape[1])
         return (ys, xs)
@@ -495,13 +499,13 @@ def _generate_perspective_coords(np_mod: Any, h_batch: Any, coords: Any) -> Any:
     ys_list = []
     xs_list = []
     for b in range(b_count):
-        sub_y, sub_x = _generate_perspective_coords(np_mod, h[b], c)
-        ys_list.append(sub_y)
-        xs_list.append(sub_x)
-    return (np_mod.stack(ys_list, axis=0), np_mod.stack(xs_list, axis=0))
+        sub_coords = cast("tuple[EagerTensorProtocol, EagerTensorProtocol]", _generate_perspective_coords(mod, h[b], c))
+        ys_list.append(sub_coords[0])
+        xs_list.append(sub_coords[1])
+    return (mod.stack(ys_list, axis=0), mod.stack(xs_list, axis=0))
 
 
-def _generate_perspective_grid(np_mod: Any, H: int, W: int) -> Any:
+def _generate_perspective_grid(np_mod: EagerValue, H: int, W: int) -> EagerValue:
     """Generate homogeneous 2D meshgrid spanning spatial dimensions (H, W).
 
     Args:
@@ -515,14 +519,14 @@ def _generate_perspective_grid(np_mod: Any, H: int, W: int) -> Any:
     if H <= 0 or W <= 0:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
-    y, x = np_mod.meshgrid(
-        np_mod.arange(H, dtype=np_mod.float32),
-        np_mod.arange(W, dtype=np_mod.float32),
+    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    y, x = mod.meshgrid(
+        mod.arange(H, dtype=mod.float32),
+        mod.arange(W, dtype=mod.float32),
         indexing="ij",
     )
-    ones = np_mod.ones_like(x)
-    return np_mod.stack([x, y, ones], axis=-1)
+    ones = mod.ones_like(x)
+    return cast(EagerValue, mod.stack([x, y, ones], axis=-1))
 
 
 @dataclass
@@ -536,8 +540,8 @@ class PerspectiveContext:
     """
 
     b: int
-    coords: Any | None = None
-    h: Any | None = None
+    coords: EagerValue | None = None
+    h: EagerValue | None = None
 
 
 @dataclass
@@ -554,12 +558,12 @@ class PerspectiveChannelContext:
 
     ctx: PerspectiveContext
     config: PerspectiveConfig
-    np_mod: Any | None = None
-    imgs: Any | None = None
-    out: Any | None = None
+    np_mod: EagerValue | None = None
+    imgs: EagerValue | None = None
+    out: EagerValue | None = None
 
 
-def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> Any:
+def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> EagerValue:
     """Apply perspective warping across channels for an individual batch element.
 
     Args:
@@ -577,11 +581,11 @@ def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> Any:
     order = 1 if getattr(pctx.config, "interpolation", "bilinear") == "bilinear" else 0
     fill_value = float(getattr(pctx.config, "fill_value", 0.0))
 
-    c_count = pctx.imgs.shape[3]
+    c_count = cast(EagerTensorProtocol, pctx.imgs).shape[3]
     for c in range(c_count):
-        pctx.out[b, :, :, c] = _np_map_coordinates(
+        cast(EagerTensorProtocol, pctx.out)[b, :, :, c] = _np_map_coordinates(
             np_mod,
-            pctx.imgs[b, :, :, c],
+            cast(EagerTensorProtocol, pctx.imgs)[b, :, :, c],
             coords,
             order=order,
             fill_value=fill_value,
@@ -589,7 +593,7 @@ def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> Any:
     return pctx.out
 
 
-def _apply_perspective_batch(np_mod: Any, imgs: Any, h: Any, config: PerspectiveConfig) -> Any:
+def _apply_perspective_batch(np_mod: EagerValue, imgs: EagerValue, h: EagerValue, config: PerspectiveConfig) -> EagerValue:
     """Apply perspective transform across a batched image array using homography matrices.
 
     Args:
@@ -604,19 +608,19 @@ def _apply_perspective_batch(np_mod: Any, imgs: Any, h: Any, config: Perspective
     if imgs is None or h is None:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
-    b_count, h_dim, w_dim, _ = imgs.shape
-    grid = _generate_perspective_grid(np_mod, h_dim, w_dim)
-    out = np_mod.zeros_like(imgs)
+    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    b_count, h_dim, w_dim, _ = cast(EagerTensorProtocol, imgs).shape
+    grid = _generate_perspective_grid(mod, h_dim, w_dim)
+    out = mod.zeros_like(imgs)
 
     for b in range(b_count):
-        h_item = h[b] if getattr(h, "ndim", 2) == 3 else h
-        coords = _generate_perspective_coords(np_mod, h_item, grid)
+        h_item = cast(EagerTensorProtocol, h)[b] if getattr(h, "ndim", 2) == 3 else h
+        coords = _generate_perspective_coords(mod, h_item, grid)
         ctx = PerspectiveContext(b=b, coords=coords, h=h_item)
-        pctx = PerspectiveChannelContext(ctx=ctx, config=config, np_mod=np_mod, imgs=imgs, out=out)
+        pctx = PerspectiveChannelContext(ctx=ctx, config=config, np_mod=mod, imgs=imgs, out=out)
         _apply_perspective_channel(pctx)
 
-    return out
+    return cast(EagerValue, out)
 
 
 __all__ = [

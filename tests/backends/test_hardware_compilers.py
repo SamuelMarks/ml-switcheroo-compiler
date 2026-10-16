@@ -7,6 +7,7 @@ CUDACompiler, HIPCompiler, MetalCompiler, and ClangCompiler across native and em
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.hardware_compilers import (
@@ -16,6 +17,9 @@ from ml_switcheroo_compiler.backends.hardware_compilers import (
     HIPCompiler,
     MetalCompiler,
 )
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_base_hardware_compiler_is_available() -> None:
@@ -108,7 +112,8 @@ def test_cuda_compiler_compile_native(tmp_path: Path) -> None:
     out_file = tmp_path / "out.ptx"
 
     # Successful compilation with output file created
-    def fake_run_success(cmd: list[str], **kwargs: object) -> MagicMock:
+    def fake_run_success(cmd: list[str], **kwargs: EagerValue) -> MagicMock:
+        """Test function fake_run_success."""
         out_path = cmd[cmd.index("-o") + 1]
         Path(out_path).write_text("// Simulated PTX content", encoding="utf-8")
         return MagicMock(returncode=0, stdout="compiled ok", stderr="")

@@ -1,6 +1,6 @@
-# ruff: noqa: E402, E501, F403
 """Generate random ops module."""
 
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .frontend import sobol_sample
@@ -13,7 +13,7 @@ class Binomial(OpDef):
 
     op_name = "Binomial"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -32,7 +32,7 @@ class Cauchy(OpDef):
 
     op_name = "Cauchy"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -50,7 +50,7 @@ class Chisquare(OpDef):
 
     op_name = "Chisquare"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -68,7 +68,7 @@ class Dirichlet(OpDef):
 
     op_name = "Dirichlet"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -86,7 +86,7 @@ class DoubleSidedMaxwell(OpDef):
 
     op_name = "DoubleSidedMaxwell"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -104,7 +104,7 @@ class Exponential(OpDef):
 
     op_name = "Exponential"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -122,7 +122,7 @@ class F(OpDef):
 
     op_name = "F"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -140,7 +140,7 @@ class Gumbel(OpDef):
 
     op_name = "Gumbel"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -158,7 +158,7 @@ class Laplace(OpDef):
 
     op_name = "Laplace"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -176,7 +176,7 @@ class Loggamma(OpDef):
 
     op_name = "Loggamma"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -194,7 +194,7 @@ class Logistic(OpDef):
 
     op_name = "Logistic"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -212,7 +212,7 @@ class Lognormal(OpDef):
 
     op_name = "Lognormal"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -230,7 +230,7 @@ class Maxwell(OpDef):
 
     op_name = "Maxwell"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -248,7 +248,7 @@ class MultivariateNormal(OpDef):
 
     op_name = "MultivariateNormal"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -266,7 +266,7 @@ class Pareto(OpDef):
 
     op_name = "Pareto"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -284,7 +284,7 @@ class Poisson(OpDef):
 
     op_name = "Poisson"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -302,7 +302,7 @@ class Rayleigh(OpDef):
 
     op_name = "Rayleigh"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -320,7 +320,7 @@ class T(OpDef):
 
     op_name = "T"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -338,7 +338,7 @@ class Triangular(OpDef):
 
     op_name = "Triangular"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -356,7 +356,7 @@ class Wald(OpDef):
 
     op_name = "Wald"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -374,7 +374,7 @@ class WeibullMin(OpDef):
 
     op_name = "WeibullMin"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -392,7 +392,7 @@ class Clone(OpDef):
 
     op_name = "Clone"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -410,7 +410,7 @@ class KeyData(OpDef):
 
     op_name = "KeyData"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -428,7 +428,7 @@ class KeyImpl(OpDef):
 
     op_name = "KeyImpl"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -446,7 +446,7 @@ class WrapKeyData(OpDef):
 
     op_name = "WrapKeyData"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -464,7 +464,7 @@ class Bits(OpDef):
 
     op_name = "Bits"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -482,7 +482,7 @@ class GeneralizedNormal(OpDef):
 
     op_name = "GeneralizedNormal"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -500,7 +500,7 @@ class Orthogonal(OpDef):
 
     op_name = "Orthogonal"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -518,7 +518,7 @@ class RandomGammaP(OpDef):
 
     op_name = "RandomGammaP"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -536,7 +536,7 @@ class Ball(OpDef):
 
     op_name = "Ball"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -554,7 +554,7 @@ class Key(OpDef):
 
     op_name = "Key"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -572,7 +572,7 @@ class RngBitGenerator(OpDef):
 
     op_name = "RngBitGenerator"
 
-    def infer_shape(self, key, shape, dtype, **kwargs):
+    def infer_shape(self, key: EagerTensorProtocol, shape: EagerTensorProtocol, dtype: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the RngBitGenerator operation.
 
         Args:
@@ -592,7 +592,7 @@ class RngUniform(OpDef):
 
     op_name = "RngUniform"
 
-    def infer_shape(self, a, b, shape, dtype, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, shape: EagerTensorProtocol, dtype: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the RngUniform operation.
 
         Args:
@@ -613,7 +613,7 @@ class Beta(OpDef):
 
     op_name = "Beta"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -631,7 +631,7 @@ class Gamma(OpDef):
 
     op_name = "Gamma"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape based on the provided inputs.
 
         Args:
@@ -655,7 +655,7 @@ class categorical(OpDef):
 
     op_name = "categorical"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -675,7 +675,7 @@ class dirichlet(OpDef):
 
     op_name = "dirichlet"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -695,7 +695,7 @@ class binomial(OpDef):
 
     op_name = "binomial"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -715,7 +715,7 @@ class truncated_normal(OpDef):
 
     op_name = "truncated_normal"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -735,7 +735,7 @@ class permutation(OpDef):
 
     op_name = "permutation"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -755,7 +755,7 @@ class choice(OpDef):
 
     op_name = "choice"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

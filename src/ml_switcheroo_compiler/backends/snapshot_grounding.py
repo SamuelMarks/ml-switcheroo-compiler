@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import gzip
 import json
+import logging
 import os
+from typing import Callable, cast
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
 from pydantic import BaseModel, Field
 
@@ -72,15 +75,15 @@ def load_backend_snapshot_targets(
         raise FileNotFoundError(f"Snapshot targets configuration not found at {config_path}")
 
     with open(config_path, encoding="utf-8") as f:
-        raw_data: dict[str, object] = yaml.safe_load(f) or {}
+        raw_data: dict[str, AttributeValue] = yaml.safe_load(f) or {}
 
     return BackendSnapshotTargetsConfig.model_validate(raw_data)
 
 
 def _extract_item_endpoints(
-    item: dict[str, object],
+    item: dict[str, AttributeValue],
     endpoints: set[str],
-    item_map: dict[str, dict[str, object]] | None = None,
+    item_map: dict[str, dict[str, AttributeValue]] | None = None,
 ) -> None:
     """Extract individual API path, name, and aliases from a snapshot item.
 
@@ -90,13 +93,13 @@ def _extract_item_endpoints(
         item_map (dict[str, dict[str, object]] | None): Optional destination map from endpoint to item data.
     """
     for key in ("api_path", "name", "mnemonic"):
-        val: object = item.get(key)
+        val: AttributeValue = item.get(key)
         if isinstance(val, str) and val:
             endpoints.add(val)
             if item_map is not None:
                 item_map[val] = item
 
-    aliases_obj: object = item.get("aliases")
+    aliases_obj: AttributeValue = item.get("aliases")
     if isinstance(aliases_obj, list):
         for a in aliases_obj:
             if isinstance(a, str) and a:
@@ -106,9 +109,9 @@ def _extract_item_endpoints(
 
 
 def _extract_category_endpoints(
-    categories_obj: object,
+    categories_obj: AttributeValue,
     endpoints: set[str],
-    item_map: dict[str, dict[str, object]] | None = None,
+    item_map: dict[str, dict[str, AttributeValue]] | None = None,
 ) -> None:
     """Extract endpoints from category groupings in snapshot data.
 
@@ -140,11 +143,11 @@ def _load_standard_arg_map() -> dict[str, str]:
         import importlib
 
         mod = importlib.import_module("ml_ecosystem_snapshots.models")
-        loaded: object = getattr(mod, "STANDARD_ARG_MAP", None)
+        loaded: AttributeValue = getattr(mod, "STANDARD_ARG_MAP", None)
         if isinstance(loaded, dict):
             return {str(k): str(v) for k, v in loaded.items()}
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return {
         "x": "input",
         "inputs": "input",
@@ -243,13 +246,13 @@ def _find_discrepancy_replacement(
         mcp = importlib.import_module("ml_ecosystem_snapshots.mcp_server")
         explain_fn = getattr(mcp, "explain_anti_pattern", None)
         if explain_fn is not None:
-            info: dict[str, object] = explain_fn(backend_name, endpoint, kw)
+            info: dict[str, AttributeValue] = explain_fn(backend_name, endpoint, kw)
             if info.get("is_known_anti_pattern"):
                 cand: str = str(info.get("canonical_argument") or "")
                 if cand and (cand in allowed_kwargs or cand in ep_allowed):
                     return cand
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     std: str | None = STANDARD_ARG_MAP.get(kw)
     if std is not None:
@@ -346,8 +349,8 @@ def _resolve_env_or_package_snapshot_dir() -> str | None:
                 cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
                 if os.path.exists(cand) and any(f.endswith(".json") or f.endswith(".json.gz") for f in os.listdir(cand)):
                     return os.path.abspath(cand)
-        except Exception:
-            pass
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return None
 
@@ -429,11 +432,11 @@ def _is_snapshot_file_complete(file_path: str, backend_name: str) -> bool:
     try:
         if file_path.endswith(".gz"):
             with gzip.open(file_path, "rt", encoding="utf-8") as gf:
-                data: dict[str, object] = json.load(gf)
+                data: dict[str, AttributeValue] = json.load(gf)
         else:
             with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
-        categories: object = data.get("categories") if isinstance(data, dict) else None
+        categories: AttributeValue = data.get("categories") if isinstance(data, dict) else None
         return isinstance(categories, dict) and "array" in categories
     except Exception:
         return False
@@ -475,8 +478,8 @@ def compute_levenshtein(s1: str, s2: str) -> int:
         lev_fn = getattr(mod, "compute_levenshtein", None)
         if lev_fn is not None:
             return int(lev_fn(s1, s2))
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     if s1 == s2:
         return 0
@@ -497,7 +500,7 @@ def compute_levenshtein(s1: str, s2: str) -> int:
     return previous_row[-1]
 
 
-def _split_signature_params(raw_params: list[object]) -> list[list[dict[str, object]]]:
+def _split_signature_params(raw_params: list[AttributeValue]) -> list[list[dict[str, AttributeValue]]]:
     """Split concatenated or malformed parameter lists into coherent Python signatures.
 
     Args:
@@ -506,16 +509,16 @@ def _split_signature_params(raw_params: list[object]) -> list[list[dict[str, obj
     Returns:
         list[list[dict[str, object]]]: Extracted distinct signature parameter lists.
     """
-    signatures: list[list[dict[str, object]]] = []
-    curr_sig: list[dict[str, object]] = []
+    signatures: list[list[dict[str, AttributeValue]]] = []
+    curr_sig: list[dict[str, AttributeValue]] = []
     seen_pos_or_kw: bool = False
     for p in raw_params:
         if not isinstance(p, dict):
             continue
-        p_name: object = p.get("name")
+        p_name: AttributeValue = p.get("name")
         if not isinstance(p_name, str) or not p_name.isidentifier() or p_name in DOCSTRING_SECTION_HEADERS:
             continue
-        kind: object = p.get("kind")
+        kind: AttributeValue = p.get("kind")
         if kind in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY"):
             seen_pos_or_kw = True
         elif kind == "POSITIONAL_ONLY" and seen_pos_or_kw:
@@ -528,7 +531,7 @@ def _split_signature_params(raw_params: list[object]) -> list[list[dict[str, obj
     return signatures
 
 
-def _hydrate_ghost_ref(data: dict[str, object]) -> ExtendedGhostRef | None:
+def _hydrate_ghost_ref(data: dict[str, AttributeValue]) -> ExtendedGhostRef | None:
     """Hydrate a snapshot item dictionary into an ExtendedGhostRef model if compatible.
 
     Args:
@@ -537,7 +540,7 @@ def _hydrate_ghost_ref(data: dict[str, object]) -> ExtendedGhostRef | None:
     Returns:
         ExtendedGhostRef | None: Hydrated ExtendedGhostRef instance, or None if invalid.
     """
-    clean_data: dict[str, object] = dict(data)
+    clean_data: dict[str, AttributeValue] = dict(data)
     if "kind" not in clean_data or not clean_data["kind"]:
         clean_data["kind"] = "function"
     if "name" not in clean_data or not clean_data["name"]:
@@ -558,7 +561,7 @@ def _register_ghost_ref(
     sym: str,
     ref: ExtendedGhostRef,
     endpoints: set[str],
-    item_map: dict[str, dict[str, object]],
+    item_map: dict[str, dict[str, AttributeValue]],
     ref_map: dict[str, ExtendedGhostRef],
 ) -> None:
     """Register an ExtendedGhostRef and its aliases in engine lookup structures.
@@ -586,10 +589,10 @@ def _register_ghost_ref(
 
 
 def _populate_from_grounding_engine(
-    engine: object | None,
+    engine: AttributeValue | None,
     target: BackendSnapshotTargetModel | None,
     endpoints: set[str],
-    item_map: dict[str, dict[str, object]],
+    item_map: dict[str, dict[str, AttributeValue]],
     ref_map: dict[str, ExtendedGhostRef],
 ) -> None:
     """Populate endpoints and ghost refs from delegating GroundingEngine if available.
@@ -604,20 +607,23 @@ def _populate_from_grounding_engine(
     if engine is None or target is None:
         return
     try:
+        discover_fn = getattr(engine, "_discover_target_files", None)
+        if endpoints and callable(discover_fn) and not discover_fn(target.framework):
+            return
         load_fn = getattr(engine, "load_target", None)
         if load_fn is None:
             return
         target_refs: dict[str, ExtendedGhostRef] = load_fn(target.framework)
         for sym, ref in target_refs.items():
             _register_ghost_ref(sym, ref, endpoints, item_map, ref_map)
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 def _populate_from_snapshot_data(
-    snapshot_data: dict[str, object] | list[object],
+    snapshot_data: dict[str, AttributeValue] | list[AttributeValue],
     endpoints: set[str],
-    item_map: dict[str, dict[str, object]],
+    item_map: dict[str, dict[str, AttributeValue]],
     ref_map: dict[str, ExtendedGhostRef],
 ) -> None:
     """Extract endpoints and hydrate ghost refs from parsed snapshot JSON data.
@@ -642,7 +648,7 @@ def _populate_from_snapshot_data(
                 ref_map[sym] = hydrated
 
 
-def _param_to_dict(p: object) -> dict[str, object]:
+def _param_to_dict(p: AttributeValue) -> dict[str, AttributeValue]:
     """Convert a parameter object or model into a dictionary specification.
 
     Args:
@@ -651,9 +657,9 @@ def _param_to_dict(p: object) -> dict[str, object]:
     Returns:
         dict[str, object]: Parameter spec dictionary.
     """
-    dump_fn: object = getattr(p, "model_dump", None)
+    dump_fn: AttributeValue = getattr(p, "model_dump", None)
     if callable(dump_fn):
-        dumped: object = dump_fn()
+        dumped: AttributeValue = dump_fn()
         if isinstance(dumped, dict):
             return dumped
     if isinstance(p, dict):
@@ -661,7 +667,7 @@ def _param_to_dict(p: object) -> dict[str, object]:
     return {}
 
 
-def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, object]]]:
+def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, AttributeValue]]]:
     """Extract parameter signatures and overloads from an ExtendedGhostRef.
 
     Args:
@@ -670,21 +676,21 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, obj
     Returns:
         list[list[dict[str, object]]]: Extracted distinct signature parameter lists.
     """
-    signatures: list[list[dict[str, object]]] = []
+    signatures: list[list[dict[str, AttributeValue]]] = []
     if ref.params:
-        primary_sig: list[dict[str, object]] = [_param_to_dict(p) for p in ref.params]
-        signatures.extend(_split_signature_params(primary_sig))
+        primary_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ref.params]
+        signatures.extend(cast("Callable[..., list[list[dict[str, AttributeValue]]]]", _split_signature_params)(primary_sig))
 
     if ref.overloads:
         for ov in ref.overloads:
-            ov_params: object = ov.params if hasattr(ov, "params") else (ov.get("params") if isinstance(ov, dict) else None)
+            ov_params: AttributeValue = ov.params if hasattr(ov, "params") else (ov.get("params") if isinstance(ov, dict) else None)
             if isinstance(ov_params, list) and ov_params:
-                ov_sig: list[dict[str, object]] = [_param_to_dict(p) for p in ov_params]
-                signatures.extend(_split_signature_params(ov_sig))
+                ov_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ov_params]
+                signatures.extend(cast("Callable[..., list[list[dict[str, AttributeValue]]]]", _split_signature_params)(ov_sig))
     return signatures
 
 
-def _signatures_from_item(item: dict[str, object]) -> list[list[dict[str, object]]]:
+def _signatures_from_item(item: dict[str, AttributeValue]) -> list[list[dict[str, AttributeValue]]]:
     """Extract fallback parameter signatures from a raw item dictionary.
 
     Args:
@@ -693,12 +699,12 @@ def _signatures_from_item(item: dict[str, object]) -> list[list[dict[str, object
     Returns:
         list[list[dict[str, object]]]: Fallback signature parameter lists.
     """
-    fallback_signatures: list[list[dict[str, object]]] = []
-    params_obj: object = item.get("params")
+    fallback_signatures: list[list[dict[str, AttributeValue]]] = []
+    params_obj: AttributeValue = item.get("params")
     if isinstance(params_obj, list) and params_obj:
-        fallback_signatures.extend(_split_signature_params(params_obj))
+        fallback_signatures.extend(cast("Callable[..., list[list[dict[str, AttributeValue]]]]", _split_signature_params)(params_obj))
 
-    overloads_obj: object = item.get("overloads")
+    overloads_obj: AttributeValue = item.get("overloads")
     if isinstance(overloads_obj, list):
         for ov in overloads_obj:
             if isinstance(ov, dict) and isinstance(ov.get("params"), list) and ov["params"]:
@@ -725,17 +731,18 @@ class SnapshotGroundingEngine:
         if config is None:
             config = load_backend_snapshot_targets()
         self.config: BackendSnapshotTargetsConfig = config
-        self._is_default_snapshot_dir: bool = snapshot_dir is None
-        self.snapshot_dir: str = os.path.abspath(snapshot_dir) if snapshot_dir is not None else _resolve_default_snapshot_dir()
+        eff_dir = None if (snapshot_dir is not None and os.path.basename(os.path.normpath(snapshot_dir)) in ("ml-framework-snapshots", "ml-ecosystem-snapshots") and not os.path.exists(snapshot_dir)) else snapshot_dir
+        self._is_default_snapshot_dir: bool = eff_dir is None
+        self.snapshot_dir: str = os.path.abspath(eff_dir) if eff_dir is not None else _resolve_default_snapshot_dir()
 
         self._fail_on_missing = fail_on_missing
         self._endpoint_cache: dict[str, set[str]] = {}
-        self._endpoint_item_cache: dict[str, dict[str, dict[str, object]]] = {}
+        self._endpoint_item_cache: dict[str, dict[str, dict[str, AttributeValue]]] = {}
         self._ghost_ref_cache: dict[str, dict[str, ExtendedGhostRef]] = {}
-        self._raw_snapshots: dict[str, dict[str, object] | list[object]] = {}
+        self._raw_snapshots: dict[str, dict[str, AttributeValue] | list[AttributeValue]] = {}
         self.frameworks_dir: str = os.path.abspath(os.path.join(os.path.dirname(self.snapshot_dir), "frameworks"))
 
-        self._grounding_engine: object | None = None
+        self._grounding_engine: AttributeValue | None = None
         try:
             import importlib
 
@@ -846,7 +853,7 @@ class SnapshotGroundingEngine:
 
         return None
 
-    def load_snapshot(self, backend_name: str) -> dict[str, object] | list[object]:
+    def load_snapshot(self, backend_name: str) -> dict[str, AttributeValue] | list[AttributeValue]:
         """Load and cache the raw JSON snapshot dictionary for a backend.
 
         Args:
@@ -869,7 +876,7 @@ class SnapshotGroundingEngine:
 
         if path.endswith(".gz"):
             with gzip.open(path, "rt", encoding="utf-8") as gf:
-                data: dict[str, object] | list[object] = json.load(gf)
+                data: dict[str, AttributeValue] | list[AttributeValue] = json.load(gf)
         else:
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
@@ -890,15 +897,15 @@ class SnapshotGroundingEngine:
             return self._endpoint_cache[backend_name]
 
         endpoints: set[str] = set()
-        item_map: dict[str, dict[str, object]] = {}
+        item_map: dict[str, dict[str, AttributeValue]] = {}
         ref_map: dict[str, ExtendedGhostRef] = {}
         target: BackendSnapshotTargetModel | None = self.config.targets.get(backend_name)
 
         try:
-            snapshot_data: dict[str, object] | list[object] = self.load_snapshot(backend_name)
+            snapshot_data: dict[str, AttributeValue] | list[AttributeValue] = self.load_snapshot(backend_name)
             _populate_from_snapshot_data(snapshot_data, endpoints, item_map, ref_map)
         except FileNotFoundError:
-            pass
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
         _populate_from_grounding_engine(self._grounding_engine, target, endpoints, item_map, ref_map)
         _extract_stub_endpoints(backend_name, endpoints)
@@ -944,7 +951,7 @@ class SnapshotGroundingEngine:
 
         return None
 
-    def get_endpoint_item(self, backend_name: str, endpoint: str) -> dict[str, object] | None:
+    def get_endpoint_item(self, backend_name: str, endpoint: str) -> dict[str, AttributeValue] | None:
         """Retrieve the raw snapshot metadata item dictionary for an endpoint.
 
         Args:
@@ -959,7 +966,7 @@ class SnapshotGroundingEngine:
             return None
 
         self.get_valid_endpoints(backend_name)
-        item_map: dict[str, dict[str, object]] = self._endpoint_item_cache.get(backend_name, {})
+        item_map: dict[str, dict[str, AttributeValue]] = self._endpoint_item_cache.get(backend_name, {})
 
         candidates: list[str] = [endpoint]
         for root in target.canonical_roots:
@@ -980,7 +987,7 @@ class SnapshotGroundingEngine:
 
         return None
 
-    def get_endpoint_signatures(self, backend_name: str, endpoint: str) -> list[list[dict[str, object]]]:
+    def get_endpoint_signatures(self, backend_name: str, endpoint: str) -> list[list[dict[str, AttributeValue]]]:
         """Retrieve all declared parameter signatures (base and overloads) for an endpoint.
 
         Args:
@@ -992,16 +999,16 @@ class SnapshotGroundingEngine:
         """
         ref: ExtendedGhostRef | None = self.get_endpoint_ghost_ref(backend_name, endpoint)
         if ref is not None:
-            signatures: list[list[dict[str, object]]] = _signatures_from_ghost_ref(ref)
+            signatures: list[list[dict[str, AttributeValue]]] = _signatures_from_ghost_ref(ref)
             if signatures:
                 return signatures
 
-        item: dict[str, object] | None = self.get_endpoint_item(backend_name, endpoint)
+        item: dict[str, AttributeValue] | None = self.get_endpoint_item(backend_name, endpoint)
         if item is None:
             return []
         return _signatures_from_item(item)
 
-    def get_endpoint_parameters(self, backend_name: str, endpoint: str) -> list[dict[str, object]] | None:
+    def get_endpoint_parameters(self, backend_name: str, endpoint: str) -> list[dict[str, AttributeValue]] | None:
         """Retrieve list of declared parameter specifications for an endpoint.
 
         Args:
@@ -1011,17 +1018,17 @@ class SnapshotGroundingEngine:
         Returns:
             list[dict[str, object]] | None: List of parameter spec dictionaries, or None if endpoint not found.
         """
-        item: dict[str, object] | None = self.get_endpoint_item(backend_name, endpoint)
+        item: dict[str, AttributeValue] | None = self.get_endpoint_item(backend_name, endpoint)
         if item is None:
             return None
-        signatures: list[list[dict[str, object]]] = self.get_endpoint_signatures(backend_name, endpoint)
+        signatures: list[list[dict[str, AttributeValue]]] = self.get_endpoint_signatures(backend_name, endpoint)
         if not signatures:
-            params_obj: object = item.get("params")
+            params_obj: AttributeValue = item.get("params")
             if params_obj is None and item.get("overloads") is None:
                 return None
             return []
         seen_names: set[str] = set()
-        res: list[dict[str, object]] = []
+        res: list[dict[str, AttributeValue]] = []
         for sig in signatures:
             for p in sig:
                 p_name: str = str(p.get("name") or "")
@@ -1042,10 +1049,10 @@ class SnapshotGroundingEngine:
         Returns:
             str | None: Return type annotation string, or None if not found or unannotated.
         """
-        item: dict[str, object] | None = self.get_endpoint_item(backend_name, endpoint)
+        item: dict[str, AttributeValue] | None = self.get_endpoint_item(backend_name, endpoint)
         if item is None:
             return None
-        ret_type: object = item.get("returns_type")
+        ret_type: AttributeValue = item.get("returns_type")
         if isinstance(ret_type, str) and ret_type:
             return ret_type
         return None
@@ -1104,8 +1111,8 @@ class SnapshotGroundingEngine:
                     suggested: str | None = suggest_fn(target.framework, candidate, max_distance=max_distance)
                     if suggested:
                         return suggested
-            except Exception:
-                pass
+            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
         valid: set[str] = self.get_valid_endpoints(backend_name)
         if not valid:
@@ -1143,16 +1150,16 @@ class SnapshotGroundingEngine:
         Raises:
             GroundingValidationError: If raise_on_error is True and parameter validation fails.
         """
-        signatures: list[list[dict[str, object]]] = self.get_endpoint_signatures(backend_name, endpoint)
+        signatures: list[list[dict[str, AttributeValue]]] = self.get_endpoint_signatures(backend_name, endpoint)
         if not signatures:
-            params: list[dict[str, object]] | None = self.get_endpoint_parameters(backend_name, endpoint)
+            params: list[dict[str, AttributeValue]] | None = self.get_endpoint_parameters(backend_name, endpoint)
             if not params:
                 return []
             signatures = [params]
 
         all_sig_errors: list[list[str]] = []
         kw_set: set[str] = set(keyword_arg_names)
-        all_params: list[dict[str, object]] = self.get_endpoint_parameters(backend_name, endpoint) or []
+        all_params: list[dict[str, AttributeValue]] = self.get_endpoint_parameters(backend_name, endpoint) or []
         endpoint_allowed_kwargs: set[str] = {str(p.get("name")) for p in all_params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
 
         for sig in signatures:
@@ -1174,7 +1181,7 @@ class SnapshotGroundingEngine:
             )
 
             has_var_pos: bool = any(p.get("kind") == "VAR_POSITIONAL" for p in sig)
-            pos_params: list[dict[str, object]] = [p for p in sig if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")]
+            pos_params: list[dict[str, AttributeValue]] = [p for p in sig if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")]
             max_pos: int = len(pos_params)
 
             if not has_var_pos and positional_args_count > max_pos:
@@ -1184,7 +1191,7 @@ class SnapshotGroundingEngine:
             for p in pos_params:
                 p_name: str = str(p.get("name") or "")
                 is_mandatory: bool = bool(p.get("is_mandatory", True))
-                default_val: object = p.get("default")
+                default_val: AttributeValue = p.get("default")
                 if is_mandatory and default_val is None and p_name not in kw_set:
                     min_required += 1
 

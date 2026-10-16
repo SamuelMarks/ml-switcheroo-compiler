@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Union
+from typing import Union, cast
 
 import numpy as np
 
@@ -13,10 +13,10 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 @numpy_eager_registry.register("Relu")
 def _np_relu(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     *args: Union[float, int, str, bool, None],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_relu operation.
 
     Args:
@@ -28,16 +28,16 @@ def _np_relu(
     Returns:
         np.ndarray: Result.
     """
-    return backend_module.maximum(x, 0.0)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.maximum(x, 0.0))
 
 
 @numpy_eager_registry.register("Elu")
 def _np_elu(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     alpha: float = 1.0,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_elu operation.
 
     Args:
@@ -49,16 +49,16 @@ def _np_elu(
     Returns:
         np.ndarray: Result.
     """
-    return backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0)))
 
 
 @numpy_eager_registry.register("Celu")
 def _np_celu(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     alpha: float = 1.0,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_celu operation.
 
     Args:
@@ -70,15 +70,15 @@ def _np_celu(
     Returns:
         np.ndarray: Result.
     """
-    return backend_module.maximum(0.0, x) + backend_module.minimum(0.0, alpha * (backend_module.exp(x / alpha) - 1.0))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.maximum(0.0, x) + backend_module.minimum(0.0, alpha * (backend_module.exp(x / alpha) - 1.0)))
 
 
 @numpy_eager_registry.register("Softplus")
 def _np_softplus(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_softplus operation.
 
     Args:
@@ -89,15 +89,15 @@ def _np_softplus(
     Returns:
         np.ndarray: Result.
     """
-    return backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0))
 
 
 @numpy_eager_registry.register("Softsign")
 def _np_softsign(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_softsign operation.
 
     Args:
@@ -108,15 +108,15 @@ def _np_softsign(
     Returns:
         np.ndarray: Result.
     """
-    return x / (1.0 + backend_module.abs(x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], x / (1.0 + backend_module.abs(x)))
 
 
 @numpy_eager_registry.register("Mish")
 def _np_mish(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_mish operation.
 
     Args:
@@ -128,15 +128,15 @@ def _np_mish(
         np.ndarray: Result.
     """
     softplus_x = backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0)
-    return x * backend_module.tanh(softplus_x)
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], x * backend_module.tanh(softplus_x))
 
 
 @numpy_eager_registry.register("LogSigmoid")
 def _np_log_sigmoid(
     backend_module: ModuleType,
-    x: np.ndarray,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_log_sigmoid operation.
 
     Args:
@@ -147,4 +147,4 @@ def _np_log_sigmoid(
     Returns:
         np.ndarray: Result.
     """
-    return -backend_module.log1p(backend_module.exp(-x))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], -backend_module.log1p(backend_module.exp(-x)))

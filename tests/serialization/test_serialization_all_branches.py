@@ -6,7 +6,7 @@ import json
 import os
 import tempfile
 import zipfile
-from typing import Any
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -16,14 +16,19 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.serialization import (
     SavedModel,
     _serialize_nested_config,
-    deserialize_keras_object,
+    deserialize_object,
     get_registered_name,
     load_model,
     read_fingerprint,
-    register_keras_serializable,
+    register_serializable,
     run_restore_ops,
-    serialize_keras_object,
+    serialize_object,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_load_model_edge_branches() -> None:
@@ -47,9 +52,10 @@ def test_load_model_edge_branches() -> None:
             assert loaded_h5.weights == {"w": 1}
 
         # Test case 2: tmp_path does not exist when entering finally (e.g. removed beforehand)
-        def remove_and_load(p):
-            if os.path.exists(p):
-                os.remove(p)
+        def remove_and_load(p: EagerValue) -> EagerValue:
+            """Test function remove_and_load."""
+            if cast("Callable[..., EagerTensorProtocol]", os.path.exists)(p):
+                cast("Callable[..., EagerTensorProtocol]", os.remove)(p)
             return {"w": 2}
 
         with patch("ml_switcheroo_compiler.serialization._load_h5_weights", side_effect=remove_and_load):
@@ -83,10 +89,10 @@ def test_load_model_edge_branches() -> None:
                 load_model(model_path)
 
 
-def test_register_keras_serializable_empty_package() -> None:
-    """Test register_keras_serializable with empty package string."""
+def test_register_serializable_empty_package() -> None:
+    """Test register_serializable with empty package string."""
 
-    @register_keras_serializable(package="", name="MyNoPackageCls")
+    @register_serializable(package="", name="MyNoPackageCls")
     class NoPackageCls:
         """Dummy class without package."""
 
@@ -101,18 +107,18 @@ def test_serialize_and_deserialize_nested_and_lists() -> None:
     class NestedObject:
         """Class with get_config method."""
 
-        def get_config(self) -> dict[str, Any]:
+        def get_config(self) -> dict[str, EagerValue]:
             """Return config dictionary."""
             return {"inner_val": 42}
 
-    # serialize_keras_object with dict and list/tuple
+    # serialize_object with dict and list/tuple
     obj_dict = {"layer": NestedObject(), "list_items": [NestedObject(), 10]}
-    ser_dict = serialize_keras_object(obj_dict)
+    ser_dict = serialize_object(obj_dict)
     assert isinstance(ser_dict, dict)
     assert ser_dict["layer"] == {"inner_val": 42}
     assert ser_dict["list_items"][0] == {"inner_val": 42}
 
-    ser_list = serialize_keras_object([NestedObject(), (NestedObject(),)])
+    ser_list = serialize_object([NestedObject(), (NestedObject(),)])
     assert isinstance(ser_list, list)
     assert ser_list[0] == {"inner_val": 42}
 
@@ -131,12 +137,12 @@ def test_serialize_and_deserialize_nested_and_lists() -> None:
         "class_name": "MyConstant",
         "config": {},
     }
-    res = deserialize_keras_object(config, custom_objects={"MyConstant": dummy_constant})
+    res = deserialize_object(config, custom_objects={"MyConstant": dummy_constant})
     assert res == dummy_constant
 
     # Deserialization of list / tuple
     list_config = [{"class_name": "MyConstant", "config": {}}, 123]
-    res_list = deserialize_keras_object(list_config, custom_objects={"MyConstant": dummy_constant})
+    res_list = deserialize_object(list_config, custom_objects={"MyConstant": dummy_constant})
     assert res_list == [dummy_constant, 123]
 
 
@@ -145,7 +151,10 @@ def test_saved_model_topology_branches() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         # 1. model with .graph
         class ModelWithGraph:
+            """Test class ModelWithGraph."""
+
             def __init__(self) -> None:
+                """Test function __init__."""
                 self.graph = IRGraph(name="test_graph")
 
         sm1 = SavedModel(model=ModelWithGraph())
@@ -156,7 +165,10 @@ def test_saved_model_topology_branches() -> None:
 
         # 2. model with .to_json()
         class ModelWithToJson:
+            """Test class ModelWithToJson."""
+
             def to_json(self) -> str:
+                """Test function to_json."""
                 return json.dumps({"class_name": "DenseModel"})
 
         sm2 = SavedModel(model=ModelWithToJson())
@@ -167,7 +179,10 @@ def test_saved_model_topology_branches() -> None:
 
         # 3. model with .get_config() (line 835)
         class ModelWithGetConfig:
-            def get_config(self) -> dict[str, Any]:
+            """Test class ModelWithGetConfig."""
+
+            def get_config(self) -> dict[str, EagerValue]:
+                """Test function get_config."""
                 return {"class_name": "ConfigOnlyModel"}
 
         sm3 = SavedModel(model=ModelWithGetConfig())
@@ -178,6 +193,8 @@ def test_saved_model_topology_branches() -> None:
 
         # 4. model that is None or has none of graph/to_json/get_config (line 835 false branch)
         class EmptyModel:
+            """Test class EmptyModel."""
+
             pass
 
         sm4 = SavedModel(model=EmptyModel())
@@ -239,7 +256,7 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
         from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
         SafetensorsWeightFormat().save({"st_w": np.ones((1,), dtype=np.float32)}, os.path.join(ckpt_dir, "model.safetensors"))
-        H5WeightFormat().save({"h5_w": np.ones((1,), dtype=np.float32)}, os.path.join(ckpt_dir, "model.h5"))
+        cast("Callable[..., EagerTensorProtocol]", H5WeightFormat)().save({"h5_w": cast("Callable[..., EagerTensorProtocol]", np.ones)((1,), dtype=np.float32)}, cast("Callable[..., EagerTensorProtocol]", os.path.join)(ckpt_dir, "model.h5"))
 
         restored = run_restore_ops(ckpt_dir)
         assert "w1" in restored
@@ -249,26 +266,39 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
 
         # 2. Validate against target_model with assign method and without assign method
         class DummyWeightWithAssign:
+            """Test class DummyWeightWithAssign."""
+
             def __init__(self, name: str, shape: tuple[int, ...]) -> None:
+                """Test function __init__."""
                 self.name = name
                 self.shape = shape
-                self.assigned_val: np.ndarray | None = None
+                self.assigned_val: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
 
-            def assign(self, val: np.ndarray) -> None:
+            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+                """Test function assign."""
                 self.assigned_val = val
 
         class DummyWeightNoAssign:
+            """Test class DummyWeightNoAssign."""
+
             def __init__(self, name: str, shape: tuple[int, ...]) -> None:
+                """Test function __init__."""
                 self.name = name
                 self.shape = shape
 
         class DummyWeightNoNameOrMissing:
+            """Test class DummyWeightNoNameOrMissing."""
+
             def __init__(self) -> None:
+                """Test function __init__."""
                 self.name = "missing_var"
                 self.shape = (1, 1)
 
         class DummyModel:
+            """Test class DummyModel."""
+
             def __init__(self) -> None:
+                """Test function __init__."""
                 self.weights = [
                     DummyWeightWithAssign("w1", (2, 3)),
                     DummyWeightNoAssign("w2", (4, 4)),
@@ -277,11 +307,14 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
 
         model_ok = DummyModel()
         run_restore_ops(ckpt_dir, target_model=model_ok)
-        assert model_ok.weights[0].assigned_val is not None
+        assert cast("EagerTensorProtocol", getattr(model_ok.weights[0], "assigned_val")) is not None
 
         # 3. Validate shape mismatch in target_model
         class DummyModelMismatch:
+            """Test class DummyModelMismatch."""
+
             def __init__(self) -> None:
+                """Test function __init__."""
                 self.weights = [DummyWeightWithAssign("w1", (5, 5))]
 
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'w1'"):
@@ -289,7 +322,10 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
 
         # 4. Validate variables dict matching shape, mismatching shape, and missing key
         class DummyVar:
+            """Test class DummyVar."""
+
             def __init__(self, shape: tuple[int, ...]) -> None:
+                """Test function __init__."""
                 self.shape = shape
 
         # Both present variable and missing variable

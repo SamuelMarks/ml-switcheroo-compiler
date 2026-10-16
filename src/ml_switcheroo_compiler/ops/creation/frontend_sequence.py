@@ -1,15 +1,10 @@
-"""Module frontend_sequence.py."""
+"""Constants & Creation Operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Constants & Creation Operations."""
-
-
 import math
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -24,7 +19,7 @@ def arange(
     step: float = 1,
     dtype: DType | None = None,
     device: Device | None = None,
-):
+) -> EagerValue:
     """Return a 1-D tensor of size with values from the interval `[start, stop)`.
 
     Args:
@@ -69,7 +64,7 @@ def linspace(
     steps: int,
     dtype: DType | None = None,
     device: Device | None = None,
-):
+) -> EagerValue:
     """Create a 1D tensor evenly spaced from `start` to `stop`.
 
     Args:

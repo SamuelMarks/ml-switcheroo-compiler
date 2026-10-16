@@ -1,82 +1,15 @@
-# ruff: noqa: E501
+"""Tests for test_normalization."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+# ruff: noqa: E501
 import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.normalization.basic import GroupMean, GroupNorm, GroupVariance
-from ml_switcheroo_compiler.ops.normalization.frontend import group_mean, group_variance, spectral_normalization
-from ml_switcheroo_compiler.ops.normalization.frontend import group_norm as frontend_group_norm
-
-
-def test_normalization_coverage():
-    config.eager_mode = True
-    t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-
-    assert GroupMean().infer_shape(t) == (1, 2)
-    assert GroupVariance().infer_shape(t) == (1, 2)
-    assert GroupNorm().infer_shape(t) == (1, 2)
-
-    import sys
-
-    norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.frontend"]
-
-    class DummyOp:
-        device = "cpu"
-
-        def __call__(self, *args, **kwargs):
-            return "normed"
-
-    orig_get_op = norm_frontend.get_op
-    norm_frontend.get_op = lambda x: DummyOp
-    try:
-        assert group_mean(t, 1) == "normed"
-        assert group_variance(t, 1) == "normed"
-        assert frontend_group_norm(t, 1) == "normed"
-    finally:
-        norm_frontend.get_op = orig_get_op
-
-    with pytest.raises(Exception):
-        spectral_normalization(t, t)
-
-
-def test_tracing_normalization_ops():
-    from ml_switcheroo_compiler.ops.nn.normalization import normalize_moments, sufficient_statistics, weighted_moments
-    from ml_switcheroo_compiler.tracing.state import global_tracing_state
-
-    config.eager_mode = False
-    global_tracing_state.start_tracing("test_norm_trace")
-
-    t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-    t.id = "tensor_n0"
-
-    try:
-        # Test normalize_moments tracing
-        mean, variance = normalize_moments(t, t, t, t)
-        assert isinstance(mean, Tensor)
-        assert isinstance(variance, Tensor)
-        assert mean.shape == (1, 2)
-        assert variance.shape == (1, 2)
-
-        # Test sufficient_statistics tracing
-        counts, mean_ss, variance_ss, shift = sufficient_statistics(t, 1)
-        assert isinstance(counts, Tensor)
-        assert isinstance(mean_ss, Tensor)
-        assert isinstance(variance_ss, Tensor)
-        assert isinstance(shift, Tensor)
-
-        # Test weighted_moments tracing
-        w_mean, w_variance = weighted_moments(t, 1, t)
-        assert isinstance(w_mean, Tensor)
-        assert isinstance(w_variance, Tensor)
-        assert w_mean.shape == (1, 2)
-        assert w_variance.shape == (1, 2)
-    finally:
-        global_tracing_state.stop_tracing()
-        config.eager_mode = True
-
-
 from ml_switcheroo_compiler.ops.nn.normalization import (
     BatchNormConfig,
     BatchNormGlobalConfig,
@@ -98,14 +31,95 @@ from ml_switcheroo_compiler.ops.nn.normalization import (
     weighted_moments,
     zero_fraction,
 )
+from ml_switcheroo_compiler.ops.normalization.basic import GroupMean, GroupNorm, GroupVariance
+from ml_switcheroo_compiler.ops.normalization.frontend import group_mean, group_variance, spectral_normalization
+from ml_switcheroo_compiler.ops.normalization.frontend import group_norm as frontend_group_norm
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def test_normalization_brute():
+def test_normalization_coverage() -> None:
+    """Test function test_normalization_coverage."""
+    config.eager_mode = True
+    t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
+
+    assert cast("Callable[..., EagerTensorProtocol]", GroupMean)().infer_shape(t) == (1, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", GroupVariance)().infer_shape(t) == (1, 2)
+    assert cast("Callable[..., EagerTensorProtocol]", GroupNorm)().infer_shape(t) == (1, 2)
+
+    import sys
+
+    norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.frontend"]
+
+    class DummyOp:
+        """Test class DummyOp."""
+
+        device = "cpu"
+
+        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Test function __call__."""
+            return "normed"
+
+    orig_get_op = norm_frontend.get_op
+    setattr(norm_frontend, "get_op", lambda x: DummyOp)
+    try:
+        assert cast("EagerTensorProtocol", group_mean(t, 1)) == cast("EagerTensorProtocol", "normed")
+        assert cast("EagerTensorProtocol", group_variance(t, 1)) == cast("EagerTensorProtocol", "normed")
+        assert cast("EagerTensorProtocol", frontend_group_norm(t, 1)) == cast("EagerTensorProtocol", "normed")
+    finally:
+        setattr(norm_frontend, "get_op", orig_get_op)
+
+    with pytest.raises(Exception, match=r".*"):
+        spectral_normalization(t, t)
+
+
+def test_tracing_normalization_ops() -> None:
+    """Test function test_tracing_normalization_ops."""
+    from ml_switcheroo_compiler.ops.nn.normalization import normalize_moments, sufficient_statistics, weighted_moments
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    config.eager_mode = False
+    global_tracing_state.start_tracing("test_norm_trace")
+
+    t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
+    setattr(t, "id", "tensor_n0")
+
+    try:
+        # Test normalize_moments tracing
+        mean, variance = cast("Callable[..., EagerTensorProtocol]", normalize_moments)(t, t, t, t)
+        assert isinstance(mean, Tensor)
+        assert isinstance(variance, Tensor)
+        assert mean.shape == (1, 2)
+        assert variance.shape == (1, 2)
+
+        # Test sufficient_statistics tracing
+        counts, mean_ss, variance_ss, shift = cast("Callable[..., EagerTensorProtocol]", sufficient_statistics)(t, 1)
+        assert isinstance(counts, Tensor)
+        assert isinstance(mean_ss, Tensor)
+        assert isinstance(variance_ss, Tensor)
+        assert isinstance(shift, Tensor)
+
+        # Test weighted_moments tracing
+        w_mean, w_variance = cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", weighted_moments)(t, 1, t))
+        assert isinstance(w_mean, Tensor)
+        assert isinstance(w_variance, Tensor)
+        assert w_mean.shape == (1, 2)
+        assert w_variance.shape == (1, 2)
+    finally:
+        global_tracing_state.stop_tracing()
+        config.eager_mode = True
+
+
+def test_normalization_brute() -> None:
+    """Test function test_normalization_brute."""
     config.backend = "numpy"
     config.eager_mode = True
 
     t1 = Tensor(np.random.rand(2, 4, 8, 8).astype(np.float32), TensorConfig((2, 4, 8, 8), "float32", "cpu"))
-    t1_1d = Tensor(np.random.rand(8).astype(np.float32), TensorConfig((8,), "float32", "cpu"))
+    Tensor(np.random.rand(8).astype(np.float32), TensorConfig((8,), "float32", "cpu"))
     mean_t = Tensor(np.random.rand(8).astype(np.float32), TensorConfig((8,), "float32", "cpu"))
     var_t = Tensor(np.abs(np.random.rand(8).astype(np.float32)) + 0.1, TensorConfig((8,), "float32", "cpu"))
     scale = Tensor(np.ones((8,)).astype(np.float32), TensorConfig((8,), "float32", "cpu"))

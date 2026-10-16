@@ -1,19 +1,14 @@
-"""Module mixing.py."""
+"""Vision operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Vision operations."""
-
-
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None):
+def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None) -> EagerValue:
     """Apply mixup to a pair of batches of images.
 
     Args:
@@ -30,12 +25,12 @@ def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None
         data = backend.execute_op("Mixup", images1.data, images2=images2.data, alpha=alpha, seed=seed)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images1.dtype, images1.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images1.dtype, images1.device),
         )
     return _emit_shape_node("Mixup", [images1, images2], {"alpha": alpha, "seed": seed}, (), images1.dtype)
 
 
-def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None):
+def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None) -> EagerValue:
     """Apply cutmix to a pair of batches of images.
 
     Args:
@@ -52,6 +47,6 @@ def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | Non
         data = backend.execute_op("Cutmix", images1.data, images2=images2.data, alpha=alpha, seed=seed)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images1.dtype, images1.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images1.dtype, images1.device),
         )
     return _emit_shape_node("Cutmix", [images1, images2], {"alpha": alpha, "seed": seed}, (), images1.dtype)

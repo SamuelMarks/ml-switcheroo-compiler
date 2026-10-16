@@ -1,28 +1,25 @@
-"""Module fft_ops.py."""
+"""Signal processing operations."""
 
 from __future__ import annotations
 
-from .common_ops import _emit_signal_node
-
-# ruff: noqa: E402, E501, F403
-"""Signal processing operations."""
-
 from dataclasses import dataclass  # noqa: F401
-from typing import Any, Optional  # noqa: F401
+from typing import Optional  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node  # noqa: F401
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node  # noqa: F401
 
+from .common_ops import _emit_signal_node
+
 
 @register_op("Fftconvolve")
 class Fftconvolve(OpDef):
     """Fftconvolve."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -35,7 +32,7 @@ class Fftconvolve(OpDef):
         return args[0].shape
 
 
-def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes=None):
+def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: EagerValue = None) -> EagerValue:
     """Evaluate fftconvolve operation.
 
     Args:
@@ -52,7 +49,7 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes=None):
 
         data = backend.execute_op("Fftconvolve", in1.data, in2.data, mode=mode, axes=axes)
 
-        return Tensor(data, TensorConfig(data.shape, in1.dtype, in1.device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), in1.dtype, in1.device))
 
     return _emit_signal_node(
         "Fftconvolve",
@@ -67,7 +64,7 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes=None):
 class Fft(OpDef):
     """Fft class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -80,7 +77,7 @@ class Fft(OpDef):
         return args[0].shape
 
 
-def fft(input: Tensor, *args, **kwargs):
+def fft(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate fft operation.
 
     Args:
@@ -94,7 +91,7 @@ def fft(input: Tensor, *args, **kwargs):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Fft", input.data, *args, **kwargs)
-        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
+        return Tensor(data, TensorConfig(getattr(data, "shape"), input.dtype, input.device))
     return _emit_signal_node("Fft", [input], kwargs, input.shape, input.dtype)
 
 
@@ -102,7 +99,7 @@ def fft(input: Tensor, *args, **kwargs):
 class Rfft(OpDef):
     """Rfft class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -119,7 +116,7 @@ class Rfft(OpDef):
 class Fft2(OpDef):
     """Fft2 class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -136,7 +133,7 @@ class Fft2(OpDef):
 class Fftfreq(OpDef):
     """Fftfreq class."""
 
-    def infer_shape(self, n, d=1.0, *args, **kwargs):
+    def infer_shape(self, n: EagerTensorProtocol, d: EagerValue = 1.0, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -155,7 +152,7 @@ class Fftfreq(OpDef):
 class Irfft(OpDef):
     """Irfft class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -172,7 +169,7 @@ class Irfft(OpDef):
 class Ihfft(OpDef):
     """Ihfft class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -189,7 +186,7 @@ class Ihfft(OpDef):
 class Ifft(OpDef):
     """Ifft class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -202,7 +199,7 @@ class Ifft(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifft(input: Tensor, *args, **kwargs):
+def ifft(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate ifft operation.
 
     Args:
@@ -224,7 +221,7 @@ def ifft(input: Tensor, *args, **kwargs):
 class Fftn(OpDef):
     """Fftn class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -237,7 +234,7 @@ class Fftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftn(input: Tensor, *args, **kwargs):
+def fftn(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate fftn operation.
 
     Args:
@@ -259,7 +256,7 @@ def fftn(input: Tensor, *args, **kwargs):
 class Ifftn(OpDef):
     """Ifftn class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -272,7 +269,7 @@ class Ifftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftn(input: Tensor, *args, **kwargs):
+def ifftn(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate ifftn operation.
 
     Args:
@@ -294,7 +291,7 @@ def ifftn(input: Tensor, *args, **kwargs):
 class Rfftn(OpDef):
     """Rfftn class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -307,7 +304,7 @@ class Rfftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftn(input: Tensor, *args, **kwargs):
+def rfftn(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate rfftn operation.
 
     Args:
@@ -329,7 +326,7 @@ def rfftn(input: Tensor, *args, **kwargs):
 class Irfftn(OpDef):
     """Irfftn class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -342,7 +339,7 @@ class Irfftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfftn(input: Tensor, *args, **kwargs):
+def irfftn(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate irfftn operation.
 
     Args:
@@ -364,7 +361,7 @@ def irfftn(input: Tensor, *args, **kwargs):
 class Ifft2(OpDef):
     """Ifft2 class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -377,7 +374,7 @@ class Ifft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifft2(input: Tensor, *args, **kwargs):
+def ifft2(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate ifft2 operation.
 
     Args:
@@ -399,7 +396,7 @@ def ifft2(input: Tensor, *args, **kwargs):
 class Rfft2(OpDef):
     """Rfft2 class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -412,7 +409,7 @@ class Rfft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfft2(input: Tensor, *args, **kwargs):
+def rfft2(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate rfft2 operation.
 
     Args:
@@ -434,7 +431,7 @@ def rfft2(input: Tensor, *args, **kwargs):
 class Irfft2(OpDef):
     """Irfft2 class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -447,7 +444,7 @@ class Irfft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfft2(input: Tensor, *args, **kwargs):
+def irfft2(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate irfft2 operation.
 
     Args:
@@ -469,7 +466,7 @@ def irfft2(input: Tensor, *args, **kwargs):
 class Fftnd(OpDef):
     """Fftnd class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -482,7 +479,7 @@ class Fftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftnd(input: Tensor, *args, **kwargs):
+def fftnd(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate fftnd operation.
 
     Args:
@@ -504,7 +501,7 @@ def fftnd(input: Tensor, *args, **kwargs):
 class Ifftnd(OpDef):
     """Ifftnd class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -517,7 +514,7 @@ class Ifftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftnd(input: Tensor, *args, **kwargs):
+def ifftnd(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate ifftnd operation.
 
     Args:
@@ -539,7 +536,7 @@ def ifftnd(input: Tensor, *args, **kwargs):
 class Rfftnd(OpDef):
     """Rfftnd class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -552,7 +549,7 @@ class Rfftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftnd(input: Tensor, *args, **kwargs):
+def rfftnd(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate rfftnd operation.
 
     Args:
@@ -574,7 +571,7 @@ def rfftnd(input: Tensor, *args, **kwargs):
 class Irfftnd(OpDef):
     """Irfftnd class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -587,7 +584,7 @@ class Irfftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfftnd(input: Tensor, *args, **kwargs):
+def irfftnd(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate irfftnd operation.
 
     Args:
@@ -609,7 +606,7 @@ def irfftnd(input: Tensor, *args, **kwargs):
 class Fftshift(OpDef):
     """Fftshift class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -622,7 +619,7 @@ class Fftshift(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftshift(input: Tensor, *args, **kwargs):
+def fftshift(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate fftshift operation.
 
     Args:
@@ -644,7 +641,7 @@ def fftshift(input: Tensor, *args, **kwargs):
 class Ifftshift(OpDef):
     """Ifftshift class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -657,7 +654,7 @@ class Ifftshift(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftshift(input: Tensor, *args, **kwargs):
+def ifftshift(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate ifftshift operation.
 
     Args:
@@ -679,7 +676,7 @@ def ifftshift(input: Tensor, *args, **kwargs):
 class Hfft(OpDef):
     """Hfft class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -692,7 +689,7 @@ class Hfft(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def hfft(input: Tensor, *args, **kwargs):
+def hfft(input: Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate hfft operation.
 
     Args:
@@ -714,7 +711,7 @@ def hfft(input: Tensor, *args, **kwargs):
 class Rfftfreq(OpDef):
     """Rfftfreq class."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -727,7 +724,7 @@ class Rfftfreq(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftfreq(input: int | Tensor, *args, **kwargs):
+def rfftfreq(input: int | Tensor, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate rfftfreq operation.
 
     Args:

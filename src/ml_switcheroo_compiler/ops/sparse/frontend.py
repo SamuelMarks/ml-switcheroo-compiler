@@ -1,5 +1,8 @@
-# ruff: noqa: E402, E501, F403
 """Sparse frontends."""
+
+from __future__ import annotations
+
+from ml_switcheroo_compiler.backends.registry import EagerValue
 
 # from ml_switcheroo_compiler.ops.sparse import (
 #    SparseBincount,
@@ -27,11 +30,11 @@
 # )
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.base import OpArgValue, get_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
-def _sparse_op(op_name, *args, **kwargs):
+def _sparse_op(op_name: str, *args: OpArgValue, **kwargs: OpArgValue) -> Tensor | tuple[Tensor, ...]:
     """Evaluate _sparse_op operation.
 
     Args:
@@ -59,10 +62,10 @@ def _sparse_op(op_name, *args, **kwargs):
 
     op = op_cls()
     out_shape = op.infer_shape(*args, **kwargs)
-    return _emit_linalg_node(op_name, list(args), kwargs, [tuple(out_shape)], [getattr(args[0], "dtype", "float32")])
+    return _emit_linalg_node(op_name, list(args), kwargs, [tuple(getattr(out_shape, "__iter__")())], [getattr(args[0], "dtype", "float32")])
 
 
-def sparse_bincount(*args, **kwargs):
+def sparse_bincount(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_bincount operation.
 
     Args:
@@ -75,7 +78,7 @@ def sparse_bincount(*args, **kwargs):
     return _sparse_op("SparseBincount", *args, **kwargs)
 
 
-def sparse_cross_hashed(*args, **kwargs):
+def sparse_cross_hashed(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_cross_hashed operation.
 
     Args:
@@ -88,7 +91,7 @@ def sparse_cross_hashed(*args, **kwargs):
     return _sparse_op("SparseCrossHashed", *args, **kwargs)
 
 
-def sparse_expand_dims(*args, **kwargs):
+def sparse_expand_dims(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_expand_dims operation.
 
     Args:
@@ -101,7 +104,7 @@ def sparse_expand_dims(*args, **kwargs):
     return _sparse_op("SparseExpandDims", *args, **kwargs)
 
 
-def sparse_eye(*args, **kwargs):
+def sparse_eye(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_eye operation.
 
     Args:
@@ -114,7 +117,7 @@ def sparse_eye(*args, **kwargs):
     return _sparse_op("SparseEye", *args, **kwargs)
 
 
-def sparse_fill_empty_rows(*args, **kwargs):
+def sparse_fill_empty_rows(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_fill_empty_rows operation.
 
     Args:
@@ -127,7 +130,7 @@ def sparse_fill_empty_rows(*args, **kwargs):
     return _sparse_op("SparseFillEmptyRows", *args, **kwargs)
 
 
-def sparse_map_values(*args, **kwargs):
+def sparse_map_values(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_map_values operation.
 
     Args:
@@ -140,7 +143,7 @@ def sparse_map_values(*args, **kwargs):
     return _sparse_op("SparseMapValues", *args, **kwargs)
 
 
-def sparse_mask(*args, **kwargs):
+def sparse_mask(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_mask operation.
 
     Args:
@@ -153,7 +156,7 @@ def sparse_mask(*args, **kwargs):
     return _sparse_op("SparseMask", *args, **kwargs)
 
 
-def sparse_maximum(*args, **kwargs):
+def sparse_maximum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_maximum operation.
 
     Args:
@@ -166,7 +169,7 @@ def sparse_maximum(*args, **kwargs):
     return _sparse_op("SparseMaximum", *args, **kwargs)
 
 
-def sparse_minimum(*args, **kwargs):
+def sparse_minimum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_minimum operation.
 
     Args:
@@ -179,7 +182,7 @@ def sparse_minimum(*args, **kwargs):
     return _sparse_op("SparseMinimum", *args, **kwargs)
 
 
-def sparse_reduce_max(*args, **kwargs):
+def sparse_reduce_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_reduce_max operation.
 
     Args:
@@ -192,7 +195,7 @@ def sparse_reduce_max(*args, **kwargs):
     return _sparse_op("SparseReduceMax", *args, **kwargs)
 
 
-def sparse_reduce_sum(*args, **kwargs):
+def sparse_reduce_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_reduce_sum operation.
 
     Args:
@@ -205,7 +208,7 @@ def sparse_reduce_sum(*args, **kwargs):
     return _sparse_op("SparseReduceSum", *args, **kwargs)
 
 
-def sparse_reorder(*args, **kwargs):
+def sparse_reorder(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_reorder operation.
 
     Args:
@@ -218,7 +221,7 @@ def sparse_reorder(*args, **kwargs):
     return _sparse_op("SparseReorder", *args, **kwargs)
 
 
-def sparse_reset_shape(*args, **kwargs):
+def sparse_reset_shape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_reset_shape operation.
 
     Args:
@@ -231,7 +234,7 @@ def sparse_reset_shape(*args, **kwargs):
     return _sparse_op("SparseResetShape", *args, **kwargs)
 
 
-def sparse_reshape(*args, **kwargs):
+def sparse_reshape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_reshape operation.
 
     Args:
@@ -244,7 +247,7 @@ def sparse_reshape(*args, **kwargs):
     return _sparse_op("SparseReshape", *args, **kwargs)
 
 
-def sparse_retain(*args, **kwargs):
+def sparse_retain(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_retain operation.
 
     Args:
@@ -257,7 +260,7 @@ def sparse_retain(*args, **kwargs):
     return _sparse_op("SparseRetain", *args, **kwargs)
 
 
-def sparse_segment_mean(*args, **kwargs):
+def sparse_segment_mean(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_segment_mean operation.
 
     Args:
@@ -270,7 +273,7 @@ def sparse_segment_mean(*args, **kwargs):
     return _sparse_op("SparseSegmentMean", *args, **kwargs)
 
 
-def sparse_segment_sqrt_n(*args, **kwargs):
+def sparse_segment_sqrt_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_segment_sqrt_n operation.
 
     Args:
@@ -283,7 +286,7 @@ def sparse_segment_sqrt_n(*args, **kwargs):
     return _sparse_op("SparseSegmentSqrtN", *args, **kwargs)
 
 
-def sparse_segment_sum(*args, **kwargs):
+def sparse_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_segment_sum operation.
 
     Args:
@@ -296,7 +299,7 @@ def sparse_segment_sum(*args, **kwargs):
     return _sparse_op("SparseSegmentSum", *args, **kwargs)
 
 
-def sparse_slice(*args, **kwargs):
+def sparse_slice(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_slice operation.
 
     Args:
@@ -309,7 +312,7 @@ def sparse_slice(*args, **kwargs):
     return _sparse_op("SparseSlice", *args, **kwargs)
 
 
-def sparse_softmax(*args, **kwargs):
+def sparse_softmax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_softmax operation.
 
     Args:
@@ -322,7 +325,7 @@ def sparse_softmax(*args, **kwargs):
     return _sparse_op("SparseSoftmax", *args, **kwargs)
 
 
-def sparse_to_indicator(*args, **kwargs):
+def sparse_to_indicator(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_to_indicator operation.
 
     Args:
@@ -335,7 +338,7 @@ def sparse_to_indicator(*args, **kwargs):
     return _sparse_op("SparseToIndicator", *args, **kwargs)
 
 
-def sparse_transpose(*args, **kwargs):
+def sparse_transpose(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_transpose operation.
 
     Args:
@@ -348,7 +351,7 @@ def sparse_transpose(*args, **kwargs):
     return _sparse_op("SparseTranspose", *args, **kwargs)
 
 
-def sparse_add(*args, **kwargs):
+def sparse_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_add operation.
 
     Args:
@@ -361,7 +364,7 @@ def sparse_add(*args, **kwargs):
     return _sparse_op("SparseAdd", *args, **kwargs)
 
 
-def sparse_dense_matmul(*args, **kwargs):
+def sparse_dense_matmul(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_dense_matmul operation.
 
     Args:
@@ -374,7 +377,7 @@ def sparse_dense_matmul(*args, **kwargs):
     return _sparse_op("SparseDenseMatMul", *args, **kwargs)
 
 
-def sparse_sampled_add(*args, **kwargs):
+def sparse_sampled_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate sparse_sampled_add operation.
 
     Args:
@@ -387,7 +390,7 @@ def sparse_sampled_add(*args, **kwargs):
     return _sparse_op("SparseSampledAdd", *args, **kwargs)
 
 
-def smm(*args, **kwargs):
+def smm(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate smm operation.
 
     Args:
@@ -400,7 +403,7 @@ def smm(*args, **kwargs):
     return _sparse_op("Smm", *args, **kwargs)
 
 
-def sparse_concat(*args, **kwargs):
+def sparse_concat(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Sparse concat.
 
     Args:
@@ -413,7 +416,7 @@ def sparse_concat(*args, **kwargs):
     return _sparse_op("SparseConcat", *args, **kwargs)
 
 
-def sparse_split(*args, **kwargs):
+def sparse_split(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Sparse split.
 
     Args:
@@ -426,7 +429,7 @@ def sparse_split(*args, **kwargs):
     return _sparse_op("SparseSplit", *args, **kwargs)
 
 
-def sparse_to_dense(*args, **kwargs):
+def sparse_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Sparse to dense.
 
     Args:

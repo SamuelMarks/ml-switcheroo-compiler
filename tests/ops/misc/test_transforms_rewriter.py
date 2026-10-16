@@ -1,10 +1,15 @@
+"""Tests for test_transforms_rewriter."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.transforms.rewriter import shape_aware_rewrite
 
 
-def test_shape_aware_rewrite():
+def test_shape_aware_rewrite() -> None:
+    """Test function test_shape_aware_rewrite."""
     graph = LogicalGraph("TestGraph", outputs=["n2"])
     n1 = LogicalNode("n1", "Reshape", shape_metadata=(2, 3), attributes={"newshape": (-1, 3)})
     n2 = LogicalNode("n2", "Add", inputs=["n1"], shape_metadata=(2, 3))

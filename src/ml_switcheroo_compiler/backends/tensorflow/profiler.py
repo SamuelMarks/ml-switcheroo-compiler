@@ -1,9 +1,12 @@
 """TensorFlow backend profiler for runtime execution and memory benchmarking."""
 
+import logging
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 try:
     import tensorflow as tf
@@ -42,12 +45,12 @@ def _get_tf_peak_memory_mb() -> float:
                 return float(mem_info["peak"]) / (1024.0 * 1024.0)
             if "current" in mem_info and mem_info["current"] > 0:
                 return float(mem_info["current"]) / (1024.0 * 1024.0)
-    except Exception:
-        pass
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _get_process_memory_mb()
 
 
-def _sync_tf_result(result: Union[object, list[object], tuple[object, ...], dict[str, object]]) -> None:
+def _sync_tf_result(result: Union[EagerValue, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue]]) -> None:
     """Force synchronization of TensorFlow evaluation results to host memory.
 
     Args:
@@ -61,11 +64,11 @@ def _sync_tf_result(result: Union[object, list[object], tuple[object, ...], dict
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_tf_result(item)
-    elif hasattr(result, "numpy") and callable(result.numpy):
+    elif hasattr(result, "numpy") and callable(getattr(result, "numpy")):
         try:
-            _ = result.numpy()
-        except Exception:
-            pass
+            _ = getattr(result, "numpy")()
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 def _compute_metrics(
@@ -106,8 +109,8 @@ class TensorFlowProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
-    ) -> list[object]:
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+    ) -> list[EagerValue]:
         """Convert input structures into topologically ordered TensorFlow tensors.
 
         Args:
@@ -120,7 +123,7 @@ class TensorFlowProfiler:
         if tf is None:
             return []
 
-        tf_inputs_dict: dict[str, object] = {}
+        tf_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             if hasattr(val, "shape") and hasattr(val, "dtype") and not isinstance(val, (list, tuple)):
                 tf_inputs_dict[k] = val
@@ -133,7 +136,7 @@ class TensorFlowProfiler:
             return [tf_inputs_dict[k] for k in input_keys]
         return list(tf_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., object]]:
+    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., EagerValue]]:
         """Compile an IRGraph into an executable TensorFlow function.
 
         Args:
@@ -148,7 +151,7 @@ class TensorFlowProfiler:
         from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 
         code: str = TensorFlowCodeGenerator(graph).generate()
-        ns: dict[str, object] = {}
+        ns: dict[str, EagerValue] = {}
         exec(code, ns)
         apply_model = ns.get("apply_model")
         if not callable(apply_model):
@@ -158,10 +161,10 @@ class TensorFlowProfiler:
     def _build_step_fn(
         self,
         has_ops: bool,
-        compiled_fn: Optional[Callable[..., object]],
-        tf_inputs: list[object],
+        compiled_fn: Optional[Callable[..., EagerValue]],
+        tf_inputs: list[EagerValue],
         device: Optional[str],
-    ) -> Callable[[], object]:
+    ) -> Callable[[], EagerValue]:
         """Build execution step function with device context and synchronization.
 
         Args:
@@ -175,7 +178,7 @@ class TensorFlowProfiler:
         """
         dev_ctx = tf.device(device) if device and tf is not None else None
 
-        def _execute_step() -> object:
+        def _execute_step() -> EagerValue:
             """Execute a single step on TensorFlow.
 
             Returns:
@@ -197,14 +200,14 @@ class TensorFlowProfiler:
             for t in tf_inputs:
                 accum = tf.add(accum, t)
             _sync_tf_result(accum)
-            return accum
+            return cast(EagerValue, accum)
 
         return _execute_step
 
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], object]],
+        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
         device: Optional[str] = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -227,7 +230,7 @@ class TensorFlowProfiler:
         tf_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Optional[Callable[..., object]] = None
+        compiled_fn: Optional[Callable[..., EagerValue]] = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)

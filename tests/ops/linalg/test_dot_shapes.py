@@ -1,8 +1,21 @@
 """Unit tests for Dot and ApplyOverAxes shape inference across 1D, 2D, and ND arrays."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+from hypothesis import given
+from hypothesis import strategies as st
+from ml_ecosystem_snapshots.compliance import validate_matmul_shapes
+
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.dot import Dot
 from ml_switcheroo_compiler.ops.stats.descriptive import ApplyOverAxes
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _make_tensor(shape: tuple[int, ...]) -> Tensor:
@@ -72,8 +85,8 @@ def test_dot_infer_shape_nd_contractions() -> None:
 
         shape_metadata = ()
 
-    assert op.infer_shape(DummyWithMetadata(), DummyWithMetadata()) == (3, 4)
-    assert op.infer_shape(DummyWithEmptyMetadata(), [2, 3]) == (2, 3)
+    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithMetadata)(), cast("Callable[..., EagerTensorProtocol]", DummyWithMetadata)()) == (3, 4)
+    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
     assert op.infer_shape("not_a_shape", "also_not") == ()
 
 
@@ -95,11 +108,6 @@ def test_apply_over_axes_shape_inference() -> None:
 
     # Fallback
     assert op.infer_shape(None, None) == ()
-
-
-from hypothesis import given
-from hypothesis import strategies as st
-from ml_ecosystem_snapshots.compliance import validate_matmul_shapes
 
 
 @given(k=st.integers(min_value=1, max_value=32))

@@ -1,3 +1,9 @@
+"""Tests for test_reductions."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 from unittest.mock import patch
 
@@ -7,8 +13,12 @@ import ml_switcheroo_compiler.ops.reductions.frontend as rd
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-def test_reductions_coverage():
+
+def test_reductions_coverage() -> None:
+    """Test function test_reductions_coverage."""
     config.eager_mode = True
     t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
@@ -24,26 +34,33 @@ def test_reductions_coverage():
         global_tracing_state.is_tracing = True
 
         class DummyGraph:
-            name = "dummy"
-            nodes = {}
+            """Test class DummyGraph."""
 
-            def add_node(self, node):
+            name = "dummy"
+            nodes = cast("dict[str, EagerTensorProtocol]", {})
+
+            def add_node(self, node: EagerValue) -> None:
+                """Test function add_node."""
                 pass
 
-        global_tracing_state.active_graph = DummyGraph()
+        setattr(global_tracing_state, "active_graph", DummyGraph())
 
         import ml_switcheroo_compiler.ops.shape.utils as shape_utils
 
         orig_emit = shape_utils._emit_shape_node
 
         class DummyOp:
-            def __call__(self, *args, **kwargs):
+            """Test class DummyOp."""
+
+            def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+                """Test function __call__."""
                 return "reduction"
 
-            def infer_shape(self, *args, **kwargs):
+            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+                """Test function infer_shape."""
                 return ()
 
-        shape_utils._emit_shape_node = lambda *args, **kwargs: DummyOp()
+        setattr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
         try:
             assert rd.sum(t) is not None
             assert rd.max(t) is not None

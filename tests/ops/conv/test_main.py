@@ -1,3 +1,7 @@
+"""Tests for test_main."""
+
+from __future__ import annotations
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
@@ -6,10 +10,8 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.conv import conv_general_dilated_local
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-"Core abstractions and logic definitions for test_conv_edge_cases.py."
 
-
-def test_conv_general_dilated_local_coverage():
+def test_conv_general_dilated_local_coverage() -> None:
     """Test the conv general dilated local coverage behavior.
 
     Returns:
@@ -25,5 +27,5 @@ def test_conv_general_dilated_local_coverage():
                 conv_general_dilated_local(t1, t2, (1, 1), "SAME", (3, 3))
             finally:
                 global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

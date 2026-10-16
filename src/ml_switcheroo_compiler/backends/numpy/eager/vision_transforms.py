@@ -18,11 +18,11 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 @numpy_eager_registry.register("RandomShear")
 def _np_random_shear(
     backend_module: ModuleType,
-    images: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     y_factor: tuple[float, float] | float,
     x_factor: tuple[float, float] | float | None = None,
     **kwargs: Union[float, int, str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_random_shear operation.
 
     Args:
@@ -41,10 +41,10 @@ def _np_random_shear(
 @numpy_eager_registry.register("RandomPerspective")
 def _np_random_perspective(
     backend_module: ModuleType,
-    images: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     factor: float,
     **kwargs: Union[float, int, str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_random_perspective operation.
 
     Args:
@@ -62,11 +62,11 @@ def _np_random_perspective(
 @numpy_eager_registry.register("RandomElasticTransform")
 def _np_random_elastic_transform(
     backend_module: ModuleType,
-    images: np.ndarray,
+    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     alpha: float,
     sigma: float,
     **kwargs: Union[float, int, str, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_random_elastic_transform operation.
 
     Args:

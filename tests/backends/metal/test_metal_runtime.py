@@ -1,7 +1,10 @@
 """Exhaustive unit and runtime tests for Metal backend and MSL templates."""
 
+from __future__ import annotations
+
 import os
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -10,6 +13,11 @@ import yaml
 from ml_switcheroo_compiler.backends.hardware_config_models import HardwareTemplatesConfig
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_msl_templates_consolidation() -> None:
@@ -26,23 +34,23 @@ def test_msl_templates_consolidation() -> None:
     # Unary ops
     for op in ("abs", "cos", "exp", "gelu", "log", "neg", "relu", "sigmoid", "silu", "sin", "sqrt", "tanh"):
         assert op in templates
-        assert "kernel void" in templates[op].body
-        assert len(templates[op].workgroup_size) == 3
+        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
+        assert len(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "workgroup_size"))) == 3
 
     # Binary ops
     for op in ("add", "sub", "mul", "div", "pow", "maximum", "minimum"):
         assert op in templates
-        assert "kernel void" in templates[op].body
+        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
 
     # Reductions
     for op in ("reducesum", "reducemean", "reducemax", "reducemin", "sum"):
         assert op in templates
-        assert "kernel void" in templates[op].body
+        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
 
     # Matrix multiplication and vision
     for op in ("matmul", "batchmatmul", "conv2d", "depthwise_conv2d", "maxpool2d", "avgpool2d", "multihead_attention"):
         assert op in templates
-        assert "kernel void" in templates[op].body
+        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
 
 
 def test_metal_code_generator_comprehensive() -> None:
@@ -113,8 +121,8 @@ def test_metal_runner_ctypes_buffer_and_execution() -> None:
         in_b = np.array([4.0, 5.0, 6.0], dtype=np.float32)
         res = runner.execute_kernel("kernel_source", "add_kernel", in_a, in_b)
 
-        assert len(res) == 3
-        assert np.allclose(res, [10.0, 20.0, 30.0])
+        assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 3
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, [10.0, 20.0, 30.0])
         assert mock_enc.dispatchThreads_threadsPerThreadgroup_.called
         assert mock_cmd.commit.called
         assert mock_cmd.waitUntilCompleted.called

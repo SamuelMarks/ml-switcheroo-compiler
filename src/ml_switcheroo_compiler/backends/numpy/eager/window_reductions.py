@@ -1,14 +1,16 @@
 """Numpy Window Reductions."""
 
-# ruff: noqa: E402, E501, F403
+from types import ModuleType
+from typing import Callable, cast
+
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window, _segment_sum
 
 
 @numpy_eager_registry.register("ReduceWindow")
-def _np_reduce_window(backend_module, *args, **kwargs):
+def _np_reduce_window(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_reduce_window operation.
 
     Args:
@@ -19,11 +21,11 @@ def _np_reduce_window(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return _reduce_window(*args, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _reduce_window)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("SegmentSum")
-def _np_segment_sum(backend_module, *args, **kwargs):
+def _np_segment_sum(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_segment_sum operation.
 
     Args:
@@ -34,11 +36,11 @@ def _np_segment_sum(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    return _segment_sum(*args, **kwargs)
+    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _segment_sum)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("SegmentMax")
-def _np_segment_max(backend_module, data, segment_ids, num_segments=None):
+def _np_segment_max(backend_module: ModuleType, data: EagerValue, segment_ids: EagerValue, num_segments: EagerValue = None) -> EagerValue:
     """Evaluate _np_segment_max operation.
 
     Args:
@@ -51,17 +53,17 @@ def _np_segment_max(backend_module, data, segment_ids, num_segments=None):
             tuple[int, ...]: Result.
     """
     if num_segments is None:
-        num_segments = np.max(segment_ids) + 1
-    out = np.full((num_segments,) + data.shape[1:], -np.inf, dtype=data.dtype)
-    for i in range(num_segments):
+        num_segments = getattr(np, "max")(segment_ids) + 1
+    out = np.full((num_segments,) + getattr(data, "shape")[1:], -np.inf, dtype=getattr(data, "dtype"))
+    for i in range(cast("int", num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            out[i] = np.max(data[mask], axis=0)
+            cast(EagerTensorProtocol, out)[i] = np.max(getattr(data, "__getitem__")(mask), axis=0)
     return out
 
 
 @numpy_eager_registry.register("SegmentMin")
-def _np_segment_min(backend_module, data, segment_ids, num_segments=None):
+def _np_segment_min(backend_module: ModuleType, data: EagerValue, segment_ids: EagerValue, num_segments: EagerValue = None) -> EagerValue:
     """Evaluate _np_segment_min operation.
 
     Args:
@@ -74,17 +76,17 @@ def _np_segment_min(backend_module, data, segment_ids, num_segments=None):
             tuple[int, ...]: Result.
     """
     if num_segments is None:
-        num_segments = np.max(segment_ids) + 1
-    out = np.full((num_segments,) + data.shape[1:], np.inf, dtype=data.dtype)
-    for i in range(num_segments):
+        num_segments = getattr(np, "max")(segment_ids) + 1
+    out = np.full((num_segments,) + getattr(data, "shape")[1:], np.inf, dtype=getattr(data, "dtype"))
+    for i in range(cast("int", num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            out[i] = np.min(data[mask], axis=0)
+            cast(EagerTensorProtocol, out)[i] = np.min(getattr(data, "__getitem__")(mask), axis=0)
     return out
 
 
 @numpy_eager_registry.register("SegmentProd")
-def _np_segment_prod(backend_module, data, segment_ids, num_segments=None):
+def _np_segment_prod(backend_module: ModuleType, data: EagerValue, segment_ids: EagerValue, num_segments: EagerValue = None) -> EagerValue:
     """Evaluate _np_segment_prod operation.
 
     Args:
@@ -97,12 +99,12 @@ def _np_segment_prod(backend_module, data, segment_ids, num_segments=None):
             tuple[int, ...]: Result.
     """
     if num_segments is None:
-        num_segments = np.max(segment_ids) + 1
-    out = np.ones((num_segments,) + data.shape[1:], dtype=data.dtype)
-    for i in range(num_segments):
+        num_segments = getattr(np, "max")(segment_ids) + 1
+    out = np.ones((num_segments,) + getattr(data, "shape")[1:], dtype=getattr(data, "dtype"))
+    for i in range(cast("int", num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            out[i] = np.prod(data[mask], axis=0)
+            cast(EagerTensorProtocol, out)[i] = np.prod(getattr(data, "__getitem__")(mask), axis=0)
     return out
 
 
@@ -127,7 +129,7 @@ def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int
 
 
 @numpy_eager_registry.register("AdaptiveAvgPool2D")
-def _np_adaptive_avg_pool2d(backend_module, operand, output_size: tuple[int, int], **kwargs):
+def _np_adaptive_avg_pool2d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int], **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_adaptive_avg_pool2d operation.
 
     Args:
@@ -159,7 +161,7 @@ def _np_adaptive_avg_pool2d(backend_module, operand, output_size: tuple[int, int
 
 
 @numpy_eager_registry.register("AdaptiveAvgPool3D")
-def _np_adaptive_avg_pool3d(backend_module, operand, output_size: tuple[int, int, int], **kwargs):
+def _np_adaptive_avg_pool3d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int, int], **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_adaptive_avg_pool3d operation.
 
     Args:
@@ -193,7 +195,7 @@ def _np_adaptive_avg_pool3d(backend_module, operand, output_size: tuple[int, int
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D")
-def _np_adaptive_max_pool3d(backend_module, operand, output_size: tuple[int, int, int], **kwargs):
+def _np_adaptive_max_pool3d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int, int], **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_adaptive_max_pool3d operation.
 
     Args:
@@ -227,7 +229,7 @@ def _np_adaptive_max_pool3d(backend_module, operand, output_size: tuple[int, int
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D_Indices")
-def _np_adaptive_max_pool3d_indices(backend_module, operand, output_size: tuple[int, int, int], **kwargs):
+def _np_adaptive_max_pool3d_indices(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int, int], **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_adaptive_max_pool3d_indices operation.
 
     Args:
@@ -244,7 +246,7 @@ def _np_adaptive_max_pool3d_indices(backend_module, operand, output_size: tuple[
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool2D")
-def _np_adaptive_max_pool2d(backend_module, operand, output_size: tuple[int, int], **kwargs):
+def _np_adaptive_max_pool2d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int], **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_adaptive_max_pool2d operation.
 
     Args:
@@ -276,7 +278,7 @@ def _np_adaptive_max_pool2d(backend_module, operand, output_size: tuple[int, int
 
 
 @numpy_eager_registry.register("FractionalAvgPool")
-def _np_fractional_avg_pool(backend_module, value, **kwargs):
+def _np_fractional_avg_pool(backend_module: ModuleType, value: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_fractional_avg_pool operation.
 
     Args:
@@ -291,7 +293,7 @@ def _np_fractional_avg_pool(backend_module, value, **kwargs):
 
 
 @numpy_eager_registry.register("FractionalMaxPool")
-def _np_fractional_max_pool(backend_module, value, **kwargs):
+def _np_fractional_max_pool(backend_module: ModuleType, value: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _np_fractional_max_pool operation.
 
     Args:

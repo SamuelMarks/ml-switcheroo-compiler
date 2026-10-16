@@ -1,9 +1,15 @@
 """Tests for maxwell."""
 
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.random.continuous.maxwell import maxwell
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_maxwell() -> None:
@@ -11,5 +17,5 @@ def test_maxwell() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.maxwell"], "_dispatch_random") as mock_dispatch:
         mock_dispatch.return_value = "mocked_result"
         result = maxwell(1, 2, a=3)
-        assert result == "mocked_result"
+        assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
         mock_dispatch.assert_called_once_with("maxwell", 1, 2, a=3)

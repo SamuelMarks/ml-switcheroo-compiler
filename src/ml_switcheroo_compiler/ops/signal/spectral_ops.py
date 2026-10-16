@@ -1,12 +1,13 @@
-"""Module spectral_ops.py."""
-
-from .common_ops import _emit_signal_node  # noqa: F401
-
-# ruff: noqa: E402, E501, F403
 """Signal processing operations."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Optional  # noqa: F401
+from typing import TYPE_CHECKING, Callable, Optional, Union, cast  # noqa: F401
+
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -15,12 +16,14 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
+from .common_ops import _emit_signal_node  # noqa: F401
+
 
 @register_op("Welch")
 class Welch(OpDef):
     """Welch."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -66,7 +69,7 @@ class WelchConfig:
 def welch(
     x: Tensor,
     config_params: Optional[WelchConfig] = None,
-):
+) -> EagerValue:
     """Evaluate welch operation.
 
     Args:
@@ -81,19 +84,22 @@ def welch(
 
     if config.eager_mode:
         backend = get_active_backend()
-        f, Pxx = backend.execute_op(
-            "Welch",
-            x.data,
-            fs=config_params.window_config.fs,
-            window=config_params.window_config.window,
-            nperseg=config_params.window_config.nperseg,
-            noverlap=config_params.window_config.noverlap,
-            nfft=config_params.window_config.nfft,
-            detrend=config_params.filter_state.detrend,
-            return_onesided=config_params.filter_state.return_onesided,
-            scaling=config_params.filter_state.scaling,
-            axis=config_params.filter_state.axis,
-            average=config_params.filter_state.average,
+        f, Pxx = cast(
+            "tuple[TensorLike, TensorLike]",
+            backend.execute_op(
+                "Welch",
+                x.data,
+                fs=config_params.window_config.fs,
+                window=config_params.window_config.window,
+                nperseg=config_params.window_config.nperseg,
+                noverlap=config_params.window_config.noverlap,
+                nfft=config_params.window_config.nfft,
+                detrend=config_params.filter_state.detrend,
+                return_onesided=config_params.filter_state.return_onesided,
+                scaling=config_params.filter_state.scaling,
+                axis=config_params.filter_state.axis,
+                average=config_params.filter_state.average,
+            ),
         )
         return (
             Tensor(f, TensorConfig(f.shape, x.dtype, x.device)),
@@ -103,32 +109,35 @@ def welch(
     f_shape = (256,)
     Pxx_shape = (256,)
 
-    f, Pxx = _emit_linalg_node(
-        "Welch",
-        [x],
-        {
-            "fs": config_params.window_config.fs,
-            "window": config_params.window_config.window,
-            "nperseg": config_params.window_config.nperseg,
-            "noverlap": config_params.window_config.noverlap,
-            "nfft": config_params.window_config.nfft,
-            "detrend": config_params.filter_state.detrend,
-            "return_onesided": config_params.filter_state.return_onesided,
-            "scaling": config_params.filter_state.scaling,
-            "axis": config_params.filter_state.axis,
-            "average": config_params.filter_state.average,
-        },
-        [f_shape, Pxx_shape],
-        [x.dtype, x.dtype],
+    f_out, Pxx_out = cast(
+        "tuple[Tensor, Tensor]",
+        _emit_linalg_node(
+            "Welch",
+            [x],
+            {
+                "fs": config_params.window_config.fs,
+                "window": config_params.window_config.window,
+                "nperseg": config_params.window_config.nperseg,
+                "noverlap": config_params.window_config.noverlap,
+                "nfft": config_params.window_config.nfft,
+                "detrend": config_params.filter_state.detrend,
+                "return_onesided": config_params.filter_state.return_onesided,
+                "scaling": config_params.filter_state.scaling,
+                "axis": config_params.filter_state.axis,
+                "average": config_params.filter_state.average,
+            },
+            [f_shape, Pxx_shape],
+            [x.dtype, x.dtype],
+        ),
     )
-    return f, Pxx
+    return f_out, Pxx_out
 
 
 @register_op("WindowHann")
 class WindowHann(OpDef):
     """WindowHann class."""
 
-    def infer_shape(self, length: int, **kwargs):
+    def infer_shape(self, length: int, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -145,7 +154,7 @@ class WindowHann(OpDef):
 class WindowHamming(OpDef):
     """WindowHamming class."""
 
-    def infer_shape(self, length: int, **kwargs):
+    def infer_shape(self, length: int, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -162,7 +171,7 @@ class WindowHamming(OpDef):
 class Stft(OpDef):
     """Stft class."""
 
-    def infer_shape(self, x, nfft: int, noverlap: int = 0, **kwargs):
+    def infer_shape(self, x: EagerTensorProtocol, nfft: int, noverlap: int = 0, **kwargs: EagerValue) -> EagerValue:
         """infer_shape function.
 
         Args:
@@ -190,7 +199,7 @@ class Stft(OpDef):
 class Istft(OpDef):
     """Istft class."""
 
-    def infer_shape(self, x, nfft: int, noverlap: int = 0, **kwargs):
+    def infer_shape(self, x: EagerTensorProtocol, nfft: int, noverlap: int = 0, **kwargs: EagerValue) -> EagerValue:
         """infer_shape function.
 
         Args:
@@ -215,7 +224,7 @@ class Istft(OpDef):
         return x.shape[:-2] + (L,)
 
 
-def window_hann(length: int):
+def window_hann(length: int) -> EagerValue:
     """Generate a Hann window.
 
     Args:
@@ -232,7 +241,7 @@ def window_hann(length: int):
     return _emit_shape_node("WindowHann", [], {"length": length}, (length,), "float32")
 
 
-def window_hamming(length: int):
+def window_hamming(length: int) -> EagerValue:
     """Generate a Hamming window.
 
     Args:
@@ -248,7 +257,7 @@ def window_hamming(length: int):
     return _emit_shape_node("WindowHamming", [], {"length": length}, (length,), "float32")
 
 
-def stft(x: Tensor, nfft: int, noverlap: int = 0):
+def stft(x: Tensor, nfft: int, noverlap: int = 0) -> EagerValue:
     """Compute the Short Time Fourier Transform.
 
     Args:
@@ -262,13 +271,13 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
-        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)
-    return _emit_shape_node("Stft", [x], {"nfft": nfft, "noverlap": noverlap}, out_shape, "complex64")
+        out_shape = getattr(data, "shape", getattr(Stft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap))
+        return Tensor(data, cast("Callable[..., TensorConfig]", TensorConfig)(out_shape, x.dtype, x.device))
+    out_shape = getattr(Stft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap)
+    return _emit_shape_node("Stft", [x], {"nfft": nfft, "noverlap": noverlap}, cast("Sequence[Union[int, str]]", out_shape), "complex64")
 
 
-def istft(x: Tensor, nfft: int, noverlap: int = 0):
+def istft(x: Tensor, nfft: int, noverlap: int = 0) -> EagerValue:
     """Compute the Inverse Short Time Fourier Transform.
 
     Args:
@@ -282,7 +291,7 @@ def istft(x: Tensor, nfft: int, noverlap: int = 0):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
-        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)
-    return _emit_shape_node("Istft", [x], {"nfft": nfft, "noverlap": noverlap}, out_shape, "float32")
+        out_shape = getattr(data, "shape", getattr(Istft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap))
+        return Tensor(data, cast("Callable[..., TensorConfig]", TensorConfig)(out_shape, x.dtype, x.device))
+    out_shape = getattr(Istft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap)
+    return _emit_shape_node("Istft", [x], {"nfft": nfft, "noverlap": noverlap}, cast("Sequence[Union[int, str]]", out_shape), "float32")

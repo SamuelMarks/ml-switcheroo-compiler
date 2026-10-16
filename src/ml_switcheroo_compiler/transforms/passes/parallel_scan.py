@@ -1,12 +1,13 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Parallel scan transformation pass converting sequential scan into parallel scan trees."""
 
 from __future__ import annotations
 
 import os
-from typing import Any, cast
+from typing import cast
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 
@@ -26,11 +27,11 @@ def _load_scan_rules() -> dict[str, AttributeValue]:
     return {}
 
 
-def detect_associative_reduction(body_graph: Any, rules: dict[str, AttributeValue]) -> tuple[str, str] | None:
+def detect_associative_reduction(body_graph: IRGraph | None, rules: dict[str, AttributeValue]) -> tuple[str, str] | None:
     """Detect whether a scan body graph performs an associative reduction.
 
     Args:
-        body_graph (Any): The scan body graph or block.
+        body_graph (IRGraph | None): The scan body graph or block.
         rules (dict[str, AttributeValue]): Declarative associative scan rules.
 
     Returns:
@@ -40,7 +41,7 @@ def detect_associative_reduction(body_graph: Any, rules: dict[str, AttributeValu
         return None
 
     nodes = body_graph.nodes if isinstance(body_graph.nodes, dict) else {n.id: n for n in getattr(body_graph, "nodes", [])}
-    assoc_map = rules.get("associative_ops", {})
+    assoc_map = cast(dict[str, dict[str, str]], rules.get("associative_ops", {}))
 
     # Check non-input/output operational nodes
     compute_nodes = [n for n in nodes.values() if getattr(n, "op_type", "") not in ("Input", "Output")]
@@ -123,6 +124,3 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
         graph.nodes.update(new_nodes)
 
     return graph
-
-
-from ml_switcheroo_ir import AttributeValue

@@ -1,4 +1,9 @@
-def test_scan_and_attention():
+"""Tests for test_generator_scan_attention."""
+
+from __future__ import annotations
+
+
+def test_scan_and_attention() -> None:
     """Test Scan and Attention."""
     from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode

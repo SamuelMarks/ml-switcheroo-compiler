@@ -1,13 +1,10 @@
-"""Module affine.py."""
+"""Vision operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Vision operations."""
 from dataclasses import dataclass
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -27,7 +24,7 @@ class AffineConfig:
     data_format = None
 
 
-def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest"):
+def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> EagerValue:
     """Apply the given 2D affine transforms to the given images.
 
     Args:
@@ -41,11 +38,11 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AffineTransform", images.data, transforms.data, interpolation=interpolation)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
-def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor):
+def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> EagerValue:
     """Construct 2D/3D affine matrices from angles, shears, and zoom factors.
 
     Args:
@@ -68,12 +65,12 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, angles.dtype, angles.device),
+            TensorConfig(getattr(backend.array(data), "shape"), angles.dtype, angles.device),
         )
     return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
 
-def random_flip(images: Tensor, mode="horizontal_and_vertical", seed=None, **kwargs):
+def random_flip(images: Tensor, mode: EagerValue = "horizontal_and_vertical", seed: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Randomly flip images horizontally and/or vertically.
 
     Args:
@@ -90,7 +87,7 @@ def random_flip(images: Tensor, mode="horizontal_and_vertical", seed=None, **kwa
         data = backend.execute_op("RandomFlip", images.data, mode=mode, seed=seed)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
 
     kwargs = {"mode": mode, "seed": seed}
@@ -101,8 +98,8 @@ def random_rotation(
     images: Tensor,
     factor: float,
     config: AffineConfig | None = None,
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Randomly rotate images.
 
     Args:
@@ -124,7 +121,7 @@ def random_rotation(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomRotation",
@@ -138,7 +135,7 @@ def random_rotation(
     )
 
 
-def random_crop(images: Tensor, size, seed=None, **kwargs):
+def random_crop(images: Tensor, size: EagerValue, seed: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Randomly crop images.
 
     Args:
@@ -153,7 +150,7 @@ def random_crop(images: Tensor, size, seed=None, **kwargs):
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RandomCrop", images.data, size=size, seed=seed)
-        new_shape = list(backend.array(data).shape)
+        new_shape = list(getattr(backend.array(data), "shape"))
         return Tensor(backend.array(data), TensorConfig(tuple(new_shape), images.dtype, images.device))
 
     kwargs = {"size": size, "seed": seed}
@@ -164,8 +161,8 @@ def random_zoom(
     images: Tensor,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Randomly zoom images.
 
     Args:
@@ -188,7 +185,7 @@ def random_zoom(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomZoom",
@@ -208,8 +205,8 @@ def random_translation(
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
     config: AffineConfig | None = None,
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Randomly translate images.
 
     Args:
@@ -233,7 +230,7 @@ def random_translation(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomTranslation",
@@ -252,8 +249,8 @@ def random_shear(
     images: Tensor,
     y_factor: float | tuple[float, float],
     x_factor: float | tuple[float, float] | None = None,
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Randomly shear images.
 
     Args:
@@ -276,7 +273,7 @@ def random_shear(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomShear",
@@ -294,8 +291,8 @@ def random_shear(
 def random_perspective(
     images: Tensor,
     factor: float | tuple[float, float],
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Randomly apply perspective transform to images.
 
     Args:
@@ -316,7 +313,7 @@ def random_perspective(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomPerspective",
@@ -334,8 +331,8 @@ def random_elastic_transform(
     images: Tensor,
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
-    **kwargs,
-):
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Randomly apply elastic transform to images.
 
     Args:
@@ -358,7 +355,7 @@ def random_elastic_transform(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomElasticTransform",
@@ -373,7 +370,7 @@ def random_elastic_transform(
     )
 
 
-def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False):
+def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> EagerValue:
     """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
@@ -387,7 +384,7 @@ def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = Fals
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AffineGrid", theta.data, size=size, align_corners=align_corners)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, theta.dtype, theta.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), theta.dtype, theta.device))
     return _emit_shape_node("AffineGrid", [theta], {"size": size, "align_corners": align_corners}, (), theta.dtype)
 
 
@@ -397,7 +394,7 @@ def grid_sample(
     mode: str = "bilinear",
     padding_mode: str = "zeros",
     align_corners: bool = False,
-):
+) -> EagerValue:
     """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
 
     Args:
@@ -420,7 +417,7 @@ def grid_sample(
             padding_mode=padding_mode,
             align_corners=align_corners,
         )
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     return _emit_shape_node(
         "GridSample",
         [input, grid],
@@ -436,7 +433,7 @@ class AffineGenerator(OpDef):
 
     op_name = "AffineGenerator"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -456,7 +453,7 @@ class AffineGrid(OpDef):
 
     op_name = "AffineGrid"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -476,7 +473,7 @@ class AffineTransform(OpDef):
 
     op_name = "AffineTransform"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:
@@ -496,7 +493,7 @@ class PerspectiveTransform(OpDef):
 
     op_name = "PerspectiveTransform"
 
-    def infer_shape(self, inputs, *args, **kwargs):
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer shape.
 
         Args:

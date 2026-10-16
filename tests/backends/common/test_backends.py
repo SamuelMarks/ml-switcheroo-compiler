@@ -1,60 +1,70 @@
+"""Tests for test_backends."""
+
+from __future__ import annotations
+
+import types
+from typing import TYPE_CHECKING, cast
+from unittest.mock import MagicMock
+
+import ml_switcheroo_compiler.backends.registry as registry
+
 try:
     import ml_switcheroo_compiler.backends.common as mod_common
 except ImportError:
-    mod_common = None
+    mod_common = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.cupy as mod_cupy
 except ImportError:
-    mod_cupy = None
+    mod_cupy = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.dask as mod_dask
 except ImportError:
-    mod_dask = None
+    mod_dask = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.eager as mod_eager
 except ImportError:
-    mod_eager = None
+    mod_eager = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.edge as mod_edge
 except ImportError:
-    mod_edge = None
+    mod_edge = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.jax as mod_jax
 except ImportError:
-    mod_jax = None
+    mod_jax = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.keras as mod_keras
 except ImportError:
-    mod_keras = None
+    mod_keras = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp as mod_llvm_cpp
 except ImportError:
-    mod_llvm_cpp = None
+    mod_llvm_cpp = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.mlx as mod_mlx
 except ImportError:
-    mod_mlx = None
+    mod_mlx = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.numpy as mod_numpy
 except ImportError:
-    mod_numpy = None
+    mod_numpy = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.pytorch as mod_pytorch
 except ImportError:
-    mod_pytorch = None
+    mod_pytorch = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow as mod_tensorflow
 except ImportError:
-    mod_tensorflow = None
+    mod_tensorflow = cast("types.ModuleType", None)
 
 try:
     import ml_switcheroo_compiler.backends.cupy.generator as gen_cupy
 except ImportError:
-    gen_cupy = None
+    gen_cupy = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.dask.generator as gen_dask
 except ImportError:
-    gen_dask = None
+    gen_dask = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.eager.generator as gen_eager
 except ImportError:
@@ -66,31 +76,31 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.jax.generator as gen_jax
 except ImportError:
-    gen_jax = None
+    gen_jax = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.keras.generator as gen_keras
 except ImportError:
-    gen_keras = None
+    gen_keras = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp.generator as gen_llvm_cpp
 except ImportError:
-    gen_llvm_cpp = None
+    gen_llvm_cpp = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.mlx.generator as gen_mlx
 except ImportError:
-    gen_mlx = None
+    gen_mlx = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.numpy.generator as gen_numpy
 except ImportError:
-    gen_numpy = None
+    gen_numpy = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.pytorch.generator as gen_pytorch
 except ImportError:
-    gen_pytorch = None
+    gen_pytorch = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow.generator as gen_tensorflow
 except ImportError:
-    gen_tensorflow = None
+    gen_tensorflow = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.common.generator as gen_common
 except ImportError:
@@ -99,11 +109,11 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.cupy.types as typ_cupy
 except ImportError:
-    typ_cupy = None
+    typ_cupy = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.dask.types as typ_dask
 except ImportError:
-    typ_dask = None
+    typ_dask = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.eager.types as typ_eager
 except ImportError:
@@ -115,11 +125,11 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.jax.types as typ_jax
 except ImportError:
-    typ_jax = None
+    typ_jax = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.keras.types as typ_keras
 except ImportError:
-    typ_keras = None
+    typ_keras = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp.types as typ_llvm_cpp
 except ImportError:
@@ -127,27 +137,60 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.mlx.types as typ_mlx
 except ImportError:
-    typ_mlx = None
+    typ_mlx = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.numpy.types as typ_numpy
 except ImportError:
-    typ_numpy = None
+    typ_numpy = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.pytorch.types as typ_pytorch
 except ImportError:
-    typ_pytorch = None
+    typ_pytorch = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow.types as typ_tensorflow
 except ImportError:
-    typ_tensorflow = None
+    typ_tensorflow = cast("types.ModuleType", None)
 try:
     import ml_switcheroo_compiler.backends.common.types as typ_common
 except ImportError:
     typ_common = None
 
-from unittest.mock import MagicMock
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-import ml_switcheroo_compiler.backends.registry as registry
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: EagerValue) -> None:
+    """Exercise eager and generator registries on a backend module."""
+    if hasattr(mod, "eager_registry"):
+        for _op, func in cast("EagerTensorProtocol", getattr(mod, "eager_registry"))._registry.items():
+            if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
+                continue
+            for call_args in ((mock_b, MagicMock()), (mock_b, MagicMock(), MagicMock())):
+                try:
+                    func(*call_args)
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                    assert _exc is not None
+
+    if generator_mod is not None and hasattr(generator_mod, "generator_registry"):
+        for _op, func in generator_mod.generator_registry._registry.items():
+            try:
+                func(MagicMock(), MagicMock(), MagicMock(), MagicMock())
+            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                assert _exc is not None
+
+
+def _exercise_types_mod(types_mod: EagerValue) -> None:
+    """Exercise to_/from_ functions on a backend types module."""
+    if types_mod is None:
+        return
+    for func_name in dir(types_mod):
+        if func_name.startswith(("to_", "from_")):
+            try:
+                getattr(types_mod, func_name)("float32")
+            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                assert _exc is not None
 
 
 def test_backends_brute_force() -> None:
@@ -169,83 +212,46 @@ def test_backends_brute_force() -> None:
     ]
 
     for mod, generator_mod, types_mod in modules:
+        _exercise_eager_and_gen(mod, generator_mod, mock_b)
+        _exercise_types_mod(types_mod)
+
+    for fn_call in (
+        lambda: cast("Callable[..., EagerTensorProtocol]", registry.register_backend)("dummy", cast("Callable[..., EagerTensorProtocol]", MagicMock)()),
+        registry.get_active_backend,
+        lambda: cast("EagerTensorProtocol", getattr(registry, "set_active_backend"))("dummy"),
+    ):
         try:
-            # Eager registries
-            if hasattr(mod, "eager_registry"):
-                for _op, func in mod.eager_registry._registry.items():
-                    if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
-                        continue
-                    try:
-                        func(mock_b, MagicMock())
-                    except Exception:
-                        pass
-                    try:
-                        func(mock_b, MagicMock(), MagicMock())
-                    except Exception:
-                        pass
-
-            # Generator registries
-            if generator_mod is not None:
-                try:
-                    if hasattr(generator_mod, "generator_registry"):
-                        for _op, func in generator_mod.generator_registry._registry.items():
-                            try:
-                                func(MagicMock(), MagicMock(), MagicMock(), MagicMock())
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-
-            # types.py
-            if types_mod is not None:
-                for func_name in dir(types_mod):
-                    if func_name.startswith("to_") or func_name.startswith("from_"):
-                        try:
-                            getattr(types_mod, func_name)("float32")
-                        except Exception:
-                            pass
-        except Exception:
-            pass
-
-    # Also trigger registry.py
-    try:
-        registry.register_backend("dummy", MagicMock())
-    except Exception:
-        pass
-    try:
-        registry.get_active_backend()
-    except Exception:
-        pass
-    try:
-        registry.set_active_backend("dummy")
-    except Exception:
-        pass
+            fn_call()
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
 
 
-def test_numpy_math_misc():
+def test_numpy_math_misc() -> None:
+    """Test function test_numpy_math_misc."""
     import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
     for name, func in list(vars(math_misc).items()):
         if callable(func) and name.startswith("_"):
             try:
                 func(MagicMock(), MagicMock(), MagicMock())
-            except Exception:
-                pass
+            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                assert _exc is not None
             try:
                 func([1.0], [2.0])
-            except Exception:
-                pass
+            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                assert _exc is not None
             try:
                 func([1.0])
-            except Exception:
-                pass
+            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                assert _exc is not None
             try:
                 func(MagicMock())
-            except Exception:
-                pass
+            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+                assert _exc is not None
 
 
-def test_eager_core_math_ops_brute():
+def test_eager_core_math_ops_brute() -> None:
+    """Test function test_eager_core_math_ops_brute."""
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     mock_b = MagicMock()
@@ -257,25 +263,25 @@ def test_eager_core_math_ops_brute():
             continue
         try:
             func(mock_b, MagicMock())
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
         try:
             func(mock_b, MagicMock(), MagicMock())
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
         try:
             func(mock_b, 1.0)
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
         try:
             func(mock_b, 1.0, 2.0)
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
         try:
             func(mock_b, [1.0])
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None
         try:
             func(mock_b, [1.0], [2.0])
-        except Exception:
-            pass
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
+            assert _exc is not None

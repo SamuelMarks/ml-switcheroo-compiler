@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
 import builtins
 import functools
-from collections.abc import Iterator  # noqa: F401
-from typing import Callable  # noqa: F401
+from collections.abc import Iterable, Iterator
+from typing import Callable, TypeVar, Union, cast
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+T = TypeVar("T")
+PyTree = Union[EagerValue, "TreeDef"]
 
 
 class TreeDef:
@@ -16,14 +20,14 @@ class TreeDef:
         self,
         node_type: type,
         children_defs: list[TreeDef] | None = None,
-        keys=None,
+        keys: list[str | int] | None = None,
     ) -> None:
         """Initialize.
 
         Args:
             node_type (type): The type of the node.
             children_defs (list[TreeDef] | None): The children definitions.
-            keys (list[object] | None): The keys for dictionary nodes.
+            keys (list[str | int] | None): The keys for dictionary nodes.
         """
         self.node_type = node_type
         self.children_defs = children_defs or []
@@ -45,11 +49,11 @@ class TreeDef:
         """
         return hash(str(self.node_type) + str(self.children_defs))
 
-    def __eq__(self, other) -> bool:
+    def _eq(self, other: EagerValue) -> bool:
         """Check equality with another TreeDef.
 
         Args:
-            other (object): The other object to compare with.
+            other (EagerValue | TreeDef): The other object to compare with.
 
         Returns:
             bool: True if equal, False otherwise.
@@ -59,19 +63,24 @@ class TreeDef:
         return self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
 
 
-def tree_flatten(tree):
+setattr(TreeDef, "__eq__", TreeDef._eq)
+
+
+def tree_flatten(tree: PyTree) -> tuple[list[EagerValue], TreeDef]:
     """Flatten a PyTree into a list of leaves and an auxiliary treedef.
 
     Args:
-        tree (object): The tree to flatten.
+        tree (PyTree): The tree to flatten.
 
     Returns:
-        tuple[list[object], TreeDef]: The flattened leaves and the tree definition.
+        tuple[list[EagerValue], TreeDef]: The flattened leaves and the tree definition.
     """
+    from typing import cast
+
     if isinstance(tree, dict):
         keys = sorted(tree.keys())
-        leaves = []
-        children_defs = []
+        leaves: list[EagerValue] = []
+        children_defs: list[TreeDef] = []
         for k in keys:
             child_leaves, child_def = tree_flatten(tree[k])
             leaves.extend(child_leaves)
@@ -85,16 +94,17 @@ def tree_flatten(tree):
             leaves.extend(child_leaves)
             children_defs.append(child_def)
         return leaves, TreeDef(type(tree), children_defs)
-    return [tree], TreeDef(type(None))
+    return [cast(EagerValue, tree)], TreeDef(type(None))
 
 
-def _unflatten_leaf(leaves_it):
+def _unflatten_leaf(leaves_it: Iterator[EagerValue]) -> EagerValue:
     """Unflatten a leaf node.
 
     Args:
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[EagerValue]): Iterator of leaves.
 
-    Returns: Tensor: The leaf.
+    Returns:
+        EagerValue: The leaf.
 
     Raises:
         ValueError: If there are too few leaves.
@@ -106,14 +116,15 @@ def _unflatten_leaf(leaves_it):
         raise ValueError(msg) from None
 
 
-def _unflatten_dict(t_def: TreeDef, leaves_it):
+def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[EagerValue]) -> dict[str | int, EagerValue]:
     """Unflatten a dict node.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[EagerValue]): Iterator of leaves.
 
-    Returns: Tensor: The unflattened dict.
+    Returns:
+        dict[str | int, EagerValue]: The unflattened dict.
 
     Raises:
         ValueError: If the dictionary TreeDef has no keys.
@@ -124,27 +135,30 @@ def _unflatten_dict(t_def: TreeDef, leaves_it):
     return {k: _unflatten_node(c_def, leaves_it) for k, c_def in zip(t_def.keys, t_def.children_defs)}
 
 
-def _unflatten_sequence(t_def: TreeDef, leaves_it):
+def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[EagerValue]) -> EagerValue:
     """Unflatten a list or tuple node.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[EagerValue]): Iterator of leaves.
 
-    Returns: Tensor: The unflattened sequence.
+    Returns:
+        EagerValue: The unflattened sequence.
     """
     children = [_unflatten_node(c_def, leaves_it) for c_def in t_def.children_defs]
-    return t_def.node_type(children)
+    res: EagerValue = t_def.node_type(children)
+    return res
 
 
-def _unflatten_node(t_def: TreeDef, leaves_it):
+def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[EagerValue]) -> EagerValue:
     """Unflatten a single node based on its TreeDef.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[EagerValue]): Iterator of leaves.
 
-    Returns: Tensor: The unflattened node.
+    Returns:
+        EagerValue: The unflattened node.
 
     Raises:
         ValueError: If the node_type is unsupported.
@@ -160,14 +174,15 @@ def _unflatten_node(t_def: TreeDef, leaves_it):
     raise ValueError(msg)
 
 
-def tree_unflatten(treedef: TreeDef, leaves):
+def tree_unflatten(treedef: TreeDef, leaves: Iterable[EagerValue]) -> EagerValue:
     """Reconstruct a PyTree from a treedef and a list of leaves.
 
     Args:
         treedef (TreeDef): The TreeDef to use for reconstruction.
-        leaves (list[object]): The list of leaves to unflatten.
+        leaves (Iterable[EagerValue]): The list of leaves to unflatten.
 
-    Returns: Tensor: The reconstructed PyTree.
+    Returns:
+        EagerValue: The reconstructed PyTree.
 
     Raises:
         ValueError: If there are too many leaves.
@@ -185,15 +200,16 @@ def tree_unflatten(treedef: TreeDef, leaves):
     return res
 
 
-def tree_map(f, tree, *rest):
+def tree_map(f: Callable[..., EagerValue], tree: PyTree, *rest: PyTree) -> EagerValue:
     """Map a function over the leaves of a PyTree.
 
     Args:
-        f (Callable): The function to apply.
-        tree (object): The primary PyTree.
-        *rest (object): Additional PyTrees of the same structure.
+        f (Callable[..., EagerValue]): The function to apply.
+        tree (PyTree): The primary PyTree.
+        *rest (PyTree): Additional PyTrees of the same structure.
 
-    Returns: Tensor: A new PyTree with the function applied to its leaves.
+    Returns:
+        EagerValue: A new PyTree with the function applied to its leaves.
 
     Raises:
         ValueError: If the trees do not have the same structure.
@@ -211,25 +227,25 @@ def tree_map(f, tree, *rest):
     return tree_unflatten(treedef, mapped_leaves)
 
 
-def tree_leaves(tree):
+def tree_leaves(tree: PyTree) -> list[EagerValue]:
     """Get the leaves of a PyTree.
 
     Args:
-        tree (object): The tree to extract leaves from.
+        tree (PyTree): The tree to extract leaves from.
 
     Returns:
-        list[object]: A list of leaves.
+        list[EagerValue]: A list of leaves.
     """
     leaves, _ = tree_flatten(tree)
 
     return leaves
 
 
-def tree_structure(tree) -> TreeDef:
+def tree_structure(tree: PyTree) -> TreeDef:
     """Get the structure of a PyTree.
 
     Args:
-        tree (object): The tree to extract structure from.
+        tree (PyTree): The tree to extract structure from.
 
     Returns:
         TreeDef: The tree structure.
@@ -239,11 +255,11 @@ def tree_structure(tree) -> TreeDef:
     return treedef
 
 
-def tree_all(tree) -> bool:
+def tree_all(tree: PyTree) -> bool:
     """Check if all leaves of a PyTree are truthy.
 
     Args:
-        tree (object): The tree to check.
+        tree (PyTree): The tree to check.
 
     Returns:
         bool: True if all leaves are truthy.
@@ -251,22 +267,23 @@ def tree_all(tree) -> bool:
     return builtins.all(tree_leaves(tree))
 
 
-def tree_reduce(f, tree, initializer=None):
+def tree_reduce(f: Callable[[EagerValue, EagerValue], EagerValue], tree: PyTree, initializer: EagerValue = None) -> EagerValue:
     """Reduce a PyTree by applying a function over its leaves.
 
     Args:
-        f (Callable): The reduction function.
-        tree (object): The tree to reduce.
-        initializer (object): Optional initial value.
+        f (Callable[[EagerValue, EagerValue], EagerValue]): The reduction function.
+        tree (PyTree): The tree to reduce.
+        initializer (EagerValue): Optional initial value.
 
-    Returns: Tensor: The reduced value.
+    Returns:
+        EagerValue: The reduced value.
     """
     leaves = tree_leaves(tree)
 
     if initializer is None:
         return functools.reduce(f, leaves)
 
-    return functools.reduce(f, leaves, initializer)
+    return cast(EagerValue, getattr(functools, "reduce")(f, leaves, initializer))
 
 
 def _count_leaves(t_def: TreeDef) -> int:
@@ -286,8 +303,8 @@ def _count_leaves(t_def: TreeDef) -> int:
 def tree_transpose(
     outer_treedef: TreeDef,
     inner_treedef: TreeDef,
-    pytree_to_transpose,
-):
+    pytree_to_transpose: PyTree,
+) -> EagerValue:
     """Transpose a PyTree of PyTrees.
 
     Args:

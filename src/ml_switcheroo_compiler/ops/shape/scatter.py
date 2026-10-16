@@ -1,15 +1,10 @@
-"""Module scatter.py."""
+"""Scatter shape operations."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Scatter shape operations."""
-
-
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -18,7 +13,7 @@ from ml_switcheroo_compiler.ops.registry import get_util
 _emit_shape_node = get_util("_emit_shape_node")
 
 
-def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor):
+def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> EagerValue:
     """Scatter values from a source tensor into the input tensor along a specified.
 
     Args:
@@ -33,7 +28,7 @@ def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Scatter", input.data, index.data, src.data, axis=axis)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input, index, src]
     attributes = {"axis": axis}
     # Output shape matches the target tensor being scattered into
@@ -47,7 +42,7 @@ def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor):
     )
 
 
-def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]):
+def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> EagerValue:
     """Scatter updates into a new tensor of specified shape using indices.
 
     Args:
@@ -73,7 +68,7 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]):
     )
 
 
-def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor):
+def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> EagerValue:
     """Add values from a source tensor to the input tensor at specified indices along a.
 
     Args:
@@ -88,7 +83,7 @@ def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor):
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("ScatterAdd", input.data, index.data, src.data, axis=axis)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
+        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input, index, src]
     attributes = {"axis": axis}
     # Output shape matches the target tensor being scattered into
@@ -102,7 +97,7 @@ def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor):
     )
 
 
-def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor):
+def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
     """Update the value of a tensor at given indices.
 
     Args:
@@ -118,7 +113,7 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor):
         data = backend.execute_op("TensorScatterUpdate", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+            TensorConfig(getattr(backend.array(data), "shape"), tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
     # Output shape matches the base tensor being updated
@@ -132,7 +127,7 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor):
     )
 
 
-def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor):
+def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
     """Update a tensor at given indices with the maximum of the current value and the update.
 
     Args:
@@ -148,7 +143,7 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor):
         data = backend.execute_op("TensorScatterMax", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+            TensorConfig(getattr(backend.array(data), "shape"), tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
     # Output shape matches the base tensor being updated
@@ -162,7 +157,7 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor):
     )
 
 
-def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor):
+def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
     """Update a tensor at given indices with the minimum of the current value and the update.
 
     Args:
@@ -178,7 +173,7 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor):
         data = backend.execute_op("TensorScatterMin", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+            TensorConfig(getattr(backend.array(data), "shape"), tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
     # Output shape matches the base tensor being updated
@@ -192,7 +187,7 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor):
     )
 
 
-def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor):
+def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
     """Add updates to a tensor at given indices.
 
     Args:
@@ -208,7 +203,7 @@ def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor):
         data = backend.execute_op("TensorScatterAdd", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
-            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+            TensorConfig(getattr(backend.array(data), "shape"), tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
     # Output shape matches the base tensor being updated

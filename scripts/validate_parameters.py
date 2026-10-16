@@ -74,6 +74,56 @@ def _extract_calls_from_ast(expr_str: str) -> list[tuple[str, int, list[str]]]:
     return calls
 
 
+def _validate_expr_calls(
+    engine: SnapshotGroundingEngine,
+    backend_name: str,
+    src: str,
+    prefix: str,
+    op_name: str,
+) -> list[str]:
+    """Validate extracted AST calls in an expression string against snapshot parameter contracts.
+
+    Args:
+        engine (SnapshotGroundingEngine): Framework snapshot verification engine.
+        backend_name (str): Target backend name.
+        src (str): Expression or template string.
+        prefix (str): Error message prefix (e.g. file path).
+        op_name (str): Operation name.
+
+    Returns:
+        list[str]: Discovered parameter validation errors.
+    """
+    if not src:
+        return []
+    errors: list[str] = []
+    for ep, pos_count, kw_names in _extract_calls_from_ast(src):
+        if engine.is_endpoint_valid(backend_name, ep):
+            for err in engine.validate_parameter_contract(backend_name, ep, pos_count, kw_names):
+                errors.append(f"{prefix} ({op_name} -> {ep}): {err}")
+    return errors
+
+
+def _is_valid_backend_target(
+    engine: SnapshotGroundingEngine,
+    backend_name: str,
+    backend_filter: str | None,
+) -> bool:
+    """Check whether a backend should be validated against snapshot targets.
+
+    Args:
+        engine (SnapshotGroundingEngine): Framework snapshot verification engine.
+        backend_name (str): Candidate backend name.
+        backend_filter (str | None): Optional filter string.
+
+    Returns:
+        bool: True if backend should be validated.
+    """
+    if backend_filter and backend_name != backend_filter:
+        return False
+    target = engine.config.targets.get(backend_name)
+    return target is not None and target.status != "missing_upstream"
+
+
 def validate_backend_mappings_parameters(
     engine: SnapshotGroundingEngine,
     backend_filter: str | None = None,
@@ -102,38 +152,19 @@ def validate_backend_mappings_parameters(
     for filepath in mapping_files:
         rel_path: str = os.path.relpath(filepath, base_dir)
         backend_name: str = rel_path.split(os.sep)[0]
-        if backend_filter and backend_name != backend_filter:
-            continue
-        if backend_name not in engine.config.targets:
-            continue
-        if engine.config.targets[backend_name].status == "missing_upstream":
+        if not _is_valid_backend_target(engine, backend_name, backend_filter):
             continue
 
         with open(filepath, encoding="utf-8") as f:
-            data: dict[str, object] | None = yaml.safe_load(f)
-        if not isinstance(data, dict):
-            continue
-
-        ops: dict[str, object] = data.get("operations", data)
+            data = yaml.safe_load(f)
+        ops = data.get("operations", data) if isinstance(data, dict) else None
         if not isinstance(ops, dict):
             continue
 
         for op_name, spec in ops.items():
-            if not isinstance(spec, dict):
-                continue
-            ast_template: str = str(spec.get("ast_template") or "")
-            custom_code: str = str(spec.get("custom_code") or "")
-
-            for src in (ast_template, custom_code):
-                if not src:
-                    continue
-                calls: list[tuple[str, int, list[str]]] = _extract_calls_from_ast(src)
-                for ep, pos_count, kw_names in calls:
-                    if not engine.is_endpoint_valid(backend_name, ep):
-                        continue
-                    errs: list[str] = engine.validate_parameter_contract(backend_name, ep, pos_count, kw_names)
-                    for err in errs:
-                        errors.append(f"{rel_path} ({op_name} -> {ep}): {err}")
+            if isinstance(spec, dict):
+                errors.extend(_validate_expr_calls(engine, backend_name, str(spec.get("ast_template") or ""), rel_path, op_name))
+                errors.extend(_validate_expr_calls(engine, backend_name, str(spec.get("custom_code") or ""), rel_path, op_name))
 
     return errors
 
@@ -167,36 +198,23 @@ def validate_op_definitions_parameters(
     for filepath in def_files:
         filename: str = os.path.basename(filepath)
         with open(filepath, encoding="utf-8") as f:
-            data: dict[str, object] | None = yaml.safe_load(f)
-        if not isinstance(data, dict):
+            data = yaml.safe_load(f)
+        variants = data.get("variants") if isinstance(data, dict) else None
+        if not isinstance(data, dict) or not isinstance(variants, dict):
             continue
 
         op_name: str = str(data.get("operation") or filename[:-5])
-        variants: dict[str, object] = data.get("variants") or {}
-        if not isinstance(variants, dict):
-            continue
-
         for backend_name, var_spec in variants.items():
-            if backend_filter and backend_name != backend_filter:
-                continue
-            if backend_name not in engine.config.targets:
-                continue
-            if engine.config.targets[backend_name].status == "missing_upstream":
-                continue
-            if not isinstance(var_spec, dict):
-                continue
-
-            generator_expr: str = str(var_spec.get("generator") or "")
-            if not generator_expr:
-                continue
-
-            calls: list[tuple[str, int, list[str]]] = _extract_calls_from_ast(generator_expr)
-            for ep, pos_count, kw_names in calls:
-                if not engine.is_endpoint_valid(backend_name, ep):
-                    continue
-                errs: list[str] = engine.validate_parameter_contract(backend_name, ep, pos_count, kw_names)
-                for err in errs:
-                    errors.append(f"{filename} [{backend_name}] ({op_name} -> {ep}): {err}")
+            if _is_valid_backend_target(engine, backend_name, backend_filter) and isinstance(var_spec, dict):
+                errors.extend(
+                    _validate_expr_calls(
+                        engine,
+                        backend_name,
+                        str(var_spec.get("generator") or ""),
+                        f"{filename} [{backend_name}]",
+                        op_name,
+                    )
+                )
 
     return errors
 
@@ -232,8 +250,7 @@ def main() -> int:
     if not getattr(engine, "_fail_on_missing", True) and not os.path.exists(engine.snapshot_dir):
         print("Skipping validation since snapshot dir is missing.")
         return 0
-    print("Skipping validation since snapshot dir is missing.")
-    return 0
+
     mapping_errors: list[str] = validate_backend_mappings_parameters(engine, backend_filter=args.backend)
     op_errors: list[str] = validate_op_definitions_parameters(engine, backend_filter=args.backend)
 

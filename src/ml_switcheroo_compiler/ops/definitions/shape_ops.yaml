@@ -1,9 +1,9 @@
 BroadcastTo:
   autodiff:
-    jvp: null
+    vjp_rule_id: BroadcastTo_vjp
     jvp_rule_id: BroadcastTo_jvp
     vjp: null
-    vjp_rule_id: BroadcastTo_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The BroadcastTo operation.
   domain: shape
@@ -18,12 +18,15 @@ BroadcastTo:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -54,12 +57,27 @@ BroadcastTo:
       generator: '{0}.expand({shape})'
     tensorflow:
       eager: tf.broadcast_to
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast_to(in0, shape)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: expand_dims
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Concat:
   autodiff:
-    jvp: null
-    jvp_rule_id: concat_jvp
+    vjp_rule_id: Concat_vjp
+    jvp_rule_id: Concat_jvp
     vjp: null
-    vjp_rule_id: concat_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Concat operation.
   domain: shape
@@ -73,12 +91,15 @@ Concat:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -100,12 +121,27 @@ Concat:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: concat(inputs, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: concat
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 ExpandDims:
   autodiff:
-    jvp: null
+    vjp_rule_id: ExpandDims_vjp
     jvp_rule_id: ExpandDims_jvp
     vjp: null
-    vjp_rule_id: ExpandDims_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The ExpandDims operation.
   domain: shape
@@ -119,12 +155,15 @@ ExpandDims:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -149,12 +188,27 @@ ExpandDims:
     pytorch: {}
     tensorflow:
       eager: tf.expand_dims
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: expand_dims(in0, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: expand_dims
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Gather:
   autodiff:
-    jvp: null
-    jvp_rule_id: gather_jvp
+    vjp_rule_id: Gather_vjp
+    jvp_rule_id: Gather_jvp
     vjp: null
-    vjp_rule_id: gather_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Gather operation.
   domain: shape
@@ -168,12 +222,15 @@ Gather:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -201,12 +258,27 @@ Gather:
       eager: torch.gather
     tensorflow:
       eager: tf.gather
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Pad:
   autodiff:
-    jvp: null
-    jvp_rule_id: pad_jvp
+    vjp_rule_id: Pad_vjp
+    jvp_rule_id: Pad_jvp
     vjp: null
-    vjp_rule_id: pad_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Pad operation.
   domain: shape
@@ -220,12 +292,15 @@ Pad:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -254,12 +329,27 @@ Pad:
     pytorch: {}
     tensorflow:
       eager: tf.pad
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Permute:
   autodiff:
-    jvp: null
+    vjp_rule_id: Permute_vjp
     jvp_rule_id: Permute_jvp
     vjp: null
-    vjp_rule_id: Permute_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: Returns a view of the original tensor input with its dimensions permuted.
   domain: shape
@@ -273,23 +363,41 @@ Permute:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: transpose(in0, axes)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: transpose
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Reshape:
   autodiff:
-    jvp: null
+    vjp_rule_id: Reshape_vjp
     jvp_rule_id: Reshape_jvp
     vjp: null
-    vjp_rule_id: Reshape_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Reshape operation.
   domain: shape
@@ -303,12 +411,15 @@ Reshape:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -340,12 +451,27 @@ Reshape:
       generator: torch.reshape({0}, {shape})
     tensorflow:
       eager: tf.reshape
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reshape(in0, shape)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reshape
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Scatter:
   autodiff:
-    jvp: null
-    jvp_rule_id: scatter_jvp
+    vjp_rule_id: Scatter_vjp
+    jvp_rule_id: Scatter_jvp
     vjp: null
-    vjp_rule_id: scatter_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Scatter operation.
   domain: shape
@@ -359,12 +485,15 @@ Scatter:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -385,12 +514,27 @@ Scatter:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Slice:
   autodiff:
-    jvp: null
-    jvp_rule_id: slice_jvp
+    vjp_rule_id: Slice_vjp
+    jvp_rule_id: Slice_jvp
     vjp: null
-    vjp_rule_id: slice_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Slice operation.
   domain: shape
@@ -404,12 +548,15 @@ Slice:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -433,12 +580,27 @@ Slice:
     pytorch: {}
     tensorflow:
       eager: tf.slice
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Split:
   autodiff:
-    jvp: null
-    jvp_rule_id: split_jvp
+    vjp_rule_id: Split_vjp
+    jvp_rule_id: Split_jvp
     vjp: null
-    vjp_rule_id: split_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Split operation.
   domain: shape
@@ -452,12 +614,15 @@ Split:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -486,12 +651,27 @@ Split:
       eager: torch.split
     tensorflow:
       eager: tf.split
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: split(in0, num_or_size_splits, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: split
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Squeeze:
   autodiff:
-    jvp: null
+    vjp_rule_id: Squeeze_vjp
     jvp_rule_id: Squeeze_jvp
     vjp: null
-    vjp_rule_id: Squeeze_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Squeeze operation.
   domain: shape
@@ -505,12 +685,15 @@ Squeeze:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -541,12 +724,27 @@ Squeeze:
       eager: torch.squeeze
     tensorflow:
       eager: tf.squeeze
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: squeeze(in0, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: squeeze
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Stack:
   autodiff:
-    jvp: null
-    jvp_rule_id: stack_jvp
+    vjp_rule_id: Stack_vjp
+    jvp_rule_id: Stack_jvp
     vjp: null
-    vjp_rule_id: stack_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Stack operation.
   domain: shape
@@ -560,12 +758,15 @@ Stack:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -594,12 +795,27 @@ Stack:
       eager: torch.stack
     tensorflow:
       eager: tf.stack
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: stack(inputs, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: stack
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Tile:
   autodiff:
-    jvp: null
-    jvp_rule_id: tile_jvp
+    vjp_rule_id: Tile_vjp
+    jvp_rule_id: Tile_jvp
     vjp: null
-    vjp_rule_id: tile_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Tile operation.
   domain: shape
@@ -613,12 +829,15 @@ Tile:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -649,12 +868,27 @@ Tile:
       eager: torch.tile
     tensorflow:
       eager: tf.tile
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Transpose:
   autodiff:
-    jvp: null
+    vjp_rule_id: Transpose_vjp
     jvp_rule_id: Transpose_jvp
     vjp: null
-    vjp_rule_id: Transpose_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Transpose operation.
   domain: shape
@@ -668,12 +902,15 @@ Transpose:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy:
@@ -705,12 +942,27 @@ Transpose:
       generator: torch.permute({0}, {axes})
     tensorflow:
       eager: tf.transpose
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: transpose(in0, axes)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: transpose
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
 Unsqueeze:
   autodiff:
-    jvp: null
+    vjp_rule_id: Unsqueeze_vjp
     jvp_rule_id: Unsqueeze_jvp
     vjp: null
-    vjp_rule_id: Unsqueeze_vjp
+    jvp: null
   broadcast_semantics: numpy
   description: The Unsqueeze operation.
   domain: shape
@@ -724,12 +976,15 @@ Unsqueeze:
   output_tensors:
   - out
   signature:
-    args:
-    - is_variadic: false
-      name: x
-      type: Tensor
-    output_dtype_formula: x.dtype
-    output_shape_formula: x.shape
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
   type_promotion: standard
   variants:
     cupy: {}
@@ -758,3 +1013,18 @@ Unsqueeze:
       eager: torch.unsqueeze
     tensorflow:
       eager: tf.unsqueeze
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: unsqueeze(in0, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: expand_dims
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

@@ -1,15 +1,16 @@
-"""Module lu.py."""
+"""Core abstractions and logic definitions for lu.py."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
-
-"""Core abstractions and logic definitions for lu.py."""
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 @register_op("LuFactor")
@@ -61,7 +62,8 @@ class LuPivotsToPermutation(OpDef):
         """
         if not args or args[0] is None:
             return ()
-        return args[0].shape[:-1] + (kwargs.get("permutation_size", 0),)
+        shape = tuple(int(d) for d in getattr(args[0], "shape", args[0] if isinstance(args[0], (list, tuple)) else ()))
+        return shape[:-1] + (kwargs.get("permutation_size", 0),)
 
 
 def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
@@ -77,7 +79,7 @@ def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        lu, piv = backend.execute_op("LuFactor", a.data)
+        lu, piv = cast("tuple[TensorLike, TensorLike]", backend.execute_op("LuFactor", a.data))
         piv_dtype = a.dtype
         return (
             Tensor(lu, TensorConfig(lu.shape, a.dtype, a.device)),
@@ -105,7 +107,7 @@ def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size)
+        data = cast("TensorLike", backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size))
         return Tensor(data, TensorConfig(data.shape, pivots.dtype, pivots.device))
     out_shape = pivots.shape[:-1] + (permutation_size,)
     res = _emit_linalg_node(

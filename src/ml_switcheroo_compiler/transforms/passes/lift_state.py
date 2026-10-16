@@ -1,14 +1,16 @@
-# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402
 """Lift State pass."""
 
 import typing
 from collections.abc import Iterable
+from typing import Callable, cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-StateValue = typing.Union[int, float, str, bool, list, tuple, dict, None]
+StateValue = typing.Union[int, float, str, bool, list["StateValue"], tuple["StateValue", ...], dict[str, "StateValue"], None]
 
 
 def flatten_state_dict(state_dict: dict[str, typing.Union[StateValue, dict[str, StateValue]]], prefix: str = "") -> dict[str, StateValue]:
@@ -25,7 +27,7 @@ def flatten_state_dict(state_dict: dict[str, typing.Union[StateValue, dict[str, 
     for k, v in state_dict.items():
         new_key: str = f"{prefix}.{k}" if prefix else k
         if isinstance(v, dict):
-            flat.update(flatten_state_dict(typing.cast(dict[str, typing.Union[StateValue, dict[str, StateValue]]], v), new_key))
+            flat.update(flatten_state_dict(v, new_key))
         else:
             flat[new_key] = v
     return flat
@@ -43,11 +45,11 @@ def unflatten_state_dict(flat_state: dict[str, StateValue]) -> dict[str, typing.
     nested: dict[str, typing.Union[StateValue, dict[str, StateValue]]] = {}
     for k, v in flat_state.items():
         parts: list[str] = k.split(".")
-        d: dict[str, object] = nested
+        d: dict[str, StateValue] = nested
         for part in parts[:-1]:
             if part not in d:
                 d[part] = {}
-            d = typing.cast(dict[str, object], d[part])
+            d = typing.cast(dict[str, StateValue], d[part])
         d[parts[-1]] = v
     return nested
 
@@ -130,23 +132,23 @@ def lift_state_pass(graph: IRGraph) -> bool:
     return _lift_block_ir(graph)
 
 
-def lift_module_state(module: object) -> tuple[dict[str, object], IRGraph]:
+def lift_module_state(module: EagerValue) -> tuple[dict[str, StateValue], IRGraph]:
     """Functionalize a class-based stateful module (e.g. nn.Module) into pure function parameters and an IRGraph.
 
     Args:
-        module (object): Stateful object or PyTorch nn.Module instance.
+        module: Stateful object or PyTorch nn.Module instance.
 
     Returns:
-        tuple[dict[str, object], IRGraph]: Extracted parameters map and pure functional IRGraph.
+        tuple[dict[str, StateValue], IRGraph]: Extracted parameters map and pure functional IRGraph.
     """
-    params: dict[str, object] = {}
+    params: dict[str, StateValue] = {}
 
     if hasattr(module, "named_parameters"):
-        named_params = module.named_parameters()
+        named_params = getattr(module, "named_parameters")()
         for k, v in named_params:
             params[k] = v
     elif hasattr(module, "state_dict"):
-        sd = module.state_dict()
+        sd = getattr(module, "state_dict")()
         for k, v in sd.items():
             params[k] = v
     elif hasattr(module, "__dict__"):
@@ -169,34 +171,34 @@ def lift_module_state(module: object) -> tuple[dict[str, object], IRGraph]:
 
 
 def lift_state(
-    module: object,
-) -> tuple[dict[str, object], typing.Callable[..., tuple[object, dict[str, object]]]]:
+    module: Callable[..., EagerValue],
+) -> tuple[dict[str, StateValue], typing.Callable[..., tuple[StateValue, dict[str, StateValue]]]]:
     """Functionalize a class-based stateful module into pure function signature: (params, inputs) -> (outputs, updated_params).
 
     Args:
-        module (object): Class-based stateful module (e.g. PyTorch nn.Module).
+        module: Class-based stateful module (e.g. PyTorch nn.Module).
 
     Returns:
-        tuple[dict[str, object], typing.Callable[..., tuple[object, dict[str, object]]]]: Extracted parameter dict and pure functional callable.
+        tuple[dict[str, StateValue], typing.Callable[..., tuple[StateValue, dict[str, StateValue]]]]: Extracted parameter dict and pure functional callable.
     """
     params, _ = lift_module_state(module)
 
     def pure_fn(
-        current_params: dict[str, object],
-        *args: object,
-        **kwargs: object,
-    ) -> tuple[object, dict[str, object]]:
+        current_params: dict[str, StateValue],
+        *args: StateValue,
+        **kwargs: StateValue,
+    ) -> tuple[StateValue, dict[str, StateValue]]:
         """Pure functional execution of the lifted module.
 
         Args:
-            current_params (dict[str, object]): Parameters passed functionally.
-            *args (object): Positional module arguments.
-            **kwargs (object): Keyword module arguments.
+            current_params (dict[str, StateValue]): Parameters passed functionally.
+            *args (StateValue): Positional module arguments.
+            **kwargs (StateValue): Keyword module arguments.
 
         Returns:
-            tuple[object, dict[str, object]]: Module forward outputs and updated state dict.
+            tuple[StateValue, dict[str, StateValue]]: Module forward outputs and updated state dict.
         """
-        backup: dict[str, object] = {}
+        backup: dict[str, StateValue] = {}
         for k, v in current_params.items():
             if hasattr(module, k):
                 backup[k] = getattr(module, k)
@@ -206,15 +208,15 @@ def lift_state(
             if callable(module):
                 output = module(*args, **kwargs)
             elif hasattr(module, "forward"):
-                output = module.forward(*args, **kwargs)
+                output = getattr(module, "forward")(*args, **kwargs)
             else:
                 output = None
-            updated_params: dict[str, object] = {k: getattr(module, k, v) for k, v in current_params.items()}
+            updated_params: dict[str, StateValue] = {k: getattr(module, k, v) for k, v in current_params.items()}
         finally:
             for k, v in backup.items():
                 setattr(module, k, v)
 
-        return output, updated_params
+        return cast(tuple[StateValue, dict[str, StateValue]], (output, updated_params))
 
     return params, pure_fn
 

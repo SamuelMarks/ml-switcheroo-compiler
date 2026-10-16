@@ -2,20 +2,23 @@
 
 from __future__ import annotations
 
-import multiprocessing
 import sys
-from typing import Callable, Union
+from typing import TYPE_CHECKING, Callable, Union, cast
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.edge.profiler as edge_prof_mod
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 MetricsVal = Union[list[float], float]
 
-ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray], str, int, multiprocessing.Queue, None]
+ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, None]
 
 
 class MockSimpleProfiler:
@@ -24,7 +27,7 @@ class MockSimpleProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -171,7 +174,7 @@ class MockDeviceFailingProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray],
+        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
         *args: int,
         **kwargs: str | int | None,
     ) -> dict[str, MetricsVal]:
@@ -222,18 +225,18 @@ def test_edge_profiler_coverage() -> None:
     # 3. profile_graph
     profiler = edge_prof_mod.EdgeProfiler()
     inputs = {"x": np.ones((1, 10), dtype=np.float32)}
-    res = profiler.profile_graph(graph, inputs, num_iters=2, warmup_iters=1)
+    res = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
     assert "latency_ms" in res
-    assert res["peak_memory_mb"] > 0.0
+    assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
 
     # Evaluation exception fallback branch
     failing_graph = IRGraph(name="failing")
     failing_graph.nodes["bad"] = IRNode(id="bad", op_type="NonexistentOp", inputs=["x"])
     failing_graph.inputs = ["x"]
-    res_fallback = profiler.profile_graph(failing_graph, inputs, num_iters=1, warmup_iters=1)
+    res_fallback = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(failing_graph, inputs, num_iters=1, warmup_iters=1)
     assert "latency_ms" in res_fallback
 
     # Mismatched inputs fallback
     mismatched_inputs = {"other_key": np.ones((1, 10), dtype=np.float32)}
-    prepared = profiler._prepare_inputs(graph, mismatched_inputs)
+    prepared = cast("Callable[..., EagerTensorProtocol]", profiler._prepare_inputs)(graph, mismatched_inputs)
     assert len(prepared) == 1

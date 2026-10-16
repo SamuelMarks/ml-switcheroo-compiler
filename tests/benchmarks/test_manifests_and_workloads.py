@@ -1,7 +1,10 @@
 """Tests for benchmark manifests, declarative workloads, and graph construction."""
 
+from __future__ import annotations
+
 import os
 import tempfile
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -24,6 +27,9 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
     load_workloads,
 )
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_load_default_manifests() -> None:
@@ -290,6 +296,7 @@ def test_load_model_workloads_fallback_paths(monkeypatch: pytest.MonkeyPatch) ->
     real_exists = os.path.exists
 
     def mock_exists_no_standard(path: str) -> bool:
+        """Test function mock_exists_no_standard."""
         if "standard_workloads.yaml" in path:
             return False
         return real_exists(path)
@@ -299,6 +306,7 @@ def test_load_model_workloads_fallback_paths(monkeypatch: pytest.MonkeyPatch) ->
     assert "mlp_model" in w_primary
 
     def mock_exists_fallback(path: str) -> bool:
+        """Test function mock_exists_fallback."""
         if "standard_workloads.yaml" in path or ("workloads.yaml" in path and "model_workloads.yaml" not in path):
             return False
         return real_exists(path)
@@ -365,7 +373,7 @@ def test_benchmark_specs_and_constraints() -> None:
     assert plan.latency_thresholds.max_mean_latency_ms == 10.0
 
 
-def test_perf_baselines_custom_path(tmp_path) -> None:
+def test_perf_baselines_custom_path(tmp_path: EagerTensorProtocol) -> None:
     """Test load_perf_baselines with an explicit path argument.
 
     Args:

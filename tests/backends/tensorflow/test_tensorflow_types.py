@@ -1,7 +1,15 @@
 """Tests for tensorflow types module."""
 
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 with patch.dict(sys.modules, {"tensorflow": MagicMock()}):
     from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
@@ -11,12 +19,12 @@ def test_tf_types() -> None:
     """Test coverage for tensorflow types."""
     import ml_switcheroo_compiler.backends.tensorflow.types as mod
 
-    mod.generic_zeros = MagicMock(return_value="zeros")
-    mod.generic_array = MagicMock(return_value="array")
-    mod.generic_asarray = MagicMock(return_value="asarray")
-    mod.generic_item = MagicMock(return_value="item")
+    setattr(mod, "generic_zeros", MagicMock(return_value="zeros"))
+    setattr(mod, "generic_array", MagicMock(return_value="array"))
+    setattr(mod, "generic_asarray", MagicMock(return_value="asarray"))
+    setattr(mod, "generic_item", MagicMock(return_value="item"))
 
-    assert zeros(None, (2, 2)) == "zeros"
-    assert array(None, [1]) == "array"
-    assert asarray(None, [1]) == "asarray"
-    assert item(None, [1]) == "item"
+    assert cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2, 2)) == "zeros"
+    assert cast("Callable[..., EagerTensorProtocol]", array)(None, [1]) == "array"
+    assert cast("Callable[..., EagerTensorProtocol]", asarray)(None, [1]) == "asarray"
+    assert cast("Callable[..., EagerTensorProtocol]", item)(None, [1]) == "item"

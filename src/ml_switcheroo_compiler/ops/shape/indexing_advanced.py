@@ -1,16 +1,17 @@
-"""Module indexing_advanced.py."""
+"""Shape operations for advanced indexing and sorting Tensor Anys."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, E501, F403
+from typing import Callable, cast
 
-"""Shape operations for advanced indexing and sorting Tensor Anys."""
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 
 # pylint: disable=duplicate-code
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _normalize_k(k):
+def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tuple[int, ...] | None:
     """Evaluate _normalize_k operation.
 
     Args:
@@ -20,12 +21,12 @@ def _normalize_k(k):
             tuple[int, ...]: Result.
     """
     if hasattr(k, "__array__") and not isinstance(k, tuple):
-        k = k.__array__()
+        k = cast(Tensor, getattr(k, "__array__")())
     if hasattr(k, "item"):
-        k = int(k.item())
+        k = int(getattr(k, "item")())
     else:
         try:
-            k = int(k)
+            k = int(cast(int, k))
         except (ValueError, TypeError):
             return k
     return k
@@ -37,7 +38,7 @@ class TopK(OpDef):
 
     op_name = "TopK"
 
-    def infer_shape(self, x, k=None, **kwargs):
+    def infer_shape(self, x: EagerTensorProtocol, k: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the operation.
 
         Args:
@@ -50,12 +51,12 @@ class TopK(OpDef):
         """
         if k is None:
             k = kwargs.get("k", 1)
-        k = _normalize_k(k)
+        k = cast("Callable[..., EagerTensorProtocol]", _normalize_k)(k)
 
         if not hasattr(x, "shape") or not x.shape:
             return (None,)
         out_shape = list(x.shape)
-        out_shape[-1] = k
+        out_shape[-1] = cast(int, k)
         return tuple(out_shape)
 
 
@@ -67,11 +68,11 @@ class Argsort(OpDef):
 
     def infer_shape(
         self,
-        x,
-        dimension=-1,
-        is_stable=True,
-        **kwargs,
-    ):
+        x: EagerTensorProtocol,
+        dimension: EagerValue = -1,
+        is_stable: EagerValue = True,
+        **kwargs: EagerValue,
+    ) -> EagerValue:
         """Infer the output shape for sorting indices.
 
         Args:
@@ -96,11 +97,11 @@ class Sort(OpDef):
 
     def infer_shape(
         self,
-        x,
-        dimension=-1,
-        is_stable=True,
-        **kwargs,
-    ):
+        x: EagerTensorProtocol,
+        dimension: EagerValue = -1,
+        is_stable: EagerValue = True,
+        **kwargs: EagerValue,
+    ) -> EagerValue:
         """Infer the output shape for the sorting operation.
 
         Args:
@@ -119,7 +120,7 @@ class Sort(OpDef):
 class Where(OpDef):
     """Operator to return elements chosen from x or y depending on a condition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for conditionally chosen elements.
 
         Args:
@@ -138,7 +139,7 @@ class Where(OpDef):
 class Gather(OpDef):
     """Operator to gather slices from a tensor according to indices."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for gathered slices.
 
         Args:
@@ -155,7 +156,7 @@ class Gather(OpDef):
 class Take(OpDef):
     """Operator to take elements from an array along an axis."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for taken elements.
 
         Args:
@@ -172,7 +173,7 @@ class Take(OpDef):
 class TakeAlongAxis(OpDef):
     """Operator to take values from the input array by matching 1d index and data slices."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for elements taken along an axis.
 
         Args:
@@ -189,7 +190,7 @@ class TakeAlongAxis(OpDef):
 class GatherNd(OpDef):
     """Operator to gather slices from a tensor into a tensor with specified shape."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for n-dimensional gathered slices.
 
         Args:
@@ -206,7 +207,7 @@ class GatherNd(OpDef):
 class Scatter(OpDef):
     """Operator to scatter updates into a new tensor according to indices."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for scattered updates.
 
         Args:
@@ -223,7 +224,7 @@ class Scatter(OpDef):
 class ScatterNd(OpDef):
     """Operator to apply sparse updates to individual values or slices within a tensor."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for n-dimensional scattered updates.
 
         Args:
@@ -240,7 +241,7 @@ class ScatterNd(OpDef):
 class ScatterAdd(OpDef):
     """Operator to add sparse updates to a tensor variable reference."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape after adding scattered updates.
 
         Args:
@@ -257,7 +258,7 @@ class ScatterAdd(OpDef):
 class Vdot(OpDef):
     """Operator to compute the dot product of two vectors."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the vector dot product.
 
         Args:
@@ -274,7 +275,7 @@ class Vdot(OpDef):
 class SearchSorted(OpDef):
     """Operator to find indices where elements should be inserted to maintain order."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for searched sorted indices.
 
         Args:
@@ -291,7 +292,7 @@ class SearchSorted(OpDef):
 class Select(OpDef):
     """Operator to select elements from two arrays based on a boolean mask."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the selected elements.
 
         Args:
@@ -308,7 +309,7 @@ class Select(OpDef):
 class Assign(OpDef):
     """Operator to assign a value to a tensor variable."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape after assignment.
 
         Args:
@@ -325,7 +326,7 @@ class Assign(OpDef):
 class AssignAdd(OpDef):
     """Operator to add a value to a tensor variable and assign the result."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape after addition assignment.
 
         Args:
@@ -342,7 +343,7 @@ class AssignAdd(OpDef):
 class AssignSub(OpDef):
     """Operator to subtract a value from a tensor variable and assign the result."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape after subtraction assignment.
 
         Args:
@@ -359,7 +360,7 @@ class AssignSub(OpDef):
 class TensorScatterUpdate(OpDef):
     """Operator to scatter updates into a new tensor using multi-dimensional indices."""
 
-    def infer_shape(self, tensor, indices, updates, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for scattered multidimensional updates.
 
         Args:
@@ -380,7 +381,7 @@ class Argpartition(OpDef):
     op_name = "Argpartition"
     np_op_name = "argpartition"
 
-    def infer_shape(self, a, kth, axis: int = -1, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, kth: EagerTensorProtocol, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the partitioned indices.
 
         Args:
@@ -402,7 +403,7 @@ class Partition(OpDef):
     op_name = "Partition"
     np_op_name = "partition"
 
-    def infer_shape(self, a, kth, axis: int = -1, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, kth: EagerTensorProtocol, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the partitioned array.
 
         Args:
@@ -424,7 +425,7 @@ class Compress(OpDef):
     op_name = "Compress"
     np_op_name = "compress"
 
-    def infer_shape(self, condition, a, axis=None, out=None, **kwargs):
+    def infer_shape(self, condition: EagerTensorProtocol, a: EagerTensorProtocol, axis: EagerValue = None, out: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the compressed array.
 
         Args:
@@ -447,7 +448,7 @@ class Diagonal(OpDef):
     op_name = "Diagonal"
     np_op_name = "diagonal"
 
-    def infer_shape(self, a, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs):
+    def infer_shape(self, a: EagerTensorProtocol, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the diagonal extraction.
 
         Args:
@@ -470,7 +471,7 @@ class Diagflat(OpDef):
     op_name = "Diagflat"
     np_op_name = "diagflat"
 
-    def infer_shape(self, v, k: int = 0, **kwargs):
+    def infer_shape(self, v: EagerTensorProtocol, k: int = 0, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the flattened diagonal matrix.
 
         Args:
@@ -491,7 +492,7 @@ class DiagIndices(OpDef):
     op_name = "DiagIndices"
     np_op_name = "diag_indices"
 
-    def infer_shape(self, n: int, naxis: int = 2, **kwargs):
+    def infer_shape(self, n: int, naxis: int = 2, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the main diagonal indices.
 
         Args:
@@ -512,7 +513,7 @@ class DiagIndicesFrom(OpDef):
     op_name = "DiagIndicesFrom"
     np_op_name = "diag_indices_from"
 
-    def infer_shape(self, arr, **kwargs):
+    def infer_shape(self, arr: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the n-dimensional diagonal indices.
 
         Args:
@@ -530,7 +531,7 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(self, tensor, mask, axis=None, **kwargs):
+    def infer_shape(self, tensor: EagerTensorProtocol, mask: EagerTensorProtocol, axis: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the boolean masked array.
 
         Args:
@@ -552,7 +553,7 @@ class InvertPermutation(OpDef):
 
     op_name = "InvertPermutation"
 
-    def infer_shape(self, x, **kwargs):
+    def infer_shape(self, x: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
         """Infer the output shape for the inverted permutation.
 
         Args:

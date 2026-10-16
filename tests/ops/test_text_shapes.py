@@ -1,5 +1,9 @@
 """Unit tests for text operations shape inference and token batch dimensions."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.shape_system import SymVar
 from ml_switcheroo_compiler.ops.text.ops import (
@@ -24,6 +28,11 @@ from ml_switcheroo_compiler.ops.text.ops import (
     TextVectorization,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 def _make_tensor(shape: tuple[int, ...]) -> Tensor:
     """Helper to create dummy tensor with specified shape.
@@ -46,26 +55,31 @@ def test_text_regex_and_hashing_shapes() -> None:
 
     t = _make_tensor((4, 16))
 
-    assert op_hash.infer_shape(t) == (4, 16)
-    assert op_regex.infer_shape(t) == (4, 16)
-    assert op_hashing.infer_shape(t) == (4, 16)
-    assert op_match.infer_shape(t) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_hash.infer_shape)(t) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_regex.infer_shape)(t) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_hashing.infer_shape)(t) == (4, 16)
+    assert cast("Callable[..., EagerTensorProtocol]", op_match.infer_shape)(t) == (4, 16)
 
     # Fallbacks
     assert op_hash.infer_shape() == ()
     assert op_regex.infer_shape() == ()
 
     class MockMeta:
-        def __init__(self, sm):
+        """Test class MockMeta."""
+
+        def __init__(self, sm: EagerValue) -> None:
+            """Test function __init__."""
             self.shape_metadata = sm
 
     class Plain:
+        """Test class Plain."""
+
         pass
 
-    assert op_hash.infer_shape(MockMeta((5, 10))) == (5, 10)
-    assert op_hash.infer_shape(MockMeta(())) == ()
-    assert op_hash.infer_shape(MockMeta(None)) == ()
-    assert op_hash.infer_shape(Plain()) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_hash.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockMeta)((5, 10))) == (5, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", op_hash.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockMeta)(())) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_hash.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockMeta)(None)) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_hash.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Plain)()) == ()
 
 
 def test_string_split_token_dimensions() -> None:
@@ -75,12 +89,12 @@ def test_string_split_token_dimensions() -> None:
     t = _make_tensor((8,))
 
     # Dynamic splits: returns (8, SymVar("num_tokens"))
-    out_dynamic = op_split.infer_shape(t)
-    assert out_dynamic[0] == 8
-    assert isinstance(out_dynamic[1], SymVar)
+    out_dynamic = cast("Callable[..., EagerTensorProtocol]", op_split.infer_shape)(t)
+    assert cast("EagerTensorProtocol", getattr(out_dynamic, "__getitem__")(0)) == 8
+    assert isinstance(cast("EagerTensorProtocol", getattr(out_dynamic, "__getitem__")(1)), SymVar)
 
     # Explicit max_splits=3 -> (8, 4)
-    out_bounded = op_split.infer_shape(t, max_splits=3)
+    out_bounded = cast("Callable[..., EagerTensorProtocol]", op_split.infer_shape)(t, max_splits=3)
     assert out_bounded == (8, 4)
 
     # Fallback
@@ -97,11 +111,11 @@ def test_string_lookups_and_conversions() -> None:
 
     t = _make_tensor((2, 5, 10))
 
-    assert op_lookup.infer_shape(t) == (2, 5, 10)
-    assert op_str_lookup.infer_shape(t) == (2, 5, 10)
-    assert op_int_lookup.infer_shape(t) == (2, 5, 10)
-    assert op_to_num.infer_shape(t) == (2, 5, 10)
-    assert op_as_str.infer_shape(t) == (2, 5, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", op_lookup.infer_shape)(t) == (2, 5, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", op_str_lookup.infer_shape)(t) == (2, 5, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", op_int_lookup.infer_shape)(t) == (2, 5, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", op_to_num.infer_shape)(t) == (2, 5, 10)
+    assert cast("Callable[..., EagerTensorProtocol]", op_as_str.infer_shape)(t) == (2, 5, 10)
 
 
 def test_string_manipulation_ops() -> None:
@@ -114,19 +128,19 @@ def test_string_manipulation_ops() -> None:
 
     t = _make_tensor((3, 6))
 
-    assert op_lower.infer_shape(t) == (3, 6)
-    assert op_upper.infer_shape(t) == (3, 6)
-    assert op_len.infer_shape(t) == (3, 6)
-    assert op_sub.infer_shape(t) == (3, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_lower.infer_shape)(t) == (3, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_upper.infer_shape)(t) == (3, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_len.infer_shape)(t) == (3, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_sub.infer_shape)(t) == (3, 6)
 
     # StringJoin reducing axis 1
-    assert op_join.infer_shape(t, axis=1) == (3,)
-    assert op_join.infer_shape(t, axis=-1) == (3,)
-    assert op_join.infer_shape(t, axis=10) == (3, 6)
-    assert op_join.infer_shape([]) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_join.infer_shape)(t, axis=1) == (3,)
+    assert cast("Callable[..., EagerTensorProtocol]", op_join.infer_shape)(t, axis=-1) == (3,)
+    assert cast("Callable[..., EagerTensorProtocol]", op_join.infer_shape)(t, axis=10) == (3, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_join.infer_shape)([]) == ()
 
     # StringJoin list of tensors
-    assert op_join.infer_shape([t, t]) == (3, 6)
+    assert cast("Callable[..., EagerTensorProtocol]", op_join.infer_shape)([t, t]) == (3, 6)
 
     # Fallbacks
     assert op_join.infer_shape() == ()
@@ -141,25 +155,25 @@ def test_edit_distance_and_vectorization() -> None:
     truth = _make_tensor((4, 25))
 
     # EditDistance reduces sequence dimension: (4, 20) -> (4,)
-    assert op_edit.infer_shape(hypo, truth) == (4,)
-    assert op_edit.infer_shape(_make_tensor(()), _make_tensor(())) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_edit.infer_shape)(hypo, truth) == (4,)
+    assert cast("Callable[..., EagerTensorProtocol]", op_edit.infer_shape)(cast("Callable[..., EagerTensorProtocol]", _make_tensor)(()), cast("Callable[..., EagerTensorProtocol]", _make_tensor)(())) == ()
 
     # TextVectorization with explicit output_sequence_length
     sentences = _make_tensor((8,))
-    assert op_vec.infer_shape(sentences, output_sequence_length=128) == (8, 128)
+    assert cast("Callable[..., EagerTensorProtocol]", op_vec.infer_shape)(sentences, output_sequence_length=128) == (8, 128)
 
     # TextVectorization with count mode and max_tokens
-    assert op_vec.infer_shape(sentences, output_mode="count", max_tokens=1000) == (1000,)
-    assert op_vec.infer_shape(_make_tensor((4, 8)), output_mode="count", max_tokens=500) == (4, 500)
+    assert cast("Callable[..., EagerTensorProtocol]", op_vec.infer_shape)(sentences, output_mode="count", max_tokens=1000) == (1000,)
+    assert cast("Callable[..., EagerTensorProtocol]", op_vec.infer_shape)(cast("Callable[..., EagerTensorProtocol]", _make_tensor)((4, 8)), output_mode="count", max_tokens=500) == (4, 500)
 
     # TextVectorization default with SymVar
-    out_default = op_vec.infer_shape(sentences)
-    assert out_default[0] == 8
-    assert isinstance(out_default[1], SymVar)
+    out_default = cast("Callable[..., EagerTensorProtocol]", op_vec.infer_shape)(sentences)
+    assert cast("EagerTensorProtocol", getattr(out_default, "__getitem__")(0)) == 8
+    assert isinstance(cast("EagerTensorProtocol", getattr(out_default, "__getitem__")(1)), SymVar)
 
     # TextVectorization empty fallbacks
     assert op_vec.infer_shape() == ()
-    assert op_vec.infer_shape(()) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_vec.infer_shape)(()) == ()
 
 
 def test_array_repr_and_str() -> None:
@@ -168,5 +182,5 @@ def test_array_repr_and_str() -> None:
     op_str = ArrayStr()
 
     t = _make_tensor((2, 3))
-    assert op_repr.infer_shape(t) == ()
-    assert op_str.infer_shape(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_repr.infer_shape)(t) == ()
+    assert cast("Callable[..., EagerTensorProtocol]", op_str.infer_shape)(t) == ()

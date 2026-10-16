@@ -1,5 +1,7 @@
 """Unit tests for statistical metrics aggregation and structured benchmark reporting."""
 
+from __future__ import annotations
+
 import csv
 import io
 import json
@@ -32,10 +34,10 @@ def test_compute_statistical_metrics_standard() -> None:
     assert metrics["max_latency_ms"] == 14.0
     assert metrics["peak_memory_mb"] == 64.5
     assert metrics["warmup_iterations"] == 3
-    assert metrics["throughput_items_per_sec"] > 0.0
-    assert metrics["gflops"] > 0.0
-    assert metrics["bandwidth_gb_s"] > 0.0
-    assert metrics["std_latency_ms"] > 0.0
+    assert getattr(metrics, "__getitem__")("throughput_items_per_sec") > 0.0
+    assert getattr(metrics, "__getitem__")("gflops") > 0.0
+    assert getattr(metrics, "__getitem__")("bandwidth_gb_s") > 0.0
+    assert getattr(metrics, "__getitem__")("std_latency_ms") > 0.0
 
 
 def test_compute_statistical_metrics_empty_and_single() -> None:

@@ -6,6 +6,7 @@ from ml_switcheroo_compiler.ops.lookup import DenseHashTable, MutableHashTable
 
 
 def test_lookup() -> None:
+    """Test function test_lookup."""
     t = Tensor(None, TensorConfig((), DType.Float32, "cpu"))
     mht = MutableHashTable(DType.Int64, DType.Float32, t)
     mht.insert(t, t)

@@ -1,6 +1,3 @@
-# ruff: noqa: E402, E501, F403
-"""Module complex_types.py."""
-
 """Core abstractions and logic definitions for complex_types.py."""
 
 from ml_switcheroo_compiler.ops.base import register_op

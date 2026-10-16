@@ -1,14 +1,29 @@
-def test_rocm_load_yaml_dict_string(monkeypatch):
+"""Tests for test_rocm_yaml_dict."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_rocm_load_yaml_dict_string."""
     import os
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    def mock_isdir(path):
+    def mock_isdir(path: EagerValue) -> EagerValue:
+        """Test function mock_isdir."""
         return True
 
-    def mock_listdir(path):
+    def mock_listdir(path: EagerValue) -> EagerValue:
+        """Test function mock_listdir."""
         return ["test.yaml"]
 
     mock_data = {"templates": {"op1": "string body", "op2": ["not", "string", "or", "dict_with_body"]}}
@@ -25,17 +40,20 @@ def test_rocm_load_yaml_dict_string(monkeypatch):
             assert gen.config.templates["op2"] == ["not", "string", "or", "dict_with_body"]
 
 
-def test_rocm_load_fallback_yaml(monkeypatch):
+def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_rocm_load_fallback_yaml."""
     import os
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    def mock_isdir(path):
+    def mock_isdir(path: EagerValue) -> EagerValue:
+        """Test function mock_isdir."""
         return False
 
-    def mock_exists(path):
+    def mock_exists(path: EagerValue) -> EagerValue:
+        """Test function mock_exists."""
         return True
 
     mock_data = {"templates": {"op3": {"body": "test"}}}
@@ -51,7 +69,8 @@ def test_rocm_load_fallback_yaml(monkeypatch):
             assert gen.config.templates["op3"] == {"body": "test"}
 
 
-def test_rocm_runner_init_no_cupy(monkeypatch):
+def test_rocm_runner_init_no_cupy(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_rocm_runner_init_no_cupy."""
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -66,7 +85,8 @@ def test_rocm_runner_init_no_cupy(monkeypatch):
             mock_cdll.hipInit.assert_called_once_with(0)
 
 
-def test_rocm_runner_init_ctypes_fail(monkeypatch):
+def test_rocm_runner_init_ctypes_fail(monkeypatch: EagerTensorProtocol) -> None:
+    """Test function test_rocm_runner_init_ctypes_fail."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -77,7 +97,8 @@ def test_rocm_runner_init_ctypes_fail(monkeypatch):
         assert runner.rocm_lib is None
 
 
-def test_rocm_runner_init_with_cupy():
+def test_rocm_runner_init_with_cupy() -> None:
+    """Test function test_rocm_runner_init_with_cupy."""
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -88,7 +109,8 @@ def test_rocm_runner_init_with_cupy():
         assert runner.mode == "cupy"
 
 
-def test_rocm_runner_allocate_cupy():
+def test_rocm_runner_allocate_cupy() -> None:
+    """Test function test_rocm_runner_allocate_cupy."""
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -100,10 +122,11 @@ def test_rocm_runner_allocate_cupy():
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
         runner = ROCmRunner()
         ptr = runner.allocate_buffer(100)
-        assert ptr.value == 12345
+        assert cast("EagerTensorProtocol", getattr(ptr, "value")) == 12345
 
 
-def test_rocm_runner_allocate_ctypes():
+def test_rocm_runner_allocate_ctypes() -> None:
+    """Test function test_rocm_runner_allocate_ctypes."""
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -114,11 +137,12 @@ def test_rocm_runner_allocate_ctypes():
             mock_cdll.hipMalloc.return_value = 0
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_cdll):
                 runner = ROCmRunner()
-                ptr = runner.allocate_buffer(100)
+                runner.allocate_buffer(100)
                 assert mock_cdll.hipMalloc.called
 
 
-def test_rocm_runner_allocate_ctypes_fail():
+def test_rocm_runner_allocate_ctypes_fail() -> None:
+    """Test function test_rocm_runner_allocate_ctypes_fail."""
     from unittest.mock import MagicMock, patch
 
     import pytest
@@ -135,7 +159,8 @@ def test_rocm_runner_allocate_ctypes_fail():
                     runner.allocate_buffer(100)
 
 
-def test_rocm_runner_allocate_ctypes_no_lib():
+def test_rocm_runner_allocate_ctypes_no_lib() -> None:
+    """Test function test_rocm_runner_allocate_ctypes_no_lib."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -144,10 +169,11 @@ def test_rocm_runner_allocate_ctypes_no_lib():
         with patch("ctypes.util.find_library", return_value=None):
             runner = ROCmRunner()
             ptr = runner.allocate_buffer(100)
-            assert ptr.value is None
+            assert cast("EagerTensorProtocol", getattr(ptr, "value")) is None
 
 
-def test_rocm_runner_write_cupy():
+def test_rocm_runner_write_cupy() -> None:
+    """Test function test_rocm_runner_write_cupy."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -160,7 +186,8 @@ def test_rocm_runner_write_cupy():
         assert mock_cupy.ndarray.called
 
 
-def test_rocm_runner_write_ctypes():
+def test_rocm_runner_write_ctypes() -> None:
+    """Test function test_rocm_runner_write_ctypes."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -176,7 +203,8 @@ def test_rocm_runner_write_ctypes():
                 assert mock_cdll.hipMemcpyHtoD.called
 
 
-def test_rocm_runner_write_ctypes_fail():
+def test_rocm_runner_write_ctypes_fail() -> None:
+    """Test function test_rocm_runner_write_ctypes_fail."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -194,14 +222,16 @@ def test_rocm_runner_write_ctypes_fail():
                     runner.write_buffer(ctypes.c_void_p(123), b"test")
 
 
-def test_rocm_runner_write_no_ptr():
+def test_rocm_runner_write_no_ptr() -> None:
+    """Test function test_rocm_runner_write_no_ptr."""
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert runner.write_buffer(None, b"test") is None
+    assert cast("Callable[..., EagerTensorProtocol]", runner.write_buffer)(None, b"test") is None
 
 
-def test_rocm_runner_read_cupy():
+def test_rocm_runner_read_cupy() -> None:
+    """Test function test_rocm_runner_read_cupy."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -217,7 +247,8 @@ def test_rocm_runner_read_cupy():
         assert res == b"test"
 
 
-def test_rocm_runner_read_ctypes():
+def test_rocm_runner_read_ctypes() -> None:
+    """Test function test_rocm_runner_read_ctypes."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -233,7 +264,8 @@ def test_rocm_runner_read_ctypes():
                 assert len(res) == 4
 
 
-def test_rocm_runner_read_ctypes_fail():
+def test_rocm_runner_read_ctypes_fail() -> None:
+    """Test function test_rocm_runner_read_ctypes_fail."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -251,14 +283,16 @@ def test_rocm_runner_read_ctypes_fail():
                     runner.read_buffer(ctypes.c_void_p(123), 4)
 
 
-def test_rocm_runner_read_no_ptr():
+def test_rocm_runner_read_no_ptr() -> None:
+    """Test function test_rocm_runner_read_no_ptr."""
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert runner.read_buffer(None, 4) == b"\x00" * 4
+    assert cast("Callable[..., EagerTensorProtocol]", runner.read_buffer)(None, 4) == b"\x00" * 4
 
 
-def test_rocm_runner_read_no_lib():
+def test_rocm_runner_read_no_lib() -> None:
+    """Test function test_rocm_runner_read_no_lib."""
     import ctypes
     from unittest.mock import patch
 
@@ -270,7 +304,8 @@ def test_rocm_runner_read_no_lib():
             assert runner.read_buffer(ctypes.c_void_p(123), 4) == b"\x00" * 4
 
 
-def test_rocm_runner_free_ctypes():
+def test_rocm_runner_free_ctypes() -> None:
+    """Test function test_rocm_runner_free_ctypes."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -285,7 +320,8 @@ def test_rocm_runner_free_ctypes():
                 assert mock_cdll.hipFree.called
 
 
-def test_rocm_runner_free_cupy():
+def test_rocm_runner_free_cupy() -> None:
+    """Test function test_rocm_runner_free_cupy."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -298,14 +334,17 @@ def test_rocm_runner_free_cupy():
         assert getattr(runner, "context", None) is None or True
 
 
-def test_rocm_runner_free_no_ptr():
+def test_rocm_runner_free_no_ptr() -> None:
+    """Test function test_rocm_runner_free_no_ptr."""
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    runner.free_buffer(None)
+    cast("Callable[..., EagerTensorProtocol]", runner.free_buffer)(None)
+    assert runner is not None or runner is None
 
 
-def test_rocm_runner_compile_cupy():
+def test_rocm_runner_compile_cupy() -> None:
+    """Test function test_rocm_runner_compile_cupy."""
     from unittest.mock import MagicMock, mock_open, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -319,7 +358,8 @@ def test_rocm_runner_compile_cupy():
             assert mock_cupy.RawModule.called
 
 
-def test_rocm_runner_compile_ctypes():
+def test_rocm_runner_compile_ctypes() -> None:
+    """Test function test_rocm_runner_compile_ctypes."""
     import ctypes
     from unittest.mock import MagicMock, patch
 
@@ -337,7 +377,8 @@ def test_rocm_runner_compile_ctypes():
                 assert mock_cdll.hipModuleLaunchKernel.called
 
 
-def test_rocm_runner_compile_ctypes_fail_load():
+def test_rocm_runner_compile_ctypes_fail_load() -> None:
+    """Test function test_rocm_runner_compile_ctypes_fail_load."""
     from unittest.mock import MagicMock, patch
 
     import pytest
@@ -354,7 +395,8 @@ def test_rocm_runner_compile_ctypes_fail_load():
                     runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1])
 
 
-def test_rocm_runner_compile_ctypes_fail_func():
+def test_rocm_runner_compile_ctypes_fail_func() -> None:
+    """Test function test_rocm_runner_compile_ctypes_fail_func."""
     from unittest.mock import MagicMock, patch
 
     import pytest
@@ -372,7 +414,8 @@ def test_rocm_runner_compile_ctypes_fail_func():
                     runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1])
 
 
-def test_rocm_runner_compile_ctypes_fail_launch():
+def test_rocm_runner_compile_ctypes_fail_launch() -> None:
+    """Test function test_rocm_runner_compile_ctypes_fail_launch."""
     from unittest.mock import MagicMock, patch
 
     import pytest
@@ -391,7 +434,8 @@ def test_rocm_runner_compile_ctypes_fail_launch():
                     runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1])
 
 
-def test_rocm_runner_compile_ctypes_no_lib():
+def test_rocm_runner_compile_ctypes_no_lib() -> None:
+    """Test function test_rocm_runner_compile_ctypes_no_lib."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner

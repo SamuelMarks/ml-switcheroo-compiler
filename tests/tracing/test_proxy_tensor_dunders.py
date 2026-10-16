@@ -59,8 +59,8 @@ def test_proxy_tensor_dunders() -> None:
             _ = p1 @ p2
         finally:
             global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_proxy_tensor_outside_tracing() -> None:
@@ -81,8 +81,8 @@ def test_proxy_tensor_outside_tracing() -> None:
             _ = p1[0]
         with pytest.raises((RuntimeError, TracingError)):
             _ = p1 @ p2
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_add_node_outside_tracing() -> None:
@@ -95,8 +95,8 @@ def test_add_node_outside_tracing() -> None:
         "Verifies that attempting to add a logical node to the tracer when tracing is.\n\n    inactive raises a RuntimeError\n\n    Returns:\n    None\n    "
         node = LogicalNode(id="dummy", op_type="Input")
         global_tracing_state.add_node(node)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None
 
 
 def test_matmul_invalid() -> None:
@@ -114,5 +114,5 @@ def test_matmul_invalid() -> None:
                 _ = p1 @ 5
         finally:
             global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
+        assert _exc is not None

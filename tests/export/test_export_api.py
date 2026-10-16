@@ -1,5 +1,10 @@
+"""Tests for test_export_api."""
+
+from __future__ import annotations
+
 import os
 import tempfile
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import pytest
@@ -7,8 +12,14 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.export.export_api import ExportArchive
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_export_archive_init():
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+def test_export_archive_init() -> None:
+    """Test function test_export_archive_init."""
     archive = ExportArchive()
     assert isinstance(archive.trackables, dict)
     assert isinstance(archive.endpoints, dict)
@@ -16,23 +27,27 @@ def test_export_archive_init():
     assert isinstance(archive.schema, dict)
 
 
-def test_export_archive_init_no_yaml():
+def test_export_archive_init_no_yaml() -> None:
+    """Test function test_export_archive_init_no_yaml."""
     with mock.patch("os.path.exists", return_value=False):
         archive = ExportArchive()
         assert archive.schema == {"types": {}, "operations": {}}
 
 
-def test_track():
+def test_track() -> None:
+    """Test function test_track."""
     archive = ExportArchive()
     resource = {"some": "data"}
-    archive.track(resource)
+    cast("Callable[..., EagerTensorProtocol]", archive.track)(resource)
     assert id(resource) in archive.trackables
 
 
-def test_add_endpoint():
+def test_add_endpoint() -> None:
+    """Test function test_add_endpoint."""
     archive = ExportArchive()
 
-    def dummy_fn():
+    def dummy_fn() -> None:
+        """Test function dummy_fn."""
         pass
 
     archive.add_endpoint("dummy", dummy_fn)
@@ -40,7 +55,8 @@ def test_add_endpoint():
     assert archive.endpoints["dummy"] is dummy_fn
 
 
-def test_get_tf_dtype():
+def test_get_tf_dtype() -> None:
+    """Test function test_get_tf_dtype."""
     archive = ExportArchive()
     archive.schema = {"types": {"float32": 1, "int32": 3}}
     assert archive._get_tf_dtype("float32") == 1
@@ -48,7 +64,8 @@ def test_get_tf_dtype():
     assert archive._get_tf_dtype("unknown") == 1
 
 
-def test_get_tf_op():
+def test_get_tf_op() -> None:
+    """Test function test_get_tf_op."""
     archive = ExportArchive()
     archive.schema = {"operations": {"Add": "AddV2", "fallback": "Placeholder"}}
     assert archive._get_tf_op("Add") == "AddV2"
@@ -58,20 +75,22 @@ def test_get_tf_op():
         archive._get_tf_op("Unknown")
 
 
-def test_build_signature_def_no_graph():
+def test_build_signature_def_no_graph() -> None:
+    """Test function test_build_signature_def_no_graph."""
     archive = ExportArchive()
     with pytest.raises(ValueError, match="Exporting SignatureDef requires an explicit IRGraph"):
         archive._build_signature_def("test_sig")
 
 
-def test_build_signature_def_with_graph():
+def test_build_signature_def_with_graph() -> None:
+    """Test function test_build_signature_def_with_graph."""
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
-    input_node.dtype = "float32"
+    setattr(input_node, "dtype", "float32")
 
     output_node = LogicalNode(id="n2", op_type="Add")
-    output_node.dtype = "float32"
+    setattr(output_node, "dtype", "float32")
 
     graph.nodes = {"n1": input_node, "n2": output_node}
     graph.outputs = ["n2"]
@@ -80,11 +99,12 @@ def test_build_signature_def_with_graph():
     assert sig is not None
 
 
-def test_build_signature_def_with_graph_no_outputs():
+def test_build_signature_def_with_graph_no_outputs() -> None:
+    """Test function test_build_signature_def_with_graph_no_outputs."""
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
-    input_node.dtype = "float32"
+    setattr(input_node, "dtype", "float32")
     graph.nodes = {"n1": input_node}
     graph.outputs = []
 
@@ -92,13 +112,15 @@ def test_build_signature_def_with_graph_no_outputs():
     assert sig is not None
 
 
-def test_build_graph_def_no_graph():
+def test_build_graph_def_no_graph() -> None:
+    """Test function test_build_graph_def_no_graph."""
     archive = ExportArchive()
     graph_def = archive._build_graph_def()
     assert graph_def is not None
 
 
-def test_build_graph_def_with_graph():
+def test_build_graph_def_with_graph() -> None:
+    """Test function test_build_graph_def_with_graph."""
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
@@ -113,7 +135,8 @@ def test_build_graph_def_with_graph():
     assert graph_def is not None
 
 
-def test_build_saved_model():
+def test_build_saved_model() -> None:
+    """Test function test_build_saved_model."""
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
@@ -128,7 +151,8 @@ def test_build_saved_model():
     assert isinstance(saved_model, bytes)
 
 
-def test_write_out():
+def test_write_out() -> None:
+    """Test function test_write_out."""
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
@@ -148,13 +172,15 @@ def test_write_out():
         assert os.path.exists(os.path.join(tmpdir, "variables", "variables.index"))
 
 
-def test_add_variable_collection():
+def test_add_variable_collection() -> None:
+    """Test function test_add_variable_collection."""
     archive = ExportArchive()
     archive.add_variable_collection("vars", [1, 2, 3])
     assert archive.collections["vars"] == [1, 2, 3]
 
 
-def test_write_out_no_collections():
+def test_write_out_no_collections() -> None:
+    """Test function test_write_out_no_collections."""
     archive = ExportArchive()
     with tempfile.TemporaryDirectory() as tmpdir:
         archive.write_out(tmpdir)

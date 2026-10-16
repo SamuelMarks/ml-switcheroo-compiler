@@ -1,13 +1,14 @@
-# ruff: noqa: E402, E501, F403
 """Numpy implementations for optimizer update steps."""
+
+from types import ModuleType
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("ApplyAdam")
-def _np_apply_adam(backend_module, param, m, v, grad, **kwargs):
+def _np_apply_adam(backend_module: ModuleType, param: EagerValue, m: EagerValue, v: EagerValue, grad: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Numpy eager fallback for ApplyAdam.
 
     Args:
@@ -32,7 +33,7 @@ def _np_apply_adam(backend_module, param, m, v, grad, **kwargs):
 
 
 @numpy_eager_registry.register("ApplyAdagrad")
-def _np_apply_adagrad(backend_module, param, accum, grad, **kwargs):
+def _np_apply_adagrad(backend_module: ModuleType, param: EagerValue, accum: EagerValue, grad: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Numpy eager fallback for ApplyAdagrad.
 
     Args:
@@ -54,7 +55,7 @@ def _np_apply_adagrad(backend_module, param, accum, grad, **kwargs):
 
 
 @numpy_eager_registry.register("ApplyFtrl")
-def _np_apply_ftrl(backend_module, param, accum, linear, grad, **kwargs):
+def _np_apply_ftrl(backend_module: ModuleType, param: EagerValue, accum: EagerValue, linear: EagerValue, grad: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Numpy eager fallback for ApplyFtrl.
 
     Args:
@@ -78,7 +79,7 @@ def _np_apply_ftrl(backend_module, param, accum, linear, grad, **kwargs):
 
 
 @numpy_eager_registry.register("ApplyRMSProp")
-def _np_apply_rmsprop(backend_module, param, ms, mom, grad, **kwargs):
+def _np_apply_rmsprop(backend_module: ModuleType, param: EagerValue, ms: EagerValue, mom: EagerValue, grad: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Numpy eager fallback for ApplyRMSProp.
 
     Args:

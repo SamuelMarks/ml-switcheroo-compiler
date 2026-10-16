@@ -1,6 +1,9 @@
 """Tests for compiler transform pass configuration models and pipelines."""
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, cast
 
 import yaml
 
@@ -15,6 +18,11 @@ from ml_switcheroo_compiler.transforms.passes.config_models import (
     load_shape_learning_protocol,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
 
 def test_pass_config_model() -> None:
     """Verify PassConfig and cost model construction."""
@@ -23,7 +31,7 @@ def test_pass_config_model() -> None:
         "cost_model": {"memory_sizes": {"MatMul": 10}, "compute_costs": {"heavy_ops": ["MatMul"], "light_ops": [], "heavy_cost": 20, "light_cost": 1, "default_cost": 2}, "compute_heavy_threshold": 1, "heavy_interleave_penalty": 1, "light_interleave_penalty": 1},
         "fusion_patterns": {"p1": {"pattern": {"op_type": "Add", "capture": "c"}, "replacement": {"op_type": "Sub", "inputs": ["c"], "capture_to_replace": "c"}}},
     }
-    config = PassConfig(**data)
+    config = cast("Callable[..., EagerTensorProtocol]", PassConfig)(**data)
     assert config.execution_order == ["test_pass"]
     assert config.cost_model.memory_sizes["MatMul"] == 10
 
@@ -35,7 +43,7 @@ def test_pass_config_model() -> None:
     assert n1.op_type is None
     n2 = NodePatternConfig(op_type="A", capture="a", inputs=[])
     assert n2.inputs == []
-    c1 = CostModelConfig(memory_sizes={}, compute_costs={"heavy_ops": [], "light_ops": [], "heavy_cost": 1, "light_cost": 1, "default_cost": 1}, compute_heavy_threshold=1, heavy_interleave_penalty=1, light_interleave_penalty=1)
+    c1 = cast("Callable[..., EagerTensorProtocol]", CostModelConfig)(memory_sizes={}, compute_costs={"heavy_ops": [], "light_ops": [], "heavy_cost": 1, "light_cost": 1, "default_cost": 1}, compute_heavy_threshold=1, heavy_interleave_penalty=1, light_interleave_penalty=1)
     assert c1.compute_heavy_threshold == 1
 
 

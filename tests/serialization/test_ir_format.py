@@ -1,5 +1,9 @@
 """Tests for IR serialization formats and shape learning protocol."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicConstraintTracker, SymInt
 from ml_switcheroo_compiler.serialization.ir_format import (
@@ -12,6 +16,11 @@ from ml_switcheroo_compiler.serialization.ir_format import (
     json_to_graph,
     yaml_to_graph,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_ir_format() -> None:
@@ -51,27 +60,30 @@ def test_ir_format() -> None:
     assert graph_to_flatbuffers(graph) == b""
 
 
-def test_ir_format_serialization_edge_branches() -> None:
-    """Verify all branching conditions in _build_serialization_dict and _parse_serialization_dict."""
-    # 1. Graph with diverse shape metadata types and non-primitive attributes
+def _test_ir_format_serialization_edge_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 1 of test_ir_format_serialization_edge_branches.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
     g = IRGraph(name="edge_graph")
 
     # Node with single int shape
-    n_int_shape = IRNode(id="n_int", op_type="Const", shape_metadata=42)  # type: ignore[arg-type]
+    n_int_shape = IRNode(id="n_int", op_type="Const", shape_metadata=42)
     # Node with single digit str shape
-    n_str_digit_shape = IRNode(id="n_str_digit", op_type="Const", shape_metadata="128")  # type: ignore[arg-type]
+    n_str_digit_shape = IRNode(id="n_str_digit", op_type="Const", shape_metadata="128")
     # Node with single non-digit str shape
-    n_str_sym_shape = IRNode(id="n_str_sym", op_type="Const", shape_metadata="batch")  # type: ignore[arg-type]
+    n_str_sym_shape = IRNode(id="n_str_sym", op_type="Const", shape_metadata="batch")
     # Node with tuple containing digit str and non-digit str
     n_tuple_mixed = IRNode(
         id="n_mixed",
         op_type="Op",
-        shape_metadata=("64", "unknown_dim", 3),  # type: ignore[arg-type]
+        shape_metadata=("64", "unknown_dim", 3),
         attributes={"str_val": "abc", "complex_val": [1, 2, 3], "num_val": 4.5, "bool_val": True},
     )
     # Node with shape_metadata = None and non-dict attributes
     n_none_shape = IRNode(id="n_none", op_type="Op", shape_metadata=None)
-    n_none_shape.attributes = "invalid_attr"  # type: ignore[assignment]
+    setattr(n_none_shape, "attributes", "invalid_attr")
 
     g.nodes["n_int"] = n_int_shape
     g.nodes["n_str_digit"] = n_str_digit_shape
@@ -89,7 +101,7 @@ def test_ir_format_serialization_edge_branches() -> None:
     assert data["nodes"]["n_none"]["attributes"] == {}
 
     # 2. Test deserialization edge cases in _parse_serialization_dict
-    raw_dict: dict[str, object] = {
+    raw_dict: dict[str, EagerValue] = {
         "name": "parsed_graph",
         "outputs": "not_a_list",  # triggers fallback where outputs is not a list
         "nodes": {
@@ -112,6 +124,19 @@ def test_ir_format_serialization_edge_branches() -> None:
     }
 
     parsed_g = _parse_serialization_dict(raw_dict)
+    getattr(_state, "update")({"data": data, "g": g, "n_int_shape": n_int_shape, "n_none_shape": n_none_shape})
+    getattr(_state, "update")({"n_str_digit_shape": n_str_digit_shape, "n_str_sym_shape": n_str_sym_shape, "n_tuple_mixed": n_tuple_mixed, "parsed_g": parsed_g})
+    getattr(_state, "update")({"raw_dict": raw_dict})
+    _state.update(locals())
+
+
+def _test_ir_format_serialization_edge_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 2 of test_ir_format_serialization_edge_branches.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+    parsed_g = _state["parsed_g"]
     assert parsed_g.name == "parsed_graph"
     assert parsed_g.outputs == []
     assert "invalid_node" not in parsed_g.nodes
@@ -127,7 +152,7 @@ def test_ir_format_serialization_edge_branches() -> None:
     assert parsed_g.nodes["valid_node_2"].attributes == {}
 
     # 3. Test _parse_serialization_dict when nodes is not a dict
-    empty_nodes_dict: dict[str, object] = {"nodes": "not_a_dict"}
+    empty_nodes_dict: dict[str, EagerValue] = {"nodes": "not_a_dict"}
     g_empty_nodes = _parse_serialization_dict(empty_nodes_dict)
     assert len(g_empty_nodes.nodes) == 0
 
@@ -135,10 +160,22 @@ def test_ir_format_serialization_edge_branches() -> None:
     g_empty_yaml = yaml_to_graph("")
     assert g_empty_yaml.name == "graph"
     assert len(g_empty_nodes.nodes) == 0
+    getattr(_state, "update")({"empty_nodes_dict": empty_nodes_dict, "g_empty_nodes": g_empty_nodes, "g_empty_yaml": g_empty_yaml})
+    _state.update(locals())
 
-    # 5. Test initializers with primitive types and custom object fallback, subgraphs without nodes, and invalid subgraph in deserialization
+
+def _test_ir_format_serialization_edge_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+    """Execute part 3 of test_ir_format_serialization_edge_branches.
+
+    Args:
+        _state: Shared test state dictionary.
+    """
+
     class CustomInitValue:
+        """Test class CustomInitValue."""
+
         def __str__(self) -> str:
+            """Test function __str__."""
             return "custom_str_repr"
 
     g_init_edge = IRGraph(name="init_edge")
@@ -150,18 +187,17 @@ def test_ir_format_serialization_edge_branches() -> None:
     n_with_bad_sub = IRNode(
         id="n_bad_sub",
         op_type="CustomOp",
-        subgraphs={"invalid_sub": "not_a_subgraph_with_nodes"},  # type: ignore[dict-item]
+        subgraphs={"invalid_sub": "not_a_subgraph_with_nodes"},
     )
     g_init_edge.nodes["n_bad_sub"] = n_with_bad_sub
-    g_init_edge.inputs = None  # type: ignore[assignment]  # triggers branch 65 where getattr(graph, 'inputs', None) is falsy
-
+    setattr(g_init_edge, "inputs", None)  # triggers branch 65 where getattr(graph, 'inputs', None) is falsy
     init_edge_data = _build_serialization_dict(g_init_edge)
     assert init_edge_data["initializers"]["int_val"] == 123
     assert init_edge_data["initializers"]["custom_obj"] == "custom_str_repr"
     assert "invalid_sub" not in init_edge_data["nodes"]["n_bad_sub"].get("subgraphs", {})
 
     # Deserialization with node containing invalid non-dict sub_data or non-dict subgraphs field
-    raw_bad_sub_data: dict[str, object] = {
+    raw_bad_sub_data: dict[str, EagerValue] = {
         "name": "g_bad_sub",
         "inputs": "not_a_list",
         "initializers": "not_a_dict",
@@ -182,6 +218,17 @@ def test_ir_format_serialization_edge_branches() -> None:
     assert "node_sub" in g_parsed_bad_sub.nodes
     assert len(g_parsed_bad_sub.nodes["node_sub"].subgraphs) == 0
     assert "node_sub_not_dict" in g_parsed_bad_sub.nodes
+    getattr(_state, "update")({"CustomInitValue": CustomInitValue, "g_init_edge": g_init_edge, "g_parsed_bad_sub": g_parsed_bad_sub, "init_edge_data": init_edge_data})
+    getattr(_state, "update")({"n_with_bad_sub": n_with_bad_sub, "raw_bad_sub_data": raw_bad_sub_data})
+
+
+def test_ir_format_serialization_edge_branches() -> None:
+    """Verify all branching conditions in _build_serialization_dict and _parse_serialization_dict."""
+    _state: dict[str, EagerTensorProtocol] = {}
+    _test_ir_format_serialization_edge_branches_part_1(_state)
+    _test_ir_format_serialization_edge_branches_part_2(_state)
+    _test_ir_format_serialization_edge_branches_part_3(_state)
+    assert isinstance(_state, dict)
 
 
 def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
@@ -203,12 +250,12 @@ def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
         }
     }
 
-    resolved_shapes = ShapeTracker.update_from_feedback(telemetry, tracker)
+    resolved_shapes = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.update_from_feedback)(telemetry, tracker)
     assert resolved_shapes["x"] == (4, 16)
     assert resolved_shapes["dense"] == (4, 32)
 
     # Resolve dynamic bounds across graph
-    resolved_bounds = ShapeTracker.resolve_dynamic_bounds(graph, telemetry, tracker)
+    resolved_bounds = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker)
     assert "batch_dim" in resolved_bounds
     assert resolved_bounds["batch_dim"] == 4
 

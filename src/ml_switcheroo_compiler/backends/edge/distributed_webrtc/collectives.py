@@ -1,15 +1,18 @@
-# ruff: noqa: E402, E501, F403
 """Zero-copy collective operations for distributed execution over WebRTC."""
+
+from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import struct
 import sys
 import zlib
 from collections.abc import Sequence
-from typing import Optional
+from typing import Callable, Optional, cast
 
-import numpy as np
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.distributed.host_collectives import np
 
 DEFAULT_CHUNK_SIZE: int = 16384
 HIGH_WATERMARK_BYTES: int = 65536
@@ -19,7 +22,7 @@ LOW_WATERMARK_BYTES: int = 16384
 class WebRTCDataChannelStream:
     """Stream manager wrapping WebRTC RTCDataChannel event-driven communication."""
 
-    channel: object
+    channel: EagerValue
     chunk_size: int
     high_watermark: int
     low_watermark: int
@@ -28,7 +31,7 @@ class WebRTCDataChannelStream:
 
     def __init__(
         self,
-        channel: object,
+        channel: EagerValue,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         high_watermark: int = HIGH_WATERMARK_BYTES,
         low_watermark: int = LOW_WATERMARK_BYTES,
@@ -53,21 +56,21 @@ class WebRTCDataChannelStream:
     def _setup_event_handlers(self) -> None:
         """Attach onmessage and onbufferedamountlow handlers if supported by channel."""
         if hasattr(self.channel, "onmessage"):
-            self.channel.onmessage = self._on_message
+            setattr(self.channel, "onmessage", self._on_message)
         elif hasattr(self.channel, "on_message"):
-            self.channel.on_message = self._on_message
+            setattr(self.channel, "on_message", self._on_message)
 
         if hasattr(self.channel, "bufferedAmountLowThreshold"):
-            self.channel.bufferedAmountLowThreshold = self.low_watermark
+            setattr(self.channel, "bufferedAmountLowThreshold", self.low_watermark)
         elif hasattr(self.channel, "buffered_amount_low_threshold"):
-            self.channel.buffered_amount_low_threshold = self.low_watermark
+            setattr(self.channel, "buffered_amount_low_threshold", self.low_watermark)
 
         if hasattr(self.channel, "onbufferedamountlow"):
-            self.channel.onbufferedamountlow = self._on_buffered_amount_low
+            setattr(self.channel, "onbufferedamountlow", self._on_buffered_amount_low)
         elif hasattr(self.channel, "on_buffered_amount_low"):
-            self.channel.on_buffered_amount_low = self._on_buffered_amount_low
+            setattr(self.channel, "on_buffered_amount_low", self._on_buffered_amount_low)
 
-    def _on_message(self, event_or_data: object) -> None:
+    def _on_message(self, event_or_data: EagerValue) -> None:
         """Event listener for incoming RTCDataChannel binary and text messages.
 
         Args:
@@ -79,11 +82,11 @@ class WebRTCDataChannelStream:
         elif isinstance(payload, str):
             self._recv_queue.put_nowait(payload.encode("utf-8"))
         elif hasattr(payload, "tobytes"):
-            self._recv_queue.put_nowait(bytes(payload.tobytes()))
+            self._recv_queue.put_nowait(bytes(getattr(payload, "tobytes")()))
         else:
-            self._recv_queue.put_nowait(bytes(payload))
+            self._recv_queue.put_nowait(cast("Callable[..., bytes]", bytes)(payload))
 
-    def _on_buffered_amount_low(self, event: Optional[object] = None) -> None:
+    def _on_buffered_amount_low(self, event: EagerValue | None = None) -> None:
         """Event listener for RTCDataChannel bufferedamountlow event.
 
         Args:
@@ -106,8 +109,8 @@ class WebRTCDataChannelStream:
         """Pause execution when bufferedAmount exceeds high watermark until drained."""
         if self.get_buffered_amount() > self.high_watermark:
             self._drain_event.clear()
-            if hasattr(self.channel, "wait_drain") and callable(self.channel.wait_drain):
-                drain_fn = self.channel.wait_drain
+            drain_fn = getattr(self.channel, "wait_drain", None)
+            if callable(drain_fn):
                 if asyncio.iscoroutinefunction(drain_fn):
                     await drain_fn()
                 else:
@@ -120,7 +123,7 @@ class WebRTCDataChannelStream:
                     await asyncio.wait_for(self._drain_event.wait(), timeout=0.01)
                     break
                 except asyncio.TimeoutError:
-                    pass
+                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     async def send_bytes(self, data: bytes) -> None:
         """Send raw bytes over the underlying channel.
@@ -129,7 +132,7 @@ class WebRTCDataChannelStream:
             data (bytes): Byte payload to transmit.
         """
         if hasattr(self.channel, "send"):
-            send_fn = self.channel.send
+            send_fn = getattr(self.channel, "send")
             if asyncio.iscoroutinefunction(send_fn):
                 await send_fn(data)
             else:
@@ -137,7 +140,7 @@ class WebRTCDataChannelStream:
                 if asyncio.iscoroutine(res):
                     await res
         elif hasattr(self.channel, "sendMessage"):
-            send_fn = self.channel.sendMessage
+            send_fn = getattr(self.channel, "sendMessage")
             if asyncio.iscoroutinefunction(send_fn):
                 await send_fn(data)
             else:
@@ -153,8 +156,8 @@ class WebRTCDataChannelStream:
         """
         if not self._recv_queue.empty():
             return await self._recv_queue.get()
-        if hasattr(self.channel, "recv") and callable(self.channel.recv):
-            recv_fn = self.channel.recv
+        recv_fn = getattr(self.channel, "recv", None)
+        if callable(recv_fn):
             if asyncio.iscoroutinefunction(recv_fn):
                 res = await recv_fn()
             else:
@@ -165,27 +168,30 @@ class WebRTCDataChannelStream:
         return await self._recv_queue.get()
 
 
-async def _send_data(conn: object, data: np.ndarray, chunk_size: int = DEFAULT_CHUNK_SIZE) -> None:
+async def _send_data(conn: EagerValue, data: EagerValue, chunk_size: int = DEFAULT_CHUNK_SIZE) -> None:
     """Send tensor over WebRTC DataChannel using chunked binary streaming protocol.
 
     Args:
         conn (object): WebRTC DataChannel, stream adapter, or async connection.
-        data (np.ndarray): Tensor to serialize and stream.
+        data (EagerValue): Tensor to serialize and stream.
         chunk_size (int): Size of individual binary chunks in bytes.
     """
     stream = conn if isinstance(conn, WebRTCDataChannelStream) else WebRTCDataChannelStream(conn, chunk_size=chunk_size)
+    arr = cast(EagerTensorProtocol, data)
+    dtype_obj = arr.dtype
+    arr_byteorder = str(getattr(dtype_obj, "byteorder", "="))
 
     native_order = "<" if sys.byteorder == "little" else ">"
-    byteorder = native_order if data.dtype.byteorder in ("=", "|") else data.dtype.byteorder
+    byteorder = native_order if arr_byteorder in ("=", "|") else arr_byteorder
 
-    raw_bytes = data.tobytes()
+    raw_bytes = bytes(arr.tobytes())
     total_bytes = len(raw_bytes)
     num_chunks = max(1, (total_bytes + chunk_size - 1) // chunk_size)
 
     meta = {
         "protocol": "webrtc_stream_v1",
-        "shape": list(data.shape),
-        "dtype": data.dtype.str,
+        "shape": list(arr.shape),
+        "dtype": str(getattr(dtype_obj, "str", dtype_obj)),
         "byteorder": byteorder,
         "total_bytes": total_bytes,
         "num_chunks": num_chunks,
@@ -207,14 +213,14 @@ async def _send_data(conn: object, data: np.ndarray, chunk_size: int = DEFAULT_C
         await stream.send_bytes(chunk_frame)
 
 
-async def _recv_data(conn: object) -> np.ndarray:
+async def _recv_data(conn: EagerValue) -> EagerValue:
     """Receive tensor from WebRTC DataChannel with chunked reassembly and endianness handling.
 
     Args:
         conn (object): WebRTC DataChannel, stream adapter, or async connection.
 
     Returns:
-        np.ndarray: Reconstructed numpy ndarray.
+        EagerValue: Reconstructed numpy ndarray.
 
     Raises:
         ValueError: If received metadata header is corrupt or payload size mismatches.
@@ -255,32 +261,32 @@ async def _recv_data(conn: object) -> np.ndarray:
         if expected_byteorder in ("<", ">") and expected_byteorder != native_order:
             arr = arr.astype(target_dtype.newbyteorder("="))
 
-        return arr.copy()
+        return cast(EagerValue, arr.copy())
     else:
         meta_str = header_bytes.decode("utf-8")
         shape_str, dtype_str = meta_str.split("|")
         shape = tuple(int(s) for s in shape_str.split(",")) if shape_str else ()
         dtype = np.dtype(dtype_str)
         data_bytes = await stream.recv_bytes()
-        return np.frombuffer(data_bytes, dtype=dtype).reshape(shape).copy()
+        return cast(EagerValue, np.frombuffer(data_bytes, dtype=dtype).reshape(shape).copy())
 
 
 async def broadcast(
-    tensor: np.ndarray,
+    tensor: EagerValue,
     root_rank: int,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
-) -> np.ndarray:
+) -> EagerValue:
     """Execute Broadcast collective operation across WebRTC DataChannels.
 
     Args:
-        tensor (np.ndarray): Tensor to broadcast from root or receive buffer.
+        tensor (EagerValue): Tensor to broadcast from root or receive buffer.
         root_rank (int): Rank of broadcasting leader node.
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
         rank (int): Global rank of current node.
 
     Returns:
-        np.ndarray: Received or copied tensor data.
+        EagerValue: Received or copied tensor data.
 
     Raises:
         ValueError: If root connection is missing.
@@ -291,7 +297,7 @@ async def broadcast(
             if i != rank and conn is not None:
                 tasks.append(_send_data(conn, tensor))
         await asyncio.gather(*tasks)
-        return tensor.copy()
+        return cast(EagerTensorProtocol, tensor).copy()
     else:
         conn = conns[root_rank]
         if conn is None:
@@ -300,28 +306,28 @@ async def broadcast(
 
 
 async def ring_all_reduce(
-    tensor: np.ndarray,
+    tensor: EagerValue,
     op_type: str,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
-) -> np.ndarray:
+) -> EagerValue:
     """Execute Ring AllReduce collective operation across cyclic peer DataChannels.
 
     Args:
-        tensor (np.ndarray): Local input tensor to reduce across all ranks.
+        tensor (EagerValue): Local input tensor to reduce across all ranks.
         op_type (str): Reduction operator type ("SUM", "PROD", "MAX", "MIN").
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
         rank (int): Global rank of current node.
 
     Returns:
-        np.ndarray: Globally reduced result tensor on local rank.
+        EagerValue: Globally reduced result tensor on local rank.
 
     Raises:
         ValueError: If op_type is unrecognized or ring neighbor connection is missing.
     """
     world_size = len(conns)
     if world_size <= 1:
-        return tensor.copy()
+        return cast(EagerTensorProtocol, tensor).copy()
 
     op_upper = op_type.upper()
     if op_upper not in ("SUM", "PROD", "MAX", "MIN"):
@@ -334,26 +340,28 @@ async def ring_all_reduce(
     if next_conn is None or prev_conn is None:
         raise ValueError(f"Ring topology requires connections to neighbors ({prev_rank}, {next_rank})")
 
-    chunks = [c.copy() for c in np.array_split(tensor, world_size, axis=0)]
+    chunks: list[EagerValue] = [c.copy() for c in np.array_split(tensor, world_size, axis=0)]
 
-    def _apply_op(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    def _apply_op(a: EagerValue, b: EagerValue) -> EagerValue:
         """Apply elementwise reduction operation between two chunks.
 
         Args:
-            a (np.ndarray): First operand chunk.
-            b (np.ndarray): Second operand chunk.
+            a (EagerValue): First operand chunk.
+            b (EagerValue): Second operand chunk.
 
         Returns:
-            np.ndarray: Result of the reduction.
+            EagerValue: Result of the reduction.
         """
+        a_t = cast(EagerTensorProtocol, a)
+        b_t = cast(EagerTensorProtocol, b)
         if op_upper == "SUM":
-            return a + b
+            return a_t + b_t
         elif op_upper == "PROD":
-            return a * b
+            return a_t * b_t
         elif op_upper == "MAX":
-            return np.maximum(a, b)
+            return cast(EagerValue, np.maximum(a_t, b_t))
         else:
-            return np.minimum(a, b)
+            return cast(EagerValue, np.minimum(a_t, b_t))
 
     # Phase 1: Scatter-Reduce
     for step in range(world_size - 1):
@@ -375,31 +383,31 @@ async def ring_all_reduce(
         _, received_chunk = await asyncio.gather(send_task, recv_task)
         chunks[recv_idx] = received_chunk
 
-    return np.concatenate(chunks, axis=0)
+    return cast(EagerValue, np.concatenate(chunks, axis=0))
 
 
 async def recursive_halving_doubling_all_gather(
-    tensor: np.ndarray,
+    tensor: EagerValue,
     axis: int,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
-) -> np.ndarray:
+) -> EagerValue:
     """Execute Recursive Halving/Doubling AllGather collective across WebRTC DataChannels.
 
     Args:
-        tensor (np.ndarray): Local input tensor to contribute to gather.
+        tensor (EagerValue): Local input tensor to contribute to gather.
         axis (int): Dimension along which to concatenate gathered slices.
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
         rank (int): Global rank of current node.
 
     Returns:
-        np.ndarray: Concatenated global tensor containing all slices in rank order.
+        EagerValue: Concatenated global tensor containing all slices in rank order.
     """
     world_size = len(conns)
     if world_size <= 1:
-        return tensor.copy()
+        return cast(EagerTensorProtocol, tensor).copy()
 
-    gathered: dict[int, np.ndarray] = {rank: tensor.copy()}
+    gathered: dict[int, EagerValue] = {rank: cast(EagerTensorProtocol, tensor).copy()}
     num_steps = (world_size - 1).bit_length()
 
     for step in range(num_steps):
@@ -421,27 +429,54 @@ async def recursive_halving_doubling_all_gather(
                     gathered[pr] = slc
 
     valid_slices = [gathered[r] for r in range(world_size) if r in gathered]
-    return np.concatenate(valid_slices, axis=axis)
+    return cast(EagerValue, np.concatenate(valid_slices, axis=axis))
 
 
-async def all_reduce(  # noqa: C901
-    tensor: np.ndarray,
+def _apply_reduction_op(a: EagerValue, b: EagerValue, op_type: str) -> EagerValue:
+    """Apply an elementwise reduction operator between two tensors.
+
+    Args:
+        a (EagerValue): First operand tensor.
+        b (EagerValue): Second operand tensor.
+        op_type (str): Reduction operator name ("SUM", "PROD", "MAX", "MIN").
+
+    Returns:
+        EagerValue: Reduced result tensor.
+
+    Raises:
+        ValueError: If op_type is not supported.
+    """
+    a_t = cast(EagerTensorProtocol, a)
+    b_t = cast(EagerTensorProtocol, b)
+    if op_type == "SUM":
+        return a_t + b_t
+    if op_type == "PROD":
+        return a_t * b_t
+    if op_type == "MAX":
+        return cast(EagerValue, np.maximum(a_t, b_t))
+    if op_type == "MIN":
+        return cast(EagerValue, np.minimum(a_t, b_t))
+    raise ValueError(f"Unsupported reduction operator '{op_type}'")
+
+
+async def all_reduce(
+    tensor: EagerValue,
     op_type: str,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
     algorithm: str = "direct",
-) -> np.ndarray:
+) -> EagerValue:
     """Execute AllReduce collective operation across WebRTC DataChannels.
 
     Args:
-        tensor (np.ndarray): Local input tensor to reduce.
+        tensor (EagerValue): Local input tensor to reduce.
         op_type (str): Reduction operator type ("SUM", "PROD", "MAX", "MIN").
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
         rank (int): Global rank of current node.
         algorithm (str): AllReduce algorithm choice ("direct", "ring").
 
     Returns:
-        np.ndarray: Fully reduced result tensor on local rank.
+        EagerValue: Fully reduced result tensor on local rank.
 
     Raises:
         ValueError: If op_type is unrecognized.
@@ -449,61 +484,42 @@ async def all_reduce(  # noqa: C901
     if algorithm == "ring":
         return await ring_all_reduce(tensor, op_type, conns, rank)
 
-    res = tensor.copy()
-
-    send_tasks = []
-    for i, conn in enumerate(conns):
-        if i != rank and conn is not None:
-            send_tasks.append(_send_data(conn, tensor))
-    await asyncio.gather(*send_tasks)
-
-    recv_tasks = []
-    for i, conn in enumerate(conns):
-        if i != rank and conn is not None:
-            recv_tasks.append(_recv_data(conn))
-
-    received_tensors = await asyncio.gather(*recv_tasks)
+    res: EagerValue = cast(EagerTensorProtocol, tensor).copy()
+    peer_conns = [conn for i, conn in enumerate(conns) if i != rank and conn is not None]
+    await asyncio.gather(*[_send_data(conn, tensor) for conn in peer_conns])
+    received_tensors = await asyncio.gather(*[_recv_data(conn) for conn in peer_conns])
 
     for other_tensor in received_tensors:
-        if op_type == "SUM":
-            res = res + other_tensor
-        elif op_type == "PROD":
-            res = res * other_tensor
-        elif op_type == "MAX":
-            res = np.maximum(res, other_tensor)
-        elif op_type == "MIN":
-            res = np.minimum(res, other_tensor)
-        else:
-            raise ValueError(f"Unsupported reduction operator '{op_type}'")
+        res = _apply_reduction_op(res, other_tensor, op_type)
 
     return res
 
 
 async def all_gather(
-    tensor: np.ndarray,
+    tensor: EagerValue,
     axis: int,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
     algorithm: str = "direct",
-) -> np.ndarray:
+) -> EagerValue:
     """Execute AllGather collective operation across WebRTC DataChannels.
 
     Args:
-        tensor (np.ndarray): Local input tensor to contribute to gather.
+        tensor (EagerValue): Local input tensor to contribute to gather.
         axis (int): Dimension along which to concatenate gathered slices.
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
         rank (int): Global rank of current node.
         algorithm (str): AllGather algorithm choice ("direct", "recursive_doubling").
 
     Returns:
-        np.ndarray: Concatenated global tensor containing all slices in rank order.
+        EagerValue: Concatenated global tensor containing all slices in rank order.
     """
     if algorithm == "recursive_doubling":
         return await recursive_halving_doubling_all_gather(tensor, axis, conns, rank)
 
     world_size = len(conns)
-    tensors: list[Optional[np.ndarray]] = [None] * world_size
-    tensors[rank] = tensor.copy()
+    tensors: list[EagerValue | None] = [None] * world_size
+    tensors[rank] = cast(EagerTensorProtocol, tensor).copy()
 
     send_tasks = []
     for i, conn in enumerate(conns):
@@ -525,34 +541,34 @@ async def all_gather(
             idx += 1
 
     valid_tensors = [t for t in tensors if t is not None]
-    return np.concatenate(valid_tensors, axis=axis)
+    return cast(EagerValue, np.concatenate(valid_tensors, axis=axis))
 
 
 async def ring_reduce_scatter(
-    tensor: np.ndarray,
+    tensor: EagerValue,
     op_type: str,
     scatter_dim: int,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
-) -> np.ndarray:
+) -> EagerValue:
     """Execute Ring ReduceScatter collective operation across cyclic peer DataChannels.
 
     Args:
-        tensor (np.ndarray): Local input tensor to reduce and scatter.
+        tensor (EagerValue): Local input tensor to reduce and scatter.
         op_type (str): Reduction operator type ("SUM", "PROD", "MAX", "MIN").
         scatter_dim (int): Axis along which to partition the reduced tensor.
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
         rank (int): Global rank of current node.
 
     Returns:
-        np.ndarray: The local slice of the globally reduced tensor.
+        EagerValue: The local slice of the globally reduced tensor.
 
     Raises:
         ValueError: If op_type is unrecognized or ring neighbor connection is missing.
     """
     world_size: int = len(conns)
     if world_size <= 1:
-        return tensor.copy()
+        return cast(EagerTensorProtocol, tensor).copy()
 
     op_upper: str = op_type.upper()
     if op_upper not in ("SUM", "PROD", "MAX", "MIN"):
@@ -565,18 +581,25 @@ async def ring_reduce_scatter(
     if next_conn is None or prev_conn is None:
         raise ValueError(f"Ring topology requires connections to neighbors ({prev_rank}, {next_rank})")
 
-    chunks: list[np.ndarray] = [c.copy() for c in np.array_split(tensor, world_size, axis=scatter_dim)]
+    chunks: list[EagerValue] = [c.copy() for c in np.array_split(tensor, world_size, axis=scatter_dim)]
 
-    def _apply_op(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-        """Apply elementwise reduction between two chunks."""
+    def _apply_op(a: EagerValue, b: EagerValue) -> EagerValue:
+        """Apply elementwise reduction between two chunks.
+
+        Args:
+            a: The a parameter.
+            b: The b parameter.
+        """
+        a_t = cast(EagerTensorProtocol, a)
+        b_t = cast(EagerTensorProtocol, b)
         if op_upper == "SUM":
-            return a + b
+            return a_t + b_t
         elif op_upper == "PROD":
-            return a * b
+            return a_t * b_t
         elif op_upper == "MAX":
-            return np.maximum(a, b)
+            return cast(EagerValue, np.maximum(a_t, b_t))
         else:
-            return np.minimum(a, b)
+            return cast(EagerValue, np.minimum(a_t, b_t))
 
     for step in range(world_size - 1):
         send_idx: int = (rank - 1 - step) % world_size
@@ -591,17 +614,17 @@ async def ring_reduce_scatter(
 
 
 async def reduce_scatter(
-    tensor: np.ndarray,
+    tensor: EagerValue,
     op_type: str,
     scatter_dim: int,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
     algorithm: str = "direct",
-) -> np.ndarray:
+) -> EagerValue:
     """Execute ReduceScatter collective operation across WebRTC DataChannels.
 
     Args:
-        tensor (np.ndarray): Local tensor to reduce and scatter.
+        tensor (EagerValue): Local tensor to reduce and scatter.
         op_type (str): Reduction operator type ("SUM", "PROD", "MAX", "MIN").
         scatter_dim (int): Axis along which to partition the reduced tensor.
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
@@ -609,7 +632,7 @@ async def reduce_scatter(
         algorithm (str): Algorithm choice ("direct", "ring").
 
     Returns:
-        np.ndarray: The local slice of the globally reduced tensor.
+        EagerValue: The local slice of the globally reduced tensor.
     """
     if algorithm == "ring":
         return await ring_reduce_scatter(tensor, op_type, scatter_dim, conns, rank)
@@ -617,16 +640,16 @@ async def reduce_scatter(
     reduced = await all_reduce(tensor, op_type, conns, rank)
     world_size = len(conns)
     chunks = np.array_split(reduced, world_size, axis=scatter_dim)
-    return chunks[rank]
+    return cast(EagerValue, chunks[rank])
 
 
 async def all_to_all(
-    tensor: np.ndarray,
+    tensor: EagerValue,
     scatter_dim: int,
     gather_dim: int,
-    conns: Sequence[Optional[object]],
+    conns: Sequence[EagerValue | None],
     rank: int,
-) -> np.ndarray:
+) -> EagerValue:
     """Execute AllToAll collective operation across WebRTC DataChannels.
 
     Each rank splits its input tensor along scatter_dim into world_size equal parts,
@@ -634,14 +657,14 @@ async def all_to_all(
     the received parts along gather_dim.
 
     Args:
-        tensor (np.ndarray): Local input tensor to distribute.
+        tensor (EagerValue): Local input tensor to distribute.
         scatter_dim (int): Axis along which to split local tensor.
         gather_dim (int): Axis along which to concatenate received tensors.
         conns (Sequence[Optional[object]]): Connection list indexed by peer rank.
         rank (int): Global rank of current node.
 
     Returns:
-        np.ndarray: Assembled tensor after all-to-all exchange.
+        EagerValue: Assembled tensor after all-to-all exchange.
     """
     world_size = len(conns)
     chunks = np.array_split(tensor, world_size, axis=scatter_dim)
@@ -658,7 +681,7 @@ async def all_to_all(
             recv_tasks.append(_recv_data(conn))
     received_chunks = await asyncio.gather(*recv_tasks)
 
-    all_chunks: list[Optional[np.ndarray]] = [None] * world_size
+    all_chunks: list[EagerValue | None] = [None] * world_size
     all_chunks[rank] = chunks[rank]
     idx = 0
     for i in range(world_size):
@@ -667,7 +690,7 @@ async def all_to_all(
             idx += 1
 
     valid_chunks = [c for c in all_chunks if c is not None]
-    return np.concatenate(valid_chunks, axis=gather_dim)
+    return cast(EagerValue, np.concatenate(valid_chunks, axis=gather_dim))
 
 
 class DistributedBarrier:
@@ -689,7 +712,7 @@ class DistributedBarrier:
         self.rank = rank
         self.leader_rank = leader_rank
 
-    async def wait(self, conns: Sequence[Optional[object]]) -> None:
+    async def wait(self, conns: Sequence[EagerValue | None]) -> None:
         """Wait for all ranks to reach the barrier.
 
         Args:
@@ -717,10 +740,10 @@ class DistributedBarrier:
             await asyncio.gather(*send_tasks)
 
 
-_BACKEND_COLLECTIVE_REGISTRY: dict[str, object] = {}
+_BACKEND_COLLECTIVE_REGISTRY: dict[str, EagerValue] = {}
 
 
-def register_collective_backend(backend_name: str, dispatcher: object) -> None:
+def register_collective_backend(backend_name: str, dispatcher: EagerValue) -> None:
     """Register a backend-specific collective dispatcher.
 
     Args:
@@ -730,7 +753,7 @@ def register_collective_backend(backend_name: str, dispatcher: object) -> None:
     _BACKEND_COLLECTIVE_REGISTRY[backend_name.lower()] = dispatcher
 
 
-def get_collective_backend(backend_name: str) -> Optional[object]:
+def get_collective_backend(backend_name: str) -> EagerValue | None:
     """Retrieve a registered collective dispatcher for a backend.
 
     Args:
@@ -742,116 +765,165 @@ def get_collective_backend(backend_name: str) -> Optional[object]:
     return _BACKEND_COLLECTIVE_REGISTRY.get(backend_name.lower())
 
 
-def dispatch_collective(  # noqa: C901, PLR0911, PLR0912, PLR0915
+def _dispatch_pytorch_collective(op: str, tensor: EagerValue, kwargs: dict[str, EagerValue]) -> EagerValue | None:
+    """Attempt to dispatch collective operation to PyTorch distributed backend.
+
+    Args:
+        op (str): Collective operation name.
+        tensor (EagerValue): Local input tensor.
+        kwargs (dict[str, EagerValue]): Additional collective parameters.
+
+    Returns:
+        EagerValue | None: Computed tensor if handled, else None.
+    """
+    try:
+        from ml_switcheroo_compiler.backends.pytorch.distributed_collectives import (
+            pytorch_all_gather,
+            pytorch_all_reduce,
+            pytorch_broadcast,
+            pytorch_reduce_scatter,
+        )
+
+        group = kwargs.get("group")
+        if op == "AllReduce":
+            return pytorch_all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), group=group)
+        if op == "AllGather":
+            return pytorch_all_gather(tensor, axis=int(cast(int, kwargs.get("axis", 0))), group=group)
+        if op == "ReduceScatter":
+            return pytorch_reduce_scatter(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0))), group=group)
+        if op == "Broadcast":
+            return pytorch_broadcast(tensor, src=int(cast(int, kwargs.get("root", 0))), group=group)
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    return None
+
+
+def _dispatch_jax_collective(op: str, tensor: EagerValue, kwargs: dict[str, EagerValue]) -> EagerValue | None:
+    """Attempt to dispatch collective operation to JAX distributed backend.
+
+    Args:
+        op (str): Collective operation name.
+        tensor (EagerValue): Local input tensor.
+        kwargs (dict[str, EagerValue]): Additional collective parameters.
+
+    Returns:
+        EagerValue | None: Computed tensor if handled, else None.
+    """
+    try:
+        from ml_switcheroo_compiler.backends.jax.distributed_collectives import (
+            jax_all_gather,
+            jax_all_reduce,
+            jax_broadcast,
+        )
+
+        axis_name = str(kwargs.get("axis_name", "data"))
+        if op == "AllReduce":
+            return jax_all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name)
+        if op == "AllGather":
+            return jax_all_gather(tensor, axis_name=axis_name, axis=int(cast(int, kwargs.get("axis", 0))))
+        if op == "Broadcast":
+            return jax_broadcast(tensor, src=int(cast(int, kwargs.get("root", 0))))
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    return None
+
+
+def _reduce_rank_sequence(all_ranks_data: Sequence[EagerValue], red_op: str) -> EagerValue:
+    """Reduce a sequence of tensors across all ranks using the specified operator.
+
+    Args:
+        all_ranks_data (Sequence[EagerValue]): Tensors from all participating ranks.
+        red_op (str): Uppercase reduction operator string.
+
+    Returns:
+        EagerValue: Reduced result tensor.
+    """
+    accum = cast(EagerTensorProtocol, all_ranks_data[0]).copy()
+    for other in all_ranks_data[1:]:
+        other_t = cast(EagerTensorProtocol, other)
+        if red_op in ("SUM", "ADD"):
+            accum = accum + other_t
+        elif red_op in ("PROD", "PRODUCT"):
+            accum = accum * other_t
+        elif red_op == "MAX":
+            accum = cast(EagerTensorProtocol, np.maximum(accum, other_t))
+        elif red_op == "MIN":
+            accum = cast(EagerTensorProtocol, np.minimum(accum, other_t))
+    return accum
+
+
+def _simulate_multi_rank_collective(
     op: str,
-    tensor: np.ndarray,
+    all_ranks_data: Sequence[EagerValue],
+    kwargs: dict[str, EagerValue],
+) -> EagerValue | None:
+    """Simulate a collective operation across multi-rank data on the host.
+
+    Args:
+        op (str): Collective operation name.
+        all_ranks_data (Sequence[EagerValue]): List or tuple of tensors for all ranks.
+        kwargs (dict[str, EagerValue]): Additional collective parameters.
+
+    Returns:
+        EagerValue | None: Simulated collective result if op is recognized, else None.
+    """
+    world_size = len(all_ranks_data)
+    rank = int(cast(int, kwargs.get("rank", 0)))
+    red_op = str(kwargs.get("op_type", "SUM")).upper()
+
+    if op == "AllReduce":
+        return _reduce_rank_sequence(all_ranks_data, red_op)
+    if op == "AllGather":
+        return cast(Optional[EagerValue], np.concatenate(all_ranks_data, axis=int(cast(int, kwargs.get("axis", 0)))))
+    if op == "ReduceScatter":
+        accum = _reduce_rank_sequence(all_ranks_data, red_op)
+        chunks = np.array_split(accum, world_size, axis=int(cast(int, kwargs.get("scatter_dim", 0))))
+        return cast(Optional[EagerValue], chunks[rank])
+    if op == "AllToAll":
+        scatter_dim = int(cast(int, kwargs.get("scatter_dim", 0)))
+        gather_dim = int(cast(int, kwargs.get("gather_dim", 0)))
+        gathered = [np.array_split(all_ranks_data[src], world_size, axis=scatter_dim)[rank] for src in range(world_size)]
+        return cast(Optional[EagerValue], np.concatenate(gathered, axis=gather_dim))
+    if op == "Broadcast":
+        return cast(EagerTensorProtocol, all_ranks_data[int(cast(int, kwargs.get("root", 0)))]).copy()
+    return None
+
+
+def dispatch_collective(
+    op: str,
+    tensor: EagerValue,
     backend: str = "numpy",
-    **kwargs: object,
-) -> np.ndarray:
+    **kwargs: EagerValue,
+) -> EagerValue:
     """Dispatch a collective operation to the designated backend runtime.
 
     Args:
         op (str): Collective operation name ("AllReduce", "AllGather", "ReduceScatter", "AllToAll", "Broadcast").
-        tensor (np.ndarray): Local tensor data.
+        tensor (EagerValue): Local tensor data.
         backend (str): Target execution backend ("pytorch", "jax", "cuda", "numpy").
         **kwargs (object): Additional collective parameters (op_type, axis, rank, world_size, all_ranks_data).
 
     Returns:
-        np.ndarray: Evaluated collective result.
+        EagerValue: Evaluated collective result.
     """
     backend_key = backend.lower()
     custom_disp = get_collective_backend(backend_key)
     if custom_disp is not None and callable(custom_disp):
         return custom_disp(op, tensor, **kwargs)
 
+    res: EagerValue | None = None
     if backend_key in ("pytorch", "torch"):
-        try:
-            from ml_switcheroo_compiler.backends.pytorch.distributed_collectives import (
-                pytorch_all_gather,
-                pytorch_all_reduce,
-                pytorch_broadcast,
-                pytorch_reduce_scatter,
-            )
-
-            if op == "AllReduce":
-                return pytorch_all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), group=kwargs.get("group"))
-            elif op == "AllGather":
-                return pytorch_all_gather(tensor, axis=int(kwargs.get("axis", 0)), group=kwargs.get("group"))
-            elif op == "ReduceScatter":
-                return pytorch_reduce_scatter(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(kwargs.get("scatter_dim", 0)), group=kwargs.get("group"))
-            elif op == "Broadcast":
-                return pytorch_broadcast(tensor, src=int(kwargs.get("root", 0)), group=kwargs.get("group"))
-        except Exception:
-            pass
-
+        res = _dispatch_pytorch_collective(op, tensor, kwargs)
     elif backend_key == "jax":
-        try:
-            from ml_switcheroo_compiler.backends.jax.distributed_collectives import (
-                jax_all_gather,
-                jax_all_reduce,
-                jax_broadcast,
-            )
+        res = _dispatch_jax_collective(op, tensor, kwargs)
 
-            if op == "AllReduce":
-                return jax_all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=str(kwargs.get("axis_name", "data")))
-            elif op == "AllGather":
-                return jax_all_gather(tensor, axis_name=str(kwargs.get("axis_name", "data")), axis=int(kwargs.get("axis", 0)))
-            elif op == "Broadcast":
-                return jax_broadcast(tensor, src=int(kwargs.get("root", 0)))
-        except Exception:
-            pass
+    if res is not None:
+        return res
 
-    # Reference host/multi-rank simulation for NumPy / decoupled execution
     all_ranks_data = kwargs.get("all_ranks_data")
     if isinstance(all_ranks_data, (list, tuple)) and len(all_ranks_data) > 0:
-        world_size = len(all_ranks_data)
-        rank = int(kwargs.get("rank", 0))
+        sim_res = _simulate_multi_rank_collective(op, all_ranks_data, kwargs)
+        if sim_res is not None:
+            return sim_res
 
-        if op == "AllReduce":
-            red_op = str(kwargs.get("op_type", "SUM")).upper()
-            accum = all_ranks_data[0].copy()
-            for other in all_ranks_data[1:]:
-                if red_op in ("SUM", "ADD"):
-                    accum = accum + other
-                elif red_op in ("PROD", "PRODUCT"):
-                    accum = accum * other
-                elif red_op == "MAX":
-                    accum = np.maximum(accum, other)
-                elif red_op == "MIN":
-                    accum = np.minimum(accum, other)
-            return accum
-
-        elif op == "AllGather":
-            axis = int(kwargs.get("axis", 0))
-            return np.concatenate(all_ranks_data, axis=axis)
-
-        elif op == "ReduceScatter":
-            red_op = str(kwargs.get("op_type", "SUM")).upper()
-            accum = all_ranks_data[0].copy()
-            for other in all_ranks_data[1:]:
-                if red_op in ("SUM", "ADD"):
-                    accum = accum + other
-                elif red_op in ("PROD", "PRODUCT"):
-                    accum = accum * other
-                elif red_op == "MAX":
-                    accum = np.maximum(accum, other)
-                elif red_op == "MIN":
-                    accum = np.minimum(accum, other)
-            scatter_dim = int(kwargs.get("scatter_dim", 0))
-            chunks = np.array_split(accum, world_size, axis=scatter_dim)
-            return chunks[rank]
-
-        elif op == "AllToAll":
-            scatter_dim = int(kwargs.get("scatter_dim", 0))
-            gather_dim = int(kwargs.get("gather_dim", 0))
-            gathered_chunks = []
-            for src_rank in range(world_size):
-                src_chunks = np.array_split(all_ranks_data[src_rank], world_size, axis=scatter_dim)
-                gathered_chunks.append(src_chunks[rank])
-            return np.concatenate(gathered_chunks, axis=gather_dim)
-
-        elif op == "Broadcast":
-            root = int(kwargs.get("root", 0))
-            return all_ranks_data[root].copy()
-
-    return tensor.copy()
+    return cast(EagerTensorProtocol, tensor).copy()

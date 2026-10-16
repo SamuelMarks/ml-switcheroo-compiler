@@ -1,9 +1,16 @@
+"""Tests for test_jvp_registry."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 # ruff: noqa: E501
 import pytest
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY, get_jvp, register_jvp
 
-"Provides required module functionality."
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_jvp_registry_coverage_brute() -> None:
@@ -48,7 +55,7 @@ def test_jvp_registry_coverage_brute() -> None:
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value="data_jvp"):
-        assert get_jvp("fake_op_2") == "data_jvp"
+        assert cast("EagerTensorProtocol", get_jvp("fake_op_2")) == cast("EagerTensorProtocol", "data_jvp")
 
     # Test get_jvp_from_data and has_jvp
     from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import has_jvp
@@ -60,7 +67,7 @@ def test_jvp_registry_coverage_brute() -> None:
         assert has_jvp("OpOnlyInData") is True
 
 
-def test_jvp_registry_full_branches():
+def test_jvp_registry_full_branches() -> None:
     """Test remaining branch coverage in jvp_registry.py."""
     import tempfile
     from unittest.mock import patch
@@ -79,12 +86,13 @@ def test_jvp_registry_full_branches():
     assert len(rules_cached) > 0
 
     # 1. Lazy load branch where get_jvp_from_data populates _JVP_REGISTRY (line 117)
-    def mock_get_data(name):
-        _JVP_REGISTRY[name] = "lazy_jvp_result"
+    def mock_get_data(name: EagerValue) -> None:
+        """Test function mock_get_data."""
+        getattr(_JVP_REGISTRY, "__setitem__")(name, "lazy_jvp_result")
         return None
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", side_effect=mock_get_data):
-        assert get_jvp("lazy_op_jvp") == "lazy_jvp_result"
+        assert cast("EagerTensorProtocol", get_jvp("lazy_op_jvp")) == cast("EagerTensorProtocol", "lazy_jvp_result")
 
     # 2. load_primitive_jvp_rules with nonexistent path (branches 47, 50->58)
     with patch("os.path.exists", return_value=False):

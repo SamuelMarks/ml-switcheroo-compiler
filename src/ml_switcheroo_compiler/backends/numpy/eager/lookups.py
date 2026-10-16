@@ -9,7 +9,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
-LookupInput = Union[np.ndarray, list[Union[int, str]], int, str]
+LookupInput = Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[Union[int, str]], int, str]
 
 
 @numpy_eager_registry.register("Hashing")
@@ -58,7 +58,7 @@ def _np_lookup(
     inputs: LookupInput,
     vocabulary: LookupInput,
     **kwargs: Union[float, int, str, bool, None],
-) -> np.ndarray:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate _np_lookup operation.
 
     Args:
@@ -70,10 +70,10 @@ def _np_lookup(
     Returns:
         np.ndarray: Result array.
     """
-    inputs_arr: np.ndarray = np.asarray(inputs)
-    vocab: np.ndarray = np.asarray(vocabulary)
+    inputs_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(inputs)
+    vocab: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(vocabulary)
     # basic mapping fallback
-    res: np.ndarray = np.zeros_like(inputs_arr, dtype=np.int32)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.zeros_like(inputs_arr, dtype=np.int32)
     for i, v in enumerate(vocab):
         res[inputs_arr == v] = i
     return res

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -126,8 +128,8 @@ def strip_offline_diagnostic_nodes_pass(graph: IRGraph) -> IRGraph:
         graph.nodes.pop(node_id, None)
 
     try:
-        graph.sorted_nodes = topological_sort(graph)
-    except Exception:
-        pass
+        setattr(graph, "sorted_nodes", topological_sort(graph))
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     return graph

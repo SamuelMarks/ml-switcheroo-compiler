@@ -1,15 +1,30 @@
+"""Tests for test_tensorflow_generator."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
 
 class DummyNode:
-    def __init__(self, attrs=None, op_type="Unknown"):
+    """Test class DummyNode."""
+
+    def __init__(self, attrs: EagerValue = None, op_type: EagerValue = "Unknown") -> None:
+        """Test function __init__."""
         self.attributes = attrs or {}
         self.op_type = op_type
         self.id = "n1"
 
 
-def test_tf_generator_basics(tmp_path):
+def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
+    """Test function test_tf_generator_basics."""
     g = IRGraph()
     gen = TensorFlowCodeGenerator(g)
 
@@ -19,12 +34,12 @@ def test_tf_generator_basics(tmp_path):
     file_npy = tmp_path / "test.npy"
     TensorFlowCodeGenerator.save(str(file_npy), arr)
     res_npy = TensorFlowCodeGenerator.load(str(file_npy))
-    np.testing.assert_array_equal(res_npy, arr)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res_npy, arr)
 
     file_npz = tmp_path / "test.npz"
     TensorFlowCodeGenerator.savez(str(file_npz), a=arr)
     res_npz = TensorFlowCodeGenerator.load(str(file_npz))
-    np.testing.assert_array_equal(res_npz["a"], arr)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("EagerTensorProtocol", getattr(res_npz, "__getitem__")("a")), arr)
 
     file_comp = tmp_path / "test_comp.npz"
     TensorFlowCodeGenerator.savez_compressed(str(file_comp), a=arr)
@@ -44,8 +59,8 @@ def test_tf_generator_basics(tmp_path):
     assert gen._format_transpose({}) == "tf.transpose({0})"
     assert gen._format_transpose({"axes": [0, 1]}) == "tf.transpose({0}, perm={axes})"
 
-    assert gen.visit_RaggedDot(DummyNode(), ["x", "y"]) == "tf_ragged_dot(x, y)"
-    assert gen.visit_Einsum(DummyNode(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
+    assert cast("Callable[..., EagerTensorProtocol]", gen.visit_RaggedDot)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["x", "y"]) == "tf_ragged_dot(x, y)"
+    assert cast("Callable[..., EagerTensorProtocol]", gen.visit_Einsum)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
 
     assert gen.get_fallback_prefix() == "tf.math"
     assert "Zeros" in gen._get_creation_ops({})
@@ -98,7 +113,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
         x_val = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
         cfg_2x2 = TensorConfig(shape=[2, 2], dtype="float32", device="cpu")
         out = runner(Tensor(x_val, cfg_2x2))
-        np.testing.assert_allclose(out, np.maximum(x_val, 0.0))
+        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(out, cast("Callable[..., EagerTensorProtocol]", np.maximum)(x_val, 0.0))
 
     # 3. compile_aot exception fallback to forward_fn
     g_multi = IRGraph()
@@ -127,7 +142,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
             # Single output
             g_multi.outputs = ["add"]
             res_single = fb_runner(a_val)
-            np.testing.assert_allclose(res_single, [2.0, 4.0])
+            cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_single, [2.0, 4.0])
 
             # No outputs
             g_multi.outputs = []

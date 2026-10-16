@@ -1,4 +1,9 @@
-def test_webgl_exhaustive_extra():
+"""Tests for test_webgl_shader_generation."""
+
+from __future__ import annotations
+
+
+def test_webgl_exhaustive_extra() -> None:
     """Test line coverage for WebGL generator."""
     import pytest
 
@@ -9,14 +14,14 @@ def test_webgl_exhaustive_extra():
     # Test missing template
     n_missing = IRNode(id="n_missing", op_type="MissingOp", inputs=[])
     g.nodes[n_missing.id] = n_missing
-    g.sorted_nodes = [n_missing]
+    setattr(g, "sorted_nodes", [n_missing])
 
     gen = WebGLCodeGenerator(g)
     with pytest.raises(ValueError, match="Missing WebGL shader template"):
         gen.generate()
 
 
-def test_webgl_shapes_and_inputs():
+def test_webgl_shapes_and_inputs() -> None:
     """Test WebGL generation with shapes and inputs."""
     from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode

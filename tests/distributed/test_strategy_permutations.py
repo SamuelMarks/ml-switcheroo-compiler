@@ -1,4 +1,15 @@
-def test_strategy_exhaustive_extra():
+"""Tests for test_strategy_permutations."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+def test_strategy_exhaustive_extra() -> None:
+    """Test function test_strategy_exhaustive_extra."""
     from unittest.mock import mock_open, patch
 
     import yaml
@@ -15,21 +26,25 @@ def test_strategy_exhaustive_extra():
     with patch("os.path.exists", return_value=True):
         with patch("builtins.open", mock_open(read_data=yaml.dump({"strategies": {"test": "val"}}))):
             res = _load_strategy_config()
-            assert res == {"test": "val"}
+            assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", {"test": "val"})
 
         with patch("builtins.open", mock_open(read_data=yaml.dump({"test2": "val2"}))):
-            res = _load_webrtc_topology()
-            assert res == {"test2": "val2"}
+            res2 = cast("EagerTensorProtocol", _load_webrtc_topology())
+            assert res2 == cast("EagerTensorProtocol", {"test2": "val2"})
 
     # Test PS Hooks
     ps = ParameterServerStrategy()
     ps.config = {"registry_hooks": {"pull": "mock_pull", "push": "mock_push"}}
 
     class MockBackend:
-        def mock_pull(self, graph, resolver):
+        """Test class MockBackend."""
+
+        def mock_pull(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
+            """Test function mock_pull."""
             return True
 
-        def mock_push(self, graph, resolver):
+        def mock_push(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
+            """Test function mock_push."""
             return True
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
@@ -52,7 +67,10 @@ def test_strategy_exhaustive_extra():
     mwms.config = {"registry_hooks": {"sync": "mock_sync"}}
 
     class MockBackendMWMS:
-        def mock_sync(self, graph, resolver):
+        """Test class MockBackendMWMS."""
+
+        def mock_sync(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
+            """Test function mock_sync."""
             return True
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackendMWMS()):
