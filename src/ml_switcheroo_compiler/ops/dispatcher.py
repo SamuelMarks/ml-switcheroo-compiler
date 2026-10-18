@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-DispatchArg = EagerValue
+DispatchArg = TensorOrScalar
 
 
 def dispatch_op(

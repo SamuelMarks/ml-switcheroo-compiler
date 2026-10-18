@@ -1,55 +1,73 @@
-"""Gradient computation and autodiff utilities."""
+"""Forward-mode (JVP), reverse-mode (VJP), Jacobian, and Hessian autodiff transformations."""
 
-import contextlib  # noqa: F401
+from __future__ import annotations
+
 import math
-import typing  # noqa: F401
 import uuid
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field  # noqa: F401
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Optional, Union, cast
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
-from ml_switcheroo_compiler.ops.registry import register_util  # noqa: F401
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp  # noqa: F401
 
 from .options import GradOptions
 from .utils import GradValue, _convert_to_tensors, _get_fun_primal
+
+
+def _unpack_pair(val: GradValue) -> tuple[GradValue, GradValue]:
+    """Unpack a 2-element iterable or tuple into `(first, second)`.
+
+    Args:
+        val (GradValue): 2-element sequence or iterable.
+
+    Returns:
+        tuple[GradValue, GradValue]: Unpacked pair of elements.
+    """
+    if isinstance(val, (list, tuple)) and len(val) >= 2:
+        return val[0], val[1]
+    if isinstance(val, Iterable):
+        items = list(val)
+        if len(items) >= 2:
+            return items[0], items[1]
+    return val, None
 
 
 class CustomJVPFunction:
     """Wrap a function to allow defining custom Jacobian-vector product (JVP) rules."""
 
     def __init__(self, fun: Callable[..., GradValue]) -> None:
-        """Initialize CustomJVPFunction.
+        """Initialize `CustomJVPFunction`.
 
         Args:
-            fun (Callable): The base function being wrapped.
+            fun (Callable[..., GradValue]): Base primal function being wrapped.
         """
         self.fun = fun
         self.jvp_rule: Optional[Callable[..., GradValue]] = None
         self.jvp_subgraph: Optional[LogicalGraph] = None
 
-    def defjvp(self, jvp_rule: Callable[..., GradValue], jvp_subgraph: Optional[LogicalGraph] = None) -> Callable[..., GradValue]:
+    def defjvp(
+        self,
+        jvp_rule: Callable[..., GradValue],
+        jvp_subgraph: Optional[LogicalGraph] = None,
+    ) -> Callable[..., GradValue]:
         """Define the custom Jacobian-vector product (JVP) rule.
 
         Args:
-            jvp_rule (Callable): The JVP rule. Signature can be (primals, tangents) -> (val, out_tangent)
-                or (*primals, *tangents).
+            jvp_rule (Callable[..., GradValue]): Custom JVP rule callable.
             jvp_subgraph (Optional[LogicalGraph]): Optional declarative forward/tangent IR subgraph.
 
         Returns:
-            Callable: The registered jvp_rule.
+            Callable[..., GradValue]: The registered `jvp_rule`.
         """
         self.jvp_rule = jvp_rule
         if jvp_subgraph is not None:
@@ -71,27 +89,27 @@ class CustomJVPFunction:
         self.jvp_subgraph = jvp_subgraph
 
     def __eq__(self, other: object) -> bool:
-        """Check equality with another function or CustomJVPFunction.
+        """Check equality with another function or `CustomJVPFunction`.
 
         Args:
-            other (object): Other object to compare.
+            other (CustomJVPFunction | Callable[..., GradValue]): Other object to compare.
 
         Returns:
             bool: True if equal, False otherwise.
         """
         if isinstance(other, CustomJVPFunction):
             return self.fun == other.fun
-        return self.fun == other
+        return bool(self.fun == other)
 
     def __call__(self, *args: GradValue, **kwargs: GradValue) -> GradValue:
-        """Execute the function, emitting a CustomJVP node when tracing with a registered rule.
+        """Execute the function, emitting a `CustomJVP` node when tracing with a registered rule.
 
         Args:
             *args (GradValue): Positional arguments.
             **kwargs (GradValue): Keyword arguments.
 
         Returns:
-            GradValue: The computed output.
+            GradValue: Computed output tensor or value.
         """
         if config.eager_mode or not global_tracing_state.is_tracing or self.jvp_rule is None:
             return self.fun(*args, **kwargs)
@@ -99,8 +117,6 @@ class CustomJVPFunction:
         tensor_args = [a for a in args if isinstance(a, Tensor)]
         if not tensor_args:
             return self.fun(*args, **kwargs)
-
-        from ml_switcheroo_compiler.core.config import ConfigContext
 
         with ConfigContext(eager_mode=True):
             sample_out = self.fun(*args, **kwargs)
@@ -120,14 +136,17 @@ class CustomJVPFunction:
                     id=cid,
                     op_type="Constant",
                     inputs=[],
-                    attributes={"value": arr},
+                    attributes=cast("Mapping[str, AttributeValue]", {"value": arr}),
                     shape_metadata=getattr(arr, "shape", ()),
                 )
                 global_tracing_state.add_node(c_node)
                 in_ids.append(cid)
 
         out_id = f"custom_jvp_{uuid.uuid4().hex[:6]}"
-        jvp_attrs: dict[str, Union[Callable[..., GradValue], LogicalGraph, None]] = {"jvp_rule": self.jvp_rule, "fun": self.fun}
+        jvp_attrs: dict[str, Union[Callable[..., GradValue], LogicalGraph, None]] = {
+            "jvp_rule": self.jvp_rule,
+            "fun": self.fun,
+        }
         subgraphs: dict[str, LogicalGraph] = {}
         if self.jvp_subgraph is not None:
             jvp_attrs["jvp_graph"] = self.jvp_subgraph
@@ -138,7 +157,7 @@ class CustomJVPFunction:
             id=out_id,
             op_type="CustomJVP",
             inputs=in_ids,
-            attributes=jvp_attrs,
+            attributes=cast("Mapping[str, AttributeValue]", jvp_attrs),
             subgraphs=subgraphs,
             shape_metadata=out_shape,
         )
@@ -151,10 +170,10 @@ def custom_jvp(fun: Callable[..., GradValue]) -> CustomJVPFunction:
     """Wrap a function to allow defining custom Jacobian-vector product (JVP) rules.
 
     Args:
-        fun (Callable): The original function.
+        fun (Callable[..., GradValue]): The original primal function.
 
     Returns:
-        CustomJVPFunction: The wrapped function that supports custom JVPs.
+        CustomJVPFunction: Wrapped callable supporting `.defjvp(...)`.
     """
     return CustomJVPFunction(fun)
 
@@ -167,12 +186,12 @@ def _run_custom_jvp_rule(
     """Execute a registered custom JVP rule in eager mode.
 
     Args:
-        fun (CustomJVPFunction): CustomJVPFunction with a registered jvp_rule.
+        fun (CustomJVPFunction): `CustomJVPFunction` with a registered `jvp_rule`.
         primals_seq (Sequence[GradValue]): Sequence of primal arguments.
         tangents_seq (Sequence[GradValue]): Sequence of tangent arguments.
 
     Returns:
-        tuple[GradValue, GradValue]: Tuple of (primal_output, tangent_output).
+        tuple[GradValue, GradValue]: Tuple of `(primal_output, tangent_output)`.
     """
     with ConfigContext(eager_mode=True):
         assert fun.jvp_rule is not None
@@ -194,7 +213,7 @@ def _build_traced_logical_graph(
     tensor_primals: list[Tensor],
     prefix: str,
 ) -> LogicalGraph:
-    """Trace a primal function and construct a LogicalGraph from the traced block.
+    """Trace a primal function and construct a `LogicalGraph` from the traced block.
 
     Args:
         fun_primal (Callable[..., GradValue]): Primal function to trace.
@@ -236,21 +255,21 @@ def _execute_autodiff_graph(graph: LogicalGraph, inputs_dict: dict[str, GradValu
 
 
 def jvp(
-    fun: Callable[..., EagerValue],
-    primals: EagerValue,
-    tangents: EagerValue,
+    fun: Callable[..., GradValue],
+    primals: GradValue,
+    tangents: GradValue,
     has_aux: bool = False,
-) -> EagerValue:
-    """Evaluate jvp operation.
+) -> GradValue:
+    """Compute the Jacobian-vector product of `fun` at `primals` along `tangents`.
 
     Args:
-        fun: The fun parameter.
-        primals: The primals parameter.
-        tangents: The tangents parameter.
-        has_aux (bool): The has_aux parameter.
+        fun (Callable[..., GradValue]): Function to differentiate.
+        primals (GradValue): Primal input tensor or sequence of tensors.
+        tangents (GradValue): Tangent vector or sequence of tangent vectors.
+        has_aux (bool): Whether `fun` returns `(output, aux)`.
 
     Returns:
-        tuple: Result.
+        GradValue: `(primal_out, tangent_out)` or `((primal_out, aux), tangent_out)`.
     """
     from ml_switcheroo_compiler.transforms.autodiff import jvp as graph_jvp
 
@@ -262,7 +281,7 @@ def jvp(
 
     with ConfigContext(eager_mode=True):
         out_eager = fun(*primals_seq)
-        val, aux = getattr(out_eager if has_aux else (out_eager, None), "__iter__")()
+        val, aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
 
     fun_primal = _get_fun_primal(fun, has_aux)
     tensor_primals = _convert_to_tensors(primals_seq)
@@ -299,7 +318,7 @@ def _attach_cotangent_inputs(forward_graph: LogicalGraph) -> tuple[str, dict[str
         forward_graph (LogicalGraph): The traced forward graph to augment.
 
     Returns:
-        tuple[str, dict[str, str], list[str]]: Tuple of (output_node_id, cotangent_mapping, cotangent_ids_list).
+        tuple[str, dict[str, str], list[str]]: Tuple of `(output_node_id, cotangent_mapping, cotangent_ids_list)`.
     """
     output_node_id = forward_graph.outputs[0]
     output_node = forward_graph.nodes[output_node_id]
@@ -338,7 +357,7 @@ def _inline_vjp_into_active_trace(
         flat_cot (list[GradValue]): Flattened cotangent values.
 
     Returns:
-        list[GradValue]: List of proxy gradient Tensor objects corresponding to grad_graph outputs.
+        list[GradValue]: List of proxy gradient `Tensor` objects corresponding to `grad_graph` outputs.
     """
     from ml_switcheroo_compiler.core.device import Device
 
@@ -375,40 +394,41 @@ def _inline_vjp_into_active_trace(
 
 
 def vjp(
-    fun: Callable[..., EagerValue],
-    *primals: EagerValue,
+    fun: Callable[..., GradValue],
+    *primals: GradValue,
     has_aux: bool = False,
-) -> EagerValue:
-    """Evaluate vjp operation.
+) -> GradValue:
+    """Compute the reverse-mode vector-Jacobian product (VJP) pullback of `fun` at `primals`.
 
     Args:
-        fun: The fun parameter.
-        *primals: Positional args.
-        has_aux (bool): Aux.
+        fun (Callable[..., GradValue]): Differentiable function.
+        *primals (GradValue): Primal input arguments.
+        has_aux (bool): Whether `fun` returns `(output, aux)`.
 
     Returns:
-        tuple: Result.
+        GradValue: `(primal_out, vjp_fn)` or `((primal_out, aux), vjp_fn)`.
     """
     from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
     from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
     flat_primals, tree_def = tree_flatten(primals)
 
-    def fun_flat(*flat_args: EagerValue) -> EagerValue:
-        """Evaluate fun_flat operation.
+    def fun_flat(*flat_args: GradValue) -> GradValue:
+        """Unflatten arguments and invoke `fun`.
 
         Args:
-            *flat_args: Positional args.
+            *flat_args (GradValue): Flattened primal leaves.
 
         Returns:
-            GradValue: Result.
+            GradValue: Output of `fun(*unflat_args)`.
         """
         unflat_args = tree_unflatten(tree_def, list(flat_args))
-        return fun(*getattr(unflat_args, "__iter__")())
+        seq_args = tuple(unflat_args) if isinstance(unflat_args, Iterable) else (unflat_args,)
+        return fun(*seq_args)
 
     with ConfigContext(eager_mode=True):
         out_eager = fun(*primals)
-        val, aux = getattr(out_eager if has_aux else (out_eager, None), "__iter__")()
+        val, aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
 
     fun_primal = _get_fun_primal(fun_flat, has_aux)
     tensor_primals = _convert_to_tensors(flat_primals)
@@ -423,14 +443,14 @@ def vjp(
         cotangent_id=cotangent_mapping,
     )
 
-    def vjp_fn(cotangent: EagerValue) -> EagerValue:
-        """Evaluate vjp_fn operation.
+    def vjp_fn(cotangent: GradValue) -> GradValue:
+        """Evaluate the pullback function on upstream `cotangent`.
 
         Args:
-            cotangent: The cotangent parameter.
+            cotangent (GradValue): Upstream cotangent matching the output of `fun`.
 
         Returns:
-            tuple: Result.
+            GradValue: Tuple of cotangents with respect to `primals`.
         """
         flat_cot, _ = tree_flatten(cotangent)
         if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
@@ -441,7 +461,8 @@ def vjp(
                 cotangent_ids_list,
                 flat_cot,
             )
-            return tuple(getattr(tree_unflatten(tree_def, flat_grads), "__iter__")())
+            unflat = tree_unflatten(tree_def, flat_grads)
+            return tuple(unflat) if isinstance(unflat, Iterable) else (unflat,)
 
         backend = get_active_backend()
         inputs_dict = {inp_id: backend.asarray(getattr(p, "data", p)) for inp_id, p in zip(primal_input_ids, tensor_primals)}
@@ -450,31 +471,32 @@ def vjp(
 
         outputs_dict = _execute_autodiff_graph(grad_graph, inputs_dict)
         flat_grads = [outputs_dict[out_id] for out_id in grad_graph.outputs]
-        return tuple(getattr(tree_unflatten(tree_def, flat_grads), "__iter__")())
+        unflat = tree_unflatten(tree_def, flat_grads)
+        return tuple(unflat) if isinstance(unflat, Iterable) else (unflat,)
 
     return ((val, aux), vjp_fn) if has_aux else (val, vjp_fn)
 
 
 def hvp(
-    fun: Callable[..., EagerValue],
-    primals: EagerValue,
-    tangents: EagerValue,
+    fun: Callable[..., GradValue],
+    primals: GradValue,
+    tangents: GradValue,
     has_aux: bool = False,
     projected_tangents: Optional[Union[Tensor, Sequence[Tensor]]] = None,
     mode: str = "forward-over-reverse",
-) -> EagerValue:
-    """Evaluate hvp operation.
+) -> GradValue:
+    """Compute the Hessian-vector product of `fun` at `primals` along `tangents`.
 
     Args:
-        fun (object): The fun parameter.
-        primals (object): The primals parameter.
-        tangents (object): The tangents parameter.
-        has_aux (bool): The has_aux parameter.
-        projected_tangents (Optional[Union[Tensor, Sequence[Tensor]]]): Projected cotangents/tangents for non-scalar outputs.
-        mode (str): HVP computation mode ('forward-over-reverse' or 'reverse-over-forward').
+        fun (Callable[..., GradValue]): Scalar or projected function to differentiate twice.
+        primals (GradValue): Primal point(s).
+        tangents (GradValue): Tangent vector(s) matching `primals`.
+        has_aux (bool): Whether `fun` returns auxiliary data `(val, aux)`.
+        projected_tangents (Optional[Union[Tensor, Sequence[Tensor]]]): Optional cotangent projection vectors.
+        mode (str): HVP mode (`'forward-over-reverse'` or `'reverse-over-forward'`).
 
     Returns:
-            tuple[int, ...]: Result.
+        GradValue: Tuple of `(primal_out, hvp_out)` or `((primal_out, aux), hvp_out)`.
     """
     from ml_switcheroo_compiler.interpreter import evaluate_graph
     from ml_switcheroo_compiler.transforms.autodiff import hvp as graph_hvp
@@ -482,18 +504,15 @@ def hvp(
     primals_seq = primals if isinstance(primals, (tuple, list)) else (primals,)
     tangents_seq = tangents if isinstance(tangents, (tuple, list)) else (tangents,)
 
-    from ml_switcheroo_compiler.core.config import ConfigContext
-
     with ConfigContext(eager_mode=True):
         if has_aux:
-            val, aux = getattr(fun(*getattr(primals_seq, "__iter__")()), "__iter__")()
+            val, aux = _unpack_pair(fun(*primals_seq))
         else:
             val = fun(*primals_seq)
 
     fun_primal = _get_fun_primal(fun, has_aux)
     tensor_primals = _convert_to_tensors(primals_seq)
 
-    # Trace
     block = cast("Callable[..., LogicalGraph]", _trace_function)(fun_primal, tuple(tensor_primals), f"hvp_{uuid.uuid4().hex[:6]}")
     forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", "hvp")))
     nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
@@ -502,7 +521,6 @@ def hvp(
     forward_graph.inputs = block.inputs
     forward_graph.outputs = block.outputs
 
-    # Add tangent constants
     tangent_ids = []
     for t, p_id in zip(tangents_seq, forward_graph.inputs):
         t_id = f"tangent_{uuid.uuid4().hex[:6]}"
@@ -530,7 +548,6 @@ def hvp(
             forward_graph.nodes[pt_id] = pt_node
             proj_tangent_ids.append(pt_id)
 
-    # Compute HVP graph
     hvp_graph = graph_hvp(
         forward_graph,
         forward_graph.inputs,
@@ -540,7 +557,6 @@ def hvp(
         projected_tangents=proj_tangent_ids,
     )
 
-    # Evaluate HVP graph
     inputs_dict = {inputs_id: get_active_backend().asarray(getattr(p, "data", p)) for inputs_id, p in zip(forward_graph.inputs, tensor_primals)}
     outputs_dict = evaluate_graph(hvp_graph, cast("dict[str, EvalValue]", inputs_dict))
 
@@ -552,44 +568,38 @@ def hvp(
     return (val, out_tan)
 
 
-def jacfwd(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
-    """Evaluate jacfwd operation.
+def jacfwd(fun: Callable[..., GradValue], options: GradOptions | GradValue = None) -> Callable[..., GradValue]:
+    """Create a function computing the full Jacobian of `fun` using forward-mode JVP pushforwards.
 
     Args:
-        fun (object): The fun parameter.
-        options (GradOptions): The options parameter.
+        fun (Callable[..., GradValue]): Function whose Jacobian is to be computed.
+        options (GradOptions | GradValue): Optional `GradOptions` configuration.
 
     Returns:
-            tuple[int, ...]: Result.
+        Callable[..., GradValue]: Callable returning the forward-mode Jacobian tensor.
     """
-    options = cast(EagerValue, options or GradOptions())
+    opts = options if isinstance(options, GradOptions) else GradOptions()
 
-    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+        """Evaluate the forward-mode Jacobian of `fun` at `*args`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (GradValue): Primal input arguments.
+            **kwargs (GradValue): Keyword arguments passed to `fun`.
 
         Returns:
-            tuple[int, ...]: Result.
+            GradValue: Evaluated Jacobian tensor.
         """
-        # Evaluate fun to see input and output dimensions
         with ConfigContext(eager_mode=True):
             out = fun(*args, **kwargs)
-            if getattr(options, "has_aux"):
-                out_val, _ = getattr(out, "__iter__")()
-            else:
-                out_val = out
+            out_val = _unpack_pair(out)[0] if getattr(opts, "has_aux") else out
         out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
 
-        # Build basis tangents for each input coordinate
         arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
         flat_arg0 = getattr(arg0, "flatten")()
 
         jacobian_rows = []
         for i in range(len(flat_arg0)):
-            # Standard basis vector for coordinate i
             tangent_flat = get_active_backend().execute_op(
                 "OneHot",
                 get_active_backend().asarray(i),
@@ -601,48 +611,48 @@ def jacfwd(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerV
             )
             tangent = getattr(tangent_flat, "reshape")(getattr(arg0, "shape"))
 
-            # Run jvp
-            _, out_tangent = getattr(jvp(fun, args, (tangent,), has_aux=getattr(options, "has_aux")), "__iter__")()
+            _, out_tangent = _unpack_pair(jvp(fun, args, (tangent,), has_aux=getattr(opts, "has_aux")))
             jacobian_rows.append(getattr(get_active_backend().asarray(out_tangent), "flatten")())
 
-        # Standard format of Jacobian: (output_size, input_size)
         res = get_active_backend().execute_op("Stack", jacobian_rows, axis=-1)
         if getattr(out_arr, "ndim") > 0:
-            return cast(EagerValue, getattr(res, "reshape")(tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape"))))
+            return cast(
+                GradValue,
+                getattr(res, "reshape")(tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape"))),
+            )
         return res
 
     return wrapped
 
 
-def jacrev(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
-    """Evaluate jacrev operation.
+def jacrev(fun: Callable[..., GradValue], options: GradOptions | GradValue = None) -> Callable[..., GradValue]:
+    """Create a function computing the full Jacobian of `fun` using reverse-mode VJP pullbacks.
 
     Args:
-        fun (object): The fun parameter.
-        options (GradOptions): The options parameter.
+        fun (Callable[..., GradValue]): Function whose Jacobian is to be computed.
+        options (GradOptions | GradValue): Optional `GradOptions` configuration.
 
     Returns:
-            tuple[int, ...]: Result.
+        Callable[..., GradValue]: Callable returning the reverse-mode Jacobian tensor.
     """
-    options = cast(EagerValue, options or GradOptions())
+    opts = options if isinstance(options, GradOptions) else GradOptions()
 
-    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+        """Evaluate the reverse-mode Jacobian of `fun` at `*args`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (GradValue): Primal input arguments.
+            **kwargs (GradValue): Unused keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            GradValue: Evaluated Jacobian tensor.
         """
+        _ = kwargs
         from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
-        out, vjp_fn = getattr(vjp(fun, *getattr(args, "__iter__")(), has_aux=getattr(options, "has_aux")), "__iter__")()
-        if getattr(options, "has_aux"):
-            out_val, _ = getattr(out, "__iter__")()
-        else:
-            out_val = out
+        out, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=getattr(opts, "has_aux")))
+        vjp_fn = cast("Callable[[GradValue], GradValue]", vjp_fn_raw)
+        out_val = _unpack_pair(out)[0] if getattr(opts, "has_aux") else out
 
         flat_out, out_tree_def = tree_flatten(out_val)
         flat_shapes = [getattr(get_active_backend().asarray(getattr(o, "data", o)), "shape") for o in flat_out]
@@ -650,7 +660,6 @@ def jacrev(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerV
         total_size = sum(flat_sizes)
 
         arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
-
         jacobian_rows = []
 
         for i in range(total_size):
@@ -675,45 +684,46 @@ def jacrev(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerV
 
             cotangent = tree_unflatten(out_tree_def, flat_cots)
             grads = vjp_fn(cotangent)
-            # Differentiate with respect to first argument
-            jacobian_rows.append(getattr(get_active_backend().asarray(getattr(grads, "__getitem__")(0)), "flatten")())
+            first_grad = grads[0] if isinstance(grads, (list, tuple)) else grads
+            jacobian_rows.append(getattr(get_active_backend().asarray(first_grad), "flatten")())
 
         res = get_active_backend().execute_op("Stack", jacobian_rows, axis=0)
-        # Reshape output to out_shape + arg_shape
         if len(flat_sizes) > 1:
-            # Multi-output: standard output shape is (total_size,) + arg_shape
-            return cast(EagerValue, getattr(res, "reshape")((total_size,) + tuple(getattr(arg0, "shape"))))
-        else:
-            out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
-            if getattr(out_arr, "ndim") > 0:
-                return cast(EagerValue, getattr(res, "reshape")(tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape"))))
-            return cast(EagerValue, getattr(res, "reshape")(getattr(arg0, "shape")))
+            return cast(GradValue, getattr(res, "reshape")((total_size,) + tuple(getattr(arg0, "shape"))))
+        out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
+        if getattr(out_arr, "ndim") > 0:
+            return cast(
+                GradValue,
+                getattr(res, "reshape")(tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape"))),
+            )
+        return cast(GradValue, getattr(res, "reshape")(getattr(arg0, "shape")))
 
     return wrapped
 
 
-def hessian(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
-    """Evaluate hessian operation.
+def hessian(fun: Callable[..., GradValue], options: GradOptions | GradValue = None) -> Callable[..., GradValue]:
+    """Create a function computing the full Hessian matrix of scalar function `fun`.
 
     Args:
-        fun (object): The fun parameter.
-        options (GradOptions): The options parameter.
+        fun (Callable[..., GradValue]): Scalar-valued function to differentiate twice.
+        options (GradOptions | GradValue): Optional `GradOptions` configuration.
 
     Returns:
-            tuple[int, ...]: Result.
+        Callable[..., GradValue]: Callable returning the Hessian tensor of shape `arg.shape + arg.shape`.
     """
-    options = cast(EagerValue, options or GradOptions())
+    opts = options if isinstance(options, GradOptions) else GradOptions()
 
-    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+        """Evaluate the Hessian matrix of `fun` at `*args`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (GradValue): Primal input arguments.
+            **kwargs (GradValue): Unused keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            GradValue: Evaluated Hessian matrix tensor.
         """
+        _ = kwargs
         arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
         flat_arg0 = getattr(arg0, "flatten")()
 
@@ -730,10 +740,10 @@ def hessian(fun: Callable[..., EagerValue], options: EagerValue = None) -> Eager
             )
             tangent = getattr(tangent_flat, "reshape")(getattr(arg0, "shape"))
 
-            _, out_tangent = getattr(hvp(fun, args, (tangent,), has_aux=getattr(options, "has_aux")), "__iter__")()
+            _, out_tangent = _unpack_pair(hvp(fun, args, (tangent,), has_aux=getattr(opts, "has_aux")))
             hessian_rows.append(getattr(get_active_backend().asarray(out_tangent), "flatten")())
 
         res = get_active_backend().execute_op("Stack", hessian_rows, axis=0)
-        return cast(EagerValue, getattr(res, "reshape")(tuple(getattr(arg0, "shape")) + tuple(getattr(arg0, "shape"))))
+        return cast(GradValue, getattr(res, "reshape")(tuple(getattr(arg0, "shape")) + tuple(getattr(arg0, "shape"))))
 
     return wrapped

@@ -1,51 +1,26 @@
-"""Tests for conftest."""
+"""Global pytest fixtures and test environment initialization."""
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
+import yaml
 
-try:
-    import yaml  # noqa: F401
+yaml.safe_load("dummy: 1")
+sys.modules.setdefault("dpnp", np)
 
-    yaml.safe_load("dummy: 1")
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
+for _opt_pkg in ("scipy.linalg", "jax", "dask", "jinja2", "torch", "numba", "sparse"):
+    if importlib.util.find_spec(_opt_pkg) is not None:
+        __import__(_opt_pkg)
 
-try:
-    import scipy.linalg  # noqa: F401
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
-
-try:
-    import jax  # noqa: F401
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
-
-try:
-    import dask  # noqa: F401
-    import jinja2  # noqa: F401
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
-
-try:
-    import torch  # noqa: F401
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
-
-try:
-    import numba  # noqa: F401
-    import sparse  # noqa: F401
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
-
-try:
+if importlib.util.find_spec("tensorflow") is not None:
     import tensorflow as tf
 
     tf.config.run_functions_eagerly(True)
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

@@ -44,7 +44,7 @@ repos:
   repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.19.1
 - hooks:
-  - entry: pytest -n auto --dist loadfile --cov=src/ml_switcheroo_compiler
+  - entry: pytest -n auto --dist loadfile --cov=src/ml_switcheroo_compiler --cov-branch --cov-fail-under=100
     files: \.py$
     id: pytest-coverage
     language: system
@@ -61,13 +61,13 @@ repos:
     stages:
     - pre-push
   - entry: python3 scripts/generate_exports.py
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
+    files: ^src/ml_switcheroo_compiler/.*\.py$
     id: generate-exports
     language: system
     name: Generate Module Exports
     pass_filenames: false
   - entry: python3 scripts/lint_numpy_leak.py
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
+    files: ^src/ml_switcheroo_compiler/.*\.py$
     id: numpy-leak-check
     language: system
     name: Check for NumPy Leaks
@@ -84,14 +84,23 @@ repos:
     language: system
     name: Check Dependency Isolation
     pass_filenames: false
-  repo: local
-- hooks:
-  - entry: bash -c "count=$(rg 'typing\.Any' src/ml_switcheroo_compiler/ | wc -l);
-      if [ \$count -gt 0 ]; then echo \"Found \$count Any usages.\"; exit 1; fi"
+  - entry: python3 scripts/lint_any.py --max-count 0
     files: \.py$
-    id: check-any
+    id: lint-any
     language: system
     name: Check typing.Any usage
+    pass_filenames: false
+  - entry: python3 scripts/lint_pass.py --check-zero-assertions
+    files: \.py$
+    id: lint-pass
+    language: system
+    name: Check Tautological Assertions and Bare Pass
+    pass_filenames: false
+  - entry: interrogate -c pyproject.toml src/ml_switcheroo_compiler scripts
+    files: ^(src/ml_switcheroo_compiler|scripts)/.*\.py$
+    id: interrogate-docs
+    language: system
+    name: Check Docstring Coverage
     pass_filenames: false
   repo: local
 - hooks:

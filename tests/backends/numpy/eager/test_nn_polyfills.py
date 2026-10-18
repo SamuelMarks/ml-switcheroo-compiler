@@ -12,6 +12,8 @@ from ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills import (
     _np_ctc_beam_search_decoder,
     _np_ctc_beam_step,
     _np_ctc_unique_labels,
+    _np_depthwise_conv2d_backprop_filter,
+    _np_depthwise_conv2d_backprop_input,
     _np_log_poisson_loss,
     _np_max_pool_with_argmax,
     _np_normalize_moments,
@@ -224,3 +226,16 @@ def test_max_pool_with_argmax_fallback() -> None:
         m, a = cast("Callable[..., EagerTensorProtocol]", _np_max_pool_with_argmax)(np, x, pool_size=2)
         assert cast("EagerTensorProtocol", getattr(m, "shape")) == (1, 4, 4, 1)
         assert cast("EagerTensorProtocol", getattr(a, "shape")) == (1,)
+
+
+def test_depthwise_conv2d_backprop_polyfills() -> None:
+    """Verify NumPy eager polyfills for depthwise conv2d filter and input backprop."""
+    df = _np_depthwise_conv2d_backprop_filter(np, np.zeros((1, 4, 4, 2)), (3, 3, 2, 1), np.zeros((1, 2, 2, 2)))
+    assert df.shape == (3, 3, 2, 1)
+    df_int = _np_depthwise_conv2d_backprop_filter(np, np.zeros((1, 4, 4, 2)), 4, np.zeros((1, 2, 2, 2)))
+    assert df_int.shape == (4,)
+
+    di = _np_depthwise_conv2d_backprop_input(np, (1, 4, 4, 2), np.zeros((3, 3, 2, 1)), np.zeros((1, 2, 2, 2)))
+    assert di.shape == (1, 4, 4, 2)
+    di_int = _np_depthwise_conv2d_backprop_input(np, 4, np.zeros((3, 3, 2, 1)), np.zeros((1, 2, 2, 2)))
+    assert di_int.shape == (4,)

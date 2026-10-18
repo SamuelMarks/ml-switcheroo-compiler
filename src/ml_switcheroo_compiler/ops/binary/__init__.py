@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, get_op
 if typing.TYPE_CHECKING:
     from types import ModuleType
 
-    from ml_switcheroo_compiler.backends.registry import EagerValue
+    from ml_switcheroo_compiler.core.shape import TensorOrScalar
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 _: ModuleType = _special
@@ -211,12 +211,12 @@ except KeyError:
     betainc = typing.cast(OpDef, None)
 
 
-def divide_no_nan(x: EagerValue, y: EagerValue) -> EagerValue:
+def divide_no_nan(x: TensorOrScalar, y: TensorOrScalar) -> TensorOrScalar:
     """Divide no nan.
 
     Args:
-        x (Any): The x parameter.
-        y (Any): The y parameter.
+        x (TensorOrScalar): The x parameter.
+        y (TensorOrScalar): The y parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -227,12 +227,12 @@ def divide_no_nan(x: EagerValue, y: EagerValue) -> EagerValue:
     return where(equal(y, 0.0), zeros_like(typing.cast("Tensor", x)), divide(x, y))
 
 
-def polar(abs: EagerValue, angle: EagerValue) -> EagerValue:
+def polar(abs: TensorOrScalar, angle: TensorOrScalar) -> TensorOrScalar:
     """Polar.
 
     Args:
-        abs (Any): The abs parameter.
-        angle (Any): The angle parameter.
+        abs (TensorOrScalar): The abs parameter.
+        angle (TensorOrScalar): The angle parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -243,11 +243,11 @@ def polar(abs: EagerValue, angle: EagerValue) -> EagerValue:
     return backend.execute_op("Polar", getattr(abs, "data", abs), getattr(angle, "data", angle))
 
 
-def view_as_complex(x: EagerValue) -> EagerValue:
+def view_as_complex(x: TensorOrScalar) -> TensorOrScalar:
     """View as complex.
 
     Args:
-        x (Any): The x parameter.
+        x (TensorOrScalar): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -258,11 +258,11 @@ def view_as_complex(x: EagerValue) -> EagerValue:
     return backend.execute_op("ViewAsComplex", getattr(x, "data", x))
 
 
-def view_as_real(x: EagerValue) -> EagerValue:
+def view_as_real(x: TensorOrScalar) -> TensorOrScalar:
     """View as real.
 
     Args:
-        x (Any): The x parameter.
+        x (TensorOrScalar): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.

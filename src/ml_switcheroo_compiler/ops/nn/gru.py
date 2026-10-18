@@ -3,9 +3,10 @@
 from collections.abc import Callable, Sequence
 from typing import Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
@@ -15,8 +16,8 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
-def _compute_gru_gates(x_parts: EagerValue, r_parts: EagerValue, state: Tensor) -> EagerValue:
-    """Evaluate _compute_gru_gates operation.
+def _compute_gru_gates(x_parts: TensorOrScalar, r_parts: TensorOrScalar, state: Tensor) -> TensorOrScalar:
+    """Compute the compute gru gates tensor operation.
 
     Args:
         x_parts (tuple): The x_parts parameter.
@@ -40,7 +41,7 @@ def gru_cell(
     kernel: Tensor,
     recurrent_kernel: Tensor,
     bias: Optional[Tensor] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Fused GRU cell math.
 
     Args:
@@ -72,12 +73,12 @@ class Gru(OpDef):
 
     op_name = "Gru"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -85,12 +86,12 @@ class Gru(OpDef):
         return args[0] if args else ()
 
 
-def gru(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def gru(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """GRU layer.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -106,10 +107,10 @@ def gru(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _sigmoid(x: Tensor) -> Tensor:
-    """Evaluate _sigmoid operation.
+    """Compute the sigmoid tensor operation.
 
     Args:
-        x (Any): The x parameter.
+        x (Tensor): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.

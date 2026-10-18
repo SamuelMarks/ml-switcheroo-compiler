@@ -83,7 +83,7 @@ class CppGenerator(BaseGenerator):
         self.lines: list[str] = []
 
     def _get_shape(self, node: IRNode) -> list[int]:
-        """_get_shape function.
+        """Execute get shape for compiler processing.
 
         Args:
             node (IRNode): The node parameter.
@@ -136,7 +136,7 @@ class CppGenerator(BaseGenerator):
             self.lines.append(f"    for(size_t i = 0; i < {clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}")
 
     def _num_elements(self, shape: list[int]) -> int:
-        """_num_elements function.
+        """Execute num elements for compiler processing.
 
         Args:
             shape (list[int]): The shape parameter.
@@ -150,7 +150,7 @@ class CppGenerator(BaseGenerator):
         return n
 
     def _get_strides(self, shape: list[int]) -> list[int]:
-        """_get_strides function.
+        """Execute get strides for compiler processing.
 
         Args:
             shape (list[int]): The shape parameter.
@@ -187,8 +187,10 @@ class CppGenerator(BaseGenerator):
         # Determine maximum memory offset required
         max_offset: int = 0
         for node in graph_to_use.nodes.values():
-            offset: int | None = node.attributes.get("buffer_offset")
-            size: int | None = node.attributes.get("buffer_size")
+            raw_offset = node.attributes.get("buffer_offset")
+            raw_size = node.attributes.get("buffer_size")
+            offset: int | None = int(raw_offset) if isinstance(raw_offset, (int, float)) else None
+            size: int | None = int(raw_size) if isinstance(raw_size, (int, float)) else None
             if offset is not None and size is not None:
                 max_offset = max(max_offset, offset + size)
 
@@ -220,7 +222,7 @@ class CppGenerator(BaseGenerator):
         return "\n".join(self.lines)
 
     def _visit_if_op(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
-        """_visit_if_op function.
+        """Execute visit if op for compiler processing.
 
         Args:
             node (IRNode): The node parameter.
@@ -1489,7 +1491,7 @@ class CppGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (object): Compiler options.
+            **kwargs (EagerValue): Compiler options.
 
         Returns:
             Callable[[], str]: Executable wrapper.
@@ -1566,7 +1568,7 @@ class LLVMCPPRunner:
             """Execute the compiled C++ graph with optional input/output buffer pointers.
 
             Args:
-                *args (object): Optional (c_inputs, c_outputs, c_shapes) buffer pointers.
+                *args (EagerValue): Optional (c_inputs, c_outputs, c_shapes) buffer pointers.
 
             Returns:
                 str: Status message.

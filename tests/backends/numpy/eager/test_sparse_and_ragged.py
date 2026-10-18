@@ -6,6 +6,7 @@ import inspect
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged as sr
 
@@ -19,7 +20,6 @@ def test_sparse_and_ragged_coverage() -> None:
     """Test function test_sparse_and_ragged_coverage."""
     ops = [getattr(sr, name) for name in dir(sr) if name.startswith("_") and callable(getattr(sr, name))]
     arg = np.array([1.0, 2.0])
-
     for op in ops:
         sig = inspect.signature(op)
         args_to_pass = []
@@ -30,13 +30,9 @@ def test_sparse_and_ragged_coverage() -> None:
                 cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
             else:
                 cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
-
-        try:
+        with pytest.raises(TypeError):
             op(*args_to_pass)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
-
         try:
             op(*args_to_pass[:-1])
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+            _caught_err = True

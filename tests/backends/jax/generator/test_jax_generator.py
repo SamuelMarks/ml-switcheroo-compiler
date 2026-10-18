@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-from typing import cast
-from typing import TYPE_CHECKING
-
-from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxControlFlowVisitor, JaxDistributedVisitor, JaxMathVisitor
-from unittest.mock import MagicMock, patch
-from unittest.mock import MagicMock
-from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 import sys
-from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
+from typing import TYPE_CHECKING, cast
+from unittest.mock import MagicMock, patch
+
+from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
+from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxControlFlowVisitor, JaxDistributedVisitor, JaxMathVisitor
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -27,96 +25,82 @@ class DummyGraph:
         self.outputs = cast("list[EagerTensorProtocol]", [])
 
 
-# ruff: noqa
-
-
 def test_jax_generator_extra_coverage() -> None:
     """Test the jax generator extra coverage behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        g = IRGraph()
-        gen = JAXCodeGenerator(g)
+    g = IRGraph()
+    gen = JAXCodeGenerator(g)
 
-        def _test_node(op_type: EagerTensorProtocol, inputs: EagerTensorProtocol, attrs: EagerTensorProtocol, expected: EagerTensorProtocol) -> None:
-            """Test the node behavior.
+    def _test_node(op_type: EagerTensorProtocol, inputs: EagerTensorProtocol, attrs: EagerTensorProtocol, expected: EagerTensorProtocol) -> None:
+        """Test the node behavior.
 
-            Args:
-                op_type (object): The op_type parameter.
-                inputs (object): The inputs parameter.
-                attrs (object): The attrs parameter.
-                expected (object): The expected parameter.
+        Args:
+            op_type (EagerTensorProtocol): The op_type parameter.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            attrs (EagerTensorProtocol): The attrs parameter.
+            expected (EagerTensorProtocol): The expected parameter.
 
-            Returns:
-                object: The inferred shape or computed result.
-            """
-            n = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n1", op_type=op_type, inputs=inputs, attributes=attrs, shape_metadata=None)
-            res = cast("Callable[..., EagerTensorProtocol]", gen.visit)(n, inputs)
-            assert expected in res
+        Returns:
+            TensorOrScalar: The inferred shape or computed result.
+        """
+        n = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n1", op_type=op_type, inputs=inputs, attributes=attrs, shape_metadata=None)
+        res = cast("Callable[..., EagerTensorProtocol]", gen.visit)(n, inputs)
+        assert expected in res
 
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentSum", ["x", "ids"], {"num_segments": 2}, "segment_sum")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentMax", ["x", "ids"], {}, "segment_max")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentMin", ["x", "ids"], {}, "segment_min")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentProd", ["x", "ids"], {}, "segment_prod")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentSum", ["x", "ids"], {}, "segment_sum")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentMax", ["x", "ids"], {}, "segment_max")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentMin", ["x", "ids"], {}, "segment_min")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentProd", ["x", "ids"], {}, "segment_prod")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("MatrixExponential", ["x"], {}, "expm")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("Polar", ["x"], {"side": "left"}, "polar")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("Polar", ["x"], {"side": "'right'"}, "polar")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("Schur", ["x"], {}, "schur")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("Cholesky", ["x"], {}, "cholesky")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("Svd", ["x"], {"full_matrices": False, "compute_uv": False}, "svd")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("If", ["cond"], {}, "cond")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("Loop", ["x"], {}, "while_loop")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("Scan", ["x", "y"], {}, "scan")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("PowerIteration", ["x", "u"], {"num_iters": 2}, "power_iteration")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("PowerIteration", ["x"], {}, "power_iteration")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("ConvTranspose", ["x", "w"], {"strides": 2, "padding": "SAME"}, "conv_transpose")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("RaggedDot", ["x", "y"], {}, "ragged_dot")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("all_gather", ["x"], {"axis_name": "'y'"}, "all_gather")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("reduce_scatter", ["x"], {"axis_name": "'y'", "axis": 1, "op": "jax.lax.pmax"}, "reduce_scatter")
-        cast("Callable[..., EagerTensorProtocol]", _test_node)("all_reduce", ["x"], {"axis_name": "'y'", "op": "pmax"}, "pmax")
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentSum", ["x", "ids"], {"num_segments": 2}, "segment_sum")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentMax", ["x", "ids"], {}, "segment_max")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentMin", ["x", "ids"], {}, "segment_min")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("SegmentProd", ["x", "ids"], {}, "segment_prod")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentSum", ["x", "ids"], {}, "segment_sum")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentMax", ["x", "ids"], {}, "segment_max")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentMin", ["x", "ids"], {}, "segment_min")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("UnsortedSegmentProd", ["x", "ids"], {}, "segment_prod")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("MatrixExponential", ["x"], {}, "expm")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("Polar", ["x"], {"side": "left"}, "polar")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("Polar", ["x"], {"side": "'right'"}, "polar")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("Schur", ["x"], {}, "schur")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("Cholesky", ["x"], {}, "cholesky")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("Svd", ["x"], {"full_matrices": False, "compute_uv": False}, "svd")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("If", ["cond"], {}, "cond")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("Loop", ["x"], {}, "while_loop")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("Scan", ["x", "y"], {}, "scan")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("PowerIteration", ["x", "u"], {"num_iters": 2}, "power_iteration")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("PowerIteration", ["x"], {}, "power_iteration")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("ConvTranspose", ["x", "w"], {"strides": 2, "padding": "SAME"}, "convtranspose")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("RaggedDot", ["x", "y"], {}, "ragged_dot")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("all_gather", ["x"], {"axis_name": "'y'"}, "all_gather")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("reduce_scatter", ["x"], {"axis_name": "'y'", "axis": 1, "op": "jax.lax.pmax"}, "reduce_scatter")
+    cast("Callable[..., EagerTensorProtocol]", _test_node)("all_reduce", ["x"], {"axis_name": "'y'", "op": "pmax"}, "all_reduce")
 
 
 def test_jax_generator_generate_full() -> None:
     """Test the jax generator generate full behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        g = IRGraph()
-        n = IRNode(id="n1", op_type="UnknownOp", inputs=[], attributes={}, shape_metadata=None)
-        g.nodes["n1"] = n
-        gen = JAXCodeGenerator(g)
-        assert gen.get_fallback_prefix() == "jnp"
-        assert "jnp.zeros({shape})" in gen._format_zeros_like("zeros", {})
-        assert "jnp.full({shape}, {fill_value})" in gen._format_full({})
-        code = gen.generate()
-        assert "def apply_model(params, *args, **kwargs) -> object:" in code
-        assert "import jax" in code
-        gen._emit_constant_assignment("var_a", "1")
-        assert "var_a = jnp.array(1)" in "\n".join(gen.code)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    g = IRGraph()
+    n = IRNode(id="n1", op_type="UnknownOp", inputs=[], attributes={}, shape_metadata=None)
+    g.nodes["n1"] = n
+    gen = JAXCodeGenerator(g)
+    assert gen.get_fallback_prefix() == "jnp"
+    assert "jnp.zeros({shape})" in gen._format_zeros_like("zeros", {})
+    assert "jnp.full({shape}, {fill_value})" in gen._format_full({})
+    code = gen.generate()
+    assert "def apply_model(params, *args, **kwargs) -> object:" in code
+    assert "import jax" in code
+    gen._emit_constant_assignment("var_a", "1")
+    assert "var_a = jnp.array(1)" in "\n".join(gen.code)
 
 
 sys.modules["jax.scipy"] = MagicMock()
-
 sys.modules["jax.scipy.special"] = MagicMock()
-
 sys.modules["jax.scipy.signal"] = MagicMock()
-
 sys.modules["jax.scipy.stats"] = MagicMock()
-
 sys.modules["jax.scipy.linalg"] = MagicMock()
-
 sys.modules["jax.nn"] = MagicMock()
 
 
@@ -201,13 +185,11 @@ def test_jax_generator_mixin_code_prop() -> None:
 
     m = cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor)(cast("Callable[..., EagerTensorProtocol]", DummyGen)())
     assert m.code == []
-
     from ml_switcheroo_compiler.ir.core import IRNode
 
     n_ata = IRNode(id="ata", op_type="AllToAll", inputs=["t"], attributes={"axis_name": "'data'", "split_axis": 0, "concat_axis": 1})
     res_ata = m.visit_AllToAll(n_ata, ["t"])
     assert "jax.lax.all_to_all(t, axis_name='data', split_axis=0, concat_axis=1)" in res_ata
-
     n_bc = IRNode(id="bc", op_type="Broadcast", inputs=["t"], attributes={"axis_name": "'model'"})
     res_bc = m.visit_Broadcast(n_bc, ["t"])
     assert "jax.lax.pbroadcast(t, axis_name='model')" in res_bc
@@ -215,7 +197,6 @@ def test_jax_generator_mixin_code_prop() -> None:
 
 def test_jax_ragged_dot_and_einsum() -> None:
     """Test function test_jax_ragged_dot_and_einsum."""
-    from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxMathVisitor
     from ml_switcheroo_compiler.ir.core import IRNode
 
     class DummyGenerator:
@@ -224,13 +205,9 @@ def test_jax_ragged_dot_and_einsum() -> None:
         pass
 
     mixin = cast("Callable[..., EagerTensorProtocol]", JaxMathVisitor)(generator=cast("Callable[..., EagerTensorProtocol]", DummyGenerator)())
-
-    # Test RaggedDot
     node1 = IRNode(id="rd", op_type="RaggedDot", inputs=["a", "b"])
     res1 = mixin.visit_RaggedDot(node1, ["x", "y"])
     assert "jax_ragged_dot(x, y)" in res1
-
-    # Test Einsum
     node2 = IRNode(id="ein", op_type="Einsum", inputs=["a", "b"])
     res2 = mixin.visit_Einsum(node2, ["x", "y"], equation="ij,jk->ik")
     assert "jnp.einsum('ij,jk->ik', x, y)" in res2

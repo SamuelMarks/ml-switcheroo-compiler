@@ -5,18 +5,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
 
 @global_eager_registry.register("ExtractVolumePatches")
 def _extract_volume_patches(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _extract_volume_patches operation.
+    """Execute the eager extract volume patches operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -24,12 +24,12 @@ def _extract_volume_patches(backend_module: EagerValue, *args: EagerValue, **kwa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     if not args:
-        return cast(EagerValue, getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else np.array([]))
+        return cast(EagerValue, getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else host_backend.array([]))
 
-    input_tensor = np.asarray(args[0])
+    input_tensor = host_backend.asarray(args[0])
     ksizes = cast("list[int]", kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
     strides = cast("list[int]", kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
 
@@ -37,7 +37,7 @@ def _extract_volume_patches(backend_module: EagerValue, *args: EagerValue, **kwa
         return cast(EagerValue, getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor)
 
     window_shape = tuple(ksizes)
-    sliding_window_view = np.lib.stride_tricks.sliding_window_view
+    sliding_window_view = host_backend.lib.stride_tricks.sliding_window_view
 
     try:
         view = sliding_window_view(input_tensor, window_shape)
@@ -87,7 +87,7 @@ def _get_box_coords(np_mod: EagerValue, box_ctx: tuple[int, int, int, int], box:
 
 
 def _extract_box_channels(np_mod: EagerValue, img: EagerValue, out: EagerValue, coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int], config: BBoxConfig) -> None:
-    """Evaluate _extract_box_channels operation.
+    """Execute the eager extract box channels operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -117,7 +117,7 @@ def _extract_box_channels(np_mod: EagerValue, img: EagerValue, out: EagerValue, 
 
 
 def _extract_single_box(np_mod: EagerValue, batch_ctx: EagerValue, i: int, config: BBoxConfig) -> None:
-    """Evaluate _extract_single_box operation.
+    """Execute the eager extract single box operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -169,7 +169,7 @@ def _extract_boxes_batch(np_mod: EagerValue, imgs: EagerValue, bxs: EagerValue, 
 
 
 def _extract_boxes_tf(backend_module: EagerValue, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
-    """Evaluate _extract_boxes_tf operation.
+    """Execute the eager extract boxes tf operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -179,17 +179,17 @@ def _extract_boxes_tf(backend_module: EagerValue, images: EagerValue, boxes: Eag
         config (BBoxConfig): The config parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    images_np = np.asarray(images)
-    boxes_np = np.asarray(boxes)
-    box_indices_np = np.asarray(box_indices)
-    res = _extract_boxes_batch(np, images_np, boxes_np, box_indices_np, config)
+    images_np = host_backend.asarray(images)
+    boxes_np = host_backend.asarray(boxes)
+    box_indices_np = host_backend.asarray(box_indices)
+    res = _extract_boxes_batch(host_backend, images_np, boxes_np, box_indices_np, config)
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
 def extract_bounding_boxes_eager(backend_module: EagerValue, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
-    """Evaluate extract_bounding_boxes_eager operation.
+    """Execute the eager extract bounding boxes eager operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -199,13 +199,13 @@ def extract_bounding_boxes_eager(backend_module: EagerValue, images: EagerValue,
         config (BBoxConfig): The config parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return _extract_boxes_tf(backend_module, images, boxes, box_indices, config)
 
 
 def _to_xyxy_format(np_mod: EagerValue, boxes: EagerValue, format: str) -> EagerValue:
-    """Evaluate _to_xyxy_format operation.
+    """Execute the eager to xyxy format operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -213,7 +213,7 @@ def _to_xyxy_format(np_mod: EagerValue, boxes: EagerValue, format: str) -> Eager
         format (str): The format parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
 
     Raises:
         ValueError: An exception.
@@ -235,7 +235,7 @@ def _to_xyxy_format(np_mod: EagerValue, boxes: EagerValue, format: str) -> Eager
 
 
 def _compute_iou(np_mod: EagerValue, b1: EagerValue, b2: EagerValue) -> EagerValue:
-    """Evaluate _compute_iou operation.
+    """Execute the eager compute iou operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -243,7 +243,7 @@ def _compute_iou(np_mod: EagerValue, b1: EagerValue, b2: EagerValue) -> EagerVal
         b2: The b2 parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     b1 = getattr(np_mod, "asarray")(b1)
     b2 = getattr(np_mod, "asarray")(b2)
@@ -274,7 +274,7 @@ def _compute_iou(np_mod: EagerValue, b1: EagerValue, b2: EagerValue) -> EagerVal
 
 
 def iou_eager(backend_module: EagerValue, boxes1: EagerValue, boxes2: EagerValue, bounding_box_format: str = "xyxy") -> EagerValue:
-    """Evaluate iou_eager operation.
+    """Execute the eager iou eager operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -283,16 +283,16 @@ def iou_eager(backend_module: EagerValue, boxes1: EagerValue, boxes2: EagerValue
         bounding_box_format (str): The bounding_box_format parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    b1 = _to_xyxy_format(np, boxes1, bounding_box_format)
-    b2 = _to_xyxy_format(np, boxes2, bounding_box_format)
-    res = _compute_iou(np, b1, b2)
+    b1 = _to_xyxy_format(host_backend, boxes1, bounding_box_format)
+    b2 = _to_xyxy_format(host_backend, boxes2, bounding_box_format)
+    res = _compute_iou(host_backend, b1, b2)
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
 def _sort_boxes_by_score(np_mod: EagerValue, boxes: EagerValue, scores: EagerValue, score_threshold: float) -> tuple[EagerValue, EagerValue, EagerValue, EagerValue]:
-    """Evaluate _sort_boxes_by_score operation.
+    """Execute the eager sort boxes by score operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -319,7 +319,7 @@ def _sort_boxes_by_score(np_mod: EagerValue, boxes: EagerValue, scores: EagerVal
 
 
 def _compute_overlap(np_mod: EagerValue, bxs: EagerValue, i: int, order: EagerValue) -> EagerValue:
-    """Evaluate _compute_overlap operation.
+    """Execute the eager compute overlap operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -328,7 +328,7 @@ def _compute_overlap(np_mod: EagerValue, bxs: EagerValue, i: int, order: EagerVa
         order: The order parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     bxs_arr = cast(EagerTensorProtocol, bxs)
     order_arr = cast(EagerTensorProtocol, order)
@@ -338,7 +338,7 @@ def _compute_overlap(np_mod: EagerValue, bxs: EagerValue, i: int, order: EagerVa
 
 
 def _apply_suppression_threshold(np_mod: EagerValue, bxs: EagerValue, order: EagerValue, max_output_size: int, iou_threshold: float) -> EagerValue:
-    """Evaluate _apply_suppression_threshold operation.
+    """Execute the eager apply suppression threshold operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -348,7 +348,7 @@ def _apply_suppression_threshold(np_mod: EagerValue, bxs: EagerValue, order: Eag
         iou_threshold (float): The iou_threshold parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     bxs_arr = cast(EagerTensorProtocol, bxs)
     keep: list[int] = []
@@ -371,7 +371,7 @@ def _apply_suppression_threshold(np_mod: EagerValue, bxs: EagerValue, order: Eag
 
 
 def _nms_tf(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
-    """Evaluate _nms_tf operation.
+    """Execute the eager nms tf operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -380,7 +380,7 @@ def _nms_tf(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, c
         config (Optional[NMSConfig]): The config parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     if config is None:
         config = NMSConfig(max_output_size=cast(EagerTensorProtocol, boxes).shape[0] if hasattr(boxes, "shape") else 100)
@@ -389,7 +389,7 @@ def _nms_tf(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, c
 
 
 def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig) -> EagerValue:
-    """Evaluate _nms_torch operation.
+    """Execute the eager nms torch operation on the active backend array.
 
     Args:
         boxes: The boxes parameter.
@@ -397,19 +397,19 @@ def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig) -> Eage
         config (NMSConfig): The config parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    boxes = np.asarray(boxes)
-    scores = np.asarray(scores)
-    bxs, scs, idxs, order = _sort_boxes_by_score(np, boxes, scores, config.score_threshold)
+    boxes = host_backend.asarray(boxes)
+    scores = host_backend.asarray(scores)
+    bxs, scs, idxs, order = _sort_boxes_by_score(host_backend, boxes, scores, config.score_threshold)
     if getattr(bxs, "__len__")() == 0:
-        return cast(EagerValue, np.array([], dtype=np.int64))
-    kept_local = _apply_suppression_threshold(np, bxs, order, config.max_output_size, config.iou_threshold)
+        return cast(EagerValue, host_backend.array([], dtype=host_backend.int64))
+    kept_local = _apply_suppression_threshold(host_backend, bxs, order, config.max_output_size, config.iou_threshold)
     return cast(EagerTensorProtocol, idxs)[kept_local]
 
 
 def nms_eager(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
-    """Evaluate nms_eager operation.
+    """Execute the eager nms eager operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -418,6 +418,6 @@ def nms_eager(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue,
         config (Optional[NMSConfig]): The config parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return _nms_tf(backend_module, boxes, scores, config)

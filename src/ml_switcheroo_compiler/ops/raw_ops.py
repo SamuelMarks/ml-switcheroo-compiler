@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -14,13 +15,16 @@ class RawOp(OpDef):
     def infer_shape(
         self,
         *args: EagerTensorProtocol,
-        **kwargs: EagerValue,
-    ) -> EagerValue:
+        **kwargs: TensorOrScalar,
+    ) -> TensorOrScalar:
         """Infer shape dynamically or fallback to unknown.
 
         Args:
             *args: The args parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            TensorOrScalar: Computed result.
         """
         if not args and "a" in kwargs:
             a = kwargs["a"]
@@ -37,12 +41,15 @@ class RawSwitch(RawOp):
 
     op_name = "RawSwitch"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
             *args: The args parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            TensorOrScalar: Computed result.
         """
         shape = super().infer_shape(*args, **kwargs)
         return (shape, shape)
@@ -54,12 +61,15 @@ class RawMerge(RawOp):
 
     op_name = "RawMerge"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
             *args: The args parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            TensorOrScalar: Computed result.
         """
         shape = super().infer_shape(*args, **kwargs)
         return (shape, ())
@@ -71,12 +81,15 @@ class RawConv2D(RawOp):
 
     op_name = "RawConv2D"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
             *args: The args parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            TensorOrScalar: Computed result.
         """
         inp: tuple[int, ...] = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
         filters: tuple[int, ...] = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))
@@ -105,12 +118,15 @@ class RawMatMul(RawOp):
 
     op_name = "RawMatMul"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
             *args: The args parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            TensorOrScalar: Computed result.
         """
         a: tuple[int, ...] = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
         b: tuple[int, ...] = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))

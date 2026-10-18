@@ -12,7 +12,7 @@ import os
 import sys
 import typing
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.registry import EagerValue
+    from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 
 
 @dataclass
@@ -43,7 +43,7 @@ class EnvironmentConfig:
     default_int_dtype: DType = DType.Int64
     default_device: Device = field(default_factory=lambda: Device(DeviceType.CPU, 0))
     jax_enable_x64: bool = False
-    layout_map: EagerValue = None
+    layout_map: TensorOrScalar = None
     interactive_logging: bool = True
     seed: typing.Optional[int] = None
 
@@ -205,19 +205,20 @@ class Config:
         self._state.execution.current_stream = value
 
     @property
-    def layout_map(self) -> EagerValue:
+    def layout_map(self) -> TensorOrScalar:
         """Get the layout map.
 
-        Returns: Tensor: The layout map.
+        Returns:
+            TensorOrScalar: The layout map.
         """
         return self._state.env.layout_map
 
     @layout_map.setter
-    def layout_map(self, value: EagerValue) -> None:
+    def layout_map(self, value: TensorOrScalar) -> None:
         """Set the layout map.
 
         Args:
-            value (object): The layout map.
+            value (TensorOrScalar): The layout map.
         """
         self._state.env.layout_map = value
 
@@ -319,11 +320,11 @@ config = Config()
 
 
 @contextmanager
-def ConfigContext(**kwargs: EagerValue) -> Iterator[None]:
+def ConfigContext(**kwargs: AttrValue) -> Iterator[None]:
     """Provide context manager for temporarily overriding global configuration values.
 
     Args:
-        **kwargs (object): Configuration keys and the values to temporarily set.
+        **kwargs (AttrValue): Configuration keys and the values to temporarily set.
 
     Yields:
         None: Yields control to the enclosed block with the overridden configuration.
@@ -350,23 +351,23 @@ def ConfigContext(**kwargs: EagerValue) -> Iterator[None]:
         _config_state_var.reset(token)
 
 
-def EagerMode() -> EagerValue:
+def EagerMode() -> AbstractContextManager[None]:
     """Provide context manager to temporarily enable eager execution mode.
 
     Returns:
-        Iterator[None]: A context manager with eager mode enabled.
+        AbstractContextManager[None]: A context manager with eager mode enabled.
     """
     return ConfigContext(eager_mode=True)
 
 
-def StreamContext(stream_name: str) -> EagerValue:
+def StreamContext(stream_name: str) -> AbstractContextManager[None]:
     """Provide context manager to temporarily switch the current execution stream.
 
     Args:
         stream_name (str): The name of the stream to execute on.
 
     Returns:
-        Iterator[None]: A context manager with the specified stream active.
+        AbstractContextManager[None]: A context manager with the specified stream active.
     """
     return ConfigContext(current_stream=stream_name)
 

@@ -5,19 +5,19 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
-def resolve_dtype(res_data: EagerValue, first_tensor: Tensor | None) -> DType | str:
+def resolve_dtype(res_data: TensorOrScalar, first_tensor: Tensor | None) -> DType | str:
     """Resolve the dtype for the eager result.
 
     Args:
-        res_data (EagerValue): The raw result data.
+        res_data (TensorOrScalar): The raw result data.
         first_tensor (Tensor | None): The first input tensor, used as fallback.
 
     Returns:
@@ -43,7 +43,7 @@ def resolve_dtype(res_data: EagerValue, first_tensor: Tensor | None) -> DType | 
 
 def resolve_output_dtype_and_device(
     first_tensor: Tensor | None,
-    kwargs: dict[str, EagerValue | DType | Device],
+    kwargs: dict[str, TensorOrScalar | DType | Device],
 ) -> tuple[DType | str, Device | str | None]:
     """Resolve output dtype and device based on inputs and kwargs.
 

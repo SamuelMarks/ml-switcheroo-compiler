@@ -2,7 +2,8 @@
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,7 +11,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Stft(OpDef):
     """Short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the STFT output.
 
         Args:
@@ -40,7 +41,7 @@ class Stft(OpDef):
 class MelSpectrogram(OpDef):
     """Mel spectrogram computation operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the mel spectrogram output.
 
         Args:
@@ -68,7 +69,7 @@ class MelSpectrogram(OpDef):
 class Istft(OpDef):
     """Inverse short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the inverse STFT output.
 
         Args:
@@ -95,7 +96,7 @@ class Istft(OpDef):
 class MelFilterbank(OpDef):
     """Mel filterbank generation operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the mel filterbank matrix.
 
         Args:
@@ -115,7 +116,7 @@ class MelFilterbank(OpDef):
 class Mfcc(OpDef):
     """Mel-frequency cepstral coefficients (MFCC) extraction operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the MFCC output.
 
         Args:
@@ -143,7 +144,7 @@ class Mfcc(OpDef):
 class MfccsFromLogMelSpectrograms(OpDef):
     """Operator to compute MFCCs directly from log mel spectrograms."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the resulting MFCC output.
 
         Args:
@@ -166,7 +167,7 @@ class MfccsFromLogMelSpectrograms(OpDef):
 class HannWindow(OpDef):
     """Hann window function generation operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the generated Hann window.
 
         Args:
@@ -188,7 +189,7 @@ class HannWindow(OpDef):
 class HammingWindow(OpDef):
     """Hamming window function generation operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the generated Hamming window.
 
         Args:
@@ -210,7 +211,7 @@ class HammingWindow(OpDef):
 class KaiserWindow(OpDef):
     """Kaiser window function generation operator."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the generated Kaiser window.
 
         Args:
@@ -234,7 +235,7 @@ class Dct(OpDef):
 
     op_name = "Dct"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the DCT output based on the input signal.
 
         Args:
@@ -253,7 +254,7 @@ class Idct(OpDef):
 
     op_name = "Idct"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the IDCT output based on the input transformed signal.
 
         Args:
@@ -272,7 +273,7 @@ class Mdct(OpDef):
 
     op_name = "Mdct"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the MDCT output based on the input signal.
 
         Args:
@@ -320,7 +321,7 @@ class InverseMdct(OpDef):
 
     op_name = "InverseMdct"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the IMDCT output based on the input transformed signal.
 
         Args:
@@ -360,7 +361,7 @@ class Frame(OpDef):
 
     op_name = "Frame"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the framed output tensor.
 
         Args:
@@ -398,7 +399,7 @@ class OverlapAndAdd(OpDef):
 
     op_name = "OverlapAndAdd"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the shape of the reconstructed signal output.
 
         Args:

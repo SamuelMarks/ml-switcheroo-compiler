@@ -12,12 +12,12 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eag
 
 @numpy_eager_registry.register("AssociativeScan")
 def _np_associative_scan(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_associative_scan operation.
+    """Execute the eager np associative scan operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -46,13 +46,13 @@ def _np_associative_scan(backend_module: ModuleType, *args: EagerValue, **kwargs
 
 @numpy_eager_registry.register("StopGradient")
 def _stop_gradient(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _stop_gradient operation.
+    """Execute the eager stop gradient operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

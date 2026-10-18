@@ -16,12 +16,12 @@ def jax_all_reduce(
     """Execute native JAX psum/pmax/pmin collective reduction.
 
     Args:
-        tensor (Any): JAX Array or compatible buffer.
+        tensor (EagerValue): JAX Array or compatible buffer.
         op (str): Reduction operator.
         axis_name (str): Named pmapped mesh axis.
 
     Returns:
-        Any: Reduced tensor array.
+        EagerValue: Reduced tensor array.
     """
     try:
         import jax.lax as lax
@@ -46,12 +46,12 @@ def jax_all_gather(
     """Execute native JAX all_gather along a named axis.
 
     Args:
-        tensor (Any): JAX Array or compatible buffer.
+        tensor (EagerValue): JAX Array or compatible buffer.
         axis_name (str): Named pmapped mesh axis.
         axis (int): Output concatenation axis.
 
     Returns:
-        Any: Gathered global tensor.
+        EagerValue: Gathered global tensor.
     """
     try:
         import jax.lax as lax
@@ -70,10 +70,10 @@ def jax_broadcast(
     """Execute native JAX broadcast.
 
     Args:
-        tensor (Any): JAX Array.
+        tensor (EagerValue): JAX Array.
         src (int): Source root rank.
 
     Returns:
-        Any: Broadcasted tensor.
+        EagerValue: Broadcasted tensor.
     """
     return tensor

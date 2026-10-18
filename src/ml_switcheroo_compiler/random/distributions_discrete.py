@@ -152,7 +152,7 @@ def binomial(
 
 
 def geometric(*args: RandomArg, **kwargs: RandomArg) -> Tensor:
-    """Evaluate geometric operation.
+    """Execute geometric for compiler processing.
 
     Args:
         *args (RandomArg): Positional args.
@@ -188,7 +188,7 @@ def poisson(
 
 
 def rademacher(*args: RandomArg, **kwargs: RandomArg) -> Tensor:
-    """Evaluate rademacher operation.
+    """Execute rademacher for compiler processing.
 
     Args:
         *args (RandomArg): Positional args.

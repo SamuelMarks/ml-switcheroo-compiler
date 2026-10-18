@@ -18,11 +18,11 @@ def execute_op(
     Args:
         cls (type): The caller class or context.
         op_type (str): The name of the operation.
-        *args (object): Positional arguments for the op.
-        **kwargs (object): Keyword arguments for the op.
+        *args (EagerValue): Positional arguments for the op.
+        **kwargs (EagerValue): Keyword arguments for the op.
 
     Returns:
-        object: Result of native TensorFlow evaluation.
+        EagerValue: Result of native TensorFlow evaluation.
 
     Raises:
         BackendNotSupportedError: If TensorFlow is unavailable or op is unmapped.

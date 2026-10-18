@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def weibull_min(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | str) -> Tensor:
-    """Evaluate weibull_min operation.
+    """Execute weibull min for compiler processing.
 
     Args:
         *args (Tensor | float | int | str): Positional args.

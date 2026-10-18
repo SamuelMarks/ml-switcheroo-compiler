@@ -404,6 +404,40 @@ def test_nccl_and_rccl_driver_buffer_methods() -> None:
         assert driver.stream_synchronize(None) == 0
         driver.free_buffer(ptr)
 
-    from ml_switcheroo_compiler.distributed.host_collectives import _scipy_mod
+    from ml_switcheroo_compiler.distributed.host_collectives import (
+        _dispatch_accelerator_collective,
+        _exec_collective_op,
+        _split_along_axis,
+        pmean,
+        psum,
+    )
 
-    assert hasattr(_scipy_mod("special"), "erf")
+    res_add = _exec_collective_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_add, np.array([4.0, 6.0]))
+    uneven_chunks = _split_along_axis(np.array([1.0, 2.0, 3.0]), 2, axis=0)
+    assert len(uneven_chunks) == 2
+
+    # Test psum and pmean in eager and symbolic modes
+    old_eager = config.eager_mode
+    try:
+        config.eager_mode = True
+        r1 = np.array([2.0, 4.0], dtype=np.float32)
+        r2 = np.array([6.0, 8.0], dtype=np.float32)
+        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(psum(r1, all_ranks_data=[r1, r2]), np.array([8.0, 12.0]))
+        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(pmean(r1, all_ranks_data=[r1, r2]), np.array([4.0, 6.0]))
+        t_in = Tensor(r1, TensorConfig(shape=(2,), dtype="float32", device="cpu"))
+        pm_eager = pmean(t_in, all_ranks_data=[r1, r2])
+        assert isinstance(pm_eager, Tensor)
+        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(pm_eager.data, np.array([4.0, 6.0]))
+
+        config.eager_mode = False
+        pm_sym = pmean(t_in)
+        assert isinstance(pm_sym, Tensor)
+    finally:
+        config.eager_mode = old_eager
+
+    # Test _dispatch_accelerator_collective exception fallback when allocate_buffer fails
+    bad_drv = MagicMock()
+    bad_drv.allocate_buffer.side_effect = RuntimeError("alloc fail")
+    with patch("ml_switcheroo_compiler.distributed.host_collectives._resolve_cuda_driver", return_value=(bad_drv, 0, 0)):
+        assert _dispatch_accelerator_collective("cuda", np.array([1.0])) is None

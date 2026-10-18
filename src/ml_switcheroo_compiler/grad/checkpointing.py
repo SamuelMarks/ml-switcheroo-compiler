@@ -6,20 +6,23 @@ and wrappers for checkpointing and recomputing graph activations during backprop
 
 import os
 import uuid
-from collections.abc import Callable
-from typing import Optional, Union
+from collections.abc import Callable, Mapping
+from typing import Optional, Union, cast
 
 import yaml
-from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue as IRAttrValue
 from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.utils import GradValue
+from ml_switcheroo_compiler.ir.core import AttrValue, LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.ops import control_flow_utils
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+AttributeValue = AttrValue
 
 
 class RematerializationPolicyModel(BaseModel):
@@ -159,12 +162,15 @@ def checkpoint(
             id=out_id,
             op_type="Checkpoint",
             inputs=[getattr(a.data, "id") for a in tensor_args if hasattr(a, "data") and hasattr(a.data, "id")],
-            attributes={
-                "subgraph": fwd_block,
-                "fun": fun,
-                "evicted": active_policy.evict_activations,
-                "policy": active_policy.model_dump(),
-            },
+            attributes=cast(
+                "Mapping[str, IRAttrValue]",
+                {
+                    "subgraph": fwd_block,
+                    "fun": fun,
+                    "evicted": active_policy.evict_activations,
+                    "policy": active_policy.model_dump(),
+                },
+            ),
             shape_metadata=shape,
         )
         global_tracing_state.add_node(node)
@@ -265,7 +271,8 @@ def _evaluate_node_costs(
     dtype_str = "float32"
     if hasattr(node, "attributes") and "dtype" in node.attributes:
         dtype_str = str(node.attributes["dtype"])
-    dtype_size = int(memory_sizes.get(dtype_str, 4)) if isinstance(memory_sizes, dict) else 4
+    raw_sz = memory_sizes.get(dtype_str, 4) if isinstance(memory_sizes, dict) else 4
+    dtype_size = int(raw_sz) if isinstance(raw_sz, (int, float, str)) else 4
     footprint_bytes = num_elements * dtype_size
 
     op_name = node.op_type
@@ -335,20 +342,26 @@ def knapsack_memory_scheduler(
     Args:
         graph (LogicalGraph): Computation graph to analyze and transform.
         memory_budget_bytes (int): Maximum peak activation memory in bytes.
-        cost_model (Optional[dict[str, object]]): Preloaded cost model dictionary.
+        cost_model (Optional[dict[str, AttributeValue]]): Preloaded cost model dictionary.
 
     Returns:
         list[str]: Node IDs designated for checkpointing/rematerialization.
     """
     cm = cost_model or load_cost_models()
-    memory_sizes = cm.get("memory_sizes", {}) if isinstance(cm, dict) else {}
+    raw_mem = cm.get("memory_sizes", {}) if isinstance(cm, dict) else {}
+    memory_sizes = cast("dict[str, AttributeValue]", raw_mem) if isinstance(raw_mem, dict) else {}
     compute_costs = cm.get("compute_costs", {}) if isinstance(cm, dict) else {}
 
-    heavy_ops = set(compute_costs.get("heavy_ops", ["Conv", "MatMul"])) if isinstance(compute_costs, dict) else {"Conv", "MatMul"}
-    light_ops = set(compute_costs.get("light_ops", ["Add", "Sub"])) if isinstance(compute_costs, dict) else {"Add", "Sub"}
-    heavy_cost = int(compute_costs.get("heavy_cost", 1000)) if isinstance(compute_costs, dict) else 1000
-    light_cost = int(compute_costs.get("light_cost", 10)) if isinstance(compute_costs, dict) else 10
-    default_cost = int(compute_costs.get("default_cost", 50)) if isinstance(compute_costs, dict) else 50
+    raw_heavy_ops = compute_costs.get("heavy_ops", ["Conv", "MatMul"]) if isinstance(compute_costs, dict) else ["Conv", "MatMul"]
+    heavy_ops = {str(x) for x in raw_heavy_ops} if isinstance(raw_heavy_ops, (list, tuple, set)) else {"Conv", "MatMul"}
+    raw_light_ops = compute_costs.get("light_ops", ["Add", "Sub"]) if isinstance(compute_costs, dict) else ["Add", "Sub"]
+    light_ops = {str(x) for x in raw_light_ops} if isinstance(raw_light_ops, (list, tuple, set)) else {"Add", "Sub"}
+    raw_hc = compute_costs.get("heavy_cost", 1000) if isinstance(compute_costs, dict) else 1000
+    heavy_cost = int(raw_hc) if isinstance(raw_hc, (int, float, str)) else 1000
+    raw_lc = compute_costs.get("light_cost", 10) if isinstance(compute_costs, dict) else 10
+    light_cost = int(raw_lc) if isinstance(raw_lc, (int, float, str)) else 10
+    raw_dc = compute_costs.get("default_cost", 50) if isinstance(compute_costs, dict) else 50
+    default_cost = int(raw_dc) if isinstance(raw_dc, (int, float, str)) else 50
 
     cfg = load_rematerialization_rules()
     target_ops = set(cfg.target_ops)

@@ -1,18 +1,14 @@
-# ruff: noqa: E402
 """Define the unified backend array base class for ml-switcheroo."""
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence  # noqa: F401
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Union, cast
-
-from ml_switcheroo_compiler.backends.registry import EagerValue
 
 if TYPE_CHECKING:
     from ml_switcheroo_ir import TensorShape
 
-    from ml_switcheroo_compiler.backends.registry import EagerValue
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
 from ml_switcheroo_compiler.core.config import config
@@ -24,6 +20,7 @@ from ml_switcheroo_compiler.core.mixins import (
     TensorBitwiseMixin,
     TensorLogicalMixin,
 )
+from ml_switcheroo_compiler.core.shape import AttrValue, ShapeLike, TensorOrScalar
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 from .tensor_mixins import (
@@ -36,102 +33,127 @@ from .tensor_mixins import (
 class ArrayAt:
     """Provide a helper object to apply updates at specific indices."""
 
-    def __init__(self, tensor: EagerValue, indices: EagerValue) -> None:
+    def __init__(self, tensor: Tensor, indices: TensorOrScalar) -> None:
         """Initialize ArrayAt.
 
         Args:
-            tensor (Tensor[object]): The tensor to update
-            indices (object): The indices to update at
+            tensor (Tensor): The tensor to update.
+            indices (TensorOrScalar): The indices to update at.
         """
         self.tensor = tensor
         self.indices = indices
 
-    def add(self, value: EagerValue) -> EagerValue:
+    def add(self, value: TensorOrScalar) -> Tensor:
         """Add value at indices.
 
         Args:
-        value (object): The value parameter.
+            value (TensorOrScalar): The value parameter.
 
         Returns:
-        str: Result.
+            Tensor: Updated tensor.
         """
+        _ = value
         return self.tensor
 
-    def multiply(self, value: EagerValue) -> EagerValue:
+    def multiply(self, value: TensorOrScalar) -> Tensor:
         """Multiply value at indices.
 
         Args:
-        value (object): The value parameter.
+            value (TensorOrScalar): The value parameter.
 
         Returns:
-        str: Result.
+            Tensor: Updated tensor.
         """
+        _ = value
         return self.tensor
 
-    def set(self, value: EagerValue) -> EagerValue:
+    def set(self, value: TensorOrScalar) -> Tensor:
         """Set value at indices.
 
         Args:
-        value (object): The value parameter.
+            value (TensorOrScalar): The value parameter.
 
         Returns:
-        str: Result.
+            Tensor: Updated tensor.
         """
+        _ = value
         return self.tensor
 
-    def maximum(self, value: EagerValue) -> EagerValue:
+    def maximum(self, value: TensorOrScalar) -> Tensor:
         """Maximum value at indices.
 
         Args:
-        value (object): The value parameter.
+            value (TensorOrScalar): The value parameter.
 
         Returns:
-        str: Result.
+            Tensor: Updated tensor.
         """
+        _ = value
         return self.tensor
 
-    def minimum(self, value: EagerValue) -> EagerValue:
+    def minimum(self, value: TensorOrScalar) -> Tensor:
         """Minimum value at indices.
 
         Args:
-        value (object): The value parameter.
+            value (TensorOrScalar): The value parameter.
 
         Returns:
-        str: Result.
+            Tensor: Updated tensor.
         """
+        _ = value
         return self.tensor
 
 
 class ArrayAtIndexer:
     """Provide a helper object to index a tensor for ArrayAt."""
 
-    def __init__(self, tensor: EagerValue) -> None:
+    def __init__(self, tensor: Tensor) -> None:
         """Initialize ArrayAtIndexer.
 
         Args:
-            tensor (Tensor[object]): The tensor to index
+            tensor (Tensor): The tensor to index.
         """
         self.tensor = tensor
 
-    def __getitem__(self, indices: EagerValue) -> ArrayAt:
+    def __getitem__(self, indices: TensorOrScalar) -> ArrayAt:
         """Get ArrayAt for indices.
 
         Args:
-        indices (object): The indices parameter.
+            indices (TensorOrScalar): The indices parameter.
 
         Returns:
-        ArrayAt: Result.
+            ArrayAt: Indexed updater helper.
         """
         return ArrayAt(self.tensor, indices)
+
+
+def _normalize_config_dtype(dt: Union[DType, str, TensorOrScalar, None]) -> Union[DType, str, TensorOrScalar]:
+    """Normalize a raw dtype specification into a `DType` enum when valid.
+
+    Args:
+        dt (Union[DType, str, TensorOrScalar, None]): Raw dtype specification.
+
+    Returns:
+        Union[DType, str, TensorOrScalar]: Normalized `DType` or original dtype object.
+    """
+    if dt is None:
+        return DType.Float32
+    if isinstance(dt, DType):
+        return dt
+    raw_val = dt if isinstance(dt, str) else getattr(dt, "value", getattr(dt, "name", str(dt)))
+    try:
+        return DType(str(raw_val))
+    except ValueError:
+        return dt
 
 
 @dataclass(frozen=True)
 class TensorConfig:
     """Configuration for a Tensor."""
 
-    shape: Union[tuple[Union[int, str, SymNode], ...], Sequence[Union[int, str, SymNode]], TensorShape, None] = ()
-    dtype: Union[DType, str, None] = DType.Float32
-    device: Union[Device, str, None] = "cpu"
+    shape: Union[tuple[Union[int, str, SymNode, None], ...], Sequence[Union[int, str, SymNode, None]], TensorShape, ShapeLike, TensorOrScalar, None] = ()
+    dtype: Union[DType, str, TensorOrScalar, None] = DType.Float32
+    device: Union[Device, str, TensorOrScalar, None] = "cpu"
     requires_grad: bool = False
     trainable: bool = False
 
@@ -140,15 +162,17 @@ class TensorConfig:
         if self.shape is None:
             object.__setattr__(self, "shape", ())
         elif not isinstance(self.shape, tuple):
-            object.__setattr__(self, "shape", tuple(self.shape))
-        if self.dtype is None:
-            object.__setattr__(self, "dtype", DType.Float32)
-        elif isinstance(self.dtype, str):
-            object.__setattr__(self, "dtype", DType(self.dtype))
+            try:
+                object.__setattr__(self, "shape", tuple(cast("Sequence[Union[int, str, SymNode, None]]", self.shape)))
+            except TypeError:
+                object.__setattr__(self, "shape", ())
+        object.__setattr__(self, "dtype", _normalize_config_dtype(self.dtype))
         if self.device is None:
             object.__setattr__(self, "device", Device("cpu"))
         elif isinstance(self.device, str):
             object.__setattr__(self, "device", Device(self.device))
+        elif not isinstance(self.device, Device) and not hasattr(self.device, "device_type"):
+            object.__setattr__(self, "device", Device(str(self.device)))
 
 
 if TYPE_CHECKING:
@@ -171,13 +195,13 @@ class Tensor(
     data payloads, supporting both eager execution and lazy tracing
     """
 
-    grad: EagerValue = None
+    grad: TensorOrScalar = None
 
-    def __init__(self, data: EagerValue, config: TensorConfig) -> None:
+    def __init__(self, data: TensorOrScalar, config: TensorConfig) -> None:
         """Initialize the Tensor.
 
         Args:
-            data (T_Payload): The actual data payload.
+            data (TensorOrScalar): The actual data payload.
             config (TensorConfig): The tensor configuration.
         """
         self._data = data
@@ -200,7 +224,8 @@ class Tensor(
             except (ValueError, TypeError):
                 return str(s)
 
-        self._shape: tuple[Union[int, str, SymNode], ...] = tuple(cast("Callable[..., Union[int, str, SymNode]]", _parse_dim)(s) for s in (config.shape or ()))
+        shape_tuple = config.shape if isinstance(config.shape, tuple) else ()
+        self._shape: tuple[Union[int, str, SymNode], ...] = tuple(cast("Callable[..., Union[int, str, SymNode]]", _parse_dim)(s) for s in shape_tuple)
         self._dtype = cast(DType, config.dtype)
         self._device = cast(Device, config.device)
         self._requires_grad = config.requires_grad
@@ -217,16 +242,17 @@ class Tensor(
 
         if global_tracing_state.is_tracing and global_tracing_state.active_graph:
             graph = global_tracing_state.active_graph
-            if getattr(self.data, "id") not in graph.outputs:
-                graph.outputs.append(getattr(self.data, "id"))
+            node_id = getattr(self.data, "id")
+            if node_id not in graph.outputs:
+                graph.outputs = [*list(graph.outputs), node_id]
         return self
 
-    def backward(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-        """Triggers the reverse-mode auto-differentiation.
+    def backward(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+        """Trigger the reverse-mode auto-differentiation.
 
         Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
+            *args (TensorOrScalar): Additional arguments.
+            **kwargs (AttrValue): Additional keyword arguments.
         """
         import ml_switcheroo_compiler.grad.api  # noqa: F401
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -239,21 +265,23 @@ class Tensor(
 
             logging.getLogger(__name__).debug("Ignored TracingError in Tensor.backward")
 
-    def view(self, *shape: int) -> EagerValue:
+    def view(self, *shape: int | Sequence[int]) -> Tensor:
         """Return a new tensor with the same data but different size.
 
         Args:
-            *shape: Additional arguments.
+            *shape (int | Sequence[int]): Target shape dimensions.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the reshaped view.
         """
-        flat_shape = []
+        flat_shape: list[int] = []
         for s in shape:
             if isinstance(s, (list, tuple)):
                 flat_shape.extend(s)
-            else:
+            elif isinstance(s, int):
                 flat_shape.append(s)
+            else:
+                flat_shape.extend(s)
         from ml_switcheroo_compiler.ops.base import OpDef
         from ml_switcheroo_compiler.ops.registry import get_frontend, get_op
 
@@ -266,19 +294,19 @@ class Tensor(
         res = cast(Callable[..., Tensor], reshape_fn)(self, tuple(flat_shape))
         return res
 
-    def contiguous(self) -> EagerValue:
+    def contiguous(self) -> Tensor:
         """Return a contiguous in memory tensor.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A contiguous tensor.
         """
         return self
 
-    def detach(self) -> EagerValue:
+    def detach(self) -> Tensor:
         """Return a new Tensor, detached from the current graph.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A detached tensor.
         """
         return Tensor(self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))
 
@@ -286,21 +314,21 @@ class Tensor(
 class Variable(Tensor):
     """Provide a mutable variable tensor for tracking state."""
 
-    def __init__(self, data: EagerValue, config: TensorConfig) -> None:
-        """Init.
+    def __init__(self, data: TensorOrScalar, config: TensorConfig) -> None:
+        """Initialize Variable.
 
         Args:
-            data (object): The underlying data array or proxy object.
+            data (TensorOrScalar): The underlying data array or proxy object.
             config (TensorConfig): The tensor configuration.
         """
         super().__init__(data, config)
         self.trainable = config.trainable
 
-    def assign(self, value: EagerValue) -> EagerValue:
+    def assign(self, value: TensorOrScalar) -> Variable:
         """Assign a new value to the variable.
 
         Args:
-            value (Tensor[object]): The new value.
+            value (TensorOrScalar): The new value.
 
         Returns:
             Variable: The updated variable.
@@ -317,11 +345,11 @@ class Variable(Tensor):
             _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_add(self, value: EagerValue) -> EagerValue:
+    def assign_add(self, value: TensorOrScalar) -> Variable:
         """Add a value to the variable in-place.
 
         Args:
-            value (Tensor[object]): The value to add.
+            value (TensorOrScalar): The value to add.
 
         Returns:
             Variable: The updated variable.
@@ -338,11 +366,11 @@ class Variable(Tensor):
             _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_sub(self, value: EagerValue) -> EagerValue:
+    def assign_sub(self, value: TensorOrScalar) -> Variable:
         """Subtract a value from the variable in-place.
 
         Args:
-            value (Tensor[object]): The value to subtract.
+            value (TensorOrScalar): The value to subtract.
 
         Returns:
             Variable: The updated variable.
@@ -363,11 +391,11 @@ class Variable(Tensor):
 class Parameter(Variable):
     """Provide a trainable parameter tensor."""
 
-    def __init__(self, data: EagerValue, config: TensorConfig) -> None:
-        """Init.
+    def __init__(self, data: TensorOrScalar, config: TensorConfig) -> None:
+        """Initialize Parameter.
 
         Args:
-            data (object): The underlying data array or proxy object.
+            data (TensorOrScalar): The underlying data array or proxy object.
             config (TensorConfig): The tensor configuration.
         """
         # Override config.trainable to True for Parameter

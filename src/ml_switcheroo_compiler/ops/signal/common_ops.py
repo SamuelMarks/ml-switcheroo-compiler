@@ -1,54 +1,47 @@
-"""Signal processing operations."""
+"""Shared helper functions for symbolic signal processing IR node emission and padding."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass  # noqa: F401
-from typing import Optional, cast  # noqa: F401
+from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import (
-    EagerValue,
-    get_active_backend,  # noqa: F401
-)
-from ml_switcheroo_compiler.core.config import config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # noqa: F401
-from ml_switcheroo_compiler.ops.base import OpDef, register_op  # noqa: F401
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node  # noqa: F401
 
 
 def _emit_signal_node(
     op_type: str,
-    inputs: Sequence[Tensor | EagerValue],
-    attrs: dict[str, EagerValue] | None,
+    inputs: Sequence[Tensor | TensorOrScalar],
+    attrs: dict[str, TensorOrScalar] | None,
     out_shape: Sequence[int | str],
     dtype: DType | str | None,
 ) -> Tensor:
-    """Emit a signal node.
+    """Emit a symbolic signal processing IR node and return its proxy `Tensor`.
 
     Args:
-        op_type (str): The op_type parameter.
-        inputs (list): The inputs parameter.
-        attrs (dict): The attrs parameter.
-        out_shape (tuple): The out_shape parameter.
-        dtype (str): The dtype parameter.
+        op_type (str): Canonical IR operation type name.
+        inputs (Sequence[Tensor | TensorOrScalar]): Input tensor operands.
+        attrs (dict[str, TensorOrScalar] | None): Optional dictionary of operation attributes.
+        out_shape (Sequence[int | str]): Inferred output tensor shape.
+        dtype (DType | str | None): Output tensor data type.
 
     Returns:
-        Tensor | tuple[Tensor, ...]: Result.
+        Tensor: Symbolic `Tensor` wrapping the emitted `LogicalNode`.
     """
     return cast(Tensor, _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype]))
 
 
 def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, str | float]:
-    """Calculate padding configuration for convolve2d.
+    """Build the padding configuration attribute dictionary for 2D signal convolution.
 
     Args:
-        mode (str): Padding mode.
-        boundary (boundary): Boundary condition.
-        fillvalue (float): Fill value for 'fill' boundary.
+        mode (str): Convolution output size mode (`'full'`, `'valid'`, or `'same'`).
+        boundary (str): Boundary handling mode (`'fill'`, `'wrap'`, or `'symm'`).
+        fillvalue (float): Constant fill value used when `boundary == 'fill'`.
 
     Returns:
-        dict[str, str | float]: Padding configuration dictionary.
+        dict[str, str | float]: Padding configuration attribute dictionary.
     """
     return {"mode": mode, "boundary": boundary, "fillvalue": fillvalue}

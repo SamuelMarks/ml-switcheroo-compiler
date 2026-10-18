@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Test sparse tensors."""
 
 import numpy as np
@@ -11,9 +10,8 @@ def test_sparse_tensor_coo() -> None:
     """Test the sparse tensor coo behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Test SparseTensorCOO."
     indices = Tensor(np.array([[0, 0], [1, 2]]), TensorConfig((2, 2), "int32", None))
     values = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", None))
     sp = SparseTensorCOO(indices, values, (3, 3))
@@ -26,9 +24,8 @@ def test_sparse_tensor_csr() -> None:
     """Test the sparse tensor csr behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Test SparseTensorCSR."
     row_pointers = Tensor(np.array([0, 1, 2, 2]), TensorConfig((4,), "int32", None))
     column_indices = Tensor(np.array([0, 2]), TensorConfig((2,), "int32", None))
     values = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", None))
@@ -43,9 +40,8 @@ def test_sparse_tensor_base() -> None:
     """Test the sparse tensor base behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Test SparseTensor."
     values = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", None))
     sp = SparseTensor(values, (3, 3))
     assert sp.dense_shape == (3, 3)

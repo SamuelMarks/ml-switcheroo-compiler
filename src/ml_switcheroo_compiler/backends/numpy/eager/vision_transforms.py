@@ -23,7 +23,7 @@ def _np_random_shear(
     x_factor: tuple[float, float] | float | None = None,
     **kwargs: Union[float, int, str, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_random_shear operation.
+    """Execute the eager np random shear operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.
@@ -45,7 +45,7 @@ def _np_random_perspective(
     factor: float,
     **kwargs: Union[float, int, str, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_random_perspective operation.
+    """Execute the eager np random perspective operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.
@@ -67,7 +67,7 @@ def _np_random_elastic_transform(
     sigma: float,
     **kwargs: Union[float, int, str, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_random_elastic_transform operation.
+    """Execute the eager np random elastic transform operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.

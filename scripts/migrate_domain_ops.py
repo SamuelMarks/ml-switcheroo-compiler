@@ -362,7 +362,7 @@ def migrate_domain(filename: str, spec: dict[str, AttributeValue]) -> dict[str, 
             math_semantics["identity_element"] = 1
 
         # Signature
-        args_list = []
+        args_list: list[AttributeValue] = []
         for inp_name in default_inputs:
             args_list.append(
                 {

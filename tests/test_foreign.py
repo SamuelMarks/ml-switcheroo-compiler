@@ -1,13 +1,11 @@
 """Tests for test_foreign."""
 
-from __future__ import annotations
-from typing import Optional
-
 import importlib
-from typing import cast
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import Optional, Tuple, cast
 
 # ruff: noqa
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ir.core import LogicalGraph
 from ml_switcheroo_compiler.transforms.foreign import (
     _extract_jaxpr_constants,
@@ -20,11 +18,6 @@ from ml_switcheroo_compiler.transforms.foreign import (
 )
 from ml_switcheroo_compiler.foreign import ForeignCall
 import pytest
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MockConst:
@@ -434,7 +427,7 @@ def test_foreign_coverage() -> None:
     setattr(mock_callable, "__signature__", inspect.Signature(return_annotation=Tuple[int, int, int]))
     assert cast("EagerTensorProtocol", op.infer_shape(mock_callable)) == cast("EagerTensorProtocol", (int, int, int))
 
-    # 7e. Callable with signature raising Exception
+    # 7e. Callable with signature raising TypeError
     class BrokenSignatureCallable:
         """Test class BrokenSignatureCallable."""
 
@@ -445,12 +438,12 @@ def test_foreign_coverage() -> None:
         @property
         def __signature__(self) -> None:
             """Test function __signature__."""
-            raise RuntimeError("broken sig")
+            raise TypeError("broken sig")
 
-    try:
-        assert op.infer_shape(BrokenSignatureCallable()) == ()
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    from ml_switcheroo_compiler.core.errors import ShapeInferenceError
+
+    with pytest.raises(ShapeInferenceError, match="broken sig"):
+        op.infer_shape(BrokenSignatureCallable())
 
     # 7f. AST parsing: function returning constant int tuple without type hints
     assert op.infer_shape(_sample_ast_tuple) == (11, 22, 33)

@@ -436,7 +436,7 @@ def test_generate_stubs_fallback_generation(tmp_path: Path) -> None:
     snap_dir.mkdir()
 
     out_base = tmp_path / "backends"
-    edge_dir = out_base / "edge_mlir"
+    edge_dir = out_base / "edge"
     edge_dir.mkdir(parents=True)
 
     with patch("scripts.generate_stubs._generate_stubs_from_live_module", return_value=0):

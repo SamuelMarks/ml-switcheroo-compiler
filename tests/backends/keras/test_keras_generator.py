@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-from typing import cast
-from typing import TYPE_CHECKING
-
-# ruff: noqa
+from typing import TYPE_CHECKING, cast
 from unittest.mock import mock_open, patch
-from ml_switcheroo_compiler.backends.keras.keras_mixins import KerasAudioVisitor, KerasVisionVisitor
+
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator, KerasSignatureBuilder, KerasTensorManipulator
-from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
-from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
+from ml_switcheroo_compiler.backends.keras.keras_mixins import KerasAudioVisitor, KerasVisionVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -140,26 +137,16 @@ def test_keras_generator_save_load(tmp_path: EagerTensorProtocol) -> None:
     """Test save and load methods of Keras generator."""
     arr = [1, 2, 3]
     filepath = str(tmp_path / "dummy.pkl")
-
-    # save
     KerasCodeGenerator.save(filepath, arr)
-
-    # load
     res = KerasCodeGenerator.load(filepath)
     assert res == arr
-
-    # savez
     filez = str(tmp_path / "dummy.npz")
     KerasCodeGenerator.savez(filez, arr, arg2=[4, 5])
-
     resz = KerasCodeGenerator.load(filez)
     assert cast("EagerTensorProtocol", getattr(resz, "__getitem__")("arr_0")) == arr
     assert cast("EagerTensorProtocol", getattr(resz, "__getitem__")("arg2")) == [4, 5]
-
-    # savez_compressed
     filezc = str(tmp_path / "dummy_comp.npz")
     KerasCodeGenerator.savez_compressed(filezc, arr, arg2=[4, 5])
-
     import gzip
     import pickle
 
@@ -186,17 +173,14 @@ def test_keras_generator_conv_transpose() -> None:
 
 def test_keras_generator_empty_prefix_yaml() -> None:
     """Test function test_keras_generator_empty_prefix_yaml."""
-    from unittest.mock import patch, mock_open
+    from unittest.mock import patch
+
     from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     g = IRGraph()
     gen = KerasCodeGenerator(g)
-
-    # Test _get_backend_prefix
     assert gen._get_backend_prefix() == "keras"
-
-    # Test _resolve_imports with empty yaml
     with patch("yaml.safe_load", return_value={}):
         lines = gen._resolve_imports()
         assert lines == ["import keras\n"]
@@ -268,23 +252,19 @@ def test_keras_generator_empty_inputs_and_outputs() -> None:
 def test_keras_generator_compile_aot() -> None:
     """Test KerasCodeGenerator._compile_aot_impl across successful exec and evaluator fallback."""
     import numpy as np
+
     from ml_switcheroo_compiler.ir.core import IRNode
 
-    # 1. Successful exec and get_model execution
     graph = IRGraph()
     gen = KerasCodeGenerator(graph)
     with patch.object(gen, "generate", return_value="def get_model(): return lambda x, **kw: x + 1"):
         artifact = gen.compile_aot(graph)
         assert artifact(41) == 42
         assert cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("backend")) == "keras"
-
-    # 1b. Exec succeeds but get_model not defined in scope
     gen_no_get_model = KerasCodeGenerator(graph)
     with patch.object(gen_no_get_model, "generate", return_value="x_const = 10"):
         artifact_no_gm = gen_no_get_model.compile_aot(graph)
         assert cast("EagerTensorProtocol", getattr(artifact_no_gm.metadata, "__getitem__")("model")) is None
-
-    # 2. Exec failure / get_model None fallback with single output
     g_single = IRGraph()
     node_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[2])
     node_id = IRNode(id="out0", op_type="Identity", inputs=["in0"], shape_metadata=[2])
@@ -306,14 +286,8 @@ def test_keras_generator_compile_aot() -> None:
     gen_single = KerasCodeGenerator(g_single)
     with patch.object(gen_single, "generate", return_value="invalid python syntax !!!"):
         art_single = gen_single.compile_aot(g_single)
-        # Call with arg having .data and extra arg past len(graph.inputs)
-        try:
-            res_single = cast("Callable[..., EagerTensorProtocol]", art_single)(cast("Callable[..., EagerTensorProtocol]", MockTensorWithData)(cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), "extra_arg")
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
+        res_single = cast("Callable[..., EagerTensorProtocol]", art_single)(cast("Callable[..., EagerTensorProtocol]", MockTensorWithData)(cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), "extra_arg")
         assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_single, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
-
-    # 3. Fallback with no outputs
     g_no_out = IRGraph()
     g_no_out.nodes = {"in0": node_in}
     g_no_out.inputs = ["in0"]
@@ -323,8 +297,6 @@ def test_keras_generator_compile_aot() -> None:
         art_no_out = gen_no_out.compile_aot(g_no_out)
         res_no_out = art_no_out(np.array([1, 2]))
         assert isinstance(res_no_out, dict)
-
-    # 4. Fallback with multiple outputs
     g_multi = IRGraph()
     node_out1 = IRNode(id="out1", op_type="Identity", inputs=["in0"], shape_metadata=[2])
     node_out2 = IRNode(id="out2", op_type="Identity", inputs=["in0"], shape_metadata=[2])

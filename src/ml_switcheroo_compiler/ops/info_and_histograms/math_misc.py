@@ -2,7 +2,7 @@
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -12,12 +12,12 @@ class Gradient(OpDef):
 
     op_name = "Gradient"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -33,12 +33,12 @@ class I0(OpDef):
 
     op_name = "I0"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -54,12 +54,12 @@ class Interp(OpDef):
 
     op_name = "Interp"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -75,12 +75,12 @@ class Intersect1d(OpDef):
 
     op_name = "Intersect1d"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -94,12 +94,12 @@ class Kron(OpDef):
 
     op_name = "Kron"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -121,12 +121,12 @@ class Median(OpDef):
 
     op_name = "Median"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -155,12 +155,12 @@ class Mish(OpDef):
 
     op_name = "Mish"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -176,12 +176,12 @@ class Modf(OpDef):
 
     op_name = "Modf"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -197,12 +197,12 @@ class Piecewise(OpDef):
 
     op_name = "Piecewise"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -218,12 +218,12 @@ class Rot90(OpDef):
 
     op_name = "Rot90"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -244,12 +244,12 @@ class Trapezoid(OpDef):
 
     op_name = "Trapezoid"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -269,12 +269,12 @@ class Tri(OpDef):
 
     op_name = "Tri"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -290,12 +290,12 @@ class Tril(OpDef):
 
     op_name = "Tril"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -311,12 +311,12 @@ class TrimZeros(OpDef):
 
     op_name = "TrimZeros"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -330,12 +330,12 @@ class Triu(OpDef):
 
     op_name = "Triu"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -351,12 +351,12 @@ class Unwrap(OpDef):
 
     op_name = "Unwrap"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -372,12 +372,12 @@ class Vander(OpDef):
 
     op_name = "Vander"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -389,12 +389,12 @@ class Vander(OpDef):
         return (*x, N)
 
 
-def gradient(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def gradient(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the gradient of an N-dimensional array.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -404,12 +404,12 @@ def gradient(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Gradient", *args, **kwargs)
 
 
-def i0(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def i0(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Modify Bessel function of the first kind, order 0.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -419,12 +419,12 @@ def i0(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("I0", *args, **kwargs)
 
 
-def interp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def interp(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """One-dimensional linear interpolation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -434,12 +434,12 @@ def interp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Interp", *args, **kwargs)
 
 
-def median(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate median operation.
+def median(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the median tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -449,12 +449,12 @@ def median(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Median", *args, **kwargs)
 
 
-def modf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def modf(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the fractional and integral parts of an array, element-wise.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -464,12 +464,12 @@ def modf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Modf", *args, **kwargs)
 
 
-def piecewise(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate piecewise operation.
+def piecewise(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the piecewise tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -479,12 +479,12 @@ def piecewise(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Piecewise", *args, **kwargs)
 
 
-def trapezoid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def trapezoid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Integrate along the given axis using the composite trapezoidal rule.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -494,12 +494,12 @@ def trapezoid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Trapezoid", *args, **kwargs)
 
 
-def kron(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def kron(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Kronecker product of two arrays.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -509,12 +509,12 @@ def kron(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Kron", *args, **kwargs)
 
 
-def rot90(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def rot90(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Rotate an array by 90 degrees in the plane specified by axes.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -524,12 +524,12 @@ def rot90(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Rot90", *args, **kwargs)
 
 
-def tri(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def tri(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Provide an array with ones at and below the given diagonal and zeros elsewhere.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -539,12 +539,12 @@ def tri(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Tri", *args, **kwargs)
 
 
-def tril(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def tril(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Lower triangle of an array.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -554,12 +554,12 @@ def tril(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Tril", *args, **kwargs)
 
 
-def trim_zeros(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def trim_zeros(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Trim the leading and/or trailing zeros from a 1-D array or sequence.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -569,12 +569,12 @@ def trim_zeros(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("TrimZeros", *args, **kwargs)
 
 
-def triu(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def triu(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Upper triangle of an array.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -584,12 +584,12 @@ def triu(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Triu", *args, **kwargs)
 
 
-def vander(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def vander(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Generate a Vandermonde matrix.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -599,12 +599,12 @@ def vander(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Vander", *args, **kwargs)
 
 
-def intersect1d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def intersect1d(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Find the intersection of two arrays.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -614,12 +614,12 @@ def intersect1d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Intersect1d", *args, **kwargs)
 
 
-def unwrap(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def unwrap(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Unwrap an array.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

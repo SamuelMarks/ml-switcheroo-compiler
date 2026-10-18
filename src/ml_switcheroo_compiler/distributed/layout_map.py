@@ -6,7 +6,7 @@ import re
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Optional
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
@@ -15,32 +15,32 @@ if TYPE_CHECKING:
 class ShardingSpec:
     """Specification of how a tensor is sharded across a DeviceMesh."""
 
-    def __init__(self, mesh: EagerValue, mesh_mapping: Sequence[Optional[str]]) -> None:
+    def __init__(self, mesh: TensorOrScalar, mesh_mapping: Sequence[Optional[str]]) -> None:
         """Initialize ShardingSpec.
 
         Args:
-            mesh: The DeviceMesh.
-            mesh_mapping: Sequence of mesh axis names or None for replicated dimensions.
+            mesh (TensorOrScalar): The DeviceMesh.
+            mesh_mapping (Sequence[Optional[str]]): Sequence of mesh axis names or None for replicated dimensions.
         """
         self.mesh = mesh
         self.mesh_mapping = tuple(mesh_mapping)
 
     def __repr__(self) -> str:
-        """Return representation.
+        """Return string representation of `ShardingSpec`.
 
         Returns:
-        str: Result.
+            str: String representation.
         """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
-    def _eq(self, other: EagerValue) -> bool:
-        """Equality check.
+    def _eq(self, other: TensorOrScalar) -> bool:
+        """Check equality with another `ShardingSpec`.
 
         Args:
-        other (object): The other parameter.
+            other (TensorOrScalar): Other object to compare.
 
         Returns:
-        bool: Result.
+            bool: True if equal.
         """
         if not isinstance(other, ShardingSpec):
             return False
@@ -53,11 +53,11 @@ setattr(ShardingSpec, "__eq__", ShardingSpec._eq)
 class LayoutMap:
     """Mapping of logical tensor paths to ShardingSpecs."""
 
-    def __init__(self, device_mesh: EagerValue = None) -> None:
+    def __init__(self, device_mesh: TensorOrScalar = None) -> None:
         """Initialize LayoutMap.
 
         Args:
-            device_mesh: Optional device mesh.
+            device_mesh (TensorOrScalar): Optional device mesh.
         """
         self.device_mesh = device_mesh
         self._map: dict[str, ShardingSpec] = {}

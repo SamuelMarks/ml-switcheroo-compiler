@@ -10,14 +10,16 @@ ALLOWED_MODULE_PATTERNS: tuple[str, ...] = (os.path.join("backends", "numpy"),)
 
 
 def _is_prohibited_dynamic_numpy_call(node: ast.AST) -> str | None:
-    """Check if an AST node is a dynamic import call for numpy.
+    """Check if an AST node is a dynamic import call or indirect proxy for numpy.
 
     Args:
         node (ast.AST): AST node to inspect.
 
     Returns:
-        str | None: Prohibited module string if matched, else None.
+        str | None: Prohibited module or proxy string if matched, else None.
     """
+    if isinstance(node, ast.Name) and node.id in ("_np_mod", "_scipy_mod", "numpy_mod"):
+        return node.id
     if not isinstance(node, ast.Call) or not node.args:
         return None
     is_dynamic_import = (isinstance(node.func, ast.Attribute) and node.func.attr == "import_module") or (isinstance(node.func, ast.Name) and node.func.id in ("import_module", "__import__"))

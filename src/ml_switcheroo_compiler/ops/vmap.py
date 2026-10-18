@@ -16,8 +16,9 @@ from typing import (
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
@@ -25,11 +26,11 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
 def _eager_vmap(
-    func: Callable[..., EagerValue],
+    func: Callable[..., TensorOrScalar],
     in_axes: int | tuple[int, ...],
     out_axes: int | tuple[int, ...],
-    args: EagerValue,
-) -> EagerValue:
+    args: TensorOrScalar,
+) -> TensorOrScalar:
     """Evaluate _eager_vmap operation using vectorized IR execution.
 
     Args:
@@ -85,10 +86,10 @@ def _eager_vmap(
 
 
 def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
-    """Evaluate _resolve_vmap_axis operation.
+    """Compute the resolve vmap axis tensor operation.
 
     Args:
-        in_axes (Any): The in_axes parameter.
+        in_axes (int | tuple[int, ...]): The in_axes parameter.
         i (int): The i parameter.
 
     Returns:
@@ -97,12 +98,12 @@ def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
     return in_axes if isinstance(in_axes, int) else (in_axes[i] if i < len(in_axes) else 0)
 
 
-def _compute_vmap_shape(a: Tensor, axis: int | None) -> EagerValue:
-    """Evaluate _compute_vmap_shape operation.
+def _compute_vmap_shape(a: Tensor, axis: int | None) -> TensorOrScalar:
+    """Compute the compute vmap shape tensor operation.
 
     Args:
         a (Tensor): The a parameter.
-        axis (Any): The axis parameter.
+        axis (int | None): The axis parameter.
 
     Returns:
         tuple: Result.
@@ -112,12 +113,12 @@ def _compute_vmap_shape(a: Tensor, axis: int | None) -> EagerValue:
     return a.shape
 
 
-def _create_vmap_symbolic_args(args: EagerValue, in_axes: int | tuple[int, ...]) -> EagerValue:
-    """Evaluate _create_vmap_symbolic_args operation.
+def _create_vmap_symbolic_args(args: TensorOrScalar, in_axes: int | tuple[int, ...]) -> TensorOrScalar:
+    """Compute the create vmap symbolic args tensor operation.
 
     Args:
-        args (Any): The args parameter.
-        in_axes (Any): The in_axes parameter.
+        args (TensorOrScalar): The args parameter.
+        in_axes (int | tuple[int, ...]): The in_axes parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -128,37 +129,41 @@ def _create_vmap_symbolic_args(args: EagerValue, in_axes: int | tuple[int, ...])
             axis = _resolve_vmap_axis(in_axes, i)
             new_shape = _compute_vmap_shape(a, axis)
             proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
-            symbolic_args.append(Tensor(proxy, cast("Callable[..., TensorConfig]", TensorConfig)(new_shape, a.dtype, a.device)))
+            symbolic_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
         else:
             symbolic_args.append(a)
     return symbolic_args
 
 
 def _trace_vmap(
-    func: Callable[..., EagerValue],
+    func: Callable[..., TensorOrScalar],
     in_axes: int | tuple[int, ...],
     out_axes: int | tuple[int, ...],
-    args: EagerValue,
-) -> EagerValue:
-    """Evaluate _trace_vmap operation.
+    args: TensorOrScalar,
+) -> TensorOrScalar:
+    """Compute the trace vmap tensor operation.
 
     Args:
         func (Callable): The func parameter.
-        in_axes (Any): The in_axes parameter.
-        out_axes (Any): The out_axes parameter.
+        in_axes (int | tuple[int, ...]): The in_axes parameter.
+        out_axes (int | tuple[int, ...]): The out_axes parameter.
         args (tuple): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
+    from collections.abc import Mapping
+
+    from ml_switcheroo_ir import AttributeValue, LogicalGraph
+
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
-    body_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
+    body_graph = cast("Callable[..., LogicalGraph]", _trace_function)(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Vmap",
         inputs=[getattr(a.data, "id") for a in getattr(args, "__iter__")() if isinstance(a, Tensor)],
-        attributes={"in_axes": in_axes, "out_axes": out_axes, "body": body_graph},
+        attributes=cast("Mapping[str, AttributeValue]", {"in_axes": in_axes, "out_axes": out_axes, "body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
     )
@@ -169,26 +174,26 @@ def _trace_vmap(
 
 
 def vmap(
-    func: Callable[..., EagerValue],
+    func: Callable[..., TensorOrScalar],
     in_axes: int | tuple[int, ...] = 0,
     out_axes: int | tuple[int, ...] = 0,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Create a vectorized version of a function mapped over specified axes.
 
     Args:
         func (Callable): The func parameter.
-        in_axes (Any): The in_axes parameter.
-        out_axes (Any): The out_axes parameter.
+        in_axes (int | tuple[int, ...]): The in_axes parameter.
+        out_axes (int | tuple[int, ...]): The out_axes parameter.
 
     Returns:
         Callable: Result.
     """
 
-    def wrapped(*args: EagerValue) -> EagerValue:
+    def wrapped(*args: TensorOrScalar) -> TensorOrScalar:
         """Wrap.
 
         Args:
-            *args (Any): Positional args.
+            *args (TensorOrScalar): Positional args.
 
         Returns:
             tuple[int, ...]: Result.

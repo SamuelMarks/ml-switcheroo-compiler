@@ -7,8 +7,9 @@ tensors with non-uniform shapes across one or more dimensions.
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -25,12 +26,12 @@ class RaggedGather(OpDef):
 
     op_name = "RaggedGather"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer output shape for RaggedGather.
 
         Args:
-            *args (object): Positional args (params, indices).
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args (params, indices).
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Inferred shape.
@@ -58,12 +59,12 @@ class RaggedTensorToDense(OpDef):
 
     op_name = "RaggedTensorToDense"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape when converting to a dense tensor.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Dense output shape.
@@ -87,10 +88,10 @@ class RaggedTensorToDense(OpDef):
 
 def ragged_tensor_to_dense(
     rt_input: "Tensor",
-    default_value: EagerValue = None,
-    row_partition_tensors: EagerValue = None,
-    row_partition_types: EagerValue = None,
-    shape: EagerValue = None,
+    default_value: TensorOrScalar = None,
+    row_partition_tensors: TensorOrScalar = None,
+    row_partition_types: TensorOrScalar = None,
+    shape: TensorOrScalar = None,
 ) -> "Tensor":
     """Convert a ragged tensor representation into a regular dense tensor.
 
@@ -147,12 +148,12 @@ class RaggedAdd(OpDef):
 
     op_name = "RaggedAdd"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape for a ragged addition operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result shape.
@@ -173,12 +174,12 @@ class RaggedMatMul(OpDef):
 
     op_name = "RaggedMatMul"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape for a ragged matrix multiplication.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Output shape with preserved outer and contraction dims.
@@ -207,12 +208,12 @@ class RaggedDynamicBroadcast(OpDef):
 
     op_name = "RaggedDynamicBroadcast"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape after a ragged dynamic broadcast.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Broadcasted target shape.
@@ -236,12 +237,12 @@ class RaggedConstant(OpDef):
 
     op_name = "RaggedConstant"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape for a ragged constant operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result shape with symbolic inner ragged dimension.
@@ -267,12 +268,12 @@ class RaggedCrossHashed(OpDef):
 
     op_name = "RaggedCrossHashed"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape for a ragged cross hashed operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result shape with leading batch and symbolic cross length.
@@ -300,12 +301,12 @@ class RaggedRange(OpDef):
 
     op_name = "RaggedRange"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape for a ragged range operation.
 
         Args:
-            *args (object): Positional args (starts, limits, deltas).
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args (starts, limits, deltas).
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result shape with batch size and symbolic range length.
@@ -330,12 +331,12 @@ class RaggedRowSplitsToSegmentIds(OpDef):
 
     op_name = "RaggedRowSplitsToSegmentIds"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape when converting row splits to segment IDs.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: 1D segment IDs shape.
@@ -355,12 +356,12 @@ class RaggedSegmentIdsToRowSplits(OpDef):
 
     op_name = "RaggedSegmentIdsToRowSplits"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape when converting segment IDs to row splits.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Row splits shape (num_segments + 1,).
@@ -383,12 +384,12 @@ class RaggedStack(OpDef):
 
     op_name = "RaggedStack"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape for a ragged stack operation.
 
         Args:
-            *args (object): Positional args (list of tensors).
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args (list of tensors).
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Higher-rank stacked shape.
@@ -419,12 +420,12 @@ class RaggedStackDynamicPartitions(OpDef):
 
     op_name = "RaggedStackDynamicPartitions"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Calculate the output shape for a ragged stack dynamic partitions op.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Partition stacked shape (num_partitions, ...).
@@ -468,12 +469,12 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer output shape for BooleanMask.
 
         Args:
-            *args (object): Positional args (data, mask).
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args (data, mask).
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Filtered shape with dynamic leading dimension.
@@ -500,13 +501,13 @@ class MapFlatValues(OpDef):
 
     op_name = "MapFlatValues"
 
-    def infer_shape(self, op: EagerValue = None, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, op: TensorOrScalar = None, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape for MapFlatValues operation.
 
         Args:
-            op (object): The mapped op.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            op (TensorOrScalar): The mapped op.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple: Shape matching the primary ragged input.

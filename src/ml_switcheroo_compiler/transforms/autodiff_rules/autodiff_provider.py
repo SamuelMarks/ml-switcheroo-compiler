@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Optional, cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -219,13 +219,16 @@ def _parse_expression(
     return _resolve_variable_ref(expr, node, cotangent, tangents)
 
 
-def _fallback_finite_difference_jvp(graph: EagerValue, node: EagerValue, tangents: EagerValue) -> str:
+def _fallback_finite_difference_jvp(graph: TensorOrScalar, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
     """Implement a generic finite difference fallback for JVP.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        tangents: The tangents parameter.
+        graph (TensorOrScalar): The graph parameter.
+        node (TensorOrScalar): The node parameter.
+        tangents (TensorOrScalar): The tangents parameter.
+
+    Returns:
+        str: Emitted finite-difference JVP node ID.
     """
     # JVP ~ (f(x + epsilon * t) - f(x - epsilon * t)) / (2 * epsilon)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
@@ -513,7 +516,7 @@ def get_vjp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, str], tuple[st
     vjp_exprs = ad_rules["vjp"]
 
     def data_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, ...]:
-        """data_vjp function.
+        """Execute data vjp for compiler processing.
 
         Args:
             graph (IRGraph): The graph parameter.
@@ -544,16 +547,16 @@ def get_jvp_from_data(op_type: str) -> Callable[..., str]:
 
     jvp_expr = ad_rules["jvp"]
 
-    def data_jvp(graph: EagerValue, node: EagerValue, tangents: EagerValue) -> str:
-        """data_jvp function.
+    def data_jvp(graph: TensorOrScalar, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
+        """Evaluate JVP expression for `node`.
 
         Args:
-            graph (object): The graph parameter.
-            node (object): The node parameter.
-            tangents (object): The tangents parameter.
+            graph (TensorOrScalar): The graph parameter.
+            node (TensorOrScalar): The node parameter.
+            tangents (TensorOrScalar): The tangents parameter.
 
         Returns:
-            object: Result.
+            str: Emitted JVP tangent node ID.
         """
         tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
         return _parse_expression(cast("LogicalGraph", graph), cast("str", jvp_expr), cast("LogicalNode", node), tangents=tangents_list)

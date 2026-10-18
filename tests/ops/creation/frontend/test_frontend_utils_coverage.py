@@ -20,8 +20,8 @@ def _side_effect_type_error(obj: EagerValue, dtype: EagerValue = None) -> list[E
     """Simulate backend array error when dtype is provided.
 
     Args:
-        obj (Any): Input object.
-        dtype (Any): Desired dtype.
+        obj (EagerValue): Input object.
+        dtype (EagerValue): Desired dtype.
 
     Returns:
         list[Any]: Nested list wrapping obj.
@@ -35,8 +35,8 @@ def _side_effect_value_error(obj: EagerValue, dtype: EagerValue = None) -> list[
     """Simulate backend array error when dtype is missing.
 
     Args:
-        obj (Any): Input object.
-        dtype (Any): Desired dtype.
+        obj (EagerValue): Input object.
+        dtype (EagerValue): Desired dtype.
 
     Returns:
         list[Any]: List with obj and dtype.

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Callable, Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 
@@ -42,13 +43,13 @@ from .tracing import (
 from .while_loop import while_loop as while_loop
 
 
-def map_fn(fn: Callable[..., EagerValue], elems: Tensor, dtype: DType | None = None) -> EagerValue:
-    """Evaluate map_fn operation.
+def map_fn(fn: Callable[..., TensorOrScalar], elems: Tensor, dtype: DType | None = None) -> TensorOrScalar:
+    """Compute the map fn tensor operation.
 
     Args:
         fn (Callable): The fn parameter.
         elems (Tensor): The elems parameter.
-        dtype (Any): The dtype parameter.
+        dtype (DType | None): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -58,12 +59,12 @@ def map_fn(fn: Callable[..., EagerValue], elems: Tensor, dtype: DType | None = N
     return map_fn_tracing(fn, elems, dtype)
 
 
-def pmap(func: Callable[..., EagerValue], axis_name: str | None = None) -> EagerValue:
-    """Evaluate pmap operation.
+def pmap(func: Callable[..., TensorOrScalar], axis_name: str | None = None) -> TensorOrScalar:
+    """Compute the pmap tensor operation.
 
     Args:
         func (Callable): The func parameter.
-        axis_name (Any): The axis_name parameter.
+        axis_name (str | None): The axis_name parameter.
 
     Returns:
         Callable: Result.
@@ -74,10 +75,10 @@ def pmap(func: Callable[..., EagerValue], axis_name: str | None = None) -> Eager
 
 
 def stop_gradient(x: Tensor | ProxyTensor) -> Tensor | ProxyTensor:
-    """Evaluate stop_gradient operation.
+    """Compute the stop gradient tensor operation.
 
     Args:
-        x (Any): The x parameter.
+        x (Tensor | ProxyTensor): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -87,11 +88,11 @@ def stop_gradient(x: Tensor | ProxyTensor) -> Tensor | ProxyTensor:
     return stop_gradient_tracing(x)
 
 
-def assert_value(condition: EagerValue, message: str = "") -> None:
-    """Evaluate assert_value operation.
+def assert_value(condition: TensorOrScalar, message: str = "") -> None:
+    """Compute the assert value tensor operation.
 
     Args:
-        condition (Any): The condition parameter.
+        condition (TensorOrScalar): The condition parameter.
         message (str): The message parameter.
     """
     if config.eager_mode:
@@ -104,12 +105,12 @@ def assert_value(condition: EagerValue, message: str = "") -> None:
 class AssertOp(OpDef):
     """Configuration class for assert op."""
 
-    def infer_shape(self, condition: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate infer_shape operation.
+    def infer_shape(self, condition: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the infer shape tensor operation.
 
         Args:
-            condition (Any): The condition parameter.
-            **kwargs (Any): Keyword args.
+            condition (EagerTensorProtocol): The condition parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -117,24 +118,24 @@ class AssertOp(OpDef):
         return ()
 
 
-def fori_loop(lower: EagerValue, upper: EagerValue, body_fun: Callable[..., EagerValue], init_val: EagerValue) -> EagerValue:
-    """Evaluate fori_loop operation.
+def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: Callable[..., TensorOrScalar], init_val: TensorOrScalar) -> TensorOrScalar:
+    """Compute the fori loop tensor operation.
 
     Args:
-        lower (Any): The lower parameter.
-        upper (Any): The upper parameter.
-        body_fun (Any): The body_fun parameter.
-        init_val (Any): The init_val parameter.
+        lower (TensorOrScalar): The lower parameter.
+        upper (TensorOrScalar): The upper parameter.
+        body_fun (Callable[..., TensorOrScalar]): The body_fun parameter.
+        init_val (TensorOrScalar): The init_val parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
 
-    def cond_fn(val: EagerValue) -> EagerValue:
-        """Evaluate cond_fn operation.
+    def cond_fn(val: TensorOrScalar) -> TensorOrScalar:
+        """Compute the cond fn tensor operation.
 
         Args:
-        val (Any): The val parameter.
+        val (TensorOrScalar): The val parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -142,11 +143,11 @@ def fori_loop(lower: EagerValue, upper: EagerValue, body_fun: Callable[..., Eage
         i, _ = getattr(val, "__iter__")()
         return less(i, upper)
 
-    def body_wrapper(val: EagerValue) -> EagerValue:
-        """Evaluate body_wrapper operation.
+    def body_wrapper(val: TensorOrScalar) -> TensorOrScalar:
+        """Compute the body wrapper tensor operation.
 
         Args:
-        val (Any): The val parameter.
+        val (TensorOrScalar): The val parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -155,10 +156,10 @@ def fori_loop(lower: EagerValue, upper: EagerValue, body_fun: Callable[..., Eage
         return add(i, 1), body_fun(i, x)
 
     _, res = cast("Callable[..., EagerTensorProtocol]", while_loop)(cond_fn, body_wrapper, (lower, init_val))
-    return cast(EagerValue, res)
+    return cast(TensorOrScalar, res)
 
 
-def map(fn: Callable[..., EagerValue], elems: Tensor) -> EagerValue:
+def map(fn: Callable[..., TensorOrScalar], elems: Tensor) -> TensorOrScalar:
     """Apply a function iteratively over elements of a tensor.
 
     Args:
@@ -171,7 +172,7 @@ def map(fn: Callable[..., EagerValue], elems: Tensor) -> EagerValue:
     return map_fn(fn, elems)
 
 
-def vectorized_map(fn: Callable[..., EagerValue], elems: Tensor) -> EagerValue:
+def vectorized_map(fn: Callable[..., TensorOrScalar], elems: Tensor) -> TensorOrScalar:
     """Apply a function in a vectorized manner over elements of a tensor.
 
     Args:
@@ -181,16 +182,16 @@ def vectorized_map(fn: Callable[..., EagerValue], elems: Tensor) -> EagerValue:
     Returns:
         Tensor: The vectorized result tensor.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", vmap)(fn)(elems))
+    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", vmap)(fn)(elems))
 
 
-def switch(index: Tensor, branches: EagerValue, *operands: EagerValue) -> EagerValue:
+def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -> TensorOrScalar:
     """Select a specific branch function based on an index tensor.
 
     Args:
         index (Tensor): The index parameter.
         branches (list): The branches parameter.
-        *operands (Any): Positional args.
+        *operands (TensorOrScalar): Positional args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -201,8 +202,8 @@ def switch(index: Tensor, branches: EagerValue, *operands: EagerValue) -> EagerV
     if not branches:
         raise ValueError("branches cannot be empty")
 
-    def build_tree(start: int, end: int) -> EagerValue:
-        """Evaluate build_tree operation.
+    def build_tree(start: int, end: int) -> TensorOrScalar:
+        """Compute the build tree tensor operation.
 
         Args:
         start (int): The start parameter.
@@ -212,20 +213,20 @@ def switch(index: Tensor, branches: EagerValue, *operands: EagerValue) -> EagerV
             tuple[int, ...]: Result.
         """
         if end - start == 1:
-            return cast(EagerValue, getattr(branches, "__getitem__")(start)(*operands))
+            return cast(TensorOrScalar, getattr(branches, "__getitem__")(start)(*operands))
 
         mid = (start + end) // 2
 
-        def true_fn() -> EagerValue:
-            """Evaluate true_fn operation.
+        def true_fn() -> TensorOrScalar:
+            """Compute the true fn tensor operation.
 
             Returns:
             tuple[int, ...]: Result.
             """
             return build_tree(start, mid)
 
-        def false_fn() -> EagerValue:
-            """Evaluate false_fn operation.
+        def false_fn() -> TensorOrScalar:
+            """Compute the false fn tensor operation.
 
             Returns:
             tuple[int, ...]: Result.
@@ -237,7 +238,7 @@ def switch(index: Tensor, branches: EagerValue, *operands: EagerValue) -> EagerV
     return build_tree(0, getattr(branches, "__len__")())
 
 
-def custom_gradient(func: Callable[..., EagerValue]) -> EagerValue:
+def custom_gradient(func: Callable[..., TensorOrScalar]) -> TensorOrScalar:
     """Create a wrapper that enables custom gradient definitions.
 
     Args:
@@ -247,19 +248,19 @@ def custom_gradient(func: Callable[..., EagerValue]) -> EagerValue:
         Callable: A wrapped version of the function that can integrate with autograd.
     """
 
-    def wrapper(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapper operation.
+    def wrapper(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the wrapper tensor operation.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
         val, grad_fn = getattr(func(*getattr(args, "__iter__")(), **kwargs), "__iter__")()
         if config.eager_mode:
-            return cast(EagerValue, val)
+            return cast(TensorOrScalar, val)
 
         import uuid
 
@@ -275,12 +276,12 @@ def custom_gradient(func: Callable[..., EagerValue]) -> EagerValue:
 
             op_name_class = op_name
 
-            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Evaluate infer_shape operation.
+            def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+                """Compute the infer shape tensor operation.
 
                 Args:
-                    *args (Any): Positional args.
-                    **kwargs (Any): Keyword args.
+                    *args (TensorOrScalar): Positional args.
+                    **kwargs (TensorOrScalar): Keyword args.
 
                 Returns:
                 tuple[int, ...]: Result.
@@ -288,12 +289,12 @@ def custom_gradient(func: Callable[..., EagerValue]) -> EagerValue:
                 return getattr(val, "shape", ())
 
         @register_vjp(op_name)
-        def dyn_vjp(graph: EagerValue, node: EagerValue, cotangent: str) -> tuple[str, ...]:
+        def dyn_vjp(graph: TensorOrScalar, node: TensorOrScalar, cotangent: str) -> tuple[str, ...]:
             """VJP function for dynamic custom gradient.
 
             Args:
-                graph (Any): The IR graph.
-                node (Any): The node.
+                graph (TensorOrScalar): The IR graph.
+                node (TensorOrScalar): The node.
                 cotangent (str): Cotangent.
 
             Returns:
@@ -310,7 +311,7 @@ def case(
     pred_fn_pairs: list[tuple[Tensor, Callable[[], Tensor | None]]],
     default: Callable[[], Tensor | None] | None = None,
 ) -> Tensor | None:
-    """Evaluate case operation.
+    """Compute the case tensor operation.
 
     Args:
         pred_fn_pairs (list): The pred_fn_pairs parameter.
@@ -327,8 +328,8 @@ def case(
             return default()
         raise ValueError("case requires at least one (pred, fn) pair or a default")
 
-    def _build_case(idx: int) -> EagerValue:
-        """Evaluate _build_case operation.
+    def _build_case(idx: int) -> TensorOrScalar:
+        """Compute the build case tensor operation.
 
         Args:
         idx (int): The idx parameter.
@@ -344,7 +345,7 @@ def case(
     return cast(Optional[Tensor], cast("Callable[..., EagerTensorProtocol]", _build_case)(0)())
 
 
-def switch_case(branch_index: Tensor, branch_fns: EagerValue, default: EagerValue = None) -> EagerValue:
+def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: TensorOrScalar = None) -> TensorOrScalar:
     """Select a specific function based on a dynamic index mapping.
 
     Args:
@@ -360,7 +361,7 @@ def switch_case(branch_index: Tensor, branch_fns: EagerValue, default: EagerValu
     """
     if not branch_fns:
         if default is not None:
-            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", default)())
+            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", default)())
         raise ValueError("switch_case requires at least one branch or a default")
 
     pred_fn_pairs = []
@@ -370,7 +371,7 @@ def switch_case(branch_index: Tensor, branch_fns: EagerValue, default: EagerValu
         pred = equal(branch_index, key_tensor)
         pred_fn_pairs.append((pred, getattr(branch_fns, "__getitem__")(key)))
 
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", case)(pred_fn_pairs, default))
+    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", case)(pred_fn_pairs, default))
 
 
 @register_op("DebugInfs")
@@ -379,12 +380,12 @@ class DebugInfs(OpDef):
 
     op_name = "DebugInfs"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate infer_shape operation.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the infer shape tensor operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -398,12 +399,12 @@ class DebugNans(OpDef):
 
     op_name = "DebugNans"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate infer_shape operation.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the infer shape tensor operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -421,14 +422,14 @@ class SwitchOp(OpDef):
 
     op_name = "Switch"
 
-    def infer_shape(self, index: EagerTensorProtocol, branches: EagerTensorProtocol, *operands: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate infer_shape operation.
+    def infer_shape(self, index: EagerTensorProtocol, branches: EagerTensorProtocol, *operands: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the infer shape tensor operation.
 
         Args:
-            index (Any): Index.
-            branches (Any): Branches.
-            *operands (Any): Operands.
-            **kwargs (Any): Keyword args.
+            index (EagerTensorProtocol): Index.
+            branches (EagerTensorProtocol): Branches.
+            *operands (EagerTensorProtocol): Operands.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -442,12 +443,12 @@ class ScanOp(OpDef):
 
     op_name = "Scan"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate infer_shape operation.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the infer shape tensor operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -461,12 +462,12 @@ class AssociativeScan(OpDef):
 
     op_name = "AssociativeScan"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate infer_shape operation.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Compute the infer shape tensor operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -474,12 +475,12 @@ class AssociativeScan(OpDef):
         return args[0] if args else ()
 
 
-def associative_scan(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate associative_scan operation.
+def associative_scan(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the associative scan tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -499,14 +500,14 @@ def associative_scan(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _emit_shape_node("AssociativeScan", list(args), kwargs, shape, dtype)
 
 
-def scan_bind(f: Callable[..., EagerValue], xs: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def scan_bind(f: Callable[..., TensorOrScalar], xs: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Bind arguments to a scanning function prior to execution.
 
     Args:
-        f (Any): The function to bind.
-        xs (Any): The elements to scan over.
-        *args (Any): Additional positional arguments.
-        **kwargs (Any): Additional keyword arguments.
+        f (Callable[..., TensorOrScalar]): The function to bind.
+        xs (TensorOrScalar): The elements to scan over.
+        *args (TensorOrScalar): Additional positional arguments.
+        **kwargs (TensorOrScalar): Additional keyword arguments.
 
     Returns: Tensor: The bound function along with its inputs.
     """

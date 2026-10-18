@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.transforms.passes.lift_state import _get_nodes, _lif
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_lift_state_branches() -> None:
@@ -126,97 +126,58 @@ def test_lift_state_pass() -> None:
 
 
 def test_lift_module_state_and_functionalize() -> None:
-    """Test lift_module_state and lift_state on stateful modules."""
+    """Test lift_module_state and lift_state on stateful variable containers."""
     import numpy as np
+    import pytest
 
     from ml_switcheroo_compiler.transforms.passes.lift_state import lift_module_state, lift_state
 
-    # 1. Custom module with named_parameters
-    class MockNamedParamModule:
-        """Test class MockNamedParamModule."""
+    class MockVariableContainer:
+        """Generic stateful variable container."""
 
         def __init__(self) -> None:
-            """Test function __init__."""
+            """Initialize MockVariableContainer."""
             self.w = np.array([[1.0, 2.0]], dtype=np.float32)
             self.b = np.array([0.5], dtype=np.float32)
 
-        def named_parameters(self) -> EagerValue:
-            """Test function named_parameters."""
-            return [("w", self.w), ("b", self.b)]
-
         def __call__(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-            """Test function __call__."""
+            """Evaluate container on x."""
             return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", (cast("EagerTensorProtocol", x) @ cast("EagerTensorProtocol", self.w.T)) + cast("EagerTensorProtocol", self.b))
 
-    mod = MockNamedParamModule()
+    mod = MockVariableContainer()
     params, g = lift_module_state(mod)
     assert "w" in params
     assert "b" in params
     assert "param_w" in g.nodes
     assert g.nodes["param_w"].attributes["is_state"] is True
 
-    # Test functional execution via lift_state
     params_lifted, pure_fn = lift_state(mod)
     x = np.array([[2.0, 3.0]], dtype=np.float32)
     out, updated_params = pure_fn(params_lifted, x)
     expected = x @ mod.w.T + mod.b
     assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out, expected)
+    assert "w" in updated_params
 
-    # 2. Module with state_dict
-    class MockStateDictModule:
-        """Test class MockStateDictModule."""
+    class NonCallableContainer:
+        """Container that is not callable."""
 
         def __init__(self) -> None:
-            """Test function __init__."""
+            """Initialize NonCallableContainer."""
             self.weight = np.ones((2, 2), dtype=np.float32)
 
-        def state_dict(self) -> EagerValue:
-            """Test function state_dict."""
-            return {"weight": self.weight}
-
-        def forward(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-            """Test function forward."""
-            return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerTensorProtocol", x) @ cast("EagerTensorProtocol", self.weight))
-
-    mod2 = MockStateDictModule()
-    params2, g2 = cast("Callable[..., EagerTensorProtocol]", lift_module_state)(mod2)
+    mod2 = NonCallableContainer()
+    params2, _ = cast("Callable[..., EagerTensorProtocol]", lift_module_state)(mod2)
     assert "weight" in params2
     _, pure_fn2 = cast("Callable[..., EagerTensorProtocol]", lift_state)(mod2)
-    out2, _ = pure_fn2(params2, x)
-    assert out2 is not None
+    with pytest.raises(TypeError, match="is not callable"):
+        pure_fn2(params2, x)
 
-    # 3. Simple module relying on __dict__ with private and callable members
-    class SimpleStateful:
-        """Test class SimpleStateful."""
-
-        def __init__(self) -> None:
-            """Test function __init__."""
-            self.param = 42
-            self._private = 100
-
-        def helper(self) -> None:
-            """Test function helper."""
-            pass
-
-    mod3 = SimpleStateful()
-    params3, g3 = cast("Callable[..., EagerTensorProtocol]", lift_module_state)(mod3)
-    assert "param" in params3
-    assert "_private" not in params3
-    assert "helper" not in params3
-
-    # Pass an extra param that module does not have yet to exercise line 197->199
-    _, pure_fn3 = cast("Callable[..., EagerTensorProtocol]", lift_state)(mod3)
-    out3, updated3 = pure_fn3({"param": 99, "new_param": 123})
-    assert out3 is None
-    assert updated3["param"] == 99
-
-    # 4. Object without __dict__, named_parameters, or state_dict (e.g. using __slots__)
     class SlotsModule:
-        """Test class SlotsModule."""
+        """Container using __slots__."""
 
         __slots__ = ()
 
-    params4, g4 = cast("Callable[..., EagerTensorProtocol]", lift_module_state)(cast("Callable[..., EagerTensorProtocol]", SlotsModule)())
+    params4, _ = cast("Callable[..., EagerTensorProtocol]", lift_module_state)(cast("Callable[..., EagerTensorProtocol]", SlotsModule)())
     assert params4 == {}
 
 

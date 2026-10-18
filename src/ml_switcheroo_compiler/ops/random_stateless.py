@@ -1,21 +1,27 @@
-"""Core abstractions and logic definitions for random_stateless.py."""
+"""Stateless functional pseudo-random number generation (PRNG) operations."""
+
+from __future__ import annotations
 
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Callable, Optional, Union, cast  # noqa: F401
+from typing import Optional, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 @dataclass
 class NormalConfig:
     """Configuration for normal distribution parameters.
 
-    This dataclass holds the mean and standard deviation for
-    generating random numbers from a normal distribution.
+    Attributes:
+        mean (float): Mean of the normal distribution.
+        stddev (float): Standard deviation of the normal distribution.
     """
 
     mean: float = 0.0
@@ -26,12 +32,107 @@ class NormalConfig:
 class UniformConfig:
     """Configuration for uniform distribution parameters.
 
-    This dataclass defines the minimum and maximum bounds for
-    generating random numbers from a uniform distribution.
+    Attributes:
+        minval (float): Lower bound of the uniform interval.
+        maxval (Optional[float]): Upper bound of the uniform interval.
     """
 
     minval: float = 0.0
     maxval: typing.Optional[float] = None
+
+
+@dataclass
+class RandomGenerationConfig:
+    """Configuration for parameterized truncated normal random number generation.
+
+    Attributes:
+        means (float): Mean of the distribution prior to truncation.
+        stddevs (float): Standard deviation prior to truncation.
+        minvals (float): Minimum truncation bound in standard deviations.
+        maxvals (float): Maximum truncation bound in standard deviations.
+        name (Optional[str]): Optional operation name.
+    """
+
+    means: float = 0.0
+    stddevs: float = 1.0
+    minvals: float = -2.0
+    maxvals: float = 2.0
+    name: Optional[str] = None
+
+
+class Algorithm:
+    """Constants for counter-based stateless PRNG algorithms."""
+
+    PHILOX = 1
+    THREEFRY = 2
+    AUTO_SELECT = 3
+
+
+def _philox_round(v0: int, v1: int, k0: int) -> tuple[int, int]:
+    """Execute a single 32-bit Philox-2x32 mixing round.
+
+    Args:
+        v0 (int): First 32-bit counter word.
+        v1 (int): Second 32-bit counter word.
+        k0 (int): 32-bit key word.
+
+    Returns:
+        tuple[int, int]: Mixed 32-bit counter pair (v0_next, v1_next).
+    """
+    product = (v0 & 0xFFFFFFFF) * 0xD256D193
+    hi = (product >> 32) & 0xFFFFFFFF
+    lo = product & 0xFFFFFFFF
+    return (hi ^ (k0 & 0xFFFFFFFF) ^ (v1 & 0xFFFFFFFF)) & 0xFFFFFFFF, lo
+
+
+def _flatten_seed_sequence(seq: Sequence[TensorOrScalar]) -> list[int]:
+    """Flatten a 1D or 2D sequence of seed items into 32-bit integers.
+
+    Args:
+        seq (Sequence[TensorOrScalar]): Input seed sequence.
+
+    Returns:
+        list[int]: Flattened integer seed words.
+    """
+    flat: list[int] = []
+    for item in seq:
+        if isinstance(item, (list, tuple)):
+            flat.extend(int(x) if isinstance(x, (int, float)) else hash(str(x)) for x in item)
+        elif isinstance(item, (int, float)):
+            flat.append(int(item))
+        else:
+            flat.append(hash(str(item)))
+    return flat
+
+
+def _extract_seed_pair(seed: TensorOrScalar) -> tuple[int, int]:
+    """Extract a deterministic 2-tuple of 32-bit unsigned integers from a seed input.
+
+    Args:
+        seed (TensorOrScalar): Input seed tensor, sequence, integer, or string.
+
+    Returns:
+        tuple[int, int]: Pair of 32-bit integer state words.
+    """
+    raw = getattr(seed, "data", seed)
+    if isinstance(raw, (int, float)):
+        s0 = int(raw) & 0xFFFFFFFF
+        return s0, (s0 ^ 0x9E3779B9) & 0xFFFFFFFF
+    if isinstance(raw, str):
+        h = 0x811C9DC5
+        for ch in raw:
+            h = ((h ^ ord(ch)) * 0x01000193) & 0xFFFFFFFF
+        return h, (h ^ 0x9E3779B9) & 0xFFFFFFFF
+    tolist_fn = getattr(raw, "tolist", None)
+    if callable(tolist_fn):
+        raw = tolist_fn()
+    if isinstance(raw, (list, tuple)):
+        flat = _flatten_seed_sequence(raw)
+        if len(flat) >= 2:
+            return flat[0] & 0xFFFFFFFF, flat[1] & 0xFFFFFFFF
+        if len(flat) == 1:
+            return flat[0] & 0xFFFFFFFF, (flat[0] ^ 0x9E3779B9) & 0xFFFFFFFF
+    return 0, 0x9E3779B9
 
 
 def stateless_random_uniform(
@@ -39,19 +140,19 @@ def stateless_random_uniform(
     seed: Tensor,
     minval: float = 0.0,
     maxval: float = 1.0,
-    dtype: str = "float32",
-) -> EagerValue:
+    dtype: str | DType = "float32",
+) -> TensorOrScalar:
     """Generate random values from a uniform distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
-        seed (Tensor): The seed tensor.
+        seed (Tensor): The stateless PRNG seed tensor.
         minval (float): The lower bound.
         maxval (float): The upper bound.
-        dtype (str): The data type.
+        dtype (str | DType): The output data type.
 
     Returns:
-        Tensor: The generated tensor.
+        TensorOrScalar: The generated uniform random tensor.
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
@@ -69,19 +170,19 @@ def stateless_random_normal(
     seed: Tensor,
     mean: float = 0.0,
     stddev: float = 1.0,
-    dtype: str = "float32",
-) -> EagerValue:
+    dtype: str | DType = "float32",
+) -> TensorOrScalar:
     """Generate random values from a normal distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
-        seed (Tensor): The seed tensor.
-        mean (float): The mean.
-        stddev (float): The standard deviation.
-        dtype (str): The data type.
+        seed (Tensor): The stateless PRNG seed tensor.
+        mean (float): The mean of the normal distribution.
+        stddev (float): The standard deviation of the normal distribution.
+        dtype (str | DType): The output data type.
 
     Returns:
-        Tensor: The generated tensor.
+        TensorOrScalar: The generated normal random tensor.
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
@@ -99,25 +200,24 @@ def stateless_random_binomial(
     seed: Tensor,
     counts: Union[float, Tensor],
     probabilities: Union[float, Tensor],
-    dtype: str = "int32",
-) -> EagerValue:
+    dtype: str | DType = "int32",
+) -> TensorOrScalar:
     """Generate random values from a binomial distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
-        seed (Tensor): The seed tensor.
+        seed (Tensor): The stateless PRNG seed tensor.
         counts (Union[float, Tensor]): Number of trials.
         probabilities (Union[float, Tensor]): Probability of success.
-        dtype (str): The data type.
+        dtype (str | DType): The output data type.
 
     Returns:
-        Tensor: The generated tensor.
+        TensorOrScalar: The generated binomial random tensor.
     """
     from ml_switcheroo_compiler.random.distributions_discrete import binomial
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
-    res = binomial(seed, counts, probabilities, tuple(shape), dtype_enum)
-    return res
+    return binomial(seed, counts, probabilities, tuple(shape), dtype_enum)
 
 
 def stateless_truncated_normal(
@@ -125,30 +225,26 @@ def stateless_truncated_normal(
     seed: Tensor,
     mean: float = 0.0,
     stddev: float = 1.0,
-    dtype: str = "float32",
-) -> EagerValue:
+    dtype: str | DType = "float32",
+) -> TensorOrScalar:
     """Generate random values from a truncated normal distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
-        seed (Tensor): The seed tensor.
-        mean (float): The mean.
-        stddev (float): The standard deviation.
-        dtype (str): The data type.
+        seed (Tensor): The stateless PRNG seed tensor.
+        mean (float): The mean of the distribution.
+        stddev (float): The standard deviation of the distribution.
+        dtype (str | DType): The output data type.
 
     Returns:
-        Tensor: The generated tensor.
+        TensorOrScalar: The generated truncated normal tensor.
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
-    from ml_switcheroo_compiler.random.continuous import (
-        truncated_normal,
-    )
+    from ml_switcheroo_compiler.random.continuous import truncated_normal
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
-    lower = -2.0
-    upper = 2.0
-    res = truncated_normal(seed, lower, upper, tuple(shape), dtype_enum)
+    res = truncated_normal(seed, -2.0, 2.0, tuple(shape), dtype_enum)
     res = multiply(res, full(shape, stddev, dtype_enum))
     res = add(res, full(shape, mean, dtype_enum))
     return res
@@ -158,54 +254,52 @@ def stateless_categorical(
     logits: Tensor,
     num_samples: int,
     seed: Tensor,
-    dtype: str = "int32",
-) -> EagerValue:
-    """Generate random values from a categorical distribution without maintaining state.
+    dtype: str | DType = "int32",
+) -> TensorOrScalar:
+    """Generate random samples from a categorical distribution without maintaining state.
 
     Args:
-        logits (Tensor): The logits tensor (batch_size, num_classes).
+        logits (Tensor): Logits tensor of shape (batch_size, num_classes).
         num_samples (int): Number of samples to draw.
-        seed (Tensor): The seed tensor.
-        dtype (str): The data type.
+        seed (Tensor): The stateless PRNG seed tensor.
+        dtype (str | DType): The output integer data type.
 
     Returns:
-        Tensor: The generated tensor (batch_size, num_samples).
+        TensorOrScalar: Sampled class indices of shape (batch_size, num_samples).
     """
     from ml_switcheroo_compiler.ops import cast as op_cast
     from ml_switcheroo_compiler.random.distributions_discrete import categorical
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
-
     batch_shape = logits.shape[:-1] if logits.shape else ()
     shape = tuple(batch_shape) + (num_samples,)
 
     res = categorical(seed, logits, axis=-1, shape=shape)
     res = op_cast(res, dtype_enum)
-    return cast(EagerValue, res)
+    return cast(TensorOrScalar, res)
 
 
 def stateless_gamma(
     shape: Sequence[int],
     seed: Tensor,
     alpha: Tensor,
-    dtype: str = "float32",
-) -> EagerValue:
+    dtype: str | DType = "float32",
+) -> TensorOrScalar:
     """Generate random values from a gamma distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
-        seed (Tensor): The seed tensor.
-        alpha (Tensor): The alpha parameter.
-        dtype (str): The data type.
+        seed (Tensor): The stateless PRNG seed tensor.
+        alpha (Tensor): Shape parameter alpha.
+        dtype (str | DType): The output data type.
 
     Returns:
-        Tensor: The generated tensor.
+        TensorOrScalar: The generated gamma random tensor.
     """
     from ml_switcheroo_compiler.random.continuous import gamma
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
-    res = gamma(seed, alpha, tuple(shape), dtype_enum)
-    return res
+    return gamma(seed, alpha, tuple(shape), dtype_enum)
 
 
 def stateless_beta(
@@ -213,273 +307,226 @@ def stateless_beta(
     seed: Tensor,
     alpha: Tensor,
     beta_param: Tensor,
-    dtype: str = "float32",
-) -> EagerValue:
+    dtype: str | DType = "float32",
+) -> TensorOrScalar:
     """Generate random values from a beta distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
-        seed (Tensor): The seed tensor.
-        alpha (Tensor): The alpha parameter.
-        beta_param (Tensor): The beta parameter.
-        dtype (str): The data type.
+        seed (Tensor): The stateless PRNG seed tensor.
+        alpha (Tensor): Alpha concentration parameter.
+        beta_param (Tensor): Beta concentration parameter.
+        dtype (str | DType): The output data type.
 
     Returns:
-        Tensor: The generated tensor.
+        TensorOrScalar: The generated beta random tensor.
     """
     from ml_switcheroo_compiler.random.continuous import beta
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
-    res = beta(seed, alpha, beta_param, tuple(shape), dtype_enum)
-    return res
+    return beta(seed, alpha, beta_param, tuple(shape), dtype_enum)
 
 
 def stateless_shuffle(
     x: Tensor,
     seed: Tensor,
     axis: int = 0,
-) -> EagerValue:
-    """Shuffles the input tensor randomly along a given axis without maintaining state.
+) -> TensorOrScalar:
+    """Shuffle the input tensor randomly along a given axis without maintaining state.
 
     Args:
         x (Tensor): The input tensor to shuffle.
-        seed (Tensor): The seed tensor.
-        axis (int): The axis to shuffle along.
+        seed (Tensor): The stateless PRNG seed tensor.
+        axis (int): The axis along which to shuffle.
 
     Returns:
-        Tensor: The shuffled tensor.
+        TensorOrScalar: The shuffled tensor.
     """
     from ml_switcheroo_compiler.random.transformations import shuffle
 
-    res = shuffle(seed, x, axis=axis)
-    return res
+    return shuffle(seed, x, axis=axis)
 
 
-@dataclass
-class RandomGenerationConfig:
-    """Configuration for advanced random number generation.
-
-    This class encapsulates multiple parameters that can be used
-    when generating random distributions, including bounded ranges.
-    """
-
-    means: float = 0.0
-    stddevs: float = 1.0
-    minvals: float = -2.0
-    maxvals: float = 2.0
-    name: Optional[str] = None
-
-
-def stateless_parameterized_truncated_normal(shape: EagerValue, seed: EagerValue, config: Optional[RandomGenerationConfig] = None) -> EagerValue:
-    """Generate random values from a truncated normal distribution with custom config.
+def stateless_parameterized_truncated_normal(
+    shape: TensorOrScalar,
+    seed: TensorOrScalar,
+    config: Optional[RandomGenerationConfig] = None,
+) -> TensorOrScalar:
+    """Generate random values from a parameterized truncated normal distribution.
 
     Args:
-        shape (Any): The shape of the output tensor.
-        seed (Any): The seed Any for the generator.
-        config (Optional[RandomGenerationConfig]): Configuration containing distribution parameters.
+        shape (TensorOrScalar): Output tensor shape tuple.
+        seed (TensorOrScalar): Stateless PRNG seed tensor.
+        config (Optional[RandomGenerationConfig]): Distribution configuration.
 
     Returns:
-        Tensor: The randomly generated tensor.
+        TensorOrScalar: Sampled truncated normal tensor.
     """
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
-    return Tensor(None, cast("Callable[..., TensorConfig]", TensorConfig)(shape, "float32", "cpu"))
-
-
-class Algorithm:
-    """Define constants for random number generation algorithms.
-
-    These algorithms dictate the specific random number generation
-    under the hood, like Philox or Threefry.
-    """
-
-    PHILOX = 1
-    THREEFRY = 2
-    AUTO_SELECT = 3
-
-
-class Generator:
-    """Provide a random number generator with internal state.
-
-    This class encapsulates the state and algorithm required to
-    produce deterministic random numbers based on an initial seed.
-    """
-
-    def __init__(self, copy_from: EagerValue = None, state: EagerValue = None, alg: EagerValue = None) -> None:
-        """Initialize the random number generator.
-
-        Args:
-            copy_from (Any): The copy_from parameter.
-            state (Any): The state parameter.
-            alg (Any): The alg parameter.
-        """
-        self.state = state
-
-    @classmethod
-    def from_seed(cls, seed: EagerValue, alg: EagerValue = None) -> "Generator":
-        """Create a Generator instance from a given seed.
-
-        Args:
-            seed (Any): The seed parameter.
-            alg (Any): The alg parameter.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        return cls(state=seed, alg=alg)
-
-    def normal(self, shape: EagerValue, config: Optional[NormalConfig] = None, dtype: EagerValue = "float32", name: EagerValue = None) -> EagerValue:
-        """Draws samples from a normal distribution using the generator's state.
-
-        Args:
-            shape (Any): The shape parameter.
-            config (Optional): The config parameter.
-            dtype (Any): The dtype parameter.
-            name (Any): The name parameter.
-
-        Returns:
-            Tensor: Result.
-        """
-        config = config or NormalConfig()
-        from ml_switcheroo_compiler.core.config import config as core_config
-
-        if core_config.eager_mode:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-            return get_active_backend().execute_op("Normal", shape, config=config, dtype=dtype, name=name)
-        from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-        out1 = _emit_shape_node("Normal", [], {"shape": shape, "config": config, "dtype": dtype, "name": name}, cast("Sequence[Union[int, str]]", shape), cast("Optional[str]", dtype))
-        return out1
-
-    def uniform(self, shape: EagerValue, config: Optional[UniformConfig] = None, dtype: EagerValue = "float32", name: EagerValue = None) -> EagerValue:
-        """Draws samples from a uniform distribution using the generator's state.
-
-        Args:
-            shape (Any): The shape parameter.
-            config (Optional): The config parameter.
-            dtype (Any): The dtype parameter.
-            name (Any): The name parameter.
-
-        Returns:
-            Tensor: Result.
-        """
-        config = config or UniformConfig()
-        from ml_switcheroo_compiler.core.config import config as core_config
-
-        if core_config.eager_mode:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-            return get_active_backend().execute_op("Uniform", shape, config=config, dtype=dtype, name=name)
-        from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-        out1 = _emit_shape_node("Uniform", [], {"shape": shape, "config": config, "dtype": dtype, "name": name}, cast("Sequence[Union[int, str]]", shape), cast("Optional[str]", dtype))
-        return out1
+    cfg = config or RandomGenerationConfig()
+    shape_tuple = (int(shape),) if isinstance(shape, int) else tuple(cast("Sequence[int]", shape))
+    if core_config.eager_mode:
+        k0, k1 = _extract_seed_pair(seed)
+        num_elems = 1
+        for d in shape_tuple:
+            num_elems *= max(1, int(d))
+        values: list[float] = []
+        c0, c1 = k0, k1
+        for idx in range(num_elems):
+            c0, c1 = _philox_round(c0 ^ idx, c1, k0 + idx)
+            c0, c1 = _philox_round(c0, c1, k1 + idx)
+            u = (c0 & 0xFFFFFF) / float(0x1000000)
+            z = cfg.minvals + u * (cfg.maxvals - cfg.minvals)
+            values.append(cfg.means + z * cfg.stddevs)
+        backend = get_active_backend()
+        arr = backend.array(values, dtype="float32")
+        reshape_fn = getattr(arr, "reshape", None)
+        if callable(reshape_fn) and shape_tuple:
+            arr = reshape_fn(shape_tuple)
+        return Tensor(arr, TensorConfig(shape_tuple, "float32", "cpu"))
+    return _emit_shape_node(
+        "ParameterizedTruncatedNormal",
+        [seed],
+        {"means": cfg.means, "stddevs": cfg.stddevs, "minvals": cfg.minvals, "maxvals": cfg.maxvals},
+        shape_tuple,
+        "float32",
+    )
 
 
-def create_rng_state(seed: EagerValue, alg: EagerValue = None) -> EagerValue:
-    """Create a random number generator state from a seed.
+def index_shuffle(index: TensorOrScalar, seed: TensorOrScalar, max_index: TensorOrScalar) -> TensorOrScalar:
+    """Compute a stateless Feistel/Philox bijective permutation of `index` within `[0, max_index]`.
 
     Args:
-        seed (Any): The seed parameter.
-        alg (Any): The alg parameter.
+        index (TensorOrScalar): Input index scalar or tensor in `[0, max_index]`.
+        seed (TensorOrScalar): Stateless PRNG seed.
+        max_index (TensorOrScalar): Inclusive maximum index bound.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Deterministically permuted index in `[0, max_index]`.
     """
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    if not core_config.eager_mode:
+        idx_shape = getattr(index, "shape", ()) if hasattr(index, "shape") else ()
+        return _emit_shape_node("IndexShuffle", [index, seed, max_index], {}, idx_shape, "int32")
 
-    return Tensor([0, seed], TensorConfig((2,), "int64", "cpu"))
+    raw_max = getattr(max_index, "data", max_index)
+    item_fn = getattr(raw_max, "item", None)
+    if callable(item_fn):
+        raw_max = item_fn()
+    elif isinstance(raw_max, (list, tuple)) and raw_max:
+        raw_max = raw_max[0]
+    m = int(raw_max) if isinstance(raw_max, (int, float)) else 0
+    if m <= 0:
+        return index
+
+    k0, k1 = _extract_seed_pair(seed)
+    modulus = m + 1
+
+    def _permute_scalar(val: int) -> int:
+        """Compute deterministic Philox-based modular permutation for a single integer index.
+
+        Args:
+            val (int): Input index in `[0, max_index]`.
+
+        Returns:
+            int: Permuted index in `[0, max_index]`.
+        """
+        v0, _ = _philox_round(val, k1, k0)
+        offset = v0 % modulus
+        return (val + offset) % modulus
+
+    if isinstance(index, int):
+        return _permute_scalar(index)
+
+    raw_idx = getattr(index, "data", index)
+    tolist_idx = getattr(raw_idx, "tolist", None)
+    raw_list = tolist_idx() if callable(tolist_idx) else raw_idx
+    if not isinstance(raw_list, (list, tuple)):
+        return index
+    permuted = [_permute_scalar(int(x)) for x in raw_list]
+    backend = get_active_backend()
+    arr = backend.array(permuted, dtype="int32")
+    return Tensor(arr, TensorConfig(getattr(index, "shape", ()), getattr(index, "dtype", "int32"), getattr(index, "device", "cpu")))
 
 
-_GLOBAL_GENERATOR_STATE: dict[str, Optional[Generator]] = {"generator": None}
-
-
-def get_global_generator() -> EagerValue:
-    """Retrieve the globally registered random number generator.
-
-    Returns: Tensor: The global Generator instance.
-    """
-    if _GLOBAL_GENERATOR_STATE["generator"] is None:
-        _GLOBAL_GENERATOR_STATE["generator"] = Generator.from_seed(0)
-    return cast(EagerValue, _GLOBAL_GENERATOR_STATE["generator"])
-
-
-def set_global_generator(generator: EagerValue) -> None:
-    """Register a globally accessible random number generator.
+def stateless_fold_in(seed: TensorOrScalar, data: TensorOrScalar) -> TensorOrScalar:
+    """Fold integer data into a stateless PRNG seed using Philox mixing.
 
     Args:
-        generator (Any): The generator instance to set globally.
-    """
-    _GLOBAL_GENERATOR_STATE["generator"] = cast(Generator, generator)
-
-
-def index_shuffle(index: EagerValue, seed: EagerValue, max_index: EagerValue) -> EagerValue:
-    """Shuffles an index safely within the defined bounds.
-
-    Args:
-        index (Any): The index value to shuffle.
-        seed (Any): The random seed.
-        max_index (Any): The maximum allowed index.
-
-    Returns: Tensor: The resulting shuffled index.
-    """
-    return index
-
-
-def stateless_fold_in(seed: EagerValue, data: EagerValue) -> EagerValue:
-    """Folds new data into an existing seed to produce a combined seed.
-
-    Args:
-        seed (Any): The original seed value.
-        data (Any): The additional data to mix into the seed.
-
-    Returns: Tensor: The combined seed.
-    """
-    return seed
-
-
-def stateless_split(seed: EagerValue, num: EagerValue = 2) -> EagerValue:
-    """Split a single seed into multiple independent seeds.
-
-    Args:
-        seed (Any): The seed parameter.
-        num (Any): The num parameter.
+        seed (TensorOrScalar): Input stateless seed tensor or value.
+        data (TensorOrScalar): Data value to mix into the seed.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: New mixed stateless PRNG seed.
     """
-    from ml_switcheroo_compiler.core.config import config
+    if not core_config.eager_mode:
+        seed_shape = getattr(seed, "shape", (2,)) if hasattr(seed, "shape") else (2,)
+        return _emit_shape_node("StatelessFoldIn", [seed, data], {}, seed_shape, "int64")
 
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+    s0, s1 = _extract_seed_pair(seed)
+    d0, d1 = _extract_seed_pair(data)
+    m0, m1 = _philox_round(s0 ^ d0, s1 ^ d1, 0x9E3779B9)
+    if isinstance(seed, Tensor):
+        backend = get_active_backend()
+        arr = backend.array([m0, m1], dtype="int64")
+        return Tensor(arr, TensorConfig((2,), seed.dtype, seed.device))
+    if isinstance(seed, str):
+        return f"{seed}_{m0:08x}"
+    return [m0, m1]
 
+
+def stateless_split(seed: TensorOrScalar, num: TensorOrScalar = 2) -> TensorOrScalar:
+    """Split a stateless PRNG seed into `num` independent seeds.
+
+    Args:
+        seed (TensorOrScalar): Input stateless PRNG seed.
+        num (TensorOrScalar): Number of sub-seeds to generate.
+
+    Returns:
+        TensorOrScalar: Tensor of shape `(num, 2)` containing split seeds.
+    """
+    if core_config.eager_mode:
         return get_active_backend().execute_op("StatelessSplit", seed, num=num)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    out1 = _emit_shape_node("StatelessSplit", [seed], {"num": num}, cast("Sequence[Union[int, str]]", (num, 2)), "int64")
-    return out1
+    return _emit_shape_node("StatelessSplit", [seed], {"num": num}, (int(cast(int, num)), 2), "int64")
 
 
 def stateless_poisson(
     shape: Sequence[int],
     seed: Tensor,
     lam: Tensor,
-    dtype: str = "int32",
-) -> EagerValue:
-    """Generate random values from a poisson distribution without maintaining state.
+    dtype: str | DType = "int32",
+) -> TensorOrScalar:
+    """Generate random values from a Poisson distribution without maintaining state.
 
     Args:
-        shape (Sequence): The shape parameter.
-        seed (Tensor): The seed parameter.
-        lam (Tensor): The lam parameter.
-        dtype (str): The dtype parameter.
+        shape (Sequence[int]): Output tensor shape.
+        seed (Tensor): Stateless PRNG seed tensor.
+        lam (Tensor): Rate parameter lambda.
+        dtype (str | DType): Output data type.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Sampled Poisson tensor.
     """
     from ml_switcheroo_compiler.random.distributions_discrete import poisson
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
-    res = poisson(seed, lam, tuple(shape), dtype_enum)
-    return res
+    return poisson(seed, lam, tuple(shape), dtype_enum)
+
+
+__all__ = [
+    "Algorithm",
+    "NormalConfig",
+    "RandomGenerationConfig",
+    "UniformConfig",
+    "index_shuffle",
+    "stateless_beta",
+    "stateless_categorical",
+    "stateless_fold_in",
+    "stateless_gamma",
+    "stateless_parameterized_truncated_normal",
+    "stateless_poisson",
+    "stateless_random_binomial",
+    "stateless_random_normal",
+    "stateless_random_uniform",
+    "stateless_shuffle",
+    "stateless_split",
+    "stateless_truncated_normal",
+]

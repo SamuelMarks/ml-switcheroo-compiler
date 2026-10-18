@@ -18,7 +18,7 @@ def _verify_gpu_residency(res: EagerValue) -> None:
     """Verify that a CuPy tensor resides strictly in GPU device memory without host transfer.
 
     Args:
-        res (object): Object or tensor resulting from CuPy operation.
+        res (EagerValue): Object or tensor resulting from CuPy operation.
 
     Raises:
         RuntimeError: If array lacks valid device memory residence.
@@ -40,14 +40,14 @@ def cupy_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
     """Execute 2D convolution directly on CuPy GPU memory.
 
     Args:
-        x (object): Input tensor of shape (N, C, H, W) or (H, W).
-        w (object): Weight filter tensor of shape (out_c, in_c, kh, kw) or (kh, kw).
-        stride (object): Spatial stride integer or pair of integers.
-        padding (object): Padding string ('SAME' or 'VALID').
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input tensor of shape (N, C, H, W) or (H, W).
+        w (EagerValue): Weight filter tensor of shape (out_c, in_c, kh, kw) or (kh, kw).
+        stride (EagerValue): Spatial stride integer or pair of integers.
+        padding (EagerValue): Padding string ('SAME' or 'VALID').
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Convolved CuPy GPU array.
+        EagerValue: Convolved CuPy GPU array.
     """
     del kwargs
     if cp is None:
@@ -94,14 +94,14 @@ def cupy_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
     """Execute 2D max pooling directly on CuPy GPU memory.
 
     Args:
-        x (object): Input tensor of shape (N, C, H, W).
-        kernel_size (object): Pooling window size integer or tuple.
-        stride (object): Window stride integer or tuple.
-        padding (object): Padding mode ('VALID' or 'SAME').
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input tensor of shape (N, C, H, W).
+        kernel_size (EagerValue): Pooling window size integer or tuple.
+        stride (EagerValue): Window stride integer or tuple.
+        padding (EagerValue): Padding mode ('VALID' or 'SAME').
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Pooled CuPy GPU array.
+        EagerValue: Pooled CuPy GPU array.
     """
     del padding, kwargs
     if cp is None or getattr(x, "ndim", 0) != 4:
@@ -129,14 +129,14 @@ def cupy_avgpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
     """Execute 2D average pooling directly on CuPy GPU memory.
 
     Args:
-        x (object): Input tensor of shape (N, C, H, W).
-        kernel_size (object): Pooling window size integer or tuple.
-        stride (object): Window stride integer or tuple.
-        padding (object): Padding mode ('VALID' or 'SAME').
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input tensor of shape (N, C, H, W).
+        kernel_size (EagerValue): Pooling window size integer or tuple.
+        stride (EagerValue): Window stride integer or tuple.
+        padding (EagerValue): Padding mode ('VALID' or 'SAME').
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Average-pooled CuPy GPU array.
+        EagerValue: Average-pooled CuPy GPU array.
     """
     del padding, kwargs
     if cp is None or getattr(x, "ndim", 0) != 4:
@@ -162,12 +162,12 @@ def cupy_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
     """Execute bilinear resize directly on CuPy GPU memory.
 
     Args:
-        x (object): Input tensor of shape (N, C, H, W).
-        size (object): Target spatial dimensions (new_h, new_w).
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input tensor of shape (N, C, H, W).
+        size (EagerValue): Target spatial dimensions (new_h, new_w).
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Resized CuPy GPU array.
+        EagerValue: Resized CuPy GPU array.
     """
     del kwargs
     if cp is None or getattr(x, "ndim", 0) != 4 or size is None:
@@ -255,11 +255,11 @@ def execute_op(
     Args:
         cls (type): The caller class or context.
         op_type (str): The name of the operation.
-        *args (object): Positional arguments for the op.
-        **kwargs (object): Keyword arguments for the op.
+        *args (EagerValue): Positional arguments for the op.
+        **kwargs (EagerValue): Keyword arguments for the op.
 
     Returns:
-        object: Result of native CuPy evaluation.
+        EagerValue: Result of native CuPy evaluation.
 
     Raises:
         BackendNotSupportedError: If CuPy is unavailable or op is unmapped.

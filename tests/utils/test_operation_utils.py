@@ -61,7 +61,7 @@ def test_shape_inference_strategy_base() -> None:
         """Dummy strategy."""
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int | None, ...] | list[tuple[int | None, ...]] | None:
-            """Test function."""
+            """Verify the behavior and output invariants of call."""
             return cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", cast("Callable[..., EagerTensorProtocol]", super().__call__)(*args, **kwargs))
 
     strategy = DummyStrategy()

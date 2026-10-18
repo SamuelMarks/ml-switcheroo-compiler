@@ -1,4 +1,6 @@
-"""State Lifting Pass for functionalization of stateful OOP model representations."""
+"""State Lifting Pass for functionalization of stateful IR graphs and variable containers."""
+
+from __future__ import annotations
 
 import typing
 from collections.abc import Callable, Iterable
@@ -6,7 +8,7 @@ from typing import cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -29,7 +31,7 @@ def _get_node_items(block: LogicalGraph) -> Iterable[tuple[str, LogicalNode]]:
 
 
 def _lift_node_state(node: LogicalNode, nid: str, block: LogicalGraph) -> bool:
-    """Lift stateful ReadVariable/AssignVariable operations into pure functional inputs/outputs.
+    """Lift stateful ReadVariable/AssignVariable/Assign operations into pure functional inputs/outputs.
 
     Args:
         node (LogicalNode): Node being inspected.
@@ -46,10 +48,13 @@ def _lift_node_state(node: LogicalNode, nid: str, block: LogicalGraph) -> bool:
         node.attributes["is_state"] = True
         return True
 
-    if node.op_type == "AssignVariable":
+    if node.op_type in ("AssignVariable", "Assign"):
         var_name = str(node.attributes.get("variable_name", f"var_{nid}"))
         node.op_type = "Output"
+        if len(node.inputs) > 1:
+            node.inputs = [node.inputs[1]]
         node.attributes["name"] = f"{var_name}_out"
+        node.attributes["stop_gradient"] = False
         node.attributes["is_state_update"] = True
         if hasattr(block, "outputs") and nid not in block.outputs:
             block.outputs.append(nid)
@@ -82,11 +87,11 @@ def _lift_block(block: LogicalGraph) -> bool:
 StateEntry = typing.Union[Tensor, int, float, str, bool, list["StateEntry"], tuple["StateEntry", ...], dict[str, "StateEntry"], None]
 
 
-def _get_val(curr_obj: EagerValue, key: str) -> StateEntry:
+def _get_val(curr_obj: TensorOrScalar, key: str) -> StateEntry:
     """Retrieve value from dictionary or object attribute.
 
     Args:
-        curr_obj: Object or dictionary container.
+        curr_obj (TensorOrScalar): Object or dictionary container.
         key (str): Attribute name or dictionary key.
 
     Returns:
@@ -97,11 +102,11 @@ def _get_val(curr_obj: EagerValue, key: str) -> StateEntry:
     return getattr(curr_obj, key, None)
 
 
-def _set_val(curr_obj: EagerValue, key: str, val: StateEntry) -> None:
+def _set_val(curr_obj: TensorOrScalar, key: str, val: StateEntry) -> None:
     """Set value on dictionary or object attribute.
 
     Args:
-        curr_obj: Target container.
+        curr_obj (TensorOrScalar): Target container.
         key (str): Key or attribute name.
         val (StateEntry): Value to assign.
     """
@@ -111,15 +116,15 @@ def _set_val(curr_obj: EagerValue, key: str, val: StateEntry) -> None:
         setattr(curr_obj, key, val)
 
 
-def _navigate(curr_obj: EagerValue, parts: list[str]) -> EagerValue:
+def _navigate(curr_obj: TensorOrScalar, parts: list[str]) -> TensorOrScalar:
     """Traverse nested dictionary or object hierarchy along path parts.
 
     Args:
-        curr_obj: Root object.
+        curr_obj (TensorOrScalar): Root object.
         parts (list[str]): Dot-separated path components.
 
     Returns:
-        dict: Navigated nested object.
+        TensorOrScalar: Navigated nested object.
     """
     for p in parts:
         if isinstance(curr_obj, dict):
@@ -130,7 +135,7 @@ def _navigate(curr_obj: EagerValue, parts: list[str]) -> EagerValue:
 
 
 class StateLiftingPass:
-    """Harden state lifting pass extracting parameters and buffers without breaking tensor identity."""
+    """Graph and container state lifting pass extracting trainable and non-trainable tensor fields."""
 
     def __init__(self) -> None:
         """Initialize StateLiftingPass."""
@@ -164,7 +169,7 @@ class StateLiftingPass:
         params: dict[str, StateEntry],
         buffers: dict[str, StateEntry],
     ) -> None:
-        """Extract state from a single reflected attribute value.
+        """Extract state from a single attribute value.
 
         Args:
             full_name (str): Qualified attribute name.
@@ -183,15 +188,12 @@ class StateLiftingPass:
             params.update(sub_p)
             buffers.update(sub_b)
 
-    def extract_state(self, module: EagerValue, prefix: str = "") -> tuple[dict[str, StateEntry], dict[str, StateEntry]]:
-        """Reliably extract parameters and buffers from stateful OOP model representations.
-
-        Handles nested submodules, custom parameter dictionaries, and buffer assignments
-        without breaking tensor identity.
+    def extract_state(self, container: TensorOrScalar, prefix: str = "") -> tuple[dict[str, StateEntry], dict[str, StateEntry]]:
+        """Extract trainable parameters and non-trainable buffers from a generic variable container.
 
         Args:
-            module: Stateful OOP model (e.g. PyTorch nn.Module or custom class).
-            prefix (str): Prefix path for nested submodules.
+            container (TensorOrScalar): Stateful variable container.
+            prefix (str): Prefix path for nested containers.
 
         Returns:
             tuple[dict[str, StateEntry], dict[str, StateEntry]]: (params_dict, buffers_dict).
@@ -199,22 +201,10 @@ class StateLiftingPass:
         params: dict[str, StateEntry] = {}
         buffers: dict[str, StateEntry] = {}
 
-        if hasattr(module, "named_parameters") and callable(getattr(module, "named_parameters")):
-            for name, param in getattr(module, "named_parameters")():
-                full_name = f"{prefix}{name}" if prefix else name
-                params[full_name] = param
-                self.identity_map[id(param)] = full_name
-
-        if hasattr(module, "named_buffers") and callable(getattr(module, "named_buffers")):
-            for name, buf in getattr(module, "named_buffers")():
-                full_name = f"{prefix}{name}" if prefix else name
-                buffers[full_name] = buf
-                self.identity_map[id(buf)] = full_name
-
-        if params or buffers or not hasattr(module, "__dict__"):
+        if not hasattr(container, "__dict__"):
             return params, buffers
 
-        for attr_name, attr_val in module.__dict__.items():
+        for attr_name, attr_val in container.__dict__.items():
             if attr_name.startswith("_") and not attr_name.startswith("_buffers"):
                 continue
             full_name = f"{prefix}{attr_name}" if prefix else attr_name
@@ -222,19 +212,19 @@ class StateLiftingPass:
 
         return params, buffers
 
-    def lift(self, module: EagerValue) -> tuple[dict[str, StateEntry], IRGraph]:
-        """Lift module parameters and buffers into an IRGraph with functional input nodes.
+    def lift(self, container: TensorOrScalar) -> tuple[dict[str, StateEntry], IRGraph]:
+        """Lift container parameters and buffers into an IRGraph with functional input nodes.
 
         Args:
-            module: Stateful model instance.
+            container (TensorOrScalar): Stateful container instance.
 
         Returns:
             tuple[dict[str, StateEntry], IRGraph]: Combined state dictionary and functional graph.
         """
-        params, buffers = self.extract_state(module)
+        params, buffers = self.extract_state(container)
         combined_state = {**params, **buffers}
 
-        graph = IRGraph(name=f"functional_{module.__class__.__name__}")
+        graph = IRGraph(name=f"functional_{container.__class__.__name__}")
         graph.inputs = []
         graph.outputs = []
         for name, tensor in combined_state.items():
@@ -249,6 +239,7 @@ class StateLiftingPass:
                 shape_metadata={"shape": tuple(shape_meta)},
                 attributes={
                     "name": name,
+                    "param_name": name,
                     "is_state": True,
                     "is_parameter": is_param,
                     "is_buffer": not is_param,
@@ -260,56 +251,53 @@ class StateLiftingPass:
 
         return combined_state, graph
 
-    def functionalize(self, module: Callable[..., EagerValue]) -> tuple[dict[str, StateEntry], Callable[..., tuple[StateEntry, dict[str, StateEntry]]]]:
-        """Convert a stateful module into a pure function accepting and returning state.
+    def functionalize(self, container: Callable[..., TensorOrScalar]) -> tuple[dict[str, StateEntry], Callable[..., tuple[StateEntry, dict[str, StateEntry]]]]:
+        """Convert a stateful callable container into a pure function accepting and returning state.
 
         Args:
-            module: The stateful model module.
+            container (Callable[..., TensorOrScalar]): The stateful callable container.
 
         Returns:
-            tuple[dict[str, StateEntry], Callable]: Initial state dictionary and pure function.
+            tuple[dict[str, StateEntry], Callable[..., tuple[StateEntry, dict[str, StateEntry]]]]: Initial state dictionary and pure function.
         """
-        params, buffers = self.extract_state(module)
+        params, buffers = self.extract_state(container)
         current_state = {**params, **buffers}
 
         def pure_fn(state: dict[str, StateEntry], *args: StateEntry, **kwargs: StateEntry) -> tuple[StateEntry, dict[str, StateEntry]]:
-            """Pure forward execution function with explicit state passing.
+            """Pure execution function with explicit state passing.
 
             Args:
-                state: The state parameter.
-                *args: The args parameter.
-                **kwargs: The kwargs parameter.
+                state (dict[str, StateEntry]): Input state dictionary.
+                *args (StateEntry): Positional arguments.
+                **kwargs (StateEntry): Keyword arguments.
+
+            Returns:
+                tuple[StateEntry, dict[str, StateEntry]]: Output and updated state dictionary.
             """
             backup: dict[str, StateEntry] = {}
-            # Apply state to module
             for k, v in state.items():
                 parts = k.split(".")
-                parent = _navigate(module, parts[:-1])
+                parent = _navigate(container, parts[:-1])
                 backup[k] = _get_val(parent, parts[-1])
                 _set_val(parent, parts[-1], v)
 
             try:
-                # Call module forward/__call__
-                if callable(module):
-                    out = module(*args, **kwargs)
-                elif hasattr(module, "forward") and callable(getattr(module, "forward")):
-                    out = getattr(module, "forward")(*args, **kwargs)
+                if callable(container):
+                    out = container(*args, **kwargs)
                 else:
-                    raise TypeError(f"Module {type(module)} is not callable and has no forward method.")
+                    raise TypeError(f"Container {type(container)} is not callable.")
 
-                # Capture updated state (buffers might have been mutated)
                 new_state: dict[str, StateEntry] = {}
                 for k in state:
                     parts = k.split(".")
-                    parent = _navigate(module, parts[:-1])
+                    parent = _navigate(container, parts[:-1])
                     new_state[k] = _get_val(parent, parts[-1])
 
                 return cast(tuple[StateEntry, dict[str, StateEntry]], (out, new_state))
             finally:
-                # Restore original attributes
                 for k, v in backup.items():
                     parts = k.split(".")
-                    parent = _navigate(module, parts[:-1])
+                    parent = _navigate(container, parts[:-1])
                     _set_val(parent, parts[-1], v)
 
         return current_state, pure_fn
@@ -333,6 +321,6 @@ def state_lifting_pass(graph: IRGraph) -> bool:
         graph (IRGraph): The graph parameter for the operation.
 
     Returns:
-        bool: A boolean indicating the result of the check.
+        bool: True if the graph was modified.
     """
     return StateLiftingPass().run(graph)

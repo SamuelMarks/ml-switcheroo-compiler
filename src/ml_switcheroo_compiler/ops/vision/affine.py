@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -24,7 +25,7 @@ class AffineConfig:
     data_format = None
 
 
-def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> EagerValue:
+def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> TensorOrScalar:
     """Apply the given 2D affine transforms to the given images.
 
     Args:
@@ -42,7 +43,7 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
     return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
-def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> EagerValue:
+def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> TensorOrScalar:
     """Construct 2D/3D affine matrices from angles, shears, and zoom factors.
 
     Args:
@@ -70,7 +71,7 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
     return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
 
-def random_flip(images: Tensor, mode: EagerValue = "horizontal_and_vertical", seed: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def random_flip(images: Tensor, mode: TensorOrScalar = "horizontal_and_vertical", seed: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Randomly flip images horizontally and/or vertically.
 
     Args:
@@ -98,8 +99,8 @@ def random_rotation(
     images: Tensor,
     factor: float,
     config: AffineConfig | None = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Randomly rotate images.
 
     Args:
@@ -135,7 +136,7 @@ def random_rotation(
     )
 
 
-def random_crop(images: Tensor, size: EagerValue, seed: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def random_crop(images: Tensor, size: TensorOrScalar, seed: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Randomly crop images.
 
     Args:
@@ -161,15 +162,15 @@ def random_zoom(
     images: Tensor,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Randomly zoom images.
 
     Args:
         images (Tensor): The images parameter.
-        height_factor (Any): The height_factor parameter.
-        width_factor (Any): The width_factor parameter.
-        **kwargs (Any): Keyword args.
+        height_factor (tuple[float, float] | float): The height_factor parameter.
+        width_factor (tuple[float, float] | float | None): The width_factor parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -205,8 +206,8 @@ def random_translation(
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
     config: AffineConfig | None = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Randomly translate images.
 
     Args:
@@ -249,8 +250,8 @@ def random_shear(
     images: Tensor,
     y_factor: float | tuple[float, float],
     x_factor: float | tuple[float, float] | None = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Randomly shear images.
 
     Args:
@@ -291,8 +292,8 @@ def random_shear(
 def random_perspective(
     images: Tensor,
     factor: float | tuple[float, float],
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Randomly apply perspective transform to images.
 
     Args:
@@ -331,8 +332,8 @@ def random_elastic_transform(
     images: Tensor,
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Randomly apply elastic transform to images.
 
     Args:
@@ -370,7 +371,7 @@ def random_elastic_transform(
     )
 
 
-def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> EagerValue:
+def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> TensorOrScalar:
     """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
@@ -394,7 +395,7 @@ def grid_sample(
     mode: str = "bilinear",
     padding_mode: str = "zeros",
     align_corners: bool = False,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
 
     Args:
@@ -433,13 +434,13 @@ class AffineGenerator(OpDef):
 
     op_name = "AffineGenerator"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-        inputs (Any): The inputs parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        inputs (EagerTensorProtocol): The inputs parameter.
+        *args (EagerTensorProtocol): Positional args.
+        **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -453,13 +454,13 @@ class AffineGrid(OpDef):
 
     op_name = "AffineGrid"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -473,13 +474,13 @@ class AffineTransform(OpDef):
 
     op_name = "AffineTransform"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -493,13 +494,13 @@ class PerspectiveTransform(OpDef):
 
     op_name = "PerspectiveTransform"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

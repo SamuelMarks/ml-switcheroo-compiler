@@ -88,20 +88,20 @@ class EagerExecutionMixin:
             **kwargs: Keyword arguments.
 
         Returns:
-            object: The eager evaluation result.
+            EagerValue: The eager evaluation result.
         """
         del args, kwargs
         return None
 
     @classmethod
     def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
-        """Evaluate zeros operation.
+        """Execute zeros for compiler processing.
 
         Args:
             shape (tuple[int, ...]): The shape parameter.
 
         Returns:
-            object: Result.
+            EagerValue: Result.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
@@ -111,14 +111,14 @@ class EagerExecutionMixin:
 
     @classmethod
     def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
-        """Evaluate array operation.
+        """Execute array for compiler processing.
 
         Args:
             data: The data parameter.
             dtype: The dtype parameter.
 
         Returns:
-            object: Result.
+            EagerValue: Result.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
@@ -128,13 +128,13 @@ class EagerExecutionMixin:
 
     @classmethod
     def asarray(cls: type, data: EagerValue) -> EagerValue:
-        """Evaluate asarray operation.
+        """Execute asarray for compiler processing.
 
         Args:
             data: The data parameter.
 
         Returns:
-            object: Result.
+            EagerValue: Result.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
@@ -144,7 +144,7 @@ class EagerExecutionMixin:
 
     @classmethod
     def item(cls: type, data: EagerValue) -> float:
-        """Evaluate item operation.
+        """Execute item for compiler processing.
 
         Args:
             data: The data parameter.

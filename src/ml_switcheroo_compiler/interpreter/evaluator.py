@@ -116,7 +116,7 @@ def evaluate_graph(
     """
     initial_env: dict[str, EvalValue] = dict(getattr(graph, "initializers", {}) or {})
     initial_env.update(inputs)
-    env = cast("Callable[..., Environment]", Environment)(initial_env)
+    env = Environment(initial_env)
     sorted_nodes = topological_sort(graph)
     active_backend = backend if backend is not None else get_active_backend()
 
@@ -416,7 +416,7 @@ def _dispatch_op(node: LogicalNode, env: Environment, backend: type[BaseGenerato
 
 
 def _evaluate_if_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
-    """_evaluate_if_node function.
+    """Execute evaluate if node for compiler processing.
 
     Args:
         node: The node parameter.
@@ -449,7 +449,7 @@ def _evaluate_if_node(node: LogicalNode, env: Environment, backend: type[BaseGen
 
 
 def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
-    """_evaluate_loop_node function.
+    """Execute evaluate loop node for compiler processing.
 
     Args:
         node: The node parameter.
@@ -509,7 +509,8 @@ def _evaluate_vmap_node(node: LogicalNode, env: Environment, backend: type[BaseG
         env (Environment): The local variable environment.
         backend (type[BaseGenerator]): The active compute backend.
     """
-    body_graph = node.attributes.get("body")
+    raw_bg = node.attributes.get("body")
+    body_graph: LogicalGraph | None = cast("LogicalGraph | None", raw_bg)
     in_axes = node.attributes.get("in_axes", 0)
     out_axes = node.attributes.get("out_axes", 0)
 
@@ -521,7 +522,7 @@ def _evaluate_vmap_node(node: LogicalNode, env: Environment, backend: type[BaseG
 
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-    if not isinstance(body_graph, IRGraph) and hasattr(body_graph, "nodes"):
+    if body_graph is not None and not isinstance(body_graph, IRGraph) and hasattr(body_graph, "nodes"):
         b_graph = IRGraph(name=getattr(body_graph, "id", "body"))
         b_graph.inputs = list(getattr(body_graph, "inputs", []))
         b_graph.outputs = list(getattr(body_graph, "outputs", []))
@@ -548,11 +549,15 @@ def _evaluate_recompute_node(node: LogicalNode, env: Environment, backend: type[
         env (Environment): The local variable environment.
         backend (type[BaseGenerator]): The active compute backend.
     """
+    from collections.abc import Mapping
+
+    from ml_switcheroo_ir import AttributeValue
+
     in_vals = [env.get(inp) for inp in node.inputs]
     orig_op = str(node.attributes.get("original_op", node.op_type))
     target_op = _get_op_alias(orig_op)
     orig_attrs: dict[str, EvalValue] = cast(dict[str, EvalValue], node.attributes.get("original_attrs", {})).copy()
-    resolved_node = LogicalNode(id=node.id, op_type=target_op, inputs=node.inputs, attributes=orig_attrs)
+    resolved_node = LogicalNode(id=node.id, op_type=target_op, inputs=node.inputs, attributes=cast("Mapping[str, AttributeValue]", orig_attrs))
     kwargs = _prepare_node_kwargs(resolved_node, target_op)
     cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(resolved_node, env, backend, target_op, in_vals, kwargs)
 
@@ -648,10 +653,13 @@ def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, EvalVal
     }:
         kwargs.pop("strides", None)
     if getattr(node, "shape_metadata", None):
+        from collections.abc import Sequence
+
+        meta_tuple = cast("EvalValue", tuple(cast("Sequence[int | str]", node.shape_metadata)))
         if target_op in ("Expand", "BroadcastTo", "ConstantOfShape", "Zeros", "Ones", "Full") and "shape" not in kwargs:
-            kwargs["shape"] = tuple(node.shape_metadata)
+            kwargs["shape"] = meta_tuple
         if target_op == "Reshape" and "newshape" not in kwargs:
-            kwargs["newshape"] = tuple(node.shape_metadata)
+            kwargs["newshape"] = meta_tuple
     return kwargs
 
 

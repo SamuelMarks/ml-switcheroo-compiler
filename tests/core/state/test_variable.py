@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Core abstractions and logic definitions for test_variable.py."""
 
 from __future__ import annotations
@@ -16,31 +15,25 @@ def test_variable_and_parameter() -> None:
     """Test the variable and parameter behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        device = Device(DeviceType.CPU, 0)
-        data = np.array([1, 2, 3])
-        with ConfigContext(eager_mode=True):
-            v = Variable(data, TensorConfig((3,), DType.Int32, device))
-            assert not v.trainable
-            p = Parameter(data, TensorConfig((3,), DType.Int32, device))
-            assert p.trainable
-            t = Tensor(np.array([4, 5, 6]), TensorConfig((3,), DType.Int32, device))
+    device = Device(DeviceType.CPU, 0)
+    data = np.array([1, 2, 3])
+    with ConfigContext(eager_mode=True):
+        v = Variable(data, TensorConfig((3,), DType.Int32, device))
+        assert not v.trainable
+        p = Parameter(data, TensorConfig((3,), DType.Int32, device))
+        assert p.trainable
+        t = Tensor(np.array([4, 5, 6]), TensorConfig((3,), DType.Int32, device))
+        v.assign(t)
+        v.assign(t)
+    with ConfigContext(eager_mode=False):
+        global_tracing_state.start_tracing()
+        try:
+            v = Variable("dummy_v", TensorConfig((3,), DType.Int32, device))
+            t = Tensor("dummy_t", TensorConfig((3,), DType.Int32, device))
             v.assign(t)
-            try:
-                v.assign(t)
-            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-                assert _exc is not None
-        with ConfigContext(eager_mode=False):
-            global_tracing_state.start_tracing()
-            try:
-                v = Variable("dummy_v", TensorConfig((3,), DType.Int32, device))
-                t = Tensor("dummy_t", TensorConfig((3,), DType.Int32, device))
-                v.assign(t)
-                v.assign_add(t)
-                v.assign_sub(t)
-            finally:
-                global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+            v.assign_add(t)
+            v.assign_sub(t)
+        finally:
+            global_tracing_state.stop_tracing()

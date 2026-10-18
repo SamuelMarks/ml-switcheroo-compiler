@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_ea
 
 @global_eager_registry.register("Argsort")
 def _argsort(backend_module: EagerValue, a: EagerValue, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _argsort operation.
+    """Execute the eager argsort operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -19,14 +19,14 @@ def _argsort(backend_module: EagerValue, a: EagerValue, axis: int = -1, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "argsort")(a, axis=axis))
 
 
 @global_eager_registry.register("Lexsort")
 def _lexsort(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _lexsort operation.
+    """Execute the eager lexsort operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -34,14 +34,14 @@ def _lexsort(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "lexsort")(*args, **kwargs))
 
 
 @global_eager_registry.register("Searchsorted")
 def _searchsorted(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _searchsorted operation.
+    """Execute the eager searchsorted operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -49,14 +49,14 @@ def _searchsorted(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "searchsorted")(*args, **kwargs))
 
 
 @global_eager_registry.register("SortComplex")
 def _sortcomplex(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _sortcomplex operation.
+    """Execute the eager sortcomplex operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -64,6 +64,6 @@ def _sortcomplex(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "sort_complex")(*args, **kwargs))

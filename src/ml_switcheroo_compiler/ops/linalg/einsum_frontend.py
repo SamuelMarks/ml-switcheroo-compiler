@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .utils import _emit_linalg_node
@@ -46,9 +46,9 @@ def _get_tensordot_output_string(a_letters: list[str], b_letters: list[str], con
     """Generate the output string for tensordot einsum routing.
 
     Args:
-        a_letters (Any): The a_letters parameter.
-        b_letters (Any): The b_letters parameter.
-        contracted (Any): The contracted parameter.
+        a_letters (list[str]): The a_letters parameter.
+        b_letters (list[str]): The b_letters parameter.
+        contracted (set[str]): The contracted parameter.
 
     Returns:
         str: Result.
@@ -62,10 +62,10 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     """Generate einsum notation strings for tensordot routing.
 
     Args:
-        shape_a (Any): The shape_a parameter.
-        shape_b (Any): The shape_b parameter.
-        axes_a (Any): The axes_a parameter.
-        axes_b (Any): The axes_b parameter.
+        shape_a (Sequence[int]): The shape_a parameter.
+        shape_b (Sequence[int]): The shape_b parameter.
+        axes_a (Sequence[int]): The axes_a parameter.
+        axes_b (Sequence[int]): The axes_b parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -82,8 +82,8 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     return a_str, b_str, out_str
 
 
-def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> EagerValue:
-    """Evaluate _tensordot_einsum_routing operation.
+def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> TensorOrScalar:
+    """Compute the tensordot einsum routing tensor operation.
 
     Args:
         a (Tensor): The a parameter.
@@ -99,13 +99,13 @@ def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], S
     return einsum(eq, a, b)
 
 
-def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> EagerValue:
+def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> TensorOrScalar:
     """Compute the tensor dot product along specified axes.
 
     Args:
         a (Tensor): The a parameter.
         b (Tensor): The b parameter.
-        axes (Any): The axes parameter.
+        axes (int | tuple[Sequence[int], Sequence[int]]): The axes parameter.
 
     Returns:
         Tensor: Result.
@@ -121,7 +121,7 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
-def einsum(equation: str, *operands: Tensor) -> EagerValue:
+def einsum(equation: str, *operands: Tensor) -> TensorOrScalar:
     """Evaluate the Einstein summation convention on the operands.
 
     Args:
@@ -150,12 +150,12 @@ def einsum(equation: str, *operands: Tensor) -> EagerValue:
 
 
 def _get_remaining_dims(shape_len: int, contracting: Sequence[int], batch: Sequence[int]) -> list[int]:
-    """Evaluate _get_remaining_dims operation.
+    """Compute the get remaining dims tensor operation.
 
     Args:
         shape_len (int): The shape_len parameter.
-        contracting (Any): The contracting parameter.
-        batch (Any): The batch parameter.
+        contracting (Sequence[int]): The contracting parameter.
+        batch (Sequence[int]): The batch parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -170,12 +170,12 @@ def _infer_dot_general_shape(
     rhs_shape: Sequence[int],
     dimension_numbers: tuple[tuple[Sequence[int], Sequence[int]], tuple[Sequence[int], Sequence[int]]],
 ) -> tuple[int, ...]:
-    """Evaluate _infer_dot_general_shape operation.
+    """Compute the infer dot general shape tensor operation.
 
     Args:
-        lhs_shape (Any): The lhs_shape parameter.
-        rhs_shape (Any): The rhs_shape parameter.
-        dimension_numbers (Any): The dimension_numbers parameter.
+        lhs_shape (Sequence[int]): The lhs_shape parameter.
+        rhs_shape (Sequence[int]): The rhs_shape parameter.
+        dimension_numbers (tuple[tuple[Sequence[int], Sequence[int]], tuple[Sequence[int], Sequence[int]]]): The dimension_numbers parameter.
 
     Returns:
             tuple[int, ...]: Result.

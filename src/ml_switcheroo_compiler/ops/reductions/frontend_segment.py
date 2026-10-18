@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Callable, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
@@ -17,7 +18,7 @@ def _emit_segment_op(
     segment_ids: Tensor,
     num_segments: int | None = None,
 ) -> Tensor:
-    """Evaluate _emit_segment_op operation.
+    """Compute the emit segment op tensor operation.
 
     Args:
         op_type (str): The op_type parameter.
@@ -52,7 +53,7 @@ def _emit_segment_op(
 
 
 @dispatch_eager("SegmentSum")
-def segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the sum of tensor elements grouped by segment_ids.
 
     Args:
@@ -67,7 +68,7 @@ def segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = No
 
 
 @dispatch_eager("SegmentMax")
-def segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the max of tensor elements grouped by segment_ids.
 
     Args:
@@ -82,7 +83,7 @@ def segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = No
 
 
 @dispatch_eager("SegmentMean")
-def segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the mean of tensor elements grouped by segment_ids.
 
     Args:
@@ -97,7 +98,7 @@ def segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = N
 
 
 @dispatch_eager("SegmentMin")
-def segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the min of tensor elements grouped by segment_ids.
 
     Args:
@@ -112,7 +113,7 @@ def segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = No
 
 
 @dispatch_eager("SegmentProd")
-def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the prod of tensor elements grouped by segment_ids.
 
     Args:
@@ -127,7 +128,7 @@ def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = N
 
 
 @dispatch_eager("UnsortedSegmentMax")
-def unsorted_segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def unsorted_segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the max of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -142,7 +143,7 @@ def unsorted_segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | 
 
 
 @dispatch_eager("UnsortedSegmentMean")
-def unsorted_segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def unsorted_segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the mean of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -157,7 +158,7 @@ def unsorted_segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int |
 
 
 @dispatch_eager("UnsortedSegmentMin")
-def unsorted_segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def unsorted_segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the min of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -172,7 +173,7 @@ def unsorted_segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | 
 
 
 @dispatch_eager("UnsortedSegmentProd")
-def unsorted_segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def unsorted_segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the prod of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -187,7 +188,7 @@ def unsorted_segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int |
 
 
 @dispatch_eager("UnsortedSegmentSqrtN")
-def unsorted_segment_sqrt_n(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def unsorted_segment_sqrt_n(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the sqrt_n of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -202,7 +203,7 @@ def unsorted_segment_sqrt_n(data: Tensor, segment_ids: Tensor, num_segments: int
 
 
 @dispatch_eager("UnsortedSegmentSum")
-def unsorted_segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> EagerValue:
+def unsorted_segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> TensorOrScalar:
     """Compute the sum of tensor elements grouped by unsorted segment_ids.
 
     Args:

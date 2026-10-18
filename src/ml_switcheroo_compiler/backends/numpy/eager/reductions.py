@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def _calc_same_padding(operand_ndim: int, window_dimensions: EagerValue) -> EagerValue:
-    """Evaluate _calc_same_padding operation.
+    """Execute the eager calc same padding operation on the active backend array.
 
     Args:
         operand_ndim (int): The operand_ndim parameter.
@@ -34,10 +34,10 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: EagerValue) -> Eage
 
 
 def _calculate_padding_for_window(padding: typing.Union[str, list[tuple[int, int]]], operand_ndim: int, window_dimensions: EagerValue) -> EagerValue:
-    """Evaluate _calculate_padding_for_window operation.
+    """Execute the eager calculate padding for window operation on the active backend array.
 
     Args:
-        padding (object): The padding parameter.
+        padding (typing.Union[str, list[tuple[int, int]]]): The padding parameter.
         operand_ndim (int): The operand_ndim parameter.
         window_dimensions (list): The window_dimensions parameter.
 
@@ -54,10 +54,10 @@ def _calculate_padding_for_window(padding: typing.Union[str, list[tuple[int, int
 
 
 def _create_sliding_window_view(operand: np.ndarray[tuple[int, ...], np.dtype[np.generic]], config: WindowConfig) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], tuple[int, ...]]:
-    """Evaluate _create_sliding_window_view operation.
+    """Execute the eager create sliding window view operation on the active backend array.
 
     Args:
-        operand (object): The operand parameter.
+        operand (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): The operand parameter.
         config (WindowConfig): The config parameter.
 
     Returns:
@@ -86,12 +86,12 @@ def _create_sliding_window_view(operand: np.ndarray[tuple[int, ...], np.dtype[np
 
 
 def _apply_base_dilation(operand: np.ndarray[tuple[int, ...], np.dtype[np.generic]], base_dilation: typing.Optional[list[int]], init_value: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _apply_base_dilation operation.
+    """Execute the eager apply base dilation operation on the active backend array.
 
     Args:
-        operand (object): The operand parameter.
-        base_dilation (object): The base_dilation parameter.
-        init_value (object): The init_value parameter.
+        operand (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): The operand parameter.
+        base_dilation (typing.Optional[list[int]]): The base_dilation parameter.
+        init_value (EagerValue): The init_value parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -106,12 +106,12 @@ def _apply_base_dilation(operand: np.ndarray[tuple[int, ...], np.dtype[np.generi
 
 
 def _top_k(x: EagerValue, k: int, axis: int = -1) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-    """Evaluate _top_k operation.
+    """Execute the eager top k operation on the active backend array.
 
     Args:
-        x (object): The x parameter.
-        k (object): The k parameter.
-        axis (object): The axis parameter.
+        x (EagerValue): The x parameter.
+        k (int): The k parameter.
+        axis (int): The axis parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -130,8 +130,8 @@ def _reduce_window(operand: EagerValue, init_value: EagerValue, computation: str
     """Evaluate.
 
     Args:
-        operand (object): The operand parameter.
-        init_value (object): The init_value parameter.
+        operand (EagerValue): The operand parameter.
+        init_value (EagerValue): The init_value parameter.
         computation (str): The computation parameter.
         config (WindowConfig): The config parameter.
 
@@ -155,12 +155,12 @@ def _reduce_window(operand: EagerValue, init_value: EagerValue, computation: str
 
 
 def _logsumexp(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = False) -> EagerValue:
-    """Evaluate _logsumexp operation.
+    """Execute the eager logsumexp operation on the active backend array.
 
     Args:
-        x (object): The x parameter.
-        axis (object): The axis parameter.
-        keepdims (object): The keepdims parameter.
+        x (EagerValue): The x parameter.
+        axis (EagerValue): The axis parameter.
+        keepdims (EagerValue): The keepdims parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -174,12 +174,12 @@ def _segment_sum(
     segment_ids: np.ndarray[tuple[int, ...], np.dtype[np.int64]],
     num_segments: int | None = None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _segment_sum operation.
+    """Execute the eager segment sum operation on the active backend array.
 
     Args:
-        data (object): The data parameter.
-        segment_ids (object): The segment_ids parameter.
-        num_segments (object): The num_segments parameter.
+        data (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): The data parameter.
+        segment_ids (np.ndarray[tuple[int, ...], np.dtype[np.int64]]): The segment_ids parameter.
+        num_segments (int | None): The num_segments parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -194,14 +194,14 @@ def _segment_sum(
 
 @numpy_eager_registry.register("NonMaxSuppression")
 def _np_nms(backend_module: ModuleType, boxes: EagerValue, scores: EagerValue, max_output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_nms operation.
+    """Execute the eager np nms operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        boxes (object): The boxes parameter.
-        scores (object): The scores parameter.
-        max_output_size (object): The max_output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        boxes (EagerValue): The boxes parameter.
+        scores (EagerValue): The scores parameter.
+        max_output_size (EagerValue): The max_output_size parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -211,12 +211,12 @@ def _np_nms(backend_module: ModuleType, boxes: EagerValue, scores: EagerValue, m
 
 @numpy_eager_registry.register("TrapezoidalIntegral")
 def _np_trapezoidal_integral(backend_module: ModuleType, y: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_trapezoidal_integral operation.
+    """Execute the eager np trapezoidal integral operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        y (EagerValue): The y parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -232,13 +232,13 @@ def _np_trapezoidal_integral(backend_module: ModuleType, y: EagerValue, **kwargs
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix(backend_module: ModuleType, labels: EagerValue, predictions: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_confusion_matrix operation.
+    """Execute the eager np confusion matrix operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        labels (object): The labels parameter.
-        predictions (object): The predictions parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        labels (EagerValue): The labels parameter.
+        predictions (EagerValue): The predictions parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -255,12 +255,12 @@ def _np_confusion_matrix(backend_module: ModuleType, labels: EagerValue, predict
 
 @numpy_eager_registry.register("Cummax")
 def _np_cummax(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_cummax operation.
+    """Execute the eager np cummax operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -276,12 +276,12 @@ def _np_cummax(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
 
 @numpy_eager_registry.register("Cummin")
 def _np_cummin(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_cummin operation.
+    """Execute the eager np cummin operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -297,12 +297,12 @@ def _np_cummin(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
 
 @numpy_eager_registry.register("Cumprod")
 def _np_cumprod(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_cumprod operation.
+    """Execute the eager np cumprod operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -315,12 +315,12 @@ def _np_cumprod(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @numpy_eager_registry.register("Cumlogsumexp")
 def _np_cumlogsumexp(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_cumlogsumexp operation.
+    """Execute the eager np cumlogsumexp operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -334,13 +334,13 @@ def _np_cumlogsumexp(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("ApproxMaxK")
 def _np_approx_max_k(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_approx_max_k operation.
+    """Execute the eager np approx max k operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -363,13 +363,13 @@ def _np_approx_max_k(backend_module: ModuleType, x: EagerValue, *args: EagerValu
 
 @numpy_eager_registry.register("ApproxMinK")
 def _np_approx_min_k(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_approx_min_k operation.
+    """Execute the eager np approx min k operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -390,7 +390,7 @@ def _get_k_val(k: EagerValue) -> int:
     """Extract integer value from k.
 
     Args:
-        k (object): The value to extract.
+        k (EagerValue): The value to extract.
 
     Returns:
         int: Extracted integer.
@@ -404,13 +404,13 @@ def _get_k_val(k: EagerValue) -> int:
 
 @numpy_eager_registry.register("TopK")
 def _np_top_k(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_top_k operation.
+    """Execute the eager np top k operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

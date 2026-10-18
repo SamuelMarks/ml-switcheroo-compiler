@@ -10,8 +10,9 @@ from typing import Optional, Union, cast  # noqa: F401
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode, topological_sort
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+from ml_switcheroo_compiler.core.shape import ShapeLike, TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, clone_logical_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
@@ -362,7 +363,7 @@ def _init_adjoints(
 
 
 def grad(graph: LogicalGraph, wrt: list[str], output_id: str | Sequence[str], cotangent_id: typing.Optional[str | Sequence[str] | dict[str, str]] = None) -> LogicalGraph:
-    """Evaluate grad operation.
+    """Execute grad for compiler processing.
 
     Args:
         graph (LogicalGraph): The graph parameter.
@@ -398,12 +399,12 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str | Sequence[str], co
     return new_graph
 
 
-def _get_input_tangents(new_graph: IRGraph, node: EagerValue, tangents: dict[str, str]) -> list[str]:
+def _get_input_tangents(new_graph: IRGraph, node: LogicalNode | TensorOrScalar, tangents: dict[str, str]) -> list[str]:
     """Get or create input tangents for a node.
 
     Args:
-        new_graph (object): The IR graph being constructed.
-        node (object): The IR node.
+        new_graph (IRGraph): The IR graph being constructed.
+        node (LogicalNode | TensorOrScalar): The IR node.
         tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
 
     Returns:
@@ -430,13 +431,13 @@ def _get_input_tangents(new_graph: IRGraph, node: EagerValue, tangents: dict[str
     return input_tangents
 
 
-def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: EagerValue, inverse_map: dict[str, str]) -> str:
+def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: ShapeLike, inverse_map: dict[str, str]) -> str:
     """Compile a JVP expression string into IR nodes.
 
     Args:
         expr_str (str): The expression string.
-        graph (object): The target IR graph.
-        shape_metadata (object): Expected shape.
+        graph (IRGraph): The target IR graph.
+        shape_metadata (ShapeLike): Expected shape.
         inverse_map (dict[str, str]): Variable substitution map.
 
     Returns:
@@ -448,11 +449,11 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: EagerValue,
 
     node = ast.parse(expr_str, mode="eval").body
 
-    def _convert(ast_node: EagerValue) -> str:
+    def _convert(ast_node: ast.AST) -> str:
         """Recursively convert an AST node to IR.
 
         Args:
-            ast_node (object): The AST node.
+            ast_node (ast.AST): The AST node.
 
         Returns:
             str: Generated IR node ID.
@@ -489,14 +490,14 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: EagerValue,
             const_node = LogicalNode(
                 id=const_id,
                 op_type="Constant",
-                attributes={"value": ast_node.value},
+                attributes={"value": cast("AttributeValue", ast_node.value)},
                 shape_metadata=(),
             )
             graph.nodes[const_id] = const_node
             return const_id
         raise ValueError(f"Unsupported AST node in JVP expression: {type(ast_node)}")
 
-    return _convert(cast("EagerValue", node))
+    return _convert(node)
 
 
 def _invoke_style2_jvp_rule(
@@ -549,12 +550,13 @@ def _invoke_jvp_rule(
     """Invoke a JVP rule function, auto-detecting the style.
 
     Args:
-        jvp_func (object): The JVP function.
-        new_graph (object): The target IR graph.
-        node (object): The IR node.
+        jvp_func (Callable[..., str | tuple[str, ...]]): The JVP function.
+        new_graph (IRGraph): The target IR graph.
+        node (LogicalNode): The IR node.
         input_tangents (list[str]): The list of input tangents.
 
-    Returns: Tensor: The result of the JVP rule.
+    Returns:
+        str | tuple[str, ...]: The result of the JVP rule.
     """
     import inspect
 
@@ -575,14 +577,14 @@ def _invoke_jvp_rule(
 
 def _process_jvp_node(
     new_graph: IRGraph,
-    node: EagerValue,
+    node: LogicalNode | TensorOrScalar,
     tangents: dict[str, str],
 ) -> None:
     """Process a single node for JVP.
 
     Args:
-        new_graph (object): The target IR graph.
-        node (object): The IR node to process.
+        new_graph (IRGraph): The target IR graph.
+        node (LogicalNode | TensorOrScalar): The IR node to process.
         tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
 
     Raises:
@@ -645,14 +647,14 @@ def _process_jvp_node(
 
 def _forward_pass_jvp(
     new_graph: IRGraph,
-    sorted_nodes: EagerValue,
+    sorted_nodes: Sequence[LogicalNode] | TensorOrScalar,
     tangents: dict[str, str],
 ) -> None:
     """Perform the forward pass to compute JVP.
 
     Args:
-        new_graph (object): The target IR graph.
-        sorted_nodes (list[object]): Topologically sorted list of IR nodes.
+        new_graph (IRGraph): The target IR graph.
+        sorted_nodes (Sequence[LogicalNode] | TensorOrScalar): Topologically sorted list of IR nodes.
         tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
     """
     for node in getattr(sorted_nodes, "__iter__")():
@@ -660,7 +662,7 @@ def _forward_pass_jvp(
 
 
 def jvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: list[str]) -> LogicalGraph:
-    """Evaluate jvp operation.
+    """Execute jvp for compiler processing.
 
     Args:
         graph (LogicalGraph): The graph parameter.
@@ -834,6 +836,9 @@ def _conv2d_vjp_rule(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> 
         graph: The graph parameter.
         node: The node parameter.
         cotangent: The cotangent parameter.
+
+    Returns:
+        tuple[str, ...]: Computed result.
     """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -854,6 +859,9 @@ def _max_pool2d_with_argmax_vjp(graph: LogicalGraph, node: LogicalNode, cotangen
         graph: The graph parameter.
         node: The node parameter.
         cotangent: The cotangent parameter.
+
+    Returns:
+        tuple[str, ...]: Computed result.
     """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -873,6 +881,9 @@ def _avg_pool2d_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
         graph: The graph parameter.
         node: The node parameter.
         cotangent: The cotangent parameter.
+
+    Returns:
+        tuple[str, ...]: Computed result.
     """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -889,6 +900,9 @@ def _batch_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
         graph: The graph parameter.
         node: The node parameter.
         cotangent: The cotangent parameter.
+
+    Returns:
+        tuple[str, ...]: Computed result.
     """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -922,6 +936,9 @@ def _layer_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
         graph: The graph parameter.
         node: The node parameter.
         cotangent: The cotangent parameter.
+
+    Returns:
+        tuple[str, ...]: Computed result.
     """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -955,6 +972,9 @@ def _rms_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tup
         graph: The graph parameter.
         node: The node parameter.
         cotangent: The cotangent parameter.
+
+    Returns:
+        tuple[str, ...]: Computed result.
     """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -983,6 +1003,9 @@ def _group_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> t
         graph: The graph parameter.
         node: The node parameter.
         cotangent: The cotangent parameter.
+
+    Returns:
+        tuple[str, ...]: Computed result.
     """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 

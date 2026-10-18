@@ -175,7 +175,7 @@ def test_stack_and_concatenate_exact_shape_deduction(mocker: EagerTensorProtocol
     """Verify that stack and concatenate compute exact output shapes in graph mode.
 
     Args:
-        mocker (object): Pytest mocker fixture.
+        mocker (EagerTensorProtocol): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 

@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import uuid
-from typing import Callable, Optional, cast
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
@@ -24,7 +24,7 @@ def eye(
     k: int = 0,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
     Args:
@@ -58,7 +58,7 @@ def identity(
     n: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return the 2-D identity matrix of shape `(n, n)`.
 
     Args:
@@ -72,14 +72,14 @@ def identity(
     return eye(n, n, 0, dtype, device)
 
 
-def _diag_eager(input: Tensor, diagonal: int, device: EagerValue, dtype: EagerValue) -> EagerValue:
-    """Evaluate _diag_eager operation.
+def _diag_eager(input: Tensor, diagonal: int, device: TensorOrScalar, dtype: TensorOrScalar) -> TensorOrScalar:
+    """Compute the diag eager tensor operation.
 
     Args:
         input (Tensor): The input parameter.
         diagonal (int): The diagonal parameter.
-        device (Any): The device parameter.
-        dtype (Any): The dtype parameter.
+        device (TensorOrScalar): The device parameter.
+        dtype (TensorOrScalar): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -88,10 +88,10 @@ def _diag_eager(input: Tensor, diagonal: int, device: EagerValue, dtype: EagerVa
     shape = getattr(data, "shape") if hasattr(data, "shape") else ()
     if dtype is None:
         dtype = getattr(data, "dtype", DType.Float32)
-    return Tensor(data, cast("Callable[..., TensorConfig]", TensorConfig)(shape, cast("Optional[str]", dtype), device))
+    return Tensor(data, TensorConfig(shape, dtype, device))
 
 
-def diag(input: Tensor, diagonal: int = 0) -> EagerValue:
+def diag(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
     """Return a 2-D square tensor with diagonal, or extracts diagonal.
 
     Args:

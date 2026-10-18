@@ -3,7 +3,8 @@
 from collections.abc import Sequence
 from typing import Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -13,14 +14,14 @@ class SpaceToBatchND(OpDef):
 
     op_name = "SpaceToBatchND"
 
-    def infer_shape(self, input: EagerTensorProtocol, block_shape: EagerTensorProtocol, paddings: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, input: EagerTensorProtocol, block_shape: EagerTensorProtocol, paddings: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            input (Any): The input parameter.
-            block_shape (Any): The block_shape parameter.
-            paddings (Any): The paddings parameter.
-            **kwargs (Any): Keyword args.
+            input (EagerTensorProtocol): The input parameter.
+            block_shape (EagerTensorProtocol): The block_shape parameter.
+            paddings (EagerTensorProtocol): The paddings parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -34,14 +35,14 @@ class SpaceToBatch(OpDef):
 
     op_name = "SpaceToBatch"
 
-    def infer_shape(self, input: EagerTensorProtocol, block_size: EagerTensorProtocol, paddings: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, input: EagerTensorProtocol, block_size: EagerTensorProtocol, paddings: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            input (Any): The input parameter.
-            block_size (Any): The block_size parameter.
-            paddings (Any): The paddings parameter.
-            **kwargs (Any): Keyword args.
+            input (EagerTensorProtocol): The input parameter.
+            block_size (EagerTensorProtocol): The block_size parameter.
+            paddings (EagerTensorProtocol): The paddings parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -49,14 +50,14 @@ class SpaceToBatch(OpDef):
         return ()
 
 
-def space_to_batch(input: EagerValue, block_size: EagerValue, paddings: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def space_to_batch(input: TensorOrScalar, block_size: TensorOrScalar, paddings: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Space to batch operation.
 
     Args:
-        input (Any): The input parameter.
-        block_size (Any): The block_size parameter.
-        paddings (Any): The paddings parameter.
-        **kwargs (Any): Keyword args.
+        input (TensorOrScalar): The input parameter.
+        block_size (TensorOrScalar): The block_size parameter.
+        paddings (TensorOrScalar): The paddings parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -75,14 +76,14 @@ def space_to_batch(input: EagerValue, block_size: EagerValue, paddings: EagerVal
     return _emit_shape_node("SpaceToBatch", [input], {"block_size": block_size, "paddings": paddings, **kwargs}, cast("Sequence[Union[int, str]]", out_shape), getattr(input, "dtype", "float32"))
 
 
-def space_to_batch_nd(input: EagerValue, block_shape: EagerValue, paddings: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def space_to_batch_nd(input: TensorOrScalar, block_shape: TensorOrScalar, paddings: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Space to batch ND operation.
 
     Args:
-        input (Any): The input parameter.
-        block_shape (Any): The block_shape parameter.
-        paddings (Any): The paddings parameter.
-        **kwargs (Any): Keyword args.
+        input (TensorOrScalar): The input parameter.
+        block_shape (TensorOrScalar): The block_shape parameter.
+        paddings (TensorOrScalar): The paddings parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

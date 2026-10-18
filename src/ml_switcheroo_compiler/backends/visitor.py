@@ -16,7 +16,7 @@ class CodeGeneratorVisitor:
         """Initialize the object.
 
         Args:
-            generator (object): The parent generator object.
+            generator (BaseGenerator): The parent generator object.
         """
         self.generator = generator
 
@@ -82,7 +82,7 @@ class CodeGeneratorVisitor:
         self.generator._emit_output_assignment(node, input_vars, returns)
 
     def handle_compute_node(self, node: IRNode) -> None:
-        """Evaluate handle_compute_node operation.
+        """Execute handle compute node for compiler processing.
 
         Args:
             node (IRNode): The node parameter.

@@ -33,10 +33,10 @@ class NumpyASTVisitor:
 
     @classmethod
     def _format_kwargs(cls, kwargs: EagerValue) -> str:
-        """Evaluate _format_kwargs operation.
+        """Execute format kwargs for compiler processing.
 
         Args:
-        kwargs (object): The kwargs parameter.
+        kwargs (EagerValue): The kwargs parameter.
 
         Returns:
         str: Result.
@@ -54,6 +54,9 @@ class NumpyASTVisitor:
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            str: Computed result.
         """
         return f"{node.id} = None # Parameter"
 
@@ -65,6 +68,9 @@ class NumpyASTVisitor:
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            str: Computed result.
         """
         if not input_vars:
             return "return None"
@@ -77,9 +83,9 @@ class NumpyASTVisitor:
         """Generate default NumPy code.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): The names of the input variables.
-            **kwargs (object): Additional keyword arguments.
+            **kwargs (EagerValue): Additional keyword arguments.
 
         Returns:
             str: The generated default NumPy code string for the node.
@@ -105,7 +111,7 @@ class NumpyGenerator(
         """Initialize the NumPy generator with an IR graph.
 
         Args:
-            graph (object): The IR graph to generate code from.
+            graph (IRGraph): The IR graph to generate code from.
         """
         super().__init__(graph)
         from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
@@ -125,11 +131,11 @@ class NumpyGenerator(
 
         Args:
             op_type (str): The operation type name.
-            *args (object): Positional arguments for the operation.
-            **kwargs (object): Keyword arguments for the operation.
+            *args (EagerValue): Positional arguments for the operation.
+            **kwargs (EagerValue): Keyword arguments for the operation.
 
         Returns:
-            object: Computed result.
+            EagerValue: Computed result.
         """
         from ml_switcheroo_compiler.backends.numpy.eager import execute_op as numpy_execute_op
 
@@ -168,8 +174,8 @@ class NumpyGenerator(
         """Get a numpy random generator.
 
         Args:
-            *args (object): Positional arguments.
-            **kwargs (object): Keyword arguments.
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
 
         Returns: np.ndarray: The rng.
         """
@@ -182,8 +188,8 @@ class NumpyGenerator(
         """Load data using NumPy's load function.
 
         Args:
-            *args (object): Positional arguments for np.load.
-            **kwargs (object): Keyword arguments for np.load.
+            *args (EagerValue): Positional arguments for np.load.
+            **kwargs (EagerValue): Keyword arguments for np.load.
 
         Returns: np.ndarray: The loaded NumPy data.
         """
@@ -196,8 +202,8 @@ class NumpyGenerator(
         """Save data using NumPy's save function.
 
         Args:
-            *args (object): Positional arguments for np.save.
-            **kwargs (object): Keyword arguments for np.save.: This function does not return a value.
+            *args (EagerValue): Positional arguments for np.save.
+            **kwargs (EagerValue): Keyword arguments for np.save.: This function does not return a value.
         """
         import numpy as np
 
@@ -208,8 +214,8 @@ class NumpyGenerator(
         """Save multiple arrays into a single file in uncompressed .npz format.
 
         Args:
-            *args (object): Positional arguments for np.savez.
-            **kwargs (object): Keyword arguments for np.savez.: This function does not return a value.
+            *args (EagerValue): Positional arguments for np.savez.
+            **kwargs (EagerValue): Keyword arguments for np.savez.: This function does not return a value.
         """
         import numpy as np
 
@@ -220,8 +226,8 @@ class NumpyGenerator(
         """Save multiple arrays into a single file in compressed .npz format.
 
         Args:
-            *args (object): Positional arguments for np.savez_compressed.
-            **kwargs (object): Keyword arguments for np.savez_compressed.: This function does not return a value.
+            *args (EagerValue): Positional arguments for np.savez_compressed.
+            **kwargs (EagerValue): Keyword arguments for np.savez_compressed.: This function does not return a value.
         """
         import numpy as np
 
@@ -236,7 +242,7 @@ class NumpyGenerator(
         return "np"
 
     def get_helper_functions(self) -> list[str]:
-        """Evaluate get_helper_functions operation.
+        """Execute get helper functions for compiler processing.
 
         Returns:
             tuple[int, ...]: Result.
@@ -252,7 +258,7 @@ class NumpyGenerator(
         Args:
             node (IRNode): The IR node representing the PowerIteration operation.
             input_vars (list[str]): The names of the input variables.
-            **kwargs (object): Additional keyword arguments.
+            **kwargs (EagerValue): Additional keyword arguments.
 
         Returns:
             str: The generated NumPy code string for power iteration.
@@ -274,10 +280,10 @@ class NumpyGenerator(
 
         Args:
             graph (IRGraph): The target computation graph.
-            **kwargs (object): Compiler options.
+            **kwargs (EagerValue): Compiler options.
 
         Returns:
-            object: Callable execution wrapper.
+            EagerValue: Callable execution wrapper.
         """
         import ml_switcheroo_compiler.interpreter.evaluator as evaluator_module
         from ml_switcheroo_compiler.core.dtype import DType
@@ -287,11 +293,11 @@ class NumpyGenerator(
             """Execute ahead-of-time compiled graph on inputs.
 
             Args:
-                *w_args (object): Positional input tensors.
-                **w_kw (object): Keyword arguments.
+                *w_args (EagerValue): Positional input tensors.
+                **w_kw (EagerValue): Keyword arguments.
 
             Returns:
-                object: Computed tensor or collection of tensors.
+                EagerValue: Computed tensor or collection of tensors.
             """
             input_map = {}
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]

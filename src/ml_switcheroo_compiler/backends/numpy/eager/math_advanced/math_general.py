@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa:
 
 @numpy_eager_registry.register("TruncateDiv")
 def _np_truncate_div(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_truncate_div operation.
+    """Execute the eager np truncate div operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -22,7 +22,7 @@ def _np_truncate_div(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     (x, y) = args[0], args[1]
     return cast(EagerValue, getattr(np, "trunc")(getattr(np, "divide")(x, y)))
@@ -30,7 +30,7 @@ def _np_truncate_div(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("TruncateMod")
 def _np_truncate_mod(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_truncate_mod operation.
+    """Execute the eager np truncate mod operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -38,7 +38,7 @@ def _np_truncate_mod(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     (x, y) = args[0], args[1]
     return cast(EagerValue, getattr(np, "fmod")(x, y))
@@ -46,7 +46,7 @@ def _np_truncate_mod(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("Betainc")
 def _np_betainc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_betainc operation.
+    """Execute the eager np betainc operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -54,7 +54,7 @@ def _np_betainc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     try:
         import scipy.special
@@ -151,7 +151,7 @@ def _np_vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
 @numpy_eager_registry.register("Average")
 def _np_average(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_average operation.
+    """Execute the eager np average operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -159,7 +159,7 @@ def _np_average(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "average")(*args, **kwargs))
 
@@ -486,7 +486,7 @@ def _np_callable(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     if args:
         return callable(args[0])
@@ -503,7 +503,7 @@ def _np_debuginfs(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
 
     Raises:
         ValueError: An exception.
@@ -524,7 +524,7 @@ def _np_debugnans(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
 
     Raises:
         ValueError: An exception.
@@ -536,7 +536,7 @@ def _np_debugnans(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
 
 def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_numbers: Sequence[Sequence[Sequence[int]]]) -> str:
-    """Evaluate _build_dot_general_einsum_str operation.
+    """Execute the eager build dot general einsum str operation on the active backend array.
 
     Args:
         lhs_ndim (int): The lhs_ndim parameter.
@@ -581,7 +581,7 @@ def _np_dotgeneral(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     (lhs, rhs) = (np.asarray(args[0]), np.asarray(args[1]))
     dimension_numbers = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ()))) if hasattr(kwargs, "get") else (((-1,), (0,)), ((), ()))
@@ -599,7 +599,7 @@ def _np_raggeddot(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "matmul")(args[0], args[1]))
 
@@ -614,7 +614,7 @@ def _np_tensor(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     if not args and (not kwargs):
         return cast(EagerValue, getattr(backend_module, "array")([]))
@@ -623,7 +623,7 @@ def _np_tensor(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
 
 @numpy_eager_registry.register("serialize_tensor")
 def _np_serialize_tensor(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_serialize_tensor operation.
+    """Execute the eager np serialize tensor operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -631,14 +631,14 @@ def _np_serialize_tensor(backend_module: EagerValue, *args: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     return _np_serialize_tensor_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("Key")
 def _np_key(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_key operation.
+    """Execute the eager np key operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -646,7 +646,7 @@ def _np_key(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     if len(args) > 0:
         return np.array([args[0], 0], dtype=np.uint32)
@@ -661,16 +661,16 @@ def _get_np_arg(arg: Sequence[EagerValue], i: int) -> np.ndarray[tuple[int, ...]
         i (int): The i parameter.
 
     Returns:
-            Any: Result.
+            np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None: Result.
     """
     return np.asarray(arg[i]) if len(arg) > i else None
 
 
 def _get_sc() -> EagerValue:
-    """_get_sc function.
+    """Execute the eager get sc operation on the active backend array.
 
     Returns:
-        Any: Result.
+        EagerValue: Result.
     """
     try:
         import scipy.special as sc
@@ -682,7 +682,7 @@ def _get_sc() -> EagerValue:
 
 @numpy_eager_registry.register("Clip")
 def _np_clip(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_clip operation.
+    """Execute the eager np clip operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -690,7 +690,7 @@ def _np_clip(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -702,7 +702,7 @@ def _np_clip(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 @numpy_eager_registry.register("OneHot")
 def _np_one_hot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_one_hot operation.
+    """Execute the eager np one hot operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -710,7 +710,7 @@ def _np_one_hot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     indices = _get_np_arg(args, 0)
     depth = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None) if hasattr(kwargs, "get") else None
@@ -731,7 +731,7 @@ def _np_one_hot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
 @numpy_eager_registry.register("SerializeTensor")
 def _np_serialize_tensor_camel(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_serialize_tensor_camel operation.
+    """Execute the eager np serialize tensor camel operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -739,7 +739,7 @@ def _np_serialize_tensor_camel(backend_module: EagerValue, *args: EagerValue, **
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -760,7 +760,7 @@ def _np_serialize_tensor_camel(backend_module: EagerValue, *args: EagerValue, **
 
 @numpy_eager_registry.register("rem")
 def _np_rem_2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rem operation.
+    """Execute the eager np rem 2 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -768,7 +768,7 @@ def _np_rem_2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -790,7 +790,7 @@ def _np_rem_2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("descriptive")
 def _np_descriptive_2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_descriptive operation.
+    """Execute the eager np descriptive 2 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -798,7 +798,7 @@ def _np_descriptive_2(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
 
     Raises:
         RuntimeError: An exception.

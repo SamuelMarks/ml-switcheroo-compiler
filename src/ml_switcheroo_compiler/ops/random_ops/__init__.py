@@ -1,6 +1,7 @@
 """Generate random ops module."""
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .frontend import sobol_sample
@@ -13,12 +14,12 @@ class Binomial(OpDef):
 
     op_name = "Binomial"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -32,12 +33,12 @@ class Cauchy(OpDef):
 
     op_name = "Cauchy"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -50,12 +51,12 @@ class Chisquare(OpDef):
 
     op_name = "Chisquare"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -68,12 +69,12 @@ class Dirichlet(OpDef):
 
     op_name = "Dirichlet"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -86,12 +87,12 @@ class DoubleSidedMaxwell(OpDef):
 
     op_name = "DoubleSidedMaxwell"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -104,12 +105,12 @@ class Exponential(OpDef):
 
     op_name = "Exponential"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -122,12 +123,12 @@ class F(OpDef):
 
     op_name = "F"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -140,12 +141,12 @@ class Gumbel(OpDef):
 
     op_name = "Gumbel"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -158,12 +159,12 @@ class Laplace(OpDef):
 
     op_name = "Laplace"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -176,12 +177,12 @@ class Loggamma(OpDef):
 
     op_name = "Loggamma"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -194,12 +195,12 @@ class Logistic(OpDef):
 
     op_name = "Logistic"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -212,12 +213,12 @@ class Lognormal(OpDef):
 
     op_name = "Lognormal"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -230,12 +231,12 @@ class Maxwell(OpDef):
 
     op_name = "Maxwell"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -248,12 +249,12 @@ class MultivariateNormal(OpDef):
 
     op_name = "MultivariateNormal"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -266,12 +267,12 @@ class Pareto(OpDef):
 
     op_name = "Pareto"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -284,12 +285,12 @@ class Poisson(OpDef):
 
     op_name = "Poisson"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -302,12 +303,12 @@ class Rayleigh(OpDef):
 
     op_name = "Rayleigh"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -320,12 +321,12 @@ class T(OpDef):
 
     op_name = "T"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -338,12 +339,12 @@ class Triangular(OpDef):
 
     op_name = "Triangular"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -356,12 +357,12 @@ class Wald(OpDef):
 
     op_name = "Wald"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -374,12 +375,12 @@ class WeibullMin(OpDef):
 
     op_name = "WeibullMin"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -392,12 +393,12 @@ class Clone(OpDef):
 
     op_name = "Clone"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -410,12 +411,12 @@ class KeyData(OpDef):
 
     op_name = "KeyData"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -428,12 +429,12 @@ class KeyImpl(OpDef):
 
     op_name = "KeyImpl"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -446,12 +447,12 @@ class WrapKeyData(OpDef):
 
     op_name = "WrapKeyData"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -464,12 +465,12 @@ class Bits(OpDef):
 
     op_name = "Bits"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -482,12 +483,12 @@ class GeneralizedNormal(OpDef):
 
     op_name = "GeneralizedNormal"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -500,12 +501,12 @@ class Orthogonal(OpDef):
 
     op_name = "Orthogonal"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -518,12 +519,12 @@ class RandomGammaP(OpDef):
 
     op_name = "RandomGammaP"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -536,12 +537,12 @@ class Ball(OpDef):
 
     op_name = "Ball"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -554,12 +555,12 @@ class Key(OpDef):
 
     op_name = "Key"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -572,14 +573,14 @@ class RngBitGenerator(OpDef):
 
     op_name = "RngBitGenerator"
 
-    def infer_shape(self, key: EagerTensorProtocol, shape: EagerTensorProtocol, dtype: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, key: EagerTensorProtocol, shape: EagerTensorProtocol, dtype: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the RngBitGenerator operation.
 
         Args:
-            key (Any): The PRNG key state.
-            shape (Any): The desired output shape.
-            dtype (Any): The desired output data type.
-            **kwargs (Any): Additional keyword arguments.
+            key (EagerTensorProtocol): The PRNG key state.
+            shape (EagerTensorProtocol): The desired output shape.
+            dtype (EagerTensorProtocol): The desired output data type.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The computed output shape, which matches the input shape parameter.
         """
@@ -592,15 +593,15 @@ class RngUniform(OpDef):
 
     op_name = "RngUniform"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, shape: EagerTensorProtocol, dtype: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, shape: EagerTensorProtocol, dtype: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the RngUniform operation.
 
         Args:
-            a (Any): The lower bound of the uniform distribution.
-            b (Any): The upper bound of the uniform distribution.
-            shape (Any): The desired output shape.
-            dtype (Any): The desired output data type.
-            **kwargs (Any): Additional keyword arguments.
+            a (EagerTensorProtocol): The lower bound of the uniform distribution.
+            b (EagerTensorProtocol): The upper bound of the uniform distribution.
+            shape (EagerTensorProtocol): The desired output shape.
+            dtype (EagerTensorProtocol): The desired output data type.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The computed output shape, which matches the input shape parameter.
         """
@@ -613,12 +614,12 @@ class Beta(OpDef):
 
     op_name = "Beta"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -631,12 +632,12 @@ class Gamma(OpDef):
 
     op_name = "Gamma"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (Any): Positional arguments typically representing input shapes or values.
-            **kwargs (Any): Keyword arguments representing additional configurations.
+            *args (TensorOrScalar): Positional arguments typically representing input shapes or values.
+            **kwargs (TensorOrScalar): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -655,13 +656,13 @@ class categorical(OpDef):
 
     op_name = "categorical"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -675,13 +676,13 @@ class dirichlet(OpDef):
 
     op_name = "dirichlet"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -695,13 +696,13 @@ class binomial(OpDef):
 
     op_name = "binomial"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -715,13 +716,13 @@ class truncated_normal(OpDef):
 
     op_name = "truncated_normal"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -735,13 +736,13 @@ class permutation(OpDef):
 
     op_name = "permutation"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -755,13 +756,13 @@ class choice(OpDef):
 
     op_name = "choice"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

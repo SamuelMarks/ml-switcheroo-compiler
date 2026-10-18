@@ -11,12 +11,12 @@ from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_windo
 
 @numpy_eager_registry.register("ReduceWindow")
 def _np_reduce_window(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_reduce_window operation.
+    """Execute the eager np reduce window operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -26,12 +26,12 @@ def _np_reduce_window(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("SegmentSum")
 def _np_segment_sum(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_segment_sum operation.
+    """Execute the eager np segment sum operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -41,13 +41,13 @@ def _np_segment_sum(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @numpy_eager_registry.register("SegmentMax")
 def _np_segment_max(backend_module: ModuleType, data: EagerValue, segment_ids: EagerValue, num_segments: EagerValue = None) -> EagerValue:
-    """Evaluate _np_segment_max operation.
+    """Execute the eager np segment max operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        data (object): The data parameter.
-        segment_ids (object): The segment_ids parameter.
-        num_segments (object): The num_segments parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        data (EagerValue): The data parameter.
+        segment_ids (EagerValue): The segment_ids parameter.
+        num_segments (EagerValue): The num_segments parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -64,13 +64,13 @@ def _np_segment_max(backend_module: ModuleType, data: EagerValue, segment_ids: E
 
 @numpy_eager_registry.register("SegmentMin")
 def _np_segment_min(backend_module: ModuleType, data: EagerValue, segment_ids: EagerValue, num_segments: EagerValue = None) -> EagerValue:
-    """Evaluate _np_segment_min operation.
+    """Execute the eager np segment min operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        data (object): The data parameter.
-        segment_ids (object): The segment_ids parameter.
-        num_segments (object): The num_segments parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        data (EagerValue): The data parameter.
+        segment_ids (EagerValue): The segment_ids parameter.
+        num_segments (EagerValue): The num_segments parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -87,13 +87,13 @@ def _np_segment_min(backend_module: ModuleType, data: EagerValue, segment_ids: E
 
 @numpy_eager_registry.register("SegmentProd")
 def _np_segment_prod(backend_module: ModuleType, data: EagerValue, segment_ids: EagerValue, num_segments: EagerValue = None) -> EagerValue:
-    """Evaluate _np_segment_prod operation.
+    """Execute the eager np segment prod operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        data (object): The data parameter.
-        segment_ids (object): The segment_ids parameter.
-        num_segments (object): The num_segments parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        data (EagerValue): The data parameter.
+        segment_ids (EagerValue): The segment_ids parameter.
+        num_segments (EagerValue): The num_segments parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -109,7 +109,7 @@ def _np_segment_prod(backend_module: ModuleType, data: EagerValue, segment_ids: 
 
 
 def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int, int]]:
-    """Evaluate _adaptive_pool_1d_indices operation.
+    """Execute the eager adaptive pool 1d indices operation on the active backend array.
 
     Args:
         input_dim (int): The input_dim parameter.
@@ -130,13 +130,13 @@ def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int
 
 @numpy_eager_registry.register("AdaptiveAvgPool2D")
 def _np_adaptive_avg_pool2d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int], **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_adaptive_avg_pool2d operation.
+    """Execute the eager np adaptive avg pool2d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
+        output_size (tuple[int, int]): The output_size parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -162,13 +162,13 @@ def _np_adaptive_avg_pool2d(backend_module: ModuleType, operand: EagerValue, out
 
 @numpy_eager_registry.register("AdaptiveAvgPool3D")
 def _np_adaptive_avg_pool3d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int, int], **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_adaptive_avg_pool3d operation.
+    """Execute the eager np adaptive avg pool3d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
+        output_size (tuple[int, int, int]): The output_size parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -196,13 +196,13 @@ def _np_adaptive_avg_pool3d(backend_module: ModuleType, operand: EagerValue, out
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D")
 def _np_adaptive_max_pool3d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int, int], **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_adaptive_max_pool3d operation.
+    """Execute the eager np adaptive max pool3d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
+        output_size (tuple[int, int, int]): The output_size parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -230,13 +230,13 @@ def _np_adaptive_max_pool3d(backend_module: ModuleType, operand: EagerValue, out
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D_Indices")
 def _np_adaptive_max_pool3d_indices(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int, int], **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_adaptive_max_pool3d_indices operation.
+    """Execute the eager np adaptive max pool3d indices operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
+        output_size (tuple[int, int, int]): The output_size parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -247,13 +247,13 @@ def _np_adaptive_max_pool3d_indices(backend_module: ModuleType, operand: EagerVa
 
 @numpy_eager_registry.register("AdaptiveMaxPool2D")
 def _np_adaptive_max_pool2d(backend_module: ModuleType, operand: EagerValue, output_size: tuple[int, int], **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_adaptive_max_pool2d operation.
+    """Execute the eager np adaptive max pool2d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
+        output_size (tuple[int, int]): The output_size parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -279,12 +279,12 @@ def _np_adaptive_max_pool2d(backend_module: ModuleType, operand: EagerValue, out
 
 @numpy_eager_registry.register("FractionalAvgPool")
 def _np_fractional_avg_pool(backend_module: ModuleType, value: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_fractional_avg_pool operation.
+    """Execute the eager np fractional avg pool operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        value (object): The value parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        value (EagerValue): The value parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -294,12 +294,12 @@ def _np_fractional_avg_pool(backend_module: ModuleType, value: EagerValue, **kwa
 
 @numpy_eager_registry.register("FractionalMaxPool")
 def _np_fractional_max_pool(backend_module: ModuleType, value: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_fractional_max_pool operation.
+    """Execute the eager np fractional max pool operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        value (object): The value parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        value (EagerValue): The value parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

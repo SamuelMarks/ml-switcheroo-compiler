@@ -16,7 +16,7 @@ def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
     """Compute the global norm of an iterable of parameters.
 
     Args:
-        parameters (Any): The parameters parameter.
+        parameters (list[Tensor]): The parameters parameter.
         norm_type (float): The norm_type parameter.
 
     Returns:

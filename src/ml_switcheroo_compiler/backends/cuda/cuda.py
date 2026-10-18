@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.util
-import importlib
 import logging
 import os
 import re
@@ -13,15 +12,8 @@ from typing import Callable, Optional, Union, cast
 
 import yaml
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
-
-try:
-    cupy = importlib.import_module("cupy")
-except (ImportError, AttributeError):
-    cupy = cast(ModuleType, None)
-
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
@@ -33,7 +25,10 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+cupy: Optional[ModuleType] = None
 
 KernelArgType = Union[ctypes.c_void_p, int, float, str, None]
 
@@ -167,7 +162,7 @@ def _evaluate_cuda_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Eag
         args (tuple[object, ...]): Input positional arguments.
 
     Returns:
-        object: Resulting tensor or tuple of tensors.
+        EagerValue: Resulting tensor or tuple of tensors.
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
@@ -545,10 +540,10 @@ class CudaCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (object): Compiler options such as optimization levels and target arch.
+            **kwargs (EagerValue): Compiler options such as optimization levels and target arch.
 
         Returns:
-            object: Executable compiled artifact.
+            EagerValue: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
         from ml_switcheroo_compiler.backends.hardware_compilers import CUDACompiler
@@ -562,11 +557,11 @@ class CudaCodeGenerator(BaseGenerator):
             """Execute compiled CUDA artifact with runtime dispatch or fallback.
 
             Args:
-                *args (object): Input tensor or buffer arguments.
-                **runner_kwargs (object): Optional execution options.
+                *args (EagerValue): Input tensor or buffer arguments.
+                **runner_kwargs (EagerValue): Optional execution options.
 
             Returns:
-                object: Output tensor or tuple of output tensors.
+                EagerValue: Output tensor or tuple of output tensors.
             """
             if CUDARunner.is_available():
                 try:

@@ -5,13 +5,13 @@ from __future__ import annotations
 import builtins  # noqa: F401
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Pshuffle")
 def _pshuffle(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _pshuffle operation.
+    """Execute the eager pshuffle operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -19,7 +19,7 @@ def _pshuffle(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(getattr(backend_module, "lax"), "pshuffle"):
         return cast(EagerValue, getattr(backend_module, "lax").pshuffle(*args, **kwargs))
@@ -28,7 +28,7 @@ def _pshuffle(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
 @global_eager_registry.register("Gumbel")
 def _np_gumbel(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_gumbel operation.
+    """Execute the eager np gumbel operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -36,17 +36,17 @@ def _np_gumbel(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "gumbel", getattr(backend_module, "gumbel", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.random.gumbel(*args, **kwargs))
+    return cast(EagerValue, host_backend.random.gumbel(*args, **kwargs))
 
 
 @global_eager_registry.register("RngUniform")
 def _np_rnguniform(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rnguniform operation.
+    """Execute the eager np rnguniform operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -54,17 +54,17 @@ def _np_rnguniform(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "rnguniform", getattr(backend_module, "rnguniform", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.random.uniform(*args, **kwargs))
+    return cast(EagerValue, host_backend.random.uniform(*args, **kwargs))
 
 
 @global_eager_registry.register("Wald")
 def _np_wald(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_wald operation.
+    """Execute the eager np wald operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -72,9 +72,9 @@ def _np_wald(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "wald", getattr(backend_module, "wald", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.random.wald(*args, **kwargs))
+    return cast(EagerValue, host_backend.random.wald(*args, **kwargs))

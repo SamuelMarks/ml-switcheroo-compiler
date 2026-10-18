@@ -8,12 +8,12 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 @numpy_eager_registry.register("Average")
 def _np_average(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_average operation.
+    """Execute the eager np average operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -26,9 +26,9 @@ def _np_corrcoef(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
     """Return Pearson product-moment correlation coefficients.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -40,9 +40,9 @@ def _np_correlate(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -54,9 +54,9 @@ def _np_cov(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
     """Estimate a covariance matrix, given data and weights.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -68,9 +68,9 @@ def _np_histogram_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """Implement Histogram via histogram.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -82,9 +82,9 @@ def _np_histogram2d_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """Implement Histogram2d via histogram2d.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -96,9 +96,9 @@ def _np_histogram_bin_edges_(backend_module: ModuleType, *args: EagerValue, **kw
     """Implement HistogramBinEdges via histogram_bin_edges.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -110,9 +110,9 @@ def _np_histogramdd_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """Implement Histogramdd via histogramdd.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -124,9 +124,9 @@ def _np_median_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
     """Implement Median via median.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -135,12 +135,12 @@ def _np_median_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_confusion_matrix operation.
+    """Execute the eager np confusion matrix operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -173,12 +173,12 @@ def _np_confusion_matrix(backend_module: ModuleType, *args: EagerValue, **kwargs
 
 @numpy_eager_registry.register("Descriptive")
 def _np_descriptive(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_descriptive operation.
+    """Execute the eager np descriptive operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -200,12 +200,12 @@ def _np_descriptive(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @numpy_eager_registry.register("Distributions")
 def _np_distributions(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_distributions operation.
+    """Execute the eager np distributions operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -217,12 +217,12 @@ def _np_distributions(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("RandomCategorical")
 def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randomcategorical operation.
+    """Execute the eager np randomcategorical operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -249,12 +249,12 @@ def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwarg
 
 @numpy_eager_registry.register("RandomPermutation")
 def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randompermutation operation.
+    """Execute the eager np randompermutation operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -275,12 +275,12 @@ def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwarg
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
 def _np_randomtruncatednormal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randomtruncatednormal operation.
+    """Execute the eager np randomtruncatednormal operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -291,12 +291,12 @@ def _np_randomtruncatednormal(backend_module: ModuleType, *args: EagerValue, **k
 
 @numpy_eager_registry.register("RandomBernoulli")
 def _np_randombernoulli(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randombernoulli operation.
+    """Execute the eager np randombernoulli operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -308,12 +308,12 @@ def _np_randombernoulli(backend_module: ModuleType, *args: EagerValue, **kwargs:
 
 @numpy_eager_registry.register("RandomUniform")
 def _np_randomuniform(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randomuniform operation.
+    """Execute the eager np randomuniform operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -326,12 +326,12 @@ def _np_randomuniform(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("RandomChoice")
 def _np_randomchoice(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randomchoice operation.
+    """Execute the eager np randomchoice operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -353,12 +353,12 @@ def _np_randomchoice(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("RandomShuffle")
 def _np_randomshuffle(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randomshuffle operation.
+    """Execute the eager np randomshuffle operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -375,12 +375,12 @@ def _np_randomshuffle(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("Dirichlet")
 def _np_dirichlet(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dirichlet operation.
+    """Execute the eager np dirichlet operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

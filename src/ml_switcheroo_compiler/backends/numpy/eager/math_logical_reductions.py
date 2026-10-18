@@ -16,7 +16,7 @@ def _np_all(
     *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, bool, None],
     **kwargs: Union[int, tuple[int, ...], bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_all operation.
+    """Execute the eager np all operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.
@@ -35,7 +35,7 @@ def _np_count_nonzero(
     *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float, bool, None],
     **kwargs: Union[int, tuple[int, ...], bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_count_nonzero operation.
+    """Execute the eager np count nonzero operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.

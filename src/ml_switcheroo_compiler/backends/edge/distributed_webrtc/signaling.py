@@ -22,7 +22,7 @@ class SignalingHandler(BaseHTTPRequestHandler):
 
         Args:
             status (int): HTTP status code.
-            data (object): Payload to serialize as JSON.
+            data (EagerValue): Payload to serialize as JSON.
         """
         self.send_response(status)
         self.send_header("Content-Type", "application/json")

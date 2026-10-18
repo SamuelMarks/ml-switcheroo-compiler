@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, Union, cast  # noqa: F401
+from collections.abc import Iterable
+from typing import Optional, Union, cast
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -27,6 +29,8 @@ WasmAttrType = Union[
 ]
 
 
+@register_backend("edge_wasm")
+@register_backend("edge_wasm_simd")
 class WasmCodeGenerator(BaseGenerator):
     """WASM Code Generator for emitting vectorizable, highly optimized WASM-SIMD C++ source code."""
 
@@ -49,27 +53,25 @@ class WasmCodeGenerator(BaseGenerator):
         self.is_simd: bool = False
 
     def _allocate_aligned_memory(self, size_bytes: int, alignment: int = 16) -> str:
-        """_allocate_aligned_memory function.
+        """Generate C++ aligned memory allocation statement.
 
         Args:
-        self: The self parameter.
-        size_bytes (int): The size_bytes parameter.
-        alignment (int): The alignment parameter.
+            size_bytes (int): Number of bytes to allocate.
+            alignment (int): Byte alignment boundary (default 16 for SIMD).
 
         Returns:
-        str: Result.
+            str: C++ `std::aligned_alloc` invocation string.
         """
         return f"std::aligned_alloc({alignment}, {size_bytes});"
 
     def _generate_striding_logic(self, shape: list[int]) -> tuple[list[int], str]:
-        """_generate_striding_logic function.
+        """Compute contiguous row-major strides and linear index C++ expression for `shape`.
 
         Args:
-        self: The self parameter.
-        shape (list[int]): The shape parameter.
+            shape (list[int]): Tensor dimension sizes.
 
         Returns:
-        tuple[list[int], str]: Result.
+            tuple[list[int], str]: Tuple of `(strides_list, c_index_expression)`.
         """
         if not shape:
             return [], "0"
@@ -81,14 +83,13 @@ class WasmCodeGenerator(BaseGenerator):
         return strides, c_code
 
     def _map_type(self, dtype: str) -> str:
-        """_map_type function.
+        """Map an IR data type string to its C++ primitive scalar type.
 
         Args:
-        self: The self parameter.
-        dtype (str): The dtype parameter.
+            dtype (str): IR data type string.
 
         Returns:
-        str: Result.
+            str: Corresponding C++ scalar type name.
         """
         return {
             "float32": "float",
@@ -98,14 +99,13 @@ class WasmCodeGenerator(BaseGenerator):
         }.get(str(dtype).lower(), "float")
 
     def _num_elements(self, shape: list[int]) -> int:
-        """_num_elements function.
+        """Compute the total number of scalar elements for `shape`.
 
         Args:
-        self: The self parameter.
-        shape (list[int]): The shape parameter.
+            shape (list[int]): Tensor dimension sizes.
 
         Returns:
-        int: Result.
+            int: Product of dimensions.
         """
         if isinstance(shape, (int, float)):
             return 1
@@ -183,8 +183,10 @@ class WasmCodeGenerator(BaseGenerator):
             res = [1] * target_ndim
         elif isinstance(raw_shape, (int, float)):
             res = [1] * (target_ndim - 1) + [int(raw_shape)]
+        elif isinstance(raw_shape, Iterable) and not isinstance(raw_shape, (str, bytes)):
+            res = [int(cast(int, x)) for x in raw_shape]
         else:
-            res = [int(x) for x in getattr(raw_shape, "__iter__")()]
+            res = [1] * target_ndim
         if len(res) < target_ndim:
             res = [1] * (target_ndim - len(res)) + res
         return res
@@ -1367,19 +1369,15 @@ class WasmCodeGenerator(BaseGenerator):
                 self.add_line(f"  {line}")
 
     def _generate_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """_generate_op function.
+        """Dispatch an IR node to its visitor method or WASM SIMD template emitter.
 
         Args:
-        self: The self parameter.
-        node (IRNode): The node parameter.
-        op_type (str): The op_type parameter.
-        clean_id (str): The clean_id parameter.
-        inputs (list[str]): The inputs parameter.
-        shape (list[int]): The shape parameter.
-        nelem (int): The nelem parameter.
-
-        Returns:
-        None: Result.
+            node (IRNode): The IR node to emit.
+            op_type (str): Canonical operation type name.
+            clean_id (str): Sanitized output buffer variable identifier.
+            inputs (list[str]): Sanitized input variable identifiers.
+            shape (list[int]): Output tensor shape dimensions.
+            nelem (int): Total number of output elements.
         """
         if hasattr(self, f"visit_{op_type}"):
             getattr(self, f"visit_{op_type}")(node, op_type, clean_id, inputs, shape, nelem)
@@ -1597,7 +1595,7 @@ class WasmCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (object): Compiler options.
+            **kwargs (EagerValue): Compiler options.
 
         Returns:
             tuple[str, str]: Paths to generated js loader and wasm binary files.

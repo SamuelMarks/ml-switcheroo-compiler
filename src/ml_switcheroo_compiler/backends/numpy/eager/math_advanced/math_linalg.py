@@ -14,13 +14,13 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa:
 
 @numpy_eager_registry.register("Rsqrt")
 def _np_rsqrt(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rsqrt operation.
+    """Execute the eager np rsqrt operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -34,9 +34,9 @@ def _np_trace(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     """Return the sum along diagonals of the array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -45,12 +45,12 @@ def _np_trace(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("Vander")
 def _np_vander(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_vander operation.
+    """Execute the eager np vander operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -63,9 +63,9 @@ def _np_linalg_cholesky_(backend_module: ModuleType, *args: EagerValue, **kwargs
     """Implement Cholesky via linalg.cholesky.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -77,9 +77,9 @@ def _np_linalg_det_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     """Implement Det via linalg.det.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -91,9 +91,9 @@ def _np_linalg_svd_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     """Implement Svd via linalg.svd.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -105,9 +105,9 @@ def _np_linalg_inv_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     """Implement Inv via linalg.inv.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -119,9 +119,9 @@ def _np_linalg_pinv_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """Implement Pinv via linalg.pinv.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -133,9 +133,9 @@ def _np_customlinearsolve(backend_module: ModuleType, *args: EagerValue, **kwarg
     """Implement CustomLinearSolve.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -153,9 +153,9 @@ def _np_linearoperatorinversion(backend_module: ModuleType, *args: EagerValue, *
     """Implement LinearOperatorInversion.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -170,9 +170,9 @@ def _np_vecdot(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
     """Implement Vecdot.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

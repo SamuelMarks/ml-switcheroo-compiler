@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-# ruff: noqa: E501
+import pytest
+
 from ml_switcheroo_compiler.ops.linalg.dot import Dot, DotGeneral, Inner, Outer, Pdot, Tensordot, _has_valid_shape
 
 if TYPE_CHECKING:
@@ -90,8 +91,5 @@ def test_pdot_frontend() -> None:
     from ml_switcheroo_compiler.ops.linalg.dot import pdot
 
     config.eager_mode = True
-    try:
-        # Fallback will trigger backend not implemented, but we just need to hit the function
+    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         pdot(np.array([1]), np.array([2]))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None

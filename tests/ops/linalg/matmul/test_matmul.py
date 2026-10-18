@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.config import config
 
@@ -14,7 +15,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-
 mod = sys.modules["ml_switcheroo_compiler.ops.linalg.matmul"]
 
 
@@ -48,45 +48,36 @@ def test_matmul_tracing() -> None:
     original_shape = mod._emit_shape_node
     original_add = mod.add
     original_multiply = mod.multiply
-
     mock_linalg = MagicMock()
     mock_shape = MagicMock()
     mock_add = MagicMock()
     mock_multiply = MagicMock()
-
     setattr(mod, "_emit_linalg_node", mock_linalg)
     setattr(mod, "_emit_shape_node", mock_shape)
     setattr(mod, "add", mock_add)
     setattr(mod, "multiply", mock_multiply)
-
     config.eager_mode = False
-
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
     c = DummyTensor((2,))
-
     mod.matmul(a, b)
     mod.dot(a, b)
     mod.vdot(a, b)
     mod.inner(a, b)
     mod.outer(a, b)
     mod.dot_general(a, b, (((1,), (0,)), ((), ())))
-
     mod.convolve(a, b)
     mod.matvec(a, b)
     mod.multi_dot([a, b])
     mod.vecdot(a, b)
-
     mod.addmm(a, a, b)
     mod.addmm(a, a, b, alpha=2.0, beta=2.0)
-
     mod.block_masked_mm(a, b, masks={"mask_out": a, "mask_lhs": a, "mask_rhs": a})
     mod.block_masked_mm(a, b)
     mod.gather_mm(a, b, lhs_indices=c, rhs_indices=c)
     mod.gather_mm(a, b, lhs_indices=None, rhs_indices=c)
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
-
     setattr(mod, "_emit_linalg_node", original_linalg)
     setattr(mod, "_emit_shape_node", original_shape)
     setattr(mod, "add", original_add)
@@ -97,69 +88,52 @@ def test_matmul_tracing() -> None:
 def test_matmul_eager() -> None:
     """Test function test_matmul_eager."""
     original_backend = mod.get_active_backend
-
     mock_get_backend = MagicMock()
     mock_backend = MagicMock()
     mock_backend.execute_op.return_value = np.zeros((2, 2))
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
     mock_get_backend.return_value = mock_backend
-
     setattr(mod, "get_active_backend", mock_get_backend)
-
     config.eager_mode = True
-
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
     c = DummyTensor((2,))
-
     mod.matmul(a, b)
     mod.dot(a, b)
     mod.vdot(a, b)
     mod.inner(a, b)
     mod.outer(a, b)
     mod.dot_general(a, b, (((1,), (0,)), ((), ())))
-
     mod.convolve(a, b)
     mod.multi_dot([a, b])
     mod.vecdot(a, b)
-
     mod.block_masked_mm(a, b, masks={"mask_out": a, "mask_lhs": a, "mask_rhs": a})
     mod.block_masked_mm(a, b)
     mod.gather_mm(a, b, lhs_indices=c, rhs_indices=c)
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
-
     config.eager_mode = False
     setattr(mod, "get_active_backend", original_backend)
     assert c is not None or c is None
 
 
 def test_matmul_opdefs() -> None:
-    # BlockMaskedMm
     """Test function test_matmul_opdefs."""
     op1 = mod.BlockMaskedMm()
     assert op1.infer_shape((2, 2), (2, 2)) == (2, 2)
-    try:
+    with pytest.raises(AttributeError):
         with patch("ml_switcheroo_compiler.ops.linalg.matmul.matmul_shape", side_effect=ValueError):
             op1.infer_shape((2, 2), (3, 3))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
     assert op1.infer_shape("not_tuple", "not_tuple") == ()
-
-    # GatherMm
     op2 = mod.GatherMm()
     assert op2.infer_shape("not_tuple", "not_tuple") == ()
-    try:
+    with pytest.raises(AttributeError):
         with patch("ml_switcheroo_compiler.ops.linalg.matmul.matmul_shape", side_effect=ValueError):
             op2.infer_shape((2, 2), (3, 3))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
     assert op2.infer_shape((2, 2), (2, 2), lhs_indices=(3,)) == (3, 2, 2)
     assert op2.infer_shape((2, 2), (2, 2), rhs_indices=(3,)) == (3, 2, 2)
     assert op2.infer_shape((2, 2), (2, 2)) == (2, 2)
-
-    # SegmentedMm
     op3 = mod.SegmentedMm()
     assert op3.infer_shape("not_tuple", "not_tuple") == ()
     assert op3.infer_shape((2, 2), (2, 2)) == (1, 2, 2)
@@ -185,16 +159,9 @@ def test_dot_general_missing_shape() -> None:
 
         Tensor(data=FakeData(), config=TensorConfig((), DType.Float32, None))
         Tensor(data=FakeData(), config=TensorConfig((2,), DType.Float32, None))
-
         with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
             with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
-                # Patch in the module it was imported into, but avoid `matmul.matmul` collision by targeting the full matmul.py module dictionary directly,
-                # actually matmul imports _emit_linalg_node from .utils, but matmul is also a function.
-                # So we can patch the real definition in utils
                 with patch("ml_switcheroo_compiler.ops.linalg.utils._emit_linalg_node", return_value="dummy_node"):
-                    # wait, that doesn't work if matmul.py does `from .utils import _emit_linalg_node`
-                    # Actually, matmul is a function, so patching "ml_switcheroo_compiler.ops.linalg.matmul._emit_linalg_node" fails because it gets the function!
-                    # Let's import the module itself and patch it directly.
                     pass
     finally:
         config.eager_mode = old_eager
@@ -224,7 +191,6 @@ def test_dot_general_missing_shape_real() -> None:
 
         t1 = Tensor(data=FakeData(), config=TensorConfig((), DType.Float32, None))
         t2 = Tensor(data=FakeData(), config=TensorConfig((2,), DType.Float32, None))
-
         with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
             with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
                 original_emit = matmul_mod._emit_linalg_node
@@ -244,14 +210,10 @@ def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.linalg.matmul import BlockMaskedMm, GatherMm, dot_general
 
-    # BlockMaskedMm
     op1 = BlockMaskedMm()
     assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)((2, 3), (4, 5)) is None
-
-    # GatherMm
     op2 = GatherMm()
     assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
-
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))

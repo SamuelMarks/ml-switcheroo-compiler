@@ -74,9 +74,9 @@ def test_constant_folding_numel_branch(monkeypatch: pytest.MonkeyPatch) -> None:
         """Return mock evaluation output.
 
         Args:
-            g (object): Graph argument.
+            g (EagerValue): Graph argument.
             inputs (dict[str, object]): Inputs mapping.
-            backend (object): Backend argument.
+            backend (EagerValue): Backend argument.
 
         Returns:
             dict[str, object]: Evaluated outputs dictionary.
@@ -159,7 +159,7 @@ def test_constant_folding_backend_item_branch() -> None:
             """Extract item.
 
             Args:
-                val (object): Input value.
+                val (EagerValue): Input value.
 
             Returns:
                 int: Evaluated item.
@@ -210,7 +210,7 @@ def test_constant_folding_backend_instance_item_branch() -> None:
             """Return float item.
 
             Args:
-                val (object): Input value.
+                val (EagerValue): Input value.
 
             Returns:
                 float: Unwrapped item.

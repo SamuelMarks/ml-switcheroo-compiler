@@ -8,19 +8,13 @@ import time
 from typing import Callable, Union, cast
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-
-try:
-    import sparse
-except ImportError:
-    sparse = None
-
 from ml_switcheroo_compiler.backends.sparse.types import (
+    _SP_BACKEND,
     COOTensor,
     CSCTensor,
     CSRTensor,
 )
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -57,17 +51,16 @@ class SparseProfiler:
         for k, val in inputs.items():
             if isinstance(val, (COOTensor, CSRTensor, CSCTensor)):
                 arr_dict[k] = val
-            elif sparse is not None and isinstance(val, (sparse.COO, sparse.GCXS)):
-                if hasattr(val, "coords") and hasattr(val, "data") and hasattr(val, "shape"):
-                    arr_dict[k] = COOTensor(indices=np.asarray(val.coords), values=np.asarray(val.data), shape=val.shape)
-                elif hasattr(val, "todense"):
-                    arr_dict[k] = COOTensor.from_dense(np.asarray(val.todense()))
-                else:
-                    arr_dict[k] = val
+            elif hasattr(val, "coords") and hasattr(val, "data") and hasattr(val, "shape"):
+                arr_dict[k] = COOTensor(
+                    indices=_SP_BACKEND.asarray(getattr(val, "coords")),
+                    values=_SP_BACKEND.asarray(getattr(val, "data")),
+                    shape=cast(tuple[int, ...], getattr(val, "shape")),
+                )
             elif hasattr(val, "shape") and not isinstance(val, (list, tuple)):
                 arr_dict[k] = COOTensor.from_dense(val)
             elif isinstance(val, (list, tuple)):
-                np_arr = np.asarray(val, dtype=np.float32)
+                np_arr = _SP_BACKEND.asarray(val, dtype=_SP_BACKEND.float32)
                 arr_dict[k] = COOTensor.from_dense(np_arr)
             else:
                 arr_dict[k] = val
@@ -132,13 +125,13 @@ class SparseProfiler:
             """Execute a single evaluation step on sparse backend.
 
             Returns:
-                object: Evaluated output array.
+                EagerValue: Evaluated output array.
             """
             if has_ops and compiled_fn is not None:
                 return compiled_fn(sparse_inputs)
 
             if not sparse_inputs:
-                return cast(EagerValue, np.zeros((1,), dtype=np.float32))
+                return cast(EagerValue, _SP_BACKEND.zeros((1,), dtype=_SP_BACKEND.float32))
 
             accum = sparse_inputs[0]
             for t in sparse_inputs[1:]:

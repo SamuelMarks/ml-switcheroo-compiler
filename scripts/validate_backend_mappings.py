@@ -13,9 +13,9 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import SnapshotGroundingEngine
+from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 
 
 def _load_yaml_config(filename: str) -> dict[str, AttributeValue]:

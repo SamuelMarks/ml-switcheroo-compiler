@@ -32,7 +32,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
                 y (np.ndarray): Second matrix.
 
             Returns:
-                object: Product matrix.
+                EagerValue: Product matrix.
             """
             return cast("Callable[..., EagerTensorProtocol]", linalg.matmul)(x, y)
 
@@ -47,7 +47,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
                 x (np.ndarray): Input matrix.
 
             Returns:
-                object: Scaled matrix.
+                EagerValue: Scaled matrix.
             """
             return cast("EagerValue", cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.5))
 
@@ -70,7 +70,7 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
                 x (np.ndarray): Input array.
 
             Returns:
-                object: Evaluated array.
+                EagerValue: Evaluated array.
             """
             return (((cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)) - ((cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", 2.0))) + (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 0.5))
 
@@ -94,7 +94,7 @@ def test_jvp_vjp_duality_reductions() -> None:
                 x (np.ndarray): Input array.
 
             Returns:
-                object: Linear combination.
+                EagerValue: Linear combination.
             """
             return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 1.5)) + (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 0.75))
 
@@ -118,7 +118,7 @@ def test_jvp_vjp_duality_failure_raises() -> None:
                 x (np.ndarray): Input array.
 
             Returns:
-                object: Scaled array.
+                EagerValue: Scaled array.
             """
             return cast("EagerValue", cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0))
 
@@ -149,7 +149,7 @@ def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
                 x (Tensor): Input tensor.
 
             Returns:
-                object: Scaled tensor.
+                EagerValue: Scaled tensor.
             """
             return x * 2.0
 
@@ -193,7 +193,7 @@ def test_check_numerical_grads_coverage() -> None:
             x (Tensor): Input tensor.
 
         Returns:
-            object: Scaled tensor.
+            EagerValue: Scaled tensor.
         """
         return x * 2.5
 

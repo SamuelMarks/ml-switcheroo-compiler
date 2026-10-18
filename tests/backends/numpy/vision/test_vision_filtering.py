@@ -6,19 +6,14 @@ import importlib
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pytest
 
-from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import (
-    _np_degeneration,
-    _np_gaussian_blur,
-    _np_median_filter,
-    _np_sharpen,
-)
+from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_degeneration, _np_gaussian_blur, _np_median_filter, _np_sharpen
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
-
 BlurConfig = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.ops.vision.filtering"), "BlurConfig"))
 
 
@@ -30,26 +25,20 @@ def test_np_degeneration() -> None:
 
 def test_np_gaussian_blur() -> None:
     """Test function test_np_gaussian_blur."""
-    try:
+    with pytest.raises(ValueError):
         _np_gaussian_blur(np, np.ones((2, 2)))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_np_median_filter() -> None:
     """Test function test_np_median_filter."""
-    try:
+    with pytest.raises(TypeError):
         _np_median_filter(np, np.ones((2, 2)))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_np_sharpen() -> None:
     """Test function test_np_sharpen."""
-    try:
-        _np_sharpen(np, np.ones((2, 2)))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    _np_sharpen(np, np.ones((2, 2)))
+    assert callable(test_np_sharpen)
 
 
 def test_gaussian_blur_cov() -> None:

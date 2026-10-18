@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+import pytest
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -74,47 +76,19 @@ def test_init_other_methods() -> None:
     assert _infer_weight_format("x.safetensors") == "safetensors"
     assert _infer_weight_format("x.npz") == "npz"
     assert _infer_weight_format("x.bin") == "pickle"
-
     assert type(_get_format_handler("h5")).__name__ == "H5WeightFormat"
     assert type(_get_format_handler("safetensors")).__name__ == "SafetensorsWeightFormat"
     assert type(_get_format_handler("npz")).__name__ == "NpzWeightFormat"
     assert type(_get_format_handler("pickle")).__name__ == "PickleWeightFormat"
-
-    try:
-        get_registered_name(list)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    try:
-        get_registered_object("list")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    try:
-        with custom_object_scope({}):
-            pass
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    try:
-        with CustomObjectScope({}):
-            pass
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    try:
-        KerasFileEditor("nonexistent")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    try:
-        serialize_object(list)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        deserialize_object({})
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    get_registered_name(list)
+    get_registered_object("list")
+    with custom_object_scope({}):
+        pass
+    with CustomObjectScope({}):
+        pass
+    KerasFileEditor("nonexistent")
+    serialize_object(list)
+    deserialize_object({})
 
 
 def test_extract_model_state_layers() -> None:
@@ -163,11 +137,8 @@ def test_extract_model_state_layers() -> None:
 
     st = {}
     ws = cast("EagerTensorProtocol", {"nt1": 1})
-    # If in weights, not added
     cast("Callable[..., EagerTensorProtocol]", _extract_non_trainable_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)(), st, ws)
     assert "nt1" not in st
-
-    # If not in weights, added
     cast("Callable[..., EagerTensorProtocol]", _extract_non_trainable_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)(), st, {})
     assert st["nt1"] == 1
 
@@ -185,20 +156,16 @@ def test_extract_model_state_submodules() -> None:
 
     st = cast("Callable[..., EagerTensorProtocol]", _extract_model_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)(), {})
     assert isinstance(st, dict)
-
-    c, m = cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)())
+    (c, m) = cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)())
     assert c == {"c": 1}
-
-    c2, m2 = cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(None)
+    (c2, m2) = cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(None)
     assert c2 == {}
-
     import os
     import zipfile
 
     tf = "test_write.zip"
     if os.path.exists(tf):
         os.remove(tf)
-
     from unittest.mock import patch
 
     import ml_switcheroo_compiler.serialization as s
@@ -206,15 +173,11 @@ def test_extract_model_state_submodules() -> None:
     with zipfile.ZipFile(tf, "w") as zf:
         with patch.object(s.H5WeightFormat, "save"):
             _write_h5_to_zip(zf, "a.h5", {"a": 1})
-
     if os.path.exists(tf):
         os.remove(tf)
-
     ctx = KerasSerializationContext(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
-
     with patch.object(s.H5WeightFormat, "save"):
         _write_keras_zip(ctx)
-
     if os.path.exists(tf):
         os.remove(tf)
 
@@ -256,14 +219,12 @@ def test_extract_model_state_nested_objects() -> None:
     tf = "test_write2.zip"
     if os.path.exists(tf):
         os.remove(tf)
-
     ctx1 = KerasSerializationContext(filepath=tf, config_dict={}, metadata={}, weights_store={}, state_store={})
     with patch.object(s, "_write_h5_to_zip") as mock_w:
         _write_keras_zip(ctx1)
         mock_w.assert_not_called()
     if os.path.exists(tf):
         os.remove(tf)
-
     ctx2 = cast("Callable[..., EagerTensorProtocol]", KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
     with patch.object(s, "_write_h5_to_zip") as mock_w:
         cast("Callable[..., EagerTensorProtocol]", _write_keras_zip)(ctx2)
@@ -315,7 +276,6 @@ def test_read_fingerprint(tmp_path: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.serialization import read_fingerprint
 
     assert read_fingerprint("nonexistent_path") == "fingerprint"
-
     fp_dir = tmp_path / "test_fp"
     fp_dir.mkdir(exist_ok=True)
     with open(fp_dir / "fingerprint.pb", "w") as f:
@@ -332,10 +292,8 @@ def test_load_variable(tmp_path: EagerTensorProtocol) -> None:
     var_dir = tmp_path / "test_var"
     var_dir.mkdir(exist_ok=True)
     np.save(str(var_dir / "my_var.npy"), np.array([1, 2, 3]))
-
     t = load_variable(str(var_dir), "my_var")
     assert t.shape == (3,)
-
     t2 = load_variable(str(var_dir), "missing_var")
     assert t2.shape == (1,)
 
@@ -350,7 +308,6 @@ def test_run_restore_ops() -> None:
 
     with pytest.raises(FileNotFoundError):
         run_restore_ops("nonexistent_restore")
-
     os.makedirs("test_restore", exist_ok=True)
     run_restore_ops("test_restore")
     import shutil
@@ -372,19 +329,16 @@ def test_export_methods() -> None:
             return "{}"
 
     g = FakeGraph()
-
     cast("Callable[..., EagerTensorProtocol]", export_to_onnx)(g, "test.onnx")
     assert os.path.exists("test.onnx")
     with open("test.onnx", "rb") as f:
         assert f.read() == b"ONNX"
     os.remove("test.onnx")
-
     cast("Callable[..., EagerTensorProtocol]", export_to_tflite)(g, "test.tflite")
     assert os.path.exists("test.tflite")
     with open("test.tflite", "rb") as f:
         assert f.read() == b"TFLITE"
     os.remove("test.tflite")
-
     cast("Callable[..., EagerTensorProtocol]", export_model_topology)(g, "test.json")
     assert os.path.exists("test.json")
     with open("test.json") as f2:
@@ -420,25 +374,18 @@ def test_init_exports_unmocked() -> None:
     """Test function test_init_exports_unmocked."""
     import pytest
 
-    from ml_switcheroo_compiler.serialization import (
-        _load_h5_weights,
-        _load_npz_weights,
-        _load_pickle_weights,
-        _load_safetensors_weights,
-        _save_as_h5,
-        _save_as_safetensors,
-    )
+    from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
-    with pytest.raises(Exception, match=r".*"):
+    with pytest.raises(Exception, match=".*"):
         cast("Callable[..., EagerTensorProtocol]", _save_as_h5)(None, None)
-    with pytest.raises(Exception, match=r".*"):
+    with pytest.raises(Exception, match=".*"):
         cast("Callable[..., EagerTensorProtocol]", _save_as_safetensors)(None, None)
-    with pytest.raises(Exception, match=r".*"):
+    with pytest.raises(Exception, match=".*"):
         cast("Callable[..., EagerTensorProtocol]", _load_h5_weights)(None)
-    with pytest.raises(Exception, match=r".*"):
+    with pytest.raises(Exception, match=".*"):
         cast("Callable[..., EagerTensorProtocol]", _load_safetensors_weights)(None)
     assert cast("Callable[..., EagerTensorProtocol]", _load_npz_weights)(None) == {}
-    with pytest.raises(Exception, match=r".*"):
+    with pytest.raises(Exception, match=".*"):
         cast("Callable[..., EagerTensorProtocol]", _load_pickle_weights)(None)
 
 
@@ -468,34 +415,21 @@ def test_init_module_all_exports() -> None:
     """Test function test_init_module_all_exports."""
     import os
 
+    import numpy as np
+
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     tf = "test_real_init_unmocked.h5"
     tf_st = "test_real_init_unmocked.st"
     tf_npz = "test_real_init_unmocked.npz"
     tf_pk = "test_real_init_unmocked.pk"
-
-    # h5
-    try:
-        _save_as_h5({"a": 1}, tf)
-        assert "a" in cast("Callable[..., EagerTensorProtocol]", _load_h5_weights)(tf)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # safetensors
-    try:
-        _save_as_safetensors({"a": 1}, tf_st)
-        assert "a" in cast("Callable[..., EagerTensorProtocol]", _load_safetensors_weights)(tf_st)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
+    _save_as_h5({"a": 1}, tf)
+    assert "a" in cast("Callable[..., EagerTensorProtocol]", _load_h5_weights)(tf)
+    _save_as_safetensors({"a": np.array([1.0], dtype=np.float32)}, tf_st)
+    assert "a" in cast("Callable[..., EagerTensorProtocol]", _load_safetensors_weights)(tf_st)
     assert _load_npz_weights(tf_npz) == {}
-
-    try:
+    with pytest.raises(FileNotFoundError):
         _load_pickle_weights(tf_pk)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
     for f in [tf, tf_st, tf_npz, tf_pk]:
         if os.path.exists(f):
             os.remove(f)
@@ -507,22 +441,11 @@ def test_np_serialization_methods() -> None:
 
     s._save_as_h5({"a": 1}, "dummy.h5")
     s._save_as_safetensors({"a": 1}, "dummy.st")
-    try:
-        s._load_h5_weights("dummy.h5")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        s._load_safetensors_weights("dummy.st")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        s._load_npz_weights("dummy.npz")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
+    s._load_h5_weights("dummy.h5")
+    s._load_safetensors_weights("dummy.st")
+    s._load_npz_weights("dummy.npz")
+    with pytest.raises(FileNotFoundError):
         s._load_pickle_weights("dummy.pk")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
     import os
 
     if os.path.exists("dummy.h5"):

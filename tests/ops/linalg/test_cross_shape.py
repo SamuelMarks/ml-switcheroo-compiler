@@ -19,7 +19,7 @@ def test_cross_shape() -> None:
     a2 = type("MockTensor", (), {"shape": (3, 4, 5)})()
     b2 = type("MockTensor", (), {"shape": (3, 4, 1)})()
 
-    assert op.infer_shape(a2, b2, dim=0) == (3, 4, 5)
+    assert op.infer_shape(a2, b2, axis=0) == (3, 4, 5)
 
     # Error cases
     a3 = type("MockTensor", (), {"shape": (4, 5, 4)})()

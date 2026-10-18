@@ -19,7 +19,7 @@ def _np_hashing(
     num_bins: int,
     **kwargs: Union[float, int, str, bool, None],
 ) -> LookupInput:
-    """Evaluate _np_hashing operation.
+    """Execute the eager np hashing operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -39,7 +39,7 @@ def _np_integer_lookup(
     inputs: LookupInput,
     **kwargs: Union[float, int, str, bool, None],
 ) -> LookupInput:
-    """Evaluate _np_integer_lookup operation.
+    """Execute the eager np integer lookup operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -59,7 +59,7 @@ def _np_lookup(
     vocabulary: LookupInput,
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_lookup operation.
+    """Execute the eager np lookup operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -85,7 +85,7 @@ def _np_string_lookup(
     inputs: LookupInput,
     **kwargs: Union[float, int, str, bool, None],
 ) -> LookupInput:
-    """Evaluate _np_string_lookup operation.
+    """Execute the eager np string lookup operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.

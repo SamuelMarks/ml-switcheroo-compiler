@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import typing  # noqa: F401
 import uuid
-from typing import Callable, TypeVar, cast  # noqa: F401
+from collections.abc import Mapping
+from typing import Callable, TypeVar, cast
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
@@ -19,29 +19,32 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 _StateT = TypeVar("_StateT")
 
 
-def cond_tracing(pred: Tensor, true_fn: EagerValue, false_fn: EagerValue) -> EagerValue:
-    """Evaluate cond_tracing operation.
+def cond_tracing(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) -> TensorOrScalar:
+    """Emit a symbolic `If` control-flow node for `cond`.
 
     Args:
         pred (Tensor): The pred parameter.
-        true_fn (Callable): The true_fn parameter.
-        false_fn (Callable): The false_fn parameter.
+        true_fn (TensorOrScalar): The true_fn parameter.
+        false_fn (TensorOrScalar): The false_fn parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Traced output tensor.
+
+    Raises:
+        TracingError: If called outside a tracing context.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit Cond node outside of a tracing context.")
-    true_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(true_fn, (), "true_branch")
-    false_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(false_fn, (), "false_branch")
+    true_graph = cast("Callable[..., LogicalGraph]", _trace_function)(true_fn, (), "true_branch")
+    false_graph = cast("Callable[..., LogicalGraph]", _trace_function)(false_fn, (), "false_branch")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="If",
         inputs=[getattr(pred.data, "id")],
-        attributes={"then_branch": true_graph, "else_branch": false_graph},
+        attributes=cast("Mapping[str, AttributeValue]", {"then_branch": true_graph, "else_branch": false_graph}),
         subgraphs={"then_branch": true_graph, "else_branch": false_graph},
         shape_metadata=(),
     )
@@ -55,29 +58,32 @@ def while_loop_tracing(
     body_fn: Callable[[_StateT], _StateT],
     init_val: _StateT,
 ) -> _StateT:
-    """Evaluate while_loop_tracing operation.
+    """Emit a symbolic `Loop` node for `while_loop`.
 
     Args:
-        cond_fn (Any): The cond_fn parameter.
-        body_fn (Any): The body_fn parameter.
-        init_val (Any): The init_val parameter.
+        cond_fn (Callable[[_StateT], bool | Tensor]): The cond_fn parameter.
+        body_fn (Callable[[_StateT], _StateT]): The body_fn parameter.
+        init_val (_StateT): The init_val parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        _StateT: Traced loop state output.
+
+    Raises:
+        TracingError: If called outside a tracing context.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit While node outside of a tracing context.")
     args = (init_val,) if isinstance(init_val, Tensor) else tuple(getattr(init_val, "__iter__")())
-    cond_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(cond_fn, args, "cond")
-    body_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(body_fn, args, "body")
+    cond_graph = cast("Callable[..., LogicalGraph]", _trace_function)(cond_fn, args, "cond")
+    body_graph = cast("Callable[..., LogicalGraph]", _trace_function)(body_fn, args, "body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Loop",
         inputs=[getattr(a.data, "id") for a in args],
-        attributes={"body": body_graph, "cond": cond_graph},
+        attributes=cast("Mapping[str, AttributeValue]", {"body": body_graph, "cond": cond_graph}),
         subgraphs={"body": body_graph, "cond": cond_graph},
         shape_metadata=(),
     )
@@ -88,14 +94,14 @@ def while_loop_tracing(
     return init_val
 
 
-def _flatten_inputs(obj: EagerValue) -> list[str]:
-    """Evaluate _flatten_inputs operation.
+def _flatten_inputs(obj: TensorOrScalar) -> list[str]:
+    """Flatten nested tensor arguments into a list of node IDs.
 
     Args:
-        obj (Any): The obj parameter.
+        obj (TensorOrScalar): The obj parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        list[str]: Flattened node IDs.
     """
     if isinstance(obj, Tensor):
         return [getattr(obj.data, "id")]
@@ -107,18 +113,22 @@ def _flatten_inputs(obj: EagerValue) -> list[str]:
     return []
 
 
-def scan_tracing(f: EagerValue, init: EagerValue, xs: EagerValue, length: int | None = None) -> EagerValue:
-    """Evaluate scan_tracing operation.
+def scan_tracing(f: TensorOrScalar, init: TensorOrScalar, xs: TensorOrScalar, length: int | None = None) -> TensorOrScalar:
+    """Emit a symbolic `Scan` node for `scan`.
 
     Args:
-        f (Callable): The f parameter.
-        init (Any): The init parameter.
-        xs (Any): The xs parameter.
-        length (Any): The length parameter.
+        f (TensorOrScalar): The f parameter.
+        init (TensorOrScalar): The init parameter.
+        xs (TensorOrScalar): The xs parameter.
+        length (int | None): The length parameter.
 
     Returns:
-        tuple: Result.
+        TensorOrScalar: Tuple of `(carry, stacked_outputs)`.
+
+    Raises:
+        TracingError: If called outside a tracing context.
     """
+    _ = length
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
 
@@ -126,14 +136,14 @@ def scan_tracing(f: EagerValue, init: EagerValue, xs: EagerValue, length: int | 
     x_shape = getattr(xs, "shape")[1:] if xs is not None and len(getattr(xs, "shape")) > 0 else ()
     proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=getattr(getattr(xs, "dtype"), "value"))
     proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, getattr(xs, "dtype"), getattr(xs, "device")))
-    body_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(f, (init, proxy_x_tensor), "scan_body")
+    body_graph = cast("Callable[..., LogicalGraph]", _trace_function)(f, (init, proxy_x_tensor), "scan_body")
     init_ids = _flatten_inputs(init)
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Scan",
         inputs=init_ids + [getattr(getattr(xs, "data"), "id")],
-        attributes={"body": body_graph},
+        attributes=cast("Mapping[str, AttributeValue]", {"body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
     )
@@ -143,16 +153,19 @@ def scan_tracing(f: EagerValue, init: EagerValue, xs: EagerValue, length: int | 
     return init, out_tensor
 
 
-def map_fn_tracing(fn: EagerValue, elems: Tensor, dtype: DType | None = None) -> EagerValue:
-    """Evaluate map_fn_tracing operation.
+def map_fn_tracing(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None) -> TensorOrScalar:
+    """Emit a symbolic `Map` node for `map_fn`.
 
     Args:
-        fn (Callable): The fn parameter.
+        fn (TensorOrScalar): The fn parameter.
         elems (Tensor): The elems parameter.
-        dtype (Any): The dtype parameter.
+        dtype (DType | None): The dtype parameter.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Mapped output tensor.
+
+    Raises:
+        TracingError: If called outside a tracing context.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -161,13 +174,13 @@ def map_fn_tracing(fn: EagerValue, elems: Tensor, dtype: DType | None = None) ->
     x_shape = elems.shape[1:] if elems is not None and len(elems.shape) > 0 else ()
     proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=elems.dtype.value)
     proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))
-    body_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(fn, (proxy_x_tensor,), "map_body")
+    body_graph = cast("Callable[..., LogicalGraph]", _trace_function)(fn, (proxy_x_tensor,), "map_body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Map",
         inputs=[getattr(elems.data, "id")],
-        attributes={"body": body_graph},
+        attributes=cast("Mapping[str, AttributeValue]", {"body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
     )
@@ -178,25 +191,28 @@ def map_fn_tracing(fn: EagerValue, elems: Tensor, dtype: DType | None = None) ->
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, elems.device))
 
 
-def pmap_tracing(func: EagerValue, axis_name: str | None = None) -> EagerValue:
-    """Evaluate pmap_tracing operation.
+def pmap_tracing(func: TensorOrScalar, axis_name: str | None = None) -> TensorOrScalar:
+    """Create a symbolic `Pmap` wrapper for `func`.
 
     Args:
-        func (Callable): The func parameter.
-        axis_name (Any): The axis_name parameter.
+        func (TensorOrScalar): The func parameter.
+        axis_name (str | None): The axis_name parameter.
 
     Returns:
-        Callable: Result.
+        TensorOrScalar: Wrapped parallel-map callable.
     """
 
-    def wrapped(*args: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: TensorOrScalar) -> TensorOrScalar:
+        """Trace `func` and emit a `Pmap` node.
 
         Args:
-            *args (Any): Positional args.
+            *args (TensorOrScalar): Positional args.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Traced output tensor.
+
+        Raises:
+            TracingError: If called outside a tracing context.
         """
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.core.errors import TracingError
@@ -210,13 +226,13 @@ def pmap_tracing(func: EagerValue, axis_name: str | None = None) -> EagerValue:
                 proxy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
             else:
                 getattr(proxy_args, "append")(a)
-        body_graph = cast("Callable[..., EagerTensorProtocol]", _trace_function)(func, tuple(proxy_args), "pmap_body")
+        body_graph = cast("Callable[..., LogicalGraph]", _trace_function)(func, tuple(proxy_args), "pmap_body")
         out_id = str(uuid.uuid4())
         node = LogicalNode(
             id=out_id,
             op_type="Pmap",
             inputs=[str(getattr(getattr(a, "data", None), "id", "")) for a in args if isinstance(a, Tensor)],
-            attributes={"axis_name": axis_name, "body": body_graph},
+            attributes=cast("Mapping[str, AttributeValue]", {"axis_name": axis_name, "body": body_graph}),
             subgraphs={"body": body_graph},
             shape_metadata=(),
         )
@@ -229,10 +245,10 @@ def pmap_tracing(func: EagerValue, axis_name: str | None = None) -> EagerValue:
 
 
 def stop_gradient_tracing(x: _StateT) -> _StateT:
-    """Evaluate stop_gradient_tracing operation.
+    """Compute the stop gradient tracing tensor operation.
 
     Args:
-        x (Any): The x parameter.
+        x (_StateT): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -253,11 +269,11 @@ def stop_gradient_tracing(x: _StateT) -> _StateT:
     return x
 
 
-def assert_value_tracing(condition: EagerValue, message: str = "") -> None:
-    """Evaluate assert_value_tracing operation.
+def assert_value_tracing(condition: TensorOrScalar, message: str = "") -> None:
+    """Compute the assert value tracing tensor operation.
 
     Args:
-        condition (Any): The condition parameter.
+        condition (TensorOrScalar): The condition parameter.
         message (str): The message parameter.
 
     Returns:

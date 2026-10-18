@@ -32,16 +32,11 @@ def test_keras_np_serialization() -> None:
             """Test function __init__."""
             self.layers = [FakeLayer()]
 
-    try:
-        cast("Callable[..., EagerTensorProtocol]", save_model)(cast("Callable[..., EagerTensorProtocol]", FakeModel)(), test_file)
-        model = load_model(test_file)
-        assert hasattr(model, "config")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
+    cast("Callable[..., EagerTensorProtocol]", save_model)(cast("Callable[..., EagerTensorProtocol]", FakeModel)(), test_file)
+    model = load_model(test_file)
+    assert hasattr(model, "config")
     if os.path.exists(test_file):
         os.remove(test_file)
-
     import pytest
 
     with pytest.raises(FileNotFoundError):
@@ -68,9 +63,7 @@ def test_keras_file_editor() -> None:
     test_file = "test_editor.keras"
     with zipfile.ZipFile(test_file, "w") as zf:
         zf.writestr("config.json", "{}")
-
     ed = KerasFileEditor(test_file)
     assert ed.filepath == test_file
-
     if os.path.exists(test_file):
         os.remove(test_file)

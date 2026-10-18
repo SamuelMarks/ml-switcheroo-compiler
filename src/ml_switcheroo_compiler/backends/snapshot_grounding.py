@@ -14,9 +14,11 @@ import os
 from typing import Callable, cast
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
 from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
 from pydantic import BaseModel, Field
+
+from ml_switcheroo_compiler.core.errors import SnapshotGroundingError
+from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 
 
 class BackendSnapshotTargetModel(BaseModel):
@@ -88,9 +90,9 @@ def _extract_item_endpoints(
     """Extract individual API path, name, and aliases from a snapshot item.
 
     Args:
-        item (dict[str, object]): An entity dictionary from snapshot JSON.
+        item (dict[str, AttributeValue]): An entity dictionary from snapshot JSON.
         endpoints (set[str]): Destination set to populate with valid endpoint strings.
-        item_map (dict[str, dict[str, object]] | None): Optional destination map from endpoint to item data.
+        item_map (dict[str, dict[str, AttributeValue]] | None): Optional destination map from endpoint to item data.
     """
     for key in ("api_path", "name", "mnemonic"):
         val: AttributeValue = item.get(key)
@@ -116,9 +118,9 @@ def _extract_category_endpoints(
     """Extract endpoints from category groupings in snapshot data.
 
     Args:
-        categories_obj (object): Categories mapping from snapshot JSON.
+        categories_obj (AttributeValue): Categories mapping from snapshot JSON.
         endpoints (set[str]): Destination set to populate with valid endpoint strings.
-        item_map (dict[str, dict[str, object]] | None): Optional destination map from endpoint to item data.
+        item_map (dict[str, dict[str, AttributeValue]] | None): Optional destination map from endpoint to item data.
     """
     if not isinstance(categories_obj, dict):
         return
@@ -129,25 +131,16 @@ def _extract_category_endpoints(
                     _extract_item_endpoints(item_obj, endpoints, item_map)
 
 
-class GroundingValidationError(ValueError):
+class GroundingValidationError(SnapshotGroundingError, ValueError):
     """Exception raised when an API call fails static framework snapshot verification."""
 
 
 def _load_standard_arg_map() -> dict[str, str]:
-    """Load standard argument mapping from ml-ecosystem-snapshots or provide fallback.
+    """Load standard argument mapping for canonical parameter normalization.
 
     Returns:
         dict[str, str]: Mapping from variant argument names to standardized names.
     """
-    try:
-        import importlib
-
-        mod = importlib.import_module("ml_ecosystem_snapshots.models")
-        loaded: AttributeValue = getattr(mod, "STANDARD_ARG_MAP", None)
-        if isinstance(loaded, dict):
-            return {str(k): str(v) for k, v in loaded.items()}
-    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return {
         "x": "input",
         "inputs": "input",
@@ -240,20 +233,6 @@ def _find_discrepancy_replacement(
     Returns:
         str | None: Suggested canonical argument replacement if found.
     """
-    try:
-        import importlib
-
-        mcp = importlib.import_module("ml_ecosystem_snapshots.mcp_server")
-        explain_fn = getattr(mcp, "explain_anti_pattern", None)
-        if explain_fn is not None:
-            info: dict[str, AttributeValue] = explain_fn(backend_name, endpoint, kw)
-            if info.get("is_known_anti_pattern"):
-                cand: str = str(info.get("canonical_argument") or "")
-                if cand and (cand in allowed_kwargs or cand in ep_allowed):
-                    return cand
-    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-
     std: str | None = STANDARD_ARG_MAP.get(kw)
     if std is not None:
         for cand in sorted(allowed_kwargs | ep_allowed):
@@ -471,16 +450,6 @@ def compute_levenshtein(s1: str, s2: str) -> int:
     Returns:
         int: Edit distance between s1 and s2.
     """
-    try:
-        import importlib
-
-        mod = importlib.import_module("ml_ecosystem_snapshots.grounding.engine")
-        lev_fn = getattr(mod, "compute_levenshtein", None)
-        if lev_fn is not None:
-            return int(lev_fn(s1, s2))
-    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-
     if s1 == s2:
         return 0
     if len(s1) < len(s2):
@@ -504,10 +473,10 @@ def _split_signature_params(raw_params: list[AttributeValue]) -> list[list[dict[
     """Split concatenated or malformed parameter lists into coherent Python signatures.
 
     Args:
-        raw_params (list[object]): Raw list of parameter dictionaries.
+        raw_params (list[AttributeValue]): Raw list of parameter dictionaries.
 
     Returns:
-        list[list[dict[str, object]]]: Extracted distinct signature parameter lists.
+        list[list[dict[str, AttributeValue]]]: Extracted distinct signature parameter lists.
     """
     signatures: list[list[dict[str, AttributeValue]]] = []
     curr_sig: list[dict[str, AttributeValue]] = []
@@ -535,7 +504,7 @@ def _hydrate_ghost_ref(data: dict[str, AttributeValue]) -> ExtendedGhostRef | No
     """Hydrate a snapshot item dictionary into an ExtendedGhostRef model if compatible.
 
     Args:
-        data (dict[str, object]): Raw dictionary representing an API symbol.
+        data (dict[str, AttributeValue]): Raw dictionary representing an API symbol.
 
     Returns:
         ExtendedGhostRef | None: Hydrated ExtendedGhostRef instance, or None if invalid.
@@ -570,7 +539,7 @@ def _register_ghost_ref(
         sym (str): Primary symbol name.
         ref (ExtendedGhostRef): ExtendedGhostRef instance.
         endpoints (set[str]): Destination endpoint set.
-        item_map (dict[str, dict[str, object]]): Destination dictionary map.
+        item_map (dict[str, dict[str, AttributeValue]]): Destination dictionary map.
         ref_map (dict[str, ExtendedGhostRef]): Destination model map.
     """
     endpoints.add(sym)
@@ -598,10 +567,10 @@ def _populate_from_grounding_engine(
     """Populate endpoints and ghost refs from delegating GroundingEngine if available.
 
     Args:
-        engine (object | None): GroundingEngine instance.
+        engine (AttributeValue | None): GroundingEngine instance.
         target (BackendSnapshotTargetModel | None): Backend snapshot target model.
         endpoints (set[str]): Destination set of API endpoint strings.
-        item_map (dict[str, dict[str, object]]): Destination map from symbol to dump dict.
+        item_map (dict[str, dict[str, AttributeValue]]): Destination map from symbol to dump dict.
         ref_map (dict[str, ExtendedGhostRef]): Destination map from symbol to ghost ref.
     """
     if engine is None or target is None:
@@ -620,6 +589,68 @@ def _populate_from_grounding_engine(
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
+def _extract_ast_canonical_ops(py_path: str) -> list[AttributeValue]:
+    """Extract CANONICAL_*_OPS list items from a Python framework AST file.
+
+    Args:
+        py_path (str): Path to the Python framework specification file.
+
+    Returns:
+        list[AttributeValue]: Extracted canonical operation dictionaries.
+    """
+    import ast
+
+    with open(py_path, encoding="utf-8") as f:
+        tree: ast.Module = ast.parse(f.read(), filename=py_path)
+    collected: list[AttributeValue] = []
+    for node in tree.body:
+        val_node: ast.expr | None = None
+        var_name: str = ""
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            var_name = node.targets[0].id
+            val_node = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+            var_name = node.target.id
+            val_node = node.value
+        if val_node is not None and var_name.startswith("CANONICAL_") and var_name.endswith("_OPS"):
+            raw_ops: AttributeValue = ast.literal_eval(val_node)
+            if isinstance(raw_ops, list):
+                collected.extend(raw_ops)
+    return collected
+
+
+def _populate_from_framework_ast(
+    frameworks_dir: str,
+    target: BackendSnapshotTargetModel | None,
+    endpoints: set[str],
+    item_map: dict[str, dict[str, AttributeValue]],
+    ref_map: dict[str, ExtendedGhostRef],
+) -> None:
+    """Populate endpoints and ghost refs by statically parsing framework AST definitions.
+
+    Args:
+        frameworks_dir (str): Directory containing framework specification files.
+        target (BackendSnapshotTargetModel | None): Backend snapshot target model.
+        endpoints (set[str]): Destination set to populate with valid endpoint strings.
+        item_map (dict[str, dict[str, AttributeValue]]): Destination map from endpoint to raw item dict.
+        ref_map (dict[str, ExtendedGhostRef]): Destination map from endpoint to hydrated ghost ref.
+    """
+    if target is None or not os.path.isdir(frameworks_dir):
+        return
+    fw_name: str = target.framework.lower().replace("-", "_")
+    cand_files: list[str] = [f"{fw_name}.py", f"{fw_name}_spec.py"]
+    for root in target.canonical_roots:
+        r_clean = root.lower().replace("-", "_").split(".")[0]
+        if f"{r_clean}.py" not in cand_files:
+            cand_files.append(f"{r_clean}.py")
+    for cand_file in cand_files:
+        py_path: str = os.path.join(frameworks_dir, cand_file)
+        if os.path.isfile(py_path):
+            raw_ops = _extract_ast_canonical_ops(py_path)
+            if raw_ops:
+                _populate_from_snapshot_data(raw_ops, endpoints, item_map, ref_map)
+
+
 def _populate_from_snapshot_data(
     snapshot_data: dict[str, AttributeValue] | list[AttributeValue],
     endpoints: set[str],
@@ -629,9 +660,9 @@ def _populate_from_snapshot_data(
     """Extract endpoints and hydrate ghost refs from parsed snapshot JSON data.
 
     Args:
-        snapshot_data (dict[str, object] | list[object]): Parsed snapshot JSON structure.
+        snapshot_data (dict[str, AttributeValue] | list[AttributeValue]): Parsed snapshot JSON structure.
         endpoints (set[str]): Destination set to populate with valid endpoint strings.
-        item_map (dict[str, dict[str, object]]): Destination map from endpoint to raw item dict.
+        item_map (dict[str, dict[str, AttributeValue]]): Destination map from endpoint to raw item dict.
         ref_map (dict[str, ExtendedGhostRef]): Destination map from endpoint to hydrated ghost ref.
     """
     if isinstance(snapshot_data, dict):
@@ -649,17 +680,17 @@ def _populate_from_snapshot_data(
 
 
 def _param_to_dict(p: AttributeValue) -> dict[str, AttributeValue]:
-    """Convert a parameter object or model into a dictionary specification.
+    """Convert a parameter model or mapping into a dictionary specification.
 
     Args:
-        p (object): Parameter model, dictionary, or object.
+        p (AttributeValue): Parameter model or dictionary.
 
     Returns:
-        dict[str, object]: Parameter spec dictionary.
+        dict[str, AttributeValue]: Parameter spec dictionary.
     """
     dump_fn: AttributeValue = getattr(p, "model_dump", None)
     if callable(dump_fn):
-        dumped: AttributeValue = dump_fn()
+        dumped: AttributeValue = cast("Callable[..., AttributeValue]", dump_fn)()
         if isinstance(dumped, dict):
             return dumped
     if isinstance(p, dict):
@@ -674,7 +705,7 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, Att
         ref (ExtendedGhostRef): Populated ExtendedGhostRef model.
 
     Returns:
-        list[list[dict[str, object]]]: Extracted distinct signature parameter lists.
+        list[list[dict[str, AttributeValue]]]: Extracted distinct signature parameter lists.
     """
     signatures: list[list[dict[str, AttributeValue]]] = []
     if ref.params:
@@ -694,10 +725,10 @@ def _signatures_from_item(item: dict[str, AttributeValue]) -> list[list[dict[str
     """Extract fallback parameter signatures from a raw item dictionary.
 
     Args:
-        item (dict[str, object]): Raw snapshot metadata item.
+        item (dict[str, AttributeValue]): Raw snapshot metadata item.
 
     Returns:
-        list[list[dict[str, object]]]: Fallback signature parameter lists.
+        list[list[dict[str, AttributeValue]]]: Fallback signature parameter lists.
     """
     fallback_signatures: list[list[dict[str, AttributeValue]]] = []
     params_obj: AttributeValue = item.get("params")
@@ -743,16 +774,6 @@ class SnapshotGroundingEngine:
         self.frameworks_dir: str = os.path.abspath(os.path.join(os.path.dirname(self.snapshot_dir), "frameworks"))
 
         self._grounding_engine: AttributeValue | None = None
-        try:
-            import importlib
-
-            mod = importlib.import_module("ml_ecosystem_snapshots.grounding.engine")
-            ge_cls = getattr(mod, "GroundingEngine", None)
-            if ge_cls is not None:
-                search_dirs: list[str] = [self.snapshot_dir, self.frameworks_dir]
-                self._grounding_engine = ge_cls(base_dirs=search_dirs)
-        except Exception:
-            self._grounding_engine = None
 
     def _find_snapshot_in_dir(self, sdir: str, prefix: str, suffix: str) -> str | None:
         """Find the latest matching snapshot file in a directory (.json or .json.gz).
@@ -860,7 +881,7 @@ class SnapshotGroundingEngine:
             backend_name (str): Identifier of the target backend.
 
         Returns:
-            dict[str, object] | list[object]: Parsed snapshot JSON structure.
+            dict[str, AttributeValue] | list[AttributeValue]: Parsed snapshot JSON structure.
 
         Raises:
             FileNotFoundError: If no snapshot file matches the configured glob.
@@ -908,6 +929,8 @@ class SnapshotGroundingEngine:
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
         _populate_from_grounding_engine(self._grounding_engine, target, endpoints, item_map, ref_map)
+        if not endpoints:
+            _populate_from_framework_ast(self.frameworks_dir, target, endpoints, item_map, ref_map)
         _extract_stub_endpoints(backend_name, endpoints)
 
         self._endpoint_cache[backend_name] = endpoints
@@ -959,7 +982,7 @@ class SnapshotGroundingEngine:
             endpoint (str): Fully qualified or short API path.
 
         Returns:
-            dict[str, object] | None: Snapshot entity dictionary or None if not found.
+            dict[str, AttributeValue] | None: Snapshot entity dictionary or None if not found.
         """
         target: BackendSnapshotTargetModel | None = self.config.targets.get(backend_name)
         if target is None:
@@ -995,7 +1018,7 @@ class SnapshotGroundingEngine:
             endpoint (str): Fully qualified or short API path.
 
         Returns:
-            list[list[dict[str, object]]]: List of parameter signatures.
+            list[list[dict[str, AttributeValue]]]: List of parameter signatures.
         """
         ref: ExtendedGhostRef | None = self.get_endpoint_ghost_ref(backend_name, endpoint)
         if ref is not None:
@@ -1016,7 +1039,7 @@ class SnapshotGroundingEngine:
             endpoint (str): Fully qualified or short API path.
 
         Returns:
-            list[dict[str, object]] | None: List of parameter spec dictionaries, or None if endpoint not found.
+            list[dict[str, AttributeValue]] | None: List of parameter spec dictionaries, or None if endpoint not found.
         """
         item: dict[str, AttributeValue] | None = self.get_endpoint_item(backend_name, endpoint)
         if item is None:

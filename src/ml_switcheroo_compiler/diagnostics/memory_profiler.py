@@ -20,9 +20,10 @@ def memory_profiler(graph: LogicalGraph) -> int:
     for node in graph.nodes.values():
         if hasattr(node, "shape_metadata") and node.shape_metadata is not None:
             try:
-                mem = int(math.prod(node.shape_metadata)) * 4  # Assume float32
+                dims = [int(d) if isinstance(d, int) else int(str(d)) for d in node.shape_metadata]
+                mem = math.prod(dims) * 4  # Assume float32
                 total_mem += mem
-            except TypeError:
+            except (TypeError, ValueError):
                 total_mem += 4
         else:
             total_mem += 4

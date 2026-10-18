@@ -5,7 +5,6 @@ from __future__ import annotations
 import ml_switcheroo_compiler.export as export_pkg
 import ml_switcheroo_compiler.interpreter as interpreter_pkg
 import ml_switcheroo_compiler.nn as nn_pkg
-import ml_switcheroo_compiler.nn.activations as nn_activations
 import ml_switcheroo_compiler.transforms as transforms_pkg
 import ml_switcheroo_compiler.transforms.autodiff_rules as autodiff_rules_pkg
 
@@ -37,8 +36,8 @@ def test_package_facades_exhaustive() -> None:
     assert hasattr(interpreter_pkg, "Environment")
     assert hasattr(interpreter_pkg, "evaluate_graph")
 
-    assert nn_pkg.__all__ == []
-    assert nn_activations.__all__ == []
+    assert "glorot_uniform" in nn_pkg.__all__
+    assert hasattr(nn_pkg, "glorot_uniform")
 
     assert hasattr(transforms_pkg, "PassManager")
     assert hasattr(transforms_pkg, "constant_folding_pass")

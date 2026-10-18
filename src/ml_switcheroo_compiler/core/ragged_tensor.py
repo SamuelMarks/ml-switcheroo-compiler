@@ -1,4 +1,6 @@
-"""Ragged tensor."""
+"""Ragged tensor representation with flat values and row split offsets."""
+
+from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Union
@@ -9,29 +11,25 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 class RaggedTensor:
-    """Represents a ragged tensor."""
+    """Nested variable-length tensor represented by `values` and `row_splits`."""
 
     def __init__(self, values: Tensor, row_splits: Tensor) -> None:
-        """Init.
+        """Initialize `RaggedTensor`.
 
         Args:
-            values (Tensor): The values parameter.
-            row_splits (Tensor): The row_splits parameter.
+            values (Tensor): Concatenated flat values tensor.
+            row_splits (Tensor): 1D integer tensor of row boundary offsets.
         """
         self.values = values
         self.row_splits = row_splits
 
     @property
     def shape(self) -> Sequence[Union[int, str]]:
-        """Get the shape of the tensor.
+        """Return the ragged tensor shape with `-1` marking the ragged dimension.
 
         Returns:
-            tuple[int, ...]: Result.
+            Sequence[Union[int, str]]: Shape tuple `(num_rows, -1, *inner_dims)`.
         """
-        # The true shape of a ragged tensor is typically (batch, None, ...)
-        # We approximate it by taking the number of rows from row_splits
-        # and marking the next dimension as 'None' (symbolic) if possible,
-        # or just delegating to values. For uniformity, returning a tuple
         batch_size = max(0, len(self.row_splits) - 1)
         val_shape = list(self.values.shape)
         if val_shape:
@@ -40,27 +38,27 @@ class RaggedTensor:
 
     @property
     def dtype(self) -> DType:
-        """Get the data type of the tensor.
+        """Return the element data type of the ragged tensor.
 
         Returns:
-        DType: Result.
+            DType: Data type of `self.values`.
         """
         return self.values.dtype
 
     @property
     def device(self) -> Device:
-        """Get the device of the tensor.
+        """Return the execution device of the ragged tensor.
 
         Returns:
-        Device: Result.
+            Device: Device of `self.values`.
         """
         return self.values.device
 
     @property
     def requires_grad(self) -> bool:
-        """Check if the tensor requires gradient computation.
+        """Return whether gradients should be tracked for `self.values`.
 
         Returns:
-        bool: Result.
+            bool: True if `self.values` requires gradients.
         """
         return self.values.requires_grad

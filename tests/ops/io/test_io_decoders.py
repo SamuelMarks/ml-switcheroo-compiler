@@ -6,16 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 import pytest
 
-from ml_switcheroo_compiler.ops.io import (
-    TFRecordOptions,
-    TFRecordWriter,
-    decode_base64,
-    encode_base64,
-    gfile_copy,
-    gfile_glob,
-    gfile_makedirs,
-    gfile_stat,
-)
+from ml_switcheroo_compiler.ops.io import TFRecordOptions, TFRecordWriter, decode_base64, encode_base64, gfile_copy, gfile_glob, gfile_makedirs, gfile_stat
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -31,14 +22,11 @@ def test_gfile() -> None:
     gfile_makedirs("/tmp/test_gfile_ml_switcheroo")
     with open("/tmp/test_gfile_ml_switcheroo/test.txt", "w") as f:
         f.write("hello")
-
     gfile_copy("/tmp/test_gfile_ml_switcheroo/test.txt", "/tmp/test_gfile_ml_switcheroo/test2.txt")
     with pytest.raises(FileExistsError):
         gfile_copy("/tmp/test_gfile_ml_switcheroo/test.txt", "/tmp/test_gfile_ml_switcheroo/test2.txt")
     gfile_copy("/tmp/test_gfile_ml_switcheroo/test.txt", "/tmp/test_gfile_ml_switcheroo/test2.txt", overwrite=True)
-
     assert len(gfile_glob("/tmp/test_gfile_ml_switcheroo/*.txt")) == 2
-
     stat = gfile_stat("/tmp/test_gfile_ml_switcheroo/test.txt")
     assert stat["length"] == 5
     assert "mtime" in stat
@@ -59,9 +47,6 @@ def test_base64_ops() -> None:
 
     config.eager_mode = False
     global_tracing_state.start_tracing()
-
-    """Test base64 ops."""
-
     if True:
         cast("Callable[..., EagerTensorProtocol]", encode_base64)(None)
     if True:
@@ -76,9 +61,6 @@ def test_parse_sequence_example() -> None:
 
     config.eager_mode = False
     global_tracing_state.start_tracing()
-
-    """Test parse sequence example."""
-
     assert callable(global_tracing_state.start_tracing)
 
 
@@ -86,7 +68,6 @@ def test_tfrecord_writer() -> None:
     """Test tfrecord writer."""
     opts = TFRecordOptions("ZLIB")
     assert opts.compression_type == "ZLIB"
-
     with TFRecordWriter("path", opts) as writer:
         cast("Callable[..., EagerTensorProtocol]", writer.write)(None)
 

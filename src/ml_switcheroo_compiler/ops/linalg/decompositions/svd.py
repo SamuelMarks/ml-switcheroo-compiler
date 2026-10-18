@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -18,12 +19,12 @@ if TYPE_CHECKING:
 class Svd(OpDef):
     """Svd Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (EagerTensorProtocol): Positional args.
+        **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -50,7 +51,7 @@ def svd(
     input: Tensor,
     full_matrices: bool = True,
     compute_uv: bool = True,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the Singular Value Decomposition (SVD) of a matrix.
 
     Args:

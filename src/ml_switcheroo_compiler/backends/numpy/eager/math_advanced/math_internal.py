@@ -19,10 +19,10 @@ def _np_population_count(backend_module: ModuleType, x: EagerValue, *args: Eager
     """Count the number of set bits in the binary representation of each element.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -35,9 +35,9 @@ def _np_get_printoptions_(backend_module: ModuleType, *args: EagerValue, **kwarg
     """Implement GetPrintoptions via get_printoptions.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -49,9 +49,9 @@ def _np_affineconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """Implement AffineConfig.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -64,9 +64,9 @@ def _np_blurconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """Implement BlurConfig.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -81,9 +81,9 @@ def _np_customroot(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """Implement CustomRoot.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -101,9 +101,9 @@ def _np_elasticconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     """Implement ElasticConfig.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -118,9 +118,9 @@ def _np_linearoperator(backend_module: ModuleType, *args: EagerValue, **kwargs: 
     """Implement LinearOperator.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -135,9 +135,9 @@ def _np_linearoperatoradjoint(backend_module: ModuleType, *args: EagerValue, **k
     """Implement LinearOperatorAdjoint.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -152,9 +152,9 @@ def _np_linearoperatorcirculant(backend_module: ModuleType, *args: EagerValue, *
     """Implement LinearOperatorCirculant.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -169,9 +169,9 @@ def _np_linearoperatorcirculant2d(backend_module: ModuleType, *args: EagerValue,
     """Implement LinearOperatorCirculant2D.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -186,9 +186,9 @@ def _np_linearoperatorcirculant3d(backend_module: ModuleType, *args: EagerValue,
     """Implement LinearOperatorCirculant3D.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -203,9 +203,9 @@ def _np_linearoperatorcomposition(backend_module: ModuleType, *args: EagerValue,
     """Implement LinearOperatorComposition.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -220,9 +220,9 @@ def _np_linearoperatorhouseholder(backend_module: ModuleType, *args: EagerValue,
     """Implement LinearOperatorHouseholder.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -237,9 +237,9 @@ def _np_linearoperatorkronecker(backend_module: ModuleType, *args: EagerValue, *
     """Implement LinearOperatorKronecker.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -254,9 +254,9 @@ def _np_linearoperatorlowrankupdate(backend_module: ModuleType, *args: EagerValu
     """Implement LinearOperatorLowRankUpdate.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -271,9 +271,9 @@ def _np_linearoperatortoeplitz(backend_module: ModuleType, *args: EagerValue, **
     """Implement LinearOperatorToeplitz.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -288,9 +288,9 @@ def _np_perspectiveconfig(backend_module: ModuleType, *args: EagerValue, **kwarg
     """Implement PerspectiveConfig.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -305,9 +305,9 @@ def _np_rawmatmul(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     """Implement RawMatMul.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[int, ...]: Result.
@@ -322,9 +322,9 @@ def _np_rawmerge(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
     """Implement RawMerge.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -338,9 +338,9 @@ def _np_rawop(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     """Implement RawOp.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -353,9 +353,9 @@ def _np_rawswitch(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     """Implement RawSwitch.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -372,9 +372,9 @@ def _np_scanop(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
     """Implement ScanOp.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -401,9 +401,9 @@ def _np_switchop(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
     """Implement SwitchOp.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -420,9 +420,9 @@ def _np_tensorarrayread(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """Implement TensorArrayRead.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -437,9 +437,9 @@ def _np_tensorarraywrite(backend_module: ModuleType, *args: EagerValue, **kwargs
     """Implement TensorArrayWrite.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -459,9 +459,9 @@ def _np_tensorconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """Implement TensorConfig.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

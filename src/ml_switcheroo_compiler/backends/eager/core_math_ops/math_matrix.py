@@ -6,12 +6,12 @@ import builtins  # noqa: F401
 from types import ModuleType
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import get_special_submodule, host_backend
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.distributed.host_collectives import _scipy_mod, np
 
 from .math_matrix_utils import _apply_causal_mask
 from .math_reduction import _apply_softmax
@@ -28,7 +28,7 @@ def _matmul(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword arguments.
 
     Returns:
-        Any: Matrix product result.
+        EagerValue: Matrix product result.
     """
     mod = cast(ModuleType, backend_module)
     a = cast(EagerTensorProtocol, args[0])
@@ -54,7 +54,7 @@ def _batch_matmul(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword arguments.
 
     Returns:
-        Any: Batched matrix product result.
+        EagerValue: Batched matrix product result.
     """
     if hasattr(backend_module, "matmul"):
         return cast(EagerValue, cast(ModuleType, backend_module).matmul(*args, **kwargs))
@@ -71,7 +71,7 @@ def _dot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
         **kwargs: Keyword arguments.
 
     Returns:
-        Any: Dot product result.
+        EagerValue: Dot product result.
     """
     if hasattr(backend_module, "dot"):
         return cast(EagerValue, cast(ModuleType, backend_module).dot(*args, **kwargs))
@@ -80,7 +80,7 @@ def _dot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
 
 @global_eager_registry.register("Einsum")
 def _einsum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _einsum operation.
+    """Execute the eager einsum operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -88,13 +88,13 @@ def _einsum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     eq = kwargs.pop("equation", "") if hasattr(kwargs, "pop") and "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
     if hasattr(backend_module, "einsum"):
         return cast(EagerValue, cast(ModuleType, backend_module).einsum(eq, *op_args, **kwargs))
-    return cast(EagerValue, np.einsum(eq, *op_args, **kwargs))
+    return cast(EagerValue, host_backend.einsum(eq, *op_args, **kwargs))
 
 
 @global_eager_registry.register("ScaledDotProductAttention")
@@ -110,7 +110,7 @@ def _scaled_dot_product_attention_eager(backend_module: EagerValue, query: Eager
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     import math
 
@@ -146,7 +146,7 @@ def _scaled_dot_product_attention_eager(backend_module: EagerValue, query: Eager
 
 @global_eager_registry.register("CholeskySolve")
 def _cholesky_solve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _cholesky_solve operation.
+    """Execute the eager cholesky solve operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -154,7 +154,7 @@ def _cholesky_solve(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "linalg", None)
@@ -165,12 +165,12 @@ def _cholesky_solve(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
 
     b, c = args[0], args[1]
 
-    return cast(EagerValue, _scipy_mod("linalg").cho_solve((mod.asarray(c), False), mod.asarray(b)))
+    return cast(EagerValue, get_special_submodule("linalg").cho_solve((mod.asarray(c), False), mod.asarray(b)))
 
 
 @global_eager_registry.register("BandedTriangularSolve")
 def _banded_triangular_solve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _banded_triangular_solve operation.
+    """Execute the eager banded triangular solve operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -178,7 +178,7 @@ def _banded_triangular_solve(backend_module: EagerValue, *args: EagerValue, **kw
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "linalg", None)
@@ -188,14 +188,14 @@ def _banded_triangular_solve(backend_module: EagerValue, *args: EagerValue, **kw
         return cast(EagerValue, mod.solve_banded(*args, **kwargs))
 
     a, b = args[0], args[1]
-    return cast(EagerValue, _scipy_mod("linalg").solve_banded((1, 1), mod.asarray(a), mod.asarray(b)))
+    return cast(EagerValue, get_special_submodule("linalg").solve_banded((1, 1), mod.asarray(a), mod.asarray(b)))
 
 
 @global_eager_registry.register("Igammac")
 @global_eager_registry.register("Polygamma")
 @global_eager_registry.register("MatrixPower")
 def _matrix_power(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _matrix_power operation.
+    """Execute the eager matrix power operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -203,7 +203,7 @@ def _matrix_power(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "linalg", None)
@@ -218,7 +218,7 @@ def _matrix_power(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
 @global_eager_registry.register("MatrixRank")
 def _matrix_rank(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _matrix_rank operation.
+    """Execute the eager matrix rank operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -226,7 +226,7 @@ def _matrix_rank(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "linalg", None)
@@ -241,7 +241,7 @@ def _matrix_rank(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
 @global_eager_registry.register("Solve")
 def _solve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _solve operation.
+    """Execute the eager solve operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -249,7 +249,7 @@ def _solve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "linalg", None)
@@ -264,7 +264,7 @@ def _solve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("Tensorsolve")
 def _tensorsolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _tensorsolve operation.
+    """Execute the eager tensorsolve operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -272,7 +272,7 @@ def _tensorsolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "linalg", None)
@@ -287,7 +287,7 @@ def _tensorsolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
 @global_eager_registry.register("Tensorsolve")
 def _np_tensorsolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_tensorsolve operation.
+    """Execute the eager np tensorsolve operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -295,17 +295,17 @@ def _np_tensorsolve(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.linalg.tensorsolve(*args, **kwargs))
+    return cast(EagerValue, host_backend.linalg.tensorsolve(*args, **kwargs))
 
 
 @global_eager_registry.register("TriangularSolve")
 def _np_triangularsolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_triangularsolve operation.
+    """Execute the eager np triangularsolve operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -313,17 +313,17 @@ def _np_triangularsolve(backend_module: EagerValue, *args: EagerValue, **kwargs:
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.linalg.solve(*args))
+    return cast(EagerValue, host_backend.linalg.solve(*args))
 
 
 @global_eager_registry.register("TridiagonalMatmul")
 def _np_tridiagonalmatmul(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_tridiagonalmatmul operation.
+    """Execute the eager np tridiagonalmatmul operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -331,17 +331,17 @@ def _np_tridiagonalmatmul(backend_module: EagerValue, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.matmul(args[0], args[1]))
+    return cast(EagerValue, host_backend.matmul(args[0], args[1]))
 
 
 @global_eager_registry.register("TridiagonalSolve")
 def _np_tridiagonalsolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_tridiagonalsolve operation.
+    """Execute the eager np tridiagonalsolve operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -349,17 +349,17 @@ def _np_tridiagonalsolve(backend_module: EagerValue, *args: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.linalg.solve(*args))
+    return cast(EagerValue, host_backend.linalg.solve(*args))
 
 
 @global_eager_registry.register("Vecdot")
 def _np_vecdot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_vecdot operation.
+    """Execute the eager np vecdot operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -367,9 +367,9 @@ def _np_vecdot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.vdot(args[0], args[1]))
+    return cast(EagerValue, host_backend.vdot(args[0], args[1]))

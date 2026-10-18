@@ -15,11 +15,11 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 @numpy_eager_registry.register("AxisIndex")
 def _np_axis_index(backend_module: ModuleType, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_axis_index operation.
+    """Execute the eager np axis index operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -107,6 +107,9 @@ class TCPDistributedContext:
             tensor: The tensor parameter.
             op_type: The op_type parameter.
             backend_module: The backend_module parameter.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed result.
         """
         if self.world_size <= 1:
             return tensor
@@ -147,6 +150,9 @@ class TCPDistributedContext:
 
         Args:
             tensor: The tensor parameter.
+
+        Returns:
+            list[EagerValue]: Computed result.
         """
         if self.world_size <= 1:
             return [tensor]
@@ -205,6 +211,9 @@ def _np_all_reduce(backend_module: ModuleType, tensor: EagerValue, op_type: str 
         op_type: The op_type parameter.
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     tensor = backend_module.array(tensor)
     if _tcp_dist_ctx.world_size <= 1:
@@ -223,6 +232,9 @@ def _np_all_gather(backend_module: ModuleType, tensor: EagerValue, axis: int = 0
         axis: The axis parameter.
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     tensor = backend_module.array(tensor)
     if _tcp_dist_ctx.world_size <= 1:
@@ -242,6 +254,9 @@ def _np_broadcast(backend_module: ModuleType, tensor: EagerValue, root_rank: int
         root_rank: The root_rank parameter.
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     tensor = backend_module.array(tensor)
     if _tcp_dist_ctx.world_size <= 1:
@@ -262,6 +277,9 @@ def _np_reduce_scatter(backend_module: ModuleType, tensor: EagerValue, op_type: 
         axis: The axis parameter.
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     tensor = backend_module.array(tensor)
     if _tcp_dist_ctx.world_size <= 1:
@@ -297,6 +315,9 @@ def _np_reduce(backend_module: ModuleType, tensor: EagerValue, root_rank: int = 
         op_type: The op_type parameter.
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     tensor = backend_module.array(tensor)
     if _tcp_dist_ctx.world_size <= 1:
@@ -329,6 +350,9 @@ def _np_all_to_all(backend_module: ModuleType, tensor: EagerValue, *args: EagerV
         tensor: The tensor parameter.
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     tensor = backend_module.array(tensor)
     if _tcp_dist_ctx.world_size <= 1:
@@ -349,5 +373,8 @@ def _np_shard_tensor(backend_module: ModuleType, tensor: EagerValue, *args: Eage
         tensor: The tensor parameter.
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     return cast(EagerValue, backend_module.array(tensor))

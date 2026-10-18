@@ -6,7 +6,8 @@
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvTranspose
 from ml_switcheroo_compiler.ops.linalg.dot import (
@@ -113,12 +114,12 @@ class Vecdot(OpDef):
 
     op_name = "Vecdot"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Evaluate infer_shape operation contracting vector dimension.
 
         Args:
-            *args (Any): Positional args (x, y).
-            **kwargs (Any): Keyword args (axis).
+            *args (EagerTensorProtocol): Positional args (x, y).
+            **kwargs (EagerTensorProtocol): Keyword args (axis).
 
         Returns:
             tuple[int, ...]: Resulting shape after contracting vector dimension.
@@ -145,12 +146,12 @@ class CustomLinearSolve(OpDef):
 
     op_name = "CustomLinearSolve"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Evaluate infer_shape operation solving AX = B.
 
         Args:
-            *args (Any): Positional args (A, B).
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args (A, B).
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Resulting shape matching broadcasted solution X.
@@ -179,12 +180,12 @@ class CustomRoot(OpDef):
 
     op_name = "CustomRoot"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Evaluate infer_shape operation for root finding.
 
         Args:
-            *args (Any): Positional args (fn, x0).
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args (fn, x0).
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Shape matching initial guess x0.
@@ -209,7 +210,7 @@ __all__ = [
     "Dot",
     "DotGeneral",
     "EagerTensorProtocol",
-    "EagerValue",
+    "TensorOrScalar",
     "Einsum",
     "LinearOperator",
     "LinearOperatorAdjoint",

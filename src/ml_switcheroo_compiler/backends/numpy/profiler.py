@@ -66,7 +66,7 @@ class NumpyProfiler:
             """Execute a single evaluation step on NumPy backend.
 
             Returns:
-                Any: Single or dictionary of output arrays.
+                EagerValue: Single or dictionary of output arrays.
             """
             if has_ops:
                 from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator

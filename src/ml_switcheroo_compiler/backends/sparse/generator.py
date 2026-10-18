@@ -11,7 +11,6 @@ from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_a
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor
-from ml_switcheroo_compiler.distributed.host_collectives import np  # noqa: F401
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -98,7 +97,6 @@ class SparseGenerator(PythonStringGenerator):
             str: Generated Python script string.
         """
         self.code = [self.header]
-        self.add_line("import numpy as np")
         self.add_line("from ml_switcheroo_compiler.backends.sparse import kernels as sp_kernels")
         self.add_line("from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor")
         if self.memory_efficient:
@@ -114,7 +112,7 @@ class SparseGenerator(PythonStringGenerator):
         """Compile the generated Python code into an executable callable.
 
         Returns:
-            Callable[..., Union[COOTensor, np.ndarray, tuple[Union[COOTensor, np.ndarray], ...]]]: Compiled function.
+            Callable[..., Union[COOTensor, EagerValue, tuple[Union[COOTensor, EagerValue], ...]]]: Compiled function.
 
         Raises:
             RuntimeError: If evaluation function was not defined in generated script.
@@ -137,7 +135,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -151,7 +149,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -165,7 +163,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -179,7 +177,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -193,7 +191,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -207,7 +205,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -221,7 +219,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -235,7 +233,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -249,7 +247,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -263,7 +261,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -277,7 +275,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -291,7 +289,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -305,7 +303,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -319,7 +317,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -333,7 +331,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -347,7 +345,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -361,7 +359,7 @@ class SparseGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Computation graph node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Node attributes and keyword options.
+            **kwargs (EagerValue): Node attributes and keyword options.
 
         Returns:
             str: Generated code expression string.
@@ -373,10 +371,10 @@ class SparseGenerator(PythonStringGenerator):
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (object): Compiler options.
+            **kwargs (EagerValue): Compiler options.
 
         Returns:
-            object: Executable compiled artifact.
+            EagerValue: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
@@ -387,11 +385,11 @@ class SparseGenerator(PythonStringGenerator):
             """Execute compiled Sparse artifact or fallback graph evaluation.
 
             Args:
-                *args (object): Input tensor or sparse matrix arguments.
-                **runner_kwargs (object): Optional execution options.
+                *args (EagerValue): Input tensor or sparse matrix arguments.
+                **runner_kwargs (EagerValue): Optional execution options.
 
             Returns:
-                object: Output tensor or tuple of output tensors.
+                EagerValue: Output tensor or tuple of output tensors.
             """
             del runner_kwargs
             if compiled_fn is not None:

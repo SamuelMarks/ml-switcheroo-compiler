@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+import uuid
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Callable, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_ir import AttributeValue
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-
-
-import uuid
-
-from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 class ProxyMathOverloadsMixin:
@@ -22,11 +23,11 @@ class ProxyMathOverloadsMixin:
     shape: tuple[int | str, ...]
     dtype: str
 
-    def _binary_op(self, other: EagerValue, op_type: str) -> ProxyTensor:
+    def _binary_op(self, other: TensorOrScalar, op_type: str) -> ProxyTensor:
         """Trace a binary mathematical operation and append it to the computation graph.
 
         Args:
-            other (object): The right-hand side operand (either a ProxyTensor or a scalar constant).
+            other (TensorOrScalar): The right-hand side operand (either a ProxyTensor or a scalar constant).
             op_type (str): The name of the binary operation (e.g., 'Add', 'Mul').
 
         Returns:
@@ -61,7 +62,7 @@ class ProxyMathOverloadsMixin:
             const_node = IRNode(
                 id=other_id,
                 op_type="Constant",
-                attributes={"value": other},
+                attributes=cast("Mapping[str, AttributeValue]", {"value": other}),
                 shape_metadata=(),
             )
             global_tracing_state.add_node(const_node)
@@ -117,11 +118,11 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __getitem__(self, key: EagerValue) -> ProxyTensor:
+    def __getitem__(self, key: TensorOrScalar) -> ProxyTensor:
         """Trace a tensor slicing or indexing operation.
 
         Args:
-            key (object): The slice, integer, or tuple defining the sub-region to extract.
+            key (TensorOrScalar): The slice, integer, or tuple defining the sub-region to extract.
 
         Returns:
             ProxyTensor: A new proxy tensor representing the sliced result.
@@ -136,8 +137,6 @@ class ProxyMathOverloadsMixin:
             raise TracingError(msg)
 
         out_id = str(uuid.uuid4())
-        # Note: True shape tracking for slices is complex and often deferred to
-        # shape inference passes in the pass manager. We approximate it here
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -153,11 +152,11 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __matmul__(self, other: EagerValue) -> ProxyTensor:
+    def __matmul__(self, other: TensorOrScalar) -> ProxyTensor:
         """Trace a matrix multiplication operation.
 
         Args:
-            other (object): The right-hand side proxy tensor.
+            other (TensorOrScalar): The right-hand side proxy tensor.
 
         Returns:
             ProxyTensor: A new proxy tensor representing the matrix multiplication result.
@@ -239,7 +238,7 @@ class ProxyMathOverloadsMixin:
             const_node = IRNode(
                 id=value_id,
                 op_type="Constant",
-                attributes={"value": value},
+                attributes=cast("Mapping[str, AttributeValue]", {"value": value}),
                 shape_metadata=(),
             )
             global_tracing_state.add_node(const_node)

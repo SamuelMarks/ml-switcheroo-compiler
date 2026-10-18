@@ -17,7 +17,7 @@ def _np_relu(
     *args: Union[float, int, str, bool, None],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_relu operation.
+    """Execute the eager np relu operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -38,7 +38,7 @@ def _np_elu(
     alpha: float = 1.0,
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_elu operation.
+    """Execute the eager np elu operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -59,7 +59,7 @@ def _np_celu(
     alpha: float = 1.0,
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_celu operation.
+    """Execute the eager np celu operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -79,7 +79,7 @@ def _np_softplus(
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_softplus operation.
+    """Execute the eager np softplus operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -98,7 +98,7 @@ def _np_softsign(
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_softsign operation.
+    """Execute the eager np softsign operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -117,7 +117,7 @@ def _np_mish(
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_mish operation.
+    """Execute the eager np mish operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -137,7 +137,7 @@ def _np_log_sigmoid(
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_log_sigmoid operation.
+    """Execute the eager np log sigmoid operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.

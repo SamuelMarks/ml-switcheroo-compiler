@@ -5,13 +5,13 @@ from __future__ import annotations
 
 import functools
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Optional, TypeVar, Union, cast  # noqa: F401
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 # We import dispatcher directly
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 # Global operation registry
 
 T = TypeVar("T", bound="OpDef")
-OpArgValue = EagerValue
+OpArgValue = TensorOrScalar
 
 
 class OpDef:
@@ -33,11 +33,11 @@ class OpDef:
 
     if TYPE_CHECKING:
         __call__: Callable[..., Tensor]
-        infer_shape: Callable[..., EagerValue]
-        eager_eval: Callable[..., EagerValue]
+        infer_shape: Callable[..., TensorOrScalar]
+        eager_eval: Callable[..., TensorOrScalar]
     else:
 
-        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> Tensor:
+        def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor:
             """Universal dispatcher for the operation.
 
             Args:
@@ -49,8 +49,8 @@ class OpDef:
             """
             return cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
 
-        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """infer_shape function.
+        def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+            """Compute the infer shape tensor operation.
 
             Args:
                 args: Positional args.
@@ -61,8 +61,8 @@ class OpDef:
             """
             return tuple()
 
-        def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Evaluate eager_eval operation.
+        def eager_eval(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+            """Compute the eager eval tensor operation.
 
             Args:
                 *args: Positional args.
@@ -82,19 +82,19 @@ def emit_ir_node(
     op_type: str,
     inputs: list[str],
     shape_metadata: tuple[int | str, ...] | list[int | str] | None = None,
-    attributes: dict[str, AttributeValue] | None = None,
+    attributes: Mapping[str, AttributeValue] | Mapping[str, TensorOrScalar] | None = None,
 ) -> str:
     """Emit a new node into the IR graph directly.
 
     Args:
-        graph: The graph parameter.
+        graph (LogicalGraph | None): The graph parameter.
         op_type (str): The op_type parameter.
-        inputs (list): The inputs parameter.
-        shape_metadata: The shape_metadata parameter.
-        attributes: The attributes parameter.
+        inputs (list[str]): The inputs parameter.
+        shape_metadata (tuple[int | str, ...] | list[int | str] | None): The shape_metadata parameter.
+        attributes (Mapping[str, AttributeValue] | Mapping[str, TensorOrScalar] | None): The attributes parameter.
 
     Returns:
-        str: Result.
+        str: Emitted node ID.
     """
     nid = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
     node = LogicalNode(
@@ -102,7 +102,7 @@ def emit_ir_node(
         op_type=op_type,
         inputs=inputs,
         shape_metadata=shape_metadata,
-        attributes=attributes or {},
+        attributes=cast("Mapping[str, AttributeValue]", attributes or {}),
     )
     if graph is not None:
         graph.nodes[nid] = node
@@ -114,7 +114,7 @@ def emit_ir_node(
 
 
 def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callable[..., OpArgValue]]:
-    """Evaluate dispatch_eager operation.
+    """Compute the dispatch eager tensor operation.
 
     Args:
         op_name (str): The op_name parameter.
@@ -124,7 +124,7 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callab
     """
 
     def decorator(func: Callable[..., OpArgValue]) -> Callable[..., OpArgValue]:
-        """Evaluate decorator operation.
+        """Compute the decorator tensor operation.
 
         Args:
             func (Callable): The func parameter.
@@ -135,14 +135,14 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callab
 
         @functools.wraps(func)
         def wrapper(*args: OpArgValue, **kwargs: OpArgValue) -> OpArgValue:
-            """Evaluate wrapper operation.
+            """Compute the wrapper tensor operation.
 
             Args:
             *args: Positional args.
             **kwargs: Keyword args.
 
             Returns:
-            Any: Result.
+            OpArgValue: Result.
             """
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend

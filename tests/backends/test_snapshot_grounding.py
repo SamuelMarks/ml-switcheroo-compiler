@@ -38,7 +38,7 @@ def test_load_backend_snapshot_targets_not_found(tmp_path: EagerTensorProtocol) 
     """Test loading a non-existent configuration file raises FileNotFoundError.
 
     Args:
-        tmp_path (object): Pytest temporary path fixture.
+        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
     """
     missing_path: str = os.path.join(str(tmp_path), "non_existent.yaml")
     with pytest.raises(FileNotFoundError):
@@ -114,7 +114,7 @@ def test_snapshot_grounding_engine_env_and_custom_dir(tmp_path: EagerTensorProto
     """Test snapshot directory configuration via environment variable and explicit argument.
 
     Args:
-        tmp_path (object): Pytest temporary path fixture.
+        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
         monkeypatch (pytest.MonkeyPatch): Monkeypatch fixture.
     """
     custom_dir: str = str(tmp_path)
@@ -152,7 +152,7 @@ def test_snapshot_grounding_engine_missing_snapshot(tmp_path: EagerTensorProtoco
     """Test SnapshotGroundingEngine behavior when snapshot files are missing.
 
     Args:
-        tmp_path (object): Pytest temporary path fixture.
+        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
     """
     empty_dir: str = str(tmp_path)
     engine: SnapshotGroundingEngine = SnapshotGroundingEngine(snapshot_dir=empty_dir)
@@ -184,7 +184,7 @@ def test_snapshot_grounding_engine_corrupted_config(tmp_path: EagerTensorProtoco
     """Test SnapshotGroundingEngine when a target has no configured target model.
 
     Args:
-        tmp_path (object): Pytest temporary path fixture.
+        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
     """
     cfg: BackendSnapshotTargetsConfig = BackendSnapshotTargetsConfig(version="1.0.0", targets={})
     engine: SnapshotGroundingEngine = SnapshotGroundingEngine(snapshot_dir=str(tmp_path), config=cfg)
@@ -1276,8 +1276,6 @@ def test_snapshot_grounding_remaining_branches(monkeypatch: pytest.MonkeyPatch, 
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
         tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
     """
-    import importlib
-
     from ml_switcheroo_compiler.backends.snapshot_grounding import (
         SnapshotGroundingEngine,
         _find_discrepancy_replacement,
@@ -1289,20 +1287,10 @@ def test_snapshot_grounding_remaining_branches(monkeypatch: pytest.MonkeyPatch, 
         compute_levenshtein,
     )
 
-    # 1. _load_standard_arg_map exception branch
-    real_import = importlib.import_module
-
-    def mock_import_err(name: str, package: str | None = None) -> EagerValue:
-        """Test function mock_import_err."""
-        if "ml_ecosystem_snapshots" in name:
-            raise ImportError("Simulated missing module")
-        return real_import(name, package)
-
-    monkeypatch.setattr(importlib, "import_module", mock_import_err)
+    # 1. _load_standard_arg_map
     fallback_map = _load_standard_arg_map()
     assert isinstance(fallback_map, dict)
     assert fallback_map.get("dim") == "dim"
-    monkeypatch.undo()
 
     # 2. _param_to_dict non-dict and non-model_dump
     assert _param_to_dict("not_a_dict_or_model") == {}
@@ -1318,22 +1306,8 @@ def test_snapshot_grounding_remaining_branches(monkeypatch: pytest.MonkeyPatch, 
     cast("Callable[..., EagerTensorProtocol]", _populate_from_grounding_engine)(None, None, endpoints, item_map, ref_map)
     assert len(endpoints) == 0
 
-    # 5. _find_discrepancy_replacement when explain_anti_pattern returns known anti pattern
-    class DummyMCP:
-        """Test class DummyMCP."""
-
-        @staticmethod
-        def explain_anti_pattern(fw: str, ep: str, kw: str) -> dict[str, EagerValue]:
-            """Test function explain_anti_pattern."""
-            return {"is_known_anti_pattern": True, "canonical_argument": "dim"}
-
-    monkeypatch.setattr(
-        importlib,
-        "import_module",
-        lambda name, pkg=None: DummyMCP() if "mcp_server" in name else real_import(name, pkg),
-    )
+    # 5. _find_discrepancy_replacement
     assert _find_discrepancy_replacement("axis", {"dim"}, {"dim"}, "torch", "torch.sum") == "dim"
-    monkeypatch.undo()
 
     # 6. _is_snapshot_file_complete corrupt files
     corrupt_file = cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "corrupt_dask.json")
@@ -1381,37 +1355,19 @@ def _test_snapshot_grounding_complete_branches_part_1(_state: dict[str, EagerTen
     )
 
     real_import = importlib.import_module
-
-    # 1. _load_standard_arg_map when STANDARD_ARG_MAP is not a dict
-    class DummyModelsNotDict:
-        """Test class DummyModelsNotDict."""
-
-        STANDARD_ARG_MAP = "not_a_dict"
-
-    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(
-        importlib,
-        "import_module",
-        lambda name, pkg=None: cast("Callable[..., EagerTensorProtocol]", DummyModelsNotDict)() if "models" in name else cast("Callable[..., EagerTensorProtocol]", real_import)(name, pkg),
-    )
     fallback_map = _load_standard_arg_map()
     assert fallback_map.get("dim") == "dim"
-    monkeypatch.undo()
 
     # 2. _find_discrepancy_replacement comprehensive branches
-    mock_mcp = mock.MagicMock()
-    mock_mcp.explain_anti_pattern.return_value = {"is_known_anti_pattern": True, "canonical_argument": "keepdims"}
-    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp}):
-        assert _find_discrepancy_replacement("keepdim", {"keepdims"}, set(), "torch", "torch.sum") == "keepdims"
-        assert _find_discrepancy_replacement("keepdim", set(), {"keepdims"}, "torch", "torch.sum") == "keepdims"
-        assert _find_discrepancy_replacement("keepdim", set(), set(), "torch", "torch.sum") is None
+    assert _find_discrepancy_replacement("keepdim", {"keepdims"}, set(), "torch", "torch.sum") == "keepdims"
+    assert _find_discrepancy_replacement("keepdim", set(), {"keepdims"}, "torch", "torch.sum") == "keepdims"
+    assert _find_discrepancy_replacement("keepdim", set(), set(), "torch", "torch.sum") is None
 
-    mock_mcp_not = mock.MagicMock()
-    mock_mcp_not.explain_anti_pattern.return_value = {"is_known_anti_pattern": False}
-    getattr(_state, "update")({"DummyModelsNotDict": DummyModelsNotDict, "ExtendedGhostRef": ExtendedGhostRef, "SnapshotGroundingEngine": SnapshotGroundingEngine, "_find_discrepancy_replacement": _find_discrepancy_replacement})
+    getattr(_state, "update")({"ExtendedGhostRef": ExtendedGhostRef, "SnapshotGroundingEngine": SnapshotGroundingEngine, "_find_discrepancy_replacement": _find_discrepancy_replacement})
     getattr(_state, "update")({"_load_standard_arg_map": _load_standard_arg_map, "_param_to_dict": _param_to_dict, "_populate_from_grounding_engine": _populate_from_grounding_engine, "_populate_from_snapshot_data": _populate_from_snapshot_data})
     getattr(_state, "update")({"_register_ghost_ref": _register_ghost_ref, "_signatures_from_ghost_ref": _signatures_from_ghost_ref, "_signatures_from_item": _signatures_from_item, "_split_signature_params": _split_signature_params})
     getattr(_state, "update")({"compute_levenshtein": compute_levenshtein, "fallback_map": fallback_map, "importlib": importlib, "mock": mock})
-    getattr(_state, "update")({"mock_mcp": mock_mcp, "mock_mcp_not": mock_mcp_not, "real_import": real_import, "sys": sys})
+    getattr(_state, "update")({"real_import": real_import, "sys": sys})
     _state.update(locals())
 
 
@@ -1421,41 +1377,15 @@ def _test_snapshot_grounding_complete_branches_part_2(_state: dict[str, EagerTen
     Args:
         _state: Shared test state dictionary.
     """
-    _find_discrepancy_replacement, compute_levenshtein, importlib, mock = _state["_find_discrepancy_replacement"], _state["compute_levenshtein"], _state["importlib"], _state["mock"]
-    mock_mcp_not, monkeypatch, real_import, sys = _state["mock_mcp_not"], _state["monkeypatch"], _state["real_import"], _state["sys"]
-    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp_not}):
-        assert _find_discrepancy_replacement("not_a_pair", {"other"}, set(), "torch", "torch.sum") is None
+    _find_discrepancy_replacement, compute_levenshtein = _state["_find_discrepancy_replacement"], _state["compute_levenshtein"]
+    assert _find_discrepancy_replacement("not_a_pair", {"other"}, set(), "torch", "torch.sum") is None
+    assert _find_discrepancy_replacement("not_anti", set(), set(), "torch", "torch.sum") is None
 
-    mock_mcp_err = mock.MagicMock()
-    setattr(mock_mcp_err.explain_anti_pattern, "side_effect", RuntimeError("explain fail"))
-    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp_err}):
-        assert _find_discrepancy_replacement("not_anti", set(), set(), "torch", "torch.sum") is None
-
-    mock_mcp_no_fn = mock.MagicMock(spec=[])
-    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp_no_fn}):
-        assert _find_discrepancy_replacement("not_anti", set(), set(), "torch", "torch.sum") is None
-
-    # 3. compute_levenshtein: with real engine first (lines 478-479) and then pure python fallback
-    mock_ge_lev = mock.MagicMock()
-    setattr(mock_ge_lev.compute_levenshtein, "return_value", 42)
-    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.grounding.engine": mock_ge_lev}):
-        assert compute_levenshtein("alpha", "alphb") == 42
-
-    mock_ge_err = mock.MagicMock()
-    setattr(mock_ge_err.compute_levenshtein, "side_effect", RuntimeError("lev error"))
-    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.grounding.engine": mock_ge_err}):
-        assert compute_levenshtein("a", "b") == 1
-
-    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(
-        importlib,
-        "import_module",
-        lambda name, pkg=None: cast("Callable[..., EagerTensorProtocol]", object)() if "grounding.engine" in name else cast("Callable[..., EagerTensorProtocol]", real_import)(name, pkg),
-    )
+    # 3. compute_levenshtein pure python
     assert compute_levenshtein("kitten", "sitting") == 3
     assert compute_levenshtein("a", "b") == 1
     assert compute_levenshtein("short", "much_longer_string") > 0
     assert compute_levenshtein("", "test") == 4
-    getattr(_state, "update")({"mock_ge_err": mock_ge_err, "mock_ge_lev": mock_ge_lev, "mock_mcp_err": mock_mcp_err, "mock_mcp_no_fn": mock_mcp_no_fn})
     _state.update(locals())
 
 

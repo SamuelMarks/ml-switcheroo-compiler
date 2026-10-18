@@ -19,7 +19,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
         shape (tuple[int, ...]): The shape of the tensor.
 
     Returns:
-        object: The zeros tensor.
+        EagerValue: The zeros tensor.
     """
     return cast(EagerValue, getattr(da, "zeros")(shape, chunks="auto"))
 
@@ -33,7 +33,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
         dtype: The target dtype.
 
     Returns:
-        object: The array tensor.
+        EagerValue: The array tensor.
     """
     if dtype is not None:
         return cast(EagerValue, getattr(da, "array")(data, dtype=getattr(dtype, "value", dtype)))
@@ -48,7 +48,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         data: The input data.
 
     Returns:
-        object: The array tensor.
+        EagerValue: The array tensor.
     """
     return cast(EagerValue, getattr(da, "asarray")(data))
 

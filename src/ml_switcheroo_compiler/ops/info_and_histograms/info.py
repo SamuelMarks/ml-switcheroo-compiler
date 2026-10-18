@@ -1,6 +1,6 @@
 """Misc operations."""
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,12 +10,12 @@ class Finfo(OpDef):
 
     op_name = "Finfo"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -29,12 +29,12 @@ class Iinfo(OpDef):
 
     op_name = "Iinfo"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -48,12 +48,12 @@ class GetPrintoptions(OpDef):
 
     op_name = "GetPrintoptions"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -67,12 +67,12 @@ class Isscalar(OpDef):
 
     op_name = "Isscalar"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -86,12 +86,12 @@ class Iterable(OpDef):
 
     op_name = "Iterable"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -105,12 +105,12 @@ class PromoteTypes(OpDef):
 
     op_name = "PromoteTypes"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -124,12 +124,12 @@ class ResultType(OpDef):
 
     op_name = "ResultType"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -137,12 +137,12 @@ class ResultType(OpDef):
         return ()
 
 
-def iinfo(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def iinfo(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Iinfo operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -152,12 +152,12 @@ def iinfo(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Iinfo", *args, **kwargs)
 
 
-def isscalar(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def isscalar(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return True if the type of num is a scalar type.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -167,12 +167,12 @@ def isscalar(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Isscalar", *args, **kwargs)
 
 
-def iterable(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def iterable(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Check whether or not an Any can be iterated over.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -182,12 +182,12 @@ def iterable(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Iterable", *args, **kwargs)
 
 
-def promote_types(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def promote_types(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the data type with the smallest size and smallest scalar kind.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -197,12 +197,12 @@ def promote_types(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("PromoteTypes", *args, **kwargs)
 
 
-def result_type(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def result_type(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the type that results from applying the NumPy type promotion rules.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -212,12 +212,12 @@ def result_type(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("ResultType", *args, **kwargs)
 
 
-def get_printoptions(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def get_printoptions(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Get the current print options.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

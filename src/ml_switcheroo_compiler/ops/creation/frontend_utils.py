@@ -1,17 +1,18 @@
-"""Constants & Creation Operations."""
+"""Creation node emission utilities and DLPack/ufunc/geometric creation operations."""
 
 from __future__ import annotations
 
 import logging
 import uuid
-from collections.abc import Sequence
-from typing import Callable, cast
+from collections.abc import Callable, Iterable, Sequence
+from typing import cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
@@ -21,21 +22,21 @@ def _emit_creation_node(
     op_type: str,
     shape: Sequence[int],
     dtype: DType,
-    attributes: EagerValue = None,
-) -> EagerValue:
-    """Emit a creation node to the IR graph.
+    attributes: TensorOrScalar = None,
+) -> TensorOrScalar:
+    """Emit a symbolic tensor creation node to the active tracing IR graph.
 
     Args:
-        op_type (str): The op_type parameter.
-        shape (Sequence): The shape parameter.
-        dtype (DType): The dtype parameter.
-        attributes (Any): The attributes parameter.
+        op_type (str): Canonical IR creation operation type name.
+        shape (Sequence[int]): Output tensor shape.
+        dtype (DType): Output tensor data type.
+        attributes (TensorOrScalar): Optional dictionary of node attributes.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Symbolic `Tensor` wrapping the emitted `LogicalNode`.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If called outside of an active tracing context.
     """
     if not global_tracing_state.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."
@@ -60,27 +61,30 @@ def _emit_creation_node(
 
 
 def _emit_constant_node(
-    value: EagerValue,
+    value: TensorOrScalar,
     dtype: DType,
-) -> EagerValue:
-    """Emit a Constant node to the IR graph.
+) -> TensorOrScalar:
+    """Emit a symbolic `Constant` node to the active tracing IR graph.
 
     Args:
-        value (Any): The value parameter.
-        dtype (DType): The dtype parameter.
+        value (TensorOrScalar): Constant scalar or sequence value.
+        dtype (DType): Output tensor data type.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Symbolic `Tensor` wrapping the emitted `Constant` node.
 
     Raises:
-        RuntimeError: An exception.
+        RuntimeError: If called outside of an active tracing context.
     """
     if not global_tracing_state.is_tracing:
         msg = "Cannot emit Constant node outside of a tracing context."
         raise RuntimeError(msg)
 
     out_id = str(uuid.uuid4())
-    val_arr = get_active_backend().array(value, dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)))
+    val_arr = get_active_backend().array(
+        value,
+        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+    )
     shape = tuple(getattr(val_arr, "shape"))
 
     node = LogicalNode(
@@ -102,19 +106,19 @@ def _emit_constant_node(
 
 @register_op("FromDlpack")
 class FromDlpack(OpDef):
-    """Create a switcheroo array from a DLPack capsule."""
+    """Create a compiler tensor from an external object implementing the DLPack protocol."""
 
     op_name = "FromDlpack"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
-        """Infer shape.
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+        """Infer shape from the DLPack source tensor.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional DLPack source tensor arguments.
+            **kwargs (TensorOrScalar): Keyword arguments (`ext_tensor` or `tensor`).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Inferred tensor shape tuple.
         """
         obj = args[0] if len(args) > 0 else kwargs.get("ext_tensor", kwargs.get("tensor"))
         return tuple(getattr(obj, "shape", getattr(obj, "shape_metadata", ())))
@@ -122,20 +126,21 @@ class FromDlpack(OpDef):
 
 @register_op("Frompyfunc")
 class Frompyfunc(OpDef):
-    """Take an arbitrary Python function and returns a NumPy ufunc."""
+    """Wrap an arbitrary Python callable into an elementwise broadcasting operation."""
 
     op_name = "Frompyfunc"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
-        """Infer shape.
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+        """Infer broadcasted output shape across input tensor operands.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional arguments (`func`, `nin`, `nout`, `*inputs`).
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Broadcasted input shape.
+            tuple[int, ...]: Broadcasted output shape tuple.
         """
+        _ = kwargs
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         inps = args[3:] if len(args) > 3 else args
@@ -154,15 +159,15 @@ class Geomspace(OpDef):
 
     op_name = "Geomspace"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
-        """Infer shape.
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+        """Infer output shape for `Geomspace` based on `start`, `stop`, `num`, and `axis`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional arguments (`start`, `stop`, `num`).
+            **kwargs (TensorOrScalar): Keyword attributes (`num`, `axis`).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Inferred output shape tuple.
         """
         start = args[0] if len(args) > 0 else kwargs.get("start")
         stop = args[1] if len(args) > 1 else kwargs.get("stop")
@@ -196,15 +201,15 @@ class Geometric(OpDef):
 
     op_name = "Geometric"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
-        """Infer shape.
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+        """Infer output shape for `Geometric` from `size` or parameter `p`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional arguments (`p`, `size`).
+            **kwargs (TensorOrScalar): Keyword attributes (`p`, `size`).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Inferred output shape tuple.
         """
         p = args[0] if len(args) > 0 else kwargs.get("p")
         size = kwargs.get("size", args[1] if len(args) > 1 else None)
@@ -212,67 +217,76 @@ class Geometric(OpDef):
             return tuple(getattr(p, "shape", getattr(p, "shape_metadata", ())))
         if isinstance(size, int):
             return (size,)
-        return tuple(int(d) for d in getattr(size, "__iter__")())
+        if isinstance(size, Iterable):
+            return tuple(int(cast(int, d)) for d in cast("Iterable[TensorOrScalar]", size))
+        return ()
 
 
-def from_dlpack(obj: EagerValue) -> EagerValue:
-    """Create a switcheroo array from a DLPack capsule.
+def from_dlpack(obj: TensorOrScalar) -> TensorOrScalar:
+    """Create a compiler tensor from an object implementing the DLPack protocol.
 
     Args:
-        obj (Any): The obj parameter.
+        obj (TensorOrScalar): Input array or tensor supporting `__dlpack__`.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Imported compiler tensor.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("FromDlpack", obj)
 
 
-def frompyfunc(func: EagerValue, nin: int, nout: int) -> EagerValue:
-    """Take an arbitrary Python function and returns a NumPy ufunc.
+def frompyfunc(func: TensorOrScalar, nin: int, nout: int) -> TensorOrScalar:
+    """Wrap an arbitrary Python function into an elementwise universal function.
 
     Args:
-        func (Any): The func parameter.
-        nin (int): The nin parameter.
-        nout (int): The nout parameter.
+        func (TensorOrScalar): Python callable to wrap.
+        nin (int): Number of input arguments accepted by `func`.
+        nout (int): Number of output values returned by `func`.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Wrapped universal function object.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Frompyfunc", func, nin, nout)
 
 
-def geomspace(start: EagerValue, stop: EagerValue, num: int = 50, endpoint: bool = True, dtype: EagerValue = None, axis: int = 0) -> EagerValue:
+def geomspace(
+    start: TensorOrScalar,
+    stop: TensorOrScalar,
+    num: int = 50,
+    endpoint: bool = True,
+    dtype: TensorOrScalar = None,
+    axis: int = 0,
+) -> TensorOrScalar:
     """Return numbers spaced evenly on a log scale (a geometric progression).
 
     Args:
-        start (Any): The start parameter.
-        stop (Any): The stop parameter.
-        num (int): The num parameter.
-        endpoint (bool): The endpoint parameter.
-        dtype (Any): The dtype parameter.
-        axis (int): The axis parameter.
+        start (TensorOrScalar): Starting value of the sequence.
+        stop (TensorOrScalar): Final value of the sequence.
+        num (int): Number of samples to generate.
+        endpoint (bool): Whether to include `stop` as the last sample.
+        dtype (TensorOrScalar): Data type of the output tensor.
+        axis (int): Axis in the result to store the samples.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Geometric progression tensor.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Geomspace", start, stop, num=num, endpoint=endpoint, dtype=dtype, axis=axis)
 
 
-def geometric(p: EagerValue, size: EagerValue = None) -> EagerValue:
-    """Draw samples from the geometric distribution.
+def geometric(p: TensorOrScalar, size: TensorOrScalar = None) -> TensorOrScalar:
+    """Draw samples from the geometric distribution with success probability `p`.
 
     Args:
-        p (Any): The p parameter.
-        size (Any): The size parameter.
+        p (TensorOrScalar): Probability of success on an individual trial.
+        size (TensorOrScalar): Output shape tuple or integer length.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Tensor of samples drawn from the geometric distribution.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

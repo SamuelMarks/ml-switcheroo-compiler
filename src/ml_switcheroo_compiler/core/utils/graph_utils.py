@@ -70,7 +70,7 @@ class _TopologicalSorter:
         for n in nodes_iterable:
             node_id = getattr(n, "id", n) if not isinstance(n, str) else n
             if node_id not in self.visited:
-                getattr(self, "visit")(node_id)
+                self.visit(str(node_id))
         return self.sorted_nodes
 
 

@@ -28,7 +28,7 @@ def evaluate_static_predicate(graph: IRGraph, pred_id: str) -> bool | None:
         if isinstance(val, (bool, int, float)):
             return bool(val)
         if hasattr(val, "item"):
-            return bool(val.item())
+            return bool(getattr(val, "item")())
 
     # Check comparison of constants
     cmp_dispatch = {

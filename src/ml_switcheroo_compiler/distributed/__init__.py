@@ -5,8 +5,8 @@ from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
 from typing import Optional, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core import config
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.ops import distributed_ops
 
 from .device_mesh import DeviceMesh
@@ -16,29 +16,29 @@ from .layout_map import LayoutMap, ShardingSpec
 class Distribution:
     """Base class for distributed strategies."""
 
-    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+    def __init__(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
         """Initialize Distribution.
 
         Args:
-            *args: arguments.
-            **kwargs: keyword arguments.
+            *args (TensorOrScalar): Positional arguments.
+            **kwargs (AttrValue): Keyword arguments.
         """
+        _ = args
         self.device_mesh = kwargs.get("device_mesh", None)
 
     def scope(self) -> ContextManager[None]:
         """Scope context manager.
 
         Returns:
-            ContextManager[None]: the context manager scope.
+            ContextManager[None]: The context manager scope.
         """
 
         @contextlib.contextmanager
         def _scope() -> Iterator[None]:
-            r"""Activate this distribution strategy within the enclosing context block.
+            """Activate this distribution strategy within the enclosing context block.
 
             Yields:
-                None
-            .
+                None: Enclosing context block.
             """
             _old = _DIST_STATE["dist"]
             _DIST_STATE["dist"] = self
@@ -53,12 +53,12 @@ class Distribution:
 class DataParallel(Distribution):
     """DataParallel strategy for distributed execution."""
 
-    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+    def __init__(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
         """Initialize the DataParallel distribution.
 
         Args:
-            *args: arguments.
-            **kwargs: keyword arguments.
+            *args (TensorOrScalar): Positional arguments.
+            **kwargs (AttrValue): Keyword arguments.
         """
         super().__init__(*args, **kwargs)
 
@@ -71,53 +71,57 @@ class ModelParallel(Distribution):
         device_mesh: Optional[DeviceMesh] = None,
         layout_map: Optional[LayoutMap] = None,
         batch_dim_name: Optional[str] = None,
-        *args: EagerValue,
-        **kwargs: EagerValue,
+        *args: TensorOrScalar,
+        **kwargs: AttrValue,
     ) -> None:
         """Initialize the ModelParallel distribution.
 
         Args:
-            device_mesh: The device mesh.
-            layout_map: The layout map.
-            batch_dim_name: Name of batch dimension.
-            *args: Extra args.
-            **kwargs: Extra kwargs.
+            device_mesh (Optional[DeviceMesh]): The device mesh.
+            layout_map (Optional[LayoutMap]): The layout map.
+            batch_dim_name (Optional[str]): Name of batch dimension.
+            *args (TensorOrScalar): Extra positional args.
+            **kwargs (AttrValue): Extra keyword args.
         """
+        _ = (device_mesh, batch_dim_name, args, kwargs)
         self.layout_map = layout_map
 
 
 class TensorLayoutClass:
     """Class representing TensorLayout."""
 
-    def __init__(self, axes: EagerValue) -> None:
+    def __init__(self, axes: TensorOrScalar) -> None:
         """Initialize TensorLayoutClass.
 
         Args:
-            axes (tuple): Tuple of axis names.
+            axes (TensorOrScalar): Tuple of axis names.
         """
         self.axes = axes
 
 
-def TensorLayout(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def TensorLayout(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
     """Create a TensorLayout.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        *args (TensorOrScalar): Positional arguments.
+        **kwargs (AttrValue): Keyword arguments.
 
     Returns:
-        TensorLayoutClass instance.
+        TensorOrScalar: TensorLayoutClass instance.
     """
     axes = kwargs.get("axes", args[0] if args else ())
-    return cast(EagerValue, TensorLayoutClass(axes))
+    return cast(TensorOrScalar, TensorLayoutClass(axes))
 
 
-def initialize(*args: EagerValue, **kwargs: EagerValue) -> None:
+def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
     """Initialize the distributed environment.
 
     Args:
-        *args: positional args.
-        **kwargs: keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (AttrValue): Keyword args.
+
+    Raises:
+        BackendNotSupportedError: If the active backend does not support initialize_distributed().
     """
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
@@ -129,57 +133,61 @@ def initialize(*args: EagerValue, **kwargs: EagerValue) -> None:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support initialize_distributed()")
 
 
-def list_devices(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def list_devices(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
     """List available devices.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        *args (TensorOrScalar): Positional arguments.
+        **kwargs (AttrValue): Keyword arguments.
 
     Returns:
-        List of devices.
+        TensorOrScalar: List of devices.
     """
+    _ = (args, kwargs)
     from ml_switcheroo_compiler.core.device import get_physical_devices
 
-    return cast(EagerValue, get_physical_devices())
+    return cast(TensorOrScalar, get_physical_devices())
 
 
 _dist: Optional[Distribution] = None
 _DIST_STATE: dict[str, Optional[Distribution]] = {"dist": None}
 
 
-def distribution(*args: EagerValue, **kwargs: EagerValue) -> Optional[Distribution]:
+def distribution(*args: TensorOrScalar, **kwargs: AttrValue) -> Optional[Distribution]:
     """Get the current distribution.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        *args (TensorOrScalar): Positional arguments.
+        **kwargs (AttrValue): Keyword arguments.
 
     Returns:
-        Optional[Distribution]: current active distribution.
+        Optional[Distribution]: Current active distribution.
     """
+    _ = (args, kwargs)
     return _DIST_STATE["dist"]
 
 
-def set_distribution(dist: Distribution, *args: EagerValue, **kwargs: EagerValue) -> None:
+def set_distribution(dist: Distribution, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
     """Set the current distribution.
 
     Args:
-        dist: Distribution to set.
-        *args: arguments.
-        **kwargs: keyword arguments.
+        dist (Distribution): Distribution to set.
+        *args (TensorOrScalar): Positional arguments.
+        **kwargs (AttrValue): Keyword arguments.
     """
+    _ = (args, kwargs)
     _DIST_STATE["dist"] = dist
 
 
-def distribute_tensor(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def distribute_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
     """Distribute a tensor across the active distribution.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        *args (TensorOrScalar): Positional arguments.
+        **kwargs (AttrValue): Keyword arguments.
 
-    Returns: Tensor: distributed tensor.
+    Returns:
+        TensorOrScalar: Distributed tensor.
     """
     if _DIST_STATE["dist"] is None:
         return args[0] if args else kwargs.get("tensor")
@@ -187,7 +195,7 @@ def distribute_tensor(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     if config.eager_mode:
         return args[0] if args else kwargs.get("tensor")
 
-    return cast(EagerValue, getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
+    return cast(TensorOrScalar, getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
 
 
 __all__ = [

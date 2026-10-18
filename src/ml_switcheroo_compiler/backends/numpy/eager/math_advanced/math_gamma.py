@@ -16,7 +16,7 @@ def _np_mvlgamma(
     *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float],
     **kwargs: Union[int, float],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_mvlgamma operation.
+    """Execute the eager np mvlgamma operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.

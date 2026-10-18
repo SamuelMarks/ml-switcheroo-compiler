@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .frontend_utils import _emit_creation_node
@@ -17,7 +18,7 @@ def rand(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return a tensor filled with random numbers from a uniform distribution.
 
     Args:
@@ -42,7 +43,7 @@ def randn(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return a tensor filled with random numbers from a standard normal distribution.
 
     Args:
@@ -69,7 +70,7 @@ def randint(
     size: Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return a tensor filled with random integers from [low, high).
 
     Args:

@@ -7,12 +7,13 @@ import typing  # noqa: F401
 from dataclasses import dataclass
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
-EagerPayload = EagerValue
+EagerPayload = TensorOrScalar
 
 
 @dataclass
@@ -89,7 +90,7 @@ class EagerEvaluator:
         """Get the evaluation strategy for a given operation class.
 
         Args:
-            op_cls (Any): The operation class.
+            op_cls (type): The operation class.
 
         Returns:
             EvaluationStrategy: The determined evaluation strategy.
@@ -114,9 +115,9 @@ class EagerEvaluator:
         """Pack raw output data into Tensor Anys.
 
         Args:
-            res_data (Any): The raw data returned by the backend.
-            first_tensor (Any): The first input tensor, used for dtype resolution.
-            device (Any): The execution device.
+            res_data (EagerPayload): The raw data returned by the backend.
+            first_tensor (Tensor | None): The first input tensor, used for dtype resolution.
+            device (Device | str | None): The execution device.
 
         Returns: Tensor: A Tensor or a tuple of Tensors.
         """
@@ -138,13 +139,13 @@ class EagerEvaluator:
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod
-    def evaluate(op_type: str, *args: EagerValue, **kwargs: EagerValue) -> Tensor | tuple[Tensor, ...]:
-        """Evaluate evaluate operation.
+    def evaluate(op_type: str, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | tuple[Tensor, ...]:
+        """Execute the eager evaluate operation on the active backend array.
 
         Args:
             op_type (str): The op_type parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

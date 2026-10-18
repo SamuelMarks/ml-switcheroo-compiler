@@ -7,9 +7,10 @@ from typing import (
     cast,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
@@ -24,7 +25,7 @@ def conv_transpose(
     rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> EagerValue:
+) -> TensorOrScalar:
     """Convolution transpose.
 
     Args:

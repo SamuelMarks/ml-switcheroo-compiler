@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Unit tests for the operation registry and base operation definition functionality.
 
 This module contains tests verifying that operations can be registered and retrieved
@@ -35,7 +34,6 @@ def _test_register_and_get_op_sub_1(_state: dict[str, EagerTensorProtocol]) -> N
     Args:
         _state: Shared test state dictionary.
     """
-    "Tests the registration and retrieval of operations in the global registry.\n\n    This test ensures that custom operations subclassing `OpDef` can be registered\n    using the `@register_op` decorator and retrieved via `get_op`. It also verifies\n    that duplicate registrations raise a `ValueError` and retrieving non-existent\n    operations raises a `KeyError`\n\n    Returns:\n    None\n    "
     original_registry = _OP_REGISTRY.copy()
     _OP_REGISTRY.clear()
     getattr(_state, "update")({"original_registry": original_registry})
@@ -62,31 +60,31 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
                 """Infer the output shape of the operation.
 
                 Args:
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
-                object: The resulting output.
+                TensorOrScalar: The resulting output.
                 """
 
             def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> None:
                 """Evaluate the operation using NumPy.
 
                 Args:
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
-                object: The resulting output.
+                TensorOrScalar: The resulting output.
                 """
 
             def vjp(self, cotangent: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
                 """Compute the vector-Jacobian product.
 
                 Args:
-                cotangent (object): The cotangent parameter
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                cotangent (EagerValue): The cotangent parameter
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
                 tuple[object, ...]: The resulting output.
@@ -97,20 +95,20 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
                 """Compute the Jacobian-vector product.
 
                 Args:
-                tangent (object): The tangent parameter
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                tangent (EagerValue): The tangent parameter
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
-                object: The resulting output.
+                TensorOrScalar: The resulting output.
                 """
 
             def emit_jax(self, *args: EagerValue, **kwargs: EagerValue) -> str:
                 """Emit code for the jax backend.
 
                 Args:
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
                 str: The resulting output.
@@ -121,8 +119,8 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
                 """Emit code for the pytorch backend.
 
                 Args:
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
                 str: The resulting output.
@@ -133,8 +131,8 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
                 """Emit code for the mlx backend.
 
                 Args:
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
                 str: The resulting output.
@@ -145,8 +143,8 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
                 """Emit code for the keras backend.
 
                 Args:
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
                 str: The resulting output.
@@ -157,8 +155,8 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
                 """Emit code for the tensorflow backend.
 
                 Args:
-                *args (object): Additional keyword arguments.
-                **kwargs (object): Additional keyword arguments.
+                *args (EagerValue): Additional keyword arguments.
+                **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
                 str: The resulting output.
@@ -173,7 +171,7 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
             class DuplicateOp(OpDef):
                 """A mock operation class used to test duplicate registration prevention."""
 
-        with pytest.raises(KeyError, match="not found in registry"):
+        with pytest.raises(KeyError, match="not found"):
             get_op("UnknownOp")
     finally:
         _OP_REGISTRY.clear()
@@ -185,15 +183,12 @@ def test_register_and_get_op() -> None:
     """Test the register and get op behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        for _sub_fn in (_test_register_and_get_op_sub_1, _test_register_and_get_op_sub_2):
-            _sub_fn(_state)
-        assert isinstance(_state, dict)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    for _sub_fn in (_test_register_and_get_op_sub_1, _test_register_and_get_op_sub_2):
+        _sub_fn(_state)
+    assert isinstance(_state, dict)
 
 
 def _test_opdef_call_eager_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -202,7 +197,6 @@ def _test_opdef_call_eager_sub_1(_state: dict[str, EagerTensorProtocol]) -> None
     Args:
         _state: Shared test state dictionary.
     """
-    "Tests the eager execution behavior of `OpDef` instances.\n\n    This test configures the system to run in eager mode, instantiates a test\n    operation, and calls it with a `Tensor` input. It verifies that the operation\n    is evaluated immediately using its NumPy implementation and returns a new\n    `Tensor` with the correct shape, data type, and device\n\n    Returns:\n    None\n    "
     original_registry = _OP_REGISTRY.copy()
     getattr(_state, "update")({"original_registry": original_registry})
     _state.update(locals())
@@ -222,34 +216,34 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
             """A mock operation class used for testing eager execution behavior."""
 
             def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """infer_shape function.
+                """Verify the behavior and output invariants of infer shape.
 
                 Args:
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                object: The computed result.
+                EagerValue: The computed result.
                 """
                 return ()
 
             def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """eager_eval function.
+                """Verify the behavior and output invariants of eager eval.
 
                 Args:
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                object: The computed result.
+                EagerValue: The computed result.
                 """
                 return np.array([1, 2, 3], dtype=np.float32)
 
             def vjp(self, cotangent: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Vjp function.
+                """Verify the behavior and output invariants of vjp.
 
                 Args:
-                cotangent (object): The cotangent.
+                cotangent (EagerValue): The cotangent.
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
@@ -259,20 +253,20 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
                 return ()
 
             def jvp(self, tangent: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Jvp function.
+                """Verify the behavior and output invariants of jvp.
 
                 Args:
-                tangent (object): The tangent.
+                tangent (EagerValue): The tangent.
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                object: The computed result.
+                EagerValue: The computed result.
                 """
                 return tangent
 
             def emit_jax(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_jax function.
+                """Verify the behavior and output invariants of emit jax.
 
                 Args:
                 *args: Additional arguments.
@@ -284,7 +278,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
                 return ""
 
             def emit_pytorch(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_pytorch function.
+                """Verify the behavior and output invariants of emit pytorch.
 
                 Args:
                 *args: Additional arguments.
@@ -296,7 +290,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
                 return ""
 
             def emit_mlx(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_mlx function.
+                """Verify the behavior and output invariants of emit mlx.
 
                 Args:
                 *args: Additional arguments.
@@ -308,7 +302,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
                 return ""
 
             def emit_keras(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_keras function.
+                """Verify the behavior and output invariants of emit keras.
 
                 Args:
                 *args: Additional arguments.
@@ -320,7 +314,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
                 return ""
 
             def emit_tensorflow(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_tensorflow function.
+                """Verify the behavior and output invariants of emit tensorflow.
 
                 Args:
                 *args: Additional arguments.
@@ -351,15 +345,12 @@ def test_opdef_call_eager() -> None:
     """Test the opdef call eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        for _sub_fn in (_test_opdef_call_eager_sub_1, _test_opdef_call_eager_sub_2):
-            _sub_fn(_state)
-        assert isinstance(_state, dict)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    for _sub_fn in (_test_opdef_call_eager_sub_1, _test_opdef_call_eager_sub_2):
+        _sub_fn(_state)
+    assert isinstance(_state, dict)
 
 
 def _test_opdef_call_tracing_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -368,7 +359,6 @@ def _test_opdef_call_tracing_sub_1(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    "Tests the tracing execution behavior of `OpDef` instances.\n\n    This test configures the system to run in tracing mode, starts a tracing\n    context,\n    and calls a test operation with a `Tensor` containing a `ProxyTensor`. It\n    verifies\n    that the operation records its execution in the active tracing graph and returns\n    a new `Tensor` wrapping a `ProxyTensor` with the correct shape and data type\n    It also ensures that calling the operation outside of a tracing context raises\n    a `RuntimeError`\n\n    Returns:\n    None\n    "
     original_registry = _OP_REGISTRY.copy()
     getattr(_state, "update")({"original_registry": original_registry})
     _state.update(locals())
@@ -388,34 +378,34 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
             """A mock operation class used for testing tracing execution behavior."""
 
             def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """infer_shape function.
+                """Verify the behavior and output invariants of infer shape.
 
                 Args:
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                object: The computed result.
+                EagerValue: The computed result.
                 """
                 return (3,)
 
             def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """eager_eval function.
+                """Verify the behavior and output invariants of eager eval.
 
                 Args:
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                object: The computed result.
+                EagerValue: The computed result.
                 """
                 return np.array([1, 2, 3])
 
             def vjp(self, cotangent: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Vjp function.
+                """Verify the behavior and output invariants of vjp.
 
                 Args:
-                cotangent (object): The cotangent.
+                cotangent (EagerValue): The cotangent.
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
@@ -425,20 +415,20 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
                 return ()
 
             def jvp(self, tangent: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Jvp function.
+                """Verify the behavior and output invariants of jvp.
 
                 Args:
-                tangent (object): The tangent.
+                tangent (EagerValue): The tangent.
                 *args: Additional arguments.
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                object: The computed result.
+                EagerValue: The computed result.
                 """
                 return tangent
 
             def emit_jax(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_jax function.
+                """Verify the behavior and output invariants of emit jax.
 
                 Args:
                 *args: Additional arguments.
@@ -450,7 +440,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
                 return ""
 
             def emit_pytorch(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_pytorch function.
+                """Verify the behavior and output invariants of emit pytorch.
 
                 Args:
                 *args: Additional arguments.
@@ -462,7 +452,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
                 return ""
 
             def emit_mlx(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_mlx function.
+                """Verify the behavior and output invariants of emit mlx.
 
                 Args:
                 *args: Additional arguments.
@@ -474,7 +464,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
                 return ""
 
             def emit_keras(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_keras function.
+                """Verify the behavior and output invariants of emit keras.
 
                 Args:
                 *args: Additional arguments.
@@ -486,7 +476,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
                 return ""
 
             def emit_tensorflow(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-                """emit_tensorflow function.
+                """Verify the behavior and output invariants of emit tensorflow.
 
                 Args:
                 *args: Additional arguments.
@@ -528,26 +518,20 @@ def test_opdef_call_tracing() -> None:
     """Test the opdef call tracing behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        for _sub_fn in (_test_opdef_call_tracing_sub_1, _test_opdef_call_tracing_sub_2):
-            _sub_fn(_state)
-        assert isinstance(_state, dict)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    for _sub_fn in (_test_opdef_call_tracing_sub_1, _test_opdef_call_tracing_sub_2):
+        _sub_fn(_state)
+    assert isinstance(_state, dict)
 
 
 def test_emit_ir_node() -> None:
-    # with graph
     """Test function test_emit_ir_node."""
     graph = MagicMock()
     graph.nodes = {}
     nid = emit_ir_node(graph, "TestOp", ["in1"], shape_metadata=(1,))
     assert nid in graph.nodes
-
-    # without graph
     with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state") as global_state:
         nid = emit_ir_node(None, "TestOp", ["in1"])
         global_state.add_node.assert_called_once()
@@ -557,7 +541,6 @@ def test_opdef_base_methods() -> None:
     """Test function test_opdef_base_methods."""
     op = OpDef()
     assert op.infer_shape() == tuple()
-
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
         backend = MagicMock()
         backend.execute_op.return_value = "eager_result"
@@ -575,19 +558,14 @@ def test_dispatch_eager_wrapper() -> None:
         assert callable(test_func)
 
     with patch("ml_switcheroo_compiler.ops.base.config") as mock_config:
-        # Test not eager mode
         mock_config.eager_mode = False
         assert test_func(1, 2) == "not eager"
-
-        # Test eager mode
         mock_config.eager_mode = True
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
             backend = MagicMock()
             backend.array.return_value = MagicMock(shape=(1,))
             backend.execute_op.return_value = "backend_res"
             mock_get_backend.return_value = backend
-
-            # with tensor inputs
             t1 = MagicMock(spec=Tensor)
             t1.data = "t1_data"
             t1.device = "dev"
@@ -596,8 +574,6 @@ def test_dispatch_eager_wrapper() -> None:
             t1.dtype = DType.Float32
             res = test_func(t1, 2)
             assert isinstance(res, Tensor)
-
-            # with multiple tensor return
             backend.execute_op.return_value = ("backend_res1", "backend_res2")
             res_tuple = test_func(t1, 2)
             assert isinstance(res_tuple, tuple)

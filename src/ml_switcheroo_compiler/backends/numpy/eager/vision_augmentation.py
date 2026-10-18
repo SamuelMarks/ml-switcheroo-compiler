@@ -17,13 +17,13 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 @numpy_eager_registry.register("AugMix")
 def _np_augmix(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_augmix operation.
+    """Execute the eager np augmix operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
         factor (float): The factor parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -33,13 +33,13 @@ def _np_augmix(backend_module: ModuleType, images: EagerValue, factor: float, **
 
 @numpy_eager_registry.register("Cutmix")
 def _np_cutmix(backend_module: ModuleType, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_cutmix operation.
+    """Execute the eager np cutmix operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images1 (object): The images1 parameter.
-        images2 (object): The images2 parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        images1 (EagerValue): The images1 parameter.
+        images2 (EagerValue): The images2 parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -49,13 +49,13 @@ def _np_cutmix(backend_module: ModuleType, images1: EagerValue, images2: EagerVa
 
 @numpy_eager_registry.register("Mixup")
 def _np_mixup(backend_module: ModuleType, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_mixup operation.
+    """Execute the eager np mixup operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images1 (object): The images1 parameter.
-        images2 (object): The images2 parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        images1 (EagerValue): The images1 parameter.
+        images2 (EagerValue): The images2 parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -65,13 +65,13 @@ def _np_mixup(backend_module: ModuleType, images1: EagerValue, images2: EagerVal
 
 @numpy_eager_registry.register("RandAugment")
 def _np_rand_augment(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rand_augment operation.
+    """Execute the eager np rand augment operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
         factor (float): The factor parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -81,12 +81,12 @@ def _np_rand_augment(backend_module: ModuleType, images: EagerValue, factor: flo
 
 @numpy_eager_registry.register("RandomColorJitter")
 def _np_random_color_jitter(backend_module: ModuleType, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_random_color_jitter operation.
+    """Execute the eager np random color jitter operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -96,13 +96,13 @@ def _np_random_color_jitter(backend_module: ModuleType, images: EagerValue, **kw
 
 @numpy_eager_registry.register("RandomCrop")
 def _np_random_crop(backend_module: ModuleType, images: EagerValue, size: EagerValue, seed: EagerValue = None) -> EagerValue:
-    """Evaluate _np_random_crop operation.
+    """Execute the eager np random crop operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
         size (tuple): The size parameter.
-        seed (object): The seed parameter.
+        seed (EagerValue): The seed parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -112,13 +112,13 @@ def _np_random_crop(backend_module: ModuleType, images: EagerValue, size: EagerV
 
 @numpy_eager_registry.register("RandomErasing")
 def _np_random_erasing(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_random_erasing operation.
+    """Execute the eager np random erasing operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
         factor (float): The factor parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -175,12 +175,12 @@ _NP_FLIP_STRATEGIES: dict[str, Callable[[EagerValue, EagerValue], EagerValue]] =
 
 
 def _np_random_flip(images: EagerValue, mode: str, seed: EagerValue = None) -> EagerValue:
-    """Evaluate _np_random_flip operation.
+    """Execute the eager np random flip operation on the active backend array.
 
     Args:
-        images (object): The images parameter.
+        images (EagerValue): The images parameter.
         mode (str): The mode parameter.
-        seed (object): The seed parameter.
+        seed (EagerValue): The seed parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -243,8 +243,8 @@ def _nearest_interpolation(
     """Nearest neighbor interpolation.
 
     Args:
-        np (object): The np parameter.
-        images (object): The images parameter.
+        np (EagerValue): The np parameter.
+        images (EagerValue): The images parameter.
         coords (tuple): The coords parameter.
         shape (tuple): The shape parameter.
         b_c (tuple): The b_c parameter.
@@ -279,7 +279,7 @@ def _get_interp_pixels(np: ModuleType, cfg: InterpPixelsConfig) -> EagerValue:
     """Gather pixels.
 
     Args:
-        np (object): The np parameter.
+        np (ModuleType): The np parameter.
         cfg (InterpPixelsConfig): The cfg parameter.
 
     Returns:
@@ -301,7 +301,7 @@ def _get_interp_weights(
     src_coords: tuple[EagerValue, EagerValue],
     bounds: tuple[EagerValue, EagerValue, EagerValue, EagerValue],
 ) -> tuple[EagerValue, EagerValue, EagerValue, EagerValue]:
-    """Evaluate _get_interp_weights operation.
+    """Execute the eager get interp weights operation on the active backend array.
 
     Args:
         src_coords (tuple): The src_coords parameter.
@@ -333,8 +333,8 @@ def _bilinear_interpolation(
     """Bilinear interpolation.
 
     Args:
-        np (object): The np parameter.
-        images (object): The images parameter.
+        np (EagerValue): The np parameter.
+        images (EagerValue): The images parameter.
         coords (tuple): The coords parameter.
         shape (tuple): The shape parameter.
         b_c (tuple): The b_c parameter.
@@ -406,10 +406,10 @@ def _process_batch_item(np: ModuleType, cfg: BatchRotationConfig, b: int, out: E
     """Process a single item in the batch.
 
     Args:
-        np (object): The np parameter.
+        np (ModuleType): The np parameter.
         cfg (BatchRotationConfig): The cfg parameter.
         b (int): The b parameter.
-        out (object): The out parameter.
+        out (EagerValue): The out parameter.
     """
     rot_cfg = RotationConfig(theta=cast("float", cfg.angles[b]), H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
     src_x, src_y = getattr(getattr(_calculate_rotation_matrix(np, rot_cfg), "__iter__")(), "__iter__")()
@@ -424,7 +424,7 @@ def _apply_rotation_batch(np: ModuleType, cfg: BatchRotationConfig) -> EagerValu
     """Apply rotation to a batch of images.
 
     Args:
-        np (object): The np parameter.
+        np (ModuleType): The np parameter.
         cfg (BatchRotationConfig): The cfg parameter.
 
     Returns:
@@ -443,7 +443,7 @@ def _resolve_rotation_factor(
     """Resolve rotation bounds.
 
     Args:
-        factor (object): The factor parameter.
+        factor (float | tuple[float, float] | list[float]): The factor parameter.
 
     Returns:
         tuple: Result.
@@ -457,7 +457,7 @@ def _create_rotation_mesh(np: ModuleType, H: int, W: int) -> EagerValue:
     """Create mesh grid for rotation.
 
     Args:
-        np (object): The np parameter.
+        np (ModuleType): The np parameter.
         H (int): The H parameter.
         W (int): The W parameter.
 
@@ -472,12 +472,12 @@ def _create_rotation_mesh(np: ModuleType, H: int, W: int) -> EagerValue:
 
 @numpy_eager_registry.register("RandomRotation")
 def _np_random_rotation(backend_module: ModuleType, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_random_rotation operation.
+    """Execute the eager np random rotation operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -511,14 +511,14 @@ def _np_random_rotation(backend_module: ModuleType, images: EagerValue, **kwargs
 
 @numpy_eager_registry.register("RandomTranslation")
 def _np_random_translation(backend_module: ModuleType, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_random_translation operation.
+    """Execute the eager np random translation operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
-        height_factor (object): The height_factor parameter.
-        width_factor (object): The width_factor parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
+        height_factor (EagerValue): The height_factor parameter.
+        width_factor (EagerValue): The width_factor parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -528,14 +528,14 @@ def _np_random_translation(backend_module: ModuleType, images: EagerValue, heigh
 
 @numpy_eager_registry.register("RandomZoom")
 def _np_random_zoom(backend_module: ModuleType, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_random_zoom operation.
+    """Execute the eager np random zoom operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        images (object): The images parameter.
-        height_factor (object): The height_factor parameter.
-        width_factor (object): The width_factor parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        images (EagerValue): The images parameter.
+        height_factor (EagerValue): The height_factor parameter.
+        width_factor (EagerValue): The width_factor parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

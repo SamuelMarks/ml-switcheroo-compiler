@@ -24,26 +24,20 @@ def test_hardware_operation_coverage_and_workgroup_rules() -> None:
     cuda_gen = CudaCodeGenerator(IRGraph())
     rocm_gen = RocmCodeGenerator(IRGraph())
     metal_gen = MetalCodeGenerator(IRGraph())
-
-    # We now support at least 20 operations across all three backends
     assert len(cuda_gen.config.templates) >= 20
     assert len(rocm_gen.config.templates) >= 20
     assert len(metal_gen.config.templates) >= 20
-
     core_ops = ["add", "sub", "mul", "div", "relu", "exp", "log", "tanh", "maximum", "silu", "gelu"]
     for op in core_ops:
         assert op in cuda_gen.config.templates
         assert op in rocm_gen.config.templates
         assert op in metal_gen.config.templates
-
-        # Explicit threadblock / workgroup sizing rules
         cuda_wg = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cuda_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
         metal_wg = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
         rocm_wg = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(rocm_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-
-        assert isinstance(cuda_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(cuda_wg)) == cast("EagerTensorProtocol", 3) and cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(cuda_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0)
-        assert isinstance(metal_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(metal_wg)) == cast("EagerTensorProtocol", 3) and cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(metal_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0)
-        assert isinstance(rocm_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(rocm_wg)) == cast("EagerTensorProtocol", 3) and cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(rocm_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0)
+        assert isinstance(cuda_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(cuda_wg)) == cast("EagerTensorProtocol", 3) and (cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(cuda_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0))
+        assert isinstance(metal_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(metal_wg)) == cast("EagerTensorProtocol", 3) and (cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(metal_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0))
+        assert isinstance(rocm_wg, list) and cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", len)(rocm_wg)) == cast("EagerTensorProtocol", 3) and (cast("EagerTensorProtocol", cast("EagerTensorProtocol", getattr(rocm_wg, "__getitem__")(0))) > cast("EagerTensorProtocol", 0))
 
 
 def test_dynamic_buffer_allocation_and_launch() -> None:
@@ -51,28 +45,21 @@ def test_dynamic_buffer_allocation_and_launch() -> None:
     g = IRGraph()
     n_in0 = IRNode("in0", "Input", shape_metadata=(16, 8), attributes={"dtype": "float32"})
     n_in1 = IRNode("in1", "Input", shape_metadata=(16, 8), attributes={"dtype": "float32"})
-    # Binary op: Add
     n_add = IRNode("add_op", "Add", inputs=["in0", "in1"], shape_metadata=(16, 8), attributes={"dtype": "float32"})
-    # Unary op: Exp
     n_exp = IRNode("exp_op", "Exp", inputs=["add_op"], shape_metadata=(16, 8), attributes={"dtype": "float32"})
-
     for n in [n_in0, n_in1, n_add, n_exp]:
         g.nodes[n.id] = n
     g.inputs = ["in0", "in1"]
     g.outputs = ["exp_op"]
-
-    # 16 * 8 = 128 elements * 4 bytes = 512 bytes
     cuda_code = CudaCodeGenerator(g).generate()
     assert "512" in cuda_code
     assert "1024 * sizeof(float)" not in cuda_code
     assert "add<<<" in cuda_code or "add_kernel<<<" in cuda_code
     assert "exp_kernel<<<" in cuda_code
-
     rocm_code = RocmCodeGenerator(g).generate()
     assert "512" in rocm_code
     assert "1024 * sizeof(float)" not in rocm_code
     assert "hipLaunchKernelGGL" in rocm_code
-
     metal_code = MetalCodeGenerator(g).generate()
     assert "512" in metal_code
     assert "1024 * 4" not in metal_code
@@ -86,30 +73,22 @@ def test_metal_native_execution_parity() -> None:
 
     if importlib.util.find_spec("Metal") is None:
         pytest.skip("PyObjC Metal module not installed on host system")
-
     if not MetalRunner.is_available():
         pytest.skip("Apple Silicon Metal device/driver not available on host system")
-
     runner = MetalRunner()
     metal_gen = MetalCodeGenerator(IRGraph())
-
-    # 1. Unary ReLU execution
     relu_tpl = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("relu")), "get"))("body", "")
     x = np.array([-5.0, 0.0, 3.5, 12.0], dtype=np.float32)
     relu_res = cast("Callable[..., EagerTensorProtocol]", runner.execute_kernel)(relu_tpl, "relu", x)
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(relu_res, cast("Callable[..., EagerTensorProtocol]", np.maximum)(0.0, x))
-
-    # 2. Binary Add execution
     add_tpl = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("add")), "get"))("body", "")
     y = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
     add_res = cast("Callable[..., EagerTensorProtocol]", runner.execute_kernel)(add_tpl, "add", x, y)
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(add_res, x + y)
-
-    # 3. Unary Exp execution
     exp_tpl = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("exp")), "get"))("body", "")
     x_small = np.array([0.0, 1.0, 2.0, -1.0], dtype=np.float32)
     exp_res = cast("Callable[..., EagerTensorProtocol]", runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(exp_res, cast("Callable[..., EagerTensorProtocol]", np.exp)(x_small), rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(exp_res, cast("Callable[..., EagerTensorProtocol]", np.exp)(x_small), rtol=1e-05, atol=1e-05)
 
 
 def test_cuda_driver_presence_or_graceful_skip() -> None:
@@ -151,16 +130,8 @@ def test_llvm_cpp_runner_compilation_and_execution() -> None:
     compiler: str | None = "clang++" if shutil.which("clang++") else "g++" if shutil.which("g++") else None
     if not compiler:
         pytest.skip("No C++ compiler (clang++ or g++) found on system.")
-
     runner: LLVMCPPRunner = LLVMCPPRunner(compiler=compiler)
-    cpp_source: str = """
-    #include <cmath>
-    extern "C" void compute_graph() {
-        volatile float x = 2.0f;
-        volatile float y = std::sin(x);
-        (void)y;
-    }
-    """
+    cpp_source: str = '\n    #include <cmath>\n    extern "C" void compute_graph() {\n        volatile float x = 2.0f;\n        volatile float y = std::sin(x);\n        (void)y;\n    }\n    '
     executable = runner.compile_and_load(cpp_source)
     assert executable() == "Execution successful"
 
@@ -170,7 +141,6 @@ def test_cuda_and_rocm_argument_marshalling() -> None:
     import ctypes
     from unittest.mock import MagicMock
 
-    # CUDA
     cuda_runner = CUDARunner()
     mock_lib = MagicMock()
     mock_lib.cuModuleLoadData.return_value = 0
@@ -178,12 +148,9 @@ def test_cuda_and_rocm_argument_marshalling() -> None:
     mock_lib.cuLaunchKernel.return_value = 0
     cuda_runner.cuda_lib = mock_lib
     cuda_runner.mode = "ctypes"
-
-    dummy_ptr = ctypes.c_void_p(0x123456)
+    dummy_ptr = ctypes.c_void_p(1193046)
     cuda_runner.compile_and_dispatch("ptx_code", "entry", [1, 1, 1], [32, 1, 1], args=[dummy_ptr, 42, 3.14])
     assert mock_lib.cuLaunchKernel.called
-
-    # ROCm
     rocm_runner = ROCmRunner()
     mock_rocm = MagicMock()
     mock_rocm.hipModuleLoad.return_value = 0
@@ -191,7 +158,6 @@ def test_cuda_and_rocm_argument_marshalling() -> None:
     mock_rocm.hipModuleLaunchKernel.return_value = 0
     rocm_runner.rocm_lib = mock_rocm
     rocm_runner.mode = "ctypes"
-
     rocm_runner.load_and_dispatch("/tmp/bin", "entry", [1, 1, 1], [32, 1, 1], args=[dummy_ptr, 10, 2.71])
     assert mock_rocm.hipModuleLaunchKernel.called
 
@@ -208,38 +174,27 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
     from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
-    # 1. MatMul Parity
     a_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     b_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
     ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.matmul(a_np, b_np)
-
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-5, atol=1e-5)
-
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
     torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-5, atol=1e-5)
-
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
     jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", np.array)(jax_res), ref_matmul, rtol=1e-5, atol=1e-5)
-
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
     mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", np.array)(mlx_res), ref_matmul, rtol=1e-5, atol=1e-5)
-
-    # 2. Reductions Parity
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
     x_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.sum(x_np, axis=-1, keepdims=True)
     ref_mean = cast("Callable[..., EagerTensorProtocol]", np.mean)(x_np, axis=-1, keepdims=True)
-
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
-
-    # 3. Activations Parity (GELU, SiLU, Sigmoid, Tanh)
     x_act: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
     ref_sig: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = 1.0 / (1.0 + np.exp(-x_act))
     ref_tanh: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.tanh(x_act)
-
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-5, atol=1e-5)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-5, atol=1e-5)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-05, atol=1e-05)
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-05, atol=1e-05)
 
 
 def test_unsupported_backend_eager_dispatch_raises_error() -> None:
@@ -253,7 +208,6 @@ def test_unsupported_backend_eager_dispatch_raises_error() -> None:
 
 def test_hardware_multidimensional_grid_and_parameter_bindings() -> None:
     """Verify 3D grid resolution and parameter bindings for Conv2D, MatMul, and BatchMatMul."""
-    # MatMul graph
     g_matmul = IRGraph()
     n_a = IRNode("a", "Input", shape_metadata=(64, 32), attributes={"dtype": "float32"})
     n_b = IRNode("b", "Input", shape_metadata=(32, 128), attributes={"dtype": "float32"})
@@ -262,18 +216,13 @@ def test_hardware_multidimensional_grid_and_parameter_bindings() -> None:
         g_matmul.nodes[n.id] = n
     g_matmul.inputs = ["a", "b"]
     g_matmul.outputs = ["mm"]
-
     cuda_mm = CudaCodeGenerator(g_matmul).generate()
     assert "matmul<<<grid_0, block_0>>>(inputs[0], inputs[1], d_out_0, 64, 128, 32)" in cuda_mm
     assert "dim3 grid_0((128 + block_0.x - 1) / block_0.x, (64 + block_0.y - 1) / block_0.y, 1)" in cuda_mm
-
     rocm_mm = RocmCodeGenerator(g_matmul).generate()
     assert "hipLaunchKernelGGL(matmul, grid_0, block_0, 0, 0, inputs[0], inputs[1], d_out_0, 64, 128, 32)" in rocm_mm
-
     metal_mm = MetalCodeGenerator(g_matmul).generate()
     assert "grid_size_0 = MTLSize(128, 64, 1)" in metal_mm
-
-    # Conv2D graph
     g_conv = IRGraph()
     n_x = IRNode("x", "Input", shape_metadata=(2, 3, 28, 28), attributes={"dtype": "float32"})
     n_w = IRNode("w", "Input", shape_metadata=(16, 3, 3, 3), attributes={"dtype": "float32"})
@@ -282,18 +231,13 @@ def test_hardware_multidimensional_grid_and_parameter_bindings() -> None:
         g_conv.nodes[n.id] = n
     g_conv.inputs = ["x", "w"]
     g_conv.outputs = ["conv"]
-
     cuda_conv = CudaCodeGenerator(g_conv).generate()
     assert "conv2d<<<grid_0, block_0>>>(inputs[0], inputs[1], d_out_0, 2, 3, 28, 28, 16, 3, 3, 26, 26)" in cuda_conv
     assert "dim3 grid_0((26 * 26 + block_0.x - 1) / block_0.x, 16, 2)" in cuda_conv
-
     rocm_conv = RocmCodeGenerator(g_conv).generate()
     assert "hipLaunchKernelGGL(conv2d, grid_0, block_0, 0, 0, inputs[0], inputs[1], d_out_0, 2, 3, 28, 28, 16, 3, 3, 26, 26)" in rocm_conv
-
     metal_conv = MetalCodeGenerator(g_conv).generate()
     assert "grid_size_0 = MTLSize(676, 16, 2)" in metal_conv
-
-    # BatchMatMul graph
     g_bmm = IRGraph()
     n_ba = IRNode("ba", "Input", shape_metadata=(4, 16, 32), attributes={"dtype": "float32"})
     n_bb = IRNode("bb", "Input", shape_metadata=(4, 32, 64), attributes={"dtype": "float32"})
@@ -302,14 +246,11 @@ def test_hardware_multidimensional_grid_and_parameter_bindings() -> None:
         g_bmm.nodes[n.id] = n
     g_bmm.inputs = ["ba", "bb"]
     g_bmm.outputs = ["bmm"]
-
     cuda_bmm = CudaCodeGenerator(g_bmm).generate()
     assert "batchmatmul<<<grid_0, block_0>>>(inputs[0], inputs[1], d_out_0, 4, 16, 64, 32)" in cuda_bmm
     assert "dim3 grid_0((64 + block_0.x - 1) / block_0.x, (16 + block_0.y - 1) / block_0.y, 4)" in cuda_bmm
-
     rocm_bmm = RocmCodeGenerator(g_bmm).generate()
     assert "hipLaunchKernelGGL(batchmatmul, grid_0, block_0, 0, 0, inputs[0], inputs[1], d_out_0, 4, 16, 64, 32)" in rocm_bmm
-
     metal_bmm = MetalCodeGenerator(g_bmm).generate()
     assert "grid_size_0 = MTLSize(64, 16, 4)" in metal_bmm
 
@@ -324,19 +265,15 @@ def test_hardware_liveness_deallocations_and_free_buffer() -> None:
         g.nodes[n.id] = n
     g.inputs = ["in0"]
     g.outputs = ["out"]
-
     cuda_code = CudaCodeGenerator(g).generate()
     assert "CUDA_CHECK(cudaFree(d_out_0));" in cuda_code
-
     rocm_code = RocmCodeGenerator(g).generate()
     assert "HIP_CHECK(hipFree(d_out_0));" in rocm_code
-
     metal_code = MetalCodeGenerator(g).generate()
     assert "d_out_0 = None" in metal_code or "buffer_out_0 = None" in metal_code
-
     runner = MetalRunner()
     runner.free_buffer(None)
-    runner.free_buffer(ctypes.c_void_p(0x1234))
+    runner.free_buffer(ctypes.c_void_p(4660))
 
 
 def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
@@ -344,48 +281,20 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
     cuda_gen = CudaCodeGenerator(IRGraph())
     rocm_gen = RocmCodeGenerator(IRGraph())
     metal_gen = MetalCodeGenerator(IRGraph())
-
-    new_ops = [
-        "reduceprod",
-        "reduceall",
-        "reduceany",
-        "argmax",
-        "argmin",
-        "cumsum",
-        "elu",
-        "selu",
-        "hardswish",
-        "mish",
-        "leakyrelu",
-        "cholesky",
-        "qr",
-        "solve",
-        "triangularsolve",
-        "einsum",
-        "avgpool3d",
-        "maxpool3d",
-        "interpolate",
-    ]
-
+    new_ops = ["reduceprod", "reduceall", "reduceany", "argmax", "argmin", "cumsum", "elu", "selu", "hardswish", "mish", "leakyrelu", "cholesky", "qr", "solve", "triangularsolve", "einsum", "avgpool3d", "maxpool3d", "interpolate"]
     for op in new_ops:
         assert op in cuda_gen.config.templates, f"Missing {op} in CUDA"
         assert op in rocm_gen.config.templates, f"Missing {op} in ROCm"
         assert op in metal_gen.config.templates, f"Missing {op} in Metal"
-
-        # Verify type mappings and grid calculations
         c_tpl = cuda_gen.config.templates[op]
         assert "float32" in getattr(c_tpl, "get")("type_mappings", {})
         assert cast("EagerTensorProtocol", getattr(c_tpl, "get"))("grid_calc") is not None
-
         r_tpl = rocm_gen.config.templates[op]
         assert "float32" in getattr(r_tpl, "get")("type_mappings", {})
         assert cast("EagerTensorProtocol", getattr(r_tpl, "get"))("grid_calc") is not None
-
         m_tpl = metal_gen.config.templates[op]
         assert "float32" in getattr(m_tpl, "get")("type_mappings", {})
         assert cast("EagerTensorProtocol", getattr(m_tpl, "get"))("grid_calc") is not None
-
-    # Test code generation for an activation and reduction graph
     g = IRGraph()
     n_in = IRNode("in0", "Input", shape_metadata=(10, 10), attributes={"dtype": "float32"})
     n_elu = IRNode("elu_op", "Elu", inputs=["in0"], shape_metadata=(10, 10), attributes={"dtype": "float32"})
@@ -394,15 +303,12 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
         g.nodes[n.id] = n
     g.inputs = ["in0"]
     g.outputs = ["prod_op"]
-
     cuda_code = CudaCodeGenerator(g).generate()
     assert "elu" in cuda_code
     assert "reduceprod" in cuda_code
-
     rocm_code = RocmCodeGenerator(g).generate()
     assert "elu" in rocm_code
     assert "reduceprod" in rocm_code
-
     metal_code = MetalCodeGenerator(g).generate()
     assert "elu" in metal_code
     assert "reduceprod" in metal_code
@@ -417,31 +323,19 @@ def _test_golden_seed_cross_backend_float_equivalence_part_1(_state: dict[str, E
     np.random.seed(42)
     x_np = np.random.randn(8, 8).astype(np.float32)
     y_np = np.random.randn(8, 8).astype(np.float32)
-
-    # Reference computation in NumPy
     z_ref = np.matmul(np.maximum(0.0, x_np + y_np), np.sin(x_np)) - np.exp(-np.abs(y_np))
+    import torch
 
-    # 1. PyTorch
-    try:
-        import torch
+    x_t = torch.from_numpy(x_np)
+    y_t = torch.from_numpy(y_np)
+    out_torch = (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).cpu().detach().numpy()
+    assert np.allclose(out_torch, z_ref, atol=1e-05, rtol=0.0001)
+    import jax.numpy as jnp
 
-        x_t = torch.from_numpy(x_np)
-        y_t = torch.from_numpy(y_np)
-        out_torch = (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).cpu().detach().numpy()
-        assert np.allclose(out_torch, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError as _exc:
-        assert _exc is not None
-
-    # 2. JAX
-    try:
-        import jax.numpy as jnp
-
-        x_j = jnp.array(x_np)
-        y_j = jnp.array(y_np)
-        out_jax = np.array(jnp.matmul(jnp.maximum(0.0, x_j + y_j), jnp.sin(x_j)) - jnp.exp(-jnp.abs(y_j)))
-        assert np.allclose(out_jax, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError as _exc:
-        assert _exc is not None
+    x_j = jnp.array(x_np)
+    y_j = jnp.array(y_np)
+    out_jax = np.array(jnp.matmul(jnp.maximum(0.0, x_j + y_j), jnp.sin(x_j)) - jnp.exp(-jnp.abs(y_j)))
+    assert np.allclose(out_jax, z_ref, atol=1e-05, rtol=0.0001)
     getattr(_state, "update")({"x_np": x_np, "y_np": y_np, "z_ref": z_ref})
     _state.update(locals())
 
@@ -452,45 +346,32 @@ def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, E
     Args:
         _state: Shared test state dictionary.
     """
-    x_np, y_np, z_ref = _state["x_np"], _state["y_np"], _state["z_ref"]
-    try:
-        import tensorflow as tf
+    (x_np, y_np, z_ref) = (_state["x_np"], _state["y_np"], _state["z_ref"])
+    import tensorflow as tf
 
-        x_tf = tf.constant(x_np)
-        y_tf = tf.constant(y_np)
-        out_tf = (tf.matmul(tf.nn.relu(x_tf + y_tf), tf.sin(x_tf)) - tf.exp(-tf.abs(y_tf))).numpy()
-        if out_tf.shape == z_ref.shape:
-            assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_tf, z_ref, atol=1e-5, rtol=1e-4)
-    except (ImportError, AttributeError, ValueError) as _exc:
-        assert _exc is not None
+    x_tf = tf.constant(x_np)
+    y_tf = tf.constant(y_np)
+    out_tf = (tf.matmul(tf.nn.relu(x_tf + y_tf), tf.sin(x_tf)) - tf.exp(-tf.abs(y_tf))).numpy()
+    if out_tf.shape == z_ref.shape:
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_tf, z_ref, atol=1e-05, rtol=0.0001)
+    import keras.ops as kops
 
-    # 4. Keras
-    try:
-        import keras.ops as kops
+    out_k = np.array(kops.matmul(kops.relu(x_np + y_np), kops.sin(x_np)) - kops.exp(-kops.abs(y_np)))
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_k, z_ref, atol=1e-05, rtol=0.0001)
+    import dask.array as da
 
-        out_k = np.array(kops.matmul(kops.relu(x_np + y_np), kops.sin(x_np)) - kops.exp(-kops.abs(y_np)))
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_k, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError as _exc:
-        assert _exc is not None
-
-    # 5. Dask
-    try:
-        import dask.array as da
-
-        x_d = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "from_array")))(x_np)
-        y_d = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "from_array")))(y_np)
-        out_d = cast(
-            "Callable[..., EagerTensorProtocol]",
-            (
-                cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "matmul")))(
-                    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "maximum")))(0.0, x_d + y_d), cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "sin")))(x_d)
-                )
-                - cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "exp")))(-cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "abs")))(y_d))
-            ).compute,
-        )()
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_d, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError as _exc:
-        assert _exc is not None
+    x_d = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "from_array")))(x_np)
+    y_d = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "from_array")))(y_np)
+    out_d = cast(
+        "Callable[..., EagerTensorProtocol]",
+        (
+            cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "matmul")))(
+                cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "maximum")))(0.0, x_d + y_d), cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "sin")))(x_d)
+            )
+            - cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "exp")))(-cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(da, "abs")))(y_d))
+        ).compute,
+    )()
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_d, z_ref, atol=1e-05, rtol=0.0001)
     _state.update(locals())
 
 
@@ -500,30 +381,23 @@ def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, E
     Args:
         _state: Shared test state dictionary.
     """
-    x_np, y_np, z_ref = _state["x_np"], _state["y_np"], _state["z_ref"]
-    try:
-        import mlx.core as mx
+    (x_np, y_np, z_ref) = (_state["x_np"], _state["y_np"], _state["z_ref"])
+    import mlx.core as mx
 
-        x_m = cast("Callable[..., EagerTensorProtocol]", mx.array)(x_np)
-        y_m = cast("Callable[..., EagerTensorProtocol]", mx.array)(y_np)
-        out_m = cast("Callable[..., EagerTensorProtocol]", np.array)(
-            cast("Callable[..., EagerTensorProtocol]", mx.matmul)(cast("Callable[..., EagerTensorProtocol]", mx.maximum)(0.0, x_m + y_m), cast("Callable[..., EagerTensorProtocol]", mx.sin)(x_m))
-            - cast("Callable[..., EagerTensorProtocol]", mx.exp)(-cast("Callable[..., EagerTensorProtocol]", mx.abs)(y_m))
-        )
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_m, z_ref, atol=1e-5, rtol=1e-4)
-    except ImportError as _exc:
-        assert _exc is not None
-
-    # 7. CuPy
-    try:
+    x_m = cast("Callable[..., EagerTensorProtocol]", mx.array)(x_np)
+    y_m = cast("Callable[..., EagerTensorProtocol]", mx.array)(y_np)
+    out_m = cast("Callable[..., EagerTensorProtocol]", np.array)(
+        cast("Callable[..., EagerTensorProtocol]", mx.matmul)(cast("Callable[..., EagerTensorProtocol]", mx.maximum)(0.0, x_m + y_m), cast("Callable[..., EagerTensorProtocol]", mx.sin)(x_m))
+        - cast("Callable[..., EagerTensorProtocol]", mx.exp)(-cast("Callable[..., EagerTensorProtocol]", mx.abs)(y_m))
+    )
+    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_m, z_ref, atol=1e-05, rtol=0.0001)
+    with pytest.raises(ModuleNotFoundError):
         import cupy as cp
 
         x_cp = cp.asarray(x_np)
         y_cp = cp.asarray(y_np)
         out_cp = cp.asnumpy(cp.matmul(cp.maximum(0.0, x_cp + y_cp), cp.sin(x_cp)) - cp.exp(-cp.abs(y_cp)))
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_cp, z_ref, atol=1e-5, rtol=1e-4)
-    except (ImportError, Exception) as _exc:
-        assert _exc is not None
+        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_cp, z_ref, atol=1e-05, rtol=0.0001)
 
 
 def test_golden_seed_cross_backend_float_equivalence() -> None:

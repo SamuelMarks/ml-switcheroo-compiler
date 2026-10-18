@@ -10,12 +10,12 @@ from ml_switcheroo_compiler.backends import mapping_loader
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 from ml_switcheroo_compiler.backends.sparse import kernels, types
 from ml_switcheroo_compiler.backends.sparse.types import (
+    _SP_BACKEND,
     COOTensor,
     CSCTensor,
     CSRTensor,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.distributed.host_collectives import _np_mod, np
 
 _DIRECT_OPS = {
     "coo_fromdense": kernels.coo_fromdense,
@@ -83,10 +83,10 @@ def _dispatch_sparse_matmul(a: EagerValue, b: EagerValue) -> tuple[bool, EagerVa
     Returns:
         tuple[bool, EagerValue]: Handled flag and computed matrix product.
     """
-    if isinstance(a, (COOTensor, CSRTensor, CSCTensor)) and isinstance(b, np.ndarray):
+    if isinstance(a, (COOTensor, CSRTensor, CSCTensor)) and isinstance(b, _SP_BACKEND.ndarray):
         coo_a = a if isinstance(a, COOTensor) else a.to_coo()
         return True, kernels.spmm(coo_a, b)
-    if isinstance(a, np.ndarray) and isinstance(b, (COOTensor, CSRTensor, CSCTensor)):
+    if isinstance(a, _SP_BACKEND.ndarray) and isinstance(b, (COOTensor, CSRTensor, CSCTensor)):
         coo_b = b if isinstance(b, COOTensor) else b.to_coo()
         return True, kernels.dense_spmm(a, coo_b)
     if isinstance(a, COOTensor) and isinstance(b, COOTensor):
@@ -142,11 +142,11 @@ def execute_op(
     Args:
         cls (type): The caller class or context.
         op_type (str): The name of the operation.
-        *args (object): Positional arguments for the op.
-        **kwargs (object): Keyword arguments for the op.
+        *args (EagerValue): Positional arguments for the op.
+        **kwargs (EagerValue): Keyword arguments for the op.
 
     Returns:
-        object: Result of sparse COO kernel evaluation.
+        EagerValue: Result of sparse COO kernel evaluation.
 
     Raises:
         BackendNotSupportedError: If op is unmapped and not in eager registry.
@@ -182,8 +182,8 @@ def execute_op(
                 processed_args.append(a.to_dense())
             else:
                 processed_args.append(a)
-        res = func(_np_mod(), *processed_args, **kwargs)
-        if isinstance(res, np.ndarray):
+        res = func(_SP_BACKEND, *processed_args, **kwargs)
+        if isinstance(res, _SP_BACKEND.ndarray):
             return COOTensor.from_dense(res)
         return res
 

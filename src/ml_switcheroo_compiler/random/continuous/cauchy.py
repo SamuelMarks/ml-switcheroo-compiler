@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def cauchy(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | str) -> Tensor:
-    """Evaluate cauchy operation.
+    """Execute cauchy for compiler processing.
 
     Args:
         *args (Tensor | float | int | str): Positional args.

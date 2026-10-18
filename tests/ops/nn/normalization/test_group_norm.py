@@ -19,7 +19,7 @@ def test_group_mean_eager() -> None:
     """Test the group mean eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         x = np.random.randn(2, 4, 4, 8).astype(np.float32)
@@ -36,7 +36,7 @@ def test_group_variance_eager() -> None:
     """Test the group variance eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         x = np.random.randn(2, 4, 4, 8).astype(np.float32)
@@ -53,7 +53,7 @@ def test_group_norm_eager() -> None:
     """Test the group norm eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         x = np.random.randn(2, 4, 4, 8).astype(np.float32)
@@ -72,7 +72,7 @@ def test_group_norm_5d_eager() -> None:
     """Test the group norm 5d eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         x = np.random.randn(2, 3, 4, 4, 8).astype(np.float32)

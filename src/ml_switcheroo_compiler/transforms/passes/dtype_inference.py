@@ -4,21 +4,21 @@ from typing import Optional, cast
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _get_value_dtype(val: EagerValue) -> Optional[DType]:
+def _get_value_dtype(val: TensorOrScalar) -> Optional[DType]:
     """Get the dtype from a constant value.
 
     Args:
-        val (object): The val parameter.
+        val (TensorOrScalar): The val parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Optional[DType]: Inferred `DType` or None.
     """
     if hasattr(val, "dtype"):
         return DType(str(getattr(val, "dtype")))
@@ -35,7 +35,7 @@ def _infer_constant_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a Constant node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (LogicalNode): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -59,7 +59,7 @@ def _infer_input_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Input node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (LogicalNode): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -73,7 +73,7 @@ def _infer_output_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Output node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (LogicalNode): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -92,13 +92,13 @@ def _infer_output_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
 
 
 def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
-    """Evaluate _get_promoted_dtype operation.
+    """Compute the promoted common data type across `valid_dtypes`.
 
     Args:
-        valid_dtypes (object): The valid_dtypes parameter.
+        valid_dtypes (list[str]): The valid_dtypes parameter.
 
     Returns:
-        str: Result.
+        str: Promoted dtype string.
     """
     if len(valid_dtypes) == 1:
         return valid_dtypes[0]
@@ -112,15 +112,16 @@ def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
 
 
 def _handle_cast_dtype(node: LogicalNode, valid_dtypes: list[str]) -> Optional[str]:
-    """Evaluate _handle_cast_dtype operation.
+    """Resolve output dtype for Cast and Bitcast nodes.
 
     Args:
-        node (object): The node parameter.
-        valid_dtypes (object): The valid_dtypes parameter.
+        node (LogicalNode): The node parameter.
+        valid_dtypes (list[str]): The valid_dtypes parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Optional[str]: Target cast dtype string or None.
     """
+    _ = valid_dtypes
     if "dtype" in node.attributes:
         val = node.attributes["dtype"]
         return val.value if isinstance(val, DType) else str(val)
@@ -128,15 +129,16 @@ def _handle_cast_dtype(node: LogicalNode, valid_dtypes: list[str]) -> Optional[s
 
 
 def _handle_boolean_dtype(node: LogicalNode, valid_dtypes: list[str]) -> str:
-    """Evaluate _handle_boolean_dtype operation.
+    """Resolve output dtype for boolean comparison and logical nodes.
 
     Args:
-        node (object): The node parameter.
-        valid_dtypes (object): The valid_dtypes parameter.
+        node (LogicalNode): The node parameter.
+        valid_dtypes (list[str]): The valid_dtypes parameter.
 
     Returns:
-        str: Result.
+        str: Boolean dtype string `'bool'`.
     """
+    _ = (node, valid_dtypes)
     return DType.Bool.value
 
 
@@ -161,15 +163,15 @@ DTYPE_INFERENCE_REGISTRY = {
 }
 
 
-def _get_node_valid_dtypes(node: EagerValue, dtypes: dict[str, str]) -> list[str]:
-    """Evaluate _get_node_valid_dtypes operation.
+def _get_node_valid_dtypes(node: LogicalNode, dtypes: dict[str, str]) -> list[str]:
+    """Collect known input dtypes for `node` from `dtypes`.
 
     Args:
-        node (object): The node parameter.
-        dtypes (object): The dtypes parameter.
+        node (LogicalNode): The node parameter.
+        dtypes (dict[str, str]): The dtypes parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        list[str]: Known input dtype strings.
     """
     valid = []
     for inp in getattr(node, "inputs"):
@@ -183,7 +185,7 @@ def _infer_op_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a generic Op node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (LogicalNode): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:

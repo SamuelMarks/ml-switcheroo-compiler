@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Control flow tests."""
 
 from __future__ import annotations
@@ -17,7 +16,6 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-
 device = Device(DeviceType.CPU, 0)
 
 
@@ -25,9 +23,8 @@ def test_cond_eager() -> None:
     """Test the cond eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the eager execution of the conditional operator.\n\n    Verifies that cond correctly evaluates the predicate and executes the\n    corresponding branch function (true or false) when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         pred = Tensor(np.array(True), TensorConfig((), DType.Bool, device))
         res = cond(pred, lambda: 1, lambda: 0)
@@ -41,9 +38,8 @@ def test_cond_trace() -> None:
     """Test the cond trace behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the tracing behavior of the conditional operator.\n\n    Verifies that cond correctly records the conditional operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
@@ -51,7 +47,7 @@ def test_cond_trace() -> None:
             """True fn.
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 
@@ -59,7 +55,7 @@ def test_cond_trace() -> None:
             """False fn.
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 

@@ -1,31 +1,27 @@
-"""aot module."""
+"""Ahead-of-time (AOT) and JIT function compilation pipeline."""
 
 from __future__ import annotations
 
 import logging
-from typing import Optional, TypeVar, Union, cast  # noqa: F401
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-
-T = TypeVar("T")
-
-# ruff: noqa: E402
-
-from collections.abc import Callable  # noqa: F401
+from collections.abc import Callable, Iterable
+from typing import Optional, TypeVar, Union, cast
 
 from ml_switcheroo_ir import LogicalGraph
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
 
-# Cache for compiled artifacts
-_COMPILATION_CACHE = {}
+T = TypeVar("T")
+
+_COMPILATION_CACHE: dict[str, Callable[..., TensorOrScalar]] = {}
 
 
 def _fallback_eager(
@@ -33,14 +29,15 @@ def _fallback_eager(
     args: tuple[T, ...],
     kw: dict[str, T],
 ) -> T:
-    """Execute function eagerly as a fallback.
+    """Execute `fn` in eager mode as a fallback when compilation is bypassed.
 
     Args:
-        fn: The original function.
-        args: Positional arguments.
-        kw: Keyword arguments.
+        fn (Callable[..., T]): Target function to evaluate.
+        args (tuple[T, ...]): Positional call arguments.
+        kw (dict[str, T]): Keyword call arguments.
 
-    Returns: Tensor: Result of eager evaluation.
+    Returns:
+        T: Result of eager evaluation.
     """
     was_eager = config.eager_mode
     config.eager_mode = True
@@ -50,19 +47,20 @@ def _fallback_eager(
         config.eager_mode = was_eager
 
 
-def _build_signature_key(fn: EagerValue, backend: str, args: EagerValue) -> str:
-    """Build a cache key for the compilation signature.
+def _build_signature_key(fn: TensorOrScalar, backend: str, args: TensorOrScalar) -> str:
+    """Build a deterministic cache key from function identity, target backend, and argument specs.
 
     Args:
-        fn (Callable): The fn parameter.
-        backend (str): The backend parameter.
-        args (tuple): The args parameter.
+        fn (TensorOrScalar): Function being compiled.
+        backend (str): Target backend identifier.
+        args (TensorOrScalar): Positional arguments tuple.
 
     Returns:
-        str: Result.
+        str: Signature cache key string.
     """
     sig_parts = []
-    for a in getattr(args, "__iter__")():
+    args_iter: Iterable[TensorOrScalar] = cast("Iterable[TensorOrScalar]", args) if isinstance(args, Iterable) else ()
+    for a in args_iter:
         if hasattr(a, "shape") and hasattr(a, "dtype"):
             sig_parts.append(f"T({getattr(a, 'shape', ())},{getattr(a, 'dtype', '')})")
         else:
@@ -72,13 +70,13 @@ def _build_signature_key(fn: EagerValue, backend: str, args: EagerValue) -> str:
 
 
 def _prepare_proxy_args(args: tuple[T, ...]) -> list[T | Tensor]:
-    """Prepare proxy arguments for tracing.
+    """Wrap tensor arguments in `ProxyTensor` instances and emit `Input` nodes in the active graph.
 
     Args:
-        args (tuple): The args parameter.
+        args (tuple[T, ...]): Raw call positional arguments.
 
     Returns:
-        list: Result.
+        list[T | Tensor]: Proxy-wrapped arguments ready for symbolic tracing.
     """
     proxy_args: list[T | Tensor] = []
     for i, a in enumerate(args):
@@ -103,7 +101,6 @@ def _prepare_proxy_args(args: tuple[T, ...]) -> list[T | Tensor]:
             proxy_args.append(Tensor(proxy, TensorConfig(proxy.shape, dtype, device)))
             TracingNodeBuilder.create_tracing_logical_node("Input", [], {}, shape)
 
-            # Overwrite id to match
             last_node = list(getattr(global_tracing_state.active_graph, "nodes").values())[-1]
             old_id = last_node.id
             del getattr(global_tracing_state.active_graph, "nodes")[old_id]
@@ -114,11 +111,11 @@ def _prepare_proxy_args(args: tuple[T, ...]) -> list[T | Tensor]:
     return proxy_args
 
 
-def _capture_outputs(out: EagerValue) -> None:
-    """Capture outputs in the active tracing graph.
+def _capture_outputs(out: TensorOrScalar) -> None:
+    """Record output tensor node IDs in the active tracing graph.
 
     Args:
-        out (T): The out parameter.
+        out (TensorOrScalar): Traced function return value or sequence of tensors.
     """
     if isinstance(out, Tensor):
         out_id, _ = TracingNodeBuilder.extract_from_tensor(out)
@@ -135,17 +132,17 @@ def _capture_outputs(out: EagerValue) -> None:
             getattr(global_tracing_state.active_graph, "outputs").append(out_node_id)
 
 
-def _get_namespace(backend: str, generator_cls: type) -> EagerValue:
-    """Get the namespace for executing generated code.
+def _get_namespace(backend: str, generator_cls: type) -> dict[str, TensorOrScalar]:
+    """Construct the execution namespace dictionary for evaluating generated backend code.
 
     Args:
-        backend (str): The backend parameter.
-        generator_cls (type): The generator_cls parameter.
+        backend (str): Target backend name.
+        generator_cls (type): Backend generator class.
 
     Returns:
-        dict: Result.
+        dict[str, TensorOrScalar]: Namespace dictionary mapping the backend module.
     """
-    namespace = {}
+    namespace: dict[str, TensorOrScalar] = {}
     if hasattr(generator_cls, "get_module"):
         namespace[backend] = generator_cls.get_module()
     elif backend == "numpy":
@@ -156,10 +153,10 @@ def _get_namespace(backend: str, generator_cls: type) -> EagerValue:
 
 
 def _run_optimization_pipeline(graph: LogicalGraph) -> LogicalGraph:
-    """Run the standard optimization pass pipeline on a traced graph.
+    """Run the standard middle-end optimization pass pipeline on a traced graph.
 
     Args:
-        graph (LogicalGraph): The traced logical graph.
+        graph (LogicalGraph): Unoptimized traced logical graph.
 
     Returns:
         LogicalGraph: Optimized logical graph.
@@ -198,7 +195,7 @@ def _trace_function_graph(fn: Callable[..., T], args: tuple[T, ...], kw: dict[st
 
     try:
         out = fn(*proxy_args, **kw)
-        _capture_outputs(cast("EagerValue", out))
+        _capture_outputs(cast("TensorOrScalar", out))
     except Exception:
         tape.stop_tracing()
         return None
@@ -214,7 +211,7 @@ def _try_static_compile_aot(
     graph: LogicalGraph,
     kwargs: dict[str, Union[bool, int, str, None]],
 ) -> Optional[Callable[..., T]]:
-    """Attempt static or class-level compile_aot on the generator class.
+    """Attempt static or class-level `compile_aot` on the generator class.
 
     Args:
         generator_cls (type): Backend generator class.
@@ -253,7 +250,7 @@ def _build_generated_entrypoint(
         code (str): Generated Python code string.
         namespace (dict[str, Callable[..., T]]): Execution namespace dictionary.
         backend (str): Target backend name.
-        strict (bool): Whether to raise CompilationError when no entrypoint exists.
+        strict (bool): Whether to raise `CompilationError` when no entrypoint exists.
 
     Returns:
         Optional[Callable[..., T]]: Wrapped entrypoint callable, or None if not found and non-strict.
@@ -265,14 +262,14 @@ def _build_generated_entrypoint(
     if "apply_model" in namespace:
 
         def apply_wrapper(*w_args: T, **w_kw: T) -> T:
-            """Wrap to invoke the generated apply_model function.
+            """Invoke the generated `apply_model` entrypoint.
 
             Args:
                 *w_args (T): Positional arguments.
                 **w_kw (T): Keyword arguments.
 
             Returns:
-                T: The result.
+                T: Evaluated model output.
             """
             return namespace["apply_model"]({}, *w_args, **w_kw)
 
@@ -281,14 +278,14 @@ def _build_generated_entrypoint(
     if "evaluate" in namespace:
 
         def eval_wrapper(*w_args: T, **w_kw: T) -> T:
-            """Wrap to invoke the generated evaluate function.
+            """Invoke the generated `evaluate` entrypoint.
 
             Args:
                 *w_args (T): Positional arguments.
                 **w_kw (T): Keyword arguments.
 
             Returns:
-                T: The result.
+                T: Evaluated graph output.
             """
             del w_kw
             numpy_args = [a.data if isinstance(a, Tensor) else a for a in w_args]
@@ -336,7 +333,7 @@ def _execute_generated_code(
     namespace = _get_namespace(backend, generator_cls)
 
     try:
-        compiled_fn: Callable[..., EagerValue] | None = cast("Callable[..., EagerTensorProtocol]", _build_generated_entrypoint)(code, namespace, backend, strict)
+        compiled_fn: Callable[..., TensorOrScalar] | None = cast("Callable[..., EagerTensorProtocol]", _build_generated_entrypoint)(code, namespace, backend, strict)
         if compiled_fn is None:
             return _fallback_eager(fn, args, kw)
         res = compiled_fn(*args, **kw)
@@ -406,26 +403,27 @@ def _compile_with_generator_instance(
     return _execute_generated_code(code, generator_cls, backend, key, strict, fn, args, kw)
 
 
-def compile_function(fn: EagerValue, backend: str = "numpy", **kwargs: EagerValue) -> EagerValue:
-    """Compiles a function functionally, intended for torch.compile integrations.
+def compile_function(fn: TensorOrScalar, backend: str = "numpy", **kwargs: AttrValue) -> TensorOrScalar:
+    """Compile a Python function into an optimized backend execution callable.
 
     Args:
-        fn: The function to compile.
-        backend: The target execution backend.
-        kwargs: Additional compilation options.
+        fn (TensorOrScalar): Function to trace and compile.
+        backend (str): Target backend name.
+        **kwargs (AttrValue): Additional compilation options (e.g., `strict=True`).
 
     Returns:
-        Callable: The compiled function.
+        TensorOrScalar: Compiled callable wrapper.
     """
 
-    def compiled_wrapper(*args: EagerValue, **kw: EagerValue) -> EagerValue:
-        """Wrap that traces and compiles the function on first call.
+    def compiled_wrapper(*args: TensorOrScalar, **kw: AttrValue) -> TensorOrScalar:
+        """Trace and compile `fn` on first call for a given input signature.
 
         Args:
-            *args (T): Positional arguments for the function.
-            **kw (T): Keyword arguments for the function.
+            *args (TensorOrScalar): Positional arguments for `fn`.
+            **kw (AttrValue): Keyword arguments for `fn`.
 
-        Returns: Tensor: The result of the compiled (or eager) function.
+        Returns:
+            TensorOrScalar: Evaluated output of the compiled (or fallback eager) function.
         """
         key = _build_signature_key(fn, backend, args)
         if key in _COMPILATION_CACHE:
@@ -433,7 +431,7 @@ def compile_function(fn: EagerValue, backend: str = "numpy", **kwargs: EagerValu
 
         graph = cast("Callable[..., EagerTensorProtocol]", _trace_function_graph)(fn, args, kw)
         if graph is None:
-            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _fallback_eager)(fn, args, kw))
+            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _fallback_eager)(fn, args, kw))
 
         try:
             generator_cls = BackendRegistry.get(backend)
@@ -442,13 +440,16 @@ def compile_function(fn: EagerValue, backend: str = "numpy", **kwargs: EagerValu
                 from ml_switcheroo_compiler.core.errors import CompilationError
 
                 raise CompilationError(f"Target backend '{backend}' not found: {e}") from e
-            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _fallback_eager)(fn, args, kw))
+            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _fallback_eager)(fn, args, kw))
 
-        static_fn = cast("Callable[..., Optional[Callable[..., EagerValue]]]", _try_static_compile_aot)(generator_cls, graph, kwargs)
+        static_fn = cast("Callable[..., Optional[Callable[..., TensorOrScalar]]]", _try_static_compile_aot)(generator_cls, graph, kwargs)
         if static_fn is not None:
             _COMPILATION_CACHE[key] = static_fn
             return static_fn(*args, **kw)
 
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _compile_with_generator_instance)(generator_cls, graph, backend, key, kwargs, fn, args, kw))
+        return cast(
+            TensorOrScalar,
+            cast("Callable[..., EagerTensorProtocol]", _compile_with_generator_instance)(generator_cls, graph, backend, key, kwargs, fn, args, kw),
+        )
 
     return compiled_wrapper

@@ -206,8 +206,10 @@ class MLIRBytecodeEncoder:
         for op in self.ops:
             # Op header: op_name_idx
             payload += self._encode_varint(self._add_string(str(op["name"])))
-            operand_ids: list[int] = list(getattr(op.get("operand_ssa_ids", []), "__iter__")())
-            type_indices: list[int] = list(getattr(op.get("result_type_indices", []), "__iter__")())
+            raw_operands = op.get("operand_ssa_ids", [])
+            operand_ids: list[int] = [int(x) for x in raw_operands] if isinstance(raw_operands, list) else []
+            raw_types = op.get("result_type_indices", [])
+            type_indices: list[int] = [int(x) for x in raw_types] if isinstance(raw_types, list) else []
 
             # Operands count
             payload += self._encode_varint(len(operand_ids))

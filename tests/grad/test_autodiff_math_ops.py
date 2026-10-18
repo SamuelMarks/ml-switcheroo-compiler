@@ -23,7 +23,7 @@ def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tenso
     """Construct a Tensor instance with CPU Float32 configuration.
 
     Args:
-        val (object): Input data to wrap.
+        val (EagerValue): Input data to wrap.
         shape (tuple[int, ...] | None): Optional explicit shape.
 
     Returns:

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -18,12 +19,12 @@ if TYPE_CHECKING:
 class Qr(OpDef):
     """Qr Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (EagerTensorProtocol): Positional args.
+        **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -45,12 +46,12 @@ class Qr(OpDef):
 class Hessenberg(OpDef):
     """Hessenberg Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -62,12 +63,12 @@ class Hessenberg(OpDef):
 class HouseholderProduct(OpDef):
     """HouseholderProduct Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape for HouseholderProduct.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result shape (..., M, N).
@@ -81,12 +82,12 @@ class HouseholderProduct(OpDef):
 class Schur(OpDef):
     """Schur Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -98,12 +99,12 @@ class Schur(OpDef):
 class Tridiagonal(OpDef):
     """Tridiagonal Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -114,7 +115,7 @@ class Tridiagonal(OpDef):
         return diag_shape, off_diag_shape, a_shape
 
 
-def qr(input: Tensor, mode: str = "reduced") -> EagerValue:
+def qr(input: Tensor, mode: str = "reduced") -> TensorOrScalar:
     """Compute the QR decomposition of a matrix.
 
     Args:
@@ -149,7 +150,7 @@ def qr(input: Tensor, mode: str = "reduced") -> EagerValue:
     return _emit_linalg_node("Qr", [input], {"mode": mode}, [q_shape, r_shape], [input.dtype] * 2)
 
 
-def hessenberg(a: Tensor) -> EagerValue:
+def hessenberg(a: Tensor) -> TensorOrScalar:
     """Compute the Hessenberg decomposition of a matrix.
 
     Args:
@@ -170,7 +171,7 @@ def hessenberg(a: Tensor) -> EagerValue:
     return _emit_linalg_node("Hessenberg", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def householder_product(a: Tensor, tau: Tensor) -> EagerValue:
+def householder_product(a: Tensor, tau: Tensor) -> TensorOrScalar:
     """Compute the product of Householder reflectors.
 
     Args:
@@ -189,7 +190,7 @@ def householder_product(a: Tensor, tau: Tensor) -> EagerValue:
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
 
-def schur(a: Tensor) -> EagerValue:
+def schur(a: Tensor) -> TensorOrScalar:
     """Compute the Schur decomposition of a matrix.
 
     Args:
@@ -210,7 +211,7 @@ def schur(a: Tensor) -> EagerValue:
     return _emit_linalg_node("Schur", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal(a: Tensor) -> EagerValue:
+def tridiagonal(a: Tensor) -> TensorOrScalar:
     """Compute the tridiagonal decomposition of a symmetric matrix.
 
     Args:
@@ -238,12 +239,12 @@ def tridiagonal(a: Tensor) -> EagerValue:
 class Qdwh(OpDef):
     """Qdwh Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -251,7 +252,7 @@ class Qdwh(OpDef):
         return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
 
 
-def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> EagerValue:
+def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> TensorOrScalar:
     """Compute the QR-based dynamically weighted Halley iteration.
 
     Args:

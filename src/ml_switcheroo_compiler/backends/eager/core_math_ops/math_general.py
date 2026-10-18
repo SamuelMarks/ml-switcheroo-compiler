@@ -7,17 +7,17 @@ import typing  # noqa: F401
 from types import ModuleType
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import get_special_submodule, host_backend
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.distributed.host_collectives import _scipy_mod, np
 
 
 @global_eager_registry.register("Deg2Rad")
 def _deg2rad(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _deg2rad operation.
+    """Execute the eager deg2rad operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -25,7 +25,7 @@ def _deg2rad(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "deg2rad", None)
     return func(*args, **kwargs) if func else None
@@ -33,7 +33,7 @@ def _deg2rad(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 @global_eager_registry.register("Degrees")
 def _degrees(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _degrees operation.
+    """Execute the eager degrees operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -41,7 +41,7 @@ def _degrees(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "degrees", getattr(backend_module, "rad2deg", None))
     return func(*args, **kwargs) if func else None
@@ -49,7 +49,7 @@ def _degrees(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 @global_eager_registry.register("Rad2Deg")
 def _rad2deg(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _rad2deg operation.
+    """Execute the eager rad2deg operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -57,7 +57,7 @@ def _rad2deg(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "rad2deg", getattr(backend_module, "degrees", None))
     return func(*args, **kwargs) if func else None
@@ -65,7 +65,7 @@ def _rad2deg(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 @global_eager_registry.register("Radians")
 def _radians(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _radians operation.
+    """Execute the eager radians operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -73,7 +73,7 @@ def _radians(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "radians", getattr(backend_module, "deg2rad", None))
     return func(*args, **kwargs) if func else None
@@ -81,7 +81,7 @@ def _radians(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 @global_eager_registry.register("Cbrt")
 def _cbrt(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _cbrt operation.
+    """Execute the eager cbrt operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -89,7 +89,7 @@ def _cbrt(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "cbrt", None)
@@ -101,7 +101,7 @@ def _cbrt(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 @global_eager_registry.register("Fix")
 def _fix(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _fix operation.
+    """Execute the eager fix operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -109,7 +109,7 @@ def _fix(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "fix", getattr(backend_module, "trunc", None))
@@ -121,7 +121,7 @@ def _fix(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
 
 @global_eager_registry.register("Hypot")
 def _hypot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _hypot operation.
+    """Execute the eager hypot operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -129,7 +129,7 @@ def _hypot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "hypot", None)
     if func:
@@ -140,7 +140,7 @@ def _hypot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("I0")
 def _i0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _i0 operation.
+    """Execute the eager i0 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -148,7 +148,7 @@ def _i0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "i0", None)
     return func(*args, **kwargs) if func else None
@@ -156,7 +156,7 @@ def _i0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> 
 
 @global_eager_registry.register("Imag")
 def _imag(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _imag operation.
+    """Execute the eager imag operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -164,7 +164,7 @@ def _imag(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "imag", None)
     return func(*args, **kwargs) if func else None
@@ -172,7 +172,7 @@ def _imag(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 @global_eager_registry.register("Lcm")
 def _lcm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _lcm operation.
+    """Execute the eager lcm operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -180,17 +180,17 @@ def _lcm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "lcm", getattr(backend_module, "least_common_multiple", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.lcm(args[0], args[1]))
+    return cast(EagerValue, host_backend.lcm(args[0], args[1]))
 
 
 @global_eager_registry.register("Nextafter")
 def _nextafter(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _nextafter operation.
+    """Execute the eager nextafter operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -198,17 +198,17 @@ def _nextafter(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "nextafter", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.nextafter(args[0], args[1]))
+    return cast(EagerValue, host_backend.nextafter(args[0], args[1]))
 
 
 @global_eager_registry.register("Real")
 def _real(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _real operation.
+    """Execute the eager real operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -216,17 +216,17 @@ def _real(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "real", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.real(args[0]))
+    return cast(EagerValue, host_backend.real(args[0]))
 
 
 @global_eager_registry.register("Spacing")
 def _spacing(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _spacing operation.
+    """Execute the eager spacing operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -234,17 +234,17 @@ def _spacing(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "spacing", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.spacing(args[0]))
+    return cast(EagerValue, host_backend.spacing(args[0]))
 
 
 @global_eager_registry.register("Unwrap")
 def _unwrap(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _unwrap operation.
+    """Execute the eager unwrap operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -252,17 +252,17 @@ def _unwrap(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "unwrap", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.unwrap(args[0], **kwargs))
+    return cast(EagerValue, host_backend.unwrap(args[0], **kwargs))
 
 
 @global_eager_registry.register("Beta")
 def _beta(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _beta operation.
+    """Execute the eager beta operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -270,7 +270,7 @@ def _beta(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     kwargs.pop("shape", None)
@@ -280,12 +280,12 @@ def _beta(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     func = getattr(backend_module, "beta", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _scipy_mod("special").beta(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").beta(*args, **kwargs))
 
 
 @global_eager_registry.register("Betainc")
 def _betainc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _betainc operation.
+    """Execute the eager betainc operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -293,17 +293,17 @@ def _betainc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "betainc", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _scipy_mod("special").betainc(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").betainc(*args, **kwargs))
 
 
 @global_eager_registry.register("AllToAll")
 def _all_to_all(backend_module: EagerValue, tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _all_to_all operation.
+    """Execute the eager all to all operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -312,14 +312,14 @@ def _all_to_all(backend_module: EagerValue, tensor: EagerValue, *args: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return tensor
 
 
 @global_eager_registry.register("ApplyOverAxes")
 def _apply_over_axes(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _apply_over_axes operation.
+    """Execute the eager apply over axes operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -327,14 +327,14 @@ def _apply_over_axes(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return args[1] if len(args) > 1 else None
 
 
 @global_eager_registry.register("ArrayRepr")
 def _array_repr(backend_module: EagerValue, arr: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _array_repr operation.
+    """Execute the eager array repr operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -342,14 +342,14 @@ def _array_repr(backend_module: EagerValue, arr: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return repr(arr)
 
 
 @global_eager_registry.register("ArrayStr")
 def _array_str(backend_module: EagerValue, arr: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _array_str operation.
+    """Execute the eager array str operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -357,14 +357,14 @@ def _array_str(backend_module: EagerValue, arr: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return str(arr)
 
 
 @global_eager_registry.register("Assign")
 def _assign(backend_module: EagerValue, ref: EagerValue, value: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _assign operation.
+    """Execute the eager assign operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -373,14 +373,14 @@ def _assign(backend_module: EagerValue, ref: EagerValue, value: EagerValue, **kw
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return value
 
 
 @global_eager_registry.register("AssignVariable")
 def _assign_variable(backend_module: EagerValue, ref: EagerValue, value: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _assign_variable operation.
+    """Execute the eager assign variable operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -389,14 +389,14 @@ def _assign_variable(backend_module: EagerValue, ref: EagerValue, value: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return value
 
 
 @global_eager_registry.register("AssociativeScan")
 def _associative_scan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _associative_scan operation.
+    """Execute the eager associative scan operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -404,7 +404,7 @@ def _associative_scan(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     fn = cast(EagerTensorProtocol, args[0])
@@ -425,7 +425,7 @@ def _associative_scan(backend_module: EagerValue, *args: EagerValue, **kwargs: E
 
 @global_eager_registry.register("Atleast1d")
 def _atleast_1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _atleast_1d operation.
+    """Execute the eager atleast 1d operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -433,14 +433,14 @@ def _atleast_1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(ModuleType, backend_module).atleast_1d(*args) if hasattr(backend_module, "atleast_1d") else args[0]
 
 
 @global_eager_registry.register("Atleast2d")
 def _atleast_2d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _atleast_2d operation.
+    """Execute the eager atleast 2d operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -448,14 +448,14 @@ def _atleast_2d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(ModuleType, backend_module).atleast_2d(*args) if hasattr(backend_module, "atleast_2d") else args[0]
 
 
 @global_eager_registry.register("Atleast3d")
 def _atleast_3d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _atleast_3d operation.
+    """Execute the eager atleast 3d operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -463,14 +463,14 @@ def _atleast_3d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(ModuleType, backend_module).atleast_3d(*args) if hasattr(backend_module, "atleast_3d") else args[0]
 
 
 @global_eager_registry.register("Adjoint")
 def _adjoint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _adjoint operation.
+    """Execute the eager adjoint operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -478,7 +478,7 @@ def _adjoint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "adjoint", None)
@@ -488,12 +488,12 @@ def _adjoint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     if hasattr(backend_module, "conj") and hasattr(backend_module, "transpose"):
         return cast(EagerValue, mod.conj(mod.transpose(x)))
     x_np = mod.asarray(x)
-    return cast(EagerValue, np.conj(np.transpose(x_np)))
+    return cast(EagerValue, host_backend.conj(host_backend.transpose(x_np)))
 
 
 @global_eager_registry.register("Bincount")
 def _bincount(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bincount operation.
+    """Execute the eager bincount operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -501,7 +501,7 @@ def _bincount(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "bincount", None)
@@ -515,7 +515,7 @@ def _bincount(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
 @global_eager_registry.register("Cross")
 def _cross(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _cross operation.
+    """Execute the eager cross operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -523,7 +523,7 @@ def _cross(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "cross", None)
@@ -534,7 +534,7 @@ def _cross(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("Inner")
 def _inner(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _inner operation.
+    """Execute the eager inner operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -542,7 +542,7 @@ def _inner(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "inner", None)
@@ -554,7 +554,7 @@ def _inner(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("Ediff1d")
 def _ediff1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _ediff1d operation.
+    """Execute the eager ediff1d operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -562,14 +562,14 @@ def _ediff1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).ediff1d(*args, **kwargs))
 
 
 @global_eager_registry.register("Gradient")
 def _gradient(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _gradient operation.
+    """Execute the eager gradient operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -577,14 +577,14 @@ def _gradient(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).gradient(*args, **kwargs))
 
 
 @global_eager_registry.register("HardSilu")
 def _hardsilu(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _hardsilu operation.
+    """Execute the eager hardsilu operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -592,7 +592,7 @@ def _hardsilu(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -601,7 +601,7 @@ def _hardsilu(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
 @global_eager_registry.register("Interp")
 def _interp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _interp operation.
+    """Execute the eager interp operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -609,14 +609,14 @@ def _interp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).interp(*args, **kwargs))
 
 
 @global_eager_registry.register("Iterable")
 def _iterable(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _iterable operation.
+    """Execute the eager iterable operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -624,14 +624,14 @@ def _iterable(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).iterable(*args, **kwargs))
 
 
 @global_eager_registry.register("Ix")
 def _ix(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _ix operation.
+    """Execute the eager ix operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -639,14 +639,14 @@ def _ix(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).ix_(*args, **kwargs))
 
 
 @global_eager_registry.register("Kron")
 def _kron(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _kron operation.
+    """Execute the eager kron operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -654,14 +654,14 @@ def _kron(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).kron(*args, **kwargs))
 
 
 @global_eager_registry.register("Outfeed")
 def _outfeed(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _outfeed operation.
+    """Execute the eager outfeed operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -669,7 +669,7 @@ def _outfeed(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     if hasattr(backend_module, "lax") and hasattr(mod.lax, "outfeed"):
@@ -679,7 +679,7 @@ def _outfeed(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 @global_eager_registry.register("R")
 def _r(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _r operation.
+    """Execute the eager r operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -687,14 +687,14 @@ def _r(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> E
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).r_(*args, **kwargs))
 
 
 @global_eager_registry.register("Rademacher")
 def _rademacher(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _rademacher operation.
+    """Execute the eager rademacher operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -702,7 +702,7 @@ def _rademacher(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     shape = kwargs.get("shape", ())
     return cast(EagerValue, cast(ModuleType, backend_module).random.choice([-1, 1], size=shape))
@@ -710,7 +710,7 @@ def _rademacher(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
 @global_eager_registry.register("Squareplus")
 def _squareplus(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _squareplus operation.
+    """Execute the eager squareplus operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -718,7 +718,7 @@ def _squareplus(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -728,7 +728,7 @@ def _squareplus(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
 @global_eager_registry.register("Trapezoid")
 def _trapezoid(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _trapezoid operation.
+    """Execute the eager trapezoid operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -736,7 +736,7 @@ def _trapezoid(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     if hasattr(backend_module, "trapezoid"):
@@ -746,7 +746,7 @@ def _trapezoid(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
 
 @global_eager_registry.register("Vectorize")
 def _vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _vectorize operation.
+    """Execute the eager vectorize operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -754,14 +754,14 @@ def _vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast(ModuleType, backend_module).vectorize(*args, **kwargs))
 
 
 @global_eager_registry.register("IndexInDim")
 def _indexindim(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _indexindim operation.
+    """Execute the eager indexindim operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -769,7 +769,7 @@ def _indexindim(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -790,7 +790,7 @@ def _indexindim(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
 @global_eager_registry.register("Ppermute")
 def _ppermute(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _ppermute operation.
+    """Execute the eager ppermute operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -798,7 +798,7 @@ def _ppermute(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     if hasattr(backend_module, "lax") and hasattr(mod.lax, "ppermute"):
@@ -808,7 +808,7 @@ def _ppermute(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
 @global_eager_registry.register("Kronecker")
 def _kronecker(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _kronecker operation.
+    """Execute the eager kronecker operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -816,7 +816,7 @@ def _kronecker(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "kron", getattr(backend_module, "kronecker", None))
@@ -827,7 +827,7 @@ def _kronecker(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
 
 @global_eager_registry.register("Outer")
 def _outer(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _outer operation.
+    """Execute the eager outer operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -835,7 +835,7 @@ def _outer(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     func = getattr(backend_module, "outer", None)
@@ -846,7 +846,7 @@ def _outer(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("Fabs")
 def _fabs(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _fabs operation.
+    """Execute the eager fabs operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -854,7 +854,7 @@ def _fabs(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "fabs", getattr(backend_module, "abs", None))
     return func(*args, **kwargs) if func else None
@@ -862,7 +862,7 @@ def _fabs(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 @global_eager_registry.register("Gcd")
 def _gcd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _gcd operation.
+    """Execute the eager gcd operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -870,7 +870,7 @@ def _gcd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "gcd", getattr(backend_module, "greatest_common_divisor", None))
     if func:
@@ -882,7 +882,7 @@ def _gcd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
 
 @global_eager_registry.register("Ball")
 def _np_ball(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_ball operation.
+    """Execute the eager np ball operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -890,17 +890,17 @@ def _np_ball(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "ball", getattr(backend_module, "ball", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.zeros(kwargs.get("shape", ()), dtype=np.float32))
+    return cast(EagerValue, host_backend.zeros(kwargs.get("shape", ()), dtype=host_backend.float32))
 
 
 @global_eager_registry.register("BetaPdf")
 def _np_betapdf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_betapdf operation.
+    """Execute the eager np betapdf operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -908,17 +908,17 @@ def _np_betapdf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "betapdf", getattr(backend_module, "betapdf", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _scipy_mod("stats").beta.pdf(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("stats").beta.pdf(*args, **kwargs))
 
 
 @global_eager_registry.register("Gcd")
 def _np_gcd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_gcd operation.
+    """Execute the eager np gcd operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -926,17 +926,17 @@ def _np_gcd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "gcd", getattr(backend_module, "gcd", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.gcd(args[0], args[1]))
+    return cast(EagerValue, host_backend.gcd(args[0], args[1]))
 
 
 @global_eager_registry.register("Inner")
 def _np_inner(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_inner operation.
+    """Execute the eager np inner operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -944,17 +944,17 @@ def _np_inner(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "inner", getattr(backend_module, "inner", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.inner(args[0], args[1]))
+    return cast(EagerValue, host_backend.inner(args[0], args[1]))
 
 
 @global_eager_registry.register("R")
 def _np_r(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_r operation.
+    """Execute the eager np r operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -962,17 +962,17 @@ def _np_r(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "r", getattr(backend_module, "r", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.r_[args[0]])
+    return cast(EagerValue, host_backend.r_[args[0]])
 
 
 @global_eager_registry.register("Switch")
 def _np_switch(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_switch operation.
+    """Execute the eager np switch operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -980,7 +980,7 @@ def _np_switch(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "switch", getattr(backend_module, "switch", None))
     if func is not None:
@@ -990,7 +990,7 @@ def _np_switch(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
 
 @global_eager_registry.register("T")
 def _np_t(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_t operation.
+    """Execute the eager np t operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -998,17 +998,17 @@ def _np_t(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "t", getattr(backend_module, "t", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.transpose(args[0]))
+    return cast(EagerValue, host_backend.transpose(args[0]))
 
 
 @global_eager_registry.register("Trapezoid")
 def _np_trapezoid(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_trapezoid operation.
+    """Execute the eager np trapezoid operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1016,18 +1016,18 @@ def _np_trapezoid(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(np, "trapezoid", getattr(np, "trapz", None)))
+    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(host_backend, "trapezoid", getattr(host_backend, "trapz", None)))
     return trapz_fn(*args, **kwargs)
 
 
 @global_eager_registry.register("TrapezoidalIntegral")
 def _np_trapezoidalintegral(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_trapezoidalintegral operation.
+    """Execute the eager np trapezoidalintegral operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1035,18 +1035,18 @@ def _np_trapezoidalintegral(backend_module: EagerValue, *args: EagerValue, **kwa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "trapezoidalintegral", getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None)))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(np, "trapezoid", getattr(np, "trapz", None)))
+    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(host_backend, "trapezoid", getattr(host_backend, "trapz", None)))
     return trapz_fn(*args, **kwargs)
 
 
 @global_eager_registry.register("Variance")
 def _np_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_variance operation.
+    """Execute the eager np variance operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1054,17 +1054,17 @@ def _np_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "variance", getattr(backend_module, "variance", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.var(*args, **kwargs))
+    return cast(EagerValue, host_backend.var(*args, **kwargs))
 
 
 @global_eager_registry.register("Vectorize")
 def _np_vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_vectorize operation.
+    """Execute the eager np vectorize operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1072,17 +1072,17 @@ def _np_vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "vectorize", getattr(backend_module, "vectorize", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.vectorize(*args, **kwargs))
+    return cast(EagerValue, host_backend.vectorize(*args, **kwargs))
 
 
 @global_eager_registry.register("Welch")
 def _np_welch(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_welch operation.
+    """Execute the eager np welch operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1090,17 +1090,17 @@ def _np_welch(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "welch", getattr(backend_module, "welch", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.fft.rfft(args[0]))
+    return cast(EagerValue, host_backend.fft.rfft(args[0]))
 
 
 @global_eager_registry.register("WrapKeyData")
 def _np_wrapkeydata(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_wrapkeydata operation.
+    """Execute the eager np wrapkeydata operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1108,7 +1108,7 @@ def _np_wrapkeydata(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "wrapkeydata", getattr(backend_module, "wrapkeydata", None))
     if func is not None:
@@ -1118,7 +1118,7 @@ def _np_wrapkeydata(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
 
 @global_eager_registry.register("ZeroFraction")
 def _np_zerofraction(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_zerofraction operation.
+    """Execute the eager np zerofraction operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1126,17 +1126,17 @@ def _np_zerofraction(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "zerofraction", getattr(backend_module, "zerofraction", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.sum(args[0] == 0) / np.size(args[0]))
+    return cast(EagerValue, host_backend.sum(args[0] == 0) / host_backend.size(args[0]))
 
 
 @global_eager_registry.register("Zeta")
 def _np_zeta(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_zeta operation.
+    """Execute the eager np zeta operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -1144,9 +1144,9 @@ def _np_zeta(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "zeta", getattr(backend_module, "zeta", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _scipy_mod("special").zeta(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").zeta(*args, **kwargs))

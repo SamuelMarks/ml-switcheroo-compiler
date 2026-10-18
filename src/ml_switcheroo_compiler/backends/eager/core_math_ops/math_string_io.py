@@ -5,13 +5,13 @@ from __future__ import annotations
 import builtins  # noqa: F401
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("AsString")
 def _as_string(backend_module: EagerValue, arr: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _as_string operation.
+    """Execute the eager as string operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -19,14 +19,14 @@ def _as_string(backend_module: EagerValue, arr: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return str(arr)
 
 
 @global_eager_registry.register("Fromfile")
 def _fromfile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _fromfile operation.
+    """Execute the eager fromfile operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -34,14 +34,14 @@ def _fromfile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "fromfile")(*args, **kwargs))
 
 
 @global_eager_registry.register("Fromstring")
 def _fromstring(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _fromstring operation.
+    """Execute the eager fromstring operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -49,7 +49,7 @@ def _fromstring(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "fromstring", None)
     if func:
@@ -60,7 +60,7 @@ def _fromstring(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
 @global_eager_registry.register("DecodeImage")
 def _np_decodeimage(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_decodeimage operation.
+    """Execute the eager np decodeimage operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -68,17 +68,17 @@ def _np_decodeimage(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "decodeimage", getattr(backend_module, "decodeimage", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.zeros(kwargs.get("shape", (224, 224, 3)) if hasattr(kwargs, "get") else (224, 224, 3), dtype=np.uint8))
+    return cast(EagerValue, host_backend.zeros(kwargs.get("shape", (224, 224, 3)) if hasattr(kwargs, "get") else (224, 224, 3), dtype=host_backend.uint8))
 
 
 @global_eager_registry.register("Fromfile")
 def _np_fromfile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_fromfile operation.
+    """Execute the eager np fromfile operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -86,17 +86,17 @@ def _np_fromfile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "fromfile", getattr(backend_module, "fromfile", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.fromfile(*args, **kwargs))
+    return cast(EagerValue, host_backend.fromfile(*args, **kwargs))
 
 
 @global_eager_registry.register("Fromstring")
 def _np_fromstring(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_fromstring operation.
+    """Execute the eager np fromstring operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -104,17 +104,17 @@ def _np_fromstring(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "fromstring", getattr(backend_module, "fromstring", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.fromstring(*args, **kwargs))
+    return cast(EagerValue, host_backend.fromstring(*args, **kwargs))
 
 
 @global_eager_registry.register("ParseTensor")
 def _np_parsetensor(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_parsetensor operation.
+    """Execute the eager np parsetensor operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -122,17 +122,17 @@ def _np_parsetensor(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "parsetensor", getattr(backend_module, "parsetensor", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.array(args[0]))
+    return cast(EagerValue, host_backend.array(args[0]))
 
 
 @global_eager_registry.register("StringLower")
 def _np_stringlower(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_stringlower operation.
+    """Execute the eager np stringlower operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -140,17 +140,17 @@ def _np_stringlower(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "stringlower", getattr(backend_module, "stringlower", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.char.lower(np.asarray(args[0], dtype=str)))
+    return cast(EagerValue, host_backend.char.lower(host_backend.asarray(args[0], dtype=str)))
 
 
 @global_eager_registry.register("StringSplit")
 def _np_stringsplit(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_stringsplit operation.
+    """Execute the eager np stringsplit operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -158,17 +158,17 @@ def _np_stringsplit(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "stringsplit", getattr(backend_module, "stringsplit", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.char.split(np.asarray(args[0], dtype=str)))
+    return cast(EagerValue, host_backend.char.split(host_backend.asarray(args[0], dtype=str)))
 
 
 @global_eager_registry.register("StringToHash")
 def _np_stringtohash(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_stringtohash operation.
+    """Execute the eager np stringtohash operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -176,17 +176,17 @@ def _np_stringtohash(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "stringtohash", getattr(backend_module, "stringtohash", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.array([hash(str(x)) for x in np.asarray(args[0]).flatten()]).reshape(np.shape(args[0])))
+    return cast(EagerValue, host_backend.array([hash(str(x)) for x in host_backend.asarray(args[0]).flatten()]).reshape(host_backend.shape(args[0])))
 
 
 @global_eager_registry.register("StringToNumber")
 def _np_stringtonumber(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_stringtonumber operation.
+    """Execute the eager np stringtonumber operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -194,17 +194,17 @@ def _np_stringtonumber(backend_module: EagerValue, *args: EagerValue, **kwargs: 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "stringtonumber", getattr(backend_module, "stringtonumber", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.asarray(args[0], dtype=float))
+    return cast(EagerValue, host_backend.asarray(args[0], dtype=float))
 
 
 @global_eager_registry.register("StringUpper")
 def _np_stringupper(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_stringupper operation.
+    """Execute the eager np stringupper operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -212,17 +212,17 @@ def _np_stringupper(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "stringupper", getattr(backend_module, "stringupper", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.char.upper(np.asarray(args[0], dtype=str)))
+    return cast(EagerValue, host_backend.char.upper(host_backend.asarray(args[0], dtype=str)))
 
 
 @global_eager_registry.register("TextVectorization")
 def _np_textvectorization(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_textvectorization operation.
+    """Execute the eager np textvectorization operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -230,7 +230,7 @@ def _np_textvectorization(backend_module: EagerValue, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "textvectorization", getattr(backend_module, "textvectorization", None))
     if func is not None:

@@ -107,36 +107,36 @@ def test_numba_generator_generic_visit() -> None:
 
 def test_numba_types() -> None:
     """Test Numba type conversion and tensor creation helpers."""
-    z = zeros(type, (2, 3))
+    z = zeros((2, 3))
     assert isinstance(z, np.ndarray)
     assert z.shape == (2, 3)
 
-    arr = array(type, [1.0, 2.0])
+    arr = array([1.0, 2.0])
     assert isinstance(arr, np.ndarray)
     assert np.allclose(arr, [1.0, 2.0])
 
-    arr_dtype = array(type, [1.0, 2.0], dtype="float64")
+    arr_dtype = array([1.0, 2.0], dtype="float64")
     assert cast("EagerTensorProtocol", getattr(arr_dtype, "dtype")) == np.float64
 
-    as_arr = asarray(type, [3.0, 4.0])
+    as_arr = asarray([3.0, 4.0])
     assert isinstance(as_arr, np.ndarray)
 
-    val = item(type, np.array([5.5]))
+    val = item(np.array([5.5]))
     assert val == 5.5
 
 
 def test_numba_eager_execute_op() -> None:
     """Test eager operation dispatch for Numba backend."""
-    res_abs = execute_op(type, "Abs", [-3.0, 4.0])
+    res_abs = execute_op("Abs", [-3.0, 4.0])
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_abs, [3.0, 4.0])
 
     # Test non-list argument (direct ndarray)
-    res_add = execute_op(type, "Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
+    res_add = execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_add, [4.0, 6.0])
 
     # Test object where asarray raises exception inside schema operation
-    with patch("ml_switcheroo_compiler.backends.numba.eager.np.asarray", side_effect=ValueError("bad array")):
-        res_fallback_arg = execute_op(type, "Abs", [1, 2])
+    with patch("ml_switcheroo_compiler.backends.numba.eager.kernels.asarray", side_effect=ValueError("bad array")):
+        res_fallback_arg = execute_op("Abs", [1, 2])
         cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_fallback_arg, [1, 2])
 
     # Test dispatch_eager_op raising BackendNotSupportedError falling back to global_eager_registry
@@ -146,7 +146,7 @@ def test_numba_eager_execute_op() -> None:
 
     global_eager_registry.register("Abs")(fallback_op)
     with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("mock error")):
-        res_fallback = execute_op(type, "Abs", [-1.0])
+        res_fallback = execute_op("Abs", [-1.0])
         assert res_fallback == "fallback_op_result"
     del global_eager_registry._registry["Abs"]
 
@@ -155,11 +155,11 @@ def test_numba_eager_execute_op() -> None:
         return "custom_numba_eager_ok"
 
     global_eager_registry.register("TestNumbaCustomOp")(custom_op)
-    res_custom = execute_op(type, "TestNumbaCustomOp")
+    res_custom = execute_op("TestNumbaCustomOp")
     assert res_custom == "custom_numba_eager_ok"
 
     with pytest.raises(BackendNotSupportedError, match="not implemented"):
-        execute_op(type, "CompletelyUnknownNumbaOp12345")
+        execute_op("CompletelyUnknownNumbaOp12345")
 
 
 def test_numba_init_import_guard() -> None:
@@ -252,24 +252,24 @@ def test_numba_expanded_eager_operations_parity() -> None:
     arr2 = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
 
     # Trig and Hyperbolic
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Cos", arr1), cast("Callable[..., EagerTensorProtocol]", np.cos)(arr1))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Tan", arr1), cast("Callable[..., EagerTensorProtocol]", np.tan)(arr1))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Tanh", arr1), cast("Callable[..., EagerTensorProtocol]", np.tanh)(arr1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Cos", arr1), cast("Callable[..., EagerTensorProtocol]", np.cos)(arr1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Tan", arr1), cast("Callable[..., EagerTensorProtocol]", np.tan)(arr1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Tanh", arr1), cast("Callable[..., EagerTensorProtocol]", np.tanh)(arr1))
 
     # Comparisons and Logic
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Greater", arr1, arr2), cast("Callable[..., EagerTensorProtocol]", np.greater)(arr1, arr2))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Less", arr1, arr2), cast("Callable[..., EagerTensorProtocol]", np.less)(arr1, arr2))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Equal", arr1, arr1), cast("Callable[..., EagerTensorProtocol]", np.equal)(arr1, arr1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Greater", arr1, arr2), cast("Callable[..., EagerTensorProtocol]", np.greater)(arr1, arr2))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Less", arr1, arr2), cast("Callable[..., EagerTensorProtocol]", np.less)(arr1, arr2))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Equal", arr1, arr1), cast("Callable[..., EagerTensorProtocol]", np.equal)(arr1, arr1))
 
     # Reductions
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Var", arr1), cast("Callable[..., EagerTensorProtocol]", np.var)(arr1))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Std", arr1), cast("Callable[..., EagerTensorProtocol]", np.std)(arr1))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Cumsum", arr1), cast("Callable[..., EagerTensorProtocol]", np.cumsum)(arr1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Var", arr1), cast("Callable[..., EagerTensorProtocol]", np.var)(arr1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Std", arr1), cast("Callable[..., EagerTensorProtocol]", np.std)(arr1))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Cumsum", arr1), cast("Callable[..., EagerTensorProtocol]", np.cumsum)(arr1))
 
     # Array creation and shape
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Zeros", (2, 2)), cast("Callable[..., EagerTensorProtocol]", np.zeros)((2, 2)))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Ones", (3,)), cast("Callable[..., EagerTensorProtocol]", np.ones)(3))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)(type, "Arange", 5), cast("Callable[..., EagerTensorProtocol]", np.arange)(5))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Zeros", (2, 2)), cast("Callable[..., EagerTensorProtocol]", np.zeros)((2, 2)))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Ones", (3,)), cast("Callable[..., EagerTensorProtocol]", np.ones)(3))
+    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", execute_op)("Arange", 5), cast("Callable[..., EagerTensorProtocol]", np.arange)(5))
 
 
 def test_numba_aot_compilation_and_runner_execution() -> None:

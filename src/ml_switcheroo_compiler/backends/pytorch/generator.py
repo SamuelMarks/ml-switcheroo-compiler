@@ -24,19 +24,26 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
     """PyTorch code generator."""
 
     @classmethod
-    def get_memory_info(cls, device: EagerValue = None) -> EagerValue:
-        """Get memory info.
+    def get_memory_info(cls, device: EagerValue = None) -> dict[str, int]:
+        """Retrieve current and peak memory telemetry from torch.cuda or stdlib resource.
 
         Args:
-            device: The device parameter.
+            device (EagerValue): Optional device identifier.
+
+        Returns:
+            dict[str, int]: Mapping with 'current' and 'peak' memory usage in bytes.
         """
+        import resource
+
         import torch
 
         if torch.cuda.is_available() and (device is None or "cuda" in str(device)):
             dev = device if device is not None else "cuda"
-            return {"current": getattr(torch.cuda, "memory_allocated")(dev), "peak": getattr(torch.cuda, "max_memory_allocated")(dev)}
-        psutil = __import__("psutil")
-        rss = psutil.Process().memory_info().rss
+            return {
+                "current": int(getattr(torch.cuda, "memory_allocated")(dev)),
+                "peak": int(getattr(torch.cuda, "max_memory_allocated")(dev)),
+            }
+        rss: int = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         return {"current": rss, "peak": rss}
 
     @classmethod
@@ -59,7 +66,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Initialize the PyTorch code generator with the given computation graph.
 
         Args:
-            graph (object): The computation graph to compile.
+            graph (IRGraph): The computation graph to compile.
         """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor()])
@@ -68,22 +75,22 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Process an IR node and produce the corresponding PyTorch code string.
 
         Args:
-            node (object): The IR node representing the operation.
+            node (EagerValue): The IR node representing the operation.
             input_vars (list[str]): The names of the input variables for the operation.
-            **kwargs (object): Additional attributes and parameters for the operation.
+            **kwargs (EagerValue): Additional attributes and parameters for the operation.
 
         Returns:
             str: The generated PyTorch code string.
         """
-        return cast(str, getattr(super(), "visit")(node, input_vars, **kwargs))
+        return super().visit(cast("LogicalNode", node), input_vars, **kwargs)
 
     def visit_PowerIteration(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for a power iteration operation.
 
         Args:
-            node (object): The IR node representing the power iteration.
+            node (LogicalNode): The IR node representing the power iteration.
             input_vars (list[str]): The names of the input variables.
-            **kwargs (object): Additional arguments such as iteration counts.
+            **kwargs (EagerValue): Additional arguments such as iteration counts.
 
         Returns:
             str: The generated PyTorch code for power iteration.
@@ -96,9 +103,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Generate PyTorch code for a ragged dot product operation.
 
         Args:
-            node (object): The IR node representing the ragged dot.
+            node (LogicalNode): The IR node representing the ragged dot.
             input_vars (list[str]): The names of the input matrices.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: The generated PyTorch code for the ragged dot operation.
@@ -109,9 +116,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Generate PyTorch code for an Einstein summation operation.
 
         Args:
-            node (object): The IR node representing the einsum operation.
+            node (LogicalNode): The IR node representing the einsum operation.
             input_vars (list[str]): The input variable names.
-            **kwargs (object): Additional parameters, including the equation string.
+            **kwargs (EagerValue): Additional parameters, including the equation string.
 
         Returns:
             str: The generated PyTorch code using torch.einsum.
@@ -157,6 +164,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         Args:
             kwargs: The kwargs parameter.
+
+        Returns:
+            dict[str, str]: Computed result.
         """
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
@@ -165,6 +175,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         Args:
             kwargs: The kwargs parameter.
+
+        Returns:
+            dict[str, str]: Computed result.
         """
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
@@ -173,6 +186,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         Args:
             kwargs: The kwargs parameter.
+
+        Returns:
+            dict[str, str]: Computed result.
         """
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
@@ -234,7 +250,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         Args:
             file (str): The file parameter.
-            arr (object): The arr parameter.
+            arr (EagerValue): The arr parameter.
             allow_pickle (bool): The allow_pickle parameter.
             fix_imports (bool): The fix_imports parameter.
         """
@@ -248,8 +264,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         Args:
             file (str): The file parameter.
-            *args (object): Positional args.
-            **kwds (object): Keyword args.
+            *args (EagerValue): Positional args.
+            **kwds (EagerValue): Keyword args.
         """
         import torch
 
@@ -263,8 +279,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         Args:
             file (str): The file parameter.
-            *args (object): Positional args.
-            **kwds (object): Keyword args.
+            *args (EagerValue): Positional args.
+            **kwds (EagerValue): Keyword args.
         """
         import torch
 
@@ -291,10 +307,10 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
                 """Forward execution call.
 
                 Args:
-                    *fn_args (object): Input tensors.
+                    *fn_args (EagerValue): Input tensors.
 
                 Returns:
-                    object: Computed outputs.
+                    EagerValue: Computed outputs.
                 """
                 input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
                 inputs: dict[str, EagerValue] = {}
@@ -327,11 +343,11 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             """Execute compiled PyTorch callable.
 
             Args:
-                *w_args (object): Input tensors.
-                **w_kwargs (object): Keyword arguments.
+                *w_args (EagerValue): Input tensors.
+                **w_kwargs (EagerValue): Keyword arguments.
 
             Returns:
-                object: Output tensor data.
+                EagerValue: Output tensor data.
             """
             del w_kwargs
             pt_args = [getattr(torch_mod, "as_tensor")(a.data if isinstance(a, Tensor) else a) for a in w_args]
@@ -344,10 +360,10 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
         Args:
             graph (IRGraph): Target computational graph to compile.
-            **kwargs (object): Optional compiler options ('mode', 'backend', 'sample_inputs').
+            **kwargs (EagerValue): Optional compiler options ('mode', 'backend', 'sample_inputs').
 
         Returns:
-            object: Optimized executable callable wrapping the compiled PyTorch module.
+            EagerValue: Optimized executable callable wrapping the compiled PyTorch module.
         """
         mod = self._create_pytorch_graph_evaluator(graph)
 

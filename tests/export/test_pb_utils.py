@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.export.pb_utils import encode_varint
 
 
 def test_encode_varint_coverage() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test encode varint coverage."""
     # Negative number
     encode_varint(-1)
     # Large positive number

@@ -1,24 +1,26 @@
-"""NPZ format serialization."""
+"""NPZ weight archive serialization format handler."""
+
+from __future__ import annotations
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 from ml_switcheroo_compiler.serialization.utils import parse_npz
 
 
 class NpzWeightFormat(WeightLoader, WeightSaver):
-    """NPZ weight format handler."""
+    """Weight loader and saver for `.npz` zip archives of `.npy` arrays."""
 
     def load(self, filepath: str) -> dict[str, TensorLike]:
-        """Load npz weights.
+        """Load a dictionary of named weight arrays from an `.npz` file.
 
         Args:
-        filepath (str): The filepath parameter.
+            filepath (str): Path to the `.npz` archive file.
 
         Returns:
-        dict: Result.
+            dict[str, TensorLike]: Mapping of weight names to loaded arrays.
         """
         import ml_switcheroo_compiler.backends.registry as registry
 
@@ -29,19 +31,19 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
             except Exception as e:
                 import warnings
 
-                warnings.warn(f"Backend load_npz failed: {e}. Falling back to default parse_npz.", stacklevel=2)
+                warnings.warn(
+                    f"Backend load_npz failed: {e}. Falling back to default parse_npz.",
+                    stacklevel=2,
+                )
 
         return parse_npz(filepath)
 
-    def save(self, weights_np: EagerValue, filepath: str) -> None:
-        """Save npz weights.
+    def save(self, weights_np: TensorOrScalar, filepath: str) -> None:
+        """Save a dictionary of named weight arrays to an `.npz` file.
 
         Args:
-            weights_np (dict): The weights_np parameter.
-            filepath (str): The filepath parameter.
-
-        Returns:
-            tuple[int, ...]: Result.
+            weights_np (TensorOrScalar): Mapping of weight names to arrays.
+            filepath (str): Destination `.npz` file path.
         """
         import ml_switcheroo_compiler.backends.registry as registry
 
@@ -50,4 +52,5 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
             backend.save_npz(weights_np, filepath)
             return
         np_mod = registry.BackendRegistry.get("numpy").get_module()
-        np_mod.savez(filepath, **weights_np)
+        if isinstance(weights_np, dict):
+            np_mod.savez(filepath, **weights_np)

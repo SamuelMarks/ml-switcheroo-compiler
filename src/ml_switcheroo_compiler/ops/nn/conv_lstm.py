@@ -210,7 +210,7 @@ def _sigmoid(x: Tensor) -> Tensor:
     """Sigmoid.
 
     Args:
-        x (Any): The x parameter.
+        x (Tensor): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.

@@ -68,10 +68,10 @@ class CupyGenerator(PythonStringGenerator):
 
         Args:
             graph (IRGraph): Target computation graph.
-            **kwargs (object): Optional compiler options ('sample_inputs').
+            **kwargs (EagerValue): Optional compiler options ('sample_inputs').
 
         Returns:
-            object: Callable execution wrapper.
+            EagerValue: Callable execution wrapper.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -80,10 +80,10 @@ class CupyGenerator(PythonStringGenerator):
             """Evaluate the graph with CuPy arrays.
 
             Args:
-                *fn_args (object): Input tensor values.
+                *fn_args (EagerValue): Input tensor values.
 
             Returns:
-                object: Output tensor or collection of tensors.
+                EagerValue: Output tensor or collection of tensors.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {}
@@ -117,11 +117,11 @@ class CupyGenerator(PythonStringGenerator):
                     """Execute captured CuPy CUDA graph.
 
                     Args:
-                        *w_args (object): Input tensors.
-                        **w_kwargs (object): Keyword arguments.
+                        *w_args (EagerValue): Input tensors.
+                        **w_kwargs (EagerValue): Keyword arguments.
 
                     Returns:
-                        object: Computed outputs.
+                        EagerValue: Computed outputs.
                     """
                     instance.launch(stream)
                     stream.synchronize()
@@ -133,11 +133,11 @@ class CupyGenerator(PythonStringGenerator):
                 """Execute compiled CuPy graph callable.
 
                 Args:
-                    *w_args (object): Input tensors.
-                    **w_kwargs (object): Keyword arguments.
+                    *w_args (EagerValue): Input tensors.
+                    **w_kwargs (EagerValue): Keyword arguments.
 
                 Returns:
-                    object: Computed outputs.
+                    EagerValue: Computed outputs.
                 """
                 cp_args = [cp.asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
                 return forward_fn(*cp_args)

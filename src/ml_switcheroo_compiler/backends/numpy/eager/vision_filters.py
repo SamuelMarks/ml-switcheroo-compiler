@@ -19,7 +19,7 @@ def _np_random_gaussian_blur(
     sigma: tuple[float, float] | float,
     **kwargs: Union[float, int, str, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_random_gaussian_blur operation.
+    """Execute the eager np random gaussian blur operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.
@@ -44,7 +44,7 @@ def _np_random_sharpness(
     factor: float,
     **kwargs: Union[float, int, str, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_random_sharpness operation.
+    """Execute the eager np random sharpness operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.

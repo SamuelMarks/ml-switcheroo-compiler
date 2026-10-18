@@ -25,8 +25,8 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
 
     Args:
         cls (type): The backend class.
-        data (object): The input data.
-        dtype (object): The target dtype.
+        data (EagerValue): The input data.
+        dtype (EagerValue): The target dtype.
 
     Returns: np.ndarray: The array tensor.
     """
@@ -38,7 +38,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
 
     Args:
         cls (type): The backend class.
-        data (object): The input data.
+        data (EagerValue): The input data.
 
     Returns: np.ndarray: The array tensor.
     """
@@ -50,7 +50,7 @@ def item(cls: type, data: EagerValue) -> float:
 
     Args:
         cls (type): The backend class.
-        data (object): The input tensor data.
+        data (EagerValue): The input tensor data.
 
     Returns:
         float: The scalar value.

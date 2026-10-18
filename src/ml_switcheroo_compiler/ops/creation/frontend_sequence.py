@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import math
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .frontend_utils import _emit_creation_node
@@ -19,15 +20,15 @@ def arange(
     step: float = 1,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return a 1-D tensor of size with values from the interval `[start, stop)`.
 
     Args:
         start (float): The start parameter.
-        stop (Any): The stop parameter.
+        stop (float | None): The stop parameter.
         step (float): The step parameter.
-        dtype (Any): The dtype parameter.
-        device (Any): The device parameter.
+        dtype (DType | None): The dtype parameter.
+        device (Device | None): The device parameter.
 
     Returns:
         Tensor: Result.
@@ -64,15 +65,15 @@ def linspace(
     steps: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Create a 1D tensor evenly spaced from `start` to `stop`.
 
     Args:
         start (float): The start parameter.
         stop (float): The stop parameter.
         steps (int): The steps parameter.
-        dtype (Any): The dtype parameter.
-        device (Any): The device parameter.
+        dtype (DType | None): The dtype parameter.
+        device (Device | None): The device parameter.
 
     Returns:
         Tensor: Result.

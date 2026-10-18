@@ -28,7 +28,7 @@ def _flatten_input_values(val: EagerValue) -> list[float]:
     """Recursively flatten input values into a flat list of floats.
 
     Args:
-        val (object): Scalar or nested container of numbers.
+        val (EagerValue): Scalar or nested container of numbers.
 
     Returns:
         list[float]: Flattened floats.

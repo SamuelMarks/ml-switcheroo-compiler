@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_general import _adjoint, _indexindim
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import _np_tensorarraywrite, _np_topk
@@ -93,7 +94,7 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     db = cast("EagerTensorProtocol", DummyBackend())
     arr = np.array([0.0, 0.0])
     res = _np_updateslice(db, arr, 0, 5)
-    assert res == [5, 0]
+    np.testing.assert_allclose(cast("np.ndarray", res), [5.0, 0.0])
 
     # math_general.py 466 (_adjoint)
     class DbAdjoint:
@@ -193,10 +194,8 @@ def _test_math_missing_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
         pass
 
     db3 = DummyBackend3()
-    try:
+    with pytest.raises(AttributeError):
         cast("Callable[..., EagerTensorProtocol]", _fromiter)(db3, [1, 2, 3])
-    except AttributeError as _exc:
-        assert _exc is not None
 
     # math_fft.py
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft import _np_hfft
@@ -330,10 +329,7 @@ def _test_math_missing_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
                 return x
 
     assert cast("Callable[..., EagerTensorProtocol]", _apply_softmax)(cast("Callable[..., EagerTensorProtocol]", BkSoftmax2)(), arr) is not None
-    try:
-        _apply_softmax(BkSoftmax1(), arr)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert _apply_softmax(BkSoftmax1(), arr) is not None
 
     # math_testing.py
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import _allclose

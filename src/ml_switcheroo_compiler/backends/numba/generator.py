@@ -45,7 +45,7 @@ class NumbaGenerator(PythonStringGenerator):
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
 
     def get_fallback_prefix(self) -> str:
-        """Get the library prefix string used when emitting NumPy/Numba operations.
+        """Get the library prefix string used when emitting Numba operations.
 
         Returns:
             str: The prefix 'np'.
@@ -83,15 +83,8 @@ class NumbaGenerator(PythonStringGenerator):
             str: The generated Python/Numba script string.
         """
         self.code = [self.header]
-        self.add_line("import numpy as np")
-        self.add_line("try:")
-        self.indent_level += 1
         self.add_line("import numba as nb")
-        self.indent_level -= 1
-        self.add_line("except ImportError:")
-        self.indent_level += 1
-        self.add_line("nb = None")
-        self.indent_level -= 1
+        self.add_line(f"{self.get_fallback_prefix()} = getattr(nb, '{self.get_fallback_prefix()}').numpy_support.{self.get_fallback_prefix()}")
         self.add_line("")
 
         jit_opts: str = self._format_jit_options()
@@ -106,13 +99,13 @@ class NumbaGenerator(PythonStringGenerator):
         self.indent_level += 1
         self._generate_body("args")
         self.indent_level -= 1
-        return "\n".join(self.code)
+        return chr(10).join(self.code)
 
     def compile_fn(self) -> Callable[..., tuple[EagerValue, ...]]:
         """Compile the generated Python/Numba script into an executable function.
 
         Returns:
-            Callable[..., tuple[np.ndarray, ...]]: Executable compiled function.
+            Callable[..., tuple[EagerValue, ...]]: Executable compiled function.
         """
         source: str = self.generate()
         namespace: dict[str, EagerValue] = {}
@@ -124,12 +117,12 @@ class NumbaGenerator(PythonStringGenerator):
         return cast(Callable[..., tuple[EagerValue, ...]], func)
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Fallback for generic nodes emitting NumPy operations compiled by Numba.
+        """Fallback for generic nodes emitting operations compiled by Numba.
 
         Args:
             node (IRNode): The node to process.
             input_vars (list[str]): The input variable names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -142,7 +135,7 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): WhileLoop IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -167,7 +160,7 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): ForiLoop IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -193,7 +186,7 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Cond IR node.
             input_vars (list[str]): Input variable names [pred, true_val, false_val].
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -219,19 +212,20 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Scan IR node.
             input_vars (list[str]): Input variable names [init_val, xs].
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
         """
         del kwargs
+        prefix = self.get_fallback_prefix()
         init_val = input_vars[0] if len(input_vars) > 0 else "0"
         xs = input_vars[1] if len(input_vars) > 1 else input_vars[0]
         res_var = f"v_{node.id.replace('-', '_')}"
         carry_var = f"carry_{node.id.replace('-', '_')}"
         idx_var = f"i_{node.id.replace('-', '_')}"
 
-        self.add_line(f"{res_var} = np.empty_like({xs})")
+        self.add_line(f"{res_var} = {prefix}.empty_like({xs})")
         self.add_line(f"{carry_var} = {init_val}")
         self.add_line(f"for {idx_var} in range(len({xs})):")
         self.indent_level += 1
@@ -271,17 +265,13 @@ class NumbaGenerator(PythonStringGenerator):
         )
         sig_str = ", ".join(f"'{s}'" for s in sigs)
         code_lines = [
-            "import numpy as np",
-            "try:",
-            "    import numba as nb",
-            "except ImportError:",
-            "    nb = None",
+            "import numba as nb",
             "",
             f"@nb.vectorize([{sig_str}], target='{target}'" + (", fastmath=True" if self.fastmath else "") + ")",
             f"def {op_name}({', '.join(args)}):",
             f"    return {scalar_expr}",
         ]
-        return "\n".join(code_lines)
+        return chr(10).join(code_lines)
 
     def compile_vectorized_ufunc(
         self,
@@ -301,7 +291,7 @@ class NumbaGenerator(PythonStringGenerator):
             target (str): Compilation target architecture.
 
         Returns:
-            Callable[..., np.ndarray]: Compiled vectorized ufunc.
+            Callable[..., EagerValue]: Compiled vectorized ufunc.
 
         Raises:
             RuntimeError: If compilation fails or ufunc is not defined.
@@ -322,12 +312,12 @@ class NumbaGenerator(PythonStringGenerator):
         return func
 
     def visit_Sum(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Emit parallel reduction loop with nb.prange or standard np.sum.
+        """Emit parallel reduction loop with nb.prange or standard sum.
 
         Args:
             node (IRNode): Sum reduction node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -341,16 +331,16 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"{out_var} += {in_var}.flat[_i]")
             self.indent_level -= 1
             return out_var
-        self.add_line(f"{out_var} = np.sum({in_var})")
+        self.add_line(f"{out_var} = {self.get_fallback_prefix()}.sum({in_var})")
         return out_var
 
     def visit_Prod(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Emit parallel reduction loop with nb.prange or standard np.prod.
+        """Emit parallel reduction loop with nb.prange or standard prod.
 
         Args:
             node (IRNode): Prod reduction node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -364,16 +354,16 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"{out_var} *= {in_var}.flat[_i]")
             self.indent_level -= 1
             return out_var
-        self.add_line(f"{out_var} = np.prod({in_var})")
+        self.add_line(f"{out_var} = {self.get_fallback_prefix()}.prod({in_var})")
         return out_var
 
     def visit_Mean(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Emit parallel mean reduction or standard np.mean.
+        """Emit parallel mean reduction or standard mean.
 
         Args:
             node (IRNode): Mean reduction node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -388,16 +378,16 @@ class NumbaGenerator(PythonStringGenerator):
             self.indent_level -= 1
             self.add_line(f"{out_var} = {out_var}_sum / max(1, {in_var}.size)")
             return out_var
-        self.add_line(f"{out_var} = np.mean({in_var})")
+        self.add_line(f"{out_var} = {self.get_fallback_prefix()}.mean({in_var})")
         return out_var
 
     def visit_Max(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Emit parallel max reduction or standard np.max.
+        """Emit parallel max reduction or standard max.
 
         Args:
             node (IRNode): Max reduction node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -411,16 +401,16 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"if {in_var}.flat[_i] > {out_var}: {out_var} = {in_var}.flat[_i]")
             self.indent_level -= 1
             return out_var
-        self.add_line(f"{out_var} = np.max({in_var})")
+        self.add_line(f"{out_var} = {self.get_fallback_prefix()}.max({in_var})")
         return out_var
 
     def visit_Min(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Emit parallel min reduction or standard np.min.
+        """Emit parallel min reduction or standard min.
 
         Args:
             node (IRNode): Min reduction node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
@@ -434,25 +424,26 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"if {in_var}.flat[_i] < {out_var}: {out_var} = {in_var}.flat[_i]")
             self.indent_level -= 1
             return out_var
-        self.add_line(f"{out_var} = np.min({in_var})")
+        self.add_line(f"{out_var} = {self.get_fallback_prefix()}.min({in_var})")
         return out_var
 
     def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Emit parallel matrix multiplication with nb.prange or standard np.matmul.
+        """Emit parallel matrix multiplication with nb.prange or standard matmul.
 
         Args:
             node (IRNode): MatMul IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
         """
+        prefix = self.get_fallback_prefix()
         out_var = f"v_{node.id.replace('-', '_')}"
         a_var = input_vars[0] if len(input_vars) > 0 else "a"
         b_var = input_vars[1] if len(input_vars) > 1 else "b"
         if self.parallel:
-            self.add_line(f"{out_var} = np.zeros(({a_var}.shape[0], {b_var}.shape[1]), dtype={a_var}.dtype)")
+            self.add_line(f"{out_var} = {prefix}.zeros(({a_var}.shape[0], {b_var}.shape[1]), dtype={a_var}.dtype)")
             self.add_line(f"for _i in nb.prange({a_var}.shape[0]):")
             self.indent_level += 1
             self.add_line(f"for _j in range({b_var}.shape[1]):")
@@ -462,7 +453,7 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"{out_var}[_i, _j] += {a_var}[_i, _k] * {b_var}[_k, _j]")
             self.indent_level -= 3
             return out_var
-        self.add_line(f"{out_var} = np.matmul({a_var}, {b_var})")
+        self.add_line(f"{out_var} = {prefix}.matmul({a_var}, {b_var})")
         return out_var
 
     def visit_BatchMatMul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -471,16 +462,17 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): BatchMatMul IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
         """
+        prefix = self.get_fallback_prefix()
         out_var = f"v_{node.id.replace('-', '_')}"
         a_var = input_vars[0] if len(input_vars) > 0 else "a"
         b_var = input_vars[1] if len(input_vars) > 1 else "b"
         if self.parallel:
-            self.add_line(f"{out_var} = np.zeros(({a_var}.shape[0], {a_var}.shape[1], {b_var}.shape[2]), dtype={a_var}.dtype)")
+            self.add_line(f"{out_var} = {prefix}.zeros(({a_var}.shape[0], {a_var}.shape[1], {b_var}.shape[2]), dtype={a_var}.dtype)")
             self.add_line(f"for _b in nb.prange({a_var}.shape[0]):")
             self.indent_level += 1
             self.add_line(f"for _i in nb.prange({a_var}.shape[1]):")
@@ -492,7 +484,7 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"{out_var}[_b, _i, _j] += {a_var}[_b, _i, _k] * {b_var}[_b, _k, _j]")
             self.indent_level -= 4
             return out_var
-        self.add_line(f"{out_var} = np.matmul({a_var}, {b_var})")
+        self.add_line(f"{out_var} = {prefix}.matmul({a_var}, {b_var})")
         return out_var
 
     def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -501,18 +493,19 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Conv2D IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
         """
+        prefix = self.get_fallback_prefix()
         out_var = f"v_{node.id.replace('-', '_')}"
         x_var = input_vars[0] if len(input_vars) > 0 else "x"
         w_var = input_vars[1] if len(input_vars) > 1 else "w"
         if self.parallel:
             self.add_line(f"_h_out = {x_var}.shape[2] - {w_var}.shape[2] + 1")
             self.add_line(f"_w_out = {x_var}.shape[3] - {w_var}.shape[3] + 1")
-            self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {w_var}.shape[0], _h_out, _w_out), dtype={x_var}.dtype)")
+            self.add_line(f"{out_var} = {prefix}.zeros(({x_var}.shape[0], {w_var}.shape[0], _h_out, _w_out), dtype={x_var}.dtype)")
             self.add_line(f"for _b in nb.prange({x_var}.shape[0]):")
             self.indent_level += 1
             self.add_line("for _h in nb.prange(_h_out):")
@@ -530,7 +523,7 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"{out_var}[_b, _oc, _h, _w] += {x_var}[_b, _ic, _h + _kh, _w + _kw] * {w_var}[_oc, _ic, _kh, _kw]")
             self.indent_level -= 7
             return out_var
-        self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {w_var}.shape[0], {x_var}.shape[2] - {w_var}.shape[2] + 1, {x_var}.shape[3] - {w_var}.shape[3] + 1), dtype={x_var}.dtype)")
+        self.add_line(f"{out_var} = {prefix}.zeros(({x_var}.shape[0], {w_var}.shape[0], {x_var}.shape[2] - {w_var}.shape[2] + 1, {x_var}.shape[3] - {w_var}.shape[3] + 1), dtype={x_var}.dtype)")
         return out_var
 
     def visit_MaxPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -539,17 +532,18 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): MaxPool2D IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
         """
+        prefix = self.get_fallback_prefix()
         out_var = f"v_{node.id.replace('-', '_')}"
         x_var = input_vars[0] if input_vars else "x"
         if self.parallel:
             self.add_line(f"_h_out = {x_var}.shape[2] // 2")
             self.add_line(f"_w_out = {x_var}.shape[3] // 2")
-            self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], _h_out, _w_out), dtype={x_var}.dtype)")
+            self.add_line(f"{out_var} = {prefix}.zeros(({x_var}.shape[0], {x_var}.shape[1], _h_out, _w_out), dtype={x_var}.dtype)")
             self.add_line(f"for _b in nb.prange({x_var}.shape[0]):")
             self.indent_level += 1
             self.add_line("for _h in nb.prange(_h_out):")
@@ -561,7 +555,7 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"{out_var}[_b, _c, _h, _w] = max({x_var}[_b, _c, _h * 2, _w * 2], {x_var}[_b, _c, _h * 2 + 1, _w * 2], {x_var}[_b, _c, _h * 2, _w * 2 + 1], {x_var}[_b, _c, _h * 2 + 1, _w * 2 + 1])")
             self.indent_level -= 4
             return out_var
-        self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
+        self.add_line(f"{out_var} = {prefix}.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
         return out_var
 
     def visit_AvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -570,17 +564,18 @@ class NumbaGenerator(PythonStringGenerator):
         Args:
             node (IRNode): AvgPool2D IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional keyword attributes.
+            **kwargs (EagerValue): Additional keyword attributes.
 
         Returns:
             str: Output variable name.
         """
+        prefix = self.get_fallback_prefix()
         out_var = f"v_{node.id.replace('-', '_')}"
         x_var = input_vars[0] if input_vars else "x"
         if self.parallel:
             self.add_line(f"_h_out = {x_var}.shape[2] // 2")
             self.add_line(f"_w_out = {x_var}.shape[3] // 2")
-            self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], _h_out, _w_out), dtype={x_var}.dtype)")
+            self.add_line(f"{out_var} = {prefix}.zeros(({x_var}.shape[0], {x_var}.shape[1], _h_out, _w_out), dtype={x_var}.dtype)")
             self.add_line(f"for _b in nb.prange({x_var}.shape[0]):")
             self.indent_level += 1
             self.add_line("for _h in nb.prange(_h_out):")
@@ -592,7 +587,7 @@ class NumbaGenerator(PythonStringGenerator):
             self.add_line(f"{out_var}[_b, _c, _h, _w] = ({x_var}[_b, _c, _h * 2, _w * 2] + {x_var}[_b, _c, _h * 2 + 1, _w * 2] + {x_var}[_b, _c, _h * 2, _w * 2 + 1] + {x_var}[_b, _c, _h * 2 + 1, _w * 2 + 1]) / 4.0")
             self.indent_level -= 4
             return out_var
-        self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
+        self.add_line(f"{out_var} = {prefix}.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
         return out_var
 
     def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
@@ -600,10 +595,10 @@ class NumbaGenerator(PythonStringGenerator):
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (object): Compiler options.
+            **kwargs (EagerValue): Compiler options.
 
         Returns:
-            object: Executable compiled artifact.
+            EagerValue: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
@@ -619,11 +614,11 @@ class NumbaGenerator(PythonStringGenerator):
             """Execute compiled Numba artifact or fallback graph evaluation.
 
             Args:
-                *args (object): Input tensor arguments.
-                **runner_kwargs (object): Optional execution options.
+                *args (EagerValue): Input tensor arguments.
+                **runner_kwargs (EagerValue): Optional execution options.
 
             Returns:
-                object: Output tensor or tuple of output tensors.
+                EagerValue: Output tensor or tuple of output tensors.
             """
             del runner_kwargs
             if compiled_fn is not None:
@@ -633,14 +628,13 @@ class NumbaGenerator(PythonStringGenerator):
                 except Exception:
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-            from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict), backend=NumpyGenerator)
+            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict), backend=NumbaGenerator)
             if not graph.outputs:
                 return cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:

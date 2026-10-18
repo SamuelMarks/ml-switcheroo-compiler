@@ -19,7 +19,7 @@ def _verify_dask_task_graph(res: EagerValue) -> None:
     """Verify that result is a native lazy Dask task graph and has not resolved to eager host memory.
 
     Args:
-        res (object): Object resulting from Dask eager operation.
+        res (EagerValue): Object resulting from Dask eager operation.
 
     Raises:
         RuntimeError: If the result is an eagerly resolved NumPy array instead of a Dask Array.
@@ -36,7 +36,7 @@ def propagate_chunk_shapes(arr: EagerValue, chunks: Optional[EagerValue] = "auto
     """Calculate chunk structure and shape propagation for distributed arrays.
 
     Args:
-        arr (object): Input Dask or sequence array.
+        arr (EagerValue): Input Dask or sequence array.
         chunks (Optional[object]): Target chunking strategy ('auto' or tuple).
 
     Returns:
@@ -57,14 +57,14 @@ def dask_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
     """Execute 2D convolution lazily as a Dask task graph.
 
     Args:
-        x (object): Input Dask array of shape (N, C, H, W).
-        w (object): Weight filter tensor.
-        stride (object): Spatial stride.
-        padding (object): Padding mode ('SAME' or 'VALID').
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input Dask array of shape (N, C, H, W).
+        w (EagerValue): Weight filter tensor.
+        stride (EagerValue): Spatial stride.
+        padding (EagerValue): Padding mode ('SAME' or 'VALID').
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Lazy Dask array with task graph.
+        EagerValue: Lazy Dask array with task graph.
     """
     del kwargs
     if da is None or getattr(x, "ndim", 0) != 4 or getattr(w, "ndim", 0) != 4:
@@ -96,14 +96,14 @@ def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
     """Execute 2D max pooling lazily as a Dask task graph.
 
     Args:
-        x (object): Input Dask array of shape (N, C, H, W).
-        kernel_size (object): Window size.
-        stride (object): Stride.
-        padding (object): Padding mode.
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input Dask array of shape (N, C, H, W).
+        kernel_size (EagerValue): Window size.
+        stride (EagerValue): Stride.
+        padding (EagerValue): Padding mode.
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Lazy Dask array.
+        EagerValue: Lazy Dask array.
     """
     del padding, kwargs
     if da is None or getattr(x, "ndim", 0) != 4:
@@ -130,14 +130,14 @@ def dask_avgpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
     """Execute 2D average pooling lazily as a Dask task graph.
 
     Args:
-        x (object): Input Dask array of shape (N, C, H, W).
-        kernel_size (object): Window size.
-        stride (object): Stride.
-        padding (object): Padding mode.
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input Dask array of shape (N, C, H, W).
+        kernel_size (EagerValue): Window size.
+        stride (EagerValue): Stride.
+        padding (EagerValue): Padding mode.
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Lazy Dask array.
+        EagerValue: Lazy Dask array.
     """
     del padding, kwargs
     if da is None or getattr(x, "ndim", 0) != 4:
@@ -164,12 +164,12 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
     """Execute bilinear resize lazily as a Dask task graph.
 
     Args:
-        x (object): Input Dask array of shape (N, C, H, W).
-        size (object): Target spatial dimensions (new_h, new_w).
-        **kwargs (object): Additional keyword arguments.
+        x (EagerValue): Input Dask array of shape (N, C, H, W).
+        size (EagerValue): Target spatial dimensions (new_h, new_w).
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Lazy resized Dask array.
+        EagerValue: Lazy resized Dask array.
     """
     del kwargs
     if da is None or getattr(x, "ndim", 0) != 4 or size is None:
@@ -232,11 +232,11 @@ def execute_op(
     Args:
         cls (type): The caller class or context.
         op_type (str): The name of the operation.
-        *args (object): Positional arguments for the op.
-        **kwargs (object): Keyword arguments for the op.
+        *args (EagerValue): Positional arguments for the op.
+        **kwargs (EagerValue): Keyword arguments for the op.
 
     Returns:
-        object: Result of native Dask evaluation (e.g. dask.array.Array).
+        EagerValue: Result of native Dask evaluation (e.g. dask.array.Array).
 
     Raises:
         BackendNotSupportedError: If Dask is unavailable or op is unmapped.

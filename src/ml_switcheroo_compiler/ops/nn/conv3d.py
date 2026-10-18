@@ -10,7 +10,8 @@ from typing import (
     cast,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
 from ml_switcheroo_compiler.ops.registry import get_op
@@ -18,7 +19,7 @@ from ml_switcheroo_compiler.ops.registry import get_op
 from .conv_utils import _build_conv_config
 
 
-def conv3d(lhs: Tensor, rhs: Tensor, config_obj: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def conv3d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """3D Convolution.
 
     Args:
@@ -31,7 +32,7 @@ def conv3d(lhs: Tensor, rhs: Tensor, config_obj: EagerValue = None, **kwargs: Ea
         Tensor: The result of the convolution.
     """
     if config_obj is None:
-        config_obj = cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _build_conv_config)(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
+        config_obj = cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _build_conv_config)(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
 
     return conv_general_dilated(lhs, rhs, config_obj)
 
@@ -41,7 +42,7 @@ def conv3d_transpose(
     rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> EagerValue:
+) -> TensorOrScalar:
     """3D convolution transpose.
 
     Args:

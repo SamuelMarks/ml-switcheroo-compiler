@@ -2,50 +2,45 @@
 
 from __future__ import annotations
 
-import contextlib  # noqa: F401
-import math  # noqa: F401
-import typing  # noqa: F401
 import uuid
-from collections.abc import Callable, Sequence  # noqa: F401
-from dataclasses import dataclass, field  # noqa: F401
+from collections.abc import Callable, Mapping
 from typing import Optional, cast
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-from ml_switcheroo_compiler.backends.registry import get_active_backend  # noqa: F401
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
-from ml_switcheroo_compiler.ops.registry import register_util  # noqa: F401
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp  # noqa: F401
+
+from .utils import GradValue
 
 
 class CustomVJPFunction:
     """Wrap for custom_vjp functions."""
 
-    def __init__(self, fun: Callable[..., EagerValue]) -> None:
+    def __init__(self, fun: Callable[..., GradValue]) -> None:
         """Initialize the custom VJP wrapper.
 
         Args:
-            fun (Callable[..., object]): The base function being wrapped for custom VJPs.
+            fun (Callable[..., GradValue]): The base function being wrapped for custom VJPs.
         """
         self.fun = fun
-        self.fwd: EagerValue = None
-        self.bwd: EagerValue = None
+        self.fwd: GradValue = None
+        self.bwd: GradValue = None
         self.bwd_subgraph: Optional[LogicalGraph] = None
         self._tracing_fwd = False
 
-    def defvjp(self, fwd: EagerValue, bwd: EagerValue, bwd_subgraph: Optional[LogicalGraph] = None) -> None:
+    def defvjp(self, fwd: GradValue, bwd: GradValue, bwd_subgraph: Optional[LogicalGraph] = None) -> None:
         """Define the forward and backward passes.
 
         Args:
-            fwd (Callable[..., object]): The forward pass.
-            bwd (Callable[..., object]): The backward pass.
+            fwd (GradValue): The forward pass.
+            bwd (GradValue): The backward pass.
             bwd_subgraph (Optional[LogicalGraph]): Declarative custom backward IR subgraph.
         """
         self.fwd = fwd
@@ -71,10 +66,10 @@ class CustomVJPFunction:
         """Extract all tensor instances from the provided arguments.
 
         Args:
-            args (tuple): The positional arguments.
+            args (tuple[Tensor | int | float | str | bool | None, ...]): The positional arguments.
 
         Returns:
-            list: A list containing only the tensor arguments.
+            list[Tensor]: A list containing only the tensor arguments.
         """
         return [a for a in args if isinstance(a, Tensor)]
 
@@ -82,9 +77,10 @@ class CustomVJPFunction:
         """Trace the forward pass of the custom VJP function to construct its logical graph.
 
         Args:
-            tensor_args (list): The list of tensor arguments.
+            tensor_args (list[Tensor]): The list of tensor arguments.
 
-        Returns: Tensor: The traced logical graph for the forward pass.
+        Returns:
+            Optional[LogicalGraph]: The traced logical graph for the forward pass.
         """
         if self.fwd is None or self.bwd is None:
             return None
@@ -99,10 +95,10 @@ class CustomVJPFunction:
         """Determine the shape, dtype, and device for the output based on the input tensors.
 
         Args:
-            tensor_args (list): The list of tensor arguments.
+            tensor_args (list[Tensor]): The list of tensor arguments.
 
         Returns:
-            tuple: A tuple containing the output shape, dtype, and device string.
+            tuple[tuple[int, ...], str, str]: A tuple containing the output shape, dtype, and device string.
         """
         shape: tuple[int, ...] = ()
         dtype = "float32"
@@ -123,11 +119,12 @@ class CustomVJPFunction:
         """Emit a CustomVJP node into the active computation graph.
 
         Args:
-            tensor_args (list): The tensor arguments.
-            fwd_graph (object): The traced forward graph.
-            primal_graph (object): The primal logical graph.
+            tensor_args (list[Tensor]): The tensor arguments.
+            fwd_graph (Optional[LogicalGraph]): The traced forward graph.
+            primal_graph (Optional[LogicalGraph]): The primal logical graph.
 
-        Returns: Tensor: The proxy tensor representing the custom VJP output.
+        Returns:
+            Tensor: The proxy tensor representing the custom VJP output.
         """
         out_id = str(uuid.uuid4())
         meta = self._resolve_output_metadata(tensor_args)
@@ -142,7 +139,7 @@ class CustomVJPFunction:
                     id=cid,
                     op_type="Constant",
                     inputs=[],
-                    attributes={"value": arr},
+                    attributes=cast("Mapping[str, AttributeValue]", {"value": arr}),
                     shape_metadata=getattr(arr, "shape", ()),
                 )
                 global_tracing_state.add_node(c_node)
@@ -163,7 +160,7 @@ class CustomVJPFunction:
             id=out_id,
             op_type="CustomVJP",
             inputs=in_ids,
-            attributes=vjp_attrs,
+            attributes=cast("Mapping[str, AttributeValue]", vjp_attrs),
             subgraphs=subgraphs,
             shape_metadata=meta[0],
         )
@@ -171,14 +168,15 @@ class CustomVJPFunction:
         proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])
         return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))
 
-    def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def __call__(self, *args: GradValue, **kwargs: GradValue) -> GradValue:
         """Execute the function, tracing the forward and primal graphs if tracing is active.
 
         Args:
-            *args (object): Positional arguments.
-            **kwargs (object): Keyword arguments.
+            *args (GradValue): Positional arguments.
+            **kwargs (GradValue): Keyword arguments.
 
-        Returns: Tensor: The computed primal output.
+        Returns:
+            GradValue: The computed primal output.
         """
         if config.eager_mode or not global_tracing_state.is_tracing or self._tracing_fwd:
             return self.fun(*args, **kwargs)
@@ -189,13 +187,13 @@ class CustomVJPFunction:
         return self._emit_vjp_node(tensor_args, fwd_graph, primal_graph)
 
 
-def custom_vjp(fun: Callable[..., EagerValue]) -> EagerValue:
+def custom_vjp(fun: Callable[..., GradValue]) -> GradValue:
     """Wrap a function to allow defining custom vector-Jacobian product (VJP) rules.
 
     Args:
-        fun (Callable): The original function.
+        fun (Callable[..., GradValue]): The original function.
 
     Returns:
-        Callable: The wrapped function that supports custom VJPs.
+        GradValue: The wrapped function that supports custom VJPs.
     """
-    return CustomVJPFunction(fun)
+    return cast(GradValue, CustomVJPFunction(fun))

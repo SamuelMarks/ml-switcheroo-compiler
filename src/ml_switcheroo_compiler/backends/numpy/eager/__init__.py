@@ -63,7 +63,7 @@ def execute_op(
     *args: typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
     **kwargs: typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
 ) -> typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-    """Evaluate execute_op operation.
+    """Execute the eager execute op operation on the active backend array.
 
     Args:
         cls (type): Class.

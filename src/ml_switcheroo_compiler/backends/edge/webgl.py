@@ -25,7 +25,7 @@ class WebGLCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (Optional[list[CodeGeneratorVisitor]], optional): Visitor delegates.
         """
-        getattr(super(), "__init__")(graph, delegates)
+        super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
         self.body_lines: list[str] = []
 
@@ -360,10 +360,10 @@ class WebGLCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (object): Compiler options.
+            **kwargs (EagerValue): Compiler options.
 
         Returns:
-            object: Executable compiled artifact.
+            EagerValue: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
@@ -373,11 +373,11 @@ class WebGLCodeGenerator(BaseGenerator):
             """Execute compiled WebGL artifact using fallback graph evaluation.
 
             Args:
-                *args (object): Input tensor arguments.
-                **runner_kwargs (object): Optional execution options.
+                *args (EagerValue): Input tensor arguments.
+                **runner_kwargs (EagerValue): Optional execution options.
 
             Returns:
-                object: Output tensor or tuple of output tensors.
+                EagerValue: Output tensor or tuple of output tensors.
             """
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 

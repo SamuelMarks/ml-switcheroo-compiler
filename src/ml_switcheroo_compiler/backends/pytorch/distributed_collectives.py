@@ -15,12 +15,12 @@ def pytorch_all_reduce(
     """Execute native PyTorch all_reduce on a tensor.
 
     Args:
-        tensor (Any): Torch tensor or array.
+        tensor (EagerValue): Torch tensor or array.
         op (str): Reduction operator ("SUM", "PRODUCT", "MAX", "MIN").
         group (Any | None): Process group handle.
 
     Returns:
-        Any: In-place or returned reduced tensor.
+        EagerValue: In-place or returned reduced tensor.
     """
     try:
         import torch
@@ -52,12 +52,12 @@ def pytorch_all_gather(
     """Execute native PyTorch all_gather on a tensor.
 
     Args:
-        tensor (Any): Torch tensor or array.
+        tensor (EagerValue): Torch tensor or array.
         axis (int): Concatenation axis.
         group (Any | None): Process group handle.
 
     Returns:
-        Any: Concatenated global tensor across all ranks.
+        EagerValue: Concatenated global tensor across all ranks.
     """
     try:
         import torch
@@ -84,13 +84,13 @@ def pytorch_reduce_scatter(
     """Execute native PyTorch reduce_scatter on a tensor.
 
     Args:
-        tensor (Any): Torch tensor or array.
+        tensor (EagerValue): Torch tensor or array.
         op (str): Reduction operator.
         scatter_dim (int): Dimension to scatter across ranks.
         group (Any | None): Process group handle.
 
     Returns:
-        Any: Reduced local slice.
+        EagerValue: Reduced local slice.
     """
     try:
         import torch
@@ -120,12 +120,12 @@ def pytorch_broadcast(
     """Execute native PyTorch broadcast on a tensor.
 
     Args:
-        tensor (Any): Torch tensor or array.
+        tensor (EagerValue): Torch tensor or array.
         src (int): Source root rank.
         group (Any | None): Process group handle.
 
     Returns:
-        Any: Broadcasted tensor on all ranks.
+        EagerValue: Broadcasted tensor on all ranks.
     """
     try:
         import torch

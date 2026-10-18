@@ -4,9 +4,10 @@ import typing
 from dataclasses import dataclass
 from typing import Callable, Optional, Union, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config as compiler_config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.nn.linear_ops import linear
@@ -148,7 +149,7 @@ def fake_quant_with_min_max_vars(
     max_val: Tensor,
     num_bits: int = 8,
     narrow_range: bool = False,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Simulate quantization and dequantization of a tensor using min and max variables.
 
     This function is useful for quantization-aware training, simulating the precision loss
@@ -201,6 +202,9 @@ class FakeQuantizePerChannelAffineOp(OpDef):
         Args:
             *args: The args parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[int, ...]: Computed result.
         """
         return getattr(args[0], "shape", ())
 
@@ -215,6 +219,9 @@ class FakeQuantizePerTensorAffineOp(OpDef):
         Args:
             *args: The args parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[int, ...]: Computed result.
         """
         return getattr(args[0], "shape", ())
 
@@ -318,7 +325,7 @@ def quantize_and_dequantize(
     input_min: Tensor,
     input_max: Tensor,
     params: Optional[QuantizationParams] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Quantizes and then dequantizes a tensor to simulate lower precision.
 
     This operation applies quantization based on the provided min/max bounds and parameters,
@@ -347,13 +354,13 @@ def quantize_and_dequantize(
         "narrow_range": params.narrow_range,
         "axis": params.axis,
     }
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)("QuantizeAndDequantize", [input, input_min, input_max], attrs, input.shape, input.dtype))
+    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)("QuantizeAndDequantize", [input, input_min, input_max], attrs, input.shape, input.dtype))
 
 
 def abs_max_quantize(
     input: Tensor,
     axis: Optional[int] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Quantizes an input tensor using absolute maximum quantization scaling.
 
     This method calculates scaling factors based on the absolute maximum values along
@@ -380,7 +387,7 @@ def abs_max_quantize(
 def compute_float8_amax_history(
     x: Tensor,
     amax_history: Tensor,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute and updates the absolute maximum history for float8 quantization scaling.
 
     Args:
@@ -402,7 +409,7 @@ def compute_float8_scale(
     amax_history: Tensor,
     scale: Tensor,
     margin: float = 0.0,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the scaling factor for float8 quantization from absolute maximum history.
 
     Args:
@@ -426,7 +433,7 @@ def quantize(
     w: Tensor,
     group_size: int = 64,
     bits: int = 4,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Quantizes a floating-point weight tensor into a lower-bit representation.
 
     Args:
@@ -478,7 +485,7 @@ class QuantizedOpsConfig:
 def quantized_matmul(
     x: Tensor,
     config: QuantizedOpsConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Perform a matrix multiplication using a quantized weight matrix configuration.
 
     Args:
@@ -508,7 +515,7 @@ def quantized_matmul(
 def gather_qmm(
     x: Tensor,
     config: QuantizedOpsConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Gather elements and performs a matrix multiplication with quantized weights.
 
     Args:
@@ -539,7 +546,7 @@ def gather_qmm(
 def quantized_linear(
     input: Tensor,
     config: QuantizedOpsConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Apply a linear transformation to incoming data using quantized parameters.
 
     The weight tensor within the configuration is expected to be quantized (e.g., int4 or int8).
@@ -582,7 +589,7 @@ def quantized_linear(
 def quantized_embedding(
     input: Tensor,
     config: QuantizedOpsConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Look up embeddings from a quantized embedding weight table.
 
     Args:
@@ -624,7 +631,7 @@ def dequantize(
     biases: Optional[Tensor] = None,
     group_size: int = 64,
     bits: int = 4,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Dequantizes a tensor back to a floating point representation.
 
     Args:
@@ -668,7 +675,7 @@ def quantized_conv(
     padding: int = 0,
     dilation: int = 1,
     groups: int = 1,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Perform a convolution using a quantized weight configuration.
 
     Args:

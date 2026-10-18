@@ -5,13 +5,13 @@ from __future__ import annotations
 import builtins  # noqa: F401
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Acos")
 def _acos(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _acos operation.
+    """Execute the eager acos operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -19,17 +19,17 @@ def _acos(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "arccos", getattr(backend_module, "acos", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.arccos(*args, **kwargs))
+    return cast(EagerValue, host_backend.arccos(*args, **kwargs))
 
 
 @global_eager_registry.register("Acosh")
 def _acosh(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _acosh operation.
+    """Execute the eager acosh operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -37,17 +37,17 @@ def _acosh(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "arccosh", getattr(backend_module, "acosh", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.arccos(*args, **kwargs))
+    return cast(EagerValue, host_backend.arccos(*args, **kwargs))
 
 
 @global_eager_registry.register("Asin")
 def _asin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _asin operation.
+    """Execute the eager asin operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -55,17 +55,17 @@ def _asin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "arcsin", getattr(backend_module, "asin", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.arcsin(*args, **kwargs))
+    return cast(EagerValue, host_backend.arcsin(*args, **kwargs))
 
 
 @global_eager_registry.register("Asinh")
 def _asinh(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _asinh operation.
+    """Execute the eager asinh operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -73,17 +73,17 @@ def _asinh(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "arcsinh", getattr(backend_module, "asinh", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.arcsin(*args, **kwargs))
+    return cast(EagerValue, host_backend.arcsin(*args, **kwargs))
 
 
 @global_eager_registry.register("Atan")
 def _atan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _atan operation.
+    """Execute the eager atan operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -91,17 +91,17 @@ def _atan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "arctan", getattr(backend_module, "atan", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.arctan(*args, **kwargs))
+    return cast(EagerValue, host_backend.arctan(*args, **kwargs))
 
 
 @global_eager_registry.register("Atanh")
 def _atanh(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _atanh operation.
+    """Execute the eager atanh operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -109,17 +109,17 @@ def _atanh(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "arctanh", getattr(backend_module, "atanh", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.arctan(*args, **kwargs))
+    return cast(EagerValue, host_backend.arctan(*args, **kwargs))
 
 
 @global_eager_registry.register("Atan2")
 def _atan2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _atan2 operation.
+    """Execute the eager atan2 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -127,17 +127,17 @@ def _atan2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "arctan2", getattr(backend_module, "atan2", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.arctan2(*args, **kwargs))
+    return cast(EagerValue, host_backend.arctan2(*args, **kwargs))
 
 
 @global_eager_registry.register("Sinc")
 def _sinc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _sinc operation.
+    """Execute the eager sinc operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -145,17 +145,17 @@ def _sinc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "sinc", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.sinc(*args, **kwargs))
+    return cast(EagerValue, host_backend.sinc(*args, **kwargs))
 
 
 @global_eager_registry.register("Isin")
 def _isin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _isin operation.
+    """Execute the eager isin operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -163,14 +163,14 @@ def _isin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "isin")(*args, **kwargs))
 
 
 @global_eager_registry.register("Isinf")
 def _isinf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _isinf operation.
+    """Execute the eager isinf operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -178,18 +178,18 @@ def _isinf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "isinf", None)
     if func:
         return cast(EagerValue, func(*args, **kwargs))
 
-    return cast(EagerValue, np.isinf(args[0]))
+    return cast(EagerValue, host_backend.isinf(args[0]))
 
 
 @global_eager_registry.register("Isposinf")
 def _isposinf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _isposinf operation.
+    """Execute the eager isposinf operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -197,10 +197,10 @@ def _isposinf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "isposinf", None)
     if func:
         return cast(EagerValue, func(*args, **kwargs))
 
-    return cast(EagerValue, np.isposinf(args[0]))
+    return cast(EagerValue, host_backend.isposinf(args[0]))

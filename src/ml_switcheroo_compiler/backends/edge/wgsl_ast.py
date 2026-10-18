@@ -3,6 +3,8 @@
 import re
 from typing import Optional, Union
 
+from ml_switcheroo_compiler.core.errors import CompilationError
+
 RESERVED_WGSL_KEYWORDS: set[str] = {
     "array",
     "atomic",
@@ -52,7 +54,7 @@ VALID_IDENTIFIER_PATTERN: re.Pattern[str] = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*
 WORKGROUP_SIZE_PATTERN: re.Pattern[str] = re.compile(r"@workgroup_size\s*\(\s*(\d+)\s*(?:,\s*(\d+))?\s*(?:,\s*(\d+))?\s*\)")
 
 
-class WGSLValidationError(ValueError):
+class WGSLValidationError(CompilationError, ValueError):
     """Exception raised when WGSL AST node or emitted code violates WebGPU specifications."""
 
 

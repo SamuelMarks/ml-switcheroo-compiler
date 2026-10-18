@@ -24,21 +24,28 @@ class JAXCodeGenerator(BaseGenerator):
     """JAX code generator."""
 
     @classmethod
-    def get_memory_info(cls, device: EagerValue = None) -> EagerValue:
-        """Get memory info.
+    def get_memory_info(cls, device: EagerValue = None) -> dict[str, int]:
+        """Retrieve current and peak memory telemetry from JAX device stats or stdlib resource.
 
         Args:
-            device: The device parameter.
+            device (EagerValue): Optional device identifier.
+
+        Returns:
+            dict[str, int]: Mapping with 'current' and 'peak' memory usage in bytes.
         """
         import jax
 
         try:
             dev = jax.local_devices()[0]
             stats = dev.memory_stats()
-            return {"current": getattr(stats, "get")("bytes_in_use", 0), "peak": getattr(stats, "get")("peak_bytes_in_use", 0)}
+            return {
+                "current": int(getattr(stats, "get")("bytes_in_use", 0)),
+                "peak": int(getattr(stats, "get")("peak_bytes_in_use", 0)),
+            }
         except Exception:
-            psutil = __import__("psutil")
-            rss = psutil.Process().memory_info().rss
+            import resource
+
+            rss: int = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
             return {"current": rss, "peak": rss}
 
     @classmethod
@@ -68,7 +75,7 @@ class JAXCodeGenerator(BaseGenerator):
             encoding (str): The encoding parameter.
 
         Returns:
-            object: Result.
+            EagerValue: Result.
         """
         import jax.numpy as jnp
 
@@ -131,7 +138,7 @@ class JAXCodeGenerator(BaseGenerator):
         )
 
     def _format_zeros_like(self, op: str, kwargs: dict[str, EagerValue]) -> str:
-        """Evaluate _format_zeros_like operation.
+        """Execute format zeros like for compiler processing.
 
         Args:
             op (str): The op parameter.
@@ -146,7 +153,7 @@ class JAXCodeGenerator(BaseGenerator):
         return res
 
     def _format_full(self, kwargs: dict[str, EagerValue]) -> str:
-        """Evaluate _format_full operation.
+        """Execute format full for compiler processing.
 
         Args:
             kwargs: The kwargs parameter.
@@ -201,7 +208,7 @@ class JAXCodeGenerator(BaseGenerator):
         return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
-        """Evaluate _emit_constant_assignment operation.
+        """Execute emit constant assignment for compiler processing.
 
         Args:
             var_name (str): The var_name parameter.
@@ -250,10 +257,10 @@ class JAXCodeGenerator(BaseGenerator):
             """Execute interpreter graph evaluation fallback.
 
             Args:
-                *fn_args (object): Positional input arguments.
+                *fn_args (EagerValue): Positional input arguments.
 
             Returns:
-                object: Evaluated output tensors.
+                EagerValue: Evaluated output tensors.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {}
@@ -286,11 +293,11 @@ class JAXCodeGenerator(BaseGenerator):
             """Execute the compiled or JIT-wrapped JAX callable.
 
             Args:
-                *w_args (object): Input tensors.
-                **w_kwargs (object): Keyword arguments.
+                *w_args (EagerValue): Input tensors.
+                **w_kwargs (EagerValue): Keyword arguments.
 
             Returns:
-                object: Result from the JAX callable.
+                EagerValue: Result from the JAX callable.
             """
             del w_kwargs
             jax_args = [getattr(jnp_mod, "asarray")(a.data if isinstance(a, Tensor) else a) for a in w_args]
@@ -303,10 +310,10 @@ class JAXCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): The target computational graph to compile.
-            **kwargs (object): Optional compilation options, such as 'sample_inputs'.
+            **kwargs (EagerValue): Optional compilation options, such as 'sample_inputs'.
 
         Returns:
-            object: AOT execution callable wrapping the JAX compiled executable.
+            EagerValue: AOT execution callable wrapping the JAX compiled executable.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
@@ -324,10 +331,10 @@ class JAXCodeGenerator(BaseGenerator):
                 """Execute generated JAX model function.
 
                 Args:
-                    *fn_args (object): Positional input arguments.
+                    *fn_args (EagerValue): Positional input arguments.
 
                 Returns:
-                    object: Computed outputs.
+                    EagerValue: Computed outputs.
                 """
                 return apply_model_fn(None, *fn_args)
 

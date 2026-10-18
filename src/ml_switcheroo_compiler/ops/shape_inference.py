@@ -77,7 +77,7 @@ class S:
         """Compare two symbolic dimensions for equality.
 
         Args:
-            other (object): Object to compare against.
+            other (TensorOrScalar): Object to compare against.
 
         Returns:
             bool: True if both are S with matching names.

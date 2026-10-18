@@ -39,9 +39,6 @@ def test_load_save(tmp_path: EagerTensorProtocol) -> None:
     _np_save(np, f, np.array([1, 2, 3]))
     assert os.path.exists(f)
 
-    # Note: load in our numpy backend calls _fallback_load
-    # which uses formats that might not support npy directly, but lets just mock it
-
 
 def test_save_gguf() -> None:
     """Test function test_save_gguf."""
@@ -108,7 +105,7 @@ def test_base64() -> None:
 
 def test_parse_sequence_example() -> None:
     """Test function test_parse_sequence_example."""
-    r1, r2 = cast("Callable[..., EagerTensorProtocol]", _np_parse_sequence_example)(np, None)
+    (r1, r2) = cast("Callable[..., EagerTensorProtocol]", _np_parse_sequence_example)(np, None)
     assert r1 == {} and r2 == {}
 
 
@@ -116,14 +113,10 @@ def test_load() -> None:
     """Test function test_load."""
     from ml_switcheroo_compiler.backends.numpy.eager.io_ops import _np_load
 
-    try:
+    with pytest.raises(ValueError):
         _np_load(np, "non_existent_file.txt")
-    except ValueError as _exc:
-        assert _exc is not None
-    try:
+    with pytest.raises(ValueError):
         _np_load(np, file="non_existent_file.txt")
-    except ValueError as _exc:
-        assert _exc is not None
 
 
 def test_save_kwargs(tmp_path: EagerTensorProtocol) -> None:
@@ -153,10 +146,8 @@ def test_missing_io_coverage() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.io_ops import _np_decode_base64, _np_encode_base64, _np_parse_sequence_example
 
     _np_encode_base64(np, np.array([b"hello world"]))
-
     decoded = _np_decode_base64(np, np.array([b"aGVsbG8gd29ybGQ="]))
     assert "hello world" in str(cast("EagerTensorProtocol", getattr(decoded, "numpy"))() if hasattr(decoded, "numpy") else decoded)
-
     res = _np_parse_sequence_example(np, "serialized")
     assert "dummy" in getattr(res, "__getitem__")(0)
 
@@ -188,32 +179,22 @@ def _test_io_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
         pass
 
     bk = DummyBackend()
-
-    # save/load
     p = tmp_path / "f.npy"
     mod._np_save(bk, str(p), np.array([1.0]))
     mod._np_save(bk, filepath=str(p), arr=np.array([1.0]))
     mod._np_save(bk, file=str(p), arr=np.array([1.0]))
     mod._np_save(bk)
-
     assert mod._np_load(bk, str(p)) is not None
-
     with pytest.raises(ValueError, match="Format not supported"):
         mod._np_load(bk, str(tmp_path / "nonexistent.xyz"))
-
-    # savez
     pz = tmp_path / "fz.npz"
     mod._np_savez(bk, str(pz), np.array([1.0]), a=np.array([2.0]))
     mod._np_savez(bk, file=str(pz), args=[np.array([1.0])], kwds={"a": np.array([2.0])})
-
     mod._np_savez_compressed(bk, str(pz), np.array([1.0]), a=np.array([2.0]))
     mod._np_savez_compressed(bk, file=str(pz), args=[np.array([1.0])], kwds={"a": np.array([2.0])})
-
     res = mod._np_load(bk, str(pz))
     assert res is not None
     mod._np_load(bk, file=str(pz))
-
-    # file io
     p_file = tmp_path / "f.txt"
     mod._np_write_file(bk, str(p_file), b"hello")
     getattr(_state, "update")({"DummyBackend": DummyBackend, "bk": bk, "p": p, "p_file": p_file})
@@ -227,43 +208,28 @@ def _test_io_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     Args:
         _state: Shared test state dictionary.
     """
-    bk, p_file = _state["bk"], _state["p_file"]
+    (bk, p_file) = (_state["bk"], _state["p_file"])
     mod._np_write_file(bk, filename=str(p_file), contents=b"hello")
-    mod._np_write_file(bk, 123, b"hello")  # invalid
-
+    mod._np_write_file(bk, 123, b"hello")
     mod._np_read_file(bk, str(p_file))
     mod._np_read_file(bk, filename=str(p_file))
     mod._np_read_file(bk, 123)
-
-    # decode img
     mod._np_decode_image(bk, b"not image")
     mod._np_decode_image(bk, contents=b"not image")
-    mod._np_decode_image(bk, 123)  # not bytes
-
-    # decode csv
+    mod._np_decode_image(bk, 123)
     mod._np_decode_csv(bk, [b"1,2", b"3,4"])
     mod._np_decode_csv(bk, records=[b"1,2", b"3,4"], record_defaults=[[0.0], [0.0]])
-
-    # tf examples (dummies)
     mod._np_parse_example(bk, b"")
     mod._np_parse_example(bk, serialized=b"", features={"f": "dummy"})
-
-    # sequence example
     mod._np_parse_sequence_example(bk, b"")
     mod._np_parse_sequence_example(bk, serialized=b"")
-    mod._np_parse_sequence_example(bk, 123)  # not bytes
-
-    # base64
+    mod._np_parse_sequence_example(bk, 123)
     mod._np_encode_base64(bk, b"hello")
     mod._np_encode_base64(bk, input=b"hello")
-
     mod._np_decode_base64(bk, b"aGVsbG8=")
     mod._np_decode_base64(bk, input=b"aGVsbG8=")
-
     mod._np_encode_base64(bk, None)
     mod._np_decode_base64(bk, None)
-
-    # tensor serialize
     mod._np_serialize_tensor(bk, np.array([1.0]))
     _state.update(locals())
 
@@ -274,17 +240,14 @@ def _test_io_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None
     Args:
         _state: Shared test state dictionary.
     """
-    bk, tmp_path = _state["bk"], _state["tmp_path"]
+    (bk, tmp_path) = (_state["bk"], _state["tmp_path"])
     mod._np_serialize_tensor(bk, tensor=np.array([1.0]))
-
     mod._np_parse_tensor(bk, b"")
     mod._np_parse_tensor(bk, serialized=b"")
-
     with pytest.raises(RuntimeError):
         mod._np_save_gguf(bk, str(tmp_path / "f.gguf"), {"a": np.array([1.0])})
     with pytest.raises(RuntimeError):
         mod._np_save_gguf(bk, filepath=str(tmp_path / "f.gguf"), tensors={"a": np.array([1.0])})
-
     mod._np_parse_sequence_example(bk, None)
 
 
@@ -305,7 +268,6 @@ def test_math_string_io_decode_image_branches() -> None:
 
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_decode_image
 
-    # Create a 2D image (L mode) and test channels=1 and channels=0 branches
     img = Image.new("L", (10, 10))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -316,19 +278,12 @@ def test_math_string_io_decode_image_branches() -> None:
 
         pass
 
-    # Test channels=1
     res1 = _np_decode_image(DummyBackend(), data, channels=1)
     assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (10, 10, 1)
-
-    # Test channels=3
     res3 = _np_decode_image(DummyBackend(), data, channels=3)
     assert cast("EagerTensorProtocol", getattr(res3, "shape")) == (10, 10, 3)
-
-    # Test channels=4
     res4 = _np_decode_image(DummyBackend(), data, channels=4)
     assert cast("EagerTensorProtocol", getattr(res4, "shape")) == (10, 10, 4)
-
-    # Test channels=0 (auto) with 2D image -> gets expanded
     res0 = _np_decode_image(DummyBackend(), data, channels=0)
     assert cast("EagerTensorProtocol", getattr(res0, "shape")) == (10, 10, 1)
 
@@ -369,27 +324,16 @@ def _test_math_string_io_coverage_part_1(_state: dict[str, EagerTensorProtocol])
     _parse_scanop_args((), {})
     _parse_scanop_args((1, 2, 3), {})
     _parse_scanop_args((), {"fn": 1, "elems": 2})
-
-    try:
+    with pytest.raises(IndexError):
         _np_sparsedensematmul(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
+    with pytest.raises(IndexError):
         _np_sparsemapvalues(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
+    with pytest.raises(AttributeError):
         _np_sparsereshape(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
+    with pytest.raises(AttributeError):
         _np_sparsesampledadd(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
+    with pytest.raises(AttributeError):
         _np_sparsetranspose(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
     getattr(_state, "update")({"DummyBackend": DummyBackend, "_np_decode_csv": _np_decode_csv, "_np_decode_csv_camel": _np_decode_csv_camel, "_np_decode_image": _np_decode_image})
     getattr(_state, "update")({"_np_decode_image_camel": _np_decode_image_camel, "_np_encode_image_camel": _np_encode_image_camel, "_np_parse_example": _np_parse_example, "_np_parse_example_camel": _np_parse_example_camel})
     getattr(_state, "update")({"_np_parse_tensor": _np_parse_tensor, "_np_parse_tensor_camel": _np_parse_tensor_camel, "_np_read_file": _np_read_file, "_np_read_file_camel": _np_read_file_camel})
@@ -404,28 +348,13 @@ def _test_math_string_io_coverage_part_2(_state: dict[str, EagerTensorProtocol])
     Args:
         _state: Shared test state dictionary.
     """
-    DummyBackend, _np_decode_csv, _np_decode_image, _np_parse_example = _state["DummyBackend"], _state["_np_decode_csv"], _state["_np_decode_image"], _state["_np_parse_example"]
-    _np_parse_tensor, _np_read_file = _state["_np_parse_tensor"], _state["_np_read_file"]
-    try:
-        _np_decode_csv(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_decode_image(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_parse_example(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_parse_tensor(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_read_file(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    (DummyBackend, _np_decode_csv, _np_decode_image, _np_parse_example) = (_state["DummyBackend"], _state["_np_decode_csv"], _state["_np_decode_image"], _state["_np_parse_example"])
+    (_np_parse_tensor, _np_read_file) = (_state["_np_parse_tensor"], _state["_np_read_file"])
+    _np_decode_csv(DummyBackend())
+    _np_decode_image(DummyBackend())
+    _np_parse_example(DummyBackend())
+    _np_parse_tensor(DummyBackend())
+    _np_read_file(DummyBackend())
     _state.update(locals())
 
 
@@ -435,28 +364,13 @@ def _test_math_string_io_coverage_part_3(_state: dict[str, EagerTensorProtocol])
     Args:
         _state: Shared test state dictionary.
     """
-    DummyBackend, _np_decode_csv_camel, _np_decode_image_camel, _np_encode_image_camel = _state["DummyBackend"], _state["_np_decode_csv_camel"], _state["_np_decode_image_camel"], _state["_np_encode_image_camel"]
-    _np_parse_example_camel, _np_write_file = _state["_np_parse_example_camel"], _state["_np_write_file"]
-    try:
-        _np_write_file(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_decode_csv_camel(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_decode_image_camel(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_encode_image_camel(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_parse_example_camel(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    (DummyBackend, _np_decode_csv_camel, _np_decode_image_camel, _np_encode_image_camel) = (_state["DummyBackend"], _state["_np_decode_csv_camel"], _state["_np_decode_image_camel"], _state["_np_encode_image_camel"])
+    (_np_parse_example_camel, _np_write_file) = (_state["_np_parse_example_camel"], _state["_np_write_file"])
+    _np_write_file(DummyBackend())
+    _np_decode_csv_camel(DummyBackend())
+    _np_decode_image_camel(DummyBackend())
+    _np_encode_image_camel(DummyBackend())
+    _np_parse_example_camel(DummyBackend())
     _state.update(locals())
 
 
@@ -466,19 +380,10 @@ def _test_math_string_io_coverage_part_4(_state: dict[str, EagerTensorProtocol])
     Args:
         _state: Shared test state dictionary.
     """
-    DummyBackend, _np_parse_tensor_camel, _np_read_file_camel, _np_write_file_camel = _state["DummyBackend"], _state["_np_parse_tensor_camel"], _state["_np_read_file_camel"], _state["_np_write_file_camel"]
-    try:
-        _np_parse_tensor_camel(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_read_file_camel(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        _np_write_file_camel(DummyBackend())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    (DummyBackend, _np_parse_tensor_camel, _np_read_file_camel, _np_write_file_camel) = (_state["DummyBackend"], _state["_np_parse_tensor_camel"], _state["_np_read_file_camel"], _state["_np_write_file_camel"])
+    _np_parse_tensor_camel(DummyBackend())
+    _np_read_file_camel(DummyBackend())
+    _np_write_file_camel(DummyBackend())
 
 
 def test_math_string_io_coverage() -> None:
@@ -502,21 +407,14 @@ def test_math_string_io_encode_image_branches() -> None:
 
         pass
 
-    # test 3D array with shape[-1] == 1
     arr_3d = np.zeros((10, 10, 1), dtype=np.uint8)
     res = _np_encode_image_camel(DummyBackend(), arr_3d, op_name="EncodeJpeg")
     assert res is not None
-
-    # test non-uint8
     arr_f32 = np.zeros((10, 10), dtype=np.float32)
     res2 = _np_encode_image_camel(DummyBackend(), arr_f32, op_name="EncodePng")
     assert res2 is not None
-
-    # test Exception branch
-    try:
+    with pytest.raises(RuntimeError):
         _np_encode_image_camel(DummyBackend(), None)
-    except RuntimeError as _exc:
-        assert _exc is not None
 
 
 def test_math_string_io_parse_example_camel() -> None:
@@ -530,26 +428,17 @@ def test_math_string_io_parse_example_camel() -> None:
 
         pass
 
-    # Test valid JSON with features
     features = {"a": type("DummyFeature", (), {"dtype": float})()}
     data_str = json.dumps({"a": [1.0, 2.0]})
     res = _np_parse_example_camel(DummyBackend(), data_str, features=features)
     assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res)
-
-    # Test bytes input
     res2 = _np_parse_example_camel(DummyBackend(), data_str.encode("utf-8"), features=features)
     assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res2)
-
-    # Test missing feature
     data_str2 = json.dumps({"b": [1.0, 2.0]})
     res3 = _np_parse_example_camel(DummyBackend(), data_str2, features=features)
-    assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res3)  # should fallback to zeros
-
-    # Test exception
-    try:
+    assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res3)
+    with pytest.raises(RuntimeError):
         _np_parse_example_camel(DummyBackend(), "{invalid json}", features=features)
-    except RuntimeError as _exc:
-        assert _exc is not None
 
 
 def test_math_string_io_read_file_camel() -> None:
@@ -561,10 +450,8 @@ def test_math_string_io_read_file_camel() -> None:
 
         pass
 
-    try:
+    with pytest.raises(RuntimeError):
         _np_read_file_camel(DummyBackend(), "missing_file.txt")
-    except RuntimeError as _exc:
-        assert _exc is not None
 
 
 def test_math_string_io_write_file_camel(tmp_path: EagerTensorProtocol) -> None:
@@ -578,15 +465,10 @@ def test_math_string_io_write_file_camel(tmp_path: EagerTensorProtocol) -> None:
 
         pass
 
-    # Success branch
     test_file = tmp_path / "test.txt"
     _np_write_file_camel(DummyBackend(), str(test_file), np.array(b"data"))
-
-    # Exception branch
-    try:
+    with pytest.raises(OSError):
         _np_write_file_camel(DummyBackend(), "/invalid/path/test.txt", "data")
-    except OSError as _exc:
-        assert _exc is not None
 
 
 def test_math_string_io_parse_tensor_camel() -> None:
@@ -603,11 +485,8 @@ def test_math_string_io_parse_tensor_camel() -> None:
     data_bytes = pickle.dumps([1.0, 2.0])
     res = _np_parse_tensor_camel(DummyBackend(), data_bytes)
     assert res is not None
-
-    try:
+    with pytest.raises(RuntimeError):
         _np_parse_tensor_camel(DummyBackend(), b"{invalid pickle}")
-    except RuntimeError as _exc:
-        assert _exc is not None
 
 
 def test_math_string_io_decode_csv_camel() -> None:
@@ -623,12 +502,8 @@ def test_math_string_io_decode_csv_camel() -> None:
     defaults = [0.0, 0.0]
     res = _np_decode_csv_camel(DummyBackend(), records, record_defaults=defaults)
     assert res is not None
-
-    # Empty records -> exception handled differently?
-    try:
+    with pytest.raises(IndexError):
         _np_decode_csv_camel(DummyBackend(), [])
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_math_string_io_sparsemapvalues() -> None:
@@ -661,7 +536,6 @@ def test_math_string_io_sparsedensematmul_fallback() -> None:
             """Test function sparsedensematmul."""
             return "hit_bk"
 
-    # hit backend branch
     assert _np_sparsedensematmul(DummyBackend(), np.ones((2, 2)), np.ones((2, 2))) == "hit_bk"
 
     class EmptyBackend:
@@ -669,7 +543,6 @@ def test_math_string_io_sparsedensematmul_fallback() -> None:
 
         pass
 
-    # fallback to np.matmul
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     b = np.array([[5.0, 6.0], [7.0, 8.0]])
     res = _np_sparsedensematmul(EmptyBackend(), a, b)
@@ -682,18 +555,11 @@ def test_math_string_io_csv_edge_cases() -> None:
 
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _get_csv_data, _parse_csv_row
 
-    # 223-224 (exception during casting)
-    try:
+    with pytest.raises(RuntimeError):
         _parse_csv_row(["invalid"], [0.0], np)
-    except RuntimeError as _exc:
-        assert _exc is not None
-
-    # 226 (row shorter than defaults)
     res = _parse_csv_row(["1.0"], [0.0, 2.0], np)
     assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 2.0
-
-    # 241 (args empty)
     res2 = _get_csv_data((), np)
     assert res2 == ""
 
@@ -710,12 +576,8 @@ def test_math_string_io_csv_exception() -> None:
         pass
 
     with patch("csv.reader", side_effect=Exception("Test")):
-        try:
+        with pytest.raises(ValueError):
             _np_decode_csv_camel(DummyBackend(), ["1.0,2.0"])
-        except ValueError as _exc:
-            assert _exc is not None
-
-    # Test empty output
     res = _np_decode_csv_camel(DummyBackend(), [""], record_defaults=[0.0])
     assert res is not None
 
@@ -743,19 +605,10 @@ def test_math_string_io_decode_image_exceptions() -> None:
 
         pass
 
-    # 334 (not bytes)
-    try:
+    with pytest.raises(RuntimeError):
         _np_decode_image_camel(DummyBackend(), "not_bytes")
-    except RuntimeError as _exc:
-        assert _exc is not None
-
-    # 355-356 (invalid bytes -> PIL fails)
-    try:
+    with pytest.raises(RuntimeError):
         _np_decode_image_camel(DummyBackend(), b"invalid_image_data")
-    except RuntimeError as _exc:
-        assert _exc is not None
-
-    # 370->373 (channels=0 on 3-channel RGB image where arr.ndim == 3)
     buf = io.BytesIO()
     Image.new("RGB", (10, 10)).save(buf, format="PNG")
     png_bytes = buf.getvalue()
@@ -775,10 +628,6 @@ def test_math_string_io_read_write_file_camel_success(tmp_path: EagerTensorProto
         pass
 
     test_file = tmp_path / "test.bin"
-
-    # Write non-bytes -> 521 contents.tobytes()
     _np_write_file_camel(DummyBackend(), str(test_file), np.array([1, 2, 3], dtype=np.int32))
-
-    # Read success -> 491
     res = _np_read_file_camel(DummyBackend(), str(test_file))
     assert res is not None

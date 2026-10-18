@@ -15,7 +15,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
     """Control flow AST generator mixin."""
 
     def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_Scan operation.
+        """Emit target backend code or IR transformation for the Scan operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -30,7 +30,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"{pfx}_scan({', '.join(input_vars)})"
 
     def visit_Switch(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_Switch operation.
+        """Emit target backend code or IR transformation for the Switch operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -45,7 +45,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"{pfx}_switch({', '.join(input_vars)})"
 
     def visit_TimeDistributed(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_TimeDistributed operation.
+        """Emit target backend code or IR transformation for the TimeDistributed operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -61,7 +61,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"{self.generator.get_fallback_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"
 
     def visit_Assert(self, node: IRNode, input_vars: list[str], **kwargs: list[str]) -> str:
-        """Evaluate visit_Assert operation.
+        """Emit target backend code or IR transformation for the Assert operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -76,7 +76,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"{pfx}_assert({input_vars[0]}, data={data})"
 
     def visit_AssociativeScan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_AssociativeScan operation.
+        """Emit target backend code or IR transformation for the AssociativeScan operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -90,7 +90,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"{pfx}_associative_scan({', '.join(input_vars)})"
 
     def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """visit_WhileLoop function.
+        """Emit target backend code or IR transformation for the WhileLoop operation.
 
         Args:
             node (IRNode): The node.
@@ -137,7 +137,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"loop_val_{node.id}"
 
     def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """visit_Cond function.
+        """Emit target backend code or IR transformation for the Cond operation.
 
         Args:
             node (IRNode): The node.
@@ -178,7 +178,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"true_fn_{node.id}() if {cond_val} else false_fn_{node.id}()"
 
     def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """visit_ForiLoop function.
+        """Emit target backend code or IR transformation for the ForiLoop operation.
 
         Args:
             node (IRNode): The node.
@@ -216,7 +216,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"loop_val_{node.id}"
 
     def visit_Map(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """visit_Map function.
+        """Emit target backend code or IR transformation for the Map operation.
 
         Args:
             node (IRNode): The node.
@@ -246,7 +246,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"{pfx}.stack([map_fn_{node.id}(x) for x in {xs}])"
 
     def visit_Fold(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """visit_Fold function.
+        """Emit target backend code or IR transformation for the Fold operation.
 
         Args:
             node (IRNode): The node.
@@ -281,7 +281,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"fold_val_{node.id}"
 
     def visit_Vmap(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """visit_Vmap function.
+        """Emit target backend code or IR transformation for the Vmap operation.
 
         Args:
             node (IRNode): The node.
@@ -295,7 +295,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"{pfx}_vmap({', '.join(input_vars)})"
 
     def visit_Pmap(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """visit_Pmap function.
+        """Emit target backend code or IR transformation for the Pmap operation.
 
         Args:
             node (IRNode): The node.

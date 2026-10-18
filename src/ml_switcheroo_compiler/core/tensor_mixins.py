@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable, Iterator
-from typing import TYPE_CHECKING, Optional, cast  # noqa: F401
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
@@ -28,7 +29,7 @@ class TensorPropertiesMixin:
     _dtype: DType
     _device: Device
     _requires_grad: bool
-    _data: EagerValue
+    _data: TensorOrScalar
 
     @property
     def ndim(self) -> int:
@@ -61,7 +62,7 @@ class TensorPropertiesMixin:
         """Get the shape of the tensor.
 
         Returns:
-            Sequence[int]: The shape tuple of the tensor.
+            tuple[int, ...]: The shape tuple of the tensor.
         """
         return cast("tuple[int, ...]", self._shape)
 
@@ -93,11 +94,11 @@ class TensorPropertiesMixin:
         return self._requires_grad
 
     @property
-    def data(self) -> EagerValue:
+    def data(self) -> TensorOrScalar:
         """Get the underlying data payload.
 
         Returns:
-            object: The computed result.
+            TensorOrScalar: The underlying array or proxy payload.
         """
         return self._data
 
@@ -114,11 +115,11 @@ class TensorConversionMixin(_ConversionBase):
     if TYPE_CHECKING:
         eval: Callable[[], Tensor]
 
-    def numpy(self) -> EagerValue:
-        """Convert the tensor to a NumPy array.
+    def numpy(self) -> TensorOrScalar:
+        """Convert the tensor to a host array representation.
 
         Returns:
-            object: The NumPy array representation.
+            TensorOrScalar: The host array representation.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -127,14 +128,14 @@ class TensorConversionMixin(_ConversionBase):
         except Exception:
             return get_active_backend().asarray(self._data)
 
-    def __array__(self, dtype: DType | str | type | None = None) -> EagerValue:
-        """Array.
+    def __array__(self, dtype: DType | str | type | None = None) -> TensorOrScalar:
+        """Convert the tensor to a backend array with optional dtype cast.
 
         Args:
-            dtype (object): The dtype to process.
+            dtype (DType | str | type | None): Optional target data type.
 
         Returns:
-            The computed shape or evaluation result.
+            TensorOrScalar: The converted array.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -154,7 +155,7 @@ class TensorConversionMixin(_ConversionBase):
         """Return the value of this tensor as a standard Python number.
 
         Returns:
-            float: The computed result.
+            float: The scalar numerical value.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -206,10 +207,10 @@ class TensorConversionMixin(_ConversionBase):
         )
 
     def __len__(self) -> int:
-        """Len.
+        """Return the size of the leading dimension.
 
         Returns:
-            int: The computed result.
+            int: Leading dimension length, or 0 for scalar tensors.
         """
         return int(self.shape[0]) if self.shape else 0
 
@@ -241,11 +242,11 @@ else:
 class TensorIndexingMixin(_IndexingBase):
     """Tensor indexing mixin."""
 
-    def __getitem__(self, key: EagerValue) -> Tensor:
+    def __getitem__(self, key: TensorOrScalar) -> Tensor:
         """Retrieve elements from the tensor.
 
         Args:
-            key (object): The index or slice key.
+            key (TensorOrScalar): The index or slice key.
 
         Returns:
             Tensor: A new tensor containing the selected elements.
@@ -267,14 +268,8 @@ class TensorIndexingMixin(_IndexingBase):
             if config.eager_mode:
                 raise
             res_shape = ()
-            # If we are in dummy mode, we might want to still raise if it's clearly out of bounds
-            # like too many indices for a known shape. But if the key has a ProxyTensor, NumPy
-            # will raise IndexError: only integers... We want to let it pass and build a node,
-            # UNLESS it's truly an invalid indexing like too many dims.
-            # We will just raise IndexError if it's too many indices for array, so Keras catches it.
             if "too many indices for array" in str(e):
                 raise
-            # Otherwise we continue and create a lazy node
 
         if config.eager_mode:
             from .tensor import Tensor, TensorConfig
@@ -300,12 +295,12 @@ class TensorIndexingMixin(_IndexingBase):
 
         return Tensor(ProxyTensor(nid, (), self.dtype.value), TensorConfig((), self.dtype, self.device))
 
-    def __setitem__(self, key: EagerValue, value: EagerValue) -> None:
+    def __setitem__(self, key: TensorOrScalar, value: TensorOrScalar) -> None:
         """Set elements in the tensor (only supported in eager mode).
 
         Args:
-            key (object): The index or slice key.
-            value (object): The value to set.
+            key (TensorOrScalar): The index or slice key.
+            value (TensorOrScalar): The value to set.
 
         Raises:
             TypeError: If attempted during tracing.
@@ -322,8 +317,8 @@ class TensorIndexingMixin(_IndexingBase):
         """Get ArrayAtIndexer for the tensor.
 
         Returns:
-            ArrayAtIndexer: The indexer
+            ArrayAtIndexer: The indexer.
         """
         from .tensor import ArrayAtIndexer
 
-        return ArrayAtIndexer(self)
+        return ArrayAtIndexer(cast("Tensor", self))

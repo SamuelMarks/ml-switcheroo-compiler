@@ -17,7 +17,7 @@ class KerasVisionVisitor:
     """Mixin."""
 
     def visit_ElasticTransform(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_ElasticTransform operation.
+        """Emit target backend code or IR transformation for the ElasticTransform operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -32,7 +32,7 @@ class KerasVisionVisitor:
         return f"keras_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"
 
     def visit_GaussianBlur(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_GaussianBlur operation.
+        """Emit target backend code or IR transformation for the GaussianBlur operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -47,7 +47,7 @@ class KerasVisionVisitor:
         return f"keras_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"
 
     def visit_MedianFilter(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_MedianFilter operation.
+        """Emit target backend code or IR transformation for the MedianFilter operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -62,7 +62,7 @@ class KerasVisionVisitor:
         return f"keras_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"
 
     def visit_ExtractBoundingBoxes(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_ExtractBoundingBoxes operation.
+        """Emit target backend code or IR transformation for the ExtractBoundingBoxes operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -77,7 +77,7 @@ class KerasVisionVisitor:
         return f"keras_extract_bounding_boxes({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, BoundingBoxExtractionConfig(crop_size={crop_size}, interpolation='{interpolation}', extrapolation_value={extrapolation_value}, data_format={df_str}))"
 
     def visit_IoU(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_IoU operation.
+        """Emit target backend code or IR transformation for the IoU operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -91,7 +91,7 @@ class KerasVisionVisitor:
         return f"keras_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
 
     def visit_NonMaxSuppression(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_NonMaxSuppression operation.
+        """Emit target backend code or IR transformation for the NonMaxSuppression operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -107,7 +107,7 @@ class KerasVisionVisitor:
         return f"keras_nms({input_vars[0]}, {input_vars[1]}, {max_output_size}, {iou_threshold}, {score_threshold})"
 
     def visit_ResizeBicubic(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_ResizeBicubic operation.
+        """Emit target backend code or IR transformation for the ResizeBicubic operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -122,7 +122,7 @@ class KerasVisionVisitor:
         return f"keras_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"
 
     def visit_ResizeLanczos3(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_ResizeLanczos3 operation.
+        """Emit target backend code or IR transformation for the ResizeLanczos3 operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -137,7 +137,7 @@ class KerasVisionVisitor:
         return f"keras_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"
 
     def visit_PerspectiveTransform(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_PerspectiveTransform operation.
+        """Emit target backend code or IR transformation for the PerspectiveTransform operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -156,7 +156,7 @@ class KerasAudioVisitor:
     """Mixin."""
 
     def visit_Istft(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_Istft operation.
+        """Emit target backend code or IR transformation for the Istft operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -170,7 +170,7 @@ class KerasAudioVisitor:
         return f"keras_istft({input_vars[0]}, STFTConfig(frame_length={frame_length}, frame_step={frame_step}, fft_length={fft_len_str}, window='{window}', center={center}))"
 
     def visit_MelFilterbank(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_MelFilterbank operation.
+        """Emit target backend code or IR transformation for the MelFilterbank operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -191,7 +191,7 @@ class KerasAudioVisitor:
         return f"keras_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate}, {lower_edge_hertz}, {upper_edge_hertz})"
 
     def visit_Mfcc(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_Mfcc operation.
+        """Emit target backend code or IR transformation for the Mfcc operation.
 
         Args:
             node (IRNode): The node parameter.

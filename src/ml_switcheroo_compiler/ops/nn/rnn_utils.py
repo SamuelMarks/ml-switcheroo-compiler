@@ -3,8 +3,9 @@
 from dataclasses import dataclass
 from typing import Callable, Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config as global_config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
@@ -75,7 +76,7 @@ class ScanConfig:
 
 
 def scan(
-    f: Callable[..., EagerValue],
+    f: Callable[..., TensorOrScalar],
     init: tuple[Tensor, ...],
     xs: Tensor,
     config: Optional[ScanConfig] = None,
@@ -83,7 +84,7 @@ def scan(
     """Scan loop construct.
 
     Args:
-        f (Any): The f parameter.
+        f (Callable[..., TensorOrScalar]): The f parameter.
         init (tuple): The init parameter.
         xs (Tensor): The xs parameter.
         config (Optional): The config parameter.
@@ -118,14 +119,14 @@ def scan(
 
 def bidirectional(
     inputs: BidirectionalInputs,
-    cell_fn: EagerValue,
+    cell_fn: TensorOrScalar,
     config: Optional[BidirectionalConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
     """Bidirectional RNN wrapper.
 
     Args:
         inputs (BidirectionalInputs): The bidirectional inputs.
-        cell_fn (Any): The RNN cell function.
+        cell_fn (TensorOrScalar): The RNN cell function.
         config (Optional[BidirectionalConfig]): Configuration.
         config (Optional[ScanConfig]): Configuration for scan.
 
@@ -164,7 +165,7 @@ def bidirectional(
     return cast(tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]], (merged_out, forward_state, backward_state))
 
 
-def _permute_time_major(inputs: Tensor) -> EagerValue:
+def _permute_time_major(inputs: Tensor) -> TensorOrScalar:
     """Swap batch and time dimensions.
 
     Args:
@@ -181,7 +182,7 @@ def _permute_time_major(inputs: Tensor) -> EagerValue:
 def rnn(
     inputs: Tensor,
     initial_state: tuple[Tensor, ...],
-    cell_fn: Callable[..., EagerValue],
+    cell_fn: Callable[..., TensorOrScalar],
     config: Optional[RNNConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
     """Define base recurrent loop evaluation.
@@ -189,7 +190,7 @@ def rnn(
     Args:
         inputs (Tensor): The inputs parameter.
         initial_state (tuple): The initial_state parameter.
-        cell_fn (Any): The cell_fn parameter.
+        cell_fn (Callable[..., TensorOrScalar]): The cell_fn parameter.
         config (Optional): The config parameter.
 
     Returns:
@@ -199,8 +200,8 @@ def rnn(
     if not conf.time_major:
         inputs = cast(Tensor, _permute_time_major(inputs))
 
-    def scan_fn(carry: Tensor, x: Tensor) -> EagerValue:
-        """Evaluate scan_fn operation.
+    def scan_fn(carry: Tensor, x: Tensor) -> TensorOrScalar:
+        """Compute the scan fn tensor operation.
 
         Args:
             carry (Tensor): The carry parameter.
@@ -230,29 +231,29 @@ def rnn(
 class RNNCellDeviceWrapper:
     """RNNCellDeviceWrapper."""
 
-    def __init__(self, cell: EagerValue, device: EagerValue, **kwargs: EagerValue) -> None:
+    def __init__(self, cell: TensorOrScalar, device: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
         """Init.
 
         Args:
-            cell (Any): The cell parameter.
-            device (Any): The device parameter.
-            **kwargs (Any): Keyword args.
+            cell (TensorOrScalar): The cell parameter.
+            device (TensorOrScalar): The device parameter.
+            **kwargs (TensorOrScalar): Keyword args.
         """
         self._cell = cell
         self._device = device
 
-    def __call__(self, inputs: EagerValue, state: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def __call__(self, inputs: TensorOrScalar, state: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Call.
 
         Args:
-        inputs (Any): The inputs parameter.
-        state (Any): The state parameter.
-        **kwargs (Any): Keyword args.
+        inputs (TensorOrScalar): The inputs parameter.
+        state (TensorOrScalar): The state parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
         tuple: Result.
         """
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs))
+        return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs))
 
 
 @dataclass
@@ -274,27 +275,27 @@ class RNNCellDropoutWrapper:
 
     def __init__(
         self,
-        cell: EagerValue,
+        cell: TensorOrScalar,
         config: Optional[DropoutWrapperConfig] = None,
-        **kwargs: EagerValue,
+        **kwargs: TensorOrScalar,
     ) -> None:
         """Initialize the RNNCellDropoutWrapper.
 
         Args:
-            cell (Any): The RNN cell to wrap.
+            cell (TensorOrScalar): The RNN cell to wrap.
             config (Optional[DropoutWrapperConfig]): Configuration for dropout.
-            kwargs (Any): Additional keyword arguments.
+            kwargs (TensorOrScalar): Additional keyword arguments.
         """
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: EagerValue) -> tuple[Tensor, tuple[Tensor, ...]]:
+    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: TensorOrScalar) -> tuple[Tensor, tuple[Tensor, ...]]:
         """Run the cell with dropout.
 
         Args:
             inputs (Tensor): Input tensor.
             state (tuple[Tensor, ...]): Current state.
-            kwargs (Any): Additional keyword arguments.
+            kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
@@ -310,24 +311,24 @@ class RNNCellDropoutWrapper:
 class RNNCellResidualWrapper:
     """RNNCellResidualWrapper."""
 
-    def __init__(self, cell: EagerValue, residual_fn: EagerValue = None, **kwargs: EagerValue) -> None:
+    def __init__(self, cell: TensorOrScalar, residual_fn: TensorOrScalar = None, **kwargs: TensorOrScalar) -> None:
         """Init.
 
         Args:
-            cell (Any): The cell parameter.
-            residual_fn (Any): The residual_fn parameter.
-            **kwargs (Any): Keyword args.
+            cell (TensorOrScalar): The cell parameter.
+            residual_fn (TensorOrScalar): The residual_fn parameter.
+            **kwargs (TensorOrScalar): Keyword args.
         """
         self._cell = cell
         self._residual_fn = residual_fn
 
-    def __call__(self, inputs: EagerValue, state: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def __call__(self, inputs: TensorOrScalar, state: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Call.
 
         Args:
-            inputs (Any): The inputs parameter.
-            state (Any): The state parameter.
-            **kwargs (Any): Keyword args.
+            inputs (TensorOrScalar): The inputs parameter.
+            state (TensorOrScalar): The state parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result.

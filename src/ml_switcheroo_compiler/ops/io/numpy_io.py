@@ -1,29 +1,23 @@
-"""I/O and memory operations."""
+"""Array archive and checkpoint I/O operations."""
 
 from __future__ import annotations
 
-import glob  # noqa: F401
-import os  # noqa: F401
-import shutil  # noqa: F401
-
-from ml_switcheroo_compiler.backends.registry import EagerValue
-from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
-from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
-from ml_switcheroo_compiler.core.tensor import Tensor  # noqa: F401
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def _fallback_load(filepath: str | None) -> EagerValue:
-    """Fallback mechanism to load weights based on file extension.
+def _fallback_load(filepath: str | None) -> TensorOrScalar:
+    """Load tensor weights based on file extension (.safetensors, .npz, .npy, .h5).
 
     Args:
-        filepath: The file path.
+        filepath (str | None): Path to the serialized weight file.
 
     Returns:
-        dict | Tensor | None: The loaded weights or None.
+        TensorOrScalar: Loaded weights dictionary, tensor, or None if unsupported.
     """
     if not isinstance(filepath, str):
         return None
@@ -40,15 +34,15 @@ def _fallback_load(filepath: str | None) -> EagerValue:
     return None
 
 
-def load(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Load arrays or pickled objects from files.
+def load(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Load arrays or serialized tensor archives from disk.
 
     Args:
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args (TensorOrScalar): Positional file path and loader arguments.
+        **kwargs (TensorOrScalar): Keyword loader options.
 
     Returns:
-        Tensor | dict: Result.
+        TensorOrScalar: Loaded tensor or dictionary of tensors.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -59,18 +53,24 @@ def load(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     _first = args[0] if args else (list(kwargs.values())[0] if kwargs else None)
-    return _emit_shape_node("Load", list(args), kwargs, getattr(_first, "shape", ()), getattr(_first, "dtype", "float32"))
+    return _emit_shape_node(
+        "Load",
+        list(args),
+        kwargs,
+        getattr(_first, "shape", ()),
+        getattr(_first, "dtype", "float32"),
+    )
 
 
-def save(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
-    """Save.
+def save(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+    """Save a tensor or array to a binary `.npy` file.
 
     Args:
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args (TensorOrScalar): File path and tensor positional arguments.
+        **kwargs (TensorOrScalar): Keyword arguments for saving.
 
     Returns:
-        Tensor | None: Result.
+        Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
     from typing import cast
 
@@ -85,15 +85,15 @@ def save(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
     return _emit_shape_node("Save", list(args), kwargs, (), "float32")
 
 
-def save_gguf(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
-    """Save gguf.
+def save_gguf(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+    """Save weights and metadata in GGUF binary format.
 
     Args:
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args (TensorOrScalar): Positional path and weight dictionary arguments.
+        **kwargs (TensorOrScalar): Keyword GGUF serialization options.
 
     Returns:
-        Tensor | None: Result.
+        Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
     from typing import cast
 
@@ -108,25 +108,25 @@ def save_gguf(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
     return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")
 
 
-def save_safetensors(file: str, arrays: EagerValue) -> None:
-    """Save a dictionary of arrays to Safetensors format.
+def save_safetensors(file: str, arrays: TensorOrScalar) -> None:
+    """Save a dictionary of tensors to Safetensors format.
 
     Args:
-        file (str): The file parameter.
-        arrays (dict): The arrays parameter.
+        file (str): Destination `.safetensors` file path.
+        arrays (TensorOrScalar): Mapping of tensor names to tensor objects.
     """
     SafetensorsWeightFormat().save(arrays, file)
 
 
-def savez(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
-    """Savez.
+def savez(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+    """Save multiple arrays into an uncompressed `.npz` archive.
 
     Args:
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args (TensorOrScalar): File path and unnamed array positional arguments.
+        **kwargs (TensorOrScalar): Named arrays to store in the archive.
 
     Returns:
-        Tensor | None: Result.
+        Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
     from typing import cast
 
@@ -141,15 +141,15 @@ def savez(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
     return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
 
 
-def savez_compressed(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
-    """Savez compressed.
+def savez_compressed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+    """Save multiple arrays into a compressed `.npz` archive.
 
     Args:
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args (TensorOrScalar): File path and unnamed array positional arguments.
+        **kwargs (TensorOrScalar): Named arrays to store in the compressed archive.
 
     Returns:
-        Tensor | None: Result.
+        Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
     from typing import cast
 
@@ -166,19 +166,19 @@ def savez_compressed(*args: EagerValue, **kwargs: EagerValue) -> Tensor | None:
 
 @register_op("Load")
 class Load(OpDef):
-    """Load operation."""
+    """Load operation definition."""
 
     op_name = "Load"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for Load.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -193,19 +193,19 @@ class Load(OpDef):
 
 @register_op("Save")
 class Save(OpDef):
-    """Save operation."""
+    """Save operation definition."""
 
     op_name = "Save"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for Save.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -220,19 +220,19 @@ class Save(OpDef):
 
 @register_op("SaveGguf")
 class SaveGguf(OpDef):
-    """SaveGguf operation."""
+    """SaveGguf operation definition."""
 
     op_name = "SaveGguf"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for SaveGguf.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -247,19 +247,19 @@ class SaveGguf(OpDef):
 
 @register_op("Savez")
 class Savez(OpDef):
-    """Savez operation."""
+    """Savez operation definition."""
 
     op_name = "Savez"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for Savez.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -274,19 +274,19 @@ class Savez(OpDef):
 
 @register_op("SavezCompressed")
 class SavezCompressed(OpDef):
-    """SavezCompressed operation."""
+    """SavezCompressed operation definition."""
 
     op_name = "SavezCompressed"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for SavezCompressed.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 

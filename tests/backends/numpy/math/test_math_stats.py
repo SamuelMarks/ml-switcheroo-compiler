@@ -61,13 +61,13 @@ def test_cov() -> None:
 
 def test_histogram() -> None:
     """Test function test_histogram."""
-    res, bins = cast("Callable[..., EagerTensorProtocol]", _np_histogram_)(np, [1, 2, 1], bins=[0, 1, 2, 3])
+    (res, bins) = cast("Callable[..., EagerTensorProtocol]", _np_histogram_)(np, [1, 2, 1], bins=[0, 1, 2, 3])
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res, [0, 2, 1])
 
 
 def test_histogram2d() -> None:
     """Test function test_histogram2d."""
-    res, xedges, yedges = cast("Callable[..., EagerTensorProtocol]", _np_histogram2d_)(np, [1, 2, 1], [1, 2, 1], bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
+    (res, xedges, yedges) = cast("Callable[..., EagerTensorProtocol]", _np_histogram2d_)(np, [1, 2, 1], [1, 2, 1], bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
 
 
@@ -79,7 +79,7 @@ def test_histogram_bin_edges() -> None:
 
 def test_histogramdd() -> None:
     """Test function test_histogramdd."""
-    res, edges = cast("Callable[..., EagerTensorProtocol]", _np_histogramdd_)(np, ([1, 2, 1], [1, 2, 1]), bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
+    (res, edges) = cast("Callable[..., EagerTensorProtocol]", _np_histogramdd_)(np, ([1, 2, 1], [1, 2, 1]), bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
 
 
@@ -95,28 +95,12 @@ def test_confusion_matrix() -> None:
     y_pred = np.array([0, 2, 1, 0, 0, 1])
     res = _np_confusion_matrix(np, y_true, y_pred)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
-    assert (
-        cast(
-            "EagerTensorProtocol",
-            getattr(res, "__getitem__")(
-                (
-                    0,
-                    0,
-                )
-            ),
-        )
-        == 2
-    )
-
-    # kwargs
+    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 2
     res_kwargs = _np_confusion_matrix(np, labels=y_true, predictions=y_pred, num_classes=3)
     assert cast("EagerTensorProtocol", getattr(res_kwargs, "shape")) == (3, 3)
-
-    # missing args
     with pytest.raises(ValueError, match="Expected labels and predictions"):
         _np_confusion_matrix(np)
 
-    # mock data attribute
     class MockData:
         """Test class MockData."""
 
@@ -136,14 +120,11 @@ def test_descriptive() -> None:
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("std")) == cast("Callable[..., EagerTensorProtocol]", pytest.approx)(1.41421356)
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("min")) == 1
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("max")) == 5
-
     res_kwargs = _np_descriptive(np, a=a)
     assert cast("EagerTensorProtocol", getattr(res_kwargs, "__getitem__")("mean")) == 3.0
-
     with pytest.raises(ValueError, match="Expected 1 argument"):
         _np_descriptive(np)
 
-    # mock data attribute
     class MockData:
         """Test class MockData."""
 
@@ -161,13 +142,13 @@ def test_distributions() -> None:
     assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [0.0]
 
 
-def disabled_test_randomcategorical() -> None:
+def test_randomcategorical() -> None:
     """Test function disabled_test_randomcategorical."""
     res = _np_randomcategorical(np, "x")
     assert res == "x"
 
 
-def disabled_test_randompermutation() -> None:
+def test_randompermutation() -> None:
     """Test function disabled_test_randompermutation."""
     res = _np_randompermutation(np, "y")
     assert res == "y"
@@ -177,7 +158,6 @@ def test_randomtruncatednormal() -> None:
     """Test function test_randomtruncatednormal."""
     res = _np_randomtruncatednormal(np, (2, 2))
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-
     res_kwargs = _np_randomtruncatednormal(np, shape=(2, 2))
     assert cast("EagerTensorProtocol", getattr(res_kwargs, "shape")) == (2, 2)
 
@@ -186,7 +166,6 @@ def test_randombernoulli() -> None:
     """Test function test_randombernoulli."""
     res = _np_randombernoulli(np, (2, 2), 0.5)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-
     res_kwargs = _np_randombernoulli(np, shape=(2, 2), p=0.5)
     assert cast("EagerTensorProtocol", getattr(res_kwargs, "shape")) == (2, 2)
 
@@ -195,6 +174,5 @@ def test_randomuniform() -> None:
     """Test function test_randomuniform."""
     res = _np_randomuniform(np, (2, 2), 0.0, 1.0)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-
     res_kwargs = _np_randomuniform(np, shape=(2, 2), minval=0.0, maxval=1.0)
     assert cast("EagerTensorProtocol", getattr(res_kwargs, "shape")) == (2, 2)

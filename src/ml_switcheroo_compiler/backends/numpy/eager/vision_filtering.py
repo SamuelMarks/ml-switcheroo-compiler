@@ -21,7 +21,7 @@ def _np_degeneration(
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_degeneration operation.
+    """Execute the eager np degeneration operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -40,7 +40,7 @@ def _np_gaussian_blur(
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[BlurConfig, dict[str, Union[tuple[int, int], tuple[float, float], str, None]], float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_gaussian_blur operation.
+    """Execute the eager np gaussian blur operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -68,7 +68,7 @@ def _np_median_filter(
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_median_filter operation.
+    """Execute the eager np median filter operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -87,7 +87,7 @@ def _np_sharpen(
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_sharpen operation.
+    """Execute the eager np sharpen operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.

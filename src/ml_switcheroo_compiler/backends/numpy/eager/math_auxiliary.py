@@ -10,14 +10,14 @@ from ml_switcheroo_compiler.core.dtype import DType
 
 @numpy_eager_registry.register("ConstantOfShape")
 def _np_constant_of_shape(backend_module: ModuleType, shape: EagerValue, value: EagerValue = 0.0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_constant_of_shape operation.
+    """Execute the eager np constant of shape operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        shape (object): The shape parameter.
-        value (object): The value parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        shape (EagerValue): The shape parameter.
+        value (EagerValue): The value parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -27,12 +27,12 @@ def _np_constant_of_shape(backend_module: ModuleType, shape: EagerValue, value: 
 
 @numpy_eager_registry.register("ReduceWindow")
 def _np_reduce_window(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_reduce_window operation.
+    """Execute the eager np reduce window operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -42,12 +42,12 @@ def _np_reduce_window(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("TestEagerOp")
 def _np_test_eager_op(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_test_eager_op operation.
+    """Execute the eager np test eager op operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -57,12 +57,12 @@ def _np_test_eager_op(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("Unknown")
 def _np_unknown(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_unknown operation.
+    """Execute the eager np unknown operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -72,12 +72,12 @@ def _np_unknown(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @numpy_eager_registry.register("Rand")
 def _np_rand(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rand operation.
+    """Execute the eager np rand operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -98,9 +98,9 @@ def _np_is_non_decreasing(backend_module: ModuleType, x: EagerValue, **kwargs: E
     """IsNonDecreasing.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -116,9 +116,9 @@ def _np_is_strictly_increasing(backend_module: ModuleType, x: EagerValue, **kwar
     """IsStrictlyIncreasing.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -134,11 +134,11 @@ def _np_l2_normalize(backend_module: ModuleType, x: EagerValue, axis: EagerValue
     """L2Normalize.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
         axis (int): The axis parameter.
         epsilon (float): The epsilon parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -153,11 +153,11 @@ def _np_reduce_euclidean_norm(backend_module: ModuleType, x: EagerValue, axis: E
     """ReduceEuclideanNorm.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        axis (object): The axis parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        axis (EagerValue): The axis parameter.
         keepdims (bool): The keepdims parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -170,11 +170,11 @@ def _clamp(np: ModuleType, min_val: EagerValue, x: EagerValue, max_val: EagerVal
     """Clamp wrapper.
 
     Args:
-        np (object): The np parameter.
-        min_val (object): The min_val parameter.
-        x (object): The x parameter.
-        max_val (object): The max_val parameter.
-        **kwargs (object): Keyword args.
+        np (ModuleType): The np parameter.
+        min_val (EagerValue): The min_val parameter.
+        x (EagerValue): The x parameter.
+        max_val (EagerValue): The max_val parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -187,11 +187,11 @@ def _logspace(np: ModuleType, start: EagerValue, stop: EagerValue, *args: EagerV
     """Logspace wrapper.
 
     Args:
-        np (object): The np parameter.
-        start (object): The start parameter.
-        stop (object): The stop parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        np (ModuleType): The np parameter.
+        start (EagerValue): The start parameter.
+        stop (EagerValue): The stop parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -204,15 +204,15 @@ def _logspace(np: ModuleType, start: EagerValue, stop: EagerValue, *args: EagerV
 
 @numpy_eager_registry.register("FromBuffer")
 def _np_frombuffer(backend_module: ModuleType, buffer: EagerValue, dtype: str = "float32", count: int = -1, offset: int = 0, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_frombuffer operation.
+    """Execute the eager np frombuffer operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        buffer (object): The buffer parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        buffer (EagerValue): The buffer parameter.
         dtype (str): The dtype parameter.
         count (int): The count parameter.
         offset (int): The offset parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -225,10 +225,10 @@ def _np_dtype_op(backend_module: ModuleType, value: EagerValue, *args: EagerValu
     """DType.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        value (object): The value parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        value (EagerValue): The value parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -242,12 +242,12 @@ def _np_dtype_op(backend_module: ModuleType, value: EagerValue, *args: EagerValu
 
 @numpy_eager_registry.register("Gradient")
 def _eager_Gradient(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _eager_Gradient operation.
+    """Execute the eager eager Gradient operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -257,12 +257,12 @@ def _eager_Gradient(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @numpy_eager_registry.register("I0")
 def _eager_I0(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _eager_I0 operation.
+    """Execute the eager eager I0 operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -272,12 +272,12 @@ def _eager_I0(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("BroadcastedIota")
 def _eager_BroadcastedIota(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _eager_BroadcastedIota operation.
+    """Execute the eager eager BroadcastedIota operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

@@ -123,7 +123,7 @@ def _mock_device_count(ptr: EagerValue) -> int:
     """Mock device count setter for ctypes pointer.
 
     Args:
-        ptr (object): Pointer object.
+        ptr (EagerValue): Pointer object.
 
     Returns:
         int: Return code 0.

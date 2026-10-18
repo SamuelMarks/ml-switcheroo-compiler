@@ -117,7 +117,7 @@ def test_hvp_api_delegation() -> None:
                 x (np.ndarray): Input tensor.
 
             Returns:
-                object: Quad form tensor.
+                EagerValue: Quad form tensor.
             """
             return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", 0.5)
 

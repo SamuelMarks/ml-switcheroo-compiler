@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_infer
 
 
 def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
-    """Evaluate _inject_cast_node operation.
+    """Execute inject cast node for compiler processing.
 
     Args:
         graph (IRGraph): The graph parameter.
@@ -37,7 +37,7 @@ def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
 
 
 def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
-    """Evaluate _needs_cast operation.
+    """Execute needs cast for compiler processing.
 
     Args:
         dt1 (Optional[str]): The dt1 parameter.
@@ -73,8 +73,10 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
             continue
 
         in1, in2 = node.inputs
-        dt1 = graph.nodes[in1].attributes.get("dtype")
-        dt2 = graph.nodes[in2].attributes.get("dtype")
+        raw_dt1 = graph.nodes[in1].attributes.get("dtype")
+        raw_dt2 = graph.nodes[in2].attributes.get("dtype")
+        dt1 = str(raw_dt1) if raw_dt1 is not None else None
+        dt2 = str(raw_dt2) if raw_dt2 is not None else None
 
         target_dt = _needs_cast(dt1, dt2)
         if target_dt is None:

@@ -135,7 +135,7 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: IpcPayload) -> list[Ip
 
 
 def _ipc_all_gather(tensor: IpcPayload, axis: Optional[int], mesh: Optional[DeviceMesh] = None) -> IpcPayload:
-    """Evaluate _ipc_all_gather operation.
+    """Execute ipc all gather for compiler processing.
 
     Args:
         tensor: The tensor parameter.
@@ -161,7 +161,7 @@ def _ipc_all_gather(tensor: IpcPayload, axis: Optional[int], mesh: Optional[Devi
 
 
 def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: Optional[DeviceMesh] = None) -> IpcPayload:
-    """Evaluate _ipc_reduce_scatter operation.
+    """Execute ipc reduce scatter for compiler processing.
 
     Args:
         tensor: The tensor parameter.
@@ -201,7 +201,7 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: 
 
 
 def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: Optional[DeviceMesh] = None) -> IpcPayload:
-    """Evaluate _ipc_all_reduce operation.
+    """Execute ipc all reduce for compiler processing.
 
     Args:
         tensor: The tensor parameter.

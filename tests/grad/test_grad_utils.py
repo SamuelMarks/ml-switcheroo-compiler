@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def test_get_inputs_dict_missing_input(mocker: EagerTensorProtocol) -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test get inputs dict missing input."""
 
     class DummyGraph:
         """Test class DummyGraph."""
@@ -28,7 +28,7 @@ def test_get_inputs_dict_missing_input(mocker: EagerTensorProtocol) -> None:
 
 
 def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test to original type dtypes."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
@@ -54,7 +54,7 @@ def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
 
 
 def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test find wrt tensors."""
     from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
     from ml_switcheroo_compiler.grad.utils import _find_wrt_tensors
 

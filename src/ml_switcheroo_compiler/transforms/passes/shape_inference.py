@@ -32,10 +32,10 @@ def _infer_constant_shape(
     node: IRNode,
     shapes: dict[str, tuple[int, ...] | None],
 ) -> tuple[int, ...] | None:
-    """Evaluate _infer_constant_shape operation.
+    """Execute infer constant shape for compiler processing.
 
     Args:
-        node (object): The node parameter.
+        node (IRNode): The node parameter.
         shapes (dict): The shapes parameter.
 
     Returns:
@@ -53,10 +53,10 @@ def _infer_output_shape(
     node: IRNode,
     shapes: dict[str, tuple[int, ...] | None],
 ) -> tuple[int, ...] | None:
-    """Evaluate _infer_output_shape operation.
+    """Execute infer output shape for compiler processing.
 
     Args:
-        node (object): The node parameter.
+        node (IRNode): The node parameter.
         shapes (dict): The shapes parameter.
 
     Returns:
@@ -68,10 +68,10 @@ def _infer_output_shape(
 
 
 def _prepare_op_kwargs(node: IRNode) -> dict[str, AttributeValue]:
-    """Evaluate _prepare_op_kwargs operation.
+    """Execute prepare op kwargs for compiler processing.
 
     Args:
-        node (object): The node parameter.
+        node (IRNode): The node parameter.
 
     Returns:
         dict: Result.
@@ -89,10 +89,10 @@ def _infer_op_shape(
     node: IRNode,
     shapes: dict[str, tuple[int, ...] | None],
 ) -> tuple[int, ...] | None:
-    """Evaluate _infer_op_shape operation.
+    """Execute infer op shape for compiler processing.
 
     Args:
-        node (object): The node parameter.
+        node (IRNode): The node parameter.
         shapes (dict): The shapes parameter.
 
     Returns:
@@ -125,7 +125,7 @@ def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[Attribut
         try:
             from typing import cast
 
-            return cast("tuple[int, ...]", tuple(int(x) if not isinstance(x, S) else x for x in raw_shape))
+            return cast("tuple[int, ...]", tuple(int(x) if isinstance(x, (int, float, str)) and not isinstance(x, S) else x for x in raw_shape))
         except (ValueError, TypeError):
             return None
     return None
@@ -159,7 +159,7 @@ _SPECIAL_OP_HANDLERS: dict[
 
 
 def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None]) -> tuple[int, ...] | None:
-    """Evaluate _determine_node_shape operation.
+    """Execute determine node shape for compiler processing.
 
     Args:
         node (IRNode): The node parameter.

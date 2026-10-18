@@ -1,4 +1,4 @@
-"""I/O and memory operations."""
+"""Filesystem and raw binary file I/O operations."""
 
 from __future__ import annotations
 
@@ -6,25 +6,20 @@ import glob
 import os
 import shutil
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
-from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
-from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat  # noqa: F401
-from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat  # noqa: F401
-from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
-def read_file(filename: str | Tensor, name: EagerValue = None) -> EagerValue:
-    """Read file.
+def read_file(filename: str | Tensor, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Read the entire contents of a file into a byte tensor.
 
     Args:
-        filename (Any): The filename parameter.
-        name (str): The name parameter.
+        filename (str | Tensor): Path to the file to read.
+        name (TensorOrScalar): Optional operation name.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Tensor containing the raw file contents.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -34,19 +29,25 @@ def read_file(filename: str | Tensor, name: EagerValue = None) -> EagerValue:
         return get_active_backend().execute_op("ReadFile", filename, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ReadFile", [filename], {"name": name}, getattr(filename, "shape", ()), getattr(filename, "dtype", "float32"))
+    return _emit_shape_node(
+        "ReadFile",
+        [filename],
+        {"name": name},
+        getattr(filename, "shape", ()),
+        getattr(filename, "dtype", "float32"),
+    )
 
 
 def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None) -> Tensor | None:
-    """Write file.
+    """Write byte or string tensor contents to a file at the given path.
 
     Args:
-        filename (str | Tensor): The filename parameter.
-        contents (Tensor): The contents parameter.
-        name (str | None): The name parameter.
+        filename (str | Tensor): Target file path.
+        contents (Tensor): Payload tensor to write.
+        name (str | None): Optional operation name.
 
     Returns:
-        Tensor | None: Result.
+        Tensor | None: Symbolic operation node when tracing, or None in eager mode.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -62,15 +63,15 @@ def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None
 
 
 def gfile_copy(src: str, dst: str, overwrite: bool = False) -> None:
-    """Copy a file.
+    """Copy a file from source path to destination path.
 
     Args:
-        src (str): The src parameter.
-        dst (str): The dst parameter.
-        overwrite (bool): The overwrite parameter.
+        src (str): Source file path.
+        dst (str): Destination file path.
+        overwrite (bool): Whether to overwrite an existing destination file.
 
     Raises:
-        FileExistsError: An exception.
+        FileExistsError: If `dst` already exists and `overwrite` is False.
     """
     if os.path.exists(dst) and not overwrite:
         raise FileExistsError(f"File {dst} already exists")
@@ -78,54 +79,54 @@ def gfile_copy(src: str, dst: str, overwrite: bool = False) -> None:
 
 
 def gfile_glob(pattern: str) -> list[str]:
-    """Glob pattern.
+    """Return a list of paths matching a pathname pattern.
 
     Args:
-        pattern (str): The pattern parameter.
+        pattern (str): Glob pattern string.
 
     Returns:
-            tuple[int, ...]: Result.
+        list[str]: Matching file paths.
     """
     return glob.glob(pattern)
 
 
 def gfile_stat(path: str) -> dict[str, int]:
-    """Stat a file.
+    """Retrieve file size and modification timestamp metadata for a path.
 
     Args:
-        path (str): The path parameter.
+        path (str): Path to inspect.
 
     Returns:
-            tuple[int, ...]: Result.
+        dict[str, int]: Dictionary with 'length' and 'mtime' integer fields.
     """
     st = os.stat(path)
     return {"length": st.st_size, "mtime": int(st.st_mtime)}
 
 
 def gfile_makedirs(path: str) -> None:
-    """Make directories.
+    """Recursively create a directory and all intermediate parent directories.
 
     Args:
-        path (str): The path parameter.
+        path (str): Directory path to create.
     """
     os.makedirs(path, exist_ok=True)
 
 
 @register_op("ReadFile")
 class ReadFile(OpDef):
-    """ReadFile operation."""
+    """ReadFile operation definition."""
 
     op_name = "ReadFile"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for ReadFile.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -140,19 +141,19 @@ class ReadFile(OpDef):
 
 @register_op("WriteFile")
 class WriteFile(OpDef):
-    """WriteFile operation."""
+    """WriteFile operation definition."""
 
     op_name = "WriteFile"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for WriteFile.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 

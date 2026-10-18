@@ -17,9 +17,9 @@ def _np_linearoperatorpermutation(backend_module: ModuleType, *args: EagerValue,
     """Implement LinearOperatorPermutation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -34,12 +34,12 @@ def _np_sobolsample(backend_module: ModuleType, dim: int, num_results: int, skip
     """Implement SobolSample eagerly.
 
     Args:
-        backend_module (object): The backend_module parameter.
+        backend_module (ModuleType): The backend_module parameter.
         dim (int): The dim parameter.
         num_results (int): The num_results parameter.
         skip (int): The skip parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -52,12 +52,12 @@ def _np_sobolsample(backend_module: ModuleType, dim: int, num_results: int, skip
 
 @numpy_eager_registry.register("RandomCategorical")
 def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randomcategorical operation.
+    """Execute the eager np randomcategorical operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -69,12 +69,12 @@ def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwarg
 
 @numpy_eager_registry.register("RandomPermutation")
 def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randompermutation operation.
+    """Execute the eager np randompermutation operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -89,12 +89,12 @@ def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwarg
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
 def _np_randomtruncatednormal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randomtruncatednormal operation.
+    """Execute the eager np randomtruncatednormal operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -105,12 +105,12 @@ def _np_randomtruncatednormal(backend_module: ModuleType, *args: EagerValue, **k
 
 @numpy_eager_registry.register("RandomBernoulli")
 def _np_randombernoulli(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_randombernoulli operation.
+    """Execute the eager np randombernoulli operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

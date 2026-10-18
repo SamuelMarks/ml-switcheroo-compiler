@@ -188,7 +188,7 @@ class KerasProfiler:
             """Execute a single evaluation step on Keras backend.
 
             Returns:
-                object: Output tensor or accumulation.
+                EagerValue: Output tensor or accumulation.
             """
             if has_ops and compiled_model is not None:
                 if len(keras_inputs) == 1:

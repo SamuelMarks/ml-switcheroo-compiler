@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+import pytest
+
 from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, BinaryMathOp, Digitize, Lcm, Polyadd, Polyder, Polydiv, Polyint, Polymul, Polysub, Roots, Xlog1py, Xlogy
 
 if TYPE_CHECKING:
@@ -238,13 +240,11 @@ def test_clip_eager() -> None:
         shape = (2, 2)
 
     assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (2, 2)
-
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
         import numpy as np
 
-        # Need an active backend, or we can just mock it
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         class MockBackend:
@@ -258,18 +258,9 @@ def test_clip_eager() -> None:
         orig_backend = config.backend
         config.backend = "mock_clip"
         cast("Callable[..., EagerTensorProtocol]", BackendRegistry.register)("mock_clip", MockBackend)
-
         assert clip(np.array([1.0]), 0.0, 2.0) == "eager_clip"
-
         config.eager_mode = False
-
-        # Test tracing emit
-        # we can just mock emit_ir_node or let it hit tracing error
-        try:
-            clip(np.array([1.0]), 0.0, 2.0)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
-
+        clip(np.array([1.0]), 0.0, 2.0)
     finally:
         config.eager_mode = orig_eager
         if "orig_backend" in locals():
@@ -280,10 +271,8 @@ def test_rem_op() -> None:
     """Test function test_rem_op."""
     from ml_switcheroo_compiler.ops.binary.math import rem
 
-    try:
+    with pytest.raises(TypeError):
         rem(1, 2)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_igamma_grad_a() -> None:
@@ -330,20 +319,9 @@ def test_missing_binary_math_coverage() -> None:
     from ml_switcheroo_compiler.ops.binary.math import igamma_grad_a, random_gamma_grad, sort_key_val
 
     t = Tensor(np.array(1.0), TensorConfig((), "float32", "cpu"))
-
-    # Just call them so dispatch_op is invoked
-    # Note: If these ops are missing from registry, it will raise KeyError, but that still covers the lines!
-    try:
+    with pytest.raises(RuntimeError):
         igamma_grad_a(t, t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    try:
+    with pytest.raises(RuntimeError):
         random_gamma_grad(t, t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    try:
+    with pytest.raises(RuntimeError):
         sort_key_val(t, t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None

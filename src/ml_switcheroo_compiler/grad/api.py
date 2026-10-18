@@ -1,83 +1,62 @@
-"""Gradient computation and autodiff utilities."""
+"""Reverse-mode and higher-order automatic differentiation public API."""
 
 from __future__ import annotations
 
-import contextlib  # noqa: F401
-import math  # noqa: F401
 import typing
-import uuid  # noqa: F401
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: F401
+from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import config  # noqa: F401
-from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # noqa: F401
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function  # noqa: F401
 from ml_switcheroo_compiler.ops.registry import register_util
-from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor  # noqa: F401
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 from .custom_vjp_ops import custom_vjp
-from .options import GradOptions, JitOptions  # noqa: F401
+from .options import GradOptions
 from .utils import GradValue, _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _get_inputs_dict
 
 
 @register_util("backward")
-def backward(tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> None:
-    """Triggers the reverse-mode auto-differentiation.
+def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
+    """Trigger reverse-mode automatic differentiation from a scalar traced `tensor`.
 
     Args:
-        tensor (object): The tensor to compute gradients for.
-        *args (object): Additional arguments.
-        **kwargs (object): Additional keyword arguments.
+        tensor (GradValue): Scalar output `Tensor` to differentiate.
+        *args (GradValue): Optional additional arguments.
+        **kwargs (GradValue): Optional additional keyword arguments.
 
     Raises:
-        TracingError: When tracing is not active or target is not a traced Tensor.
+        TracingError: When tracing is not active or `tensor` is not a traced `Tensor`.
     """
+    _ = (args, kwargs)
     from ml_switcheroo_compiler.core.errors import TracingError
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F811
 
-    # 1. Disallow dummy fallback; raise explicit TracingError if tracing is inactive
     if not isinstance(tensor, Tensor) or not global_tracing_state.is_tracing or global_tracing_state.active_graph is None:
         raise TracingError("Cannot execute backward(): tracing is not active or target is not a traced Tensor.")
 
-    # 2. Validate that the target tensor is a scalar
     _check_scalar(tensor)
 
-    # 3. Extract the active graph
     graph = global_tracing_state.active_graph
-
-    # 4. Find all active variables/tensors in memory that require gradients and are in the graph
     wrt_tensors, wrt_ids = _find_wrt_tensors(graph)
 
-    # 5. Extract target loss node ID
     loss_id = getattr(tensor.data, "id", None)
     if loss_id is None:
         loss_id = str(tensor.data)
 
     if not wrt_ids:
-        # No variables require gradients
         tensor.grad = 1.0
         return
 
-    # 6. Run the graph-level gradient generator
     from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 
     grad_graph = graph_grad(graph, wrt_ids, loss_id)
-
-    # 7. Map input node IDs to their concrete values for evaluation
     inputs_dict = _get_inputs_dict(graph)
 
-    # 8. Lower gradient graph to native backend execution pipeline or fallback
     backend = get_active_backend()
     if backend is not None and hasattr(backend, "execute_graph"):
         outputs_dict = backend.execute_graph(grad_graph, inputs_dict)
@@ -89,7 +68,6 @@ def backward(tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> Non
 
         outputs_dict = evaluate_graph(grad_graph, cast("dict[str, EvalValue]", inputs_dict))
 
-    # 9. Traverse the wrt list and assign computed gradient arrays to .grad attributes
     for i in range(len(wrt_ids)):
         grad_node_id = grad_graph.outputs[i]
         if grad_node_id in outputs_dict:
@@ -99,94 +77,96 @@ def backward(tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> Non
 
 
 def RegisterGradient(op_type: str) -> typing.Callable[..., GradValue]:
-    """Register a custom gradient for an operation.
+    """Return a decorator registering a custom VJP gradient rule for `op_type`.
 
     Args:
-        op_type (str): The name of the operation.
+        op_type (str): Canonical IR operation name.
 
     Returns:
-        Callable: The decorator function.
+        Callable[..., GradValue]: Decorator registering the VJP rule function.
     """
     return typing.cast("typing.Callable[..., GradValue]", register_vjp(op_type))
 
 
-def overwrite_with_gradient(tensor: EagerValue, gradient: EagerValue) -> EagerValue:
-    """Overwrite the gradient of the tensor in the backward pass.
-
-    During the forward pass, this returns the `tensor` unchanged.
-    During the backward pass, it replaces the propagated gradient with `gradient`.
+def overwrite_with_gradient(tensor: GradValue, gradient: GradValue) -> GradValue:
+    """Return `tensor` in the forward pass while replacing its backward gradient with `gradient`.
 
     Args:
-        tensor (object): The input tensor.
-        gradient (object): The gradient value to use in the backward pass.
+        tensor (GradValue): Input primal tensor.
+        gradient (GradValue): Replacement gradient value used during the backward pass.
 
-    Returns: Tensor: The tensor with the overridden backward pass gradient.
+    Returns:
+        GradValue: Primal tensor with overridden backward gradient rule.
     """
 
     @custom_vjp
-    def _overwrite(t: EagerValue, g: EagerValue) -> EagerValue:
-        """Overwrite the gradient during the backward pass.
+    def _overwrite(t: GradValue, g: GradValue) -> GradValue:
+        """Identity forward operation with custom VJP override.
 
         Args:
-            t (object): The primal tensor.
-            g (object): The gradient to overwrite with.
-
-        Returns: Tensor: The primal tensor unchanged.
-        """
-        return t
-
-    def _overwrite_fwd(t: EagerValue, g: EagerValue) -> EagerValue:
-        """Forward pass for overwriting a gradient.
-
-        Args:
-            t (object): The primal tensor.
-            g (object): The gradient to overwrite with.
+            t (GradValue): Primal tensor.
+            g (GradValue): Replacement gradient tensor.
 
         Returns:
-            tuple[object, object]: The primal tensor and the gradient to store for backward.
+            GradValue: Unmodified primal tensor `t`.
+        """
+        _ = g
+        return t
+
+    def _overwrite_fwd(t: GradValue, g: GradValue) -> GradValue:
+        """Forward pass saving `g` as the residual for backward propagation.
+
+        Args:
+            t (GradValue): Primal tensor.
+            g (GradValue): Replacement gradient tensor.
+
+        Returns:
+            GradValue: Tuple of `(t, g)`.
         """
         return t, g
 
-    def _overwrite_bwd(g: EagerValue, g_in: EagerValue) -> EagerValue:
-        """Backward pass for overwriting a gradient.
+    def _overwrite_bwd(g: GradValue, g_in: GradValue) -> GradValue:
+        """Backward pass returning the stored `g` in place of `g_in`.
 
         Args:
-            g (object): The stored gradient to overwrite with.
-            g_in (object): The incoming upstream gradient.
+            g (GradValue): Stored replacement gradient.
+            g_in (GradValue): Incoming upstream cotangent.
 
         Returns:
-            tuple[object, object]: The overwritten gradient and None for the second argument.
+            GradValue: Tuple of `(g, None)`.
         """
+        _ = g_in
         return g, None
 
     getattr(_overwrite, "defvjp")(_overwrite_fwd, _overwrite_bwd)
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _overwrite)(tensor, gradient))
+    return cast(GradValue, cast("Callable[..., EagerTensorProtocol]", _overwrite)(tensor, gradient))
 
 
-def ir_grad(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
-    """Return a gradient wrapper.
+def ir_grad(fun: Callable[..., GradValue], options: GradOptions | GradValue = None) -> Callable[..., GradValue]:
+    """Wrap `fun` to compute its symbolic IR gradient with respect to specified arguments.
 
     Args:
-        fun (Callable): Function to differentiate.
-        options (GradOptions): Differentiation options.
+        fun (Callable[..., GradValue]): Differentiable function to wrap.
+        options (GradOptions | GradValue): Optional `GradOptions` configuration.
 
     Returns:
-        Callable: The wrapper function.
+        Callable[..., GradValue]: Callable computing the gradient of `fun`.
     """
-    options = cast(EagerValue, options or GradOptions())
+    opts = options if isinstance(options, GradOptions) else GradOptions()
 
-    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+        """Compute gradient of `fun` at `*args`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (GradValue): Positional primal arguments.
+            **kwargs (GradValue): Unused keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            GradValue: Evaluated gradient tensor(s).
         """
-        _, grads = cast("Callable[..., EagerTensorProtocol]", _compute_grad_and_value)(fun, options, args)
-        return cast(EagerValue, grads)
+        _ = kwargs
+        _, grads = _compute_grad_and_value(fun, opts, args)
+        return grads
 
     return wrapped
 
@@ -195,27 +175,28 @@ def grad(
     fun: Callable[..., GradValue],
     options: GradOptions | None = None,
 ) -> Callable[..., GradValue]:
-    """Return a gradient wrapper.
+    """Create a function that evaluates the gradient of `fun`.
 
     Args:
-        fun (Callable): Function to differentiate.
-        options (GradOptions): Differentiation options.
+        fun (Callable[..., GradValue]): Function to differentiate.
+        options (GradOptions | None): Optional differentiation options (`argnums`, `has_aux`).
 
     Returns:
-        Callable: The wrapper function.
+        Callable[..., GradValue]: Gradient function with the same input signature as `fun`.
     """
     options = options or GradOptions()
 
-    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+        """Evaluate the gradient of `fun` at `*args`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (GradValue): Positional primal arguments.
+            **kwargs (GradValue): Unused keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            GradValue: Gradient tensor(s), or `(grads, aux)` when `options.has_aux` is True.
         """
+        _ = kwargs
         val, grads = _compute_grad_and_value(fun, options, args)
         if options.has_aux:
             return grads, typing.cast(tuple[GradValue, GradValue], val)[1]
@@ -224,91 +205,92 @@ def grad(
     return wrapped
 
 
-def value_and_grad(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
-    """Return a gradient wrapper.
+def value_and_grad(
+    fun: Callable[..., GradValue],
+    options: GradOptions | GradValue = None,
+) -> Callable[..., tuple[GradValue, GradValue]]:
+    """Create a function that evaluates both the primal value and gradient of `fun`.
 
     Args:
-        fun (Callable): Function to differentiate.
-        options (GradOptions): Differentiation options.
+        fun (Callable[..., GradValue]): Function to differentiate.
+        options (GradOptions | GradValue): Optional `GradOptions` configuration.
 
     Returns:
-        Callable: The wrapper function.
+        Callable[..., tuple[GradValue, GradValue]]: Callable returning `(value, grads)`.
     """
-    options = cast(EagerValue, options or GradOptions())
+    opts = options if isinstance(options, GradOptions) else GradOptions()
 
-    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> tuple[GradValue, GradValue]:
+        """Evaluate both primal value and gradient of `fun` at `*args`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (GradValue): Positional primal arguments.
+            **kwargs (GradValue): Unused keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[GradValue, GradValue]: Tuple of `(value, grads)`.
         """
-        val, grads = cast("Callable[..., EagerTensorProtocol]", _compute_grad_and_value)(fun, options, args)
-        if getattr(options, "has_aux"):
+        _ = kwargs
+        val, grads = _compute_grad_and_value(fun, opts, args)
+        if getattr(opts, "has_aux"):
             return val, grads
         return val, grads
 
     return wrapped
 
 
-def hook_gradient(tensor: EagerValue, hook: Callable[..., EagerValue]) -> EagerValue:
-    """Register a custom gradient hook on a tensor.
-
-    During the forward pass, this returns the `tensor` unchanged.
-    During the backward pass, the `hook` function is called with the upstream gradient,
-    and its return value (if not None) replaces the gradient.
+def hook_gradient(tensor: GradValue, hook: Callable[..., GradValue]) -> GradValue:
+    """Attach a custom backward gradient transformation `hook` to `tensor`.
 
     Args:
-        tensor (object): The input tensor.
-        hook (Callable): The hook function applied to the gradient.
+        tensor (GradValue): Input tensor.
+        hook (Callable[..., GradValue]): Callable invoked on the upstream gradient during backprop.
 
     Returns:
-        object: The tensor with the gradient hook attached.
+        GradValue: Tensor with the backward gradient hook attached.
     """
 
     @custom_vjp
-    def _hook_op(t: EagerValue) -> EagerValue:
-        """Apply the hook op.
+    def _hook_op(t: GradValue) -> GradValue:
+        """Identity forward operation with custom gradient hook.
 
         Args:
-            t (object): The input tensor.
+            t (GradValue): Input tensor.
 
         Returns:
-            object: The unchanged tensor.
+            GradValue: Unchanged input tensor `t`.
         """
         return t
 
-    def _hook_fwd(t: EagerValue) -> EagerValue:
-        """Forward pass for the hook.
+    def _hook_fwd(t: GradValue) -> GradValue:
+        """Forward pass for gradient hook.
 
         Args:
-            t (object): The input tensor.
+            t (GradValue): Input tensor.
 
         Returns:
-            tuple[object, object]: The primal and None.
+            GradValue: Tuple of `(t, t)`.
         """
         return t, t
 
-    def _hook_bwd(res: EagerValue, g_in: EagerValue) -> EagerValue:
-        """Backward pass for the hook.
+    def _hook_bwd(res: GradValue, g_in: GradValue) -> GradValue:
+        """Backward pass invoking `hook(g_in)`.
 
         Args:
-            res (object): The stored result.
-            g_in (object): The incoming upstream gradient.
+            res (GradValue): Saved primal residual.
+            g_in (GradValue): Incoming upstream gradient.
 
         Returns:
-            tuple[object]: The processed gradient.
+            GradValue: 1-tuple containing the hooked gradient.
         """
+        _ = res
         out_g = hook(g_in)
         if out_g is None:
             out_g = g_in
         return (out_g,)
 
     getattr(_hook_op, "defvjp")(_hook_fwd, _hook_bwd)
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _hook_op)(tensor))
+    return cast(GradValue, cast("Callable[..., EagerTensorProtocol]", _hook_op)(tensor))
 
 
 def jvp(
@@ -316,34 +298,37 @@ def jvp(
     primals: Sequence[GradValue],
     tangents: Sequence[GradValue],
 ) -> tuple[GradValue, GradValue]:
-    """Compute a Jacobian-vector product (forward pushforward).
+    """Compute a Jacobian-vector product (forward-mode directional derivative).
 
     Args:
-        fun (Callable): The function to differentiate.
+        fun (Callable[..., GradValue]): Function to differentiate.
         primals (Sequence[GradValue]): Primal point inputs.
-        tangents (Sequence[GradValue]): Tangent vectors corresponding to primals.
+        tangents (Sequence[GradValue]): Tangent vectors corresponding to `primals`.
 
     Returns:
-        tuple[GradValue, GradValue]: Tuple of (primal_out, tangent_out).
+        tuple[GradValue, GradValue]: Tuple of `(primal_out, tangent_out)`.
     """
     primals_tuple = tuple(primals)
     tangents_tuple = tuple(tangents)
     primal_out = fun(*primals_tuple)
 
     eps = 1e-5
-    perturbed = []
+    perturbed: list[GradValue] = []
     for p, t in zip(primals_tuple, tangents_tuple):
         if hasattr(p, "__add__"):
             try:
                 perturbed.append(typing.cast(EagerTensorProtocol, p) + typing.cast(EagerTensorProtocol, t) * eps)
             except Exception:
-                getattr(perturbed, "append")(p)
+                perturbed.append(p)
         else:
-            getattr(perturbed, "append")(p)
+            perturbed.append(p)
 
     out_eps = fun(*perturbed)
     try:
-        tangent_out: GradValue = typing.cast(GradValue, (typing.cast(EagerTensorProtocol, out_eps) - typing.cast(EagerTensorProtocol, primal_out)) / eps)
+        tangent_out: GradValue = typing.cast(
+            GradValue,
+            (typing.cast(EagerTensorProtocol, out_eps) - typing.cast(EagerTensorProtocol, primal_out)) / eps,
+        )
     except Exception:
         tangent_out = primal_out
     return primal_out, tangent_out
@@ -357,18 +342,15 @@ def hvp_graph(
     mode: str = "forward-over-reverse",
     projected_tangents: list[str] | None = None,
 ) -> LogicalGraph:
-    """Compute symbolic Hessian-vector product IR graph transform.
-
-    Lowers an HVP operation by applying a forward-mode JVP transformation
-    directly to the reverse-mode VJP cotangent graph without runtime function re-wrapping.
+    """Compute a symbolic Hessian-vector product IR graph transform.
 
     Args:
         graph (LogicalGraph): Input computation graph.
         primals (list[str]): Input primal variable node IDs.
-        tangents (list[str]): Tangent vector node IDs corresponding to primals.
-        outputs (Optional[list[str]]): Target output node IDs. If None, defaults to graph.outputs.
-        mode (str): HVP computation mode ('forward-over-reverse' or 'reverse-over-forward').
-        projected_tangents (Optional[list[str]]): Tangents for projecting non-scalar outputs.
+        tangents (list[str]): Tangent vector node IDs corresponding to `primals`.
+        outputs (list[str] | None): Target output node IDs (defaults to `graph.outputs`).
+        mode (str): HVP computation mode (`'forward-over-reverse'` or `'reverse-over-forward'`).
+        projected_tangents (list[str] | None): Tangents for projecting non-scalar outputs.
 
     Returns:
         LogicalGraph: Symbolic Hessian-vector product computation graph.
@@ -396,19 +378,16 @@ def hvp(
 ) -> tuple[GradValue, GradValue]:
     """Compute a Hessian-vector product via symbolic graph transformation.
 
-    Eliminates runtime function re-wrapping by delegating directly to symbolic
-    lowering of JVP passes over the reverse-mode VJP cotangent graph.
-
     Args:
-        fun (Callable): Function to evaluate Hessian-vector product on.
+        fun (Callable[..., GradValue]): Function to evaluate Hessian-vector product on.
         primals (Sequence[GradValue] | GradValue): Primal evaluation inputs.
         tangents (Sequence[GradValue] | GradValue): Tangent direction vectors.
-        has_aux (bool): Whether fun returns auxiliary outputs.
-        mode (str): Evaluation mode ('forward-over-reverse' or 'reverse-over-forward').
-        projected_tangents (Optional[Union[Tensor, Sequence[Tensor]]]): Projected cotangents.
+        has_aux (bool): Whether `fun` returns auxiliary outputs.
+        mode (str): Evaluation mode (`'forward-over-reverse'` or `'reverse-over-forward'`).
+        projected_tangents (Tensor | Sequence[Tensor] | None): Projected cotangents for non-scalar outputs.
 
     Returns:
-        tuple[GradValue, GradValue]: Tuple of (fun(*primals), hvp_result).
+        tuple[GradValue, GradValue]: Tuple of `(fun(*primals), hvp_result)`.
     """
     from .jvp_vjp import hvp as _jvp_vjp_hvp
 
@@ -437,13 +416,13 @@ def nth_order_grad_graph(
         graph (LogicalGraph): Initial computation graph.
         wrt (list[str]): Input variable IDs to differentiate with respect to.
         output_id (str): Target scalar output node ID.
-        n (int): Derivative order (n >= 1).
+        n (int): Derivative order (`n >= 1`).
 
     Returns:
         LogicalGraph: N-th order gradient computation graph.
 
     Raises:
-        ValueError: If n < 1.
+        ValueError: If `n < 1`.
     """
     if n < 1:
         raise ValueError(f"Derivative order n must be >= 1, got {n}")
@@ -465,15 +444,15 @@ def nth_order_grad(
     """Return an N-th order gradient function via repeated symbolic differentiation.
 
     Args:
-        fun (Callable): Function to differentiate.
-        n (int): Order of the derivative (n >= 1).
-        options (Optional[GradOptions]): Differentiation options.
+        fun (Callable[..., GradValue]): Function to differentiate.
+        n (int): Order of the derivative (`n >= 1`).
+        options (GradOptions | None): Optional differentiation options.
 
     Returns:
-        Callable: The N-th order derivative function.
+        Callable[..., GradValue]: The N-th order derivative function.
 
     Raises:
-        ValueError: If n < 1.
+        ValueError: If `n < 1`.
     """
     if n < 1:
         raise ValueError(f"Derivative order n must be >= 1, got {n}")

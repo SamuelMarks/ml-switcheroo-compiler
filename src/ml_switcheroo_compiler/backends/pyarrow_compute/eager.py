@@ -210,10 +210,10 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     """Unwrap Tensor into underlying array or scalar.
 
     Args:
-        arg (object): Input argument to unwrap.
+        arg (EagerValue): Input argument to unwrap.
 
     Returns:
-        object: Unwrapped raw data.
+        EagerValue: Unwrapped raw data.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
         return cast(EagerValue, getattr(arg, "data"))
@@ -274,7 +274,7 @@ def _dispatch_cbrt(
     Args:
         fn_name (str): Lowercase operation name.
         actual_args (tuple[object, ...]): Operation positional arguments.
-        pc_mod (object): pyarrow.compute module.
+        pc_mod (EagerValue): pyarrow.compute module.
 
     Returns:
         tuple[bool, object]: Handled flag and resulting object.
@@ -292,39 +292,30 @@ def _dispatch_cbrt(
 
 
 def execute_op(
-    cls_or_op: EagerValue,
-    op_type_or_first: EagerValue = None,
+    op_type: str,
     *args: EagerValue,
     **kwargs: EagerValue,
 ) -> EagerValue:
     """Execute operation eagerly on Apache Arrow Compute backend.
 
     Args:
-        cls_or_op (object): Caller class context or operation name string.
-        op_type_or_first (object): Operation name string or first argument.
-        *args (object): Input tensor parameters.
-        **kwargs (object): Additional keyword attributes.
+        op_type (str): Operation name string.
+        *args (EagerValue): Input tensor parameters.
+        **kwargs (EagerValue): Additional keyword attributes.
 
     Returns:
-        object: Evaluated Arrow array or scalar.
+        EagerValue: Evaluated Arrow array or scalar.
 
     Raises:
         BackendNotSupportedError: When the operation cannot be resolved or executed.
     """
-    if isinstance(cls_or_op, type):
-        op_type = str(op_type_or_first)
-        raw_args = args
-    else:
-        op_type = str(cls_or_op)
-        raw_args = (op_type_or_first,) + args if op_type_or_first is not None else args
-
     try:
         pc_mod = importlib.import_module("pyarrow.compute")
     except Exception as exc:
         msg = f"pyarrow.compute is required for PyArrow Compute backend execution: {exc}"
         raise BackendNotSupportedError(msg) from exc
 
-    actual_args = tuple(_unwrap_arg(a) for a in raw_args)
+    actual_args = tuple(_unwrap_arg(a) for a in args)
     fn_name = op_type.lower()
 
     # 1. GroupBy / Hash Aggregations on Table / RecordBatch

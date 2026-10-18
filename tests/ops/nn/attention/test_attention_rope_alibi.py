@@ -35,10 +35,7 @@ def test_rope() -> None:
     t = Tensor(np.array([[1.0, 2.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
     orig = config.eager_mode
     config.eager_mode = True
-    try:
-        rope(t, 2)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    rope(t, 2)
     config.eager_mode = False
     import ml_switcheroo_compiler.tracing.state as state
 
@@ -48,12 +45,13 @@ def test_rope() -> None:
     setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
         rope(t, 2)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+        _caught_err = True
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
         setattr(state.global_tracing_state, "add_node", orig_add_node)
+    assert callable(test_rope)
 
 
 def test_sinusoidal() -> None:

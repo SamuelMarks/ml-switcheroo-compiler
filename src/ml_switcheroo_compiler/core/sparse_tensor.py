@@ -1,4 +1,6 @@
-"""Sparse tensor representations."""
+"""Coordinate (COO) and Compressed Sparse Row (CSR) sparse tensor representations."""
+
+from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Union
@@ -9,14 +11,14 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 class SparseTensor:
-    """Define base class for sparse tensors."""
+    """Base class for sparse tensor representations storing non-zero values and dense shape."""
 
     def __init__(self, values: Tensor, dense_shape: tuple[int, ...]) -> None:
-        """Init COO.
+        """Initialize `SparseTensor`.
 
         Args:
-            values (Tensor): The values parameter.
-            dense_shape (tuple): The dense_shape parameter.
+            values (Tensor): 1D tensor of non-zero element values.
+            dense_shape (tuple[int, ...]): Full dense shape of the tensor.
         """
         self.values = values
         self.dense_shape = dense_shape
@@ -24,51 +26,51 @@ class SparseTensor:
 
     @property
     def shape(self) -> Sequence[Union[int, str]]:
-        """Get the shape of the tensor.
+        """Return the full dense shape of the sparse tensor.
 
         Returns:
-            tuple[int, ...]: Result.
+            Sequence[Union[int, str]]: Dense shape tuple.
         """
         return self.dense_shape
 
     @property
     def dtype(self) -> DType:
-        """Get the data type of the tensor.
+        """Return the element data type of the sparse tensor.
 
         Returns:
-        DType: Result.
+            DType: Data type of `self.values`.
         """
         return self.values.dtype
 
     @property
     def device(self) -> Device:
-        """Get the device of the tensor.
+        """Return the execution device where the sparse tensor resides.
 
         Returns:
-        Device: Result.
+            Device: Device of `self.values`.
         """
         return self.values.device
 
     @property
     def requires_grad(self) -> bool:
-        """Check if the tensor requires gradient computation.
+        """Return whether gradients should be computed for the sparse tensor's values.
 
         Returns:
-        bool: Result.
+            bool: True if `self.values` requires gradients.
         """
         return self.values.requires_grad
 
 
 class SparseTensorCOO(SparseTensor):
-    """Represents a sparse tensor in COO format."""
+    """Sparse tensor in Coordinate (COO) format."""
 
     def __init__(self, indices: Tensor, values: Tensor, dense_shape: tuple[int, ...]) -> None:
-        """Init COO.
+        """Initialize `SparseTensorCOO`.
 
         Args:
-            indices (Tensor): The indices parameter.
-            values (Tensor): The values parameter.
-            dense_shape (tuple): The dense_shape parameter.
+            indices (Tensor): 2D index tensor of shape `(nnz, ndim)`.
+            values (Tensor): 1D tensor of non-zero values of length `nnz`.
+            dense_shape (tuple[int, ...]): Full dense tensor shape.
         """
         super().__init__(values, dense_shape)
         self.indices = indices
@@ -76,7 +78,7 @@ class SparseTensorCOO(SparseTensor):
 
 
 class SparseTensorCSR(SparseTensor):
-    """Represents a sparse tensor in CSR format."""
+    """Sparse 2D matrix in Compressed Sparse Row (CSR) format."""
 
     def __init__(
         self,
@@ -85,13 +87,13 @@ class SparseTensorCSR(SparseTensor):
         values: Tensor,
         dense_shape: tuple[int, ...],
     ) -> None:
-        """Init CSR.
+        """Initialize `SparseTensorCSR`.
 
         Args:
-            row_pointers (Tensor): The row_pointers parameter.
-            column_indices (Tensor): The column_indices parameter.
-            values (Tensor): The values parameter.
-            dense_shape (tuple): The dense_shape parameter.
+            row_pointers (Tensor): 1D row pointer offsets tensor of length `num_rows + 1`.
+            column_indices (Tensor): 1D column index tensor of length `nnz`.
+            values (Tensor): 1D non-zero values tensor of length `nnz`.
+            dense_shape (tuple[int, ...]): 2D dense matrix shape `(num_rows, num_cols)`.
         """
         super().__init__(values, dense_shape)
         self.row_pointers = row_pointers

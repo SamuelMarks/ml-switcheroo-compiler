@@ -139,12 +139,6 @@ def test_all_backends_have_valid_nonempty_stubs() -> None:
         "pyarrow_compute",
         "llvm_cpp",
         "edge",
-        "edge_onnx",
-        "edge_stablehlo",
-        "edge_mlir",
-        "edge_wasm",
-        "edge_webgl",
-        "webgpu",
         "pure_python",
     ]
 

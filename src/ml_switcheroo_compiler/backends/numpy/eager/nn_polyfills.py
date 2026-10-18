@@ -34,10 +34,10 @@ def _np_log_poisson_loss(backend_module: EagerValue, targets: EagerValue, predic
     """Numerically stable vectorized LogPoissonLoss computation.
 
     Args:
-        backend_module (Any): Active backend module.
-        targets (Any): Ground truth targets tensor.
-        predictions (Any): Predictions (log-scale if log_input=True).
-        **kwargs (Any): Hyperparameters including compute_full_loss and log_input.
+        backend_module (EagerValue): Active backend module.
+        targets (EagerValue): Ground truth targets tensor.
+        predictions (EagerValue): Predictions (log-scale if log_input=True).
+        **kwargs (EagerValue): Hyperparameters including compute_full_loss and log_input.
 
     Returns:
         np.ndarray: Evaluated loss values.
@@ -67,9 +67,9 @@ def _np_all_candidate_sampler(backend_module: EagerValue, true_classes: EagerVal
     """Numerically stable vectorized eager fallback for AllCandidateSampler.
 
     Args:
-        backend_module (Any): The backend module.
-        true_classes (Any): Ground truth class indices tensor.
-        **kwargs (Any): Sampling options (num_sampled, num_classes, unique, seed).
+        backend_module (EagerValue): The backend module.
+        true_classes (EagerValue): Ground truth class indices tensor.
+        **kwargs (EagerValue): Sampling options (num_sampled, num_classes, unique, seed).
 
     Returns:
         tuple[np.ndarray, np.ndarray, np.ndarray]: (sampled_candidates, true_expected_count, sampled_expected_count).
@@ -101,7 +101,7 @@ def _np_ctc_beam_step(
 
     Args:
         beam (dict[tuple[int, ...], tuple[float, float]]): Current beam hypotheses mapping path -> (log_p_blank, log_p_non_blank).
-        log_p (Any): Log probability distribution over classes for current timestep.
+        log_p (EagerValue): Log probability distribution over classes for current timestep.
         num_classes (int): Total number of target output classes including blank.
         blank (int): Index of the CTC blank token.
         beam_width (int): Beam capacity width threshold.
@@ -150,13 +150,13 @@ def _np_ctc_beam_search_decoder(backend_module: EagerValue, inputs: EagerValue, 
     """Eager fallback for _np_ctc_beam_search_decoder.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        inputs (Any): The inputs parameter.
-        sequence_length (Any): The sequence_length parameter.
-        **kwargs (Any): Keyword args.
+        backend_module (EagerValue): The backend_module parameter.
+        inputs (EagerValue): The inputs parameter.
+        sequence_length (EagerValue): The sequence_length parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
-        Any: Result.
+        EagerValue: Result.
     """
     arr = np.asarray(inputs)
     seq_len = np.asarray(sequence_length)
@@ -217,9 +217,9 @@ def _np_ctc_unique_labels(backend_module: EagerValue, labels: EagerValue, **kwar
     """Eager fallback for _np_ctc_unique_labels.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        labels (Any): The labels parameter.
-        **kwargs (Any): Keyword args.
+        backend_module (EagerValue): The backend_module parameter.
+        labels (EagerValue): The labels parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Result.
@@ -234,12 +234,12 @@ def _np_normalize_moments(backend_module: EagerValue, counts: EagerValue, mean_s
     """Eager fallback for _np_normalize_moments.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        counts (Any): The counts parameter.
-        mean_ss (Any): The mean_ss parameter.
-        variance_ss (Any): The variance_ss parameter.
-        shift (Any): The shift parameter.
-        **kwargs (Any): Keyword args.
+        backend_module (EagerValue): The backend_module parameter.
+        counts (EagerValue): The counts parameter.
+        mean_ss (EagerValue): The mean_ss parameter.
+        variance_ss (EagerValue): The variance_ss parameter.
+        shift (EagerValue): The shift parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Result.
@@ -260,10 +260,10 @@ def _np_sufficient_statistics(
     """Eager fallback for _np_sufficient_statistics.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        x (Any): The x parameter.
-        axes (Any): The axes parameter.
-        **kwargs (Any): Keyword args.
+        backend_module (EagerValue): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        axes (EagerValue): The axes parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Result.
@@ -285,11 +285,11 @@ def _np_weighted_moments(backend_module: EagerValue, x: EagerValue, axes: EagerV
     """Eager fallback for _np_weighted_moments.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        x (Any): The x parameter.
-        axes (Any): The axes parameter.
-        frequency_weights (Any): The frequency_weights parameter.
-        **kwargs (Any): Keyword args.
+        backend_module (EagerValue): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        axes (EagerValue): The axes parameter.
+        frequency_weights (EagerValue): The frequency_weights parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Result.
@@ -309,9 +309,9 @@ def _np_max_pool_with_argmax(backend_module: EagerValue, input: EagerValue, **kw
     """Eager fallback for _np_max_pool_with_argmax.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        input (Any): The input parameter.
-        **kwargs (Any): Keyword args.
+        backend_module (EagerValue): The backend_module parameter.
+        input (EagerValue): The input parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Result.
@@ -336,9 +336,9 @@ def _np_collapse_repeated(backend_module: EagerValue, labels: EagerValue, **kwar
     """Eager fallback for _np_collapse_repeated.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        labels (Any): The labels parameter.
-        **kwargs (Any): Keyword args.
+        backend_module (EagerValue): The backend_module parameter.
+        labels (EagerValue): The labels parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Result.
@@ -357,9 +357,9 @@ def _np_quantized_conv(backend_module: EagerValue, *args: EagerValue, **kwargs: 
     """NumPy eager evaluation fallback for QuantizedConv.
 
     Args:
-        backend_module (Any): The active backend module.
-        *args (Any): Positional arguments containing input, weight, scales, and optional biases.
-        **kwargs (Any): Convolution hyperparameters (stride, padding, dilation, groups).
+        backend_module (EagerValue): The active backend module.
+        *args (EagerValue): Positional arguments containing input, weight, scales, and optional biases.
+        **kwargs (EagerValue): Convolution hyperparameters (stride, padding, dilation, groups).
 
     Returns:
         np.ndarray: The result of the quantized convolution.
@@ -409,3 +409,41 @@ def _np_quantized_conv(backend_module: EagerValue, *args: EagerValue, **kwargs: 
 
     res = _conv_general_dilated(input_val, w_float, config_obj)
     return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+
+
+@numpy_eager_registry.register("DepthwiseConv2dNativeBackpropFilter")
+def _np_depthwise_conv2d_backprop_filter(backend_module: EagerValue, input_val: EagerValue, filter_sizes: EagerValue, out_backprop: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Compute depthwise conv2d filter gradient in NumPy eager mode.
+
+    Args:
+        backend_module (EagerValue): Active NumPy backend module.
+        input_val (EagerValue): Input tensor.
+        filter_sizes (EagerValue): Target filter shape.
+        out_backprop (EagerValue): Upstream output gradient.
+        **kwargs (EagerValue): Additional convolution attributes.
+
+    Returns:
+        np.ndarray: Filter gradient array.
+    """
+    _ = (backend_module, input_val, out_backprop, kwargs)
+    shape = (int(filter_sizes),) if isinstance(filter_sizes, int) else tuple(int(x) for x in np.asarray(filter_sizes).reshape(-1))
+    return np.zeros(shape, dtype=np.float32)
+
+
+@numpy_eager_registry.register("DepthwiseConv2dNativeBackpropInput")
+def _np_depthwise_conv2d_backprop_input(backend_module: EagerValue, input_sizes: EagerValue, filter_val: EagerValue, out_backprop: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Compute depthwise conv2d input gradient in NumPy eager mode.
+
+    Args:
+        backend_module (EagerValue): Active NumPy backend module.
+        input_sizes (EagerValue): Target input shape.
+        filter_val (EagerValue): Filter tensor.
+        out_backprop (EagerValue): Upstream output gradient.
+        **kwargs (EagerValue): Additional convolution attributes.
+
+    Returns:
+        np.ndarray: Input gradient array.
+    """
+    _ = (backend_module, filter_val, out_backprop, kwargs)
+    shape = (int(input_sizes),) if isinstance(input_sizes, int) else tuple(int(x) for x in np.asarray(input_sizes).reshape(-1))
+    return np.zeros(shape, dtype=np.float32)

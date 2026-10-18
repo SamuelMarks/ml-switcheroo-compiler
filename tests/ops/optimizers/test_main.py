@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Core abstractions and logic definitions for test_optimizers.py."""
 
 from __future__ import annotations
@@ -42,7 +41,7 @@ def tensor_fixtures() -> EagerValue:
     """Evaluate and process the tensor fixtures operation.
 
     Returns:
-        object: The evaluated or processed output.
+        EagerValue: The evaluated or processed output.
     """
     config.eager_mode = True
     p_data = np.array([1.0, 2.0], dtype=np.float32)
@@ -56,174 +55,144 @@ def test_sgd(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the sgd behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", sgd_update)(p, g, cast("Callable[..., EagerTensorProtocol]", SGDConfig)(lr=0.1))
-        assert new_p is not None
-        (new_p2, state2) = cast("Callable[..., EagerTensorProtocol]", sgd_update)(p, g, cast("Callable[..., EagerTensorProtocol]", SGDConfig)(lr=0.1, momentum=0.9, weight_decay=0.01))
-        assert new_p2 is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", sgd_update)(p, g, cast("Callable[..., EagerTensorProtocol]", SGDConfig)(lr=0.1))
+    assert new_p is not None
+    (new_p2, state2) = cast("Callable[..., EagerTensorProtocol]", sgd_update)(p, g, cast("Callable[..., EagerTensorProtocol]", SGDConfig)(lr=0.1, momentum=0.9, weight_decay=0.01))
+    assert new_p2 is not None
 
 
 def test_adam(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the adam behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adam_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdamHyperparams)(lr=0.1))
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adam_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdamHyperparams)(lr=0.1))
+    assert new_p is not None
 
 
 def test_adamw(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the adamw behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adamw_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdamWHyperparams)(lr=0.1))
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adamw_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdamWHyperparams)(lr=0.1))
+    assert new_p is not None
 
 
 def test_adagrad(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the adagrad behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adagrad_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdagradConfig)(lr=0.1))
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adagrad_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdagradConfig)(lr=0.1))
+    assert new_p is not None
 
 
 def test_rmsprop(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the rmsprop behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(p, g, cast("Callable[..., EagerTensorProtocol]", RMSPropHyperparams)(lr=0.1))
-        assert new_p is not None
-        (new_p2, state2) = cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(p, g, cast("Callable[..., EagerTensorProtocol]", RMSPropHyperparams)(lr=0.1, momentum=0.9, centered=True))
-        assert new_p2 is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(p, g, cast("Callable[..., EagerTensorProtocol]", RMSPropHyperparams)(lr=0.1))
+    assert new_p is not None
+    (new_p2, state2) = cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(p, g, cast("Callable[..., EagerTensorProtocol]", RMSPropHyperparams)(lr=0.1, momentum=0.9, centered=True))
+    assert new_p2 is not None
 
 
 def test_adadelta(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the adadelta behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adadelta_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdadeltaConfig)(lr=1.0))
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adadelta_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdadeltaConfig)(lr=1.0))
+    assert new_p is not None
 
 
 def test_adamax(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the adamax behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adamax_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdamaxHyperparams)(lr=0.1))
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adamax_update)(p, g, cast("Callable[..., EagerTensorProtocol]", AdamaxHyperparams)(lr=0.1))
+    assert new_p is not None
 
 
 def test_lion(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the lion behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", lion_update)(p, g, cast("Callable[..., EagerTensorProtocol]", LionConfig)(lr=0.1))
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", lion_update)(p, g, cast("Callable[..., EagerTensorProtocol]", LionConfig)(lr=0.1))
+    assert new_p is not None
 
 
 def test_adafactor(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the adafactor behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adafactor_update)(p, g, lr=0.1)
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", adafactor_update)(p, g, lr=0.1)
+    assert new_p is not None
 
 
 def test_muon(tensor_fixtures: EagerTensorProtocol) -> None:
     """Test the muon behavior.
 
     Args:
-        tensor_fixtures (object): The tensor_fixtures parameter.
+        tensor_fixtures (EagerTensorProtocol): The tensor_fixtures parameter.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        (p, g) = tensor_fixtures
-        (new_p, state) = cast("Callable[..., EagerTensorProtocol]", muon_update)(p, g, lr=0.1)
-        assert new_p is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (p, g) = tensor_fixtures
+    (new_p, state) = cast("Callable[..., EagerTensorProtocol]", muon_update)(p, g, lr=0.1)
+    assert new_p is not None
 
 
 def test_apply_adam(tensor_fixtures: EagerTensorProtocol) -> None:
@@ -231,7 +200,7 @@ def test_apply_adam(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adam
 
-    p_new, m_new, v_new = cast("Callable[..., EagerTensorProtocol]", apply_adam)(p, p, p, g, 0.1)
+    (p_new, m_new, v_new) = cast("Callable[..., EagerTensorProtocol]", apply_adam)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -240,7 +209,7 @@ def test_apply_adagrad(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adagrad
 
-    p_new, a_new = cast("Callable[..., EagerTensorProtocol]", apply_adagrad)(p, p, g, 0.1)
+    (p_new, a_new) = cast("Callable[..., EagerTensorProtocol]", apply_adagrad)(p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -249,7 +218,7 @@ def test_apply_ftrl(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_ftrl
 
-    p_new, a_new, l_new = cast("Callable[..., EagerTensorProtocol]", apply_ftrl)(p, p, p, g, 0.1)
+    (p_new, a_new, l_new) = cast("Callable[..., EagerTensorProtocol]", apply_ftrl)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -258,7 +227,7 @@ def test_apply_rmsprop(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_rmsprop
 
-    p_new, m_new, mom_new = cast("Callable[..., EagerTensorProtocol]", apply_rmsprop)(p, p, p, g, 0.1)
+    (p_new, m_new, mom_new) = cast("Callable[..., EagerTensorProtocol]", apply_rmsprop)(p, p, p, g, 0.1)
     assert p_new is not None
 
 

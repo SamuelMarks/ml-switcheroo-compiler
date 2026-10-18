@@ -24,6 +24,8 @@ def _scan_file_for_np_refs(filepath: str) -> list[str]:
                 if re.search(r"\w+\.numpy\(\)", code_line) or ("np.gradient" in code_line and "torch.gradient" in line):
                     continue
                 hits.append(f"{filepath}:{i + 1}: {code_line}")
+            if re.search(r"\b(_np_mod|_scipy_mod|numpy_mod)\b", code_line):
+                hits.append(f"{filepath}:{i + 1}: {code_line}")
     return hits
 
 
@@ -50,11 +52,8 @@ def check_for_numpy_leaks(directory: str) -> list[str]:
                 if import_pattern.search(code_line):
                     violations.append(f"{filepath}:{i + 1}: {code_line}")
 
-    files_to_check: list[str] = glob.glob(directory + "/backends/**/*.py", recursive=True)
-    files_to_check.extend(glob.glob(f"{directory}/grad/**/*.py", recursive=True))
-
-    exempt_dirs = ("backends/numpy", "backends/numba", "backends/sparse", "backends/eager", "distributed_webrtc")
-    for filepath in sorted(set(files_to_check)):
+    exempt_dirs = ("backends/numpy",)
+    for filepath in sorted(set(all_files)):
         if not any(exempt in filepath for exempt in exempt_dirs):
             violations.extend(_scan_file_for_np_refs(filepath))
 

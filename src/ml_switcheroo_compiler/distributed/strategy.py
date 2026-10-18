@@ -1,29 +1,29 @@
 """Distributed training strategies for ML Switcheroo Compiler."""
 
-# ruff: noqa: E402
 import logging
 import os
 from types import ModuleType
-from typing import Optional, Union, cast  # noqa: F401
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-
-AttrType = Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], None]
+from typing import Optional, Union, cast
 
 import yaml
 
 import ml_switcheroo_compiler.backends.registry as registry
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+AttrType = Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], None]
+
 
 def _load_strategy_config() -> dict[str, dict[str, AttrType]]:
-    """Load the strategy configuration from YAML."""
+    """Load the strategy configuration from YAML.
+
+    Returns:
+        dict[str, dict[str, AttrType]]: Parsed strategy configurations.
+    """
     yaml_path = os.path.join(os.path.dirname(__file__), "strategy_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            from typing import cast
-
             return cast(dict[str, dict[str, "AttrType"]], yaml.safe_load(f).get("strategies", {}))
     return {}
 
@@ -37,19 +37,19 @@ def _load_device_mesh_config() -> dict[str, AttrType]:
     yaml_path: str = os.path.join(os.path.dirname(__file__), "device_mesh.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            from typing import cast
-
             return cast(dict[str, AttrType], yaml.safe_load(f) or {})
     return {}
 
 
-def _load_webrtc_topology() -> EagerValue:
-    """Load the WebRTC topology configuration for browser edge targets."""
+def _load_webrtc_topology() -> dict[str, AttrType]:
+    """Load the WebRTC topology configuration for browser edge targets.
+
+    Returns:
+        dict[str, AttrType]: Parsed WebRTC topology configuration.
+    """
     yaml_path = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            from typing import cast
-
             return cast(dict[str, "AttrType"], yaml.safe_load(f))
     return {}
 
@@ -57,11 +57,11 @@ def _load_webrtc_topology() -> EagerValue:
 class ParameterServerStrategy(Distribution):
     """Parameter server strategy."""
 
-    def __init__(self, cluster_resolver: EagerValue = None) -> None:
+    def __init__(self, cluster_resolver: TensorOrScalar = None) -> None:
         """Initialize ParameterServerStrategy.
 
         Args:
-            cluster_resolver: The cluster_resolver parameter.
+            cluster_resolver (TensorOrScalar): The cluster_resolver parameter.
         """
         super().__init__()
         self.cluster_resolver = cluster_resolver
@@ -193,7 +193,7 @@ class DataParallelStrategy(Distribution):
         mesh_axis: str = "data",
         all_reduce_algorithm: str = "ring",
         target_env: str = "host",
-        cluster_resolver: EagerValue = None,
+        cluster_resolver: TensorOrScalar = None,
     ) -> None:
         """Initialize DataParallelStrategy.
 
@@ -201,7 +201,7 @@ class DataParallelStrategy(Distribution):
             mesh_axis (str): Logical mesh axis name for gradient synchronization.
             all_reduce_algorithm (str): Reduction algorithm name ('ring', 'tree').
             target_env (str): Deployment environment ('host' or 'browser').
-            cluster_resolver: Cluster configuration or resolver object.
+            cluster_resolver (TensorOrScalar): Cluster configuration or resolver object.
         """
         super().__init__()
         self.mesh_axis: str = mesh_axis
@@ -329,11 +329,11 @@ class ModelParallelStrategy(Distribution):
 class PreemptionCheckpointHandler:
     """Handle asynchronous checkpointing for preemptible instances."""
 
-    def __init__(self, cluster_resolver: EagerValue, checkpoint_dir: str) -> None:
+    def __init__(self, cluster_resolver: TensorOrScalar, checkpoint_dir: str) -> None:
         """Initialize PreemptionCheckpointHandler.
 
         Args:
-            cluster_resolver: The cluster resolver.
+            cluster_resolver (TensorOrScalar): The cluster resolver.
             checkpoint_dir (str): The directory to save checkpoints.
         """
         self.cluster_resolver = cluster_resolver
@@ -397,13 +397,14 @@ class PreemptionCheckpointHandler:
         except (ValueError, AttributeError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-    def _handle_preemption_signal(self, signum: int, frame: EagerValue) -> None:
+    def _handle_preemption_signal(self, signum: int, frame: TensorOrScalar) -> None:
         """Internal callback invoked upon receiving a preemption signal.
 
         Args:
             signum (int): The received signal number.
-            frame: Current execution frame.
+            frame (TensorOrScalar): Current execution frame.
         """
+        _ = frame
         self.save_preemption_checkpoint({"signal": signum, "status": "preempted"})
 
 
@@ -414,7 +415,7 @@ class Server:
         """Initialize Server.
 
         Args:
-            server_def (Union[dict, str, None]): The server_def parameter.
+            server_def (Union[dict[str, AttrType], str, None]): The server_def parameter.
             job_name (Optional[str]): The job_name parameter.
             task_index (Optional[int]): The task_index parameter.
         """
@@ -456,13 +457,13 @@ class Server:
         self._thread = threading.Thread(target=self._run_server, daemon=True)
         self._thread.start()
 
-    def _handle_pull_action(self, conn: EagerValue, tensor_id: str, np: ModuleType) -> None:
+    def _handle_pull_action(self, conn: TensorOrScalar, tensor_id: str, backend_mod: ModuleType) -> None:
         """Handle a parameter pull request over a client socket.
 
         Args:
-            conn: Active client socket connection.
+            conn (TensorOrScalar): Active client socket connection.
             tensor_id (str): Identifier of the requested tensor weight.
-            np: NumPy module instance used for serialization.
+            backend_mod (ModuleType): Backend module instance used for serialization.
         """
         import io
 
@@ -471,21 +472,21 @@ class Server:
                 raise KeyError(f"Weight {tensor_id} not found on parameter server.")
             tensor_data = self.state_store[tensor_id]
             bio = io.BytesIO()
-            np.save(bio, tensor_data, allow_pickle=False)
+            backend_mod.save(bio, tensor_data, allow_pickle=False)
             data = bio.getvalue()
             getattr(conn, "sendall")(len(data).to_bytes(8, "big"))
             getattr(conn, "sendall")(data)
         except Exception:
             logging.getLogger(__name__).debug("Failed to pull weight", exc_info=True)
 
-    def _handle_push_or_send_action(self, conn: EagerValue, action: str, tensor_id: str, np: ModuleType) -> None:
+    def _handle_push_or_send_action(self, conn: TensorOrScalar, action: str, tensor_id: str, backend_mod: ModuleType) -> None:
         """Handle a gradient push or tensor send request over a client socket.
 
         Args:
-            conn: Active client socket connection.
+            conn (TensorOrScalar): Active client socket connection.
             action (str): Action type ('push' or 'send').
             tensor_id (str): Identifier of the incoming tensor.
-            np: NumPy module instance used for deserialization.
+            backend_mod (ModuleType): Backend module instance used for deserialization.
         """
         import io
 
@@ -500,7 +501,7 @@ class Server:
                 break
             payload.extend(chunk)
         bio = io.BytesIO(bytes(payload))
-        arr = np.load(bio, allow_pickle=False)
+        arr = backend_mod.load(bio, allow_pickle=False)
         self.inbox.put((tensor_id, arr))
         if action == "push":
             if tensor_id in self.state_store:
@@ -508,17 +509,17 @@ class Server:
             else:
                 self.state_store[tensor_id] = arr
 
-    def _process_client_connection(self, conn: EagerValue, np: ModuleType) -> None:
+    def _process_client_connection(self, conn: TensorOrScalar, np: ModuleType) -> None:
         """Read header and dispatch action for an accepted client socket.
 
         Args:
-            conn: Accepted client socket connection.
-            np: NumPy module instance.
+            conn (TensorOrScalar): Accepted client socket connection.
+            np (ModuleType): NumPy module instance.
         """
         import json
         from contextlib import AbstractContextManager
 
-        with cast("AbstractContextManager[EagerValue]", conn):
+        with cast("AbstractContextManager[TensorOrScalar]", conn):
             getattr(conn, "setblocking")(True)
             header_len_b = getattr(conn, "recv")(4)
             if not header_len_b:
@@ -806,7 +807,19 @@ class PipelineParallelStrategy(Distribution):
         cond_graph.inputs = ["idx_cond"]
         cond_graph.outputs = ["cond_cmp"]
 
-        loop_node = IRNode(id="microbatch_loop", op_type="WhileLoop", inputs=[i.id for i in inputs], attributes={"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph})
+        from collections.abc import Mapping
+
+        from ml_switcheroo_ir import AttributeValue
+
+        loop_node = IRNode(
+            id="microbatch_loop",
+            op_type="WhileLoop",
+            inputs=[i.id for i in inputs],
+            attributes=cast(
+                "Mapping[str, AttributeValue]",
+                {"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph},
+            ),
+        )
         graph.nodes[loop_node.id] = loop_node
 
         if graph.outputs:
@@ -953,7 +966,11 @@ class PipelineParallelStrategy(Distribution):
         return True
 
     def get_communication_protocol(self) -> str:
-        """Get the communication protocol based on the target environment."""
+        """Get the communication protocol based on the target environment.
+
+        Returns:
+            str: Computed result.
+        """
         if getattr(self, "target_env", "host") == "browser":
             return "webrtc"
         return "tcp"
@@ -1014,9 +1031,11 @@ class SPMDShardingStrategy(Distribution):
                     break
 
             if self.layout_map:
+                from ml_switcheroo_ir import PartitionSpec
+
                 spec = self.layout_map.get(node.id)
                 if spec:
-                    node.sharding = spec
+                    node.sharding = cast("Optional[PartitionSpec]", spec)
 
     def lower_sharding(self, graph: IRGraph) -> bool:
         """Execute SPMD graph partitioning, lowering 1D/2D mesh sharding to explicit collectives.

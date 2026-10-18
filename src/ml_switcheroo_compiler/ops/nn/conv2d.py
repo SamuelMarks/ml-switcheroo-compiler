@@ -9,7 +9,8 @@ from typing import (
     cast,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
 from ml_switcheroo_compiler.ops.registry import get_op
@@ -25,20 +26,20 @@ class ConvHyperparams:
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID"
 
 
-def conv2d(lhs: Tensor, rhs: Tensor, config_obj: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def conv2d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """2D Convolution.
 
     Args:
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
-        config_obj (Any): The config_obj parameter.
-        **kwargs (Any): Keyword args.
+        config_obj (TensorOrScalar): The config_obj parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
     """
     if config_obj is None:
-        config_obj = cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _build_conv_config)(kwargs, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
+        config_obj = cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _build_conv_config)(kwargs, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
 
     return conv_general_dilated(lhs, rhs, config_obj)
 
@@ -48,7 +49,7 @@ def conv2d_transpose(
     rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> EagerValue:
+) -> TensorOrScalar:
     """2D convolution transpose.
 
     Args:
@@ -65,14 +66,14 @@ def conv2d_transpose(
     return conv_transpose(lhs, rhs, strides, padding)
 
 
-def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """2D Depthwise Convolution.
 
     Args:
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
-        config_obj (Any): The config_obj parameter.
-        **kwargs (Any): Keyword args.
+        config_obj (TensorOrScalar): The config_obj parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -86,9 +87,9 @@ def separable_conv2d(
     lhs: Tensor,
     depthwise_filter: Tensor,
     pointwise_filter: Tensor,
-    config: EagerValue = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    config: TensorOrScalar = None,
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """2D Separable Convolution.
 
     Args:
@@ -96,12 +97,12 @@ def separable_conv2d(
         depthwise_filter (Tensor): The depthwise_filter parameter.
         pointwise_filter (Tensor): The pointwise_filter parameter.
         config (ConvHyperparams): The config parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
     """
-    config = cast(EagerValue, config or ConvHyperparams())
+    config = cast(TensorOrScalar, config or ConvHyperparams())
     strides, padding = getattr(config, "strides"), getattr(config, "padding")
     kwargs["strides"] = strides
     kwargs["padding"] = padding

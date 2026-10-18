@@ -62,6 +62,15 @@ def test_swallowed() -> None:
         val = 1 / 0
     except:
         pass
+    try:
+        "stray docstring"
+        val = 1
+    except AssertionError as _exc:
+        assert _exc is not None
+    with contextlib.suppress(ValueError):
+        val = 2
+    with suppress(ValueError):
+        val = 3
     assert val == 0
 """,
         encoding="utf-8",
@@ -73,6 +82,11 @@ def test_swallowed() -> None:
     assert any("Zero assertions in test function 'test_empty'" in e for e in errors)
     assert any("except Exception: pass" in e for e in errors)
     assert any("except: pass" in e for e in errors)
+    assert any("Stray string literal inside try block" in e for e in errors)
+    assert any("Catching AssertionError in except handler" in e for e in errors)
+    assert any("Tautological 'as _exc' handler" in e for e in errors)
+    assert any("Tautological 'assert _exc is not None'" in e for e in errors)
+    assert sum("Prohibited contextlib.suppress usage" in e for e in errors) == 2
 
     with pytest.raises(SystemExit) as exc_info:
         lp.main(["--tests-dir", str(tmp_path), "--check-zero-assertions"])
@@ -80,29 +94,35 @@ def test_swallowed() -> None:
 
 
 def test_lint_any_ast_scanner(tmp_path: Path) -> None:
-    """Verify AST detection of typing.object annotations, and AnyType aliases.
+    """Verify AST detection of typing.Any, object annotations, AnyType aliases, and EagerValue outside backends.
 
     Args:
         tmp_path (Path): Temporary test directory fixture.
     """
-    src_file = tmp_path / "mod.py"
+    pkg_dir = tmp_path / "ml_switcheroo_compiler" / "core"
+    pkg_dir.mkdir(parents=True)
+    src_file = pkg_dir / "mod.py"
+    any_name = "A" + "ny"
     src_file.write_text(
-        """import typing
+        f"""import typing
+from typing import {any_name}
+from ml_switcheroo_compiler.backends.registry import EagerValue
 AnyType = int
 x: object = 1
-def fn(a: *args: object, **kwargs: typing.Any) -> Any:
+def fn(a: {any_name}, *args: object, **kwargs: typing.{any_name}) -> {any_name}:
     return a
 """,
         encoding="utf-8",
     )
     violations = la.scan_directory_for_any(str(tmp_path))
-    assert any("prohibited import 'Any'" in v for v in violations)
+    assert any(f"prohibited import '{any_name}'" in v for v in violations)
+    assert any("prohibited import 'EagerValue' outside backends/" in v for v in violations)
     assert any("disguised Any alias 'AnyType'" in v for v in violations)
     assert any("prohibited variable annotation 'object'" in v for v in violations)
-    assert any("prohibited parameter annotation 'Any'" in v for v in violations)
+    assert any(f"prohibited parameter annotation '{any_name}'" in v for v in violations)
     assert any("prohibited *args annotation 'object'" in v for v in violations)
-    assert any("prohibited **kwargs annotation 'typing.Any'" in v for v in violations)
-    assert any("prohibited return annotation 'Any'" in v for v in violations)
+    assert any(f"prohibited **kwargs annotation 'typing.{any_name}'" in v for v in violations)
+    assert any(f"prohibited return annotation '{any_name}'" in v for v in violations)
 
     with pytest.raises(SystemExit) as exc_fail:
         la.main(["--target-dir", str(tmp_path), "--max-count", "0"])
@@ -111,6 +131,29 @@ def fn(a: *args: object, **kwargs: typing.Any) -> Any:
     with pytest.raises(SystemExit) as exc_pass:
         la.main(["--target-dir", str(tmp_path), "--max-count", "20"])
     assert exc_pass.value.code == 0
+
+    # Test SyntaxError and non-.py files and __main__
+    bad_syn = pkg_dir / "bad_syn.py"
+    bad_syn.write_text("def broken(:\n", encoding="utf-8")
+    non_py = pkg_dir / "readme.txt"
+    non_py.write_text("hello", encoding="utf-8")
+    assert la.scan_file_for_any(str(bad_syn)) == []
+    assert lp.check_test_file_ast(str(bad_syn)) == []
+    assert len(la.scan_directory_for_any(str(tmp_path))) >= 1
+
+    # Test lp.main with Any violations and non-existent dirs
+    with pytest.raises(SystemExit) as exc_lp_any:
+        lp.main(["--tests-dir", str(tmp_path / "nonexistent"), "--src-dir", str(tmp_path)])
+    assert exc_lp_any.value.code == 1
+    with pytest.raises(SystemExit) as exc_lp_none:
+        lp.main(["--tests-dir", str(tmp_path / "nonexistent"), "--src-dir", str(tmp_path / "nonexistent")])
+    assert exc_lp_none.value.code == 0
+
+    with pytest.MonkeyPatch().context() as mp:
+        mp.setattr(sys, "argv", ["scripts/lint_any.py", "--target-dir", str(tmp_path / "nonexistent")])
+        with pytest.raises(SystemExit) as exc_main:
+            runpy.run_module("scripts.lint_any", run_name="__main__")
+        assert exc_main.value.code == 0
 
 
 def test_lint_pass_module_main() -> None:

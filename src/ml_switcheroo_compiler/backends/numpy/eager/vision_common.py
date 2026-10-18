@@ -11,12 +11,12 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 @numpy_eager_registry.register("MelFilterbank")
 def _np_mel_filterbank(backend_module: ModuleType, _: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_mel_filterbank operation.
+    """Execute the eager np mel filterbank operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        _ (object): The _ parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        _ (EagerValue): The _ parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -26,12 +26,12 @@ def _np_mel_filterbank(backend_module: ModuleType, _: EagerValue, **kwargs: Eage
 
 @numpy_eager_registry.register("Mfcc")
 def _np_mfcc(backend_module: ModuleType, spectrogram: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_mfcc operation.
+    """Execute the eager np mfcc operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        spectrogram (object): The spectrogram parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        spectrogram (EagerValue): The spectrogram parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -41,13 +41,13 @@ def _np_mfcc(backend_module: ModuleType, spectrogram: EagerValue, **kwargs: Eage
 
 @numpy_eager_registry.register("PowerIteration")
 def _np_power_iteration(backend_module: ModuleType, w: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_power_iteration operation.
+    """Execute the eager np power iteration operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        w (object): The w parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        w (EagerValue): The w parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

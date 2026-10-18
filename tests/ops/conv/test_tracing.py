@@ -1,7 +1,8 @@
-# ruff: noqa: E501
 """Core abstractions and logic definitions for test_conv_tracing.py."""
 
 from __future__ import annotations
+
+import pytest
 
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
@@ -16,9 +17,9 @@ def test_conv_tracing() -> None:
     """Test the conv tracing behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
+    with pytest.raises(ValueError):
         device = Device(DeviceType.CPU, 0)
         with ConfigContext(eager_mode=False):
             global_tracing_state.start_tracing()
@@ -28,5 +29,3 @@ def test_conv_tracing() -> None:
                 conv_general_dilated(lhs, rhs, ConvConfig(window_strides=(1, 1), padding="SAME"))
             finally:
                 global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None

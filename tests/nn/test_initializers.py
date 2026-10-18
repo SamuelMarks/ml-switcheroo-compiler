@@ -31,11 +31,11 @@ class DummyOps:
             """Execute mock operation.
 
             Args:
-                *args (object): Positional arguments.
-                **kwargs (object): Keyword arguments.
+                *args (EagerValue): Positional arguments.
+                **kwargs (EagerValue): Keyword arguments.
 
             Returns:
-                object: Operation name or tuple for QR decomposition.
+                EagerValue: Operation name or tuple for QR decomposition.
             """
             _ = (args, kwargs)
             if name == "qr":

@@ -5,12 +5,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.creation.frontend import asarray
@@ -18,11 +19,11 @@ from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> EagerValue:
+def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
-        tensors (Any): The tensors parameter.
+        tensors (Sequence[Tensor]): The tensors parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -56,11 +57,11 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> EagerValue:
     )
 
 
-def stack(tensors: Sequence[Tensor], axis: int = 0) -> EagerValue:
+def stack(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     """Stack a sequence of tensors along a new dimension.
 
     Args:
-        tensors (Any): The tensors parameter.
+        tensors (Sequence[Tensor]): The tensors parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -108,7 +109,7 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> EagerValue:
     )
 
 
-def vstack(tup: Sequence[Tensor]) -> EagerValue:
+def vstack(tup: Sequence[Tensor]) -> TensorOrScalar:
     """Stack arrays in sequence vertically (row wise).
 
     Args:
@@ -126,7 +127,7 @@ def vstack(tup: Sequence[Tensor]) -> EagerValue:
     return _emit_shape_node("Vstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
 
 
-def hstack(tup: Sequence[Tensor]) -> EagerValue:
+def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
     """Stack arrays in sequence horizontally (column wise).
 
     Args:
@@ -144,7 +145,7 @@ def hstack(tup: Sequence[Tensor]) -> EagerValue:
     return _emit_shape_node("Hstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
 
 
-def dstack(tup: Sequence[Tensor]) -> EagerValue:
+def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
     """Stack arrays in sequence depth wise (along third axis).
 
     Args:
@@ -162,12 +163,12 @@ def dstack(tup: Sequence[Tensor]) -> EagerValue:
     return _emit_shape_node("Dstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
 
 
-def append(arr: EagerValue, values: EagerValue, axis: int | None = None) -> EagerValue:
+def append(arr: TensorOrScalar, values: TensorOrScalar, axis: int | None = None) -> TensorOrScalar:
     """Append values to the end of an array.
 
     Args:
-        arr (Any): Values are appended to a copy of this array.
-        values (Any): These values are appended to a copy of arr.
+        arr (TensorOrScalar): Values are appended to a copy of this array.
+        values (TensorOrScalar): These values are appended to a copy of arr.
         axis (int | None, optional): The axis along which values are appended.
             If axis is not given, both arr and values are flattened before use.
 
@@ -192,7 +193,7 @@ def append(arr: EagerValue, values: EagerValue, axis: int | None = None) -> Eage
     return concatenate([arr_t, values_t], axis=axis)
 
 
-def column_stack(tup: EagerValue) -> EagerValue:
+def column_stack(tup: TensorOrScalar) -> TensorOrScalar:
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:

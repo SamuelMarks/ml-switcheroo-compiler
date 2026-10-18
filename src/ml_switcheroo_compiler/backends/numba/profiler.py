@@ -5,17 +5,11 @@ from __future__ import annotations
 import resource
 import sys
 import time
-from typing import Callable, cast
+from typing import Callable
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-
-try:
-    import numba
-except ImportError:
-    numba = None
-
+from ml_switcheroo_compiler.backends.numba import kernels
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -39,27 +33,27 @@ class NumbaProfiler:
         graph: IRGraph,
         inputs: dict[str, list[float] | list[list[float]] | EagerValue],
     ) -> list[EagerValue]:
-        """Convert input payloads into topologically ordered NumPy arrays.
+        """Convert input payloads into topologically ordered array buffers.
 
         Args:
             graph (IRGraph): IR computation graph.
             inputs (dict[str, list[float] | list[list[float]] | EagerValue]): Input mapping.
 
         Returns:
-            list[EagerValue]: Ordered list of NumPy arrays.
+            list[EagerValue]: Ordered list of array buffers.
         """
-        np_inputs_dict: dict[str, EagerValue] = {}
+        nb_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
             if hasattr(val, "shape") and not isinstance(val, (list, tuple)):
-                np_inputs_dict[k] = val
+                nb_inputs_dict[k] = val
             else:
-                np_inputs_dict[k] = np.asarray(val, dtype=np.float32)
+                nb_inputs_dict[k] = kernels.asarray(val, dtype=kernels.float32)
 
         sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
         input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        if input_keys and all(k in np_inputs_dict for k in input_keys):
-            return [np_inputs_dict[k] for k in input_keys]
-        return list(np_inputs_dict.values())
+        if input_keys and all(k in nb_inputs_dict for k in input_keys):
+            return [nb_inputs_dict[k] for k in input_keys]
+        return list(nb_inputs_dict.values())
 
     def _compile_graph(self, graph: IRGraph) -> Callable[..., EagerValue] | None:
         """Compile an IRGraph into an executable Numba JIT function.
@@ -68,7 +62,7 @@ class NumbaProfiler:
             graph (IRGraph): The IR computation graph.
 
         Returns:
-            Callable[..., object] | None: JIT-compiled evaluate function.
+            Callable[..., EagerValue] | None: JIT-compiled evaluate function.
         """
         from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 
@@ -101,7 +95,7 @@ class NumbaProfiler:
         """
         del device
 
-        np_inputs = self._prepare_inputs(graph, inputs)
+        nb_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
         compiled_fn: Callable[..., EagerValue] | None = None
@@ -115,18 +109,18 @@ class NumbaProfiler:
             """Execute a single evaluation step on Numba backend.
 
             Returns:
-                object: Evaluated output array.
+                EagerValue: Evaluated output array.
             """
             if has_ops and compiled_fn is not None:
-                return compiled_fn(tuple(np_inputs))
+                return compiled_fn(tuple(nb_inputs))
 
-            if not np_inputs:
-                return cast(EagerValue, np.zeros((1,), dtype=np.float32))
+            if not nb_inputs:
+                return kernels.zeros((1,), dtype=kernels.float32)
 
-            accum = np.zeros_like(np_inputs[0])
-            for t in np_inputs:
-                accum = np.add(accum, t)
-            return cast(EagerValue, accum)
+            accum = kernels.zeros_like(nb_inputs[0])
+            for t in nb_inputs:
+                accum = kernels.add(accum, t)
+            return accum
 
         for _ in range(max(1, warmup_iters)):
             _ = _execute_step()

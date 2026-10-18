@@ -21,7 +21,7 @@ def test_dropout2d_shape() -> None:
     """Test the dropout2d shape behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         try:
@@ -47,7 +47,7 @@ def test_dropout2d_eager() -> None:
     """Test the dropout2d eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         try:

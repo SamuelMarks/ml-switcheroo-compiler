@@ -6,23 +6,41 @@ import os
 import shutil
 import subprocess
 import uuid
-from typing import Optional, Union, cast  # noqa: F401
+from collections.abc import Iterable
+from typing import cast
 
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
+def _iter_ints(val: EagerValue) -> list[int]:
+    """Extract a list of integers from an integer or iterable attribute value.
+
+    Args:
+        val (EagerValue): Integer or iterable of integers.
+
+    Returns:
+        list[int]: Extracted integer list.
+    """
+    if isinstance(val, int):
+        return [val]
+    if isinstance(val, Iterable) and not isinstance(val, (str, bytes)):
+        return [int(cast(int, x)) for x in cast("Iterable[EagerValue]", val)]
+    return []
+
+
 def verify_stablehlo_mlir(mlir_text: str, mlir_opt_path: str | None = None) -> bool:
-    """Verify StableHLO MLIR text representation using mlir-opt or structural analysis.
+    """Verify StableHLO MLIR text representation using `mlir-opt` or structural analysis.
 
     Args:
         mlir_text (str): StableHLO MLIR module text to verify.
-        mlir_opt_path (Optional[str]): Optional path to mlir-opt tool binary.
+        mlir_opt_path (str | None): Optional path to `mlir-opt` tool binary.
 
     Returns:
         bool: True if verification succeeds.
@@ -59,6 +77,7 @@ def verify_stablehlo_mlir(mlir_text: str, mlir_opt_path: str | None = None) -> b
     return True
 
 
+@register_backend("edge_stablehlo")
 class StableHLOCodeGenerator(BaseGenerator):
     """StableHLO Code Generator for emitting MLIR text format from IR Graph."""
 
@@ -67,9 +86,9 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): The IR graph to process.
-            delegates (Optional[list[CodeGeneratorVisitor]], optional): Visitor delegates.
+            delegates (list[CodeGeneratorVisitor] | None): Optional visitor delegates.
         """
-        getattr(super(), "__init__")(graph, delegates)
+        super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
 
         yaml_path: str = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
@@ -199,10 +218,10 @@ class StableHLOCodeGenerator(BaseGenerator):
                 lhs_contract = [1] if rank > 1 else [0]
                 rhs_contract = [0]
 
-        lhs_b_str: str = ", ".join(str(x) for x in getattr((lhs_batch or []), "__iter__")())
-        rhs_b_str: str = ", ".join(str(x) for x in getattr((rhs_batch or []), "__iter__")())
-        lhs_c_str: str = ", ".join(str(x) for x in getattr((lhs_contract or []), "__iter__")())
-        rhs_c_str: str = ", ".join(str(x) for x in getattr((rhs_contract or []), "__iter__")())
+        lhs_b_str: str = ", ".join(str(x) for x in _iter_ints(lhs_batch))
+        rhs_b_str: str = ", ".join(str(x) for x in _iter_ints(rhs_batch))
+        lhs_c_str: str = ", ".join(str(x) for x in _iter_ints(lhs_contract))
+        rhs_c_str: str = ", ".join(str(x) for x in _iter_ints(rhs_contract))
 
         dot_dims: str = f"#stablehlo.dot<lhs_batching_dimensions = [{lhs_b_str}], rhs_batching_dimensions = [{rhs_b_str}], lhs_contracting_dimensions = [{lhs_c_str}], rhs_contracting_dimensions = [{rhs_c_str}]>"
         self.add_line(f'  {res_var} = "stablehlo.dot_general"({inputs_str}) {{dot_dimension_numbers = {dot_dims}}} : {types_sig}')
@@ -235,7 +254,7 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         attrs: dict[str, EagerValue] = getattr(node, "attributes", {}) or {}
         strides_val = attrs.get("strides", attrs.get("stride", [1, 1]))
-        strides: list[int] = [strides_val, strides_val] if isinstance(strides_val, int) else list(getattr(strides_val, "__iter__")())
+        strides: list[int] = [strides_val, strides_val] if isinstance(strides_val, int) else _iter_ints(strides_val)
 
         pads_val = attrs.get("padding", attrs.get("pads", [[0, 0], [0, 0]]))
         pads: list[list[int]] = []
@@ -245,7 +264,12 @@ class StableHLOCodeGenerator(BaseGenerator):
             p0, p1 = pads_val[0], int(cast(int, pads_val[1]))
             pads = [[p0, p0], [p1, p1]]
         elif isinstance(pads_val, (list, tuple)) and len(pads_val) == 4 and isinstance(pads_val[0], int):
-            p0, p1, p2, p3 = pads_val[0], int(cast(int, pads_val[1])), int(cast(int, pads_val[2])), int(cast(int, pads_val[3]))
+            p0, p1, p2, p3 = (
+                pads_val[0],
+                int(cast(int, pads_val[1])),
+                int(cast(int, pads_val[2])),
+                int(cast(int, pads_val[3])),
+            )
             pads = [[p0, p1], [p2, p3]]
         elif isinstance(pads_val, (list, tuple)):
             pads = [list(p) if isinstance(p, (list, tuple)) else [int(p), int(p)] for p in pads_val]
@@ -253,10 +277,10 @@ class StableHLOCodeGenerator(BaseGenerator):
             pads = [[0, 0], [0, 0]]
 
         lhs_dil_val = attrs.get("lhs_dilation", [1, 1])
-        lhs_dil: list[int] = [lhs_dil_val, lhs_dil_val] if isinstance(lhs_dil_val, int) else list(getattr(lhs_dil_val, "__iter__")())
+        lhs_dil: list[int] = [lhs_dil_val, lhs_dil_val] if isinstance(lhs_dil_val, int) else _iter_ints(lhs_dil_val)
 
         rhs_dil_val = attrs.get("rhs_dilation", attrs.get("dilation", [1, 1]))
-        rhs_dil: list[int] = [rhs_dil_val, rhs_dil_val] if isinstance(rhs_dil_val, int) else list(getattr(rhs_dil_val, "__iter__")())
+        rhs_dil: list[int] = [rhs_dil_val, rhs_dil_val] if isinstance(rhs_dil_val, int) else _iter_ints(rhs_dil_val)
 
         feature_group_count: int = int(cast(int, attrs.get("feature_group_count", attrs.get("groups", 1))))
         batch_group_count: int = int(cast(int, attrs.get("batch_group_count", 1)))
@@ -324,8 +348,8 @@ class StableHLOCodeGenerator(BaseGenerator):
         if isinstance(pads_val, int):
             pads = [[0, 0], [pads_val, pads_val], [pads_val, pads_val], [0, 0]]
         elif isinstance(pads_val, (list, tuple)) and len(pads_val) == 2:
-            p0 = [pads_val[0], pads_val[0]] if isinstance(pads_val[0], int) else list(getattr(getattr(pads_val[0], "__iter__")(), "__iter__")())
-            p1 = [pads_val[1], pads_val[1]] if isinstance(pads_val[1], int) else list(getattr(getattr(pads_val[1], "__iter__")(), "__iter__")())
+            p0 = [pads_val[0], pads_val[0]] if isinstance(pads_val[0], int) else _iter_ints(pads_val[0])
+            p1 = [pads_val[1], pads_val[1]] if isinstance(pads_val[1], int) else _iter_ints(pads_val[1])
             pads = [[0, 0], p0, p1, [0, 0]]
         elif isinstance(pads_val, (list, tuple)):
             pads = [list(p) if isinstance(p, (list, tuple)) else [int(p), int(p)] for p in pads_val]
@@ -334,8 +358,8 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         reducer: str = str(attrs.get("reducer", "maximum" if "Max" in op_type else "add"))
 
-        base_dils: list[int] = list(getattr(attrs.get("base_dilations", [1] * len(win_dims)), "__iter__")())
-        win_dils: list[int] = list(getattr(attrs.get("window_dilations", [1] * len(win_dims)), "__iter__")())
+        base_dils: list[int] = _iter_ints(attrs.get("base_dilations", [1] * len(win_dims)))
+        win_dils: list[int] = _iter_ints(attrs.get("window_dilations", [1] * len(win_dims)))
 
         op_in: str = in_vars_mapped[0] if in_vars_mapped else "%arg0"
         op_type_val: str = in_types[0] if in_types else out_type
@@ -414,9 +438,9 @@ class StableHLOCodeGenerator(BaseGenerator):
         if rank == 0:
             rank = 4
 
-        pad_low: list[int] = list(getattr(attrs.get("edge_padding_low", [0] * rank), "__iter__")())
-        pad_high: list[int] = list(getattr(attrs.get("edge_padding_high", [0] * rank), "__iter__")())
-        interior: list[int] = list(getattr(attrs.get("interior_padding", [0] * rank), "__iter__")())
+        pad_low: list[int] = _iter_ints(attrs.get("edge_padding_low", [0] * rank))
+        pad_high: list[int] = _iter_ints(attrs.get("edge_padding_high", [0] * rank))
+        interior: list[int] = _iter_ints(attrs.get("interior_padding", [0] * rank))
 
         if len(in_vars_mapped) > 1:
             pad_val_var: str = in_vars_mapped[1]
@@ -613,11 +637,12 @@ class StableHLOCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs: Additional attributes.
+            **kwargs (EagerValue): Additional attributes.
 
         Returns:
             str: Variable name of the evaluated node.
         """
+        _ = (input_vars, kwargs)
         op_type: str = getattr(node, "op_type", "")
         nid: str = getattr(node, "id", str(uuid.uuid4()))
 
@@ -651,18 +676,18 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         return res_var
 
-    def _build_func_args(self, input_nodes: list[EagerValue]) -> list[str]:
+    def _build_func_args(self, input_nodes: list[IRNode] | list[EagerValue]) -> list[str]:
         """Build the list of function arguments for the generated MLIR module.
 
         Args:
-            input_nodes (list[object]): List of input IR nodes.
+            input_nodes (list[IRNode] | list[EagerValue]): List of input IR nodes.
 
         Returns:
             list[str]: A list of argument strings for the MLIR function.
         """
         func_args: list[str] = []
         for idx, node in enumerate(input_nodes):
-            t_type: str = getattr(self, "_get_node_type")(node)
+            t_type: str = self._get_node_type(cast(IRNode, node))
             arg_name: str = f"%arg{idx}"
             self.var_map[getattr(node, "id", "")] = arg_name
             func_args.append(f"{arg_name}: {t_type}")
@@ -723,7 +748,7 @@ class StableHLOCodeGenerator(BaseGenerator):
             str: Generated StableHLO MLIR text.
         """
         input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        func_args: list[str] = getattr(self, "_build_func_args")(input_nodes)
+        func_args: list[str] = self._build_func_args(input_nodes)
 
         output_ids: list[str] = getattr(self.graph, "outputs", []) or []
         out_types: list[str] = self._build_out_types(output_ids)
@@ -747,37 +772,35 @@ class StableHLOCodeGenerator(BaseGenerator):
         self.add_line("  }")
         self.add_line("}")
 
-        return "\n".join(self.code)
+        return chr(10).join(self.code)
 
     def verify(self, mlir_opt_path: str | None = None) -> bool:
-        """Verify the emitted MLIR code using mlir-opt or structural validation.
+        """Verify the emitted MLIR code using `mlir-opt` or structural validation.
 
         Args:
-            mlir_opt_path (Optional[str]): Optional path to mlir-opt executable.
+            mlir_opt_path (str | None): Optional path to `mlir-opt` executable.
 
         Returns:
             bool: True if validation passed.
         """
-        code: str = self.generate() if not self.code else "\n".join(self.code)
+        code: str = self.generate() if not self.code else chr(10).join(self.code)
         return verify_stablehlo_mlir(code, mlir_opt_path)
 
     def export_mlirbc(self, file_path: str) -> None:
-        """Export the generated StableHLO to MLIR bytecode (.mlirbc) format.
+        """Export the generated StableHLO to MLIR bytecode (`.mlirbc`) format.
 
         Args:
-            file_path (str): The path to save the .mlirbc file.
+            file_path (str): The path to save the `.mlirbc` file.
         """
         from ml_switcheroo_compiler.backends.edge.config_models import StablehloSchemaConfig
         from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncoder
 
-        # Generate MLIR text to populate variables mapping etc.
         self.generate()
 
         encoder: MLIRBytecodeEncoder = MLIRBytecodeEncoder()
         encoder.add_dialect("stablehlo")
         encoder.add_dialect("func")
 
-        # Walk through sorted nodes and add them
         for node in self.sorted_nodes:
             op_type: str = getattr(node, "op_type", "")
             if op_type == "Input":
@@ -798,15 +821,16 @@ class StableHLOCodeGenerator(BaseGenerator):
             f.write(encoder.encode())
 
     def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
-        """Compile IRGraph into a bytecode-compiled .mlirbc / IREE execution binary module artifact.
+        """Compile `IRGraph` into a bytecode-compiled `.mlirbc` execution binary module artifact.
 
         Args:
             graph (IRGraph): Target computational graph to compile.
-            **kwargs (object): Optional compiler options.
+            **kwargs (EagerValue): Optional compiler options.
 
         Returns:
-            object: Execution callable wrapping the compiled binary module artifact.
+            EagerValue: Execution callable wrapping the compiled binary module artifact.
         """
+        _ = kwargs
         from ml_switcheroo_compiler.backends.edge.config_models import StablehloSchemaConfig
         from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncoder
         from ml_switcheroo_compiler.core.tensor import Tensor
@@ -842,7 +866,7 @@ class StableHLOCodeGenerator(BaseGenerator):
                 """Initialize compiled artifact.
 
                 Args:
-                    bytecode (bytes): Encoded .mlirbc bytecode.
+                    bytecode (bytes): Encoded `.mlirbc` bytecode.
                     mlir (str): Generated MLIR text representation.
                 """
                 self.bytecode = bytecode
@@ -852,11 +876,11 @@ class StableHLOCodeGenerator(BaseGenerator):
                 """Execute compiled StableHLO module.
 
                 Args:
-                    *args (object): Input tensors.
-                    **kw (object): Keyword arguments.
+                    *args (EagerValue): Input tensors.
+                    **kw (EagerValue): Keyword arguments.
 
                 Returns:
-                    object: Evaluated output tensors.
+                    EagerValue: Evaluated output tensors.
                 """
                 input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
                 inputs = {}

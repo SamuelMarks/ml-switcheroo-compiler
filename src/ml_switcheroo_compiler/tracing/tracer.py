@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.core.mixins import (
 )
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.core.shape import TensorOrScalar
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.tracing.state import global_tracing_state as global_tracing_state
@@ -101,13 +101,13 @@ class ProxyTensor(ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseM
     """Provide a proxy object that intercepts mathematical operations and builds the IR graph.
 
     Attributes:
-        id (str): The ID of the IRNode producing this tensor
-        shape (Tuple[Union[int, str], ...]): The shape of the tensor
-        dtype (str): The data type of the tensor
-        sparsity (dict[str, object] | None): Optional sparsity pattern metadata (e.g. CSR, COO, BCOO)
+        id (str): The ID of the IRNode producing this tensor.
+        shape (tuple[int | str, ...]): The shape of the tensor.
+        dtype (str): The data type of the tensor.
+        sparsity (dict[str, str | int | float | bool] | None): Optional sparsity pattern metadata (e.g. CSR, COO, BCOO).
     """
 
-    concrete_value: EagerValue = None
+    concrete_value: TensorOrScalar = None
 
     def __init__(
         self,

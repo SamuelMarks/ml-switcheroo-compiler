@@ -15,10 +15,10 @@ def _np_divide_no_nan(backend_module: ModuleType, x: EagerValue, y: EagerValue, 
     """DivideNoNan.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        y (EagerValue): The y parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -31,10 +31,10 @@ def _np_multiply_no_nan(backend_module: ModuleType, x: EagerValue, y: EagerValue
     """MultiplyNoNan.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        y (EagerValue): The y parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -47,10 +47,10 @@ def _np_squared_difference(backend_module: ModuleType, x: EagerValue, y: EagerVa
     """SquaredDifference.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        y (EagerValue): The y parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -64,10 +64,10 @@ def _np_xdivy(backend_module: ModuleType, x: EagerValue, y: EagerValue, **kwargs
     """Xdivy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        y (EagerValue): The y parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -80,10 +80,10 @@ def _np_xlog1py(backend_module: ModuleType, x: EagerValue, y: EagerValue, **kwar
     """Xlog1py.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        y (EagerValue): The y parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -104,9 +104,9 @@ def _np_reciprocal_no_nan(backend_module: ModuleType, x: EagerValue, **kwargs: E
     """ReciprocalNoNan.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -119,9 +119,9 @@ def _np_zero_fraction(backend_module: ModuleType, x: EagerValue, **kwargs: Eager
     """ZeroFraction.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -134,11 +134,11 @@ def _np_zero_fraction(backend_module: ModuleType, x: EagerValue, **kwargs: Eager
 
 
 def _xlogy(x: EagerValue, y: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _xlogy operation.
+    """Execute the eager xlogy operation on the active backend array.
 
     Args:
-        x (object): The x parameter.
-        y (object): The y parameter.
+        x (EagerValue): The x parameter.
+        y (EagerValue): The y parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -152,12 +152,12 @@ def _np_nanmean(backend_module: ModuleType, a: EagerValue, axis: EagerValue = No
     """Nanmean.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
-        axis (object): The axis parameter.
-        keepdims (object): The keepdims parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
+        axis (EagerValue): The axis parameter.
+        keepdims (EagerValue): The keepdims parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -170,12 +170,12 @@ def _np_nanmedian(backend_module: ModuleType, a: EagerValue, axis: EagerValue = 
     """Nanmedian.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
-        axis (object): The axis parameter.
-        keepdims (object): The keepdims parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
+        axis (EagerValue): The axis parameter.
+        keepdims (EagerValue): The keepdims parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

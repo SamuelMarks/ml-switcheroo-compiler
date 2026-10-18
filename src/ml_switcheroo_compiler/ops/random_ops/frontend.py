@@ -4,14 +4,15 @@ import uuid
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
-def sobol_sample(dim: int, num_results: int, skip: int = 0) -> EagerValue:
+def sobol_sample(dim: int, num_results: int, skip: int = 0) -> TensorOrScalar:
     """Sobol sequence generator.
 
     Args:

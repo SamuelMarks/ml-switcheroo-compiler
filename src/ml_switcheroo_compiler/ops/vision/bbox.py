@@ -5,9 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -28,8 +29,8 @@ def crop_and_resize(
     boxes: Tensor,
     box_indices: Tensor,
     crop_size: tuple[int, int],
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
@@ -37,7 +38,7 @@ def crop_and_resize(
         boxes (Tensor): The boxes parameter.
         box_indices (Tensor): The box_indices parameter.
         crop_size (tuple): The crop_size parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -72,15 +73,15 @@ def _extract_bounding_boxes_eager(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj: EagerValue,
-) -> EagerValue:
-    """Evaluate _extract_bounding_boxes_eager operation.
+    config_obj: TensorOrScalar,
+) -> TensorOrScalar:
+    """Compute the extract bounding boxes eager tensor operation.
 
     Args:
         images (Tensor): The images parameter.
         boxes (Tensor): The boxes parameter.
         box_indices (Tensor): The box_indices parameter.
-        config_obj (Any): The config_obj parameter.
+        config_obj (TensorOrScalar): The config_obj parameter.
 
     Returns:
         Tensor: Result.
@@ -102,17 +103,17 @@ def extract_bounding_boxes(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj: EagerValue = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    config_obj: TensorOrScalar = None,
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
         images (Tensor): The images parameter.
         boxes (Tensor): The boxes parameter.
         box_indices (Tensor): The box_indices parameter.
-        config_obj (Any): The config_obj parameter.
-        **kwargs (Any): Keyword args.
+        config_obj (TensorOrScalar): The config_obj parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -124,7 +125,7 @@ def extract_bounding_boxes(
         if isinstance(crop_size, int):
             crop_size = (crop_size, crop_size)
         config_obj = cast(
-            EagerValue,
+            TensorOrScalar,
             cast("Callable[..., EagerTensorProtocol]", BBoxConfig)(
                 crop_size=crop_size,
                 interpolation=cast("str", kwargs.get("interpolation", "bilinear")),
@@ -153,7 +154,7 @@ def crop(
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Crops an image to a specified bounding box.
 
     Args:
@@ -202,7 +203,7 @@ def pad_to_bounding_box(
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Pad an image with zeros to the specified height and width.
 
     Args:
@@ -250,14 +251,14 @@ def draw_bounding_boxes(
     boxes: Tensor,
     colors: Tensor | None = None,
     texts: list[str] | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Draw bounding boxes on a batch of images.
 
     Args:
         images (Tensor): The images parameter.
         boxes (Tensor): The boxes parameter.
-        colors (Any): The colors parameter.
-        texts (Any): The texts parameter.
+        colors (Tensor | None): The colors parameter.
+        texts (list[str] | None): The texts parameter.
 
     Returns:
         Tensor: Result.
@@ -285,7 +286,7 @@ def crop_images(
     images: Tensor,
     cropping: tuple[int, int, int, int],
     data_format: str | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Crops images.
 
     Args:
@@ -332,8 +333,8 @@ def extract_patches(
     images: Tensor,
     size: int | tuple[int, int] | list[int],
     options: ExtractPatchesOptions | None = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Extract patches from images.
 
     Args:
@@ -383,7 +384,7 @@ def pad_images(
     padding: tuple[int, int, int, int],
     target_shape: tuple[int | None, int | None],
     data_format: str | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Pad images.
 
     Args:
@@ -437,13 +438,13 @@ class ExtractBoundingBoxes(OpDef):
 
     op_name = "ExtractBoundingBoxes"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-        inputs (Any): The inputs parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        inputs (EagerTensorProtocol): The inputs parameter.
+        *args (EagerTensorProtocol): Positional args.
+        **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -457,13 +458,13 @@ class Iou(OpDef):
 
     op_name = "Iou"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -477,13 +478,13 @@ class Nms(OpDef):
 
     op_name = "Nms"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            inputs (Any): The inputs parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            inputs (EagerTensorProtocol): The inputs parameter.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

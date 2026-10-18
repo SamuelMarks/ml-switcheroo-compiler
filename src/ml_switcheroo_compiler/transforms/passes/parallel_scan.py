@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import os
-from typing import cast
+from typing import Optional, cast
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, LogicalGraph
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 
@@ -70,7 +70,7 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
 
     for node_id, node in graph.nodes.items():
         if getattr(node, "op_type", "") == "Scan":
-            body = node.attributes.get("body")
+            body = cast("Optional[LogicalGraph]", node.attributes.get("body"))
             reduction_info = detect_associative_reduction(body, rules)
 
             if reduction_info is not None:

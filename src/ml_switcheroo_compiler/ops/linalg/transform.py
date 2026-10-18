@@ -5,13 +5,14 @@ from typing import Callable, cast
 import ml_switcheroo_compiler.ops.binary as _math
 import ml_switcheroo_compiler.ops.shape.joining as _joining
 import ml_switcheroo_compiler.ops.shape.slicing as _slicing
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 from ml_switcheroo_compiler.ops.shape.frontend import reshape
 
 
-def hadamard_transform(x: Tensor, scale: float = 1.0) -> EagerValue:
+def hadamard_transform(x: Tensor, scale: float = 1.0) -> TensorOrScalar:
     """Apply the Walsh-Hadamard Transform to the last dimension of the input tensor.
 
     Args:

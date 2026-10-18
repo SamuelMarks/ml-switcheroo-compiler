@@ -213,7 +213,7 @@ def test_indexing_exact_shapes(mocker: EagerTensorProtocol) -> None:
     """Verify exact output shapes for take_along_axis, gather_nd, take, where, and classes.
 
     Args:
-        mocker (object): Pytest mocker fixture.
+        mocker (EagerTensorProtocol): Pytest mocker fixture.
     """
     from ml_switcheroo_compiler.ops.shape.indexing import (
         gather,
@@ -279,7 +279,7 @@ def test_indexing_edge_cases(mocker: EagerTensorProtocol) -> None:
     """Test edge cases and fallback branches in shape indexing operations.
 
     Args:
-        mocker (object): Pytest mocker fixture.
+        mocker (EagerTensorProtocol): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 

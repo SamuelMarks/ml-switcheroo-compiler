@@ -2,13 +2,17 @@
 
 import os
 from collections.abc import ItemsView
-from typing import Optional, cast
+from typing import Optional, Union, cast
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field, RootModel
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import AttrValue
+
+YamlScalar = Optional[Union[str, int, float, bool]]
+YamlLeaf = Union[YamlScalar, list[YamlScalar], dict[str, YamlScalar], list[dict[str, YamlScalar]]]
+YamlNodeValue = Union[YamlLeaf, list[YamlLeaf], dict[str, Union[YamlLeaf, dict[str, YamlLeaf]]]]
 
 
 class MicrobatchSplittingConfig(BaseModel):
@@ -67,12 +71,12 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
 
     root: dict[str, TopologyConfig]
 
-    def _dict(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, AttributeValue]:
+    def _dict(self, *args: AttrValue, **kwargs: AttrValue) -> dict[str, AttributeValue]:
         """Return dict representation.
 
         Args:
-            *args: Positional dump args.
-            **kwargs: Keyword dump args.
+            *args (AttrValue): Positional dump args.
+            **kwargs (AttrValue): Keyword dump args.
 
         Returns:
             dict[str, AttributeValue]: Dictionary representation.
@@ -167,7 +171,7 @@ class DistributedTopologyConfig(BaseModel):
     device_mesh_grids: dict[str, DeviceMeshGridConfig] = {}
     collective_algorithms: list[CollectiveAlgorithmConfig] = []
     pipeline_topologies: dict[str, TopologyConfig] = {}
-    webrtc_topology: Optional[dict[str, AttributeValue]] = None
+    webrtc_topology: Optional[dict[str, YamlNodeValue]] = None
 
 
 class DeviceMeshYamlConfig(BaseModel):
@@ -254,7 +258,7 @@ def load_consolidated_topology(yaml_path: Optional[str] = None) -> DistributedTo
         with open(pipe_path, encoding="utf-8") as f:
             pipe_raw = yaml.safe_load(f) or {}
         pipe_cfg = PipelineTopologiesConfig.model_validate(pipe_raw)
-        consolidated_dict["pipeline_topologies"] = pipe_cfg.root
+        consolidated_dict["pipeline_topologies"] = cast("AttributeValue", pipe_cfg.root)
 
     webrtc_path = os.path.join(base_dir, "webrtc_topology.yaml")
     if os.path.exists(webrtc_path):

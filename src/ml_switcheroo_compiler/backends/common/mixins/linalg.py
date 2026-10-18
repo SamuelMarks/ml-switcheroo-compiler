@@ -14,7 +14,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
     """LinearAlgebra AST visitor."""
 
     def visit_CholeskyVjp(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_CholeskyVjp operation.
+        """Emit target backend code or IR transformation for the CholeskyVjp operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -32,7 +32,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"_cholesky_vjp_eager({backend_name}, {input_vars[0]}, {input_vars[1]})"
 
     def visit_LuVjp(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_LuVjp operation.
+        """Emit target backend code or IR transformation for the LuVjp operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -50,7 +50,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"_lu_vjp_eager({backend_name}, {input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {input_vars[3]})"
 
     def visit_BandPart(self, node: IRNode, input_vars: list[str], **kwargs: int) -> str:
-        """Evaluate visit_BandPart operation.
+        """Emit target backend code or IR transformation for the BandPart operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -66,7 +66,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{pfx}_band_part({input_vars[0]}, {num_lower}, {num_upper})"
 
     def visit_BandedTriangularSolve(self, node: IRNode, input_vars: list[str], **kwargs: bool) -> str:
-        """Evaluate visit_BandedTriangularSolve operation.
+        """Emit target backend code or IR transformation for the BandedTriangularSolve operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -82,7 +82,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{pfx}_banded_triangular_solve({input_vars[0]}, {input_vars[1]}, lower={lower}, adjoint={adjoint})"
 
     def visit_GatherMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_GatherMm operation.
+        """Emit target backend code or IR transformation for the GatherMm operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -100,7 +100,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{self.generator.get_fallback_prefix()}.gather_mm({args_str})"
 
     def visit_SegmentedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_SegmentedMm operation.
+        """Emit target backend code or IR transformation for the SegmentedMm operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -113,7 +113,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(cast(int, node.attributes.get('segments', 2)))]})"
 
     def visit_BlockMaskedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_BlockMaskedMm operation.
+        """Emit target backend code or IR transformation for the BlockMaskedMm operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -129,7 +129,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return out
 
     def visit_Quantize(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_Quantize operation.
+        """Emit target backend code or IR transformation for the Quantize operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -149,7 +149,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{input_vars[0]}"
 
     def visit_QuantizedMatmul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_QuantizedMatmul operation.
+        """Emit target backend code or IR transformation for the QuantizedMatmul operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -173,7 +173,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{pfx}.matmul({x}, {w}.T if {transpose} else {w})"
 
     def visit_GatherQMM(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_GatherQMM operation.
+        """Emit target backend code or IR transformation for the GatherQMM operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -198,7 +198,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{pfx}.matmul({x}, {w}[{indices}].T if {transpose} else {w}[{indices}])"
 
     def visit_QrVjp(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_QrVjp operation.
+        """Emit target backend code or IR transformation for the QrVjp operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -215,7 +215,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"_qr_vjp_eager({pfx}, {input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
     def visit_SvdVjp(self, node: IRNode, input_vars: list[str], **kwargs: bool) -> str:
-        """Evaluate visit_SvdVjp operation.
+        """Emit target backend code or IR transformation for the SvdVjp operation.
 
         Args:
             node (IRNode): The node parameter.

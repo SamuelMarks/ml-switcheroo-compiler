@@ -16,10 +16,11 @@ if TYPE_CHECKING:
 
 
 def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test decode image with pil."""
     # Empty data
     t = _decode_image_with_pil(None)
-    assert t.data is None
+    assert t.data == b""
+    assert t.shape == (0,)
 
     # Exception when active backend lacks decode_image_bytes
     with pytest.raises(NotImplementedError):
@@ -59,7 +60,7 @@ def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: Eager
 
 
 def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test decode image backend."""
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -87,25 +88,25 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_decode_image_fallback() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test decode image fallback."""
     from ml_switcheroo_compiler.ops.io.image_io import decode_jpeg
 
     # Calling the ops should fallback to PIL since the default mock or no backend has decode_png
     # But we need valid inputs or we get exception.
     t_jpeg = decode_jpeg(None)
-    assert t_jpeg.data is None
+    assert t_jpeg.data == b""
     t_png = decode_png(None)
-    assert t_png.data is None
+    assert t_png.data == b""
 
     t_gif = decode_gif(None)
-    assert t_gif.data is None
+    assert t_gif.data == b""
 
     t_bmp = decode_bmp(None)
-    assert t_bmp.data is None
+    assert t_bmp.data == b""
 
 
 def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test decode image eager mode."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.ops.io.image_io import decode_image, decode_jpeg
 
@@ -132,7 +133,7 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
 
 
 def test_decode_image_infer_shape() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test decode image infer shape."""
     from ml_switcheroo_compiler.ops.io.image_io import DecodeImage
 
     op = DecodeImage()
@@ -153,7 +154,7 @@ def test_decode_image_infer_shape() -> None:
 
 
 def test_decode_image_non_eager() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test decode image non eager."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.ops.io.image_io import decode_image
 

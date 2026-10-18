@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary import (
     _clamp,
@@ -39,14 +40,10 @@ def test_constant_of_shape() -> None:
 
 
 def test_reduce_window() -> None:
-    # Need to test reduce_window from math_extras which just wraps _reduce_window
     """Test function test_reduce_window."""
-    pass  # we'll skip or use dummy call if needed. Actually let's do a basic one.
-    # reduce_window is registered in reductions.py, which is not what we're testing directly. Let's provide a dummy test to hit the lines.
-    try:
+    pass
+    with pytest.raises(TypeError):
         _np_reduce_window(np, np.ones((2, 2)))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_test_eager_op() -> None:
@@ -65,12 +62,8 @@ def test_rand() -> None:
     """Test function test_rand."""
     res = _np_rand(np, 2, 2)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-
-    # string dtype
     res2 = _np_rand(np, 2, 2, dtype="float64")
     assert cast("EagerTensorProtocol", getattr(res2, "dtype")) == np.float64
-
-    # "bfloat16" pseudo-dtype
     res3 = _np_rand(np, 2, 2, dtype="bfloat16")
     assert cast("EagerTensorProtocol", getattr(res3, "dtype")) == np.float32
 
@@ -141,10 +134,8 @@ def test_dtype_op() -> None:
     """Test function test_dtype_op."""
     res1 = _np_dtype_op(np, "float32")
     assert isinstance(res1, DType)
-
     res2 = _np_dtype_op(np, np.array([1.0, 2.0]))
     assert isinstance(res2, DType)
-
     res3 = _np_dtype_op(np, [1, 2])
     assert isinstance(res3, DType)
 
@@ -184,12 +175,7 @@ def test_np_rand_dt_str() -> None:
 
     from ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary import _np_rand
 
-    try:
+    with pytest.raises(TypeError):
         res = _np_rand(np, 2, 2, dtype="fake_dtype")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        res = _np_rand(np, 2, 2, dtype="int4")
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    res = _np_rand(np, 2, 2, dtype="int4")
     assert res is not None

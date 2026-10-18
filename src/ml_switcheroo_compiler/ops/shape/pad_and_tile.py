@@ -6,10 +6,10 @@ from collections.abc import Sequence
 from typing import Callable, Optional, Union, cast
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import broadcast_shapes
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.shape_system import SymNode
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.ops.shape.reshape import Resize
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def tile(input: Tensor, reps: Sequence[int]) -> EagerValue:
+def tile(input: Tensor, reps: Sequence[int]) -> TensorOrScalar:
     """Construct a new tensor by repeating the input tensor the specified number of times.
 
     Args:
@@ -52,12 +52,12 @@ def repeat(
     input: Tensor,
     repeats: int | Sequence[int],
     axis: int | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Repeat elements of the input tensor along a specified dimension.
 
     Args:
         input (Tensor): The input parameter.
-        repeats (Any): The repeats parameter.
+        repeats (int | Sequence[int]): The repeats parameter.
         axis (int | None): The axis parameter.
 
     Returns:
@@ -97,7 +97,7 @@ def repeat(
     )
 
 
-def triu(input: Tensor, diagonal: int = 0) -> EagerValue:
+def triu(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
     """Return the upper triangular part of a matrix or batch of matrices.
 
     Args:
@@ -122,7 +122,7 @@ def triu(input: Tensor, diagonal: int = 0) -> EagerValue:
     )
 
 
-def tril(input: Tensor, diagonal: int = 0) -> EagerValue:
+def tril(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
     """Return the lower triangular part of a matrix or batch of matrices.
 
     Args:
@@ -151,7 +151,7 @@ def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, .
     """Compute the shape for a meshgrid.
 
     Args:
-        inputs (Any): The inputs parameter.
+        inputs (list[Tensor]): The inputs parameter.
         indexing (str): The indexing parameter.
 
     Returns:
@@ -187,11 +187,11 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
 
 
-def _normalize_pad_width(pad_width: EagerValue, ndim: int) -> EagerValue:
+def _normalize_pad_width(pad_width: TensorOrScalar, ndim: int) -> TensorOrScalar:
     """Normalize pad width representation.
 
     Args:
-        pad_width (Any): Pad width descriptor.
+        pad_width (TensorOrScalar): Pad width descriptor.
         ndim (int): Number of dimensions.
 
     Returns:
@@ -204,12 +204,12 @@ def _normalize_pad_width(pad_width: EagerValue, ndim: int) -> EagerValue:
     return tuple(pad_width) if isinstance(pad_width, (list, tuple)) else ()
 
 
-def _compute_pad_dim(dim: int, pw: EagerValue) -> int:
-    """Evaluate _compute_pad_dim operation.
+def _compute_pad_dim(dim: int, pw: TensorOrScalar) -> int:
+    """Compute the compute pad dim tensor operation.
 
     Args:
         dim (int): The dim parameter.
-        pw (Any): The pw parameter.
+        pw (TensorOrScalar): The pw parameter.
 
     Returns:
         int: Result.
@@ -227,14 +227,14 @@ class Pad(OpDef):
 
     op_name = "Pad"
 
-    def infer_shape(self, array: EagerTensorProtocol, pad_width: EagerTensorProtocol, mode: str = "constant", **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, array: EagerTensorProtocol, pad_width: EagerTensorProtocol, mode: str = "constant", **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            array (Any): The array parameter.
-            pad_width (Any): The pad_width parameter.
+            array (EagerTensorProtocol): The array parameter.
+            pad_width (EagerTensorProtocol): The pad_width parameter.
             mode (str): The mode parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result.
@@ -254,18 +254,18 @@ class Pad(OpDef):
 
 @dispatch_eager("Pad")
 def pad(
-    array: EagerValue,
-    pad_width: EagerValue,
+    array: TensorOrScalar,
+    pad_width: TensorOrScalar,
     mode: str = "constant",
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Pad an array with specified widths and values.
 
     Args:
-        array (Any): The array parameter.
-        pad_width (Any): The pad_width parameter.
+        array (TensorOrScalar): The array parameter.
+        pad_width (TensorOrScalar): The pad_width parameter.
         mode (str): The mode parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -278,7 +278,7 @@ def pad(
 
 
 @dispatch_eager("TopK")
-def top_k(operand: Tensor, k: int) -> EagerValue:
+def top_k(operand: Tensor, k: int) -> TensorOrScalar:
     """Return the top k values and their indices along the last dimension.
 
     Args:
@@ -304,7 +304,7 @@ def argsort(
     operand: Tensor,
     axis: int = -1,
     is_stable: bool = True,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return the indices that would sort an array along a given dimension.
 
     Args:
@@ -329,7 +329,7 @@ def sort(
     operand: Tensor,
     axis: int = -1,
     is_stable: bool = True,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Sorts the elements of an array along a given dimension.
 
     Args:
@@ -354,7 +354,7 @@ def sort(
 
 
 @dispatch_eager("Resize")
-def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> EagerValue:
+def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> TensorOrScalar:
     """Resizes an image to the given target shape using interpolation.
 
     Args:
@@ -380,12 +380,12 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
 class DynamicShape(OpDef):
     """DynamicShape op."""
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            x (Any): The x parameter.
-            **kwargs (Any): Keyword args.
+            x (EagerTensorProtocol): The x parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result.
@@ -399,12 +399,12 @@ class Rank(OpDef):
 
     op_name = "Rank"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -419,13 +419,13 @@ class Size(OpDef):
 
     op_name = "Size"
 
-    def infer_shape(self, a: EagerTensorProtocol, axis: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, axis: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            a (Any): The a parameter.
-            axis (Any): The axis parameter.
-            **kwargs (Any): Keyword args.
+            a (EagerTensorProtocol): The a parameter.
+            axis (TensorOrScalar): The axis parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -433,7 +433,7 @@ class Size(OpDef):
         return ()
 
 
-def pad_constant(array: EagerValue, pad_width: EagerValue, value: float = 0.0, **kwargs: EagerValue) -> EagerValue:
+def pad_constant(array: TensorOrScalar, pad_width: TensorOrScalar, value: float = 0.0, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Pad an array with a constant value.
 
     Args:
@@ -448,7 +448,7 @@ def pad_constant(array: EagerValue, pad_width: EagerValue, value: float = 0.0, *
     return pad(array, pad_width, mode="constant", constant_values=value, **kwargs)
 
 
-def pad_reflect(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def pad_reflect(array: TensorOrScalar, pad_width: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Pad an array with reflection.
 
     Args:
@@ -462,7 +462,7 @@ def pad_reflect(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue) 
     return pad(array, pad_width, mode="reflect", **kwargs)
 
 
-def pad_replicate(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def pad_replicate(array: TensorOrScalar, pad_width: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Pad an array with edge replication.
 
     Args:
@@ -476,7 +476,7 @@ def pad_replicate(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue
     return pad(array, pad_width, mode="edge", **kwargs)
 
 
-def pad_circular(array: EagerValue, pad_width: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def pad_circular(array: TensorOrScalar, pad_width: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Pad an array with circular wrapping.
 
     Args:
@@ -496,12 +496,12 @@ class Flatnonzero(OpDef):
 
     op_name = "Flatnonzero"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple: 1D index shape with symbolic nonzero count.
@@ -517,12 +517,12 @@ class Lexsort(OpDef):
 
     op_name = "Lexsort"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -542,12 +542,12 @@ class Nonzero(OpDef):
 
     op_name = "Nonzero"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple: Tuple of 1D coordinate arrays with symbolic nonzero count.
@@ -559,13 +559,13 @@ class Nonzero(OpDef):
         return tuple((SymVar("nonzero_count"),) for _ in in_shape)
 
 
-def _infer_shape_percentile_quantile(a: EagerValue, q: EagerValue, axis: EagerValue = None, keepdims: bool = False) -> tuple[int, ...]:
+def _infer_shape_percentile_quantile(a: TensorOrScalar, q: TensorOrScalar, axis: TensorOrScalar = None, keepdims: bool = False) -> tuple[int, ...]:
     """Infer shape for percentile and quantile ops.
 
     Args:
-        a (Any): The a parameter.
-        q (Any): The q parameter.
-        axis (Any): The axis parameter.
+        a (TensorOrScalar): The a parameter.
+        q (TensorOrScalar): The q parameter.
+        axis (TensorOrScalar): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -597,12 +597,12 @@ class Percentile(OpDef):
 
     op_name = "Percentile"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -620,12 +620,12 @@ class Quantile(OpDef):
 
     op_name = "Quantile"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -643,12 +643,12 @@ class RavelMultiIndex(OpDef):
 
     op_name = "RavelMultiIndex"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -670,7 +670,7 @@ def _repeat_infer_no_axis(
 
     Args:
         in_shape (tuple): The input shape.
-        repeats (Any): The repetitions.
+        repeats (int | list[int] | tuple[int, ...] | None): The repetitions.
 
     Returns:
         tuple: The inferred shape.
@@ -696,12 +696,12 @@ class Repeat(OpDef):
 
     op_name = "Repeat"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -711,7 +711,7 @@ class Repeat(OpDef):
         axis = kwargs.get("axis", None)
         in_shape = getattr(a, "shape", ())
         if axis is None:
-            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _repeat_infer_no_axis)(in_shape, repeats))
+            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _repeat_infer_no_axis)(in_shape, repeats))
         out_shape = list(in_shape)
         if isinstance(repeats, int):
             out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None
@@ -728,12 +728,12 @@ class Searchsorted(OpDef):
 
     op_name = "Searchsorted"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args (sorted_sequence, values).
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args (sorted_sequence, values).
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Resulting shape matching values broadcasted with sequence.
@@ -757,12 +757,12 @@ class SortComplex(OpDef):
 
     op_name = "SortComplex"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape strictly preserving input tensor shape.
 
         Args:
-            *args (Any): Positional args (input array).
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args (input array).
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Resulting shape identical to input shape.
@@ -777,7 +777,7 @@ def _compute_tile_shape(
     in_shape: tuple[int | None, ...],
     reps: tuple[int | None, ...],
 ) -> tuple[int | None, ...]:
-    """Evaluate _compute_tile_shape operation.
+    """Compute the compute tile shape tensor operation.
 
     Args:
         in_shape (tuple): The in_shape parameter.
@@ -801,12 +801,12 @@ class Tile(OpDef):
 
     op_name = "Tile"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -820,10 +820,10 @@ class Tile(OpDef):
             reps = (reps,)
         else:
             reps = cast(EagerTensorProtocol, tuple(reps))
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _compute_tile_shape)(in_shape, reps))
+        return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _compute_tile_shape)(in_shape, reps))
 
 
-def _get_unique_inverse_shape(axis: int | None, in_shape: EagerValue) -> EagerValue:
+def _get_unique_inverse_shape(axis: int | None, in_shape: TensorOrScalar) -> TensorOrScalar:
     """Get the inverse shape for the unique operation.
 
     Args:
@@ -850,12 +850,12 @@ class Unique(OpDef):
 
     op_name = "Unique"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -886,12 +886,12 @@ class Unique(OpDef):
         return tuple(ret)
 
 
-def percentile(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate percentile operation.
+def percentile(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the percentile tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -901,12 +901,12 @@ def percentile(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Percentile", *args, **kwargs)
 
 
-def quantile(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate quantile operation.
+def quantile(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the quantile tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -916,12 +916,12 @@ def quantile(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Quantile", *args, **kwargs)
 
 
-def flatnonzero(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def flatnonzero(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return indices that are non-zero in the flattened version of a.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -931,12 +931,12 @@ def flatnonzero(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Flatnonzero", *args, **kwargs)
 
 
-def nonzero(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def nonzero(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the indices of the elements that are non-zero.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -946,12 +946,12 @@ def nonzero(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Nonzero", *args, **kwargs)
 
 
-def ravel_multi_index(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def ravel_multi_index(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Convert a tuple of index arrays into an array of flat indices.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -961,12 +961,12 @@ def ravel_multi_index(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("RavelMultiIndex", *args, **kwargs)
 
 
-def lexsort(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def lexsort(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Perform an indirect stable sort using a sequence of keys.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -976,12 +976,12 @@ def lexsort(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Lexsort", *args, **kwargs)
 
 
-def searchsorted(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def searchsorted(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Find indices where elements should be inserted to maintain order.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -991,12 +991,12 @@ def searchsorted(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Searchsorted", *args, **kwargs)
 
 
-def sort_complex(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def sort_complex(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Sort a complex array using the real part first, then the imaginary part.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -1006,12 +1006,12 @@ def sort_complex(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("SortComplex", *args, **kwargs)
 
 
-def unique(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def unique(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Find the unique elements of an array.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

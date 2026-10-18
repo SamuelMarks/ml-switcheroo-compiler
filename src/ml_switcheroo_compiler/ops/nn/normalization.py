@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Optional, Union, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import (
@@ -57,7 +57,7 @@ def local_response_normalization(
     bias: float = 1.0,
     alpha: float = 1.0,
     beta: float = 0.5,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Local Response Normalization.
 
     Args:
@@ -88,7 +88,7 @@ def batch_normalization(
     variance: Tensor,
     axis: Union[int, Sequence[int]],
     config: Optional[BatchNormConfig] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Batch normalization.
 
     Args:
@@ -122,7 +122,7 @@ def rms_normalization(
     x: Tensor,
     scale: Tensor,
     epsilon: float = 1e-3,
-) -> EagerValue:
+) -> TensorOrScalar:
     """RMS normalization.
 
     Args:
@@ -153,22 +153,22 @@ class BatchNormGlobalConfig:
 
 
 def batch_norm_with_global_normalization(
-    t: EagerValue,
-    m: EagerValue,
-    v: EagerValue,
-    beta: EagerValue,
-    gamma: EagerValue,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    t: TensorOrScalar,
+    m: TensorOrScalar,
+    v: TensorOrScalar,
+    beta: TensorOrScalar,
+    gamma: TensorOrScalar,
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Batch normalization with global normalization.
 
     Args:
-        t (Any): The t parameter.
-        m (Any): The m parameter.
-        v (Any): The v parameter.
-        beta (Any): The beta parameter.
-        gamma (Any): The gamma parameter.
-        **kwargs (Any): Keyword args.
+        t (TensorOrScalar): The t parameter.
+        m (TensorOrScalar): The m parameter.
+        v (TensorOrScalar): The v parameter.
+        beta (TensorOrScalar): The beta parameter.
+        gamma (TensorOrScalar): The gamma parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -188,18 +188,18 @@ def batch_norm_with_global_normalization(
     )
 
 
-def lrn(input: EagerValue, config: EagerValue = None, name: EagerValue = None) -> EagerValue:
-    """Evaluate lrn operation.
+def lrn(input: TensorOrScalar, config: TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Compute the lrn tensor operation.
 
     Args:
-        input (Any): The input parameter.
+        input (TensorOrScalar): The input parameter.
         config (LRNConfig): The config parameter.
-        name (Any): The name parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    config = cast(EagerValue, config or LRNConfig())
+    config = cast(TensorOrScalar, config or LRNConfig())
     depth_radius = getattr(config, "depth_radius")
     bias = getattr(config, "bias")
     alpha = getattr(config, "alpha")
@@ -217,11 +217,11 @@ def l2_normalize(
     """Normalize along dimension axis using an L2 norm.
 
     Args:
-        x (Any): The x parameter.
-        axis (Any): The axis parameter.
-        epsilon (Any): The epsilon parameter.
-        name (Any): The name parameter.
-        axis (Any): The axis parameter.
+        x (Tensor): The x parameter.
+        axis (int | Sequence[int] | None): The axis parameter.
+        epsilon (float): The epsilon parameter.
+        name (str | None): The name parameter.
+        axis (int | Sequence[int] | None): The axis parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -231,15 +231,15 @@ def l2_normalize(
     return multiply(x, x_inv_norm)
 
 
-def moments(x: EagerValue, axes: EagerValue, shift: EagerValue = None, keepdims: EagerValue = False, name: EagerValue = None) -> EagerValue:
+def moments(x: TensorOrScalar, axes: TensorOrScalar, shift: TensorOrScalar = None, keepdims: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
     """Calculate the mean and variance of x.
 
     Args:
-        x (Any): The x parameter.
-        axes (Any): The axes parameter.
-        shift (Any): The shift parameter.
-        keepdims (Any): The keepdims parameter.
-        name (Any): The name parameter.
+        x (TensorOrScalar): The x parameter.
+        axes (TensorOrScalar): The axes parameter.
+        shift (TensorOrScalar): The shift parameter.
+        keepdims (TensorOrScalar): The keepdims parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -247,15 +247,15 @@ def moments(x: EagerValue, axes: EagerValue, shift: EagerValue = None, keepdims:
     return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
 
-def normalize_moments(counts: EagerValue, mean_ss: EagerValue, variance_ss: EagerValue, shift: EagerValue, name: EagerValue = None) -> EagerValue:
+def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_ss: TensorOrScalar, shift: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Calculate the mean and variance of based on the sufficient statistics.
 
     Args:
-        counts (Any): The counts parameter.
-        mean_ss (Any): The mean_ss parameter.
-        variance_ss (Any): The variance_ss parameter.
-        shift (Any): The shift parameter.
-        name (Any): The name parameter.
+        counts (TensorOrScalar): The counts parameter.
+        mean_ss (TensorOrScalar): The mean_ss parameter.
+        variance_ss (TensorOrScalar): The variance_ss parameter.
+        shift (TensorOrScalar): The shift parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -267,8 +267,9 @@ def normalize_moments(counts: EagerValue, mean_ss: EagerValue, variance_ss: Eage
 
         return get_active_backend().execute_op("NormalizeMoments", counts, mean_ss, variance_ss, shift, name=name)
     import uuid
+    from collections.abc import Mapping
 
-    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_ir import AttributeValue, LogicalNode
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -281,7 +282,7 @@ def normalize_moments(counts: EagerValue, mean_ss: EagerValue, variance_ss: Eage
         id=out_id_mean,
         op_type="NormalizeMoments",
         inputs=[str(getattr(counts, "id", counts)), str(getattr(mean_ss, "id", mean_ss)), str(getattr(variance_ss, "id", variance_ss)), str(getattr(shift, "id", shift))],
-        attributes={"name": name, "secondary_id": out_id_variance},
+        attributes=cast("Mapping[str, AttributeValue]", {"name": name, "secondary_id": out_id_variance}),
         shape_metadata=getattr(counts, "shape", ()),
     )
     global_tracing_state.add_node(node)
@@ -295,18 +296,18 @@ def normalize_moments(counts: EagerValue, mean_ss: EagerValue, variance_ss: Eage
     )
 
 
-def sufficient_statistics(x: EagerValue, axes: EagerValue, shift: EagerValue = None, keepdims: EagerValue = False, name: EagerValue = None) -> EagerValue:
+def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: TensorOrScalar = None, keepdims: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
     """Calculate the sufficient statistics for the mean and variance of x.
 
     Args:
-        x (Any): The x parameter.
-        axes (Any): The axes parameter.
-        shift (Any): The shift parameter.
-        keepdims (Any): The keepdims parameter.
-        name (Any): The name parameter.
+        x (TensorOrScalar): The x parameter.
+        axes (TensorOrScalar): The axes parameter.
+        shift (TensorOrScalar): The shift parameter.
+        keepdims (TensorOrScalar): The keepdims parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Sufficient statistics tuple.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -315,8 +316,9 @@ def sufficient_statistics(x: EagerValue, axes: EagerValue, shift: EagerValue = N
 
         return get_active_backend().execute_op("SufficientStatistics", x, axes, shift=shift, keepdims=keepdims, name=name)
     import uuid
+    from collections.abc import Mapping
 
-    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_ir import AttributeValue, LogicalNode
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -331,7 +333,10 @@ def sufficient_statistics(x: EagerValue, axes: EagerValue, shift: EagerValue = N
         id=out_id_counts,
         op_type="SufficientStatistics",
         inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes))],
-        attributes={"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]},
+        attributes=cast(
+            "Mapping[str, AttributeValue]",
+            {"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]},
+        ),
         shape_metadata=getattr(x, "shape", ()),
     )
     global_tracing_state.add_node(node)
@@ -346,23 +351,23 @@ def sufficient_statistics(x: EagerValue, axes: EagerValue, shift: EagerValue = N
 
 
 def weighted_moments(
-    x: EagerValue,
-    axes: EagerValue,
-    frequency_weights: EagerValue,
-    name: EagerValue = None,
-    keepdims: EagerValue = False,
-) -> EagerValue:
+    x: TensorOrScalar,
+    axes: TensorOrScalar,
+    frequency_weights: TensorOrScalar,
+    name: TensorOrScalar = None,
+    keepdims: TensorOrScalar = False,
+) -> TensorOrScalar:
     """Return the frequency-weighted mean and variance of x.
 
     Args:
-        x (Any): The x parameter.
-        axes (Any): The axes parameter.
-        frequency_weights (Any): The frequency_weights parameter.
-        name (Any): The name parameter.
-        keepdims (Any): The keepdims parameter.
+        x (TensorOrScalar): The x parameter.
+        axes (TensorOrScalar): The axes parameter.
+        frequency_weights (TensorOrScalar): The frequency_weights parameter.
+        name (TensorOrScalar): The name parameter.
+        keepdims (TensorOrScalar): The keepdims parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Weighted `(mean, variance)` tuple.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -371,8 +376,9 @@ def weighted_moments(
 
         return get_active_backend().execute_op("WeightedMoments", x, axes, frequency_weights, name=name, keepdims=keepdims)
     import uuid
+    from collections.abc import Mapping
 
-    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_ir import AttributeValue, LogicalNode
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -385,7 +391,7 @@ def weighted_moments(
         id=out_id_mean,
         op_type="WeightedMoments",
         inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes)), str(getattr(frequency_weights, "id", frequency_weights))],
-        attributes={"name": name, "keepdims": keepdims, "secondary_id": out_id_variance},
+        attributes=cast("Mapping[str, AttributeValue]", {"name": name, "keepdims": keepdims, "secondary_id": out_id_variance}),
         shape_metadata=getattr(x, "shape", ()),
     )
     global_tracing_state.add_node(node)
@@ -399,12 +405,12 @@ def weighted_moments(
     )
 
 
-def zero_fraction(value: EagerValue, name: EagerValue = None) -> EagerValue:
+def zero_fraction(value: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Return the fraction of zeros in value.
 
     Args:
-        value (Any): The value parameter.
-        name (Any): The name parameter.
+        value (TensorOrScalar): The value parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -418,7 +424,7 @@ def layer_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Layer normalization.
 
     Args:
@@ -456,7 +462,7 @@ def group_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Group normalization.
 
     Args:
@@ -500,7 +506,7 @@ def instance_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Instance normalization.
 
     Args:

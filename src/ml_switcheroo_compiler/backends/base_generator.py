@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from types import ModuleType
 from typing import TYPE_CHECKING, Protocol, Union, cast  # noqa: F401
@@ -63,7 +63,7 @@ class CompiledArtifact:
             **kwargs: Keyword arguments to pass to the compiled callable.
 
         Returns:
-            Any: Computation output or tuple of outputs.
+            EagerValue: Computation output or tuple of outputs.
 
         Raises:
             RuntimeError: If no executable callable_fn is bound to this artifact.
@@ -85,13 +85,13 @@ class CompiledArtifact:
             item (str): Key name to retrieve.
 
         Returns:
-            Any: Value from metadata dictionary or artifact attributes.
+            EagerValue: Value from metadata dictionary or artifact attributes.
 
         Raises:
             KeyError: If key is not found in metadata or attributes.
         """
         if self.metadata is not None and item in self.metadata:
-            return cast(EagerValue, self.metadata[item])
+            return self.metadata[item]
         if hasattr(self, item):
             return cast(EagerValue, getattr(self, item))
         raise KeyError(item)
@@ -277,7 +277,7 @@ class class_or_instance_method:
         """Initialize descriptor with wrapped function.
 
         Args:
-            fn (object): The callable method to wrap.
+            fn (EagerValue): The callable method to wrap.
         """
         self.fn = fn
 
@@ -285,7 +285,7 @@ class class_or_instance_method:
         """Bind method to instance if present, else to class.
 
         Args:
-            obj (object): Target instance or None.
+            obj (BaseGenerator | EagerValue): Target instance or None.
             cls (type | None): Owning class.
 
         Returns:
@@ -306,17 +306,21 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
     load: Callable[..., EagerValue]
     numpy: Callable[..., EagerValue]
 
-    def __init__(self, graph: IRGraph, delegates: EagerValue = None) -> None:
+    def __init__(
+        self,
+        graph: IRGraph,
+        delegates: Sequence[VisitorProtocol] | Sequence[CodeGeneratorVisitor] | EagerValue = None,
+    ) -> None:
         """Initialize the object.
 
         Args:
             graph (IRGraph): The graph to process.
-            delegates: The visitor delegates.
+            delegates (Sequence[VisitorProtocol] | Sequence[CodeGeneratorVisitor] | EagerValue): The visitor delegates.
         """
         self.graph = graph
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
-        self.visitors: list[VisitorProtocol] = [self] + (list(delegates) if isinstance(delegates, (list, tuple)) else [])
+        self.visitors: list[VisitorProtocol] = [self] + (list(cast("Sequence[VisitorProtocol]", delegates)) if isinstance(delegates, (list, tuple)) else [])
 
     def get_language(self) -> str:
         """Get the target programming language for code emission.
@@ -432,7 +436,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Args:
             node (IRNode): Target IRNode.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional node attributes and context.
+            **kwargs (EagerValue): Additional node attributes and context.
 
         Returns:
             str: Generated code line or expression.
@@ -462,7 +466,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Args:
             node (IRNode): The node parameter for the operation.
             input_vars (list[str]): The input_vars parameter for the operation.
-            **kwargs (object): Additional keyword arguments.
+            **kwargs (EagerValue): Additional keyword arguments.
 
         Returns:
             str: The computed result.
@@ -532,10 +536,10 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         Args:
             graph (IRGraph | None): Target computation graph to compile.
-            **kwargs (object): Compiler options, optimization levels, or destination paths.
+            **kwargs (EagerValue): Compiler options, optimization levels, or destination paths.
 
         Returns:
-            object: Compiled binary artifact, path, or callable execution wrapper.
+            EagerValue: Compiled binary artifact, path, or callable execution wrapper.
 
         Raises:
             NotImplementedError: If AOT compilation is not implemented for this backend.
@@ -564,10 +568,10 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         Args:
             graph (IRGraph): The computation graph to compile.
-            **kwargs (object): Backend-specific compiler arguments.
+            **kwargs (EagerValue): Backend-specific compiler arguments.
 
         Returns:
-            object: Resulting compiled artifact or callable.
+            EagerValue: Resulting compiled artifact or callable.
         """
         msg = f"AOT compilation is not implemented for {self.__class__.__name__}"
         raise NotImplementedError(msg)
@@ -668,8 +672,8 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """Initialize distributed execution context for multi-device operations.
 
         Args:
-            *args (object): Distributed initialization parameters.
-            **kwargs (object): Additional distributed execution options.
+            *args (EagerValue): Distributed initialization parameters.
+            **kwargs (EagerValue): Additional distributed execution options.
         """
         del args, kwargs
 
@@ -678,8 +682,8 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """Export a computational graph or trace for unified persistence.
 
         Args:
-            *args (object): Export arguments.
-            **kwargs (object): Export configuration parameters.
+            *args (EagerValue): Export arguments.
+            **kwargs (EagerValue): Export configuration parameters.
         """
         del args, kwargs
 
@@ -780,4 +784,4 @@ class ClassBasedGenerator(BaseGenerator):
         return "\n".join(self.code)
 
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.registry import EagerValue
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
@@ -19,12 +19,12 @@ if TYPE_CHECKING:
 class Det(OpDef):
     """Det Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer determinant output scalar/batch shape (...).
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Reduced batch shape (...).
@@ -40,12 +40,12 @@ class Det(OpDef):
 class Slogdet(OpDef):
     """Slogdet Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer sign and log determinant output shapes.
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (sign_shape (...), logdet_shape (...)).
@@ -58,7 +58,7 @@ class Slogdet(OpDef):
         return (batch_shape, batch_shape)
 
 
-def det(input: Tensor) -> EagerValue:
+def det(input: Tensor) -> TensorOrScalar:
     """Compute the determinant of a square matrix.
 
     Args:
@@ -80,7 +80,7 @@ def det(input: Tensor) -> EagerValue:
     return _emit_linalg_node("Det", [input], {}, [()], [getattr(input, "dtype", None)])
 
 
-def slogdet(input: Tensor) -> EagerValue:
+def slogdet(input: Tensor) -> TensorOrScalar:
     """Compute the sign and natural logarithm of the determinant of a square matrix.
 
     Args:
@@ -93,7 +93,7 @@ def slogdet(input: Tensor) -> EagerValue:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sign, logdet = cast("tuple[EagerValue, EagerValue]", backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input)))
+        sign, logdet = cast("tuple[TensorOrScalar, TensorOrScalar]", backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input)))
         sign_arr = cast("TensorLike", backend.array(sign))
         logdet_arr = cast("TensorLike", backend.array(logdet))
         return (

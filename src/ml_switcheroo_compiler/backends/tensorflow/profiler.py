@@ -182,7 +182,7 @@ class TensorFlowProfiler:
             """Execute a single step on TensorFlow.
 
             Returns:
-                object: Output tensor or accumulation.
+                EagerValue: Output tensor or accumulation.
             """
             if has_ops and compiled_fn is not None:
                 if dev_ctx:

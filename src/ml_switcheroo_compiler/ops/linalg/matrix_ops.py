@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import Callable, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.products import Adjoint, MatrixRank, MatrixTranspose, Trace
@@ -15,7 +16,7 @@ from ml_switcheroo_compiler.ops.registry import get_op
 from .utils import _emit_linalg_node
 
 
-def band_part(input: Tensor, num_lower: int, num_upper: int) -> EagerValue:
+def band_part(input: Tensor, num_lower: int, num_upper: int) -> TensorOrScalar:
     """Copy a tensor setting everything outside a central band in each innermost matrix to zero.
 
     Args:
@@ -39,7 +40,7 @@ def band_part(input: Tensor, num_lower: int, num_upper: int) -> EagerValue:
     )
 
 
-def diag(input: Tensor, k: int = 0) -> EagerValue:
+def diag(input: Tensor, k: int = 0) -> TensorOrScalar:
     """Extract a diagonal or constructs a diagonal array.
 
     Args:
@@ -67,7 +68,7 @@ def cross(
     a: Tensor,
     b: Tensor,
     axes: dict[str, int | None] | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the vector cross product of two arrays.
 
     Args:
@@ -85,7 +86,7 @@ def cross(
         return Tensor(data, TensorConfig(getattr(data, "shape"), a.dtype, a.device))
     out_shape = a.shape
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)(
             "Cross",
             [a, b],
@@ -96,7 +97,7 @@ def cross(
     )
 
 
-def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> EagerValue:
+def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> TensorOrScalar:
     """Return the sum along diagonals of the array.
 
     Args:
@@ -122,7 +123,7 @@ def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> EagerVa
     )
 
 
-def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) -> EagerValue:
+def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) -> TensorOrScalar:
     """Return matrix rank of array using SVD method.
 
     Args:
@@ -141,7 +142,7 @@ def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) 
     return _emit_linalg_node("MatrixRank", [M], {"tol": tol, "hermitian": hermitian}, [tuple(out_shape)], [M.dtype])
 
 
-def matrix_transpose(a: Tensor) -> EagerValue:
+def matrix_transpose(a: Tensor) -> TensorOrScalar:
     """Transpose last two dimensions of tensor.
 
     Args:
@@ -158,7 +159,7 @@ def matrix_transpose(a: Tensor) -> EagerValue:
     return _emit_linalg_node("MatrixTranspose", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
-def sqrtm(a: Tensor) -> EagerValue:
+def sqrtm(a: Tensor) -> TensorOrScalar:
     """Compute the matrix square root of a tensor.
 
     Args:
@@ -175,7 +176,7 @@ def sqrtm(a: Tensor) -> EagerValue:
     return _emit_linalg_node("Sqrtm", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
-def tensor_diag(input: Tensor, k: int = 0) -> EagerValue:
+def tensor_diag(input: Tensor, k: int = 0) -> TensorOrScalar:
     """Provide an alias for the diag operation.
 
     Args:
@@ -188,7 +189,7 @@ def tensor_diag(input: Tensor, k: int = 0) -> EagerValue:
     return diag(input, k)
 
 
-def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> EagerValue:
+def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> TensorOrScalar:
     """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
@@ -203,7 +204,7 @@ def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1)
     return diagonal(a, offset, axis1, axis2)
 
 
-def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> EagerValue:
+def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> TensorOrScalar:
     """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
@@ -218,7 +219,7 @@ def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Eag
     return diagonal(a, offset, axis1, axis2)
 
 
-def adjoint(matrix: Tensor) -> EagerValue:
+def adjoint(matrix: Tensor) -> TensorOrScalar:
     """Transpose the last two dimensions of and conjugates tensor matrix.
 
     Args:
@@ -238,8 +239,8 @@ def adjoint(matrix: Tensor) -> EagerValue:
 def eigh_tridiagonal(
     alpha: Tensor,
     beta: Tensor,
-    kwargs: EagerValue = None,
-) -> EagerValue:
+    kwargs: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Compute the eigenvalues of a Hermitian tridiagonal matrix.
 
     Args:
@@ -252,12 +253,12 @@ def eigh_tridiagonal(
     """
     if config.eager_mode:
         kw = kwargs or {"eigvals_only": True, "select": "a", "select_range": None, "tol": None}
-        data = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **cast("dict[str, EagerValue]", kw))
+        data = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **cast("dict[str, TensorOrScalar]", kw))
         return Tensor(data, TensorConfig(getattr(data, "shape"), alpha.dtype, alpha.device))
 
     out_shape = getattr(EighTridiagonal(), "infer_shape")(alpha, beta)
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)(
             "EighTridiagonal",
             [alpha, beta],
@@ -268,82 +269,82 @@ def eigh_tridiagonal(
     )
 
 
-def expm(input: EagerValue, name: EagerValue = None) -> EagerValue:
+def expm(input: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the matrix exponential of a given square matrix.
 
     Args:
-        input (Any): The input square matrix.
-        name (Any): Optional name for the operation.
+        input (TensorOrScalar): The input square matrix.
+        name (TensorOrScalar): Optional name for the operation.
 
     Returns: Tensor: The matrix exponential.
     """
     return get_op("MatrixExponential")()(input)
 
 
-def global_norm(t_list: EagerValue, name: EagerValue = None) -> EagerValue:
+def global_norm(t_list: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the global norm of multiple tensors.
 
     Args:
-        t_list (Any): A list of tensors.
-        name (Any): Optional name for the operation.
+        t_list (TensorOrScalar): A list of tensors.
+        name (TensorOrScalar): Optional name for the operation.
 
     Returns: Tensor: The global norm.
     """
     return getattr(t_list, "__getitem__")(0) if t_list else 0.0
 
 
-def logdet(matrix: EagerValue, name: EagerValue = None) -> EagerValue:
+def logdet(matrix: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the logarithm of the absolute value of the determinant.
 
     Args:
-        matrix (Any): The input matrix.
-        name (Any): Optional name for the operation.
+        matrix (TensorOrScalar): The input matrix.
+        name (TensorOrScalar): Optional name for the operation.
 
     Returns: Tensor: The log determinant.
     """
     return matrix
 
 
-def logm(input: EagerValue, name: EagerValue = None) -> EagerValue:
+def logm(input: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the matrix logarithm of a given square matrix.
 
     Args:
-        input (Any): The input square matrix.
-        name (Any): Optional name for the operation.
+        input (TensorOrScalar): The input square matrix.
+        name (TensorOrScalar): Optional name for the operation.
 
     Returns: Tensor: The matrix logarithm.
     """
     return input
 
 
-def normalize(tensor: EagerValue, ord: EagerValue = "euclidean", axis: EagerValue = None, name: EagerValue = None) -> EagerValue:
+def normalize(tensor: TensorOrScalar, ord: TensorOrScalar = "euclidean", axis: TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
     """Normalize the input tensor along a given axis.
 
     Args:
-        tensor (Any): The input tensor.
-        ord (Any): The order of the norm.
-        axis (Any): The axis along which to normalize.
-        name (Any): Optional name for the operation.
+        tensor (TensorOrScalar): The input tensor.
+        ord (TensorOrScalar): The order of the norm.
+        axis (TensorOrScalar): The axis along which to normalize.
+        name (TensorOrScalar): Optional name for the operation.
 
     Returns: Tensor: The normalized tensor.
     """
     return tensor, tensor
 
 
-def set_diag(input: EagerValue, diagonal: EagerValue, name: EagerValue = None) -> EagerValue:
+def set_diag(input: TensorOrScalar, diagonal: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Replace the diagonal elements of a tensor with new values.
 
     Args:
-        input (Any): The input tensor.
-        diagonal (Any): The new diagonal values.
-        name (Any): Optional name for the operation.
+        input (TensorOrScalar): The input tensor.
+        diagonal (TensorOrScalar): The new diagonal values.
+        name (TensorOrScalar): Optional name for the operation.
 
     Returns: Tensor: The tensor with updated diagonal.
     """
     return input
 
 
-def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> EagerValue:
+def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> TensorOrScalar:
     """Multiply tridiagonal matrix by matrix.
 
     Args:
@@ -363,7 +364,7 @@ def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> EagerVal
     return _emit_linalg_node("TridiagonalMatmul", [dl, d, du, b], {}, [tuple(out_shape)], [b.dtype])
 
 
-def matrix_norm(x: Tensor, keepdims: EagerValue = False, name: EagerValue = None) -> EagerValue:
+def matrix_norm(x: Tensor, keepdims: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the matrix norm of the input tensor.
 
     Args:
@@ -381,15 +382,15 @@ def matrix_norm(x: Tensor, keepdims: EagerValue = False, name: EagerValue = None
     return _emit_linalg_node("MatrixNorm", [x], {"keepdims": keepdims}, [()], [x.dtype])
 
 
-def vector_norm(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = False, ord: EagerValue = 2, name: EagerValue = None) -> EagerValue:
+def vector_norm(x: TensorOrScalar, axis: TensorOrScalar = None, keepdims: TensorOrScalar = False, ord: TensorOrScalar = 2, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the vector norm of the input tensor.
 
     Args:
-        x (Any): The input tensor.
-        axis (Any): The axis along which to compute the norm.
-        keepdims (Any): If True, retains reduced dimensions.
-        ord (Any): The order of the norm.
-        name (Any): Optional name for the operation.
+        x (TensorOrScalar): The input tensor.
+        axis (TensorOrScalar): The axis along which to compute the norm.
+        keepdims (TensorOrScalar): If True, retains reduced dimensions.
+        ord (TensorOrScalar): The order of the norm.
+        name (TensorOrScalar): Optional name for the operation.
 
     Returns: Tensor: The computed vector norm.
     """
@@ -404,12 +405,12 @@ def vector_norm(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = F
 class Svdvals(OpDef):
     """Svdvals Operation Definition."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -421,7 +422,7 @@ class Svdvals(OpDef):
         return shape[:-2] + (min(shape[-2], shape[-1]),)
 
 
-def svdvals(x: Tensor, name: EagerValue = None) -> EagerValue:
+def svdvals(x: Tensor, name: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the singular values of a matrix.
 
     Args:
@@ -449,11 +450,11 @@ def diagonal(
     """Extract a diagonal from the input tensor.
 
     Args:
-        x (Any): The input tensor.
-        offset (Any): Offset of the diagonal from the main diagonal.
-        axis1 (Any): First axis of the 2-D sub-arrays.
-        axis2 (Any): Second axis of the 2-D sub-arrays.
-        name (Any): Optional name for the operation.
+        x (Tensor): The input tensor.
+        offset (int): Offset of the diagonal from the main diagonal.
+        axis1 (int): First axis of the 2-D sub-arrays.
+        axis2 (int): Second axis of the 2-D sub-arrays.
+        name (str | None): Optional name for the operation.
 
     Returns: Tensor: The extracted diagonal.
     """
@@ -470,15 +471,15 @@ class TridiagonalMatmul(OpDef):
 
     op_name = "TridiagonalMatmul"
 
-    def infer_shape(self, dl: EagerTensorProtocol, d: EagerTensorProtocol, du: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, dl: EagerTensorProtocol, d: EagerTensorProtocol, du: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the operation.
 
         Args:
-            dl (Any): The dl parameter.
-            d (Any): The d parameter.
-            du (Any): The du parameter.
-            b (Any): The b parameter.
-            **kwargs (Any): Keyword args.
+            dl (EagerTensorProtocol): The dl parameter.
+            d (EagerTensorProtocol): The d parameter.
+            du (EagerTensorProtocol): The du parameter.
+            b (EagerTensorProtocol): The b parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -490,12 +491,12 @@ class TridiagonalMatmul(OpDef):
 class Cond(OpDef):
     """Cond Operation Definition."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -503,7 +504,7 @@ class Cond(OpDef):
         return ()
 
 
-def cond(input: Tensor, p: (str | float | None) = None) -> EagerValue:
+def cond(input: Tensor, p: (str | float | None) = None) -> TensorOrScalar:
     """Compute the condition number of a matrix.
 
     Args:

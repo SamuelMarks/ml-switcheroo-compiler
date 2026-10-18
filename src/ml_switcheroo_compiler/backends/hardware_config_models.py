@@ -88,7 +88,7 @@ class HardwareTemplateConfig(BaseModel):
         """Compare template configuration against another instance or dict.
 
         Args:
-            other (object): Other object to compare against.
+            other (TensorOrScalar): Other object to compare against.
 
         Returns:
             bool: True if contents match.

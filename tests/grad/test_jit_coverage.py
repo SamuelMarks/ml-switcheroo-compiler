@@ -29,8 +29,8 @@ class _MockBackendModule:
         """Mock array.
 
         Args:
-            data (object): Input data.
-            dtype (object): Optional data type.
+            data (EagerValue): Input data.
+            dtype (EagerValue): Optional data type.
 
         Returns:
             tuple[str, object, object]: Mock array descriptor.
@@ -41,7 +41,7 @@ class _MockBackendModule:
         """Mock asarray.
 
         Args:
-            data (object): Input data.
+            data (EagerValue): Input data.
 
         Returns:
             tuple[str, object]: Mock asarray descriptor.

@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eag
 
 
 def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
-    """Evaluate _dct_1d_matrix operation.
+    """Execute the eager dct 1d matrix operation on the active backend array.
 
     Args:
         N (int): The N parameter.
@@ -64,12 +64,12 @@ def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tup
 
 @numpy_eager_registry.register("Dct")
 def _np_dct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dct operation.
+    """Execute the eager np dct operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -87,7 +87,7 @@ def _np_dct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
 
 
 def _idct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _idct_1d_matrix operation.
+    """Execute the eager idct 1d matrix operation on the active backend array.
 
     Args:
         N (int): The N parameter.
@@ -125,12 +125,12 @@ def _idct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tu
 
 @numpy_eager_registry.register("Idct")
 def _np_idct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_idct operation.
+    """Execute the eager np idct operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -152,9 +152,9 @@ def _np_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
     """Implement MDCT eagerly in numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -181,9 +181,9 @@ def _np_inverse_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """Implement Inverse MDCT eagerly in numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -203,9 +203,9 @@ def _np_frame(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     """Implement Frame eagerly in numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -226,9 +226,9 @@ def _np_overlap_and_add(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """Implement OverlapAndAdd eagerly in numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

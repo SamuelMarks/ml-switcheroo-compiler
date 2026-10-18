@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence  # noqa: F401
-from typing import Callable, Optional, Union, cast  # noqa: F401
+from typing import Callable, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -17,7 +16,7 @@ def _extract_numpy_weights(weights: dict[str, TensorLike]) -> dict[str, TensorLi
         weights (dict[str, TensorLike]): The weights parameter.
 
     Returns:
-        dict[str, TensorLike]: Result.
+        dict[str, TensorLike]: Extracted weights dictionary.
     """
     weights_np = {}
     for k, w in weights.items():
@@ -43,7 +42,7 @@ def to_numpy(tensor: TensorLike) -> TensorLike:
         tensor (TensorLike): The tensor parameter.
 
     Returns:
-        TensorLike: Result.
+        TensorLike: Converted array.
     """
     if hasattr(tensor, "numpy"):
         return cast(TensorLike, tensor.numpy())
@@ -63,33 +62,33 @@ def concatenate_arrays(arrays: list[TensorLike]) -> TensorLike:
         arrays (list[TensorLike]): The arrays parameter.
 
     Returns:
-        TensorLike: Result.
+        TensorLike: Concatenated array.
     """
     from ml_switcheroo_compiler import ops
 
     return cast(TensorLike, getattr(ops, "concatenate")(arrays, axis=0))
 
 
-def is_numpy_array(array: EagerValue) -> bool:
+def is_numpy_array(array: TensorOrScalar) -> bool:
     """Check if array is a numpy array.
 
     Args:
-        array (object): The array parameter.
+        array (TensorOrScalar): The array parameter.
 
     Returns:
-        bool: Result.
+        bool: True if array is a numpy array or array-like.
     """
     return type(array).__module__ == "numpy" or hasattr(array, "numpy") or hasattr(array, "__array__")
 
 
-def _dtype_to_descr(dtype: EagerValue) -> str:
+def _dtype_to_descr(dtype: TensorOrScalar) -> str:
     """Map DType to numpy descr string.
 
     Args:
-        dtype (object): The dtype parameter.
+        dtype (TensorOrScalar): The dtype parameter.
 
     Returns:
-        str: Result.
+        str: NumPy descriptor string.
     """
     from ml_switcheroo_compiler.core.dtype import DType
 
@@ -123,7 +122,7 @@ def _extract_arr_shape_dtype(arr: TensorLike) -> tuple[tuple[int, ...], str]:
         arr (TensorLike): The array object.
 
     Returns:
-        tuple[tuple[int, ...], str]: (shape, dtype_str)
+        tuple[tuple[int, ...], str]: (shape, dtype_str).
     """
     dtype = getattr(arr.dtype, "name") if hasattr(getattr(arr, "dtype", None), "name") else str(getattr(arr, "dtype", "<f4"))
     return getattr(arr, "shape", ()), dtype
@@ -136,7 +135,7 @@ def _get_shape_and_dtype(tensor: TensorLike) -> tuple[tuple[int, ...], str]:
         tensor (TensorLike): The tensor object.
 
     Returns:
-        tuple[tuple[int, ...], str]: (shape, dtype)
+        tuple[tuple[int, ...], str]: (shape, dtype).
     """
     if hasattr(tensor, "eval"):
         return _extract_arr_shape_dtype(tensor.eval())
@@ -147,11 +146,11 @@ def _get_shape_and_dtype(tensor: TensorLike) -> tuple[tuple[int, ...], str]:
     return getattr(tensor, "shape", ()), getattr(tensor, "dtype", "<f4")
 
 
-def _extract_arr_bytes(arr: EagerValue) -> bytes:
+def _extract_arr_bytes(arr: TensorOrScalar) -> bytes:
     """Extract raw bytes from an array object.
 
     Args:
-        arr (object): The array object.
+        arr (TensorOrScalar): The array object.
 
     Returns:
         bytes: The raw data bytes.
@@ -163,11 +162,11 @@ def _extract_arr_bytes(arr: EagerValue) -> bytes:
     return b""
 
 
-def _get_data_bytes(tensor: EagerValue) -> bytes:
+def _get_data_bytes(tensor: TensorOrScalar) -> bytes:
     """Get raw data bytes from a generic tensor object.
 
     Args:
-        tensor (object): The tensor object.
+        tensor (TensorOrScalar): The tensor object.
 
     Returns:
         bytes: The raw data bytes.
@@ -181,14 +180,14 @@ def _get_data_bytes(tensor: EagerValue) -> bytes:
     return b""
 
 
-def _tensor_to_npy_bytes(tensor: EagerValue) -> bytes:
+def _tensor_to_npy_bytes(tensor: TensorOrScalar) -> bytes:
     """Convert a tensor to npy bytes.
 
     Args:
-        tensor (object): The tensor parameter.
+        tensor (TensorOrScalar): The tensor parameter.
 
     Returns:
-        bytes: Result.
+        bytes: Serialized `.npy` byte stream.
     """
     import struct
 
@@ -207,14 +206,14 @@ def _tensor_to_npy_bytes(tensor: EagerValue) -> bytes:
     return header + data_bytes
 
 
-def get_npz_bytes(weights: EagerValue) -> bytes:
+def get_npz_bytes(weights: TensorOrScalar) -> bytes:
     """Get npz bytes.
 
     Args:
-        weights (dict): The weights parameter.
+        weights (TensorOrScalar): The weights parameter.
 
     Returns:
-        bytes: Result.
+        bytes: Serialized `.npz` archive bytes.
     """
     import io
     import zipfile

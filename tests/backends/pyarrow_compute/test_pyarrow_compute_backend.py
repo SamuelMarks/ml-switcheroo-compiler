@@ -194,10 +194,29 @@ def test_pyarrow_compute_types() -> None:
     with mock.patch.dict(sys.modules, {"pyarrow": None}):
         with mock.patch(
             "importlib.import_module",
-            side_effect=lambda name: np if name == "numpy" else (_ for _ in ()).throw(ImportError(name)),
+            side_effect=ImportError("pyarrow"),
         ):
             pa_mod = pa_pkg.types._get_pa_module()
-            assert pa_mod is np
+            assert pa_mod is None
+
+
+def test_pyarrow_compute_ones_empty_parity() -> None:
+    """Verify ones, empty, table, tensor, and check_parity helpers in PyArrow Compute backend."""
+    mock_pa_no_array = mock.MagicMock(spec=[])
+    o = pa_pkg.ones((3,))
+    assert len(o) == 3
+    e = pa_pkg.empty((2,))
+    assert len(e) == 2
+    with mock.patch("ml_switcheroo_compiler.backends.pyarrow_compute.types._get_pa_module", return_value=mock_pa_no_array):
+        assert pa_pkg.ones((2,)) == [1.0, 1.0]
+        assert pa_pkg.empty((2,)) == [None, None]
+    tbl_alias = pa_pkg.table({"k": [1, 2]})
+    assert tbl_alias is not None
+    t_alias = pa_pkg.tensor([1.0, 2.0])
+    assert t_alias is not None
+    assert pa_pkg.check_parity([1.0, 2.0], [1.0, 2.0]) is True
+    assert pa_pkg.PyArrowComputeGenerator.check_parity([1.0, 2.0], [1.0, 3.0]) is False
+    assert pa_pkg.check_parity([1.0, 2.0], [1.0]) is False
 
 
 def test_pyarrow_compute_eager_dispatch() -> None:

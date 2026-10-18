@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-
-# ruff: noqa: E501
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -92,10 +90,8 @@ def test_linalg_products() -> None:
     assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)("string") is None
     op3 = Matmul()
     assert cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)((2, 2), (2, 2)) == (2, 2)
-    try:
+    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)((2, 2), (3, 3))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.linalg.products.matmul_shape", side_effect=ValueError):

@@ -2,8 +2,9 @@
 
 from typing import Union
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg.products import _has_valid_shape
@@ -69,14 +70,14 @@ class Convolve(OpDef):
     op_name = "Convolve"
     np_op_name = "convolve"
 
-    def infer_shape(self, a: EagerTensorProtocol, v: EagerTensorProtocol, mode: str = "full", **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, v: EagerTensorProtocol, mode: str = "full", **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for 1D discrete linear convolution.
 
         Args:
-            a (Any): First input array.
-            v (Any): Second input array.
+            a (EagerTensorProtocol): First input array.
+            v (EagerTensorProtocol): Second input array.
             mode (str): Convolution mode ('full', 'same', or 'valid').
-            **kwargs (Any): Additional keyword arguments.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: Inferred output shape.
@@ -102,12 +103,12 @@ class ConvGeneralDilatedLocal(OpDef):
 
     op_name = "ConvGeneralDilatedLocal"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -121,12 +122,12 @@ class ConvGeneralDilatedPatches(OpDef):
 
     op_name = "ConvGeneralDilatedPatches"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -140,12 +141,12 @@ class ConvWithGeneralPadding(OpDef):
 
     op_name = "ConvWithGeneralPadding"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -159,12 +160,12 @@ class ConvTransposeShapeTuple(OpDef):
 
     op_name = "ConvTransposeShapeTuple"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -178,13 +179,13 @@ class ConvTranspose(OpDef):
 
     op_name = "ConvTranspose"
 
-    def infer_shape(self, lhs: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, lhs: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            lhs (Any): The lhs parameter.
-            rhs (Any): The rhs parameter.
-            **kwargs (Any): Keyword args.
+            lhs (EagerTensorProtocol): The lhs parameter.
+            rhs (EagerTensorProtocol): The rhs parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

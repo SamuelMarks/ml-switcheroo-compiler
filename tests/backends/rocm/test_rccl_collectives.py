@@ -260,7 +260,7 @@ def _test_rccl_driver_hip_rt_memory_and_streams_part_1(_state: dict[str, EagerTe
         """Simulate successful hipMalloc.
 
         Args:
-            ptr_ref (object): Pointer reference.
+            ptr_ref (EagerValue): Pointer reference.
             size (int): Allocation size.
 
         Returns:

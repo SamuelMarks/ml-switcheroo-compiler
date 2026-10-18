@@ -4,177 +4,176 @@ from __future__ import annotations
 
 import os
 import typing
+from pathlib import Path
 from typing import Callable, cast
 
-# ruff: noqa: E402
-from ml_switcheroo_ir import PartitionSpec
+import yaml
+from ml_switcheroo_ir import AttributeValue, PartitionSpec
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+ShardingValue = typing.Union["SPMDShardingAnnotation", PartitionSpec, TensorOrScalar]
 
-def _get_sharding_axes(sharding: EagerValue) -> list[str]:
-    """Evaluate _get_sharding_axes operation.
+
+def _get_sharding_axes(sharding: ShardingValue) -> list[str]:
+    """Extract non-None mesh axis names from `sharding`.
 
     Args:
-        sharding (typing.Union[dict, list, tuple, None]): The sharding parameter.
+        sharding (ShardingValue): The sharding parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        list[str]: Active sharding axis names.
     """
     if not sharding or not hasattr(sharding, "mesh_mapping"):
         return []
     return [m for m in sharding.mesh_mapping if m is not None]
 
 
-def _is_boundary_transition(inp_sharding: EagerValue, node_sharding: EagerValue) -> tuple[bool, bool]:
-    """Evaluate _is_boundary_transition operation.
+def _is_boundary_transition(inp_sharding: ShardingValue, node_sharding: ShardingValue) -> tuple[bool, bool]:
+    """Check whether `inp_sharding` and `node_sharding` are sharded.
 
     Args:
-        inp_sharding (typing.Union[dict, list, tuple, None]): The inp_sharding parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        inp_sharding (ShardingValue): The inp_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        tuple[bool, bool]: `(inp_sharded, node_sharded)` boolean flags.
     """
     inp_sharded = bool(_get_sharding_axes(inp_sharding))
     node_sharded = bool(_get_sharding_axes(node_sharding))
     return inp_sharded, node_sharded
 
 
-def _create_all_gather_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _create_all_gather_node operation.
+def _create_all_gather_node(inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Create an `AllGather` collective communication node.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Constructed `AllGather` node.
     """
     return IRNode(id=f"{inp_id}_all_gather", op_type="AllGather", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _create_reduce_scatter_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _create_reduce_scatter_node operation.
+def _create_reduce_scatter_node(inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Create a `ReduceScatter` collective communication node.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Constructed `ReduceScatter` node.
     """
     return IRNode(id=f"{inp_id}_reduce_scatter", op_type="ReduceScatter", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _create_all_reduce_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _create_all_reduce_node operation.
+def _create_all_reduce_node(inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Create an `AllReduce` collective communication node.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Constructed `AllReduce` node.
     """
     return IRNode(id=f"{inp_id}_all_reduce", op_type="AllReduce", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _create_all_to_all_node(inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _create_all_to_all_node operation.
+def _create_all_to_all_node(inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Create an `AllToAll` collective communication node.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Constructed `AllToAll` node.
     """
     return IRNode(id=f"{inp_id}_all_to_all", op_type="AllToAll", inputs=[inp_id], sharding=cast("PartitionSpec | None", node_sharding), attributes={"dispatch_early": True})
 
 
-def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _inject_all_gather operation.
+def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Inject an `AllGather` node before `node.inputs[idx]`.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Injected `AllGather` node.
     """
     gather_node = _create_all_gather_node(inp_id, node_sharding)
     node.inputs[idx] = gather_node.id
     return gather_node
 
 
-def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _inject_reduce_scatter operation.
+def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Inject a `ReduceScatter` node before `node.inputs[idx]`.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Injected `ReduceScatter` node.
     """
     scatter_node = _create_reduce_scatter_node(inp_id, node_sharding)
     node.inputs[idx] = scatter_node.id
     return scatter_node
 
 
-def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _inject_all_reduce operation.
+def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Inject an `AllReduce` node before `node.inputs[idx]`.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Injected `AllReduce` node.
     """
     reduce_node = _create_all_reduce_node(inp_id, node_sharding)
     node.inputs[idx] = reduce_node.id
     return reduce_node
 
 
-def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: EagerValue) -> IRNode:
-    """Evaluate _inject_all_to_all operation.
+def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: ShardingValue) -> IRNode:
+    """Inject an `AllToAll` node before `node.inputs[idx]`.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-        IRNode: Result.
+        IRNode: Injected `AllToAll` node.
     """
     atoa_node = _create_all_to_all_node(inp_id, node_sharding)
     node.inputs[idx] = atoa_node.id
     return atoa_node
 
 
-from pathlib import Path
-
-import yaml
-from ml_switcheroo_ir import AttributeValue
-
 _SPMD_RULES: dict[str, AttributeValue] | None = None
 
 
 def _get_spmd_rules() -> dict[str, AttributeValue]:
-    """_get_spmd_rules function.
+    """Load and cache SPMD communication and propagation rules from YAML.
 
     Returns:
-        dict: Result.
+        dict[str, AttributeValue]: Loaded SPMD rules dictionary.
     """
     global _SPMD_RULES
     if _SPMD_RULES is None:
@@ -270,21 +269,21 @@ def _determine_spmd_communication(
         "AllToAll": _inject_all_to_all,
     }
     injector = injectors.get(injected_op)
-    return injector(node, idx, inp_id, cast("EagerValue", node_sharding)) if injector is not None else None
+    return injector(node, idx, inp_id, cast("ShardingValue", node_sharding)) if injector is not None else None
 
 
-def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: EagerValue) -> IRNode | None:
-    """Evaluate _process_spmd_input operation.
+def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: ShardingValue) -> IRNode | None:
+    """Inspect a single node input and inject collective communication if sharding transitions require it.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
         graph (IRGraph): The graph parameter.
-        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
+        node_sharding (ShardingValue): The node_sharding parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        IRNode | None: Injected collective node or None.
     """
     if inp_id not in graph.nodes:
         return None
@@ -302,14 +301,14 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
 
 
 def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]]:
-    """Evaluate _process_spmd_node operation.
+    """Process all inputs of `node` for SPMD collective injection.
 
     Args:
         node (IRNode): The node parameter.
         graph (IRGraph): The graph parameter.
 
     Returns:
-        tuple: Result.
+        tuple[bool, list[IRNode]]: `(modified, injected_nodes)`.
     """
     modified = False
     injected_nodes = []
@@ -334,7 +333,7 @@ def inject_spmd_communication_pass(graph: IRGraph) -> bool:
         graph (IRGraph): The graph parameter.
 
     Returns:
-        bool: Result.
+        bool: True if graph was modified.
     """
     modified = False
     new_nodes = {}
@@ -358,7 +357,7 @@ class SPMDShardingAnnotation:
 
     def __init__(
         self,
-        mesh: EagerValue,
+        mesh: TensorOrScalar,
         mesh_mapping: typing.Sequence[str | None],
         mesh_shape: typing.Sequence[int] | None = None,
         mesh_axes: typing.Sequence[str] | None = None,
@@ -366,7 +365,7 @@ class SPMDShardingAnnotation:
         """Initialize SPMDShardingAnnotation.
 
         Args:
-            mesh: DeviceMesh or mesh configuration.
+            mesh (TensorOrScalar): DeviceMesh or mesh configuration.
             mesh_mapping (typing.Sequence[str | None]): Axis sharding names.
             mesh_shape (typing.Sequence[int] | None): Optional device mesh dimensions.
             mesh_axes (typing.Sequence[str] | None): Optional device mesh axis names (e.g., ['dp', 'tp', 'pp']).
@@ -552,7 +551,7 @@ def spmd_partitioning_pass(graph: IRGraph) -> bool:
         coll_type = node.attributes.get("inject_collective")
         if coll_type in ("AllReduce", "ReduceScatter", "AllGather", "AllToAll"):
             node.attributes.pop("inject_collective", None)
-            coll_id = f"{node_id}_all_reduce" if coll_type == "AllReduce" else f"{node_id}_{coll_type.lower()}"
+            coll_id = f"{node_id}_all_reduce" if coll_type == "AllReduce" else f"{node_id}_{str(coll_type).lower()}"
             if coll_id not in graph.nodes:
                 if coll_type == "AllReduce":
                     coll_node = _create_all_reduce_node(node_id, getattr(node, "sharding", None))

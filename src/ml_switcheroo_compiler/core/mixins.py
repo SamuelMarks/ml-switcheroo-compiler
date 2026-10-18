@@ -1,11 +1,10 @@
 """Core Mixins."""
 
-import typing  # noqa: F401
 from collections.abc import Callable
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.registry import EagerValue
+    from ml_switcheroo_compiler.core.shape import TensorOrScalar
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.base import OpDef
 
@@ -19,163 +18,164 @@ class TensorArithmeticMixin:
         Args:
             name (str): The name of the operation to retrieve.
 
-        Returns: Tensor: The operation class or instance.
+        Returns:
+            OpDef: The operation instance.
         """
         from ml_switcheroo_compiler.ops.registry import get_op
 
         return get_op(name)()
 
-    def __add__(self, other: "EagerValue") -> "Tensor":
-        """Add.
+    def __add__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise addition `self + other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the sum.
         """
         return self._get_op("Add")(cast("Tensor", self), other)
 
-    def __radd__(self, other: "EagerValue") -> "Tensor":
-        """Radd.
+    def __radd__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise addition `other + self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Left-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the sum.
         """
         return self._get_op("Add")(other, cast("Tensor", self))
 
-    def __sub__(self, other: "EagerValue") -> "Tensor":
-        """Sub.
+    def __sub__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise subtraction `self - other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the difference.
         """
         return self._get_op("Subtract")(cast("Tensor", self), other)
 
-    def __rsub__(self, other: "EagerValue") -> "Tensor":
-        """Rsub.
+    def __rsub__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise subtraction `other - self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Left-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the difference.
         """
         return self._get_op("Subtract")(other, cast("Tensor", self))
 
-    def __mul__(self, other: "EagerValue") -> "Tensor":
-        """Mul.
+    def __mul__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise multiplication `self * other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the product.
         """
         return self._get_op("Multiply")(cast("Tensor", self), other)
 
-    def __rmul__(self, other: "EagerValue") -> "Tensor":
-        """Rmul.
+    def __rmul__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise multiplication `other * self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Left-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the product.
         """
         return self._get_op("Multiply")(other, cast("Tensor", self))
 
-    def __truediv__(self, other: "EagerValue") -> "Tensor":
-        """Truediv.
+    def __truediv__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise true division `self / other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand divisor operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the quotient.
         """
         return self._get_op("TrueDivide")(cast("Tensor", self), other)
 
-    def __rtruediv__(self, other: "EagerValue") -> "Tensor":
-        """Rtruediv.
+    def __rtruediv__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise true division `other / self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Left-hand dividend operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the quotient.
         """
         return self._get_op("TrueDivide")(other, cast("Tensor", self))
 
-    def __pow__(self, other: "EagerValue") -> "Tensor":
-        """Pow.
+    def __pow__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise exponentiation `self ** other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Exponent operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the power result.
         """
         return self._get_op("Power")(cast("Tensor", self), other)
 
-    def __rpow__(self, other: "EagerValue") -> "Tensor":
-        """Rpow.
+    def __rpow__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise exponentiation `other ** self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Base operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the power result.
         """
         return self._get_op("Power")(other, cast("Tensor", self))
 
-    def __floordiv__(self, other: "EagerValue") -> "Tensor":
-        """Floordiv.
+    def __floordiv__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise floor division `self // other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Divisor operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the floor quotient.
         """
         return self._get_op("FloorDivide")(cast("Tensor", self), other)
 
-    def __rfloordiv__(self, other: "EagerValue") -> "Tensor":
-        """Rfloordiv.
+    def __rfloordiv__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise floor division `other // self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Dividend operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the floor quotient.
         """
         return self._get_op("FloorDivide")(other, cast("Tensor", self))
 
-    def __mod__(self, other: "EagerValue") -> "Tensor":
-        """Mod.
+    def __mod__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise modulo `self % other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Divisor operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the remainder.
         """
         return self._get_op("Mod")(cast("Tensor", self), other)
 
-    def __rmod__(self, other: "EagerValue") -> "Tensor":
-        """Rmod.
+    def __rmod__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise modulo `other % self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Dividend operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the remainder.
         """
         return self._get_op("Mod")(other, cast("Tensor", self))
 
@@ -185,145 +185,145 @@ class TensorBitwiseMixin:
 
     _get_op: Callable[[str], "OpDef"]
 
-    def __and__(self, other: "EagerValue") -> "Tensor":
-        """And.
+    def __and__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise bitwise AND `self & other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the bitwise AND result.
         """
         return self._get_op("BitwiseAnd")(cast("Tensor", self), other)
 
-    def __rand__(self, other: "EagerValue") -> "Tensor":
-        """Rand.
+    def __rand__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise bitwise AND `other & self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Left-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the bitwise AND result.
         """
         return self._get_op("BitwiseAnd")(other, cast("Tensor", self))
 
-    def __or__(self, other: "EagerValue") -> "Tensor":
-        """Or.
+    def __or__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise bitwise OR `self | other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the bitwise OR result.
         """
         return self._get_op("BitwiseOr")(cast("Tensor", self), other)
 
-    def __ror__(self, other: "EagerValue") -> "Tensor":
-        """Ror.
+    def __ror__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise bitwise OR `other | self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Left-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the bitwise OR result.
         """
         return self._get_op("BitwiseOr")(other, cast("Tensor", self))
 
-    def __xor__(self, other: "EagerValue") -> "Tensor":
-        """Xor.
+    def __xor__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise bitwise XOR `self ^ other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the bitwise XOR result.
         """
         return self._get_op("BitwiseXor")(cast("Tensor", self), other)
 
-    def __rxor__(self, other: "EagerValue") -> "Tensor":
-        """Rxor.
+    def __rxor__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise bitwise XOR `other ^ self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Left-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the bitwise XOR result.
         """
         return self._get_op("BitwiseXor")(other, cast("Tensor", self))
 
-    def __lshift__(self, other: "EagerValue") -> "Tensor":
-        """Lshift.
+    def __lshift__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise left bit shift `self << other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Shift amount operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the left-shifted result.
         """
         return self._get_op("LeftShift")(cast("Tensor", self), other)
 
-    def __rlshift__(self, other: "EagerValue") -> "Tensor":
-        """Rlshift.
+    def __rlshift__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise left bit shift `other << self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Value to shift.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the left-shifted result.
         """
         return self._get_op("LeftShift")(other, cast("Tensor", self))
 
-    def __rshift__(self, other: "EagerValue") -> "Tensor":
-        """Rshift.
+    def __rshift__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute elementwise right bit shift `self >> other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Shift amount operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the right-shifted result.
         """
         return self._get_op("RightShift")(cast("Tensor", self), other)
 
-    def __rrshift__(self, other: "EagerValue") -> "Tensor":
-        """Rrshift.
+    def __rrshift__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compute reverse elementwise right bit shift `other >> self`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Value to shift.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the right-shifted result.
         """
         return self._get_op("RightShift")(other, cast("Tensor", self))
 
     def __neg__(self) -> "Tensor":
-        """Neg.
+        """Compute elementwise negation `-self`.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the negated values.
         """
         return self._get_op("Negative")(cast("Tensor", self))
 
     def __pos__(self) -> "Tensor":
-        """Pos.
+        """Compute elementwise unary positive `+self`.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the positive values.
         """
         return self._get_op("Positive")(cast("Tensor", self))
 
     def __abs__(self) -> "Tensor":
-        """Abs.
+        """Compute elementwise absolute value `abs(self)`.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the absolute values.
         """
         return self._get_op("Abs")(cast("Tensor", self))
 
     def __invert__(self) -> "Tensor":
-        """Invert.
+        """Compute elementwise bitwise inversion `~self`.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A tensor containing the inverted values.
         """
         return self._get_op("BitwiseNot")(cast("Tensor", self))
 
@@ -333,77 +333,77 @@ class TensorLogicalMixin:
 
     _get_op: Callable[[str], "OpDef"]
 
-    def __lt__(self, other: "EagerValue") -> "Tensor":
-        """Lt.
+    def __lt__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compare elementwise strictly less than `self < other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A boolean tensor of comparison results.
         """
         return self._get_op("Less")(cast("Tensor", self), other)
 
-    def __gt__(self, other: "EagerValue") -> "Tensor":
-        """Gt.
+    def __gt__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compare elementwise strictly greater than `self > other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A boolean tensor of comparison results.
         """
         return self._get_op("Greater")(cast("Tensor", self), other)
 
-    def __le__(self, other: "EagerValue") -> "Tensor":
-        """Le.
+    def __le__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compare elementwise less than or equal `self <= other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A boolean tensor of comparison results.
         """
         return self._get_op("LessEqual")(cast("Tensor", self), other)
 
-    def __ge__(self, other: "EagerValue") -> "Tensor":
-        """Ge.
+    def __ge__(self, other: "TensorOrScalar") -> "Tensor":
+        """Compare elementwise greater than or equal `self >= other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A boolean tensor of comparison results.
         """
         return self._get_op("GreaterEqual")(cast("Tensor", self), other)
 
     def __hash__(self) -> int:
-        """Evaluate __hash__ operation.
+        """Compute identity-based hash of the tensor instance.
 
         Returns:
-        int: Result.
+            int: Identity hash value.
         """
         return id(self)
 
-    def _eq(self, other: "EagerValue") -> "Tensor":
-        """Eq.
+    def _eq(self, other: "TensorOrScalar") -> "Tensor":
+        """Compare elementwise equality `self == other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A boolean tensor of equality results.
         """
         return self._get_op("Equal")(cast("Tensor", self), other)
 
-    def _ne(self, other: "EagerValue") -> "Tensor":
-        """Ne.
+    def _ne(self, other: "TensorOrScalar") -> "Tensor":
+        """Compare elementwise inequality `self != other`.
 
         Args:
-            other (object): The other to process.
+            other (TensorOrScalar): Right-hand operand.
 
         Returns:
-            'Tensor': A tensor containing the result of the operation.
+            Tensor: A boolean tensor of inequality results.
         """
         return self._get_op("NotEqual")(cast("Tensor", self), other)
 

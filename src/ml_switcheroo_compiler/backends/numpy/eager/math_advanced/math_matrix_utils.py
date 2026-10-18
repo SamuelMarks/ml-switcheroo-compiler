@@ -108,7 +108,7 @@ def _np_linearoperatorblockdiag(backend_module: EagerValue, *args: EagerValue, *
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockDiag
 
@@ -125,7 +125,7 @@ def _np_linearoperatordiag(backend_module: EagerValue, *args: EagerValue, **kwar
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorDiag
 
@@ -134,7 +134,7 @@ def _np_linearoperatordiag(backend_module: EagerValue, *args: EagerValue, **kwar
 
 @numpy_eager_registry.register("confusion_matrix")
 def _np_confusion_matrix(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_confusion_matrix operation.
+    """Execute the eager np confusion matrix operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -142,7 +142,7 @@ def _np_confusion_matrix(backend_module: EagerValue, *args: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            EagerValue: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -168,7 +168,7 @@ def _np_confusion_matrix(backend_module: EagerValue, *args: EagerValue, **kwargs
 
 @numpy_eager_registry.register("distributions")
 def _np_distributions(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """_np_distributions function.
+    """Execute the eager np distributions operation on the active backend array.
 
     Args:
         backend_module: The backend.
@@ -176,7 +176,7 @@ def _np_distributions(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         kwargs: Keyword args.
 
     Returns:
-        Any: Result.
+        EagerValue: Result.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops
@@ -197,7 +197,7 @@ def _np_distributions(backend_module: EagerValue, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix_cap(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """_np_confusion_matrix_cap function.
+    """Execute the eager np confusion matrix cap operation on the active backend array.
 
     Args:
         backend_module: The backend.
@@ -205,7 +205,7 @@ def _np_confusion_matrix_cap(backend_module: EagerValue, *args: EagerValue, **kw
         kwargs: Keyword args.
 
     Returns:
-        Any: Result.
+        EagerValue: Result.
     """
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)

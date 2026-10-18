@@ -5,13 +5,13 @@ from __future__ import annotations
 import builtins  # noqa: F401
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Expm1")
 def _expm1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _expm1 operation.
+    """Execute the eager expm1 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -19,7 +19,7 @@ def _expm1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     x = args[0]
     if hasattr(backend_module, "expm1"):
@@ -29,7 +29,7 @@ def _expm1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("FloatPower")
 def _float_power(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _float_power operation.
+    """Execute the eager float power operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -37,7 +37,7 @@ def _float_power(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
     return func(*args, **kwargs) if func else None
@@ -45,7 +45,7 @@ def _float_power(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
 @global_eager_registry.register("Frexp")
 def _frexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _frexp operation.
+    """Execute the eager frexp operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -53,7 +53,7 @@ def _frexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     import math
 
@@ -63,7 +63,7 @@ def _frexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("Ldexp")
 def _ldexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _ldexp operation.
+    """Execute the eager ldexp operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -71,7 +71,7 @@ def _ldexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     import math
 
@@ -81,7 +81,7 @@ def _ldexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 @global_eager_registry.register("Slogdet")
 def _slogdet(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _slogdet operation.
+    """Execute the eager slogdet operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -89,7 +89,7 @@ def _slogdet(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "slogdet"):
@@ -103,7 +103,7 @@ def _slogdet(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 @global_eager_registry.register("Xlog1py")
 def _np_xlog1py(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_xlog1py operation.
+    """Execute the eager np xlog1py operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -111,17 +111,17 @@ def _np_xlog1py(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.where(args[0] == 0, 0, args[0] * np.log1p(args[1])))
+    return cast(EagerValue, host_backend.where(args[0] == 0, 0, args[0] * host_backend.log1p(args[1])))
 
 
 @global_eager_registry.register("Xlogy")
 def _np_xlogy(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_xlogy operation.
+    """Execute the eager np xlogy operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -129,9 +129,9 @@ def _np_xlogy(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, np.where(args[0] == 0, 0, args[0] * np.log(args[1])))
+    return cast(EagerValue, host_backend.where(args[0] == 0, 0, args[0] * host_backend.log(args[1])))

@@ -6,12 +6,13 @@ import builtins
 from collections.abc import Sequence
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -21,7 +22,7 @@ def dynamic_slice(
     input: Tensor,
     start_indices: Sequence[Tensor],
     slice_sizes: Sequence[int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Slice the input tensor dynamically using start indices and slice sizes.
 
     Args:
@@ -56,7 +57,7 @@ def dynamic_slice(
     )
 
 
-def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> EagerValue:
+def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> TensorOrScalar:
     """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:
@@ -78,7 +79,7 @@ def dynamic_update_slice(
     operand: Tensor,
     update: Tensor,
     start_indices: Sequence[Tensor],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Update a slice of an array at dynamically computed start indices.
 
     Args:
@@ -105,12 +106,12 @@ class DynamicSlice(OpDef):
 
     op_name = "DynamicSlice"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -130,14 +131,14 @@ class DynamicUpdateSlice(OpDef):
         x: EagerTensorProtocol,
         update: EagerTensorProtocol,
         start_indices: EagerTensorProtocol,
-        **kwargs: EagerValue,
-    ) -> EagerValue:
+        **kwargs: TensorOrScalar,
+    ) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            x (Any): The input x tensor.
-            update (Any): The update parameter for the operation.
-            start_indices (Any): The start_indices parameter for the operation.
+            x (EagerTensorProtocol): The input x tensor.
+            update (EagerTensorProtocol): The update parameter for the operation.
+            start_indices (EagerTensorProtocol): The start_indices parameter for the operation.
             **kwargs: Additional keyword arguments.
 
         Returns: Tensor: The computed result.

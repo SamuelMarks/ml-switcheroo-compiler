@@ -46,7 +46,7 @@ def _emit_reduction_node(
     out_shape: tuple[int | None, ...],
     out_dtype: DType,
 ) -> Tensor:
-    """Evaluate _emit_reduction_node operation.
+    """Compute the emit reduction node tensor operation.
 
     Args:
         op_type (str): The op_type parameter.
@@ -58,19 +58,23 @@ def _emit_reduction_node(
     Returns:
         Tensor: Result.
     """
+    from collections.abc import Mapping
+
+    from ml_switcheroo_ir import AttributeValue
+
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type=op_type,
-        inputs=[getattr(getattr(inp, "data", inp), "id", "mock_id") for inp in inputs],  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        attributes=attrs,
+        inputs=[getattr(getattr(inp, "data", inp), "id", "mock_id") for inp in inputs],
+        attributes=cast("Mapping[str, AttributeValue]", attrs),
         shape_metadata=out_shape,
     )
     global_tracing_state.add_node(node)
 
     dtype_val = getattr(out_dtype, "value", out_dtype)
     proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
-    return Tensor(proxy, cast("Callable[..., TensorConfig]", TensorConfig)(out_shape, out_dtype, inputs[0].device))
+    return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 
 def _reduce_window_eager(
@@ -79,7 +83,7 @@ def _reduce_window_eager(
     computation: str,
     window_config: WindowConfig,
 ) -> Tensor:
-    """Evaluate _reduce_window_eager operation.
+    """Compute the reduce window eager tensor operation.
 
     Args:
         operand (Tensor): The operand parameter.
@@ -107,7 +111,7 @@ def _build_reduce_window_attributes(
     computation: str,
     window_config: WindowConfig,
 ) -> dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None]:
-    """Evaluate _build_reduce_window_attributes operation.
+    """Compute the build reduce window attributes tensor operation.
 
     Args:
         init_value (Tensor | float): The init_value parameter.
@@ -136,7 +140,7 @@ def _reduce_window_trace(
     computation: str,
     window_config: WindowConfig,
 ) -> Tensor:
-    """Evaluate _reduce_window_trace operation.
+    """Compute the reduce window trace tensor operation.
 
     Args:
         operand (Tensor): The operand parameter.

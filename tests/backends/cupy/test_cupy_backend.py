@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
+import pytest
+
 from ml_switcheroo_compiler.backends.cupy.eager import execute_op
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
 from ml_switcheroo_compiler.backends.cupy.types import array, asarray, item, zeros
@@ -41,39 +43,28 @@ def test_cupy_eager_execute_op() -> None:
     """Test function test_cupy_eager_execute_op."""
     cp_mock = DummyCp()
 
-    # Test registered func
     def dummy_eager(module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Test function dummy_eager."""
         return "dummy_eager_res"
 
     global_eager_registry.register("TestOp")(dummy_eager)
-
     res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "TestOp")
     assert res == "dummy_eager_res"
-
     if "Add" in global_eager_registry._registry:
         del global_eager_registry._registry["Add"]
-
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
         mock_schema = type("Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}})()
         mock_mappings.return_value = mock_schema
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", cp_mock), patch("sys.modules", {"ml_switcheroo_compiler.backends.cupy.eager": cp_mock}):
             res2 = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1, 2)
             assert res2 == "add_res"
-
     global_eager_registry.register("NumpyFallbackOp")(dummy_eager)
     res3 = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "NumpyFallbackOp")
     assert res3 == "dummy_eager_res"
-
     if "UnknownOp" in global_eager_registry._registry:
         del global_eager_registry._registry["UnknownOp"]
-
-    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-
-    try:
+    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownOp")
-    except BackendNotSupportedError as _exc:
-        assert _exc is not None
 
 
 def test_cupy_eager_execute_op_exception() -> None:
@@ -85,10 +76,8 @@ def test_cupy_eager_execute_op_exception() -> None:
 
     if "OpThatRaises" in global_eager_registry._registry:
         del global_eager_registry._registry["OpThatRaises"]
-
     with pytest.raises(BackendNotSupportedError, match="Operation 'OpThatRaises' is not implemented."):
         cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "OpThatRaises")
-
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
         mock_schema = type("Dummy", (), {"operations": {"SnakeOp": type("DummyOp", (), {"target_api": "snake_op", "custom_code": None})()}})()
         mock_mappings.return_value = mock_schema
@@ -103,19 +92,14 @@ def test_cupy_generator() -> None:
     gen = cast("Callable[..., EagerTensorProtocol]", CupyGenerator)(g)
     assert gen.get_fallback_prefix() == "cp"
     assert gen.get_helper_functions() == []
-
     node = IRNode("Einsum", op_type="Einsum")
-
     node = IRNode("TruncateDiv", op_type="TruncateDiv")
-
     node = IRNode("TruncateMod", op_type="TruncateMod")
-
     node = IRNode("Add", op_type="Add")
     assert gen.generic_visit(node, ["a", "b"]) == "cp.add(a, b)"
-
     node = IRNode("UnknownOp", op_type="UnknownOp")
-    assert gen.generic_visit(node, [], kwarg1="val") == "cp.unknownop(kwarg1=\x27val\x27)"
-    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "cp.unknownop(a, b, kwarg1=\x27val\x27)"
+    assert gen.generic_visit(node, [], kwarg1="val") == "cp.unknownop(kwarg1='val')"
+    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "cp.unknownop(a, b, kwarg1='val')"
 
 
 def test_cupy_types() -> None:
@@ -138,25 +122,6 @@ def test_cupy_eager_execute_op_fallback_to_numpy_registry() -> None:
         """Test function dummy_eager."""
         return "dummy_eager_numpy_fallback"
 
-    # Don't register it globally, we want the global registry to have it but
-    # cupy to NOT have it. Wait, the code says:
-    # try:
-    #     func = getattr(cp, snake)
-    # except AttributeError:
-    #     func = global_eager_registry.get(op_type)
-    #     if func:
-    #         return func(np, *args, **kwargs)
-
-    # We tested this with NumpyFallbackOp but global_eager_registry.get(op_type)
-    # in execute_op is checked AT THE START of execute_op:
-    # func_registry = global_eager_registry.get(op_type)
-    # if func_registry is not None:
-    #     return func_registry(cp, *args, **kwargs)
-
-    # Meaning we CANNOT hit lines 41-42 (fallback to np via global registry)
-    # unless global_eager_registry.get(op_type) was None at first, but then is not None
-    # in the except block! That's impossible, they use the same op_type.
-    # Ah, wait! The eager registry might have backends mapped.
     assert callable(test_cupy_eager_execute_op_fallback_to_numpy_registry)
 
 

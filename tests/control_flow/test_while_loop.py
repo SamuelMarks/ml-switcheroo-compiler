@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Control flow tests."""
 
 from __future__ import annotations
@@ -19,7 +18,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-
 device = Device(DeviceType.CPU, 0)
 
 
@@ -27,19 +25,18 @@ def test_while_loop_eager() -> None:
     """Test the while loop eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the eager execution of the while_loop operator.\n\n    Verifies that while_loop correctly iterates using the condition and body\n    functions until the condition is no longer met when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
 
         def cond_fn(val: EagerValue) -> EagerValue:
             """Cond fn.
 
             Args:
-            val (object): The val parameter
+            val (EagerValue): The val parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("EagerTensorProtocol", val) < cast("EagerTensorProtocol", 5), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((), DType.Bool, device))
 
@@ -47,10 +44,10 @@ def test_while_loop_eager() -> None:
             """Body fn.
 
             Args:
-            val (object): The val parameter
+            val (EagerValue): The val parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return cast("EagerTensorProtocol", val) + cast("EagerTensorProtocol", 1)
 
@@ -62,19 +59,18 @@ def test_while_loop_trace() -> None:
     """Test the while loop trace behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the tracing behavior of the while_loop operator.\n\n    Verifies that while_loop correctly records the loop operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
 
         def cond_fn(val: EagerValue) -> EagerValue:
             """Cond fn.
 
             Args:
-            val (object): The val parameter
+            val (EagerValue): The val parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
@@ -82,10 +78,10 @@ def test_while_loop_trace() -> None:
             """Body fn.
 
             Args:
-            val (object): The val parameter
+            val (EagerValue): The val parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return val
 
@@ -100,9 +96,8 @@ def test_while_loop_tuple_init() -> None:
     """Test the while loop tuple init behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the while_loop operator with tuple and list initial states.\n\n    Verifies that while_loop correctly handles structured state (tuples in\n    eager mode, lists in tracing mode) for both condition and body functions\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         t1 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
         t2 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
@@ -111,10 +106,10 @@ def test_while_loop_tuple_init() -> None:
             """Cond fn.
 
             Args:
-            state (object): The state parameter
+            state (EagerValue): The state parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             (v1, _v2) = cast("EagerTensorProtocol", state)
             return Tensor(cast("EagerTensorProtocol", getattr(v1, "data")) < 2, TensorConfig((), DType.Bool, device))
@@ -123,10 +118,10 @@ def test_while_loop_tuple_init() -> None:
             """Body fn.
 
             Args:
-            state (object): The state parameter
+            state (EagerValue): The state parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             (v1, v2) = cast("EagerTensorProtocol", state)
             return (Tensor(cast("EagerTensorProtocol", getattr(v1, "data")) + 1, TensorConfig((), DType.Int32, device)), v2)
@@ -141,11 +136,11 @@ def test_while_loop_tuple_init() -> None:
             """Cond fn trace.
 
             Args:
-            v1 (object): The v1 parameter
-            v2 (object): The v2 parameter
+            v1 (EagerValue): The v1 parameter
+            v2 (EagerValue): The v2 parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return Tensor(ProxyTensor(id="mock3", shape=(), dtype="bool"), TensorConfig((), DType.Bool, device))
 
@@ -153,11 +148,11 @@ def test_while_loop_tuple_init() -> None:
             """Body fn trace.
 
             Args:
-            v1 (object): The v1 parameter
-            v2 (object): The v2 parameter
+            v1 (EagerValue): The v1 parameter
+            v2 (EagerValue): The v2 parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return (v1, v2)
 

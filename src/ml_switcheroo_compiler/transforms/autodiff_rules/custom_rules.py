@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence  # noqa: F401
-from typing import Callable, Optional, Union, cast  # noqa: F401
+from collections.abc import Mapping, Sequence
+from typing import Callable, cast
 
-from ml_switcheroo_ir import LogicalGraph
+from ml_switcheroo_ir import AttributeValue, LogicalGraph
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import (
     UnconnectedGradients,
@@ -62,15 +62,16 @@ for op_name in [
     register_jvp(op_name)(make_zero_jvp(op_name))
 
 
-def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: EagerValue, id_map: dict[str, str]) -> None:
+def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: TensorOrScalar, id_map: dict[str, str]) -> None:
     """Inline a subgraph into the main graph.
 
     Args:
-        graph (object): The graph parameter.
-        subgraph (object): The subgraph parameter.
-        node (object): The node parameter.
-        id_map (dict): The id_map parameter.
+        graph (IRGraph): The graph parameter.
+        subgraph (IRGraph): The subgraph parameter.
+        node (TensorOrScalar): The node parameter.
+        id_map (dict[str, str]): The id_map parameter.
     """
+    _ = node
     from ml_switcheroo_ir import LogicalGraph
 
     from ml_switcheroo_compiler.ir.core import clone_logical_node
@@ -88,18 +89,24 @@ def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: EagerValue, id_map
         graph.nodes[new_n.id] = new_n
 
 
-def _inline_grad_subgraph(graph: IRGraph, sg_grad: EagerValue, sg: EagerValue, node: EagerValue, cotangent_mapping: dict[str, str]) -> list[str]:
+def _inline_grad_subgraph(
+    graph: IRGraph,
+    sg_grad: TensorOrScalar,
+    sg: TensorOrScalar,
+    node: TensorOrScalar,
+    cotangent_mapping: dict[str, str],
+) -> list[str]:
     """Inline the gradient subgraph into the main graph.
 
     Args:
-        graph (object): The graph parameter.
-        sg_grad (object): The sg_grad parameter.
-        sg (object): The sg parameter.
-        node (object): The node parameter.
-        cotangent_mapping (object): The cotangent_mapping parameter.
+        graph (IRGraph): The graph parameter.
+        sg_grad (TensorOrScalar): The sg_grad parameter.
+        sg (TensorOrScalar): The sg parameter.
+        node (TensorOrScalar): The node parameter.
+        cotangent_mapping (dict[str, str]): The cotangent_mapping parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        list[str]: Inlined output gradient node IDs.
     """
     import uuid
 
@@ -131,8 +138,8 @@ def checkpoint_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     """VJP for Checkpoint operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (IRGraph): The graph parameter.
+        node (IRNode): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -191,8 +198,8 @@ def _if_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, ...] | s
     """VJP for If operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (IRGraph): The graph parameter.
+        node (IRNode): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -208,8 +215,8 @@ def _loop_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
     """VJP for Loop operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (IRGraph): The graph parameter.
+        node (IRNode): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -248,12 +255,15 @@ def _cond_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
             id=adj_id,
             op_type="Cond",
             inputs=list(node.inputs),
-            attributes={
-                "then_branch": tb_grad,
-                "else_branch": eb_grad,
-                "true_branch": tb_grad,
-                "false_branch": eb_grad,
-            },
+            attributes=cast(
+                "Mapping[str, AttributeValue]",
+                {
+                    "then_branch": tb_grad,
+                    "else_branch": eb_grad,
+                    "true_branch": tb_grad,
+                    "false_branch": eb_grad,
+                },
+            ),
             shape_metadata=node.shape_metadata,
         )
         graph.nodes[adj_id] = adj_node
@@ -286,11 +296,14 @@ def _scan_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
             id=adj_id,
             op_type="Scan",
             inputs=list(node.inputs),
-            attributes={
-                "body": body_grad,
-                "body_subgraph": body_grad,
-                "reverse": not node.attributes.get("reverse", False),
-            },
+            attributes=cast(
+                "Mapping[str, AttributeValue]",
+                {
+                    "body": body_grad,
+                    "body_subgraph": body_grad,
+                    "reverse": not node.attributes.get("reverse", False),
+                },
+            ),
             shape_metadata=node.shape_metadata,
         )
         graph.nodes[adj_id] = adj_node
@@ -324,12 +337,15 @@ def _while_loop_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str |
             id=adj_id,
             op_type="WhileLoop",
             inputs=list(node.inputs),
-            attributes={
-                "body": body_grad,
-                "body_subgraph": body_grad,
-                "cond": cond,
-                "adjoint": True,
-            },
+            attributes=cast(
+                "Mapping[str, AttributeValue]",
+                {
+                    "body": body_grad,
+                    "body_subgraph": body_grad,
+                    "cond": cond,
+                    "adjoint": True,
+                },
+            ),
             shape_metadata=node.shape_metadata,
         )
         graph.nodes[adj_id] = adj_node
@@ -343,26 +359,30 @@ def _assoc_scan_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str |
     """VJP for AssociativeScan operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (IRGraph): The graph parameter.
+        node (IRNode): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
-        tuple: Result.
+        tuple[str | UnconnectedGradients | None, ...]: Zero cotangents for each input.
     """
+    _ = (graph, cotangent)
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     return tuple(UnconnectedGradients.ZERO for _ in node.inputs)
 
 
 @register_jvp("If")
-def _if_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
+def _if_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
     """JVP for If operation.
 
     Args:
-        graph: The graph parameter.
-        node: The node parameter.
-        tangents: The tangents parameter.
+        graph (IRGraph): The graph parameter.
+        node (TensorOrScalar): The node parameter.
+        tangents (TensorOrScalar): The tangents parameter.
+
+    Returns:
+        str: Tangent output node ID.
     """
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.transforms.autodiff import jvp
@@ -382,7 +402,12 @@ def _if_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
         else_jvp = jvp(eb, primals, tangent_ids, getattr(eb, "outputs"))
 
         new_id = f"{getattr(node, 'id')}_jvp"
-        new_node = IRNode(id=new_id, op_type="If", inputs=getattr(node, "inputs"), attributes={"then_branch": then_jvp, "else_branch": else_jvp})
+        new_node = IRNode(
+            id=new_id,
+            op_type="If",
+            inputs=getattr(node, "inputs"),
+            attributes=cast("Mapping[str, AttributeValue]", {"then_branch": then_jvp, "else_branch": else_jvp}),
+        )
         graph.nodes[new_id] = new_node
         return new_id
 
@@ -390,13 +415,13 @@ def _if_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
 
 
 @register_jvp("Cond")
-def _cond_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
+def _cond_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
     """JVP for Cond operation.
 
     Args:
         graph (IRGraph): The computation graph.
-        node (IRNode | Sequence[str] | str): The primal Cond node.
-        tangents (Sequence[str]): Input tangent identifiers.
+        node (TensorOrScalar): The primal Cond node.
+        tangents (TensorOrScalar): Input tangent identifiers.
 
     Returns:
         str: Tangent output node identifier.
@@ -418,12 +443,15 @@ def _cond_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
             id=new_id,
             op_type="Cond",
             inputs=getattr(node, "inputs"),
-            attributes={
-                "then_branch": then_jvp,
-                "else_branch": else_jvp,
-                "true_branch": then_jvp,
-                "false_branch": else_jvp,
-            },
+            attributes=cast(
+                "Mapping[str, AttributeValue]",
+                {
+                    "then_branch": then_jvp,
+                    "else_branch": else_jvp,
+                    "true_branch": then_jvp,
+                    "false_branch": else_jvp,
+                },
+            ),
             shape_metadata=getattr(node, "shape_metadata"),
         )
         graph.nodes[new_id] = new_node
@@ -433,13 +461,13 @@ def _cond_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
 
 
 @register_jvp("WhileLoop")
-def _while_loop_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
+def _while_loop_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
     """JVP for WhileLoop operation.
 
     Args:
         graph (IRGraph): The computation graph.
-        node (IRNode | Sequence[str] | str): The primal WhileLoop node.
-        tangents (Sequence[str]): Input tangent identifiers.
+        node (TensorOrScalar): The primal WhileLoop node.
+        tangents (TensorOrScalar): Input tangent identifiers.
 
     Returns:
         str: Tangent output node identifier.
@@ -458,11 +486,14 @@ def _while_loop_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> s
             id=new_id,
             op_type="WhileLoop",
             inputs=getattr(node, "inputs"),
-            attributes={
-                "body": body_jvp,
-                "body_subgraph": body_jvp,
-                "cond": getattr(node, "attributes").get("cond"),
-            },
+            attributes=cast(
+                "Mapping[str, AttributeValue]",
+                {
+                    "body": body_jvp,
+                    "body_subgraph": body_jvp,
+                    "cond": getattr(node, "attributes").get("cond"),
+                },
+            ),
             shape_metadata=getattr(node, "shape_metadata"),
         )
         graph.nodes[new_id] = new_node
@@ -472,28 +503,29 @@ def _while_loop_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> s
 
 
 @register_jvp("Loop")
-def _loop_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
+def _loop_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
     """JVP for Loop operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
-        tangents (list): The tangents parameter.
+        graph (IRGraph): The graph parameter.
+        node (TensorOrScalar): The node parameter.
+        tangents (TensorOrScalar): The tangents parameter.
 
     Returns:
-        str: Result.
+        str: Tangent node ID.
     """
+    _ = (graph, node, tangents)
     return ""
 
 
 @register_jvp("Scan")
-def _scan_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
+def _scan_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
     """JVP for Scan operation.
 
     Args:
         graph (IRGraph): The computation graph.
-        node (IRNode | Sequence[str] | str): The primal Scan node.
-        tangents (Sequence[str]): Tangents.
+        node (TensorOrScalar): The primal Scan node.
+        tangents (TensorOrScalar): Tangents.
 
     Returns:
         str: Tangent node ID.
@@ -515,11 +547,14 @@ def _scan_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
             id=new_id,
             op_type="Scan",
             inputs=getattr(node, "inputs"),
-            attributes={
-                "body": body_jvp,
-                "body_subgraph": body_jvp,
-                "reverse": getattr(node, "attributes").get("reverse", False),
-            },
+            attributes=cast(
+                "Mapping[str, AttributeValue]",
+                {
+                    "body": body_jvp,
+                    "body_subgraph": body_jvp,
+                    "reverse": getattr(node, "attributes").get("reverse", False),
+                },
+            ),
             shape_metadata=getattr(node, "shape_metadata"),
         )
         graph.nodes[new_id] = new_node
@@ -529,17 +564,18 @@ def _scan_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
 
 
 @register_jvp("AssociativeScan")
-def _assoc_scan_jvp(graph: IRGraph, node: EagerValue, tangents: EagerValue) -> str:
+def _assoc_scan_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
     """JVP for AssociativeScan operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
-        tangents (list): The tangents parameter.
+        graph (IRGraph): The graph parameter.
+        node (TensorOrScalar): The node parameter.
+        tangents (TensorOrScalar): The tangents parameter.
 
     Returns:
-        str: Result.
+        str: Tangent node ID.
     """
+    _ = (graph, node, tangents)
     return ""
 
 
@@ -550,15 +586,13 @@ def recompute_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> Sequence[str 
     Delegates to the original operation's VJP rule.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (IRGraph): The graph parameter.
+        node (IRNode): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
         tuple: Result.
     """
-    from ml_switcheroo_ir import AttributeValue
-
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
     orig_op = str(node.attributes.get("original_op", "Unknown"))
@@ -580,8 +614,8 @@ def custom_vjp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     """VJP for CustomVJP operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (IRGraph): The graph parameter.
+        node (IRNode): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -640,9 +674,9 @@ def custom_jvp_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) 
     """JVP for CustomJVP operation.
 
     Args:
-        graph (object): The target IR graph.
-        node (object): The CustomJVP node.
-        tangents (object): Tangents for inputs.
+        graph (IRGraph): The target IR graph.
+        node (IRNode): The CustomJVP node.
+        tangents (Sequence[str] | str): Tangents for inputs.
 
     Returns:
         str: Output tangent node ID.
@@ -697,8 +731,8 @@ def custom_jvp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     """VJP for CustomJVP operation.
 
     Args:
-        graph (object): The target IR graph.
-        node (object): The CustomJVP node.
+        graph (IRGraph): The target IR graph.
+        node (IRNode): The CustomJVP node.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -850,7 +884,7 @@ def log_poisson_loss_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[
     """
     import uuid
 
-    from ml_switcheroo_ir import AttributeValue, LogicalNode
+    from ml_switcheroo_ir import LogicalNode
 
     targets_id: str = node.inputs[0] if len(node.inputs) > 0 else ""
     log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""
@@ -892,7 +926,7 @@ def log_poisson_loss_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] |
     """
     import uuid
 
-    from ml_switcheroo_ir import AttributeValue, LogicalNode
+    from ml_switcheroo_ir import LogicalNode
 
     targets_id: str = node.inputs[0] if len(node.inputs) > 0 else ""
     log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""

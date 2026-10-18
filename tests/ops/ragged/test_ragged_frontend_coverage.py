@@ -86,8 +86,8 @@ def test_ragged_frontend_coverage() -> None:
                 """Return mocked shape tuple.
 
                 Args:
-                    *args (object): Input arguments.
-                    **kwargs (object): Keyword arguments.
+                    *args (EagerValue): Input arguments.
+                    **kwargs (EagerValue): Keyword arguments.
 
                 Returns:
                     tuple[int, ...]: Inferred shape.

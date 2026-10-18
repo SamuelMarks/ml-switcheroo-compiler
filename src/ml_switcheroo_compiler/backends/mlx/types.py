@@ -21,20 +21,20 @@ except ImportError:
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
-    """Evaluate zeros operation.
+    """Execute zeros for compiler processing.
 
     Args:
         cls: Class.
         shape (tuple[int, ...]): Shape.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_zeros)(mx, shape))
 
 
 def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
-    """Evaluate array operation.
+    """Execute array for compiler processing.
 
     Args:
         cls: Class.
@@ -42,7 +42,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
         dtype: Dtype.
 
     Returns:
-        object: Result.
+        EagerValue: Result.
     """
     del cls
     actual_dtype = getattr(mx, dtype) if isinstance(dtype, str) and hasattr(mx, dtype) else dtype
@@ -50,14 +50,14 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
-    """Evaluate asarray operation.
+    """Execute asarray for compiler processing.
 
     Args:
         cls: Class.
         data: Data.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     if hasattr(mx, "asarray"):
         return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(mx, data))
@@ -65,7 +65,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
 
 
 def item(cls: type, data: EagerValue) -> float:
-    """Evaluate item operation.
+    """Execute item for compiler processing.
 
     Args:
         cls: Class.

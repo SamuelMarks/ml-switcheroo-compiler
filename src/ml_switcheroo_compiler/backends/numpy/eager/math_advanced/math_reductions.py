@@ -21,7 +21,7 @@ def _np_pmean(
     *args: Union[float, int, str, bool, None],
     **kwargs: Union[float, int, str, bool, None],
 ) -> ArrayInput:
-    """Evaluate _np_pmean operation.
+    """Execute the eager np pmean operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.
@@ -42,7 +42,7 @@ def _np_psum(
     *args: ArrayInput,
     **kwargs: Union[float, int, str, bool, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_psum operation.
+    """Execute the eager np psum operation on the active backend array.
 
     Args:
         backend_module (ModuleType): The backend module.

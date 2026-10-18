@@ -243,10 +243,11 @@ def test_eager_dispatch_error_and_fallbacks() -> None:
         with pytest.raises(BackendNotSupportedError, match="Failed executing awkward.sum"):
             execute_op("Sum", [1, 2])
 
-    # Mock ufunc failure in numpy
-    with mock.patch("numpy.sin", side_effect=RuntimeError("numpy ufunc error")):
-        with pytest.raises(BackendNotSupportedError, match="Failed executing NumPy ufunc"):
+    # Mock ufunc failure in math
+    with mock.patch("math.sin", side_effect=RuntimeError("math ufunc error")):
+        with pytest.raises(BackendNotSupportedError, match="Failed executing math ufunc"):
             execute_op("Sin", [1.0])
+    assert execute_op("Sin", 0.0) == 0.0
 
     # Unhandled operator in _eval_operator
     handled, _ = _eval_operator("unknown_op_xyz", (1, 2))

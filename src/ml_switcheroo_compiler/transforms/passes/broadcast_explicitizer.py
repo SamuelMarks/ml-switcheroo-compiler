@@ -19,7 +19,7 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_infer
 
 
 def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[int, ...]) -> str:
-    """Evaluate _inject_broadcast_node operation.
+    """Execute inject broadcast node for compiler processing.
 
     Args:
         graph (IRGraph): The graph parameter.
@@ -42,11 +42,11 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
 
 
 def _needs_broadcast(shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[int, ...]]) -> Optional[tuple[int, ...]]:
-    """Evaluate _needs_broadcast operation.
+    """Execute needs broadcast for compiler processing.
 
     Args:
-        shape1 (object): The shape1 parameter.
-        shape2 (object): The shape2 parameter.
+        shape1 (Optional[tuple[int, ...]]): The shape1 parameter.
+        shape2 (Optional[tuple[int, ...]]): The shape2 parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -77,9 +77,11 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
     if len(node.inputs) != BINARY_OP_ARITY:
         return False
 
+    from typing import cast
+
     in1, in2 = node.inputs
-    shape1 = graph.nodes[in1].shape_metadata
-    shape2 = graph.nodes[in2].shape_metadata
+    shape1 = cast("Optional[tuple[int, ...]]", graph.nodes[in1].shape_metadata)
+    shape2 = cast("Optional[tuple[int, ...]]", graph.nodes[in2].shape_metadata)
 
     target_shape = _needs_broadcast(shape1, shape2)
     if target_shape is None:

@@ -23,8 +23,8 @@ class MockEmptyShapeOp(OpDef):
         """Return empty shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerValue): Positional args.
+            **kwargs (EagerValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Empty tuple.

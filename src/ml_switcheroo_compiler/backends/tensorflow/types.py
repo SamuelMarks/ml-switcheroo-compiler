@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
-    """Evaluate zeros operation.
+    """Execute zeros for compiler processing.
 
     Args:
         cls (type): Class.
@@ -35,22 +35,22 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
 
 
 def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
-    """Evaluate array operation.
+    """Execute array for compiler processing.
 
     Args:
         cls (type): Class.
-        data (object): Data.
-        dtype (object): Dtype.
+        data (EagerValue): Data.
+        dtype (EagerValue): Dtype.
 
     Args:
         cls (type): Class.
-        data (object): Data.
-        dtype (object): Dtype.
+        data (EagerValue): Data.
+        dtype (EagerValue): Dtype.
 
     Args:
         cls (type): The class.
-    data (object): The data parameter.
-        dtype (object): The dtype parameter.
+    data (EagerValue): The data parameter.
+        dtype (EagerValue): The dtype parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -59,19 +59,19 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
-    """Evaluate asarray operation.
+    """Execute asarray for compiler processing.
 
     Args:
         cls (type): Class.
-        data (object): Data.
+        data (EagerValue): Data.
 
     Args:
         cls (type): Class.
-        data (object): Data.
+        data (EagerValue): Data.
 
     Args:
         cls (type): The class.
-    data (object): The data parameter.
+    data (EagerValue): The data parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -80,19 +80,19 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
 
 
 def item(cls: type, data: EagerValue) -> float:
-    """Evaluate item operation.
+    """Execute item for compiler processing.
 
     Args:
         cls (type): Class.
-        data (object): Data.
+        data (EagerValue): Data.
 
     Args:
         cls (type): Class.
-        data (object): Data.
+        data (EagerValue): Data.
 
     Args:
         cls (type): The class.
-    data (object): The data parameter.
+    data (EagerValue): The data parameter.
 
     Returns:
         float: Result.

@@ -133,7 +133,7 @@ def test_scatter_exact_shape_deduction(mocker: EagerTensorProtocol) -> None:
     """Verify that scatter and tensor_scatter operations deduce exact shapes in graph mode.
 
     Args:
-        mocker (object): Pytest mocker fixture.
+        mocker (EagerTensorProtocol): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 

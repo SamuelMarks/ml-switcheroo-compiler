@@ -17,29 +17,26 @@ def test_check_dependencies_clean() -> None:
         clean_file: str = os.path.join(core_dir, "clean.py")
         with open(clean_file, "w", encoding="utf-8") as f:
             f.write("import os\nimport sys\nimport yaml\nimport pydantic\n")
-
-        # non-python file skipped
         with open(os.path.join(core_dir, "notes.txt"), "w", encoding="utf-8") as f:
             f.write("Some notes")
-
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) == 0
 
 
 def test_check_dependencies_violations() -> None:
-    """Test checking dependencies detects disallowed 3rd party import."""
+    """Test checking dependencies detects disallowed 3rd party import (static and dynamic)."""
     with tempfile.TemporaryDirectory() as temp_dir:
         core_dir: str = os.path.join(temp_dir, "core")
         os.makedirs(core_dir)
         bad_file: str = os.path.join(core_dir, "bad.py")
         with open(bad_file, "w", encoding="utf-8") as f:
-            f.write("import sklearn\nimport numpy as np\nfrom scipy.optimize import minimize\n")
-
+            f.write('import importlib\nimport sklearn\nimport numpy as np\nfrom scipy.optimize import minimize\np = __import__("psutil")\nsub = "special"\ns = importlib.import_module(f"scipy.{sub}")\ndyn = importlib.import_module(f"{sub}")\nother = __import__()\nnum = __import__(123)\n')
         violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) >= 3
+        assert len(violations) >= 5
         assert any("sklearn" in v for v in violations)
         assert any("numpy" in v for v in violations)
         assert any("scipy" in v for v in violations)
+        assert any("psutil" in v for v in violations)
 
 
 def test_check_dependencies_backend_allowed() -> None:
@@ -50,13 +47,11 @@ def test_check_dependencies_backend_allowed() -> None:
         torch_file: str = os.path.join(pytorch_dir, "runner.py")
         with open(torch_file, "w", encoding="utf-8") as f:
             f.write("import torch\nfrom torch import nn\n")
-
         numpy_dir: str = os.path.join(temp_dir, "backends", "numpy")
         os.makedirs(numpy_dir)
         np_file: str = os.path.join(numpy_dir, "runner.py")
         with open(np_file, "w", encoding="utf-8") as f:
             f.write("import numpy as np\nimport scipy.special\n")
-
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) == 0
 
@@ -69,11 +64,9 @@ def test_check_dependencies_local_module_ignored() -> None:
         helper_file: str = os.path.join(mod_dir, "helper.py")
         with open(helper_file, "w", encoding="utf-8") as f:
             f.write("X = 1\n")
-
         consumer_file: str = os.path.join(mod_dir, "consumer.py")
         with open(consumer_file, "w", encoding="utf-8") as f:
             f.write("import helper\n")
-
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) == 0
 
@@ -84,7 +77,6 @@ def test_check_dependencies_syntax_error_handled() -> None:
         bad_syntax: str = os.path.join(temp_dir, "invalid.py")
         with open(bad_syntax, "w", encoding="utf-8") as f:
             f.write("def invalid_syntax(\n")
-
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) == 0
 
@@ -104,7 +96,6 @@ def test_check_dependencies_forbidden_upward_import() -> None:
         bad_file: str = os.path.join(core_dir, "bad_upward.py")
         with open(bad_file, "w", encoding="utf-8") as f:
             f.write("import zero_pytorch\nimport zero_zoo\n")
-
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) == 2
         assert any("zero_pytorch" in v for v in violations)
@@ -133,3 +124,4 @@ def test_entrypoint_call() -> None:
                 runpy.run_path("scripts/lint_dependencies.py", run_name="__main__")
             except SystemExit as e:
                 assert e.code == 0
+    assert callable(test_entrypoint_call)

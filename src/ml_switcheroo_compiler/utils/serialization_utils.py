@@ -16,7 +16,11 @@ class ConfigurableProtocol(Protocol):
     """Protocol for objects implementing get_config()."""
 
     def get_config(self) -> dict[str, AttributeValue]:
-        """Return configuration dictionary."""
+        """Return configuration dictionary.
+
+        Returns:
+            dict[str, AttributeValue]: Computed result.
+        """
         ...
 
 
@@ -219,7 +223,7 @@ def deserialize_object(
     cls_obj = get_registered_object(class_name, custom_objects)
     if cls_obj is not None and isinstance(cls_obj, type):
         if hasattr(cls_obj, "from_config") and isinstance(config_dict, dict):
-            return cls_obj.from_config(config_dict)
+            return cast("ConfigurableProtocol | AttributeValue | None", cls_obj.from_config(config_dict))
         if isinstance(config_dict, dict):
-            return cls_obj(**config_dict)
+            return cast("ConfigurableProtocol | AttributeValue | None", cls_obj(**config_dict))
     return identifier

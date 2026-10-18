@@ -12,17 +12,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Callable, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def expand_dims(a: EagerValue, axis: int) -> EagerValue:
+def expand_dims(a: TensorOrScalar, axis: int) -> TensorOrScalar:
     """Expand dimensions.
 
     Args:
-        a (Any): The a parameter.
+        a (TensorOrScalar): The a parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -38,11 +39,11 @@ def expand_dims(a: EagerValue, axis: int) -> EagerValue:
     return _emit_shape_node("ExpandDims", [a], {"axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def argwhere(a: EagerValue) -> EagerValue:
+def argwhere(a: TensorOrScalar) -> TensorOrScalar:
     """Find the indices of array elements that are non-zero, grouped by element.
 
     Args:
-        a (Any): Input data.
+        a (TensorOrScalar): Input data.
 
     Returns:
         Tensor: Indices of elements that are non-zero.
@@ -53,15 +54,15 @@ def argwhere(a: EagerValue) -> EagerValue:
     return _emit_shape_node("Argwhere", [a], {}, cast("Sequence[Union[int, str]]", (None, None)), "int64")
 
 
-def argpartition(a: EagerValue, kth: EagerValue, axis: int = -1, kind: str = "introselect", order: EagerValue = None) -> EagerValue:
+def argpartition(a: TensorOrScalar, kth: TensorOrScalar, axis: int = -1, kind: str = "introselect", order: TensorOrScalar = None) -> TensorOrScalar:
     """Perform an indirect partition along the given axis.
 
     Args:
-        a (Any): The a parameter.
-        kth (Any): The kth parameter.
+        a (TensorOrScalar): The a parameter.
+        kth (TensorOrScalar): The kth parameter.
         axis (int): The axis parameter.
         kind (str): The kind parameter.
-        order (Any): The order parameter.
+        order (TensorOrScalar): The order parameter.
 
     Returns:
         Tensor: Result.
@@ -78,15 +79,15 @@ def argpartition(a: EagerValue, kth: EagerValue, axis: int = -1, kind: str = "in
     )
 
 
-def partition(a: EagerValue, kth: EagerValue, axis: int = -1, kind: str = "introselect", order: EagerValue = None) -> EagerValue:
+def partition(a: TensorOrScalar, kth: TensorOrScalar, axis: int = -1, kind: str = "introselect", order: TensorOrScalar = None) -> TensorOrScalar:
     """Return a partitioned copy of an array.
 
     Args:
-        a (Any): The a parameter.
-        kth (Any): The kth parameter.
+        a (TensorOrScalar): The a parameter.
+        kth (TensorOrScalar): The kth parameter.
         axis (int): The axis parameter.
         kind (str): The kind parameter.
-        order (Any): The order parameter.
+        order (TensorOrScalar): The order parameter.
 
     Returns:
         Tensor: Result.
@@ -107,14 +108,14 @@ def partition(a: EagerValue, kth: EagerValue, axis: int = -1, kind: str = "intro
     )
 
 
-def compress(condition: EagerValue, a: EagerValue, axis: EagerValue = None, out: EagerValue = None) -> EagerValue:
+def compress(condition: TensorOrScalar, a: TensorOrScalar, axis: TensorOrScalar = None, out: TensorOrScalar = None) -> TensorOrScalar:
     """Return selected slices of an array along given axis.
 
     Args:
-        condition (Any): The condition parameter.
-        a (Any): The a parameter.
+        condition (TensorOrScalar): The condition parameter.
+        a (TensorOrScalar): The a parameter.
         axis (int): The axis parameter.
-        out (Any): The out parameter.
+        out (TensorOrScalar): The out parameter.
 
     Returns:
         Tensor: Result.
@@ -135,13 +136,13 @@ def compress(condition: EagerValue, a: EagerValue, axis: EagerValue = None, out:
     )
 
 
-def insert(arr: EagerValue, obj: EagerValue, values: EagerValue, axis: EagerValue = None) -> EagerValue:
+def insert(arr: TensorOrScalar, obj: TensorOrScalar, values: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
     """Insert values along the given axis before the given indices.
 
     Args:
-        arr (Any): The arr parameter.
-        obj (Any): The obj parameter.
-        values (Any): The values parameter.
+        arr (TensorOrScalar): The arr parameter.
+        obj (TensorOrScalar): The obj parameter.
+        values (TensorOrScalar): The values parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -156,12 +157,12 @@ def insert(arr: EagerValue, obj: EagerValue, values: EagerValue, axis: EagerValu
     return _emit_shape_node("Insert", [arr, values] if hasattr(values, "shape") else [arr], {"obj": obj, "axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(arr, "dtype", "float32"))
 
 
-def fill_diagonal(a: EagerValue, val: EagerValue, wrap: bool = False) -> EagerValue:
+def fill_diagonal(a: TensorOrScalar, val: TensorOrScalar, wrap: bool = False) -> TensorOrScalar:
     """Fill the main diagonal of the given array of any dimensionality.
 
     Args:
-        a (Any): The a parameter.
-        val (Any): The val parameter.
+        a (TensorOrScalar): The a parameter.
+        val (TensorOrScalar): The val parameter.
         wrap (bool): The wrap parameter.
 
     Returns:
@@ -176,13 +177,13 @@ def fill_diagonal(a: EagerValue, val: EagerValue, wrap: bool = False) -> EagerVa
     return _emit_shape_node("FillDiagonal", [a, val] if hasattr(val, "shape") else [a], {"val": val, "wrap": wrap}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def moveaxis(a: EagerValue, source: EagerValue, destination: EagerValue) -> EagerValue:
+def moveaxis(a: TensorOrScalar, source: TensorOrScalar, destination: TensorOrScalar) -> TensorOrScalar:
     """Move axes of a tensor.
 
     Args:
-        a (Any): The a parameter.
-        source (Any): The source parameter.
-        destination (Any): The destination parameter.
+        a (TensorOrScalar): The a parameter.
+        source (TensorOrScalar): The source parameter.
+        destination (TensorOrScalar): The destination parameter.
 
     Returns:
         Tensor: Result.
@@ -201,8 +202,8 @@ def permute(a: Tensor, dims: tuple[int, ...] | list[int] | None = None) -> Tenso
     """Permute dimensions of a tensor.
 
     Args:
-        a (Any): The a parameter.
-        dims (Any): The dims parameter.
+        a (Tensor): The a parameter.
+        dims (tuple[int, ...] | list[int] | None): The dims parameter.
 
     Returns:
         Tensor: Result.
@@ -217,11 +218,11 @@ def permute(a: Tensor, dims: tuple[int, ...] | list[int] | None = None) -> Tenso
     return _emit_shape_node("Permute", [a], {"dims": dims}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def swapaxes(a: EagerValue, axis1: int, axis2: int) -> EagerValue:
+def swapaxes(a: TensorOrScalar, axis1: int, axis2: int) -> TensorOrScalar:
     """Interchange two axes of an array.
 
     Args:
-        a (Any): The a parameter.
+        a (TensorOrScalar): The a parameter.
         axis1 (int): The axis1 parameter.
         axis2 (int): The axis2 parameter.
 
@@ -238,13 +239,13 @@ def swapaxes(a: EagerValue, axis1: int, axis2: int) -> EagerValue:
     return _emit_shape_node("Swapaxes", [a], {"axis1": axis1, "axis2": axis2}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def roll(a: EagerValue, shift: EagerValue, axis: EagerValue = None) -> EagerValue:
+def roll(a: TensorOrScalar, shift: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
     """Roll array elements along a given axis.
 
     Args:
-        a (Any): The a parameter.
-        shift (Any): The shift parameter.
-        axis (Any): The axis parameter.
+        a (TensorOrScalar): The a parameter.
+        shift (TensorOrScalar): The shift parameter.
+        axis (TensorOrScalar): The axis parameter.
 
     Returns:
         Tensor: Result.
@@ -259,11 +260,11 @@ def roll(a: EagerValue, shift: EagerValue, axis: EagerValue = None) -> EagerValu
     return _emit_shape_node("Roll", [a], {"shift": shift, "axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def atleast_1d(a: EagerValue) -> EagerValue:
+def atleast_1d(a: TensorOrScalar) -> TensorOrScalar:
     """Atleast 1d.
 
     Args:
-        a (Any): The a parameter.
+        a (TensorOrScalar): The a parameter.
 
     Returns:
         Tensor: Result.
@@ -278,11 +279,11 @@ def atleast_1d(a: EagerValue) -> EagerValue:
     return _emit_shape_node("Atleast1d", [a], {}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def atleast_2d(a: EagerValue) -> EagerValue:
+def atleast_2d(a: TensorOrScalar) -> TensorOrScalar:
     """Atleast 2d.
 
     Args:
-        a (Any): The a parameter.
+        a (TensorOrScalar): The a parameter.
 
     Returns:
         Tensor: Result.
@@ -297,11 +298,11 @@ def atleast_2d(a: EagerValue) -> EagerValue:
     return _emit_shape_node("Atleast2d", [a], {}, cast("Sequence[Union[int, str]]", out_shape), getattr(a, "dtype", "float32"))
 
 
-def atleast_3d(a: EagerValue) -> EagerValue:
+def atleast_3d(a: TensorOrScalar) -> TensorOrScalar:
     """Atleast 3d.
 
     Args:
-        a (Any): The a parameter.
+        a (TensorOrScalar): The a parameter.
 
     Returns:
         Tensor: Result.
@@ -317,11 +318,11 @@ def atleast_3d(a: EagerValue) -> EagerValue:
 
 
 def _get_squeeze_shape(a: Tensor, axis: int | tuple[int, ...] | list[int] | None) -> tuple[int, ...]:
-    """Evaluate _get_squeeze_shape operation.
+    """Compute the get squeeze shape tensor operation.
 
     Args:
-        a (Any): The a parameter.
-        axis (Any): The axis parameter.
+        a (Tensor): The a parameter.
+        axis (int | tuple[int, ...] | list[int] | None): The axis parameter.
 
     Returns:
         tuple: Result.
@@ -334,12 +335,12 @@ def _get_squeeze_shape(a: Tensor, axis: int | tuple[int, ...] | list[int] | None
     return tuple(shape[i] for i in range(len(shape)) if i not in n)
 
 
-def squeeze(a: EagerValue, axis: EagerValue = None) -> EagerValue:
+def squeeze(a: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
     """Squeeze dimensions of a tensor.
 
     Args:
-        a (Any): The a parameter.
-        axis (Any): The axis parameter.
+        a (TensorOrScalar): The a parameter.
+        axis (TensorOrScalar): The axis parameter.
 
     Returns:
         Tensor: Result.
@@ -353,11 +354,11 @@ def squeeze(a: EagerValue, axis: EagerValue = None) -> EagerValue:
     return _emit_shape_node("Squeeze", [a], {"axis": axis}, shape_val, getattr(a, "dtype", "float32"))
 
 
-def diagflat(v: EagerValue, k: int = 0) -> EagerValue:
+def diagflat(v: TensorOrScalar, k: int = 0) -> TensorOrScalar:
     """Create a two-dimensional array with the flattened input as a diagonal.
 
     Args:
-        v (Any): The v parameter.
+        v (TensorOrScalar): The v parameter.
         k (int): The k parameter.
 
     Returns:
@@ -372,11 +373,11 @@ def diagflat(v: EagerValue, k: int = 0) -> EagerValue:
     return _emit_shape_node("Diagflat", [v], {"k": k}, cast("Sequence[Union[int, str]]", out_shape), getattr(v, "dtype", "float32"))
 
 
-def block(arrays: EagerValue) -> EagerValue:
+def block(arrays: TensorOrScalar) -> TensorOrScalar:
     """Assemble an nd-array from nested lists of blocks.
 
     Args:
-        arrays (Any): The arrays parameter.
+        arrays (TensorOrScalar): The arrays parameter.
 
     Returns:
         Tensor: Result.
@@ -387,15 +388,15 @@ def block(arrays: EagerValue) -> EagerValue:
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Block")().infer_shape(arrays)
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, cast("Sequence[Union[int, str]]", out_shape), "float32"))
+    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, cast("Sequence[Union[int, str]]", out_shape), "float32"))
 
 
-def delete(arr: EagerValue, obj: EagerValue, axis: EagerValue = None) -> EagerValue:
+def delete(arr: TensorOrScalar, obj: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
     """Return a new array with sub-arrays along an axis deleted.
 
     Args:
-        arr (Any): The arr parameter.
-        obj (Any): The obj parameter.
+        arr (TensorOrScalar): The arr parameter.
+        obj (TensorOrScalar): The obj parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -410,7 +411,7 @@ def delete(arr: EagerValue, obj: EagerValue, axis: EagerValue = None) -> EagerVa
     return _emit_shape_node("Delete", [arr], {"obj": obj, "axis": axis}, cast("Sequence[Union[int, str]]", out_shape), getattr(arr, "dtype", "float32"))
 
 
-def diag_indices(n: int, ndim: int = 2) -> EagerValue:
+def diag_indices(n: int, ndim: int = 2) -> TensorOrScalar:
     """Return the indices to access the main diagonal of an array.
 
     Args:
@@ -442,11 +443,11 @@ def diag_indices(n: int, ndim: int = 2) -> EagerValue:
     return tuple(out_tensors)
 
 
-def diag_indices_from(arr: EagerValue) -> EagerValue:
+def diag_indices_from(arr: TensorOrScalar) -> TensorOrScalar:
     """Return the indices to access the main diagonal of an n-dimensional array.
 
     Args:
-        arr (Any): The arr parameter.
+        arr (TensorOrScalar): The arr parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -475,12 +476,12 @@ def diag_indices_from(arr: EagerValue) -> EagerValue:
     return tuple(out_tensors)
 
 
-def size(input: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def size(input: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the number of elements in a tensor.
 
     Args:
-        input (Any): The input parameter.
-        **kwargs (Any): Keyword args.
+        input (TensorOrScalar): The input parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -498,8 +499,8 @@ def reshape(a: Tensor, newshape: int | tuple[int, ...] | list[int]) -> Tensor:
     """Reshape a tensor.
 
     Args:
-        a (Any): The a parameter.
-        newshape (Any): The newshape parameter.
+        a (Tensor): The a parameter.
+        newshape (int | tuple[int, ...] | list[int]): The newshape parameter.
 
     Returns:
         Tensor: Result.
@@ -518,8 +519,8 @@ def flip(m: Tensor, axis: int | tuple[int, ...] | list[int] | None = None) -> Te
     """Reverse the order of elements in an array along the given axis.
 
     Args:
-        m (Any): The m parameter.
-        axis (Any): The axis parameter.
+        m (Tensor): The m parameter.
+        axis (int | tuple[int, ...] | list[int] | None): The axis parameter.
 
     Returns:
         Tensor: Result.
@@ -532,11 +533,11 @@ def flip(m: Tensor, axis: int | tuple[int, ...] | list[int] | None = None) -> Te
     return _emit_shape_node("Flip", [m], {"axis": axis}, getattr(m, "shape", ()), getattr(m, "dtype", "float32"))
 
 
-def fliplr(m: EagerValue) -> EagerValue:
+def fliplr(m: TensorOrScalar) -> TensorOrScalar:
     """Flip array in the left/right direction.
 
     Args:
-        m (Any): The m parameter.
+        m (TensorOrScalar): The m parameter.
 
     Returns:
         Tensor: Result.
@@ -549,11 +550,11 @@ def fliplr(m: EagerValue) -> EagerValue:
     return _emit_shape_node("Fliplr", [m], {}, getattr(m, "shape", ()), getattr(m, "dtype", "float32"))
 
 
-def flipud(m: EagerValue) -> EagerValue:
+def flipud(m: TensorOrScalar) -> TensorOrScalar:
     """Flip array in the up/down direction.
 
     Args:
-        m (Any): The m parameter.
+        m (TensorOrScalar): The m parameter.
 
     Returns:
         Tensor: Result.

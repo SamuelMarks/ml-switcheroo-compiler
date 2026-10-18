@@ -6,17 +6,17 @@ import builtins  # noqa: F401
 import typing  # noqa: F401
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.distributed.host_collectives import np
 
 
 @global_eager_registry.register("Copysign")
 def _copysign(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _copysign operation.
+    """Execute the eager copysign operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -24,7 +24,7 @@ def _copysign(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "copysign", None)
     if func:
@@ -36,7 +36,7 @@ def _copysign(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
 @global_eager_registry.register("GetPrintoptions")
 def _getprintoptions(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _getprintoptions operation.
+    """Execute the eager getprintoptions operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -44,14 +44,14 @@ def _getprintoptions(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(backend_module, "get_printoptions")(*args, **kwargs))
 
 
 @global_eager_registry.register("NpTensorarrayread")
 def _np_tensorarrayread(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_tensorarrayread operation.
+    """Execute the eager np tensorarrayread operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -59,7 +59,7 @@ def _np_tensorarrayread(backend_module: EagerValue, *args: EagerValue, **kwargs:
         **kwargs: Keyword arguments.
 
     Returns:
-        Any: Element extracted at the specified index.
+        EagerValue: Element extracted at the specified index.
 
     Raises:
         IndexError: If index is out of bounds for the array or list.
@@ -91,7 +91,7 @@ def _np_tensorarrayread(backend_module: EagerValue, *args: EagerValue, **kwargs:
 
 @global_eager_registry.register("NpTensorarraywrite")
 def _np_tensorarraywrite(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_tensorarraywrite operation.
+    """Execute the eager np tensorarraywrite operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -99,7 +99,7 @@ def _np_tensorarraywrite(backend_module: EagerValue, *args: EagerValue, **kwargs
         **kwargs: Keyword arguments.
 
     Returns:
-        Any: Updated array or list containing the written element.
+        EagerValue: Updated array or list containing the written element.
 
     Raises:
         IndexError: If index is negative.
@@ -121,15 +121,15 @@ def _np_tensorarraywrite(backend_module: EagerValue, *args: EagerValue, **kwargs
         res[index] = value
         return res
 
-    if isinstance(arr, np.ndarray):
+    if isinstance(arr, host_backend.ndarray):
         if index < arr.shape[0]:
             res_arr = arr.copy()
             res_arr[index] = value
             return cast(EagerValue, res_arr)
         pad_shape = list(arr.shape)
         pad_shape[0] = index - arr.shape[0] + 1
-        pad = np.zeros(pad_shape, dtype=arr.dtype)
-        res_arr = np.concatenate([arr, pad], axis=0)
+        pad = host_backend.zeros(pad_shape, dtype=arr.dtype)
+        res_arr = host_backend.concatenate([arr, pad], axis=0)
         res_arr[index] = value
         return cast(EagerValue, res_arr)
 
@@ -143,7 +143,7 @@ def _np_tensorarraywrite(backend_module: EagerValue, *args: EagerValue, **kwargs
 
 @global_eager_registry.register("NpTopk")
 def _np_topk(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_topk operation.
+    """Execute the eager np topk operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -151,12 +151,12 @@ def _np_topk(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     arr = args[0]
     k = int(cast(int, args[1])) if len(args) > 1 else 1
-    if isinstance(arr, (list, np.ndarray)):
-        arr_np = np.array(arr)
-        idx = np.argsort(arr_np)[-k:][::-1]
+    if isinstance(arr, (list, host_backend.ndarray)):
+        arr_np = host_backend.array(arr)
+        idx = host_backend.argsort(arr_np)[-k:][::-1]
         return arr_np[idx], idx
     return [0], [0]

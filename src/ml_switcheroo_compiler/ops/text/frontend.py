@@ -4,10 +4,10 @@ import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.registry import EagerValue
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 from ml_switcheroo_ir import LogicalNode
@@ -32,7 +32,7 @@ class AsStringConfig:
     fill: str = ""
 
 
-def string_to_hash(input_tensor: Tensor, num_buckets: int) -> EagerValue:
+def string_to_hash(input_tensor: Tensor, num_buckets: int) -> TensorOrScalar:
     """Hashes string tensors to integer buckets.
 
     Args:
@@ -59,7 +59,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> EagerValue:
     )
 
 
-def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> EagerValue:
+def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> TensorOrScalar:
     """Replace matches of pattern in input_tensor with rewrite.
 
     Args:
@@ -87,7 +87,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> EagerValu
     )
 
 
-def regex_full_match(input_tensor: Tensor, pattern: str) -> EagerValue:
+def regex_full_match(input_tensor: Tensor, pattern: str) -> TensorOrScalar:
     """Check if each string fully matches the regex pattern.
 
     Args:
@@ -114,7 +114,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> EagerValue:
     )
 
 
-def string_join(inputs: list[Tensor], separator: str = "") -> EagerValue:
+def string_join(inputs: list[Tensor], separator: str = "") -> TensorOrScalar:
     """Join strings in a list of tensors.
 
     Args:
@@ -141,7 +141,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> EagerValue:
     )
 
 
-def string_length(input_tensor: Tensor) -> EagerValue:
+def string_length(input_tensor: Tensor) -> TensorOrScalar:
     """Compute the length of each string.
 
     Args:
@@ -167,7 +167,7 @@ def string_length(input_tensor: Tensor) -> EagerValue:
     )
 
 
-def string_substr(input_tensor: Tensor, pos: int, len: int) -> EagerValue:
+def string_substr(input_tensor: Tensor, pos: int, len: int) -> TensorOrScalar:
     """Return substrings.
 
     Args:
@@ -195,8 +195,8 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> EagerValue:
     )
 
 
-def _string_split_eager(input_tensor: Tensor, delimiter: str) -> EagerValue:
-    """Evaluate _string_split_eager operation.
+def _string_split_eager(input_tensor: Tensor, delimiter: str) -> TensorOrScalar:
+    """Compute the string split eager tensor operation.
 
     Args:
         input_tensor (Tensor): The input_tensor parameter.
@@ -206,7 +206,7 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> EagerValue:
         tuple: Result.
     """
     backend = get_active_backend()
-    tokens, lengths = cast("tuple[EagerValue, EagerValue]", backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
+    tokens, lengths = cast("tuple[TensorOrScalar, TensorOrScalar]", backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
     tokens_arr = cast("TensorLike", backend.array(tokens))
     lengths_arr = cast("TensorLike", backend.array(lengths))
     return (
@@ -221,8 +221,8 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> EagerValue:
     )
 
 
-def _string_split_trace(input_tensor: Tensor, delimiter: str) -> EagerValue:
-    """Evaluate _string_split_trace operation.
+def _string_split_trace(input_tensor: Tensor, delimiter: str) -> TensorOrScalar:
+    """Compute the string split trace tensor operation.
 
     Args:
         input_tensor (Tensor): The input_tensor parameter.
@@ -260,7 +260,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> EagerValue:
     )
 
 
-def string_split(input_tensor: Tensor, delimiter: str = " ") -> EagerValue:
+def string_split(input_tensor: Tensor, delimiter: str = " ") -> TensorOrScalar:
     """Split string tensors into tokens.
 
     Args:
@@ -275,7 +275,7 @@ def string_split(input_tensor: Tensor, delimiter: str = " ") -> EagerValue:
     return _string_split_trace(input_tensor, delimiter)
 
 
-def lookup(input_tensor: Tensor, vocabulary: Tensor) -> EagerValue:
+def lookup(input_tensor: Tensor, vocabulary: Tensor) -> TensorOrScalar:
     """Map tensor values to integer indices using a vocabulary.
 
     Args:
@@ -302,7 +302,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> EagerValue:
     )
 
 
-def text_vectorization(input_tensor: Tensor, **kwargs: EagerValue) -> EagerValue:
+def text_vectorization(input_tensor: Tensor, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Text vectorization.
 
     Args:
@@ -329,7 +329,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: EagerValue) -> EagerValue
     )
 
 
-def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> EagerValue:
+def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> TensorOrScalar:
     """Parse numeric values from string tensors.
 
     Args:
@@ -356,7 +356,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Eage
     )
 
 
-def string_lower(input_tensor: Tensor) -> EagerValue:
+def string_lower(input_tensor: Tensor) -> TensorOrScalar:
     """Convert string tensors to lowercase.
 
     Args:
@@ -382,7 +382,7 @@ def string_lower(input_tensor: Tensor) -> EagerValue:
     )
 
 
-def string_upper(input_tensor: Tensor) -> EagerValue:
+def string_upper(input_tensor: Tensor) -> TensorOrScalar:
     """Convert string tensors to uppercase.
 
     Args:
@@ -408,7 +408,7 @@ def string_upper(input_tensor: Tensor) -> EagerValue:
     )
 
 
-def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> EagerValue:
+def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> TensorOrScalar:
     """Compute the Levenshtein distance between sequences.
 
     Args:
@@ -436,18 +436,18 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
     )
 
 
-def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> EagerValue:
+def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> TensorOrScalar:
     """Convert AsStringConfig to a dictionary.
 
     Args:
-        conf (Any): The conf parameter.
+        conf (Optional[AsStringConfig]): The conf parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
     conf = conf if conf is not None else AsStringConfig()
     return cast(
-        EagerValue,
+        TensorOrScalar,
         {
             "precision": conf.precision,
             "scientific": conf.scientific,
@@ -461,7 +461,7 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> EagerValue:
 def as_string(
     input_tensor: Tensor,
     config: Optional[AsStringConfig] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Convert a numeric tensor to a string tensor.
 
     Args:
@@ -474,14 +474,14 @@ def as_string(
     kwargs = _as_string_config_to_dict(config)
     if global_config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("AsString", input_tensor.data, **cast("dict[str, EagerValue]", kwargs))
+        data = backend.execute_op("AsString", input_tensor.data, **cast("dict[str, TensorOrScalar]", kwargs))
         arr = cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.String, input_tensor.device),
         )
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)(
             "AsString",
             [input_tensor],

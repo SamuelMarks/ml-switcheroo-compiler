@@ -1,17 +1,22 @@
-# ruff: noqa: E402
-"""Gradient computation and autodiff utilities."""
+"""Internal helper utilities and protocols for automatic differentiation."""
 
 from __future__ import annotations
 
-import contextlib  # noqa: F401
-import math  # noqa: F401
-import uuid  # noqa: F401
+import uuid
 from collections.abc import Callable, Sequence
-from typing import Protocol, TypeVar, Union, cast, runtime_checkable  # noqa: F401
+from typing import Protocol, cast, runtime_checkable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor, Variable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+from .options import GradOptions
 
 
 @runtime_checkable
@@ -20,71 +25,74 @@ class GradTensorProtocol(Protocol):
 
     @property
     def dtype(self) -> DType | str:
-        """Get data type identifier."""
+        """Return data type identifier.
+
+        Returns:
+            DType | str: Computed result.
+        """
         ...
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Get shape dimensions."""
+        """Return shape dimensions tuple.
+
+        Returns:
+            tuple[int, ...]: Computed result.
+        """
         ...
 
     @property
     def id(self) -> str:
-        """Get unique tensor identifier."""
+        """Return unique tensor identifier.
+
+        Returns:
+            str: Computed result.
+        """
         ...
 
     @property
     def data(self) -> GradValue:
-        """Get underlying array buffer."""
+        """Return underlying array buffer.
+
+        Returns:
+            GradValue: Computed result.
+        """
         ...
 
     def __len__(self) -> int:
-        """Get length of leading dimension."""
+        """Return length of the leading dimension.
+
+        Returns:
+            int: Computed result.
+        """
         ...
 
 
 BackendArray = GradTensorProtocol
-GradValue = EagerValue
-
-
-from dataclasses import dataclass, field  # noqa: F401
-
-from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: F401
-
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import config  # noqa: F401
-from ml_switcheroo_compiler.core.tensor import TensorConfig
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function  # noqa: F401
-from ml_switcheroo_compiler.ops.registry import register_util  # noqa: F401
-from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp  # noqa: F401
-
-from .options import GradOptions
+GradValue = TensorOrScalar
 
 
 def value_and_grad_wrt_vars(
     fun: Callable[..., GradValue],
 ) -> Callable[..., tuple[GradValue, dict[str, GradValue]]]:
-    """Create a function that evaluates both the primal value and the gradient with respect to variables.
+    """Create a function that evaluates both the primal value and variable gradients.
 
     Args:
-        fun: The original function to wrap.
+        fun (Callable[..., GradValue]): Original function to wrap.
 
     Returns:
-        Callable: The wrapped function returning the primal value and gradients.
+        Callable[..., tuple[GradValue, dict[str, GradValue]]]: Wrapped callable returning `(value, grads_dict)`.
     """
 
     def wrapped(*args: GradValue, **kwargs: GradValue) -> tuple[GradValue, dict[str, GradValue]]:
-        """Evaluate wrapped operation.
+        """Evaluate `fun` and return `(value, grads_dict)`.
 
         Args:
-            *args: Positional args.
-            **kwargs: Keyword args.
+            *args (GradValue): Positional arguments.
+            **kwargs (GradValue): Keyword arguments.
 
         Returns:
-            tuple: Result.
+            tuple[GradValue, dict[str, GradValue]]: Primal output value and variable gradient dictionary.
         """
         val = fun(*args, **kwargs)
         grads: dict[str, GradValue] = {}
@@ -94,13 +102,13 @@ def value_and_grad_wrt_vars(
 
 
 def _check_scalar(tensor: GradValue) -> None:
-    """Validate that the target tensor is a scalar.
+    """Validate that `tensor` has a scalar (unit-element) shape.
 
     Args:
-        tensor: The tensor to validate.
+        tensor (GradValue): Tensor to validate.
 
     Raises:
-        SwitcherooError: If target tensor is not a scalar.
+        SwitcherooError: If `tensor` is not a scalar tensor.
     """
     from ml_switcheroo_compiler.core.errors import SwitcherooError
 
@@ -110,7 +118,6 @@ def _check_scalar(tensor: GradValue) -> None:
         try:
             prod *= int(s)
         except (ValueError, TypeError):
-            # Assume symbolic dimensions might be non-scalar
             prod = 2
 
     if prod != 1:
@@ -118,13 +125,13 @@ def _check_scalar(tensor: GradValue) -> None:
 
 
 def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
-    """Find all active variables/tensors in memory that require gradients and are in the graph.
+    """Find all live trainable tensors/variables whose node IDs belong to `graph`.
 
     Args:
-        graph: The active tracing graph.
+        graph (GradValue): Active tracing graph.
 
     Returns:
-        tuple: A tuple of active tensors list and their corresponding graph node IDs.
+        tuple[list[GradValue], list[str]]: Tuple of `(wrt_tensors, wrt_node_ids)`.
     """
     all_tensors = _collect_live_tensors()
     wrt_tensors: list[GradValue] = []
@@ -140,13 +147,13 @@ def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
 
 
 def _get_concrete_val(t: GradValue) -> GradValue:
-    """Extract concrete value from a tensor.
+    """Extract the concrete array value attached to a traced `Tensor` or `ProxyTensor`.
 
     Args:
-        t: The tensor.
+        t (GradValue): Traced tensor object.
 
     Returns:
-        GradValue: The concrete value or None.
+        GradValue: Concrete backing array value, or None if unavailable.
     """
     val = getattr(getattr(t, "data", t), "concrete_value", None)
     if val is None:
@@ -157,26 +164,27 @@ def _get_concrete_val(t: GradValue) -> GradValue:
 
 
 def _collect_live_tensors() -> list[Tensor]:
-    """Collect all live Tensor instances tracked by the garbage collector.
+    """Collect all live `Tensor` instances tracked by the garbage collector.
 
     Returns:
-        list[Tensor]: List of active Tensor objects in memory.
+        list[Tensor]: List of active `Tensor` objects in memory.
     """
     import gc
-
-    from ml_switcheroo_compiler.core.tensor import Tensor
 
     return [obj for obj in gc.get_objects() if issubclass(type(obj), Tensor)]
 
 
 def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
-    """Map input node IDs to their concrete values for evaluate_graph.
+    """Map input node IDs of `graph` to their concrete values for graph evaluation.
 
     Args:
-        graph: The active tracing graph.
+        graph (GradValue): Active tracing graph.
 
     Returns:
-        dict: A mapping of input node ID to its value.
+        dict[str, GradValue]: Mapping of input node IDs to concrete backend arrays.
+
+    Raises:
+        ValueError: If any graph input node is missing a concrete value.
     """
     all_tensors = _collect_live_tensors()
     graph_nodes = getattr(graph, "nodes", {})
@@ -196,16 +204,15 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
 
 
 def _convert_to_tensors(primals: Sequence[GradValue]) -> list[Tensor]:
-    """Convert input primals to Tensor objects.
+    """Convert a sequence of primal values into `Tensor` instances.
 
     Args:
-        primals: The primals.
+        primals (Sequence[GradValue]): Input primal values.
 
     Returns:
-        list[Tensor]: A list of converted Tensor objects.
+        list[Tensor]: Converted `Tensor` instances.
     """
     tensor_primals: list[Tensor] = []
-    from ml_switcheroo_compiler.core.device import Device
 
     for p in primals:
         if isinstance(p, Tensor):
@@ -224,25 +231,25 @@ def _convert_to_tensors(primals: Sequence[GradValue]) -> list[Tensor]:
 
 
 def _get_fun_primal(fun: Callable[..., GradValue], has_aux: bool) -> Callable[..., GradValue]:
-    """Return function for primal evaluation.
+    """Return a wrapper extracting only the primal output when `has_aux` is True.
 
     Args:
-        fun (Callable): The fun parameter.
-        has_aux (bool): The has_aux parameter.
+        fun (Callable[..., GradValue]): Target function.
+        has_aux (bool): Whether `fun` returns `(primal, aux)`.
 
     Returns:
-        Callable: Result.
+        Callable[..., GradValue]: Primal-only callable.
     """
     if has_aux:
 
         def fun_primal(*args: GradValue) -> GradValue:
-            """Evaluate fun_primal operation.
+            """Evaluate `fun` and return the first element of `(primal, aux)`.
 
             Args:
-                *args: Positional args.
+                *args (GradValue): Positional arguments.
 
             Returns:
-                GradValue: Result.
+                GradValue: Primary output value.
             """
             out_val: GradValue = fun(*args)
             return out_val[0] if isinstance(out_val, tuple) else out_val
@@ -253,29 +260,19 @@ def _get_fun_primal(fun: Callable[..., GradValue], has_aux: bool) -> Callable[..
 
 
 def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
-    """Convert the computed gradient to match the original input's type.
+    """Wrap `val` into a `Tensor` if `orig` was a `Tensor`.
 
     Args:
-        val: The calculated gradient array/value.
-        orig: The original input argument.
+        val (GradValue): Computed gradient array or `Tensor`.
+        orig (GradValue): Original primal input argument.
 
     Returns:
-        GradValue: The gradient converted to the original type.
+        GradValue: Gradient converted to match the type of `orig`.
     """
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
     if isinstance(val, Tensor):
         return val
 
     if isinstance(orig, Tensor):
-        import uuid  # noqa: F401
-
-        from ml_switcheroo_ir import LogicalNode  # noqa: F401
-
-        from ml_switcheroo_compiler.core.device import Device
-        from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
-        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor  # noqa: F401
-
         arr = cast(BackendArray, get_active_backend().asarray(val))
         dt = DType.Float32
         if str(arr.dtype) == "float64":
@@ -294,27 +291,20 @@ def _compute_grad_and_value(
     options: GradOptions,
     args: tuple[GradValue, ...],
 ) -> tuple[GradValue, GradValue]:
-    """Evaluate _compute_grad_and_value operation.
+    """Compute both the primal output and selected argument gradients of `fun` at `args`.
 
     Args:
-        fun: The fun parameter.
-        options: The options parameter.
-        args: The args parameter.
+        fun (Callable[..., GradValue]): Function to differentiate.
+        options (GradOptions): Differentiation configuration (`argnums`, `has_aux`).
+        args (tuple[GradValue, ...]): Tuple of primal arguments.
 
     Returns:
-        tuple: Result.
+        tuple[GradValue, GradValue]: Tuple of `(primal_value, gradients)`.
     """
-    import uuid  # noqa: F811
+    from .jvp_vjp import _unpack_pair, vjp
 
-    from ml_switcheroo_ir import LogicalNode  # noqa: F811
-
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F811
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-
-    from .jvp_vjp import vjp
-
-    val, vjp_fn = getattr(vjp(fun, *getattr(args, "__iter__")(), has_aux=getattr(options, "has_aux", False)), "__iter__")()
+    val, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=getattr(options, "has_aux", False)))
+    vjp_fn = cast("Callable[[GradValue], GradValue]", vjp_fn_raw)
 
     if getattr(options, "has_aux", False):
         primal_val, _ = cast(tuple[GradValue, GradValue], val)
@@ -324,7 +314,13 @@ def _compute_grad_and_value(
     if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
         c_id = f"cot_{uuid.uuid4().hex[:6]}"
         p_shape = getattr(primal_val, "shape", ())
-        c_node = LogicalNode(id=c_id, op_type="Constant", inputs=[], attributes={"value": 1.0}, shape_metadata=p_shape)
+        c_node = LogicalNode(
+            id=c_id,
+            op_type="Constant",
+            inputs=[],
+            attributes={"value": 1.0},
+            shape_metadata=p_shape,
+        )
         global_tracing_state.add_node(c_node)
         proxy = ProxyTensor(id=c_id, shape=p_shape, dtype="float32")
         cotangent: GradValue = Tensor(proxy, TensorConfig(p_shape, DType.Float32, Device("cpu")))
@@ -333,13 +329,17 @@ def _compute_grad_and_value(
         cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
 
     grads = vjp_fn(cotangent)
+    grads_seq = tuple(grads) if isinstance(grads, (list, tuple)) else (grads,)
 
     argnums = getattr(options, "argnums", 0)
     if isinstance(argnums, int):
-        res_grad = _to_original_type(getattr(grads, "__getitem__")(argnums), getattr(args, "__getitem__")(argnums))
+        res_grad = _to_original_type(grads_seq[argnums], args[argnums])
     elif isinstance(argnums, (tuple, list)):
-        res_grad = cast(GradValue, tuple(_to_original_type(cast(tuple[GradValue, ...], grads)[idx], args[idx]) for idx in cast(tuple[int, ...], argnums)))
+        res_grad = cast(
+            GradValue,
+            tuple(_to_original_type(grads_seq[idx], args[idx]) for idx in cast(tuple[int, ...], argnums)),
+        )
     else:
-        res_grad = _to_original_type(getattr(grads, "__getitem__")(0), getattr(args, "__getitem__")(0))
+        res_grad = _to_original_type(grads_seq[0], args[0])
 
     return val, res_grad

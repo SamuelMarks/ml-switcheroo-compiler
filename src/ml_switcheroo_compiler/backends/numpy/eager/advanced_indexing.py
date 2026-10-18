@@ -18,9 +18,9 @@ def _gather_nd(x: EagerValue, indices: EagerValue, **kwargs: EagerValue) -> Eage
     """Evaluate.
 
     Args:
-        x (object): The x parameter.
-        indices (object): The indices parameter.
-        **kwargs (object): Keyword args.
+        x (EagerValue): The x parameter.
+        indices (EagerValue): The indices parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -32,10 +32,10 @@ def _scatter_nd(indices: EagerValue, updates: EagerValue, shape: EagerValue, **k
     """Evaluate.
 
     Args:
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
-        shape (object): The shape parameter.
-        **kwargs (object): Keyword args.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
+        shape (EagerValue): The shape parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -49,11 +49,11 @@ def _scatter(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **kwar
     """Evaluate.
 
     Args:
-        x (object): The x parameter.
-        index (object): The index parameter.
-        src (object): The src parameter.
+        x (EagerValue): The x parameter.
+        index (EagerValue): The index parameter.
+        src (EagerValue): The src parameter.
         dim (int): The dim parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -67,11 +67,11 @@ def _scatter_add(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **
     """Evaluate.
 
     Args:
-        x (object): The x parameter.
-        index (object): The index parameter.
-        src (object): The src parameter.
+        x (EagerValue): The x parameter.
+        index (EagerValue): The index parameter.
+        src (EagerValue): The src parameter.
         dim (int): The dim parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -89,9 +89,9 @@ def _tensor_scatter_update(tensor: EagerValue, indices: EagerValue, updates: Eag
     """Tensor scatter update for numpy.
 
     Args:
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -108,9 +108,9 @@ def _tensor_scatter_add(tensor: EagerValue, indices: EagerValue, updates: EagerV
     """Tensor scatter add for numpy.
 
     Args:
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -127,9 +127,9 @@ def _tensor_scatter_max(tensor: EagerValue, indices: EagerValue, updates: EagerV
     """Tensor scatter max for numpy.
 
     Args:
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -146,9 +146,9 @@ def _tensor_scatter_min(tensor: EagerValue, indices: EagerValue, updates: EagerV
     """Tensor scatter min for numpy.
 
     Args:
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -163,13 +163,13 @@ def _tensor_scatter_min(tensor: EagerValue, indices: EagerValue, updates: EagerV
 
 @numpy_eager_registry.register("TakeAlongAxis")
 def _np_take_along_axis(backend_module: ModuleType, x: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
-    """Evaluate _np_take_along_axis operation.
+    """Execute the eager np take along axis operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        indices (object): The indices parameter.
-        axis (object): The axis parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        indices (EagerValue): The indices parameter.
+        axis (EagerValue): The axis parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -179,13 +179,13 @@ def _np_take_along_axis(backend_module: ModuleType, x: EagerValue, indices: Eage
 
 @numpy_eager_registry.register("TensorScatterUpdate")
 def _np_tensor_scatter_update(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
-    """Evaluate _np_tensor_scatter_update operation.
+    """Execute the eager np tensor scatter update operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -195,13 +195,13 @@ def _np_tensor_scatter_update(backend_module: ModuleType, tensor: EagerValue, in
 
 @numpy_eager_registry.register("TensorScatterAdd")
 def _np_tensor_scatter_add(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
-    """Evaluate _np_tensor_scatter_add operation.
+    """Execute the eager np tensor scatter add operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -214,13 +214,13 @@ def _np_tensor_scatter_add(backend_module: ModuleType, tensor: EagerValue, indic
 
 @numpy_eager_registry.register("TensorScatterMax")
 def _np_tensor_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
-    """Evaluate _np_tensor_scatter_max operation.
+    """Execute the eager np tensor scatter max operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -233,13 +233,13 @@ def _np_tensor_scatter_max(backend_module: ModuleType, tensor: EagerValue, indic
 
 @numpy_eager_registry.register("TensorScatterMin")
 def _np_tensor_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
-    """Evaluate _np_tensor_scatter_min operation.
+    """Execute the eager np tensor scatter min operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -252,12 +252,12 @@ def _np_tensor_scatter_min(backend_module: ModuleType, tensor: EagerValue, indic
 
 @numpy_eager_registry.register("GatherNd")
 def _np_gather_nd(backend_module: ModuleType, params: EagerValue, indices: EagerValue) -> EagerValue:
-    """Evaluate _np_gather_nd operation.
+    """Execute the eager np gather nd operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        params (object): The params parameter.
-        indices (object): The indices parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        params (EagerValue): The params parameter.
+        indices (EagerValue): The indices parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -268,14 +268,14 @@ def _np_gather_nd(backend_module: ModuleType, params: EagerValue, indices: Eager
 
 @numpy_eager_registry.register("ScatterNd")
 def _np_scatter_nd(backend_module: ModuleType, indices: EagerValue, updates: EagerValue, shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_scatter_nd operation.
+    """Execute the eager np scatter nd operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
-        shape (object): The shape parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
+        shape (EagerValue): The shape parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -288,12 +288,12 @@ def _np_scatter_nd(backend_module: ModuleType, indices: EagerValue, updates: Eag
 
 @numpy_eager_registry.register("Scatter")
 def _np_scatter(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_scatter operation.
+    """Execute the eager np scatter operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -309,12 +309,12 @@ def _np_scatter(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @numpy_eager_registry.register("ScatterAdd")
 def _np_scatter_add(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_scatter_add operation.
+    """Execute the eager np scatter add operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -329,13 +329,13 @@ def _np_scatter_add(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @numpy_eager_registry.register("ScatterApply")
 def _np_scatter_apply(backend_module: ModuleType, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_scatter_apply operation.
+    """Execute the eager np scatter apply operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
+        backend_module (ModuleType): The backend_module parameter.
         context (IndexingContext): The context parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -367,13 +367,13 @@ def _np_scatter_apply(backend_module: ModuleType, context: IndexingContext, *arg
 
 @numpy_eager_registry.register("ScatterMax")
 def _np_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
-    """Evaluate _np_scatter_max operation.
+    """Execute the eager np scatter max operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
         context (IndexingContext): The context parameter.
 
     Returns:
@@ -386,13 +386,13 @@ def _np_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: Eag
 
 @numpy_eager_registry.register("ScatterMin")
 def _np_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
-    """Evaluate _np_scatter_min operation.
+    """Execute the eager np scatter min operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
         context (IndexingContext): The context parameter.
 
     Returns:
@@ -405,13 +405,13 @@ def _np_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: Eag
 
 @numpy_eager_registry.register("ScatterMul")
 def _np_scatter_mul(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
-    """Evaluate _np_scatter_mul operation.
+    """Execute the eager np scatter mul operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        tensor (EagerValue): The tensor parameter.
+        indices (EagerValue): The indices parameter.
+        updates (EagerValue): The updates parameter.
         context (IndexingContext): The context parameter.
 
     Returns:

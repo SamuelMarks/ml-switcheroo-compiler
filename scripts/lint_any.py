@@ -73,9 +73,14 @@ def scan_file_for_any(file_path: str) -> list[str]:
         return []
 
     violations: list[str] = []
+    norm_parts = os.path.normpath(file_path).split(os.sep)
+    is_outside_backends = "ml_switcheroo_compiler" in norm_parts and "backends" not in norm_parts
+
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             violations.extend(f"{file_path}:{node.lineno}: prohibited import 'Any'" for alias in node.names if alias.name == "Any")
+            if is_outside_backends:
+                violations.extend(f"{file_path}:{node.lineno}: prohibited import 'EagerValue' outside backends/" for alias in node.names if alias.name == "EagerValue")
         elif isinstance(node, ast.Assign):
             violations.extend(f"{file_path}:{node.lineno}: disguised Any alias 'AnyType'" for target in node.targets if isinstance(target, ast.Name) and target.id == "AnyType")
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):

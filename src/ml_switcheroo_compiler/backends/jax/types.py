@@ -15,20 +15,20 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
-    """Evaluate zeros operation.
+    """Execute zeros for compiler processing.
 
     Args:
         cls: Class.
         shape (tuple[int, ...]): Shape.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return generic_zeros(cast(ZerosModule, jnp), shape)
 
 
 def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
-    """Evaluate array operation.
+    """Execute array for compiler processing.
 
     Args:
         cls: Class.
@@ -36,26 +36,26 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
         dtype: Dtype.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(jnp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
-    """Evaluate asarray operation.
+    """Execute asarray for compiler processing.
 
     Args:
         cls: Class.
         data: Data.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(jnp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
-    """Evaluate item operation.
+    """Execute item for compiler processing.
 
     Args:
         cls: Class.

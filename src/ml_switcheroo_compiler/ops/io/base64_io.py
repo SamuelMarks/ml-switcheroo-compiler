@@ -1,67 +1,59 @@
-"""I/O and memory operations."""
+"""Base64 encoding and decoding I/O operations."""
 
 from __future__ import annotations
 
-import glob  # noqa: F401
-import os  # noqa: F401
-import shutil  # noqa: F401
+import base64
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
-from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
-from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat  # noqa: F401
-from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat  # noqa: F401
-from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
-def _eager_base64(op: str, data: EagerValue, pad: bool = False) -> EagerValue:
-    """Evaluate _eager_base64 operation.
+def _eager_base64(op: str, data: TensorOrScalar, pad: bool = False) -> TensorOrScalar:
+    """Evaluate Base64 encoding or decoding on eager byte/string inputs.
 
     Args:
-        op (str): The op parameter.
-        data (Any): The data parameter.
-        pad (bool): The pad parameter.
+        op (str): Operation mode ('encode' or 'decode').
+        data (TensorOrScalar): Input bytes, string, or sequence of bytes/strings.
+        pad (bool): Whether to preserve '=' padding characters when encoding.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Base64-processed bytes or list of bytes.
     """
-    import base64
 
-    def _proc(d: EagerValue) -> bytes:
+    def _proc(d: TensorOrScalar) -> bytes:
         """Process a single element for base64 operation.
 
         Args:
-            d (Any): The element.
+            d (TensorOrScalar): Input element to encode or decode.
 
         Returns:
-            bytes: The base64 bytes.
+            bytes: Processed Base64 byte string.
         """
         if d is None:
             return b""
-        b = d.encode("utf-8") if isinstance(d, str) else d
-        res = getattr(base64, "b64encode")(b) if op == "encode" else getattr(base64, "b64decode")(b)
+        raw_bytes = d.encode("utf-8") if isinstance(d, str) else cast("bytes", d)
+        res = base64.b64encode(raw_bytes) if op == "encode" else base64.b64decode(raw_bytes)
         if op == "encode" and not pad:
             res = res.rstrip(b"=")
-        return cast(bytes, res)
+        return res
 
     if isinstance(data, (list, tuple)):
         return [_proc(d) for d in data]
     return _proc(data)
 
 
-def encode_base64(input: Tensor, pad: EagerValue = False, name: EagerValue = None) -> EagerValue:
-    """Encode base64.
+def encode_base64(input: Tensor, pad: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Encode input tensor strings/bytes into web-safe Base64 representations.
 
     Args:
-        input (Tensor): The input parameter.
-        pad (bool): The pad parameter.
-        name (str): The name parameter.
+        input (Tensor): Input tensor to encode.
+        pad (TensorOrScalar): Whether to include padding characters at the end.
+        name (TensorOrScalar): Optional operation name.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Base64-encoded tensor.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -71,18 +63,24 @@ def encode_base64(input: Tensor, pad: EagerValue = False, name: EagerValue = Non
         return get_active_backend().execute_op("EncodeBase64", input, pad=pad, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("EncodeBase64", [input], {"pad": pad, "name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+    return _emit_shape_node(
+        "EncodeBase64",
+        [input],
+        {"pad": pad, "name": name},
+        getattr(input, "shape", ()),
+        getattr(input, "dtype", "float32"),
+    )
 
 
-def decode_base64(input: Tensor, name: EagerValue = None) -> EagerValue:
-    """Decode base64.
+def decode_base64(input: Tensor, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Decode Base64-encoded tensor elements back into raw bytes.
 
     Args:
-        input (Tensor): The input parameter.
-        name (str): The name parameter.
+        input (Tensor): Base64-encoded input tensor.
+        name (TensorOrScalar): Optional operation name.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Decoded byte tensor.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -92,24 +90,30 @@ def decode_base64(input: Tensor, name: EagerValue = None) -> EagerValue:
         return get_active_backend().execute_op("DecodeBase64", input, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("DecodeBase64", [input], {"name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+    return _emit_shape_node(
+        "DecodeBase64",
+        [input],
+        {"name": name},
+        getattr(input, "shape", ()),
+        getattr(input, "dtype", "float32"),
+    )
 
 
 @register_op("EncodeBase64")
 class EncodeBase64(OpDef):
-    """EncodeBase64 operation."""
+    """EncodeBase64 operation definition."""
 
     op_name = "EncodeBase64"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for EncodeBase64.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -124,19 +128,19 @@ class EncodeBase64(OpDef):
 
 @register_op("DecodeBase64")
 class DecodeBase64(OpDef):
-    """DecodeBase64 operation."""
+    """DecodeBase64 operation definition."""
 
     op_name = "DecodeBase64"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for DecodeBase64.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 

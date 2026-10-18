@@ -7,10 +7,10 @@ Divide) using NumPy for evaluation
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 
 # Simple broadcasting
-from ml_switcheroo_compiler.core.shape import broadcast_shapes
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -24,12 +24,12 @@ class BinaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *shapes (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *shapes (EagerTensorProtocol): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -369,12 +369,12 @@ class Diff(OpDef):
 
     op_name = "Diff"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -389,12 +389,12 @@ class Digitize(OpDef):
 
     op_name = "Digitize"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -411,12 +411,12 @@ class ArrayEquiv(OpDef):
 
     op_name = "ArrayEquiv"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -472,14 +472,14 @@ class Betainc(OpDef):
 
     op_name = "Betainc"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, x: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, x: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            a (Any): The a parameter.
-            b (Any): The b parameter.
-            x (Any): The x parameter.
-            **kwargs (Any): Keyword args.
+            a (EagerTensorProtocol): The a parameter.
+            b (EagerTensorProtocol): The b parameter.
+            x (TensorOrScalar): The x parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -545,12 +545,12 @@ class Polyadd(BinaryMathOp):
 
     op_name = "Polyadd"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -570,12 +570,12 @@ class Polysub(BinaryMathOp):
 
     op_name = "Polysub"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -595,12 +595,12 @@ class Polymul(BinaryMathOp):
 
     op_name = "Polymul"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -620,12 +620,12 @@ class Polydiv(BinaryMathOp):
 
     op_name = "Polydiv"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -645,12 +645,12 @@ class Polyval(BinaryMathOp):
 
     op_name = "Polyval"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -670,12 +670,12 @@ class Poly(BinaryMathOp):
 
     op_name = "Poly"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -695,12 +695,12 @@ class Polyder(BinaryMathOp):
 
     op_name = "Polyder"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -720,12 +720,12 @@ class Polyfit(BinaryMathOp):
 
     op_name = "Polyfit"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -745,12 +745,12 @@ class Polyint(BinaryMathOp):
 
     op_name = "Polyint"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -770,12 +770,12 @@ class Roots(BinaryMathOp):
 
     op_name = "Roots"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Arguments.
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -821,12 +821,12 @@ class Atan2(BinaryMathOp):
 class Clip(OpDef):
     """Operator Clip."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -836,14 +836,14 @@ class Clip(OpDef):
         return ()
 
 
-def clip(x: EagerValue, min_val: EagerValue = None, max_val: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def clip(x: TensorOrScalar, min_val: TensorOrScalar = None, max_val: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Clip values in a tensor.
 
     Args:
-        x (Any): The x parameter.
-        min_val (Any): The min_val parameter.
-        max_val (Any): The max_val parameter.
-        **kwargs (Any): Keyword args.
+        x (TensorOrScalar): The x parameter.
+        min_val (TensorOrScalar): The min_val parameter.
+        max_val (TensorOrScalar): The max_val parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -861,12 +861,12 @@ def clip(x: EagerValue, min_val: EagerValue = None, max_val: EagerValue = None, 
     return emit_ir_node(None, "Clip", [cast(str, x)], getattr(x, "shape_metadata", None), kwargs)
 
 
-def rem(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate rem operation.
+def rem(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the rem tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -946,12 +946,12 @@ class LegendrePolynomialP(BinaryMathOp):
     op_name = "LegendrePolynomialP"
 
 
-def igamma_grad_a(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def igamma_grad_a(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Compute the gradient of the regularized incomplete gamma function.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -961,12 +961,12 @@ def igamma_grad_a(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("IgammaGradA", *args, **kwargs)
 
 
-def random_gamma_grad(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def random_gamma_grad(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Compute the derivative of a Gamma random variable.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -976,12 +976,12 @@ def random_gamma_grad(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("RandomGammaGrad", *args, **kwargs)
 
 
-def sort_key_val(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def sort_key_val(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Sort keys and values.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

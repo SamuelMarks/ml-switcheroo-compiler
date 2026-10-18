@@ -1,24 +1,23 @@
+# ruff: noqa: C901, PLR0912, PLR0915, E402, F401, F811, F841, E712, D301, UP006, UP035
 """Tests for test_edge."""
 
 from __future__ import annotations
 
-from typing import cast
-from typing import TYPE_CHECKING
-
-from ml_switcheroo_compiler.core.errors import CompilationError, UnimplementedMathError
-import pytest
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
-import pytest
-import sys
+
 import ml_dtypes
-from ml_switcheroo_compiler.backends import edge
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-import contextlib
+import pytest
 from ml_switcheroo_ir import LogicalGraph
-from ml_switcheroo_compiler.backends.edge import ONNXCodeGenerator, WasmCodeGenerator, WebGPUCodeGenerator, StableHLOCodeGenerator
+
+from ml_switcheroo_compiler.backends import edge
+from ml_switcheroo_compiler.backends.edge import ONNXCodeGenerator, StableHLOCodeGenerator, WasmCodeGenerator, WebGPUCodeGenerator
+from ml_switcheroo_compiler.core.errors import CompilationError, UnimplementedMathError
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -26,10 +25,10 @@ if TYPE_CHECKING:
 def global_wasm_mock() -> Iterator[None]:
     """Test function global_wasm_mock."""
     import copy
+
     from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
     saved_registry = copy.deepcopy(OPS_REGISTRY)
-
     ops_to_mock = ["UnknownOp", "Conv2D", "MaxPool2D", "BatchNorm", "LayerNorm", "AvgPool2D", "Add", "Constant", "DotGeneral", "Transpose", "MatMul", "ReduceSum", "ReduceMax", "Tanh", "BroadcastTo", "DummyOp", "Dummy", "Exp", "Input"]
     for op in ops_to_mock:
         if op not in OPS_REGISTRY:
@@ -37,7 +36,6 @@ def global_wasm_mock() -> Iterator[None]:
         if "variants" not in OPS_REGISTRY[op]:
             OPS_REGISTRY[op]["variants"] = {}
         getattr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
-
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
 
         def mock_template_resolver(template_name: EagerValue) -> EagerValue:
@@ -62,7 +60,6 @@ def global_wasm_mock() -> Iterator[None]:
             return {"body": body}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
-
         try:
             yield
         finally:
@@ -70,52 +67,33 @@ def global_wasm_mock() -> Iterator[None]:
             OPS_REGISTRY.update(saved_registry)
 
 
-try:
-    import onnx
-except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-    assert _exc is not None
-except AttributeError as _exc:
-    assert _exc is not None
-
+import onnx
 
 if not hasattr(ml_dtypes, "float4_e2m1fn"):
-    # SKIP REASON: The `onnx` library requires newer `ml_dtypes` types (like float4_e2m1fn)
-    # to construct valid ONNX tensor proto schemas. Older versions of ml_dtypes (e.g. 0.2.x)
-    # installed on some architectures (e.g. older macOS) lack these types, causing a failure
-    # during ONNX generator instantiation. To resolve and re-enable, upgrade ml_dtypes >= 0.4.0.
     pytestmark = pytest.mark.skip("ml_dtypes version incompatible with onnx on this system.")
-
-# ruff: noqa
-# ruff: noqa
 
 
 def test_edge_generators() -> None:
     """Test the edge generators behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Verifies the code generation and node visitation of various edge backends.\n\n    This test ensures that WebGPU and ONNX code generators\n    correctly initialize with a logical graph, produce the expected boilerplate\n    code, and return the correct operation identifiers during graph traversal\n\n    Args:\n    None\n\n    Returns:\n    None\n\n    Raises:\n    AssertionError: If any of the generated code or visited operation\n        strings do not match the expected output.\n    "
     graph = LogicalGraph()
-
     onnx = ONNXCodeGenerator(graph)
     onnx_res = onnx.generate()
     assert "ml_switcheroo_graph" in onnx_res or "MagicMock" in str(onnx_res)
-    """Test the ONNX code generator to verify correctness of generated ONNX schema graph representation."""
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(1, 64))
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
     n3 = IRNode(id="n3", op_type="Exp", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
-
     for n in [n0, n1, n2, n3]:
         g.nodes[n.id] = n
     g.inputs = ["n0"]
     g.outputs = ["n3"]
-
     generator = ONNXCodeGenerator(g)
     onnx_code = generator.generate()
-
     if "PrintableGraph" not in str(onnx_code) and "MagicMock" not in str(onnx_code):
         assert "ml_switcheroo_graph" in onnx_code
     if "PrintableGraph" not in str(onnx_code) and "MagicMock" not in str(onnx_code):
@@ -137,25 +115,18 @@ def test_wasm_generator() -> None:
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(64,))
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(64,))
     n3 = IRNode(id="n3", op_type="Exp", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(64,))
-
     for n in [n0, n1, n2, n3]:
         g.nodes[n.id] = n
     g.inputs = ["n0"]
     g.outputs = ["n3"]
-
     generator = WasmCodeGenerator(g)
     cpp_code = generator.generate()
-
-    # Verify emitted edge graph topological ordering, signatures, and memory allocation offsets
-    assert "auto buffer_pool" in cpp_code or "memory_pool" in cpp_code or "malloc" in cpp_code or "float" in cpp_code
+    assert "auto buffer_pool" in cpp_code or "memory_pool" in cpp_code or "malloc" in cpp_code or ("float" in cpp_code)
     assert "n2" in cpp_code or "Add" in cpp_code
     assert "n3" in cpp_code or "Exp" in cpp_code
     assert "wasm_f32x4_splat" in cpp_code
     assert "wasm_f32x4_add" in cpp_code
     assert "std::exp" in cpp_code
-
-    # Ensure they don't error out and fall into generation branches
-
     g2 = IRGraph()
     n_in2 = IRNode(id="n_in2", op_type="Input", inputs=[], shape_metadata=(1,))
     n_unk = IRNode(id="n_unk", op_type="UnknownOp", inputs=["n_in2"], shape_metadata=(1,))
@@ -172,15 +143,12 @@ def test_webgpu_generator() -> None:
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(64,))
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(64,))
     n3 = IRNode(id="n3", op_type="Exp", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(64,))
-
     for n in [n0, n1, n2, n3]:
         g.nodes[n.id] = n
     g.inputs = ["n0"]
     g.outputs = ["n3"]
-
     generator = WebGPUCodeGenerator(g)
     wgsl_code = generator.generate()
-
     assert "@group(0) @binding(0) var<storage, read> buf_in0_f32: array<f32>;" in wgsl_code
     assert "compute_n2" in wgsl_code
     assert "@compute @workgroup_size(64, 1, 1)" in wgsl_code
@@ -194,15 +162,12 @@ def test_stablehlo_generator() -> None:
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": [3.0, 4.0], "dtype": "float32"}, shape_metadata=(1, 2))
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(1, 2))
     n3 = IRNode(id="n3", op_type="CustomUnk", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(1, 2))
-
     for n in [n0, n1, n2, n3]:
         g.nodes[n.id] = n
     g.inputs = ["n0"]
     g.outputs = ["n3"]
-
     generator = StableHLOCodeGenerator(g)
     mlir_code = generator.generate()
-
     assert "module @jit_fun" in mlir_code
     assert "func.func @main" in mlir_code
     assert "stablehlo.constant" in mlir_code
@@ -213,23 +178,16 @@ def test_stablehlo_generator() -> None:
 
 
 def test_edge_coverage2() -> None:
-    """Test the edge coverage2 behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    "Docstring."
+    """Verify code generation across WebGPU, Wasm, ONNX, and StableHLO edge generators."""
     classes = [edge.WebGPUCodeGenerator, edge.WasmCodeGenerator, edge.ONNXCodeGenerator, edge.StableHLOCodeGenerator]
     g = IRGraph()
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": [1.0]}, shape_metadata=None)
+    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 1.0}, shape_metadata=(1,))
     g.nodes["n1"] = n1
     g.outputs = ["n1"]
     for mod in classes:
-        with contextlib.suppress(Exception):
-            mod(g).generate()
-        with contextlib.suppress(Exception):
-            cast("EagerTensorProtocol", getattr(mod, "execute_op"))("Add", [1, 2])
-    assert n1 is not None or n1 is None
+        out_code = mod(g).generate()
+        assert isinstance(out_code, str)
+        assert len(out_code) > 0
 
 
 def test_edge_compiler_numerical_equivalence() -> None:
@@ -243,15 +201,12 @@ def test_webgpu_ndim_indexing() -> None:
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(2, 3))
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 1.0, "dtype": "float32"}, shape_metadata=(2, 3))
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(2, 3))
-
     for n in [n0, n1, n2]:
         g.nodes[n.id] = n
     g.inputs = ["n0"]
     g.outputs = ["n2"]
-
     generator = WebGPUCodeGenerator(g)
     js_code = generator.generate()
-
     assert "let out_offset_d1: u32 = out_offset_remaining % 3u;" in js_code
     assert "const out_0_staging = device.createBuffer" in js_code
 
@@ -280,17 +235,11 @@ def test_webgpu_ops_coverage() -> None:
     n_cast = IRNode(id="n_cast", op_type="Cast", inputs=["n_in"], attributes={"dtype": "int32"}, shape_metadata=(2, 2))
     n_gelu = IRNode(id="n_gelu", op_type="Gelu", inputs=["n_in"], shape_metadata=(2, 2))
     n_pow = IRNode(id="n_pow", op_type="Power", inputs=["n_in", "n_in"], shape_metadata=(2, 2))
-
     for n in [n_in, n_in4d, n_mat, n_conv, n_conv1, n_pool, n_bn, n_red1, n_red2, n_red3, n_red4, n_red5, n_arg1, n_arg2, n_dot, n_ein, n_soft, n_logsoft, n_cast, n_gelu, n_pow]:
         g.nodes[n.id] = n
-
     gen = WebGPUCodeGenerator(g)
-    try:
-        code = gen.generate()
-        assert "compute_n_conv" in code
-    except (UnimplementedMathError, CompilationError) as _exc:
-        assert _exc is not None
-
+    with pytest.raises((UnimplementedMathError, CompilationError)):
+        gen.generate()
     g2 = IRGraph()
     n_in2 = IRNode(id="n_in2", op_type="Input", inputs=[], shape_metadata=(1,))
     n_bool = IRNode(id="n_bool", op_type="Cast", inputs=["n_in2"], attributes={"dtype": "bool"}, shape_metadata=(1,))
@@ -298,44 +247,36 @@ def test_webgpu_ops_coverage() -> None:
     for n in [n_in2, n_bool, n_unk]:
         g2.nodes[n.id] = n
     gen2 = WebGPUCodeGenerator(g2)
-    try:
-        code = gen2.generate()
-    except (UnimplementedMathError, CompilationError) as _exc:
-        assert _exc is not None
+    with pytest.raises((UnimplementedMathError, CompilationError)):
+        gen2.generate()
 
 
 def test_onnx_binary_export(tmp_path: EagerTensorProtocol) -> None:
     """Test the ONNX code generator to verify correctness of real binary .onnx export.
 
     Args:
-        tmp_path (object): Pytest temporary path fixture.
+        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
     """
     import os
-    import onnx
 
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(1, 64))
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
-
     for n in [n0, n1, n2]:
         g.nodes[n.id] = n
     g.inputs = ["n0"]
     g.outputs = ["n2"]
-
     generator = ONNXCodeGenerator(g)
     out_file = os.path.join(tmp_path, "model.onnx")
-    # If open is mocked, skip to avoid TypeError
     import builtins
 
     if hasattr(builtins.open, "mock_calls") or hasattr(os.path.exists, "mock_calls"):
         return
-
     try:
         generator.export_onnx(out_file)
     except TypeError:
         return
-
     assert os.path.exists(out_file)
     try:
         model = onnx.load(out_file)

@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-
 pytest.importorskip("dask")
 
 
@@ -42,43 +41,33 @@ def test_dask_eager_execute_op() -> None:
     """Test function test_dask_eager_execute_op."""
     cp_mock = DummyDa()
 
-    # Test registered func
     def dummy_eager(module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Test function dummy_eager."""
         return "dummy_eager_res"
 
     global_eager_registry.register("TestOpDask")(dummy_eager)
-
     res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "TestOpDask")
     assert res == "dummy_eager_res"
-
     if "Add" in global_eager_registry._registry:
         del global_eager_registry._registry["Add"]
-
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
         mock_schema = type("Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}})()
         mock_mappings.return_value = mock_schema
         with patch("sys.modules", {"ml_switcheroo_compiler.backends.dask.eager": cp_mock}):
             res2 = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add")
             assert res2 == "add_res"
-
     if "UnknownOpDask" in global_eager_registry._registry:
         del global_eager_registry._registry["UnknownOpDask"]
-
-    try:
+    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownOpDask")
-    except BackendNotSupportedError as _exc:
-        assert _exc is not None
 
 
 def test_dask_eager_execute_op_exception() -> None:
     """Test function test_dask_eager_execute_op_exception."""
     if "OpThatRaisesDask" in global_eager_registry._registry:
         del global_eager_registry._registry["OpThatRaisesDask"]
-
     with pytest.raises(BackendNotSupportedError):
         cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "OpThatRaisesDask")
-
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
         mock_schema = type("Dummy", (), {"operations": {"SnakeOp": type("DummyOp", (), {"target_api": "snake_op", "custom_code": None})()}})()
         mock_mappings.return_value = mock_schema
@@ -93,14 +82,11 @@ def test_dask_generator() -> None:
     gen = cast("Callable[..., EagerTensorProtocol]", DaskGenerator)(g)
     assert gen.get_fallback_prefix() == "da"
     assert gen.get_helper_functions() == []
-
     node = IRNode("Einsum", op_type="Einsum")
     node = IRNode("TruncateDiv", op_type="TruncateDiv")
     node = IRNode("TruncateMod", op_type="TruncateMod")
-
     node = IRNode("Add", op_type="Add")
     assert gen.generic_visit(node, ["a", "b"]) == "da.add(a, b)"
-
     node = IRNode("UnknownOp", op_type="UnknownOp")
     assert gen.generic_visit(node, [], kwarg1="val") == "da.unknownop(kwarg1='val')"
     assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "da.unknownop(a, b, kwarg1='val')"

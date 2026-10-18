@@ -6,16 +6,17 @@ from collections.abc import Sequence
 from typing import cast
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.tracing import builder
 
 
-def _calculate_num_splits(input: EagerValue, split_size_or_sections: int | Sequence[int], axis: int) -> EagerValue:  #
+def _calculate_num_splits(input: TensorOrScalar, split_size_or_sections: int | Sequence[int], axis: int) -> TensorOrScalar:  #
     """Calculate the number of splits for a tensor.
 
     Args:
@@ -36,12 +37,12 @@ def _calculate_num_splits(input: EagerValue, split_size_or_sections: int | Seque
         return 1
 
     if getattr(input, "shape") and getattr(input, "shape")[axis] % split_size_or_sections == 0:
-        return cast(EagerValue, getattr(input, "shape")[axis] // split_size_or_sections)
+        return cast(TensorOrScalar, getattr(input, "shape")[axis] // split_size_or_sections)
 
     return split_size_or_sections
 
 
-def _validate_split_axis(input: EagerValue, axis: int) -> EagerValue:  #
+def _validate_split_axis(input: TensorOrScalar, axis: int) -> TensorOrScalar:  #
     """Validate the split axis against the input tensor shape.
 
     Args:
@@ -66,7 +67,7 @@ def _validate_split_axis(input: EagerValue, axis: int) -> EagerValue:  #
 # pylint: disable=too-many-locals
 
 
-def _split_even(input: EagerValue, split_size: int, axis: int, num_splits: int) -> EagerValue:
+def _split_even(input: TensorOrScalar, split_size: int, axis: int, num_splits: int) -> TensorOrScalar:
     """Handle splitting when an integer split_size_or_sections is provided.
 
     Args:
@@ -104,11 +105,11 @@ def _split_even(input: EagerValue, split_size: int, axis: int, num_splits: int) 
 
 
 def _split_sections(  # pylint: disable=too-many-locals
-    input: EagerValue,
+    input: TensorOrScalar,
     sections: Sequence[int],
     axis: int,
     num_splits: int,  #
-) -> EagerValue:
+) -> TensorOrScalar:
     """Handle splitting when a sequence of sections is provided.
 
     Args:
@@ -146,15 +147,15 @@ def _split_sections(  # pylint: disable=too-many-locals
 
 
 def split(
-    input: EagerValue,  #
+    input: TensorOrScalar,  #
     split_size_or_sections: int | Sequence[int],
     axis: int = 0,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Split the input tensor into multiple sub-tensors.
 
     Args:
         input (Tensor): The input parameter.
-        split_size_or_sections (Any): The split_size_or_sections parameter.
+        split_size_or_sections (int | Sequence[int]): The split_size_or_sections parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -168,7 +169,7 @@ def split(
     return _split_sections(input, split_size_or_sections, cast("int", valid_axis), cast("int", num_splits))
 
 
-def unstack(input: EagerValue, axis: int = 0) -> EagerValue:
+def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
     """Unstack the input tensor along a specified dimension into a sequence of tensors.
 
     Args:
@@ -208,15 +209,15 @@ def unstack(input: EagerValue, axis: int = 0) -> EagerValue:
 
 
 def array_split(
-    ary: EagerValue,  #
+    ary: TensorOrScalar,  #
     indices_or_sections: int | Sequence[int],
     axis: int = 0,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Split an array into multiple sub-arrays.
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (Any): The indices_or_sections parameter.
+        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -237,12 +238,12 @@ def array_split(
     )
 
 
-def vsplit(ary: EagerValue, indices_or_sections: int | Sequence[int]) -> EagerValue:
+def vsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> TensorOrScalar:
     """Split an array into multiple sub-arrays vertically (row-wise).
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (Any): The indices_or_sections parameter.
+        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
 
     Returns:
         Sequence: Result.
@@ -275,12 +276,12 @@ def vsplit(ary: EagerValue, indices_or_sections: int | Sequence[int]) -> EagerVa
     return tuple(out_tensors)
 
 
-def hsplit(ary: EagerValue, indices_or_sections: int | Sequence[int]) -> EagerValue:
+def hsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> TensorOrScalar:
     """Split an array into multiple sub-arrays horizontally (column-wise).
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (Any): The indices_or_sections parameter.
+        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
 
     Returns:
         Sequence: Result.
@@ -311,12 +312,12 @@ def hsplit(ary: EagerValue, indices_or_sections: int | Sequence[int]) -> EagerVa
     return tuple(out_tensors)
 
 
-def dsplit(ary: EagerValue, indices_or_sections: int | Sequence[int]) -> EagerValue:
+def dsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> TensorOrScalar:
     """Split array into multiple sub-arrays along the 3rd axis (depth).
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (Any): The indices_or_sections parameter.
+        indices_or_sections (int | Sequence[int]): The indices_or_sections parameter.
 
     Returns:
         Sequence: Result.
@@ -351,12 +352,12 @@ def dsplit(ary: EagerValue, indices_or_sections: int | Sequence[int]) -> EagerVa
 class GetItemOp(OpDef):
     """Operation to retrieve an item from a tensor."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape for Unstack.
 
         Args:
-            *args (Any): Positional arguments (e.g. input tensor).
-            **kwargs (Any): Keyword arguments.
+            *args (EagerTensorProtocol): Positional arguments (e.g. input tensor).
+            **kwargs (EagerTensorProtocol): Keyword arguments.
 
         Returns:
             tuple[int, ...]: Inferred shape.
@@ -372,12 +373,12 @@ old_split = split
 class Unstack(OpDef):
     """Unstack op for shape inference."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape for Unstack.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

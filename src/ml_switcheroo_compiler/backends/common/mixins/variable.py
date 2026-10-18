@@ -17,7 +17,7 @@ class VariableASTVisitor(CommonASTVisitor):
         input_vars: list[str],
         **kwargs: str | int | float | bool | None,
     ) -> str:
-        """Evaluate visit_Assign operation.
+        """Emit target backend code or IR transformation for the Assign operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -36,7 +36,7 @@ class VariableASTVisitor(CommonASTVisitor):
         input_vars: list[str],
         **kwargs: str | int | float | bool | None,
     ) -> str:
-        """Evaluate visit_AssignAdd operation.
+        """Emit target backend code or IR transformation for the AssignAdd operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -55,7 +55,7 @@ class VariableASTVisitor(CommonASTVisitor):
         input_vars: list[str],
         **kwargs: str | int | float | bool | None,
     ) -> str:
-        """Evaluate visit_AssignSub operation.
+        """Emit target backend code or IR transformation for the AssignSub operation.
 
         Args:
             node (IRNode): The node parameter.

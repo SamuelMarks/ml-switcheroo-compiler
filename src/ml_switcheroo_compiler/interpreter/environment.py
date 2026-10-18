@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Union, cast
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 
-ValueType = Union["Tensor", float, int, bool, str, tuple[int, ...], list[float]]
+ValueType = Union["Tensor", float, int, bool, str, tuple[int, ...], list[float], "EvalValue"]
 
 
 class Environment:
@@ -23,13 +25,13 @@ class Environment:
 
     memory: dict[str, ValueType]
 
-    def __init__(self, inputs: dict[str, ValueType] | None = None) -> None:
+    def __init__(self, inputs: Mapping[str, ValueType] | None = None) -> None:
         """Initialize the environment.
 
         Args:
-            inputs (dict[str, ValueType] | None): Initial variable mapping dictionary.
+            inputs (Mapping[str, ValueType] | None): Initial variable mapping dictionary.
         """
-        self.memory = inputs if inputs is not None else {}
+        self.memory = cast("dict[str, ValueType]", inputs) if isinstance(inputs, dict) else (dict(inputs) if inputs is not None else {})
 
     def get(self, name: str) -> ValueType:
         """Retrieve the value associated with the given node or variable name.

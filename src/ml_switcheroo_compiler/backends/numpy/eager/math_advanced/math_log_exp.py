@@ -17,12 +17,12 @@ from .math_general import _get_np_arg, _get_sc  # noqa: F401
 
 @numpy_eager_registry.register("Xlogy")
 def _np_xlogy(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_xlogy operation.
+    """Execute the eager np xlogy operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -35,11 +35,11 @@ def _np_logsumexp(backend_module: ModuleType, a: EagerValue, axis: EagerValue = 
     """Evaluate _np_logsumexp logic eagerly backed by NumPy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
-        axis (object): The axis parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
+        axis (EagerValue): The axis parameter.
         keepdims (bool): The keepdims parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -59,12 +59,12 @@ def _np_logsumexp(backend_module: ModuleType, a: EagerValue, axis: EagerValue = 
 
 @numpy_eager_registry.register("Log1P")
 def _np_log1p2(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_log1p2 operation.
+    """Execute the eager np log1p2 operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -77,9 +77,9 @@ def _np_expand_dims_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """Implement Unsqueeze via expand_dims.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Variable positional arguments.
+        **kwargs (EagerValue): Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -88,12 +88,12 @@ def _np_expand_dims_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("LogSoftmax")
 def _np_log_softmax(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_log_softmax operation.
+    """Execute the eager np log softmax operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

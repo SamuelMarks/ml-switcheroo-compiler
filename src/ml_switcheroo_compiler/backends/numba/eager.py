@@ -7,18 +7,18 @@ from typing import cast
 
 from ml_switcheroo_compiler.backends import mapping_loader
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.numba import kernels
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.distributed.host_collectives import _np_mod, np
 
 
 def _unwrap_arg(arg: EagerValue) -> EagerValue:
-    """Unwrap framework Tensor objects to underlying NumPy array buffers.
+    """Unwrap framework Tensor objects to underlying array buffers.
 
     Args:
-        arg (object): Input argument.
+        arg (EagerValue): Input argument.
 
     Returns:
-        object: Unwrapped buffer or original value.
+        EagerValue: Unwrapped buffer or original value.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
         return cast(EagerValue, getattr(arg, "data"))
@@ -56,10 +56,10 @@ def _eval_numba_control_flow(
     if op_type in ("Scan", "scan") and len(actual_args) >= 2:
         carry, xs = actual_args[0], actual_args[1]
         res = []
-        for x in np.asarray(xs):
-            carry = carry + x
+        for x in getattr(kernels.asarray(xs), "tolist")():
+            carry = cast(EagerTensorProtocol, carry) + x
             res.append(carry)
-        return True, np.asarray(res)
+        return True, kernels.asarray(res)
 
     return False, None
 
@@ -87,7 +87,7 @@ def _try_numba_schema_dispatch(
     for arg in actual_args:
         if isinstance(arg, (list, tuple)):
             try:
-                processed_args.append(np.asarray(arg))
+                processed_args.append(kernels.asarray(arg))
             except Exception:
                 processed_args.append(arg)
         else:
@@ -99,7 +99,7 @@ def _try_numba_schema_dispatch(
             op_type,
             processed_args,
             dict(kwargs),
-            backend_module=_np_mod(),
+            backend_module=kernels,
         )
         return True, res
     except BackendNotSupportedError:
@@ -108,26 +108,23 @@ def _try_numba_schema_dispatch(
 
 
 def execute_op(
-    cls: type,
     op_type: str,
     *args: EagerValue,
     **kwargs: EagerValue,
 ) -> EagerValue:
-    """Execute operation eagerly on Numba backend with NumPy execution.
+    """Execute operation eagerly on Numba backend.
 
     Args:
-        cls (type): The caller class or context.
         op_type (str): The name of the operation.
-        *args (object): Positional arguments for the op.
-        **kwargs (object): Keyword arguments for the op.
+        *args (EagerValue): Positional arguments for the op.
+        **kwargs (EagerValue): Keyword arguments for the op.
 
     Returns:
-        object: Result of native NumPy/Numba evaluation.
+        EagerValue: Result of Numba evaluation.
 
     Raises:
         BackendNotSupportedError: If op is unmapped and not in eager registry.
     """
-    del cls
     actual_args = tuple(_unwrap_arg(a) for a in args)
 
     cf_handled, cf_res = _eval_numba_control_flow(op_type, actual_args, kwargs)
@@ -140,11 +137,11 @@ def execute_op(
 
     func = global_eager_registry.get(op_type)
     if func is not None:
-        return func(_np_mod(), *actual_args, **kwargs)
+        return func(kernels, *actual_args, **kwargs)
 
     fn_name = op_type.lower()
-    if hasattr(np, fn_name):
-        fn = getattr(np, fn_name)
+    if hasattr(kernels, fn_name):
+        fn = getattr(kernels, fn_name)
         if callable(fn):
             return cast(EagerValue, fn(*actual_args, **kwargs))
 

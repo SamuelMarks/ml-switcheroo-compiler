@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Core abstractions and logic definitions for test_ir_sharding.py."""
 
 from __future__ import annotations
@@ -15,12 +14,9 @@ def test_ir_node_sharding() -> None:
     """Test the ir node sharding behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        node = IRNode("node_1", "Add")
-        setattr(node, "sharding", "shard_info")
-        assert hasattr(node, "sharding")
-        assert cast("EagerTensorProtocol", node.sharding) == cast("EagerTensorProtocol", "shard_info")
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    node = IRNode("node_1", "Add")
+    setattr(node, "sharding", "shard_info")
+    assert hasattr(node, "sharding")
+    assert cast("EagerTensorProtocol", node.sharding) == cast("EagerTensorProtocol", "shard_info")

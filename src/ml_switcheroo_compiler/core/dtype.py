@@ -5,6 +5,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.core.errors import DTypeValidationError as DTypeValidationError
+
 if TYPE_CHECKING:
 
     class DType(str, Enum):
@@ -146,10 +148,6 @@ number = inexact + integer
 generic = number + (DType.Bool, DType.String, DType.Object)
 
 
-class DTypeValidationError(TypeError):
-    """Exception raised when an operand data type is invalid for an operation."""
-
-
 def validate_dtype_for_op(op_name: str, dtype: DType | str) -> tuple[bool, str | None]:
     """Validate that a data type is legally applicable to a mathematical operator.
 
@@ -164,19 +162,6 @@ def validate_dtype_for_op(op_name: str, dtype: DType | str) -> tuple[bool, str |
         tuple[bool, str | None]: Tuple of (is_valid, optional_error_message).
     """
     dtype_str: str = dtype.value if isinstance(dtype, DType) else str(dtype)
-    try:
-        import importlib
-
-        mod = importlib.import_module("ml_ecosystem_snapshots.compliance")
-        fn = getattr(mod, "validate_dtype_for_op", None)
-        if fn is not None:
-            res: tuple[bool, str | None] = fn(op_name, dtype_str)
-            return res
-    except (ImportError, AttributeError) as e:
-        import logging
-
-        logging.getLogger(__name__).debug("Framework dtype resolution failed: %s", e)
-
     clean_op: str = op_name.lower().split(".")[-1]
     transcendental_ops: tuple[str, ...] = (
         "sin",

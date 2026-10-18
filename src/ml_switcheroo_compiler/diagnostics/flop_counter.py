@@ -22,9 +22,9 @@ def _estimate_node_flops(node: LogicalNode) -> int:
 
     if hasattr(node, "shape_metadata") and node.shape_metadata is not None:
         try:
-            # If shape is iterable, multiply dimensions
-            return int(math.prod(node.shape_metadata))
-        except TypeError:
+            dims = [int(d) if isinstance(d, int) else int(str(d)) for d in node.shape_metadata]
+            return math.prod(dims)
+        except (TypeError, ValueError):
             return 1
 
     if node.op_type != "Foo":

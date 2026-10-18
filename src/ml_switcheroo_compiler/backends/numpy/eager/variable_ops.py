@@ -8,14 +8,14 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eag
 
 @numpy_eager_registry.register("Assign")
 def _np_assign(backend_module: ModuleType, x: EagerValue, y: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_assign operation.
+    """Execute the eager np assign operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        y (EagerValue): The y parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -25,14 +25,14 @@ def _np_assign(backend_module: ModuleType, x: EagerValue, y: EagerValue, *args: 
 
 @numpy_eager_registry.register("Cast")
 def _np_cast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_cast operation.
+    """Execute the eager np cast operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        dtype (object): The dtype parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        dtype (EagerValue): The dtype parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -48,14 +48,14 @@ def _np_cast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args
 
 @numpy_eager_registry.register("Bitcast")
 def _np_bitcast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_bitcast operation.
+    """Execute the eager np bitcast operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        dtype (object): The dtype parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        dtype (EagerValue): The dtype parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -65,12 +65,12 @@ def _np_bitcast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *a
 
 @numpy_eager_registry.register("ReadVariable")
 def _np_read_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_read_variable operation.
+    """Execute the eager np read variable operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -80,12 +80,12 @@ def _np_read_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("AssignVariable")
 def _np_assign_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_assign_variable operation.
+    """Execute the eager np assign variable operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

@@ -2,20 +2,15 @@
 
 from __future__ import annotations
 
-import typing  # noqa: F401
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
-
-from ml_switcheroo_compiler.backends.registry import EagerValue
-from ml_switcheroo_compiler.core.dtype import DType
-
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.registry import EagerValue
+from typing import cast
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .frontend_utils import _emit_reduction_node
@@ -34,7 +29,7 @@ class UnpoolOptions:
 def fractional_max_pool2d(
     operand: Tensor,
     output_size: tuple[int, int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Fractional max pooling 2D.
 
     Args:
@@ -60,7 +55,7 @@ def fractional_max_pool2d(
 def adaptive_avg_pool2d(
     operand: Tensor,
     output_size: tuple[int, int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Adaptive average pooling 2D.
 
     Args:
@@ -96,7 +91,7 @@ def adaptive_avg_pool2d(
 def adaptive_max_pool2d(
     operand: Tensor,
     output_size: tuple[int, int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Adaptive max pooling 2D.
 
     Args:
@@ -132,7 +127,7 @@ def adaptive_max_pool2d(
 def unfold(
     operand: Tensor,
     kernel_size: tuple[int, int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Unfold (Im2Col) operator.
 
     Args:
@@ -149,7 +144,7 @@ def fold(
     operand: Tensor,
     output_size: tuple[int, int],
     kernel_size: tuple[int, int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Fold (Col2Im) operator.
 
     Args:
@@ -172,9 +167,9 @@ def fold(
 def fractional_max_pool3d(
     operand: Tensor,
     output_size: tuple[int, int, int],
-    output_ratio: EagerValue = None,
-    random_samples: EagerValue = None,
-) -> EagerValue:
+    output_ratio: TensorOrScalar = None,
+    random_samples: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Fractional max pooling 3D.
 
     Args:
@@ -195,7 +190,7 @@ def fractional_max_pool3d(
     if config.eager_mode:
         backend = get_active_backend()
         data, indices = cast(
-            "tuple[EagerValue, EagerValue]",
+            "tuple[TensorOrScalar, TensorOrScalar]",
             backend.execute_op(
                 "FractionalMaxPool3D",
                 operand.data,
@@ -226,7 +221,7 @@ def fractional_max_pool3d(
 def adaptive_avg_pool3d(
     operand: Tensor,
     output_size: tuple[int, int, int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Adaptive average pooling 3D.
 
     Args:
@@ -285,7 +280,7 @@ def adaptive_max_pool3d(
         backend = get_active_backend()
         if return_indices:
             data, indices = cast(
-                "tuple[EagerValue, EagerValue]",
+                "tuple[TensorOrScalar, TensorOrScalar]",
                 backend.execute_op(
                     "AdaptiveMaxPool3D",
                     operand.data,
@@ -326,7 +321,7 @@ def max_unpool1d(
     operand: Tensor,
     indices: Tensor,
     options: UnpoolOptions,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Max unpooling 1D.
 
     Args:
@@ -372,7 +367,7 @@ def max_unpool2d(
     operand: Tensor,
     indices: Tensor,
     options: UnpoolOptions,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Max unpooling 2D.
 
     Args:
@@ -419,7 +414,7 @@ def max_unpool3d(
     operand: Tensor,
     indices: Tensor,
     options: UnpoolOptions,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Max unpooling 3D.
 
     Args:

@@ -145,7 +145,7 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
             # Perform actual IR mutation (splitting the shape for tile chunks)
             new_shape = _split_shape(op_type, tuple(shape), op_config)
             if new_shape != shape:
-                node.shape_metadata = new_shape
+                node.shape_metadata = cast("tuple[int | str, ...]", new_shape)
                 node.attributes["tiling"] = True
 
                 # Copy all TILE_* attributes dynamically

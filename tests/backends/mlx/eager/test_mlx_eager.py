@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Core abstractions and logic definitions for test_mlx_eager_coverage.py."""
 
 from __future__ import annotations
@@ -15,7 +14,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
-
 pytest.importorskip("mlx.core")
 
 
@@ -23,50 +21,41 @@ def test_mlx_eager_coverage_part1() -> None:
     """Test the mlx eager coverage part1 behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
-        try:
-            try:
-                pass
-            except ImportError:
-                pytest.skip("MLX not installed")
+        pass
+    except ImportError:
+        pytest.skip("MLX not installed")
 
-            class DummyBackend:
-                """Configuration class for dummy backend."""
+    class DummyBackend:
+        """Configuration class for dummy backend."""
 
-                pass
+        pass
 
-            cls = DummyBackend()
-            res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "TakeAlongAxis", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
-            assert res is not None
-            res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "Take", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
-            assert res is not None
-            with patch("ml_switcheroo_compiler.backends.numpy.eager.execute_op", return_value="scatter_res"):
-                try:
-                    cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "ScatterNd", cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([1]))
-                except NotImplementedError as _exc:
-                    assert _exc is not None
-            shape_mock = MagicMock()
-            shape_mock.data = [2]
-            shape_mock.tolist.return_value = [2]
-            res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "Reshape", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), shape=shape_mock)
-            assert res is not None
-            res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "Reshape", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), newshape=(2,))
-            assert res is not None
-        except (ValueError, AttributeError, AssertionError, TypeError) as _exc:
-            assert _exc is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    cls = DummyBackend()
+    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "TakeAlongAxis", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
+    assert res is not None
+    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "Take", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
+    assert res is not None
+    with patch("ml_switcheroo_compiler.backends.numpy.eager.execute_op", return_value="scatter_res"):
+        cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "ScatterNd", cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([1]))
+    shape_mock = MagicMock()
+    shape_mock.data = [2]
+    shape_mock.tolist.return_value = [2]
+    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "Reshape", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), shape=shape_mock)
+    assert res is not None
+    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "Reshape", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), newshape=(2,))
+    assert res is not None
 
 
 def test_mlx_eager_coverage_part2() -> None:
     """Test the mlx eager coverage part2 behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
+    with pytest.raises(ValueError):
 
         class DummyBackend:
             """Configuration class for dummy backend."""
@@ -100,39 +89,28 @@ def test_mlx_eager_coverage_part2() -> None:
         with patch("mlx.core.take", side_effect=ValueError), patch("ml_switcheroo_compiler.backends.numpy.eager.execute_op", return_value=(1, 2)):
             res = cast("Callable[..., EagerTensorProtocol]", execute_op)(cls, "Take", cast("Callable[..., EagerTensorProtocol]", mx.array)([1, 2]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
             assert isinstance(res, tuple)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
 
 
 def test_mlx_ragged_tensor_to_dense() -> None:
     """Verify MLX RaggedTensorToDense converts ragged lists and dicts to dense arrays."""
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_ragged_tensor_to_dense
 
-    # 1. Test sequence of arrays with padding
     r1: list[mx.array] = [mx.array([1.0, 2.0]), mx.array([3.0, 4.0, 5.0])]
     dense1: mx.array = cast("mx.array", _mlx_ragged_tensor_to_dense(mx, r1, default_value=0.0))
     assert dense1.shape == (2, 3)
     assert dense1[0, 2].item() == 0.0
     assert dense1[1, 2].item() == 5.0
-
-    # 2. Test standard dictionary with values and row_splits
-    r2: dict[str, mx.array] = {
-        "values": mx.array([10.0, 20.0, 30.0, 40.0]),
-        "row_splits": mx.array([0, 1, 4]),
-    }
+    r2: dict[str, mx.array] = {"values": mx.array([10.0, 20.0, 30.0, 40.0]), "row_splits": mx.array([0, 1, 4])}
     dense2: mx.array = cast("mx.array", _mlx_ragged_tensor_to_dense(mx, r2, default_value=-1.0))
     assert dense2.shape == (2, 3)
     assert dense2[0, 0].item() == 10.0
     assert dense2[0, 1].item() == -1.0
     assert dense2[1, 0].item() == 20.0
     assert dense2[1, 2].item() == 40.0
-
-    # 3. Test fallback pass-through for already dense array
     arr: mx.array = mx.array([1.0, 2.0])
     res_dense: mx.array = cast("mx.array", _mlx_ragged_tensor_to_dense(mx, arr))
     assert res_dense is arr
 
-    # 4. Test object with values and row_splits attributes (branch 149->150)
     class RaggedContainer:
         """Container holding values and row_splits."""
 
@@ -141,14 +119,9 @@ def test_mlx_ragged_tensor_to_dense() -> None:
             self.values = values
             self.row_splits = row_splits
 
-    r_obj = RaggedContainer(
-        values=mx.array([10.0, 20.0, 30.0, 40.0]),
-        row_splits=mx.array([0, 1, 4]),
-    )
+    r_obj = RaggedContainer(values=mx.array([10.0, 20.0, 30.0, 40.0]), row_splits=mx.array([0, 1, 4]))
     dense_obj = _mlx_ragged_tensor_to_dense(mx, r_obj, default_value=-1.0)
     assert cast("EagerTensorProtocol", getattr(dense_obj, "shape")) == (2, 3)
-
-    # 5. Test empty rows branch (branch 173->175)
     r_empty: dict[str, mx.array] = {"values": mx.array([], dtype=mx.float32), "row_splits": mx.array([0])}
     dense_empty = _mlx_ragged_tensor_to_dense(mx, r_empty)
     assert cast("EagerTensorProtocol", getattr(dense_empty, "shape")) == (0, 0)
@@ -169,6 +142,5 @@ def test_mlx_eager_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
         m.setitem(sys.modules, "mlx.core", None)
         importlib.reload(mx_eager)
         assert cast("EagerTensorProtocol", getattr(mx_eager, "mx")) is None
-
     importlib.reload(mx_eager)
     assert cast("EagerTensorProtocol", getattr(mx_eager, "mx")) is not None

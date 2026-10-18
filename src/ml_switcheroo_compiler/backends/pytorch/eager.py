@@ -11,11 +11,11 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 
 def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_accumulate_n operation.
+    """Execute the eager execute accumulate n operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -33,11 +33,11 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
 
 
 def _execute_tensor_scatter_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_tensor_scatter_max operation.
+    """Execute the eager execute tensor scatter max operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -54,11 +54,11 @@ def _execute_tensor_scatter_max(*args: EagerValue, **kwargs: EagerValue) -> Eage
 
 
 def _execute_tensor_scatter_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_tensor_scatter_min operation.
+    """Execute the eager execute tensor scatter min operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -75,11 +75,11 @@ def _execute_tensor_scatter_min(*args: EagerValue, **kwargs: EagerValue) -> Eage
 
 
 def _execute_tensor_scatter_update(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_tensor_scatter_update operation.
+    """Execute the eager execute tensor scatter update operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -88,11 +88,11 @@ def _execute_tensor_scatter_update(*args: EagerValue, **kwargs: EagerValue) -> E
 
 
 def _execute_tensor_scatter_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_tensor_scatter_add operation.
+    """Execute the eager execute tensor scatter add operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -101,11 +101,11 @@ def _execute_tensor_scatter_add(*args: EagerValue, **kwargs: EagerValue) -> Eage
 
 
 def _execute_power_iteration(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_power_iteration operation.
+    """Execute the eager execute power iteration operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -126,11 +126,11 @@ def _execute_power_iteration(*args: EagerValue, **kwargs: EagerValue) -> EagerVa
 
 
 def _execute_broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_broadcast_to operation.
+    """Execute the eager execute broadcast to operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -139,11 +139,14 @@ def _execute_broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
 
 
 def _execute_one_hot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """_execute_one_hot function.
+    """Execute the eager execute one hot operation on the active backend array.
 
     Args:
         *args: The args parameter.
         **kwargs: The kwargs parameter.
+
+    Returns:
+        EagerValue: Computed result.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("indices")
     depth = args[1] if len(args) > 1 else kwargs.get("depth")
@@ -165,11 +168,11 @@ def _execute_one_hot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_cast operation.
+    """Execute the eager execute cast operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -193,11 +196,11 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _execute_cummax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_cummax operation.
+    """Execute the eager execute cummax operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -206,11 +209,11 @@ def _execute_cummax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _execute_cummin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_cummin operation.
+    """Execute the eager execute cummin operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -219,11 +222,11 @@ def _execute_cummin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _execute_cumlogsumexp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_cumlogsumexp operation.
+    """Execute the eager execute cumlogsumexp operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -235,8 +238,8 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     """Evaluate _execute_ragged_tensor_to_dense operation with proper padding and index tracking.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -317,11 +320,11 @@ def _get_custom_torch_op_map() -> dict[str, Callable[..., EagerValue]]:
 
 
 def _torch_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _torch_variance operation.
+    """Execute the eager torch variance operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -331,11 +334,11 @@ def _torch_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _torch_tensordot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _torch_tensordot operation.
+    """Execute the eager torch tensordot operation on the active backend array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -374,7 +377,7 @@ def _torch_all_gather(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tenso
 
     Args:
         tensor (torch.Tensor): The input tensor.
-        **kwargs (object): Additional args.
+        **kwargs (EagerValue): Additional args.
 
     Returns:
         torch.Tensor: The gathered tensor.
@@ -394,7 +397,7 @@ def _torch_all_reduce(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tenso
 
     Args:
         tensor (torch.Tensor): The input tensor.
-        **kwargs (object): Additional args.
+        **kwargs (EagerValue): Additional args.
 
     Returns:
         torch.Tensor: The reduced tensor.
@@ -414,7 +417,7 @@ def _torch_reduce_scatter(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.T
 
     Args:
         tensor (torch.Tensor): The input tensor.
-        **kwargs (object): Additional args.
+        **kwargs (EagerValue): Additional args.
 
     Returns:
         torch.Tensor: The reduce-scattered tensor.
@@ -436,7 +439,7 @@ def _torch_all_to_all(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tenso
 
     Args:
         tensor (torch.Tensor): The input tensor.
-        **kwargs (object): Additional args.
+        **kwargs (EagerValue): Additional args.
 
     Returns:
         torch.Tensor: The scattered/gathered tensor.
@@ -455,13 +458,13 @@ def _torch_all_to_all(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tenso
 
 
 def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate execute_op operation.
+    """Execute the eager execute op operation on the active backend array.
 
     Args:
         cls (type): The class.
         op_type (str): The op_type parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

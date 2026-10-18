@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E501
 import os
 import tempfile
 from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -82,14 +82,8 @@ def test_sparse_ops() -> None:
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.start_tracing()
-    try:
-        sparse_plus(t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        sparse_sigmoid(t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    sparse_plus(t)
+    sparse_sigmoid(t)
     global_tracing_state.stop_tracing()
 
 
@@ -104,23 +98,10 @@ def _test_io_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
 
     config.eager_mode = False
     global_tracing_state.start_tracing()
-
     import os
     import tempfile
 
-    from ml_switcheroo_compiler.ops.io import (
-        TFRecordOptions,
-        TFRecordWriter,
-        decode_bmp,
-        decode_gif,
-        decode_jpeg,
-        decode_png,
-        gfile_copy,
-        gfile_glob,
-        gfile_makedirs,
-        gfile_stat,
-        save_safetensors,
-    )
+    from ml_switcheroo_compiler.ops.io import TFRecordOptions, TFRecordWriter, decode_bmp, decode_gif, decode_jpeg, decode_png, gfile_copy, gfile_glob, gfile_makedirs, gfile_stat, save_safetensors
 
     pass
     pass
@@ -150,11 +131,9 @@ def _test_io_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     Args:
         _state: Shared test state dictionary.
     """
-    gfile_copy, os, tempfile = _state["gfile_copy"], _state["os"], _state["tempfile"]
-    try:
+    (gfile_copy, os, tempfile) = (_state["gfile_copy"], _state["os"], _state["tempfile"])
+    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         gfile_copy(__file__, __file__)
-    except FileExistsError as _exc:
-        assert _exc is not None
     with tempfile.NamedTemporaryFile(delete=False) as src, tempfile.NamedTemporaryFile(delete=False) as dst:
         os.unlink(dst.name)
         gfile_copy(src.name, dst.name)
@@ -175,7 +154,7 @@ def _test_io_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     Args:
         _state: Shared test state dictionary.
     """
-    decode_bmp, decode_gif, decode_jpeg, decode_png = _state["decode_bmp"], _state["decode_gif"], _state["decode_jpeg"], _state["decode_png"]
+    (decode_bmp, decode_gif, decode_jpeg, decode_png) = (_state["decode_bmp"], _state["decode_gif"], _state["decode_jpeg"], _state["decode_png"])
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.decode_jpeg.return_value = "jpeg"
         mock_backend.return_value.decode_png.return_value = "png"
@@ -203,7 +182,7 @@ def _test_io_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     Args:
         _state: Shared test state dictionary.
     """
-    TFRecordOptions, TFRecordWriter = _state["TFRecordOptions"], _state["TFRecordWriter"]
+    (TFRecordOptions, TFRecordWriter) = (_state["TFRecordOptions"], _state["TFRecordWriter"])
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         del mock_backend.return_value.decode_jpeg
         del mock_backend.return_value.decode_png
@@ -272,8 +251,6 @@ def test_io_stubs() -> None:
 
     config.eager_mode = False
     global_tracing_state.start_tracing()
-
-    """Test IO stubs."""
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = None
         pass
@@ -313,13 +290,10 @@ def test_io_reading_writing() -> None:
                 path = os.path.join(d, "test.txt")
                 assert isinstance(cast("Callable[..., EagerTensorProtocol]", write_file)(path, "hello world"), Tensor)
                 assert isinstance(read_file(path), Tensor)
-
                 path_npy = os.path.join(d, "test.npy")
                 t = Tensor(np.array([1, 2, 3]), TensorConfig((3,), "int64", "cpu"))
                 assert isinstance(save(path_npy, t), Tensor)
-
                 assert isinstance(load(path_npy), Tensor)
-
                 path_npz = os.path.join(d, "test.npz")
                 assert isinstance(savez(path_npz, t=t), Tensor)
 
@@ -354,8 +328,6 @@ def test_numpy_io_tracing() -> None:
         assert savez("test", [1, 2]) is not None
         assert savez_compressed("test", [1, 2]) is not None
         assert save_gguf("test", {"t": [1]}) is not None
-
-        # testing infer_shape
         assert Load().infer_shape() is not None
         assert Save().infer_shape() is not None
         assert Savez().infer_shape() is not None
@@ -387,10 +359,8 @@ def test_numpy_io_eager_and_format_fallback() -> None:
         assert cast("EagerTensorProtocol", savez("x", [1])) == cast("EagerTensorProtocol", "executed")
         assert cast("EagerTensorProtocol", savez_compressed("x", [1])) == cast("EagerTensorProtocol", "executed")
         assert cast("EagerTensorProtocol", save_gguf("x", {"t": [1]})) == cast("EagerTensorProtocol", "executed")
-
     assert cast("Callable[..., EagerTensorProtocol]", _fallback_load)(123) is None
     assert _fallback_load("test.bin") is None
-
     with mock.patch("ml_switcheroo_compiler.serialization.formats.h5.H5WeightFormat.load", return_value="h5load"):
         assert _fallback_load("test.h5") == "h5load"
 

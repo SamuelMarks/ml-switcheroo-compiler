@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-# ruff: noqa: F401
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
-from typing import Union, cast
+from collections.abc import Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Union, cast
 
 from ml_switcheroo_ir import (
     AttributeValue,
@@ -21,12 +19,34 @@ from ml_switcheroo_ir import (
 )
 from ml_switcheroo_ir.types import TensorSpec
 
+from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
+
+SymbolicDim = Union[str, "SymNode", "SymInt"]
+ShapeLike = Union[tuple[Union[int, str], ...], Sequence[Union[int, str]], None]
+AxesLike = Union[int, Sequence[int], None]
+ScalarLike = Union[int, float, bool, complex]
+AttrValue = Union[
+    ScalarLike,
+    str,
+    bytes,
+    Sequence["AttrValue"],
+    Mapping[str, "AttrValue"],
+    DType,
+    Device,
+    IRGraph,
+    None,
+]
 
 # Re-export TensorSpec from ml_switcheroo_ir.types
 TensorSpec = TensorSpec
 
 __all__ = [
+    "AttrValue",
+    "AxesLike",
     "DType",
     "IRBlock",
     "IRGraph",
@@ -34,6 +54,9 @@ __all__ = [
     "LogicalGraph",
     "LogicalNode",
     "NoTangent",
+    "ScalarLike",
+    "ShapeLike",
+    "SymbolicDim",
     "TensorSpec",
     "ZeroTangent",
     "clone_logical_node",
@@ -87,7 +110,7 @@ def clone_logical_node(
     ver_override = overrides.get("version")
     node_version: int = int(ver_override) if isinstance(ver_override, (int, str)) else node.version
     shape_override = overrides.get("shape_metadata")
-    node_shape: Sequence[int | str] | None = cast("Sequence[int | str]", shape_override) if isinstance(shape_override, (list, tuple)) else node.shape_metadata
+    node_shape: Sequence[int | str] | None = cast("Sequence[int | str]", shape_override) if isinstance(shape_override, (list, tuple)) else cast("Sequence[int | str] | None", node.shape_metadata)
     sharding_override = overrides.get("sharding")
     node_sharding: PartitionSpec | None = sharding_override if isinstance(sharding_override, PartitionSpec) else node.sharding
     dtype_override = overrides.get("dtype")
@@ -156,7 +179,7 @@ class ZeroTangent(LogicalNode):
     def __init__(
         self,
         id: str,
-        shape_metadata: tuple[int | str, ...] | Sequence[int | str] | None = None,
+        shape_metadata: ShapeLike = None,
         inputs: list[str] | None = None,
         attributes: dict[str, AttributeValue] | None = None,
     ) -> None:
@@ -164,7 +187,7 @@ class ZeroTangent(LogicalNode):
 
         Args:
             id (str): The node id.
-            shape_metadata: Shape metadata.
+            shape_metadata (ShapeLike): Shape metadata.
             inputs (list[str] | None): Optional input node IDs.
             attributes (dict[str, AttributeValue] | None): Optional node attributes.
         """
@@ -183,7 +206,7 @@ class NoTangent(LogicalNode):
     def __init__(
         self,
         id: str,
-        shape_metadata: tuple[int | str, ...] | Sequence[int | str] | None = None,
+        shape_metadata: ShapeLike = None,
         inputs: list[str] | None = None,
         attributes: dict[str, AttributeValue] | None = None,
     ) -> None:
@@ -191,7 +214,7 @@ class NoTangent(LogicalNode):
 
         Args:
             id (str): The node id.
-            shape_metadata: Shape metadata.
+            shape_metadata (ShapeLike): Shape metadata.
             inputs (list[str] | None): Optional input node IDs.
             attributes (dict[str, AttributeValue] | None): Optional node attributes.
         """

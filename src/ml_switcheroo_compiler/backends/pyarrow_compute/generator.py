@@ -16,10 +16,10 @@ def _unwrap_input_val(val: EagerValue) -> EagerValue:
     """Unwrap Arrow object or Tensor to underlying raw array or scalar.
 
     Args:
-        val (object): Input value.
+        val (EagerValue): Input value.
 
     Returns:
-        object: Unwrapped raw data.
+        EagerValue: Unwrapped raw data.
     """
     from ml_switcheroo_compiler.backends.pyarrow_compute.types import from_arrow, is_arrow_object
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -193,7 +193,6 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         self.code = [self.header]
         self.add_line("import pyarrow.compute as pc")
         self.add_line("import pyarrow as pa")
-        self.add_line("import " + "numpy as np")
         self.add_line("")
         self.add_line(f"def {self._func_name}(args):")
         self.indent_level += 1
@@ -207,7 +206,7 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         Args:
             node (IRNode): The node to process.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -219,10 +218,10 @@ class PyArrowComputeGenerator(PythonStringGenerator):
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (object): Optional compilation options.
+            **kwargs (EagerValue): Optional compilation options.
 
         Returns:
-            object: Execution callable.
+            EagerValue: Execution callable.
         """
         from ml_switcheroo_compiler.backends.pyarrow_compute.types import is_arrow_object, to_arrow
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -233,11 +232,11 @@ class PyArrowComputeGenerator(PythonStringGenerator):
             """Execute graph with Arrow columnar structures.
 
             Args:
-                *w_args (object): Input tensor values.
-                **w_kw (object): Keyword inputs.
+                *w_args (EagerValue): Input tensor values.
+                **w_kw (EagerValue): Keyword inputs.
 
             Returns:
-                object: Output results.
+                EagerValue: Output results.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {inp_node.id: _unwrap_input_val(w_args[i]) for i, inp_node in enumerate(input_nodes) if i < len(w_args)}

@@ -14,12 +14,12 @@ from ml_ecosystem_snapshots.stubs import (
     _sanitize_default,
     validate_pyi_stub,
 )
-from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
     SnapshotGroundingEngine,
     _resolve_default_snapshot_dir,
 )
+from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 
 BACKENDS_CONFIG: dict[str, str | tuple[str, ...]] = {
     "numpy": "numpy",
@@ -40,12 +40,6 @@ BACKENDS_CONFIG: dict[str, str | tuple[str, ...]] = {
     "pyarrow_compute": "pyarrow.compute",
     "llvm_cpp": "llvm_cpp",
     "edge": "edge",
-    "edge_onnx": "onnx",
-    "edge_stablehlo": "stablehlo",
-    "edge_mlir": "mlir",
-    "edge_wasm": "wasm",
-    "edge_webgl": "webgl",
-    "webgpu": "webgpu",
     "pure_python": "pure_python",
 }
 

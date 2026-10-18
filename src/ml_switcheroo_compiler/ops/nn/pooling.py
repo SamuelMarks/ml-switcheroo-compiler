@@ -7,10 +7,10 @@ import typing  # noqa: F401
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.registry import EagerValue
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -26,8 +26,8 @@ from ml_switcheroo_compiler.ops.reductions import reduce_window
 def _prepare_pool_config(
     rank: int,
     spatial_rank: int,
-    window_shape: EagerValue,
-    strides: EagerValue,
+    window_shape: TensorOrScalar,
+    strides: TensorOrScalar,
     padding: str | tuple[int, ...],
 ) -> WindowConfig:
     """Prepare and validates the window configuration for pooling operations.
@@ -93,7 +93,7 @@ def _max_pool_with_indices(
     strides: tuple[int, ...],
     padding: str | tuple[tuple[int, int], ...],
     config: WindowConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the max pooling operation and returns the resulting tensor along with its indices.
 
     Args:
@@ -113,7 +113,7 @@ def _max_pool_with_indices(
     if _config.eager_mode:
         backend = get_active_backend()
         data, indices = cast(
-            "tuple[EagerValue, EagerValue]",
+            "tuple[TensorOrScalar, TensorOrScalar]",
             backend.execute_op(
                 "MaxPoolWithIndices",
                 operand.data,
@@ -179,7 +179,7 @@ def avg_pool(
     window_shape: tuple[int, ...],
     strides: tuple[int, ...] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
-) -> EagerValue:
+) -> TensorOrScalar:
     """Apply an average pooling operation over the input tensor.
 
     Args:
@@ -211,14 +211,14 @@ def pool1d(
     strides: int | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     pool_mode: str = "max",
-) -> EagerValue:
+) -> TensorOrScalar:
     """Apply a 1D pooling operation over the input tensor.
 
     Args:
         operand (Tensor): The operand parameter.
         window_shape (int): The window_shape parameter.
-        strides (Any): The strides parameter.
-        padding (Any): The padding parameter.
+        strides (int | None): The strides parameter.
+        padding (str | tuple[tuple[int, int], ...]): The padding parameter.
         pool_mode (str): The pool_mode parameter.
 
     Returns:
@@ -242,14 +242,14 @@ def pool2d(
     strides: tuple[int, int] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     pool_mode: str = "max",
-) -> EagerValue:
+) -> TensorOrScalar:
     """Apply a 2D pooling operation over the input tensor.
 
     Args:
         operand (Tensor): The operand parameter.
         window_shape (tuple): The window_shape parameter.
-        strides (Any): The strides parameter.
-        padding (Any): The padding parameter.
+        strides (tuple[int, int] | None): The strides parameter.
+        padding (str | tuple[tuple[int, int], ...]): The padding parameter.
         pool_mode (str): The pool_mode parameter.
 
     Returns:
@@ -271,14 +271,14 @@ def pool3d(
     strides: tuple[int, int, int] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     pool_mode: str = "max",
-) -> EagerValue:
+) -> TensorOrScalar:
     """Apply a 3D pooling operation over the input tensor.
 
     Args:
         operand (Tensor): The operand parameter.
         window_shape (tuple): The window_shape parameter.
-        strides (Any): The strides parameter.
-        padding (Any): The padding parameter.
+        strides (tuple[int, int, int] | None): The strides parameter.
+        padding (str | tuple[tuple[int, int], ...]): The padding parameter.
         pool_mode (str): The pool_mode parameter.
 
     Returns:
@@ -300,7 +300,7 @@ def average_pool(
     strides: tuple[int, ...] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     data_format: str | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute an average pool over the given input tensor.
 
     Args:
@@ -321,10 +321,10 @@ class SpatialConfig:
     """Configuration for spatial dimensions in a pooling operation.
 
     Args:
-        ksize (Any): The kernel size for pooling.
-        strides (Any): The stride dimensions for pooling.
-        padding (Any): The padding configuration.
-        dilation_rate (Any): The dilation rate for pooling. Defaults to None.
+        ksize (TensorOrScalar): The kernel size for pooling.
+        strides (TensorOrScalar): The stride dimensions for pooling.
+        padding (TensorOrScalar): The padding configuration.
+        dilation_rate (TensorOrScalar): The dilation rate for pooling. Defaults to None.
         data_format (str | None): The data format string, e.g., 'NHWC'. Defaults to None.
     """
 
@@ -341,8 +341,8 @@ class PoolingBehaviorConfig:
 
     Args:
         pooling_type (str): The type of pooling ('MAX' or 'AVG'). Defaults to 'MAX'.
-        pooling_ratio (Any): The pooling ratio used for fractional pooling. Defaults to None.
-        output_dtype (Any): The desired output data type. Defaults to None.
+        pooling_ratio (TensorOrScalar): The pooling ratio used for fractional pooling. Defaults to None.
+        output_dtype (TensorOrScalar): The desired output data type. Defaults to None.
         include_batch_in_index (bool): Whether to include the batch dimension in indices. Defaults to False.
         pseudo_random (bool): Whether to use pseudo-randomness. Defaults to False.
         overlapping (bool): Whether to allow overlapping regions. Defaults to False.
@@ -377,17 +377,17 @@ class PoolingConfig:
     behavior: PoolingBehaviorConfig
 
 
-def avg_pool1d(value: EagerValue, config: PoolingConfig) -> EagerValue:
+def avg_pool1d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """Execute a 1D average pooling operation based on the given configuration.
 
     Args:
-        value (Any): The input tensor or data to pool.
+        value (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration containing window shapes and behavior.
 
     Returns: Tensor: The resulting 1D average pooled data.
     """
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", avg_pool)(
             cast("Tensor", value),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -397,17 +397,17 @@ def avg_pool1d(value: EagerValue, config: PoolingConfig) -> EagerValue:
     )
 
 
-def avg_pool2d(value: EagerValue, config: PoolingConfig) -> EagerValue:
+def avg_pool2d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """Execute a 2D average pooling operation based on the given configuration.
 
     Args:
-        value (Any): The input tensor or data to pool.
+        value (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 2D average pooled data.
     """
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", avg_pool)(
             cast("Tensor", value),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -417,17 +417,17 @@ def avg_pool2d(value: EagerValue, config: PoolingConfig) -> EagerValue:
     )
 
 
-def avg_pool3d(value: EagerValue, config: PoolingConfig) -> EagerValue:
+def avg_pool3d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """Execute a 3D average pooling operation based on the given configuration.
 
     Args:
-        value (Any): The input tensor or data to pool.
+        value (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 3D average pooled data.
     """
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", avg_pool)(
             cast("Tensor", value),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -437,17 +437,17 @@ def avg_pool3d(value: EagerValue, config: PoolingConfig) -> EagerValue:
     )
 
 
-def max_pool1d(inputs: EagerValue, config: PoolingConfig) -> EagerValue:
+def max_pool1d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """Execute a 1D max pooling operation based on the given configuration.
 
     Args:
-        inputs (Any): The input tensor or data to pool.
+        inputs (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 1D max pooled data.
     """
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", max_pool)(
             cast("Tensor", inputs),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -457,17 +457,17 @@ def max_pool1d(inputs: EagerValue, config: PoolingConfig) -> EagerValue:
     )
 
 
-def max_pool2d(inputs: EagerValue, config: PoolingConfig) -> EagerValue:
+def max_pool2d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """Execute a 2D max pooling operation based on the given configuration.
 
     Args:
-        inputs (Any): The input tensor or data to pool.
+        inputs (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 2D max pooled data.
     """
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", max_pool)(
             cast("Tensor", inputs),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -477,17 +477,17 @@ def max_pool2d(inputs: EagerValue, config: PoolingConfig) -> EagerValue:
     )
 
 
-def max_pool3d(inputs: EagerValue, config: PoolingConfig) -> EagerValue:
+def max_pool3d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """Execute a 3D max pooling operation based on the given configuration.
 
     Args:
-        inputs (Any): The input tensor or data to pool.
+        inputs (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 3D max pooled data.
     """
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", max_pool)(
             cast("Tensor", inputs),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -498,31 +498,34 @@ def max_pool3d(inputs: EagerValue, config: PoolingConfig) -> EagerValue:
 
 
 def max_pool_with_argmax(
-    input: EagerValue,
+    input: TensorOrScalar,
     config: PoolingConfig,
-) -> EagerValue:
-    """Execute a max pooling operation and additionally computes the argmax indices based on the configuration.
+) -> TensorOrScalar:
+    """Execute a max pooling operation and additionally compute the argmax indices based on the configuration.
 
     Args:
-        input (Any): The input tensor or data to pool.
+        input (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
-    Returns: Tensor: A tuple containing the pooled output and a tensor representing the argmax indices.
+    Returns:
+        TensorOrScalar: A tuple containing the pooled output and a tensor representing the argmax indices.
     """
-    out = cast("Callable[..., EagerTensorProtocol]", max_pool)(
-        cast("Tensor", input),
-        window_shape=cast("tuple[int, ...]", config.window.ksize),
-        strides=config.window.strides,
-        padding=config.window.padding,
+    return cast(
+        TensorOrScalar,
+        cast("Callable[..., EagerTensorProtocol]", max_pool)(
+            cast("Tensor", input),
+            window_shape=cast("tuple[int, ...]", config.window.ksize),
+            strides=config.window.strides,
+            padding=config.window.padding,
+            return_indices=True,
+        ),
     )
-    argmax_out = Tensor(None, TensorConfig(getattr(out, "shape"), "int32", "cpu"))
-    return out, argmax_out
 
 
 def fractional_avg_pool(
     value: Tensor,
     config: PoolingConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Perform fractional average pooling on the input tensor based on the given configuration.
 
     Args:
@@ -558,7 +561,7 @@ def fractional_avg_pool(
 def fractional_max_pool(
     value: Tensor,
     config: PoolingConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Perform fractional max pooling on the input tensor based on the given configuration.
 
     Args:
@@ -592,20 +595,20 @@ def fractional_max_pool(
 
 
 def pool(
-    input: EagerValue,
+    input: TensorOrScalar,
     config: PoolingConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Execute a generic pooling operation, delegating to either average or max pooling depending on the configuration.
 
     Args:
-        input (Any): The input tensor or data to pool.
+        input (TensorOrScalar): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration specifying spatial dimensions and pooling type.
 
     Returns: Tensor: The resulting pooled data.
     """
     if config.behavior.pooling_type == "AVG":
         return cast(
-            EagerValue,
+            TensorOrScalar,
             cast("Callable[..., EagerTensorProtocol]", avg_pool)(
                 cast("Tensor", input),
                 window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -614,7 +617,7 @@ def pool(
             ),
         )
     return cast(
-        EagerValue,
+        TensorOrScalar,
         cast("Callable[..., EagerTensorProtocol]", max_pool)(
             cast("Tensor", input),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
@@ -630,13 +633,13 @@ class FractionalAvgPool(OpDef):
 
     op_name = "FractionalAvgPool"
 
-    def infer_shape(self, value: EagerTensorProtocol, pooling_ratio: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, value: EagerTensorProtocol, pooling_ratio: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape of a fractional average pooling operation.
 
         Args:
-            value (Any): The input Any or tensor.
-            pooling_ratio (Any): The specified pooling ratio.
-            **kwargs (Any): Additional keyword arguments.
+            value (EagerTensorProtocol): The input Any or tensor.
+            pooling_ratio (EagerTensorProtocol): The specified pooling ratio.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred output shape.
         """
@@ -650,13 +653,13 @@ class FractionalMaxPool(OpDef):
 
     op_name = "FractionalMaxPool"
 
-    def infer_shape(self, value: EagerTensorProtocol, pooling_ratio: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, value: EagerTensorProtocol, pooling_ratio: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape of a fractional max pooling operation.
 
         Args:
-            value (Any): The input Any or tensor.
-            pooling_ratio (Any): The specified pooling ratio.
-            **kwargs (Any): Additional keyword arguments.
+            value (EagerTensorProtocol): The input Any or tensor.
+            pooling_ratio (EagerTensorProtocol): The specified pooling ratio.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred output shape.
         """

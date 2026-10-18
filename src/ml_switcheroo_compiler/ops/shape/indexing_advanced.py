@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Callable, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -12,10 +13,10 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tuple[int, ...] | None:
-    """Evaluate _normalize_k operation.
+    """Compute the normalize k tensor operation.
 
     Args:
-        k (Any): The k parameter.
+        k (int | Tensor | tuple[int, ...] | None): The k parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -38,13 +39,13 @@ class TopK(OpDef):
 
     op_name = "TopK"
 
-    def infer_shape(self, x: EagerTensorProtocol, k: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, x: EagerTensorProtocol, k: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the operation.
 
         Args:
-            x (Any): The x parameter.
-            k (Any): The k parameter.
-            **kwargs (Any): Keyword args.
+            x (EagerTensorProtocol): The x parameter.
+            k (TensorOrScalar): The k parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -69,17 +70,17 @@ class Argsort(OpDef):
     def infer_shape(
         self,
         x: EagerTensorProtocol,
-        dimension: EagerValue = -1,
-        is_stable: EagerValue = True,
-        **kwargs: EagerValue,
-    ) -> EagerValue:
+        dimension: TensorOrScalar = -1,
+        is_stable: TensorOrScalar = True,
+        **kwargs: TensorOrScalar,
+    ) -> TensorOrScalar:
         """Infer the output shape for sorting indices.
 
         Args:
-            x (Any): The x parameter.
-            dimension (Any): The dimension parameter.
-            is_stable (Any): The is_stable parameter.
-            **kwargs (Any): Keyword args.
+            x (EagerTensorProtocol): The x parameter.
+            dimension (TensorOrScalar): The dimension parameter.
+            is_stable (TensorOrScalar): The is_stable parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -98,17 +99,17 @@ class Sort(OpDef):
     def infer_shape(
         self,
         x: EagerTensorProtocol,
-        dimension: EagerValue = -1,
-        is_stable: EagerValue = True,
-        **kwargs: EagerValue,
-    ) -> EagerValue:
+        dimension: TensorOrScalar = -1,
+        is_stable: TensorOrScalar = True,
+        **kwargs: TensorOrScalar,
+    ) -> TensorOrScalar:
         """Infer the output shape for the sorting operation.
 
         Args:
-            x (Any): The x parameter.
-            dimension (Any): The dimension parameter.
-            is_stable (Any): The is_stable parameter.
-            **kwargs (Any): Keyword args.
+            x (EagerTensorProtocol): The x parameter.
+            dimension (TensorOrScalar): The dimension parameter.
+            is_stable (TensorOrScalar): The is_stable parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -120,12 +121,12 @@ class Sort(OpDef):
 class Where(OpDef):
     """Operator to return elements chosen from x or y depending on a condition."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for conditionally chosen elements.
 
         Args:
-            *args (Any): Positional arguments, typically condition, x, and y.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically condition, x, and y.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple.
@@ -139,12 +140,12 @@ class Where(OpDef):
 class Gather(OpDef):
     """Operator to gather slices from a tensor according to indices."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for gathered slices.
 
         Args:
-            *args (Any): Positional arguments, typically params and indices.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically params and indices.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -156,12 +157,12 @@ class Gather(OpDef):
 class Take(OpDef):
     """Operator to take elements from an array along an axis."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for taken elements.
 
         Args:
-            *args (Any): Positional arguments, typically the input tensor and indices.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically the input tensor and indices.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -173,12 +174,12 @@ class Take(OpDef):
 class TakeAlongAxis(OpDef):
     """Operator to take values from the input array by matching 1d index and data slices."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for elements taken along an axis.
 
         Args:
-            *args (Any): Positional arguments, typically the input array, indices, and axis.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically the input array, indices, and axis.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -190,12 +191,12 @@ class TakeAlongAxis(OpDef):
 class GatherNd(OpDef):
     """Operator to gather slices from a tensor into a tensor with specified shape."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for n-dimensional gathered slices.
 
         Args:
-            *args (Any): Positional arguments, typically params and n-dimensional indices.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically params and n-dimensional indices.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -207,12 +208,12 @@ class GatherNd(OpDef):
 class Scatter(OpDef):
     """Operator to scatter updates into a new tensor according to indices."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for scattered updates.
 
         Args:
-            *args (Any): Positional arguments, typically input tensor, indices, and updates.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically input tensor, indices, and updates.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -224,12 +225,12 @@ class Scatter(OpDef):
 class ScatterNd(OpDef):
     """Operator to apply sparse updates to individual values or slices within a tensor."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for n-dimensional scattered updates.
 
         Args:
-            *args (Any): Positional arguments, typically tensor, indices, and updates.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically tensor, indices, and updates.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -241,12 +242,12 @@ class ScatterNd(OpDef):
 class ScatterAdd(OpDef):
     """Operator to add sparse updates to a tensor variable reference."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape after adding scattered updates.
 
         Args:
-            *args (Any): Positional arguments, typically tensor, indices, and updates.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically tensor, indices, and updates.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -258,12 +259,12 @@ class ScatterAdd(OpDef):
 class Vdot(OpDef):
     """Operator to compute the dot product of two vectors."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the vector dot product.
 
         Args:
-            *args (Any): Positional arguments, typically the two input vectors.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically the two input vectors.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -275,12 +276,12 @@ class Vdot(OpDef):
 class SearchSorted(OpDef):
     """Operator to find indices where elements should be inserted to maintain order."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for searched sorted indices.
 
         Args:
-            *args (Any): Positional arguments, typically sorted sequence and values to insert.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically sorted sequence and values to insert.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -292,12 +293,12 @@ class SearchSorted(OpDef):
 class Select(OpDef):
     """Operator to select elements from two arrays based on a boolean mask."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the selected elements.
 
         Args:
-            *args (Any): Positional arguments, typically condition, x, and y.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically condition, x, and y.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -309,12 +310,12 @@ class Select(OpDef):
 class Assign(OpDef):
     """Operator to assign a value to a tensor variable."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape after assignment.
 
         Args:
-            *args (Any): Positional arguments, typically the variable and the value.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically the variable and the value.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -326,12 +327,12 @@ class Assign(OpDef):
 class AssignAdd(OpDef):
     """Operator to add a value to a tensor variable and assign the result."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape after addition assignment.
 
         Args:
-            *args (Any): Positional arguments, typically the variable and the value to add.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically the variable and the value to add.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -343,12 +344,12 @@ class AssignAdd(OpDef):
 class AssignSub(OpDef):
     """Operator to subtract a value from a tensor variable and assign the result."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape after subtraction assignment.
 
         Args:
-            *args (Any): Positional arguments, typically the variable and the value to subtract.
-            **kwargs (Any): Additional keyword arguments.
+            *args (TensorOrScalar): Positional arguments, typically the variable and the value to subtract.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -360,14 +361,14 @@ class AssignSub(OpDef):
 class TensorScatterUpdate(OpDef):
     """Operator to scatter updates into a new tensor using multi-dimensional indices."""
 
-    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for scattered multidimensional updates.
 
         Args:
-            tensor (Any): The initial tensor to be updated.
-            indices (Any): The multidimensional indices for the updates.
-            updates (Any): The values to be updated in the tensor.
-            **kwargs (Any): Additional keyword arguments.
+            tensor (EagerTensorProtocol): The initial tensor to be updated.
+            indices (EagerTensorProtocol): The multidimensional indices for the updates.
+            updates (EagerTensorProtocol): The values to be updated in the tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """
@@ -381,14 +382,14 @@ class Argpartition(OpDef):
     op_name = "Argpartition"
     np_op_name = "argpartition"
 
-    def infer_shape(self, a: EagerTensorProtocol, kth: EagerTensorProtocol, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, kth: EagerTensorProtocol, axis: int = -1, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the partitioned indices.
 
         Args:
-            a (Any): The a parameter.
-            kth (Any): The kth parameter.
+            a (EagerTensorProtocol): The a parameter.
+            kth (EagerTensorProtocol): The kth parameter.
             axis (int): The axis parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -403,14 +404,14 @@ class Partition(OpDef):
     op_name = "Partition"
     np_op_name = "partition"
 
-    def infer_shape(self, a: EagerTensorProtocol, kth: EagerTensorProtocol, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, kth: EagerTensorProtocol, axis: int = -1, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the partitioned array.
 
         Args:
-            a (Any): The a parameter.
-            kth (Any): The kth parameter.
+            a (EagerTensorProtocol): The a parameter.
+            kth (EagerTensorProtocol): The kth parameter.
             axis (int): The axis parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -425,15 +426,15 @@ class Compress(OpDef):
     op_name = "Compress"
     np_op_name = "compress"
 
-    def infer_shape(self, condition: EagerTensorProtocol, a: EagerTensorProtocol, axis: EagerValue = None, out: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, condition: EagerTensorProtocol, a: EagerTensorProtocol, axis: TensorOrScalar = None, out: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the compressed array.
 
         Args:
-            condition (Any): The condition parameter.
-            a (Any): The a parameter.
+            condition (EagerTensorProtocol): The condition parameter.
+            a (EagerTensorProtocol): The a parameter.
             axis (int): The axis parameter.
-            out (Any): The out parameter.
-            **kwargs (Any): Keyword args.
+            out (TensorOrScalar): The out parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -448,15 +449,15 @@ class Diagonal(OpDef):
     op_name = "Diagonal"
     np_op_name = "diagonal"
 
-    def infer_shape(self, a: EagerTensorProtocol, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the diagonal extraction.
 
         Args:
-            a (Any): The a parameter.
+            a (EagerTensorProtocol): The a parameter.
             offset (int): The offset parameter.
             axis1 (int): The axis1 parameter.
             axis2 (int): The axis2 parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -471,13 +472,13 @@ class Diagflat(OpDef):
     op_name = "Diagflat"
     np_op_name = "diagflat"
 
-    def infer_shape(self, v: EagerTensorProtocol, k: int = 0, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, v: EagerTensorProtocol, k: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the flattened diagonal matrix.
 
         Args:
-            v (Any): The v parameter.
+            v (EagerTensorProtocol): The v parameter.
             k (int): The k parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -492,13 +493,13 @@ class DiagIndices(OpDef):
     op_name = "DiagIndices"
     np_op_name = "diag_indices"
 
-    def infer_shape(self, n: int, naxis: int = 2, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, n: int, naxis: int = 2, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the main diagonal indices.
 
         Args:
             n (int): The n parameter.
             naxis (int): The naxis parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -513,12 +514,12 @@ class DiagIndicesFrom(OpDef):
     op_name = "DiagIndicesFrom"
     np_op_name = "diag_indices_from"
 
-    def infer_shape(self, arr: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, arr: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the n-dimensional diagonal indices.
 
         Args:
-            arr (Any): The array for which the indices will be generated.
-            **kwargs (Any): Additional keyword arguments.
+            arr (EagerTensorProtocol): The array for which the indices will be generated.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape tuple representing a dynamic 1D size.
         """
@@ -531,14 +532,14 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, mask: EagerTensorProtocol, axis: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, mask: EagerTensorProtocol, axis: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the boolean masked array.
 
         Args:
-            tensor (Any): The tensor parameter.
-            mask (Any): The mask parameter.
-            axis (Any): The axis parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            mask (EagerTensorProtocol): The mask parameter.
+            axis (TensorOrScalar): The axis parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -553,12 +554,12 @@ class InvertPermutation(OpDef):
 
     op_name = "InvertPermutation"
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the inverted permutation.
 
         Args:
-            x (Any): The 1-D tensor indicating the permutation to invert.
-            **kwargs (Any): Additional keyword arguments.
+            x (EagerTensorProtocol): The 1-D tensor indicating the permutation to invert.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """

@@ -1,64 +1,54 @@
-"""Gradient computation and autodiff utilities."""
+"""JIT compilation wrapper, `disable_jit` context manager, and `eval_shape` utility."""
+
+from __future__ import annotations
 
 import contextlib
-import math  # noqa: F401
 import typing
-import uuid  # noqa: F401
-from collections.abc import Callable, Sequence  # noqa: F401
-from dataclasses import dataclass, field  # noqa: F401
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import cast
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: F401
+from ml_switcheroo_compiler.core.shape import AttrValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.registry import get_active_backend  # noqa: F401
-from ml_switcheroo_compiler.core.config import config  # noqa: F401
-from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # noqa: F401
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function  # noqa: F401
-from ml_switcheroo_compiler.ops.registry import register_util  # noqa: F401
-from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor  # noqa: F401
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp  # noqa: F401
+from .utils import GradValue
 
 
 @dataclass
 class JitOptions:
-    """Options for JIT compilation."""
+    """Configuration options for JIT compilation."""
 
-    static_argnums = None
-    static_argnames = None
-    donate_argnums = None
-    donate_argnames = None
+    static_argnums: AttrValue = None
+    static_argnames: AttrValue = None
+    donate_argnums: AttrValue = None
+    donate_argnames: AttrValue = None
     keep_unused: bool = False
-    device = None
-    backend = None
+    device: AttrValue = None
+    backend: AttrValue = None
     inline: bool = False
-    abstracted_axes = None
+    abstracted_axes: AttrValue = None
 
 
-def jit(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValue:
-    """Return a JIT wrapper.
+def jit(fun: Callable[..., GradValue], options: JitOptions | GradValue = None) -> Callable[..., GradValue]:
+    """Wrap `fun` for just-in-time compilation with `options`.
 
     Args:
-        fun (Callable[..., object]): The function to jit compile.
-        options (JitOptions): Configuration options.
+        fun (Callable[..., GradValue]): Function to JIT compile.
+        options (JitOptions | GradValue): Optional `JitOptions` configuration.
 
     Returns:
-        Callable[..., object]: The JIT wrapped function.
+        Callable[..., GradValue]: JIT-wrapped callable.
     """
-    options = cast(EagerValue, options or JitOptions())
+    _ = cast(GradValue, options or JitOptions())
 
-    def wrapped(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Evaluate wrapped operation.
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
+        """Execute JIT-wrapped function `fun`.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (GradValue): Positional call arguments.
+            **kwargs (GradValue): Keyword call arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            GradValue: Result of evaluating `fun(*args, **kwargs)`.
         """
         return fun(*args, **kwargs)
 
@@ -67,23 +57,23 @@ def jit(fun: Callable[..., EagerValue], options: EagerValue = None) -> EagerValu
 
 @contextlib.contextmanager
 def disable_jit() -> typing.Iterator[None]:
-    """Provide context manager to disable JIT locally.
+    """Context manager that temporarily disables JIT compilation within its scope.
 
     Yields:
-        None: Context manager yield.
+        None: Context scope with JIT disabled.
     """
     yield
 
 
-def eval_shape(fun: Callable[..., EagerValue], *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate eval_shape operation.
+def eval_shape(fun: Callable[..., GradValue], *args: GradValue, **kwargs: GradValue) -> GradValue:
+    """Evaluate the output shape and dtype of `fun(*args, **kwargs)`.
 
     Args:
-        fun (object): The fun parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        fun (Callable[..., GradValue]): Function whose output shape is to be inferred.
+        *args (GradValue): Positional arguments or shape specs.
+        **kwargs (GradValue): Keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        GradValue: Evaluated output of `fun(*args, **kwargs)`.
     """
     return fun(*args, **kwargs)

@@ -104,7 +104,7 @@ def test_slice_and_strided_slice_exact_shapes(mocker: EagerTensorProtocol) -> No
     """Verify exact output shapes for slice and strided_slice in graph mode.
 
     Args:
-        mocker (object): Pytest mocker fixture.
+        mocker (EagerTensorProtocol): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 

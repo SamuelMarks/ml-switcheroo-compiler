@@ -18,11 +18,11 @@ from .eager import execute_op
 from .generator import NumbaGenerator
 from .types import array, asarray, item, zeros
 
-type.__setattr__(NumbaGenerator, "zeros", classmethod(zeros))
-type.__setattr__(NumbaGenerator, "array", classmethod(array))
-type.__setattr__(NumbaGenerator, "asarray", classmethod(asarray))
-type.__setattr__(NumbaGenerator, "item", classmethod(item))
-type.__setattr__(NumbaGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", classmethod)(execute_op))
+type.__setattr__(NumbaGenerator, "zeros", staticmethod(zeros))
+type.__setattr__(NumbaGenerator, "array", staticmethod(array))
+type.__setattr__(NumbaGenerator, "asarray", staticmethod(asarray))
+type.__setattr__(NumbaGenerator, "item", staticmethod(item))
+type.__setattr__(NumbaGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", staticmethod)(execute_op))
 
 __all__ = [
     "NumbaGenerator",

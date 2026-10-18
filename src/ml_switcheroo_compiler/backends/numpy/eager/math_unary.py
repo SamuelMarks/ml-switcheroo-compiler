@@ -10,12 +10,12 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eag
 
 @numpy_eager_registry.register("Exp")
 def _np_exp(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_exp operation.
+    """Execute the eager np exp operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -25,12 +25,12 @@ def _np_exp(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
 
 @numpy_eager_registry.register("Log")
 def _np_log(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_log operation.
+    """Execute the eager np log operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -40,12 +40,12 @@ def _np_log(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
 
 @numpy_eager_registry.register("Log1p")
 def _np_log1p(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_log1p operation.
+    """Execute the eager np log1p operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -55,12 +55,12 @@ def _np_log1p(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("Round")
 def _np_round(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_round operation.
+    """Execute the eager np round operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -70,12 +70,12 @@ def _np_round(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("Erf")
 def _np_erf(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_erf operation.
+    """Execute the eager np erf operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -92,12 +92,12 @@ def _np_erf(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
 
 @numpy_eager_registry.register("Erfc")
 def _np_erfc(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_erfc operation.
+    """Execute the eager np erfc operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -114,12 +114,12 @@ def _np_erfc(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
 
 @numpy_eager_registry.register("Erfinv")
 def _np_erfinv(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_erfinv operation.
+    """Execute the eager np erfinv operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -131,12 +131,12 @@ def _np_erfinv(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
 
 @numpy_eager_registry.register("Igamma")
 def _np_igamma(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_igamma operation.
+    """Execute the eager np igamma operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -150,12 +150,12 @@ def _np_igamma(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
 
 @numpy_eager_registry.register("Igammac")
 def _np_igammac(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_igammac operation.
+    """Execute the eager np igammac operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -169,12 +169,12 @@ def _np_igammac(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @numpy_eager_registry.register("BitwiseNot")
 def _np_bitwise_not(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_bitwise_not operation.
+    """Execute the eager np bitwise not operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -184,12 +184,12 @@ def _np_bitwise_not(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @numpy_eager_registry.register("Angle")
 def _np_angle(backend_module: ModuleType, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_angle operation.
+    """Execute the eager np angle operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -199,12 +199,12 @@ def _np_angle(backend_module: ModuleType, x: EagerValue, **kwargs: EagerValue) -
 
 @numpy_eager_registry.register("Expm1")
 def _np_expm1(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_expm1 operation.
+    """Execute the eager np expm1 operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -214,12 +214,12 @@ def _np_expm1(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("Log10")
 def _np_log10(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_log10 operation.
+    """Execute the eager np log10 operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -229,12 +229,12 @@ def _np_log10(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("Log2")
 def _np_log2(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_log2 operation.
+    """Execute the eager np log2 operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -244,12 +244,12 @@ def _np_log2(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
 
 @numpy_eager_registry.register("Exp2")
 def _np_exp2(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_exp2 operation.
+    """Execute the eager np exp2 operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -259,12 +259,12 @@ def _np_exp2(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
 
 @numpy_eager_registry.register("Signbit")
 def _np_signbit(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_signbit operation.
+    """Execute the eager np signbit operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -274,12 +274,12 @@ def _np_signbit(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @numpy_eager_registry.register("Isnan")
 def _np_isnan(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_isnan operation.
+    """Execute the eager np isnan operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -289,12 +289,12 @@ def _np_isnan(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("Isinf")
 def _np_isinf(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_isinf operation.
+    """Execute the eager np isinf operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -304,12 +304,12 @@ def _np_isinf(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @numpy_eager_registry.register("Isfinite")
 def _np_isfinite(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_isfinite operation.
+    """Execute the eager np isfinite operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

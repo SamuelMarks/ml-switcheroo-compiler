@@ -47,30 +47,26 @@ def test_check_for_numpy_leaks() -> None:
             f.write("from numpy import array\n")
             f.write("a = 1 + 1\n")
 
-        # These should be ignored
+        # Only backends/numpy is exempt
         with open(os.path.join(numpy_dir, "good.py"), "w") as f:
             f.write("import numpy\n")
 
-        with open(os.path.join(eager_dir, "good.py"), "w") as f:
-            f.write("res = np.add(1, 2)\n")
-
-        webrtc_dir: str = os.path.join(backends_dir, "distributed_webrtc")
-        os.makedirs(webrtc_dir)
-        with open(os.path.join(webrtc_dir, "good.py"), "w") as f:
-            f.write("res = np.add(1, 2)\n")
+        with open(os.path.join(eager_dir, "bad_eager.py"), "w") as f:
+            f.write("res = _np_mod().add(1, 2)\n")
 
         with open(os.path.join(grad_dir, "bad.py"), "w") as f:
             f.write("import numpy\n")
 
         violations: list[str] = check_for_numpy_leaks(d)
 
-        assert len(violations) == 4
+        assert len(violations) == 5
         # check if grad and mlx violations are recorded
         # The exact text match depends on order, but we can verify substrings
         violation_texts: str = " ".join(violations)
         assert "import numpy as np" in violation_texts
         assert "res = np.add(1, 2)" in violation_texts
         assert "from numpy import array" in violation_texts
+        assert "_np_mod" in violation_texts
         # one from grad/bad.py
         assert "import numpy" in violation_texts
 
@@ -173,12 +169,14 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
             raise ImportError("Mocked initial import error")
         return cast("Callable[..., EagerTensorProtocol]", orig_import)(name, *args, **kwargs)
 
-    if "scripts.lint_dependencies" in sys.modules:
-        del sys.modules["scripts.lint_dependencies"]
-
-    with patch("builtins.__import__", side_effect=mock_import):
-        res = check_for_third_party_leaks("src")
-        assert isinstance(res, list)
+    saved_mod = sys.modules.pop("scripts.lint_dependencies", None)
+    try:
+        with patch("builtins.__import__", side_effect=mock_import):
+            res = check_for_third_party_leaks("src")
+            assert isinstance(res, list)
+    finally:
+        if saved_mod is not None:
+            sys.modules["scripts.lint_dependencies"] = saved_mod
 
 
 def test_main_block(capsys: CaptureFixture[str]) -> None:

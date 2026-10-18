@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Callable, Optional, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -17,7 +18,7 @@ from .einsum_frontend import _infer_dot_general_shape
 from .utils import _emit_linalg_node
 
 
-def matmul(input: Tensor, other: Tensor) -> EagerValue:
+def matmul(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the matrix product of two tensors.
 
     Args:
@@ -42,7 +43,7 @@ def matmul(input: Tensor, other: Tensor) -> EagerValue:
     return _emit_linalg_node("Matmul", [input, other], {}, [out_shape], [getattr(input, "dtype", None)])
 
 
-def dot(input: Tensor, other: Tensor) -> EagerValue:
+def dot(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the dot product of two tensors.
 
     Args:
@@ -70,7 +71,7 @@ def dot(input: Tensor, other: Tensor) -> EagerValue:
     return _emit_linalg_node("Dot", [input, other], {}, [()], [getattr(input, "dtype", None)])
 
 
-def vdot(input: Tensor, other: Tensor) -> EagerValue:
+def vdot(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the dot product of two vectors, conjugating the first argument.
 
     Args:
@@ -98,7 +99,7 @@ def vdot(input: Tensor, other: Tensor) -> EagerValue:
     return _emit_linalg_node("Vdot", [input, other], {}, [()], [getattr(input, "dtype", None)])
 
 
-def inner(input: Tensor, other: Tensor) -> EagerValue:
+def inner(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the inner product of two tensors.
 
     Args:
@@ -126,7 +127,7 @@ def inner(input: Tensor, other: Tensor) -> EagerValue:
     return _emit_linalg_node("Inner", [input, other], {}, [()], [getattr(input, "dtype", None)])
 
 
-def outer(input: Tensor, other: Tensor) -> EagerValue:
+def outer(input: Tensor, other: Tensor) -> TensorOrScalar:
     """Compute the outer product of two vectors.
 
     Args:
@@ -158,7 +159,7 @@ def dot_general(
     lhs: Tensor,
     rhs: Tensor,
     dimension_numbers: tuple[tuple[Sequence[int], Sequence[int]], tuple[Sequence[int], Sequence[int]]],
-) -> EagerValue:
+) -> TensorOrScalar:
     """General dot product with support for batching and contracting arbitrary dimensions.
 
     Args:
@@ -185,15 +186,15 @@ def dot_general(
     out_shape = []
     if lhs.shape and rhs.shape:
         out_shape = list(_infer_dot_general_shape(lhs.shape, rhs.shape, dimension_numbers))
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [getattr(lhs, "dtype", None)]))
+    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [getattr(lhs, "dtype", None)]))
 
 
-def convolve(a: EagerValue, v: EagerValue, mode: str = "full") -> EagerValue:
+def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> TensorOrScalar:
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
-        a (Any): The a parameter.
-        v (Any): The v parameter.
+        a (TensorOrScalar): The a parameter.
+        v (TensorOrScalar): The v parameter.
         mode (str): The mode parameter.
 
     Returns:
@@ -213,15 +214,15 @@ def convolve(a: EagerValue, v: EagerValue, mode: str = "full") -> EagerValue:
     return _emit_linalg_node("Convolve", [a, v], {"mode": mode}, [(None,)], [getattr(a, "dtype", "float32")])
 
 
-def matvec(a: EagerValue, b: EagerValue, transpose_a: EagerValue = False, adjoint_a: EagerValue = False, **kwargs: EagerValue) -> EagerValue:
+def matvec(a: TensorOrScalar, b: TensorOrScalar, transpose_a: TensorOrScalar = False, adjoint_a: TensorOrScalar = False, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Matrix-vector multiplication.
 
     Args:
-        a (Any): The a parameter.
-        b (Any): The b parameter.
-        transpose_a (Any): The transpose_a parameter.
-        adjoint_a (Any): The adjoint_a parameter.
-        **kwargs (Any): Keyword args.
+        a (TensorOrScalar): The a parameter.
+        b (TensorOrScalar): The b parameter.
+        transpose_a (TensorOrScalar): The transpose_a parameter.
+        adjoint_a (TensorOrScalar): The adjoint_a parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -229,12 +230,12 @@ def matvec(a: EagerValue, b: EagerValue, transpose_a: EagerValue = False, adjoin
     return a
 
 
-def multi_dot(arrays: EagerValue, name: EagerValue = None) -> EagerValue:
-    """Evaluate multi_dot operation.
+def multi_dot(arrays: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Compute the multi dot tensor operation.
 
     Args:
-        arrays (Any): The arrays parameter.
-        name (Any): The name parameter.
+        arrays (TensorOrScalar): The arrays parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -243,17 +244,17 @@ def multi_dot(arrays: EagerValue, name: EagerValue = None) -> EagerValue:
         backend = get_active_backend()
         data = backend.execute_op("MultiDot", [(getattr(a, "data") if type(a).__name__ == "Tensor" else a) for a in getattr(arrays, "__iter__")()])
         return Tensor(data, TensorConfig(getattr(data, "shape"), getattr(getattr(arrays, "__getitem__")(0), "dtype"), getattr(getattr(arrays, "__getitem__")(0), "device")))
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("MultiDot", arrays, {}, [()], [getattr(getattr(arrays, "__getitem__")(0), "dtype")]))
+    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("MultiDot", arrays, {}, [()], [getattr(getattr(arrays, "__getitem__")(0), "dtype")]))
 
 
-def vecdot(x: EagerValue, y: EagerValue, axis: EagerValue = -1, name: EagerValue = None) -> EagerValue:
-    """Evaluate vecdot operation.
+def vecdot(x: TensorOrScalar, y: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Compute the vecdot tensor operation.
 
     Args:
-        x (Any): The x parameter.
-        y (Any): The y parameter.
-        axis (Any): The axis parameter.
-        name (Any): The name parameter.
+        x (TensorOrScalar): The x parameter.
+        y (TensorOrScalar): The y parameter.
+        axis (TensorOrScalar): The axis parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -277,12 +278,12 @@ def addmm(
     *,
     beta: (float | int) = 1.0,
     alpha: (float | int) = 1.0,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Perform a matrix multiplication of the matrices mat1 and mat2.
 
     Args:
-        beta (Any): The beta parameter.
-        alpha (Any): The alpha parameter.
+        beta (float | int): The beta parameter.
+        alpha (float | int): The alpha parameter.
         input (Tensor): The input parameter.
         mat1 (Tensor): The mat1 parameter.
         mat2 (Tensor): The mat2 parameter.
@@ -306,13 +307,13 @@ class BlockMaskedMm(OpDef):
 
     op_name = "BlockMaskedMm"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            a (Any): The a parameter.
-            b (Any): The b parameter.
-            **kwargs (Any): Keyword args.
+            a (EagerTensorProtocol): The a parameter.
+            b (EagerTensorProtocol): The b parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -325,11 +326,11 @@ class BlockMaskedMm(OpDef):
         return getattr(a, "shape", ())
 
 
-def _unwrap(x: Tensor | None) -> EagerValue | None:
+def _unwrap(x: Tensor | None) -> TensorOrScalar | None:
     """Unwrap a Tensor to its underlying data if it's a Tensor.
 
     Args:
-        x (Any): The Any to unwrap.
+        x (Tensor | None): The Any to unwrap.
 
     Returns: Tensor: The unwrapped data.
     """
@@ -341,21 +342,21 @@ def block_masked_mm(
     b: Tensor,
     block_size: int = 64,
     masks: dict[str, Tensor | None] | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Block masked matrix multiplication.
 
     Args:
         a (Tensor): The a parameter.
         b (Tensor): The b parameter.
         block_size (int): The block_size parameter.
-        masks (Any): The masks parameter.
+        masks (dict[str, Tensor | None] | None): The masks parameter.
 
     Returns:
         Tensor: Result.
     """
     masks = masks or {}
 
-    kwargs: dict[str, EagerValue] = {"block_size": block_size}
+    kwargs: dict[str, TensorOrScalar] = {"block_size": block_size}
     if config.eager_mode:
         backend = get_active_backend()
         for k in ("mask_out", "mask_lhs", "mask_rhs"):
@@ -385,18 +386,18 @@ class GatherMm(OpDef):
         self,
         a: EagerTensorProtocol,
         b: EagerTensorProtocol,
-        lhs_indices: EagerValue = None,
-        rhs_indices: EagerValue = None,
-        **kwargs: EagerValue,
-    ) -> EagerValue:
+        lhs_indices: TensorOrScalar = None,
+        rhs_indices: TensorOrScalar = None,
+        **kwargs: TensorOrScalar,
+    ) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            a (Any): The a parameter.
-            b (Any): The b parameter.
-            lhs_indices (Any): The lhs_indices parameter.
-            rhs_indices (Any): The rhs_indices parameter.
-            **kwargs (Any): Keyword args.
+            a (EagerTensorProtocol): The a parameter.
+            b (EagerTensorProtocol): The b parameter.
+            lhs_indices (TensorOrScalar): The lhs_indices parameter.
+            rhs_indices (TensorOrScalar): The rhs_indices parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -414,7 +415,7 @@ class GatherMm(OpDef):
         return mm_shape
 
 
-def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: EagerValue = None, rhs_indices: EagerValue = None) -> EagerValue:
+def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: TensorOrScalar = None, rhs_indices: TensorOrScalar = None) -> TensorOrScalar:
     """Infer shape for gather_mm operation.
 
     Args:
@@ -437,10 +438,10 @@ def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: EagerValue = None,
 def gather_mm(
     a: Tensor,
     b: Tensor,
-    lhs_indices: EagerValue = None,
-    rhs_indices: EagerValue = None,
+    lhs_indices: TensorOrScalar = None,
+    rhs_indices: TensorOrScalar = None,
     sorted_indices: bool = False,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Gather matrix multiplication.
 
     Args:
@@ -453,7 +454,7 @@ def gather_mm(
     Returns:
         Tensor: Result.
     """
-    kwargs: dict[str, EagerValue] = {"sorted_indices": sorted_indices}
+    kwargs: dict[str, TensorOrScalar] = {"sorted_indices": sorted_indices}
     if config.eager_mode:
         backend = get_active_backend()
         for k, v in (("lhs_indices", lhs_indices), ("rhs_indices", rhs_indices)):
@@ -479,14 +480,14 @@ class SegmentedMm(OpDef):
 
     op_name = "SegmentedMm"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, segments: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, segments: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            a (Any): The a parameter.
-            b (Any): The b parameter.
-            segments (Any): The segments parameter.
-            **kwargs (Any): Keyword args.
+            a (EagerTensorProtocol): The a parameter.
+            b (EagerTensorProtocol): The b parameter.
+            segments (TensorOrScalar): The segments parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -498,7 +499,7 @@ class SegmentedMm(OpDef):
         return getattr(a, "shape", ())
 
 
-def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> EagerValue:
+def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> TensorOrScalar:
     """Segmented matrix multiplication.
 
     Args:

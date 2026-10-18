@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 
 @global_eager_registry.register("ActivityRegularization")
 def _activity_regularization(backend_module: EagerValue, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _activity_regularization operation.
+    """Execute the eager activity regularization operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -24,7 +24,7 @@ def _activity_regularization(backend_module: EagerValue, x: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return x
 
@@ -39,7 +39,7 @@ def _layer_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: Normalized output.
+        EagerValue: Normalized output.
     """
     del kwargs
     mod = cast(ModuleType, backend_module)
@@ -62,7 +62,7 @@ def _batch_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: Normalized output.
+        EagerValue: Normalized output.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -90,7 +90,7 @@ def _rms_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: Normalized output.
+        EagerValue: Normalized output.
     """
     del kwargs
     mod = cast(ModuleType, backend_module)
@@ -110,7 +110,7 @@ def _mse_loss(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: MSE loss value.
+        EagerValue: MSE loss value.
     """
     del kwargs
     mod = cast(ModuleType, backend_module)
@@ -129,7 +129,7 @@ def _bce_loss(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: BCE loss value.
+        EagerValue: BCE loss value.
     """
     del kwargs
     mod = cast(ModuleType, backend_module)
@@ -153,7 +153,7 @@ def _huber_loss(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: Huber loss value.
+        EagerValue: Huber loss value.
     """
     del kwargs
     mod = cast(ModuleType, backend_module)
@@ -175,7 +175,7 @@ def _kl_loss(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: KL divergence loss value.
+        EagerValue: KL divergence loss value.
     """
     del kwargs
     mod = cast(ModuleType, backend_module)
@@ -196,7 +196,7 @@ def _gelu(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: GELU activation output.
+        EagerValue: GELU activation output.
     """
     del kwargs
     import math
@@ -217,7 +217,7 @@ def _silu(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: SiLU activation output.
+        EagerValue: SiLU activation output.
     """
     del kwargs
     mod = cast(ModuleType, backend_module)
@@ -237,7 +237,7 @@ def _elu(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: ELU activation output.
+        EagerValue: ELU activation output.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -257,7 +257,7 @@ def _leaky_relu(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Optional keyword arguments.
 
     Returns:
-        Any: LeakyReLU activation output.
+        EagerValue: LeakyReLU activation output.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -374,7 +374,7 @@ def _global_adaptive_pool(backend_module: EagerValue, operand: EagerValue, outpu
         **kwargs: Keyword args.
 
     Returns:
-        object: Result.
+        EagerValue: Result.
     """
     del kwargs
     if not hasattr(operand, "shape"):
@@ -398,7 +398,7 @@ def _global_adaptive_pool(backend_module: EagerValue, operand: EagerValue, outpu
 
 @global_eager_registry.register("AdaptiveAvgPool2D")
 def _adaptive_avg_pool2d(backend_module: EagerValue, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _adaptive_avg_pool2d operation.
+    """Execute the eager adaptive avg pool2d operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -407,14 +407,14 @@ def _adaptive_avg_pool2d(backend_module: EagerValue, operand: EagerValue, output
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveAvgPool3D")
 def _adaptive_avg_pool3d(backend_module: EagerValue, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _adaptive_avg_pool3d operation.
+    """Execute the eager adaptive avg pool3d operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -423,14 +423,14 @@ def _adaptive_avg_pool3d(backend_module: EagerValue, operand: EagerValue, output
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AlphaDropout")
 def _alpha_dropout(backend_module: EagerValue, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _alpha_dropout operation.
+    """Execute the eager alpha dropout operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -438,14 +438,14 @@ def _alpha_dropout(backend_module: EagerValue, x: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return x
 
 
 @global_eager_registry.register("FractionalAvgPool")
 def _np_fractionalavgpool(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_fractionalavgpool operation.
+    """Execute the eager np fractionalavgpool operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -453,7 +453,7 @@ def _np_fractionalavgpool(backend_module: EagerValue, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     func = getattr(backend_module, "fractionalavgpool", getattr(backend_module, "fractionalavgpool", None))
     if func is not None:

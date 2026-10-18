@@ -1,44 +1,44 @@
-"""Signal processing operations."""
+"""Spectral analysis, window functions, and Short-Time Fourier Transform operations."""
+
+from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable, Optional, Union, cast  # noqa: F401
+from typing import TYPE_CHECKING, Optional, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
-
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
-
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-from .common_ops import _emit_signal_node  # noqa: F401
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 @register_op("Welch")
 class Welch(OpDef):
-    """Welch."""
+    """Welch power spectral density estimation operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer output shape for `Welch` from the input signal tensor.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional input signal arguments.
+            **kwargs (TensorOrScalar): Keyword Welch configuration attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
+        _ = kwargs
         return args[0].shape
 
 
 @dataclass
 class WindowConfig:
-    """Configuration class for window config."""
+    """Windowing configuration for Welch spectral density estimation."""
 
     fs: float = 1.0
     window: str = "hann"
@@ -49,7 +49,7 @@ class WindowConfig:
 
 @dataclass
 class FilterState:
-    """Configuration class for filter state."""
+    """Detrending, scaling, and averaging options for Welch spectral estimation."""
 
     detrend: str = "constant"
     return_onesided: bool = True
@@ -60,7 +60,7 @@ class FilterState:
 
 @dataclass
 class WelchConfig:
-    """Configuration class for welch config."""
+    """Composite configuration for Welch's method (`WindowConfig` + `FilterState`)."""
 
     window_config: WindowConfig = field(default_factory=WindowConfig)
     filter_state: FilterState = field(default_factory=FilterState)
@@ -69,15 +69,15 @@ class WelchConfig:
 def welch(
     x: Tensor,
     config_params: Optional[WelchConfig] = None,
-) -> EagerValue:
-    """Evaluate welch operation.
+) -> TensorOrScalar:
+    """Estimate power spectral density using Welch's overlapped periodogram method.
 
     Args:
-        x (Tensor): The x parameter.
-        config_params (Optional): The config_params parameter.
+        x (Tensor): Time-series input signal tensor.
+        config_params (Optional[WelchConfig]): Optional window and filter configuration.
 
     Returns:
-        tuple: Result.
+        TensorOrScalar: Tuple of `(sample_frequencies_tensor, power_spectral_density_tensor)`.
     """
     if config_params is None:
         config_params = WelchConfig()
@@ -135,120 +135,135 @@ def welch(
 
 @register_op("WindowHann")
 class WindowHann(OpDef):
-    """WindowHann class."""
+    """Hann window generation operation definition."""
 
-    def infer_shape(self, length: int, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, length: int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer 1D `(length,)` output shape for `WindowHann`.
 
         Args:
-            length (int): The length parameter.
-            **kwargs (Any): Keyword args.
+            length (int): Number of points in the output window.
+            **kwargs (TensorOrScalar): Additional keyword attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: 1-tuple `(length,)`.
         """
+        _ = kwargs
         return (length,)
 
 
 @register_op("WindowHamming")
 class WindowHamming(OpDef):
-    """WindowHamming class."""
+    """Hamming window generation operation definition."""
 
-    def infer_shape(self, length: int, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, length: int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer 1D `(length,)` output shape for `WindowHamming`.
 
         Args:
-            length (int): The length parameter.
-            **kwargs (Any): Keyword args.
+            length (int): Number of points in the output window.
+            **kwargs (TensorOrScalar): Additional keyword attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: 1-tuple `(length,)`.
         """
+        _ = kwargs
         return (length,)
 
 
 @register_op("Stft")
 class Stft(OpDef):
-    """Stft class."""
+    """Short-Time Fourier Transform operation definition."""
 
-    def infer_shape(self, x: EagerTensorProtocol, nfft: int, noverlap: int = 0, **kwargs: EagerValue) -> EagerValue:
-        """infer_shape function.
+    def infer_shape(
+        self,
+        x: Tensor | EagerTensorProtocol,
+        nfft: int,
+        noverlap: int = 0,
+        **kwargs: TensorOrScalar,
+    ) -> TensorOrScalar:
+        """Infer output shape for Short-Time Fourier Transform.
 
         Args:
-            x (Any): The x parameter.
-            nfft (int): The nfft parameter.
-            noverlap (int): The noverlap parameter.
-            **kwargs (Any): Keyword args.
+            x (Tensor | EagerTensorProtocol): The input signal tensor.
+            nfft (int): The FFT window length.
+            noverlap (int): The number of overlapping samples between frames.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred spectrogram output shape.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If `noverlap` is greater than or equal to `nfft`.
         """
+        _ = kwargs
         if not hasattr(x, "shape") or not x.shape:
             return ()
         step = nfft - noverlap
         if step <= 0:
             raise ValueError("noverlap must be less than nfft")
-        num_frames = (x.shape[-1] - noverlap) // step
-        return x.shape[:-1] + (nfft // 2 + 1, num_frames)
+        num_frames = (int(x.shape[-1]) - noverlap) // step
+        return tuple(x.shape[:-1]) + (nfft // 2 + 1, num_frames)
 
 
 @register_op("Istft")
 class Istft(OpDef):
-    """Istft class."""
+    """Inverse Short-Time Fourier Transform operation definition."""
 
-    def infer_shape(self, x: EagerTensorProtocol, nfft: int, noverlap: int = 0, **kwargs: EagerValue) -> EagerValue:
-        """infer_shape function.
+    def infer_shape(
+        self,
+        x: Tensor | EagerTensorProtocol,
+        nfft: int,
+        noverlap: int = 0,
+        **kwargs: TensorOrScalar,
+    ) -> TensorOrScalar:
+        """Infer output shape for Inverse Short-Time Fourier Transform.
 
         Args:
-            x (Any): The x parameter.
-            nfft (int): The nfft parameter.
-            noverlap (int): The noverlap parameter.
-            **kwargs (Any): Keyword args.
+            x (Tensor | EagerTensorProtocol): The input spectrogram tensor.
+            nfft (int): The FFT window length.
+            noverlap (int): The number of overlapping samples between frames.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred time-domain signal shape.
 
         Raises:
-            ValueError: An exception.
+            ValueError: If `noverlap` is greater than or equal to `nfft`.
         """
+        _ = kwargs
         if not hasattr(x, "shape") or not x.shape or len(x.shape) < 2:
             return ()
         step = nfft - noverlap
         if step <= 0:
             raise ValueError("noverlap must be less than nfft")
-        T = x.shape[-1]
+        T = int(x.shape[-1])
         L = (T - 1) * step + nfft
-        return x.shape[:-2] + (L,)
+        return tuple(x.shape[:-2]) + (L,)
 
 
-def window_hann(length: int) -> EagerValue:
-    """Generate a Hann window.
+def window_hann(length: int) -> TensorOrScalar:
+    """Generate a symmetric Hann window of length `length`.
 
     Args:
-        length (int): The length parameter.
+        length (int): Number of points in the output window.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: 1D `Tensor` of shape `(length,)` containing the Hann window.
     """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("WindowHann", length)
         return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))
-    # Note: Using float32 as default dtype for window
     return _emit_shape_node("WindowHann", [], {"length": length}, (length,), "float32")
 
 
-def window_hamming(length: int) -> EagerValue:
-    """Generate a Hamming window.
+def window_hamming(length: int) -> TensorOrScalar:
+    """Generate a symmetric Hamming window of length `length`.
 
     Args:
-        length (int): The length parameter.
+        length (int): Number of points in the output window.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: 1D `Tensor` of shape `(length,)` containing the Hamming window.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -257,41 +272,53 @@ def window_hamming(length: int) -> EagerValue:
     return _emit_shape_node("WindowHamming", [], {"length": length}, (length,), "float32")
 
 
-def stft(x: Tensor, nfft: int, noverlap: int = 0) -> EagerValue:
-    """Compute the Short Time Fourier Transform.
+def stft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
+    """Compute the Short-Time Fourier Transform (STFT) of signal `x`.
 
     Args:
-        x (Tensor): The x parameter.
-        nfft (int): The nfft parameter.
-        noverlap (int): The noverlap parameter.
+        x (Tensor): Time-domain input signal tensor.
+        nfft (int): FFT window length.
+        noverlap (int): Number of overlapping samples between adjacent frames.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Complex STFT spectrogram `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", getattr(Stft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap))
-        return Tensor(data, cast("Callable[..., TensorConfig]", TensorConfig)(out_shape, x.dtype, x.device))
-    out_shape = getattr(Stft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap)
-    return _emit_shape_node("Stft", [x], {"nfft": nfft, "noverlap": noverlap}, cast("Sequence[Union[int, str]]", out_shape), "complex64")
+        out_shape = getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
+    out_shape = Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    return _emit_shape_node(
+        "Stft",
+        [x],
+        {"nfft": nfft, "noverlap": noverlap},
+        cast("Sequence[Union[int, str]]", out_shape),
+        "complex64",
+    )
 
 
-def istft(x: Tensor, nfft: int, noverlap: int = 0) -> EagerValue:
-    """Compute the Inverse Short Time Fourier Transform.
+def istft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
+    """Compute the Inverse Short-Time Fourier Transform (ISTFT) of spectrogram `x`.
 
     Args:
-        x (Tensor): The x parameter.
-        nfft (int): The nfft parameter.
-        noverlap (int): The noverlap parameter.
+        x (Tensor): Frequency-domain STFT spectrogram tensor.
+        nfft (int): FFT window length.
+        noverlap (int): Number of overlapping samples between adjacent frames.
 
     Returns:
-        Tensor: Result.
+        TensorOrScalar: Reconstructed time-domain signal `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", getattr(Istft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap))
-        return Tensor(data, cast("Callable[..., TensorConfig]", TensorConfig)(out_shape, x.dtype, x.device))
-    out_shape = getattr(Istft(), "infer_shape")(x, nfft=nfft, noverlap=noverlap)
-    return _emit_shape_node("Istft", [x], {"nfft": nfft, "noverlap": noverlap}, cast("Sequence[Union[int, str]]", out_shape), "float32")
+        out_shape = getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
+    out_shape = Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    return _emit_shape_node(
+        "Istft",
+        [x],
+        {"nfft": nfft, "noverlap": noverlap},
+        cast("Sequence[Union[int, str]]", out_shape),
+        "float32",
+    )

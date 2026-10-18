@@ -10,7 +10,7 @@ def test_scan_bind_coverage() -> None:
     """Test the scan bind coverage behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     res = scan_bind(lambda x: x, [1, 2, 3])
     assert res is not None

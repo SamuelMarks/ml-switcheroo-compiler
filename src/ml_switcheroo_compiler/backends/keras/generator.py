@@ -54,7 +54,7 @@ class KerasTensorManipulator:
 
     @staticmethod
     def format_zeros_like(op: str, kwargs: dict[str, EagerValue]) -> str:
-        """Evaluate format_zeros_like operation.
+        """Execute format zeros like for compiler processing.
 
         Args:
             op (str): The op parameter.
@@ -70,7 +70,7 @@ class KerasTensorManipulator:
 
     @staticmethod
     def format_full(kwargs: dict[str, EagerValue]) -> str:
-        """Evaluate format_full operation.
+        """Execute format full for compiler processing.
 
         Args:
             kwargs: The kwargs parameter.
@@ -85,7 +85,7 @@ class KerasTensorManipulator:
 
     @staticmethod
     def format_transpose(kwargs: dict[str, EagerValue]) -> str:
-        """Evaluate format_transpose operation.
+        """Execute format transpose for compiler processing.
 
         Args:
             kwargs: The kwargs parameter.
@@ -113,7 +113,7 @@ class KerasCodeGenerator(BaseGenerator):
             encoding (str): The encoding.
 
         Returns:
-            object: The loaded object.
+            EagerValue: The loaded object.
         """
         import pickle
 
@@ -260,7 +260,7 @@ class KerasCodeGenerator(BaseGenerator):
         return ops
 
     def _emit_input_assignment(self, var_name: str, node: IRNode, input_prefix: str, input_idx: int) -> None:
-        """Evaluate _emit_input_assignment operation.
+        """Execute emit input assignment for compiler processing.
 
         Args:
             var_name (str): The var_name parameter.
@@ -272,7 +272,7 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_input_vars.append(var_name)
 
     def _emit_body_return(self, returns: list[str]) -> None:
-        """Evaluate _emit_body_return operation.
+        """Execute emit body return for compiler processing.
 
         Args:
             returns (list[str]): The returns parameter.
@@ -290,7 +290,7 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_output_vars.extend(input_vars)
 
     def _generate_file_header(self) -> list[str]:
-        """Evaluate _generate_file_header operation.
+        """Execute generate file header for compiler processing.
 
         Returns:
             list[str]: Result.
@@ -298,7 +298,7 @@ class KerasCodeGenerator(BaseGenerator):
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
-        """Evaluate _resolve_imports operation.
+        """Execute resolve imports for compiler processing.
 
         Returns:
             list[str]: Result.
@@ -330,10 +330,10 @@ class KerasCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (object): Compiler options.
+            **kwargs (EagerValue): Compiler options.
 
         Returns:
-            object: Executable compiled artifact.
+            EagerValue: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
@@ -351,11 +351,11 @@ class KerasCodeGenerator(BaseGenerator):
             """Execute compiled Keras artifact using instantiated model or graph fallback.
 
             Args:
-                *args (object): Input tensor arguments.
-                **runner_kwargs (object): Optional execution options.
+                *args (EagerValue): Input tensor arguments.
+                **runner_kwargs (EagerValue): Optional execution options.
 
             Returns:
-                object: Model execution output or evaluated graph output.
+                EagerValue: Model execution output or evaluated graph output.
             """
             if model_obj is not None:
                 return cast(Callable[..., EagerValue], model_obj)(*args, **runner_kwargs)

@@ -12,7 +12,7 @@ def test_jax_spmd_lowering() -> None:
     """Test the jax spmd lowering behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     graph = IRGraph()
     gen = JAXCodeGenerator(graph)
@@ -31,7 +31,7 @@ def test_torch_spmd_lowering() -> None:
     """Test the torch spmd lowering behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     graph = IRGraph()
     gen = PyTorchCodeGenerator(graph)

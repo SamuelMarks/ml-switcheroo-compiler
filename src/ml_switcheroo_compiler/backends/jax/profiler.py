@@ -72,7 +72,7 @@ def _sync_jax_result(result: Union[jax.Array, tuple[EagerValue, ...], list[Eager
     """Force hardware device synchronization on all JAX leaf tensors using block_until_ready.
 
     Args:
-        result (object): Single or multi-output array evaluation result.
+        result (Union[jax.Array, tuple[EagerValue, ...], list[EagerValue], dict[str, EagerValue], EagerValue]): Single or multi-output array evaluation result.
     """
     if hasattr(jax, "tree_util") and hasattr(jax.tree_util, "tree_leaves"):
         try:
@@ -124,7 +124,7 @@ class JAXProfiler:
                 *args (jax.Array): Positional tensor inputs.
 
             Returns:
-                object: Evaluated output array or collection.
+                EagerValue: Evaluated output array or collection.
             """
             return native_apply_model({}, *args)
 
@@ -184,7 +184,7 @@ class JAXProfiler:
             """Execute a single forward evaluation step on JAX backend.
 
             Returns:
-                object: Single or collection of evaluated JAX arrays.
+                EagerValue: Single or collection of evaluated JAX arrays.
             """
             if has_ops and compiled_fn is not None:
                 return compiled_fn(*jax_input_list)

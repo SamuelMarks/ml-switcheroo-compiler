@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
 def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], sigma: tuple[float, float]) -> EagerValue:
-    """Evaluate _generate_gaussian_kernel operation.
+    """Execute the eager generate gaussian kernel operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -15,7 +15,7 @@ def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], 
         sigma (tuple[float, float]): The sigma parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     kx, ky = kernel_size
     sx, sy = sigma
@@ -27,7 +27,7 @@ def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], 
 
 
 def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue, mode: str) -> EagerValue:
-    """Evaluate _apply_conv2d_batch operation.
+    """Execute the eager apply conv2d batch operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -36,7 +36,7 @@ def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue
         mode (str): The mode parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
 
     Raises:
         ValueError: An exception.
@@ -62,7 +62,7 @@ def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue
 
 
 def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: Optional[BlurConfig]) -> BlurConfig:
-    """Evaluate _get_blur_config operation.
+    """Execute the eager get blur config operation on the active backend array.
 
     Args:
         kwargs (dict[str, object]): The kwargs parameter.
@@ -84,7 +84,7 @@ def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: Optional[BlurCon
 
 
 def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_obj: Optional[BlurConfig] = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate gaussian_blur_eager operation.
+    """Execute the eager gaussian blur eager operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -93,7 +93,7 @@ def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_o
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     config = _get_blur_config(kwargs, config_obj)
     kernel = cast("Callable[..., EagerTensorProtocol]", _generate_gaussian_kernel)(backend_module, config.kernel_size, config.sigma)
@@ -101,7 +101,7 @@ def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_o
 
 
 def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size: tuple[int, int], padding: str) -> EagerValue:
-    """Evaluate _apply_median_filter_batch operation.
+    """Execute the eager apply median filter batch operation on the active backend array.
 
     Args:
         np_mod: The np_mod parameter.
@@ -110,7 +110,7 @@ def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size
         padding (str): The padding parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
 
     Raises:
         ValueError: An exception.
@@ -139,7 +139,7 @@ def median_filter_eager(
     padding: str = "same",
     data_format: Optional[EagerValue] = None,
 ) -> EagerValue:
-    """Evaluate median_filter_eager operation.
+    """Execute the eager median filter eager operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -149,6 +149,6 @@ def median_filter_eager(
         data_format: The data_format parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return _apply_median_filter_batch(backend_module, images, kernel_size, padding)

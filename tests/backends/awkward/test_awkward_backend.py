@@ -19,7 +19,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _create_sample_graph(multi_output: bool = False, no_output: bool = False) -> IRGraph:
@@ -279,8 +279,8 @@ def _test_awkward_ragged_operations_and_records_part_2(_state: dict[str, EagerTe
     exp_res = ak_pkg.execute_op("Exp", ragged)
     assert isinstance(exp_res, cast("type", ak.Array))
 
-    # Classmethod execution and other overloaded ops
-    sub_res = ak_pkg.execute_op(AwkwardGenerator, "Sub", ragged, ragged)
+    # Staticmethod execution and other overloaded ops
+    sub_res = ak_pkg.AwkwardGenerator.execute_op("Sub", ragged, ragged)
     assert ak.to_list(sub_res) == [[0.0, 0.0, 0.0], [0.0], [0.0, 0.0]]
     mul_res = ak_pkg.execute_op("Mul", ragged, ragged)
     assert isinstance(mul_res, cast("type", ak.Array))
@@ -339,7 +339,7 @@ def _test_awkward_ragged_operations_and_records_part_4(_state: dict[str, EagerTe
     mock_ak_empty = _state["mock_ak_empty"]
     with mock.patch("ml_switcheroo_compiler.backends.awkward.types._get_ak_module", return_value=mock_ak_empty):
         ragged_fallback = ak_pkg.ragged_array([1, 2])
-        assert isinstance(ragged_fallback, np.ndarray)
+        assert isinstance(ragged_fallback, list)
         rec_fallback = ak_pkg.record_array({"a": [1]})
         assert isinstance(rec_fallback, dict)
         flat_fallback = ak_pkg.flatten(np.array([[1, 2], [3, 4]]))
@@ -368,27 +368,19 @@ def test_awkward_types_coverage_branches() -> None:
     """Test full branch coverage for ml_switcheroo_compiler.backends.awkward.types."""
     from ml_switcheroo_compiler.backends.awkward import types as ak_types
 
-    # 1. _get_ak_module import exception fallback (lines 17-18)
-    with mock.patch("importlib.import_module") as mock_import:
+    # 1. _get_ak_module import exception fallback
+    with mock.patch("importlib.import_module", side_effect=ImportError("No awkward")):
+        assert ak_types._get_ak_module() is None
 
-        def side_effect(name: str) -> EagerValue:
-            """Side effect to simulate missing awkward package."""
-            if name == "awkward":
-                raise ImportError("No awkward")
-            return np
-
-        mock_import.side_effect = side_effect
-        assert ak_types._get_ak_module() is np
-
-    # 2. zeros when ak_mod has no Array attribute (line 37)
+    # 2. zeros when ak_mod has no Array attribute and 2D shape
     with mock.patch(
         "ml_switcheroo_compiler.backends.awkward.types._get_ak_module",
         return_value=mock.MagicMock(spec=[]),
     ):
-        z = ak_types.zeros((3,))
-        assert isinstance(z, np.ndarray)
+        z = ak_types.zeros((2, 3))
+        assert isinstance(z, list)
 
-    # 3. array when ak_mod.Array raises Exception (lines 62-63)
+    # 3. array when ak_mod.Array raises Exception
     mock_ak_throwing = mock.MagicMock()
     mock_ak_throwing.Array.side_effect = TypeError("Boom")
     with mock.patch(
@@ -396,32 +388,36 @@ def test_awkward_types_coverage_branches() -> None:
         return_value=mock_ak_throwing,
     ):
         arr = ak_types.array([1, 2, 3])
-        assert isinstance(arr, np.ndarray)
+        assert isinstance(arr, list)
+        arr_scalar = ak_types.array(5)
+        assert arr_scalar == [5]
 
-    # 4. asarray when ak_mod.Array raises Exception (lines 81-84) and when ak_mod has no Array attribute (branch 78->83)
+    # 4. asarray when ak_mod.Array raises Exception and when ak_mod has no Array attribute
     with mock.patch(
         "ml_switcheroo_compiler.backends.awkward.types._get_ak_module",
         return_value=mock_ak_throwing,
     ):
         as_arr = ak_types.asarray([1, 2, 3])
-        assert isinstance(as_arr, np.ndarray)
+        assert isinstance(as_arr, list)
 
     with mock.patch(
         "ml_switcheroo_compiler.backends.awkward.types._get_ak_module",
         return_value=mock.MagicMock(spec=[]),
     ):
-        as_arr_no_ak = ak_types.asarray([1, 2, 3])
-        assert isinstance(as_arr_no_ak, np.ndarray)
+        as_arr_no_ak = ak_types.asarray(42)
+        assert as_arr_no_ak == [42]
 
-    # 5. ragged_array when ak_mod.Array raises Exception (lines 113-114)
+    # 5. ragged_array when ak_mod.Array raises Exception
     with mock.patch(
         "ml_switcheroo_compiler.backends.awkward.types._get_ak_module",
         return_value=mock_ak_throwing,
     ):
         rag = ak_types.ragged_array([[1], [2, 3]])
-        assert isinstance(rag, np.ndarray)
+        assert isinstance(rag, list)
+        rag_scalar = ak_types.ragged_array(7)
+        assert rag_scalar == [7]
 
-    # 6. record_array when ak_mod has neither zip nor Array (line 137)
+    # 6. record_array when ak_mod has neither zip nor Array
     mock_ak_no_zip = mock.MagicMock(spec=["Array"])
     mock_ak_no_zip.Array.return_value = "array_record"
     with mock.patch(
@@ -438,7 +434,7 @@ def test_awkward_types_coverage_branches() -> None:
         rec = ak_types.record_array("non_mapping_data")
         assert rec == "non_mapping_data"
 
-    # 7. with_field fallback when base is not dict and ak has no with_field (line 223)
+    # 7. with_field fallback when base is not dict and ak has no with_field
     with mock.patch(
         "ml_switcheroo_compiler.backends.awkward.types._get_ak_module",
         return_value=mock.MagicMock(spec=[]),
@@ -446,7 +442,7 @@ def test_awkward_types_coverage_branches() -> None:
         res = ak_types.with_field("not_a_dict", "val", where="fld")
         assert res == "not_a_dict"
 
-    # 8. unzip fallback when base is not dict and ak has no unzip (line 246)
+    # 8. unzip fallback when base is not dict and ak has no unzip
     with mock.patch(
         "ml_switcheroo_compiler.backends.awkward.types._get_ak_module",
         return_value=mock.MagicMock(spec=[]),
@@ -454,7 +450,7 @@ def test_awkward_types_coverage_branches() -> None:
         unzipped = ak_types.unzip("not_a_dict")
         assert unzipped == ("not_a_dict",)
 
-    # 9. item fallback with nested list/tuple where first is list/tuple (line 265)
+    # 9. item fallback with nested list/tuple where first is list/tuple
     class NestedToListItem:
         """Dummy object with nested to_list structure."""
 
@@ -464,16 +460,7 @@ def test_awkward_types_coverage_branches() -> None:
 
     assert cast("Callable[..., EagerTensorProtocol]", ak_types.item)(cast("Callable[..., EagerTensorProtocol]", NestedToListItem)()) == 123.45
 
-    # 10. array when numpy_mod.array raises ValueError (lines 62-63)
-    with mock.patch(
-        "ml_switcheroo_compiler.backends.awkward.types._get_ak_module",
-        return_value=mock.MagicMock(spec=[]),
-    ):
-        with mock.patch("numpy.array", side_effect=[ValueError("Ragged"), np.array(["mock"])]):
-            res_val_err = ak_types.array([[1], [2, 3]])
-            assert res_val_err is not None
-
-    # 11. item fallback with object having .item() (line 267)
+    # 10. item fallback with object having .item()
     class ItemHolder:
         """Dummy object implementing item method."""
 

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E501
+import pytest
+
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -15,9 +16,9 @@ def test_conv_general_dilated_local_coverage() -> None:
     """Test the conv general dilated local coverage behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
+    with pytest.raises(TypeError):
         device = Device(DeviceType.CPU, 0)
         with ConfigContext(eager_mode=False):
             global_tracing_state.start_tracing()
@@ -27,5 +28,3 @@ def test_conv_general_dilated_local_coverage() -> None:
                 conv_general_dilated_local(t1, t2, (1, 1), "SAME", (3, 3))
             finally:
                 global_tracing_state.stop_tracing()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None

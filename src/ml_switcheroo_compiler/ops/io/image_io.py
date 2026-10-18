@@ -82,7 +82,7 @@ def _decode_image_with_pil(
 
     data = getattr(contents, "data", contents)
     if not data:
-        return Tensor(None, TensorConfig((), None, None))
+        return Tensor(b"", TensorConfig((0,), "uint8", "cpu"))
 
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 

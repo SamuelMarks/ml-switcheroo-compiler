@@ -2,74 +2,61 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import cast
-
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.distributed.host_collectives import np
+from ml_switcheroo_compiler.backends.numba import kernels
 
 
-def zeros(shape_or_cls: EagerValue, shape: tuple[int, ...] | None = None) -> EagerValue:
-    """Create a NumPy tensor of zeros for Numba execution.
+def zeros(shape: tuple[int, ...]) -> EagerValue:
+    """Create a tensor of zeros for Numba execution.
 
     Args:
-        shape_or_cls (object): Shape tuple or backend class context.
-        shape (tuple[int, ...] | None): The shape of the tensor when called as classmethod.
+        shape (tuple[int, ...]): The shape of the tensor.
 
     Returns:
-        np.ndarray: The allocated zeros array.
+        EagerValue: The allocated zeros array.
     """
-    actual_shape = shape_or_cls if shape is None and isinstance(shape_or_cls, tuple) else (shape or (0,))
-    return cast(EagerValue, np.zeros(actual_shape, dtype=np.float32))
+    return kernels.zeros(shape, dtype=kernels.float32)
 
 
 def array(
-    data_or_cls: EagerValue,
-    data: Sequence[float] | None = None,
+    data: EagerValue,
     dtype: str | None = None,
 ) -> EagerValue:
-    """Create a NumPy tensor from data for Numba execution.
+    """Create a tensor from data for Numba execution.
 
     Args:
-        data_or_cls (object): Data sequence or backend class context.
-        data (Sequence[float] | None): Input data sequence when called as classmethod.
+        data (EagerValue): Input data sequence or buffer.
         dtype (str | None): The target dtype name.
 
     Returns:
-        np.ndarray: The created NumPy array.
+        EagerValue: The created array buffer.
     """
-    actual_data = data_or_cls if data is None else data
     if dtype is not None:
-        return cast(EagerValue, np.array(actual_data, dtype=getattr(dtype, "value", dtype)))
-    return cast(EagerValue, np.array(actual_data))
+        return kernels.array(data, dtype=getattr(dtype, "value", dtype))
+    return kernels.array(data)
 
 
 def asarray(
-    data_or_cls: EagerValue,
-    data: Sequence[float] | None = None,
+    data: EagerValue,
 ) -> EagerValue:
-    """Convert input data to a NumPy array for Numba execution.
+    """Convert input data to an array buffer for Numba execution.
 
     Args:
-        data_or_cls (object): Input data sequence or backend class context.
-        data (Sequence[float] | None): Input data sequence when called as classmethod.
+        data (EagerValue): Input data sequence or buffer.
 
     Returns:
-        np.ndarray: The NumPy array representation.
+        EagerValue: The array buffer representation.
     """
-    actual_data = data_or_cls if data is None else data
-    return cast(EagerValue, np.asarray(actual_data))
+    return kernels.asarray(data)
 
 
-def item(data_or_cls: EagerValue, data: EagerValue | None = None) -> float:
+def item(data: EagerValue) -> float:
     """Extract scalar item value from tensor.
 
     Args:
-        data_or_cls (object): Target data or backend class context.
-        data (np.ndarray | None): Input tensor data when called as classmethod.
+        data (EagerValue): Input tensor data.
 
     Returns:
         float: The extracted scalar float value.
     """
-    actual_data = data_or_cls if data is None else data
-    return float(np.asarray(actual_data).item())
+    return float(getattr(kernels.asarray(data), "item")())

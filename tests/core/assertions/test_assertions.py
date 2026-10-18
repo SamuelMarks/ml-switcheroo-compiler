@@ -1,5 +1,4 @@
-# ruff: noqa: E501
-"""Core abstractions and logic definitions for test_assertions.py."""
+"""Unit tests for runtime and symbolic assertion recording and evaluation."""
 
 from __future__ import annotations
 
@@ -19,98 +18,88 @@ if TYPE_CHECKING:
 
 
 def test_assertions() -> None:
-    """Test the assertions behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        clear_assertions()
-        record_assertion(np.array([True, True]), "Should pass")
+    """Verify `record_assertion`, `evaluate_assertions`, and proxy `.numpy()` unwrapping."""
+    clear_assertions()
+    record_assertion(np.array([True, True]), "Should pass")
+    evaluate_assertions()
+    record_assertion(np.array([True, False]), "Should fail")
+    with pytest.raises(AssertionError, match="Should fail"):
         evaluate_assertions()
-        record_assertion(np.array([True, False]), "Should fail")
-        with pytest.raises(AssertionError, match="Should fail"):
-            evaluate_assertions()
 
-        class DummyProxy:
-            """Configuration class for dummy proxy."""
+    class DummyProxy:
+        """Proxy test helper exposing `.numpy()`."""
 
-            def __init__(self, val: EagerValue) -> None:
-                """Initialize the instance.
+        def __init__(self, val: EagerValue) -> None:
+            """Initialize DummyProxy.
 
-                Args:
-                    val (object): The val parameter.
+            Args:
+                val (EagerValue): Wrapped array value.
+            """
+            self.val = val
 
-                Returns:
-                    object: The inferred shape or computed result.
-                """
-                self.val = val
+        def numpy(self) -> EagerValue:
+            """Return the wrapped array value.
 
-            def numpy(self) -> EagerValue:
-                """Evaluate and process the numpy operation.
+            Returns:
+                EagerValue: Wrapped array.
+            """
+            return self.val
 
-                Returns:
-                    object: The evaluated or processed output.
-                """
-                return self.val
-
-        cast("Callable[..., EagerTensorProtocol]", record_assertion)(cast("Callable[..., EagerTensorProtocol]", DummyProxy)(cast("Callable[..., EagerTensorProtocol]", np.array)([False])), "Proxy failed")
-        with pytest.raises(AssertionError, match="Proxy failed"):
-            evaluate_assertions()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", record_assertion)(
+        cast("Callable[..., EagerTensorProtocol]", DummyProxy)(cast("Callable[..., EagerTensorProtocol]", np.array)([False])),
+        "Proxy failed",
+    )
+    with pytest.raises(AssertionError, match="Proxy failed"):
+        evaluate_assertions()
 
 
 def test_assert_value_eager() -> None:
-    """Test the assert value eager behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        clear_assertions()
+    """Verify `assert_value` raises `AssertionError` on a false condition in eager mode."""
+    clear_assertions()
+    with pytest.raises(AssertionError, match="Eager failed"):
         assert_value(np.array([False]), "Eager failed")
-        with pytest.raises(AssertionError, match="Eager failed"):
-            evaluate_assertions()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+        evaluate_assertions()
 
 
 def test_assertions_coverage() -> None:
-    """Test function test_assertions_coverage."""
+    """Verify `_is_iterable_non_string`, `_evaluate_iterable`, and `_evaluate_single_condition`."""
     assertions.clear_assertions()
 
-    # record
     assertions.record_assertion(True, "Should not fail")
     assertions.record_assertion(False, "Should fail")
 
-    # is_iterable_non_string
     assert assertions._is_iterable_non_string([1, 2]) is True
     assert assertions._is_iterable_non_string("string") is False
     assert assertions._is_iterable_non_string(b"bytes") is False
     assert assertions._is_iterable_non_string(1) is False
 
-    # evaluate_iterable
     assert assertions._evaluate_iterable([True, True]) is True
     assert assertions._evaluate_iterable([True, False]) is False
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Could not evaluate boolean value"):
         assertions._evaluate_iterable(1)
 
-    # evaluate_single_condition
     class NumpyCond:
-        """Test class NumpyCond."""
+        """Condition helper returning an all-True NumPy array."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Return an all-True NumPy array.
+
+            Returns:
+                EagerValue: Boolean array `[True, True]`.
+            """
             return np.array([True, True])
 
     assert bool(cast("Callable[..., EagerTensorProtocol]", assertions._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", NumpyCond)())) is True
 
     class NumpyCondFalse:
-        """Test class NumpyCondFalse."""
+        """Condition helper returning a mixed NumPy array."""
 
         def numpy(self) -> EagerValue:
-            """Test function numpy."""
+            """Return a mixed boolean NumPy array.
+
+            Returns:
+                EagerValue: Boolean array `[True, False]`.
+            """
             return np.array([True, False])
 
     assert bool(cast("Callable[..., EagerTensorProtocol]", assertions._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", NumpyCondFalse)())) is False
@@ -119,23 +108,30 @@ def test_assertions_coverage() -> None:
     assert assertions._evaluate_single_condition(False) is False
 
     class ValueErrCond:
-        """Test class ValueErrCond."""
+        """Condition helper raising `ValueError` on `bool()` and falling back to `__iter__`."""
 
-        def __bool__(self) -> None:
-            """Test function __bool__."""
-            raise ValueError()
+        def __bool__(self) -> bool:
+            """Raise `ValueError` to mimic multi-element array truth ambiguity.
+
+            Raises:
+                ValueError: Always raised.
+            """
+            raise ValueError("ambiguous truth value")
 
         def __iter__(self) -> Iterator[EagerValue]:
-            """Test function __iter__."""
+            """Yield boolean elements.
+
+            Yields:
+                EagerValue: True elements.
+            """
             yield True
             yield True
 
     assert bool(cast("Callable[..., EagerTensorProtocol]", assertions._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", ValueErrCond)())) is True
 
-    # evaluate_assertions
     assertions.clear_assertions()
     assertions.record_assertion(True, "All good")
-    assertions.evaluate_assertions()  # Should not raise
+    assertions.evaluate_assertions()
 
     assertions.record_assertion(False, "Oh no")
     with pytest.raises(AssertionError, match="Oh no"):

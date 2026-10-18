@@ -120,6 +120,10 @@ class DTypePromotionError(CompilerError):
     """Raised on invalid automatic type casting."""
 
 
+class DTypeValidationError(CompilerError, TypeError):
+    """Exception raised when an operand data type is invalid for an operation."""
+
+
 class BackendNotSupportedError(CompilerError):
     """Raised when an edge target lacks an op."""
 

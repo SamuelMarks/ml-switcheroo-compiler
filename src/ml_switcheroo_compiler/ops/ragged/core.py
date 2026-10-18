@@ -2,7 +2,8 @@
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -12,12 +13,12 @@ class RaggedDot(OpDef):
 
     op_name = "RaggedDot"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the RaggedDot operation.
 
         Args:
-            *args (object): Input tensors (rt_a, b).
-            **kwargs (object): Optional keyword arguments.
+            *args (TensorOrScalar): Input tensors (rt_a, b).
+            **kwargs (TensorOrScalar): Optional keyword arguments.
 
         Returns:
             tuple: Result shape (B, var_dim, N).

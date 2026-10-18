@@ -21,7 +21,7 @@ def test_block_masked_mm_shape() -> None:
     """Test the block masked mm shape behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         config.eager_mode = False
@@ -44,7 +44,7 @@ def test_block_masked_mm_eager() -> None:
     """Test the block masked mm eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
         config.eager_mode = True

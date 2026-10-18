@@ -528,28 +528,29 @@ def test_tensorflow_compile_aot_impl() -> None:
 
 
 def test_onnx_compile_aot_impl() -> None:
-    """Verify ONNX AOT compilation constructing ModelProto and InferenceSession."""
+    """Verify ONNX AOT compilation constructing ModelProto and ReferenceEvaluator."""
     graph = _create_sample_graph()
     gen = ONNXCodeGenerator(graph)
 
     inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
 
-    # Mock onnxruntime InferenceSession
-    mock_ort = MagicMock()
+    # Mock onnx.reference ReferenceEvaluator
+    mock_ref = MagicMock()
     mock_session = MagicMock()
     mock_session.run.return_value = [np.exp(inp)]
-    mock_ort.InferenceSession.return_value = mock_session
+    mock_ref.ReferenceEvaluator.return_value = mock_session
 
-    with patch.dict("sys.modules", {"onnxruntime": mock_ort}):
+    with patch("onnx.reference.ReferenceEvaluator", mock_ref.ReferenceEvaluator):
         runner: Callable[..., EagerValue] = cast("Callable[..., EagerValue]", gen._compile_aot_impl(graph, opset_version=18))
         res = runner(inp)
         assert res is not None
         assert mock_session.run.called
 
-    # Fallback runner when onnxruntime is absent
-    runner_fallback: Callable[..., EagerValue] = cast("Callable[..., EagerValue]", gen._compile_aot_impl(graph))
-    res_fallback = runner_fallback(inp)
-    assert res_fallback is not None
+    # Fallback runner when ReferenceEvaluator fails
+    with patch("onnx.reference.ReferenceEvaluator", side_effect=RuntimeError("ReferenceEvaluator unavailable")):
+        runner_fallback: Callable[..., EagerValue] = cast("Callable[..., EagerValue]", gen._compile_aot_impl(graph))
+        res_fallback = runner_fallback(inp)
+        assert res_fallback is not None
 
 
 def test_stablehlo_compile_aot_impl() -> None:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-# ruff: noqa: E501
 import numpy as np
 import pytest
 
@@ -43,10 +42,8 @@ def test_vmap_eager(mocker: EagerTensorProtocol) -> None:
         return x
 
     vmapped = vmap(my_func, in_axes=0, out_axes=0)
-    try:
-        cast("Callable[..., EagerTensorProtocol]", vmapped)(t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", vmapped)(t)
+    assert callable(test_vmap_eager)
 
 
 def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
@@ -62,10 +59,8 @@ def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
         return x
 
     vmapped = vmap(my_func, in_axes=(0, 1), out_axes=0)
-    try:
+    with pytest.raises(AttributeError):
         cast("Callable[..., EagerTensorProtocol]", vmapped)(t, t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_vmap_not_tracing() -> None:

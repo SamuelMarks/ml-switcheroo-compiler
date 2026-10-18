@@ -3,23 +3,26 @@
 import logging
 import os
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Callable, Optional, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+
+YamlDefaultValue = Union[int, float, str, bool, list[Union[int, float, str, bool, None]], dict[str, Union[int, float, str, bool, None]], None]
 
 
 class KwargTranslation(BaseModel):
     """Configuration for keyword argument translation between frameworks."""
 
     target_name: str
-    default_value: Optional[AttributeValue] = None
+    default_value: Optional[YamlDefaultValue] = None
 
 
 class OpMappingSchema(BaseModel):
@@ -32,7 +35,7 @@ class OpMappingSchema(BaseModel):
     kwarg_map: dict[str, Optional[str]] = Field(default_factory=dict)
     kwarg_translations: dict[str, str] = Field(default_factory=dict)
     dtype_overrides: dict[str, str] = Field(default_factory=dict)
-    default_kwargs: dict[str, AttributeValue] = Field(default_factory=dict)
+    default_kwargs: dict[str, YamlDefaultValue] = Field(default_factory=dict)
     supported_dtypes: Optional[list[str]] = None
     ast_template: Optional[str] = None
     custom_code: Optional[str] = None
@@ -110,7 +113,7 @@ def load_backend_mappings(backend_name: str) -> BackendMappingSchema:
     if os.path.exists(eager_yaml_path):
         _read_and_merge(eager_yaml_path, operations_dict)
 
-    schema = cast("Callable[..., BackendMappingSchema]", BackendMappingSchema)(backend_name=backend_name, operations=operations_dict)
+    schema = BackendMappingSchema.model_validate({"backend_name": backend_name, "operations": operations_dict})
     _MAPPING_CACHE[backend_name] = schema
     return schema
 
@@ -134,7 +137,7 @@ def _resolve_custom_code(custom_code: str, backend_module: Optional[AttributeVal
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     try:
-        return eval(custom_code, local_env)
+        return cast("Optional[AttributeValue]", eval(custom_code, local_env))
     except Exception:
         return None
 
@@ -165,7 +168,7 @@ def _resolve_from_backend_module(api_str: str, backend_module: AttributeValue) -
 
     Args:
         api_str (str): Target API string.
-        backend_module (object): Backend module.
+        backend_module (AttributeValue): Backend module.
 
     Returns:
         Optional[object]: Resolved function or None.
@@ -173,7 +176,7 @@ def _resolve_from_backend_module(api_str: str, backend_module: AttributeValue) -
     parts: list[str] = api_str.split(".")
     if len(parts) > 2 and parts[0] == "dask" and parts[1] == "array":
         sub_parts: list[str] = parts[2:]
-    elif len(parts) > 1 and parts[0] in ("cupy", "dask", "tensorflow", "keras", "torch", "jax", "np", "cp", "tf", "da", "numba", "nb", "sparse", "sp"):
+    elif len(parts) > 1 and parts[0] in ("cupy", "dask", "tensorflow", "keras", "torch", "jax", "numpy", "np", "cp", "tf", "da", "numba", "nb", "sparse", "sp"):
         sub_parts = parts[1:]
     else:
         sub_parts = parts
@@ -263,7 +266,7 @@ def dispatch_eager_op(
         raise BackendNotSupportedError(f"Operation '{op_type}' is not supported by {backend_name} eager backend.")
 
     op_spec = schema.operations[op_type]
-    func = resolve_target_api(op_spec.target_api, op_spec.custom_code, cast(Optional[AttributeValue], backend_module))
+    func = resolve_target_api(op_spec.target_api, op_spec.custom_code, backend_module)
     if func is None or not callable(func):
         raise BackendNotSupportedError(f"Operation '{op_type}' target API '{op_spec.target_api}' could not be resolved for {backend_name}.")
 
@@ -272,7 +275,7 @@ def dispatch_eager_op(
     for src_k, dst_k in kwarg_map.items():
         if dst_k and src_k not in kwarg_trans:
             kwarg_trans[src_k] = dst_k
-    translated_kwargs = translate_kwargs(kwarg_trans, cast(dict[str, AttributeValue], kwargs))
+    translated_kwargs = translate_kwargs(kwarg_trans, kwargs)
     default_kwargs = getattr(op_spec, "default_kwargs", {}) or {}
     for def_k, def_v in default_kwargs.items():
         if def_k not in translated_kwargs:
@@ -283,4 +286,4 @@ def dispatch_eager_op(
         if method is not None and callable(method):
             return cast("EagerValue", method(*args[1:], **translated_kwargs))
 
-    return cast("EagerValue", func(*args, **translated_kwargs))
+    return func(*args, **translated_kwargs)

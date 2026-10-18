@@ -40,12 +40,12 @@ def _dynamic_update_slice(
     update: EagerValue,
     start_indices: EagerValue,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _dynamic_update_slice operation.
+    """Execute the eager dynamic update slice operation on the active backend array.
 
     Args:
-        x (object): The x parameter.
-        update (object): The update parameter.
-        start_indices (object): The start_indices parameter.
+        x (EagerValue): The x parameter.
+        update (EagerValue): The update parameter.
+        start_indices (EagerValue): The start_indices parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -53,10 +53,10 @@ def _dynamic_update_slice(
     out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(x)
 
     def _to_int(v: EagerValue) -> int:
-        """Evaluate _to_int operation.
+        """Execute the eager to int operation on the active backend array.
 
         Args:
-            v (object): The v parameter.
+            v (EagerValue): The v parameter.
 
         Returns:
             int: Result.
@@ -74,12 +74,12 @@ def _dynamic_update_slice(
 
 @numpy_eager_registry.register("DynamicUpdateSlice")
 def _np_dynamic_update_slice(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dynamic_update_slice operation.
+    """Execute the eager np dynamic update slice operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -89,14 +89,14 @@ def _np_dynamic_update_slice(backend_module: ModuleType, *args: EagerValue, **kw
 
 @numpy_eager_registry.register("Unstack")
 def _np_unstack(backend_module: ModuleType, x: EagerValue, axis: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_unstack operation.
+    """Execute the eager np unstack operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        axis (object): The axis parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        axis (int): The axis parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -106,13 +106,13 @@ def _np_unstack(backend_module: ModuleType, x: EagerValue, axis: int = 0, *args:
 
 @numpy_eager_registry.register("DynamicSlice")
 def _np_dynamic_slice(backend_module: ModuleType, x: EagerValue, start_indices: EagerValue, slice_sizes: EagerValue) -> EagerValue:
-    """Evaluate _np_dynamic_slice operation.
+    """Execute the eager np dynamic slice operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        start_indices (object): The start_indices parameter.
-        slice_sizes (object): The slice_sizes parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        start_indices (EagerValue): The start_indices parameter.
+        slice_sizes (EagerValue): The slice_sizes parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -123,14 +123,14 @@ def _np_dynamic_slice(backend_module: ModuleType, x: EagerValue, start_indices: 
 
 @numpy_eager_registry.register("DynamicSliceInDim")
 def _np_dynamic_slice_in_dim(backend_module: ModuleType, operand: EagerValue, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dynamic_slice_in_dim operation.
+    """Execute the eager np dynamic slice in dim operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
         context (IndexingContext): The context parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -144,15 +144,15 @@ def _np_dynamic_slice_in_dim(backend_module: ModuleType, operand: EagerValue, co
 
 @numpy_eager_registry.register("DynamicUpdateSliceInDim")
 def _np_dynamic_update_slice_in_dim(backend_module: ModuleType, operand: EagerValue, update: EagerValue, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dynamic_update_slice_in_dim operation.
+    """Execute the eager np dynamic update slice in dim operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        update (object): The update parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
+        update (EagerValue): The update parameter.
         context (IndexingContext): The context parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -168,15 +168,15 @@ def _np_dynamic_update_slice_in_dim(backend_module: ModuleType, operand: EagerVa
 
 @numpy_eager_registry.register("DynamicIndexInDim")
 def _np_dynamic_index_in_dim(backend_module: ModuleType, operand: EagerValue, index: EagerValue, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dynamic_index_in_dim operation.
+    """Execute the eager np dynamic index in dim operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        index (object): The index parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
+        index (EagerValue): The index parameter.
         context (IndexingContext): The context parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -195,14 +195,14 @@ def _np_dynamic_index_in_dim(backend_module: ModuleType, operand: EagerValue, in
 
 @numpy_eager_registry.register("DynamicUpdateIndexInDim")
 def _np_dynamic_update_index_in_dim(backend_module: ModuleType, target: IndexTarget, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dynamic_update_index_in_dim operation.
+    """Execute the eager np dynamic update index in dim operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
+        backend_module (ModuleType): The backend_module parameter.
         target (IndexTarget): The target parameter.
         context (IndexingContext): The context parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -218,14 +218,14 @@ def _np_dynamic_update_index_in_dim(backend_module: ModuleType, target: IndexTar
 
 @numpy_eager_registry.register("SliceInDim")
 def _np_slice_in_dim(backend_module: ModuleType, operand: EagerValue, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_slice_in_dim operation.
+    """Execute the eager np slice in dim operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        operand (EagerValue): The operand parameter.
         context (IndexingContext): The context parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -238,11 +238,11 @@ def _np_slice_in_dim(backend_module: ModuleType, operand: EagerValue, context: I
 
 @numpy_eager_registry.register("Slice")
 def _np_slice(backend_module: ModuleType, x: EagerValue, context: IndexingContext) -> EagerValue:
-    """Evaluate _np_slice operation.
+    """Execute the eager np slice operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
         context (IndexingContext): The context parameter.
 
     Returns:
@@ -255,11 +255,11 @@ def _np_slice(backend_module: ModuleType, x: EagerValue, context: IndexingContex
 
 @numpy_eager_registry.register("GetItem")
 def _np_getitem(backend_module: ModuleType, x: EagerValue, key: str) -> EagerValue:
-    """Evaluate _np_getitem operation.
+    """Execute the eager np getitem operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
         key (str): The key parameter.
 
     Returns:
@@ -271,12 +271,12 @@ def _np_getitem(backend_module: ModuleType, x: EagerValue, key: str) -> EagerVal
 
 @numpy_eager_registry.register("SetItem")
 def _np_setitem(backend_module: ModuleType, x: EagerValue, value: EagerValue, key: str) -> EagerValue:
-    """Evaluate _np_setitem operation.
+    """Execute the eager np setitem operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        value (object): The value parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        value (EagerValue): The value parameter.
         key (str): The key parameter.
 
     Returns:
@@ -290,12 +290,12 @@ def _np_setitem(backend_module: ModuleType, x: EagerValue, value: EagerValue, ke
 
 @numpy_eager_registry.register("IndexInDim")
 def _eager_indexindim(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _eager_indexindim operation.
+    """Execute the eager eager indexindim operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -308,12 +308,12 @@ def _eager_indexindim(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("Gather")
 def gather_eager(np_mod: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """gather_eager function.
+    """Execute the eager gather eager operation on the active backend array.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        np_mod (ModuleType): The np_mod parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -330,12 +330,12 @@ def gather_eager(np_mod: ModuleType, *args: EagerValue, **kwargs: EagerValue) ->
 
 @numpy_eager_registry.register("Stack")
 def stack_eager(np_mod: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """stack_eager function.
+    """Execute the eager stack eager operation on the active backend array.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        np_mod (ModuleType): The np_mod parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

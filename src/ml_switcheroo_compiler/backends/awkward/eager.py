@@ -10,17 +10,16 @@ from typing import cast
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
 
 
 def _unwrap_arg(arg: EagerValue) -> EagerValue:
     """Unwrap Tensor into underlying array or scalar.
 
     Args:
-        arg (object): Input argument to unwrap.
+        arg (EagerValue): Input argument to unwrap.
 
     Returns:
-        object: Unwrapped raw data.
+        EagerValue: Unwrapped raw data.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
         return cast(EagerValue, getattr(arg, "data"))
@@ -82,42 +81,42 @@ AK_OPS_MAP: dict[str, str] = {
     "from_iter": "from_iter",
 }
 
-UFUNC_NAMES: dict[str, str] = {
-    "exp": "exp",
-    "exp2": "exp2",
-    "expm1": "expm1",
-    "log": "log",
-    "log2": "log2",
-    "log10": "log10",
-    "log1p": "log1p",
-    "sqrt": "sqrt",
-    "square": "square",
-    "cbrt": "cbrt",
-    "sin": "sin",
-    "cos": "cos",
-    "tan": "tan",
-    "asin": "arcsin",
-    "arcsin": "arcsin",
-    "acos": "arccos",
-    "arccos": "arccos",
-    "atan": "arctan",
-    "arctan": "arctan",
-    "sinh": "sinh",
-    "cosh": "cosh",
-    "tanh": "tanh",
-    "asinh": "arcsinh",
-    "arcsinh": "arcsinh",
-    "acosh": "arccosh",
-    "arccosh": "arccosh",
-    "atanh": "arctanh",
-    "arctanh": "arctanh",
-    "floor": "floor",
-    "ceil": "ceil",
-    "trunc": "trunc",
-    "rint": "rint",
-    "round": "round",
-    "abs": "abs",
-    "sign": "sign",
+_MATH_UFUNCS: dict[str, Callable[[float], float]] = {
+    "exp": math.exp,
+    "exp2": lambda x: 2.0**x,
+    "expm1": math.expm1,
+    "log": math.log,
+    "log2": math.log2,
+    "log10": math.log10,
+    "log1p": math.log1p,
+    "sqrt": math.sqrt,
+    "square": lambda x: x * x,
+    "cbrt": lambda x: math.copysign(abs(x) ** (1.0 / 3.0), x),
+    "sin": math.sin,
+    "cos": math.cos,
+    "tan": math.tan,
+    "asin": math.asin,
+    "arcsin": math.asin,
+    "acos": math.acos,
+    "arccos": math.acos,
+    "atan": math.atan,
+    "arctan": math.atan,
+    "sinh": math.sinh,
+    "cosh": math.cosh,
+    "tanh": math.tanh,
+    "asinh": math.asinh,
+    "arcsinh": math.asinh,
+    "acosh": math.acosh,
+    "arccosh": math.acosh,
+    "atanh": math.atanh,
+    "arctanh": math.atanh,
+    "floor": lambda x: float(math.floor(x)),
+    "ceil": lambda x: float(math.ceil(x)),
+    "trunc": lambda x: float(math.trunc(x)),
+    "rint": lambda x: float(round(x)),
+    "round": lambda x: float(round(x)),
+    "abs": abs,
+    "sign": lambda x: 1.0 if x > 0 else (-1.0 if x < 0 else 0.0),
 }
 
 _BINARY_OPS = {
@@ -185,10 +184,10 @@ def _eval_operator(fn_name: str, args: tuple[EagerValue, ...]) -> tuple[bool, Ea
 
     Args:
         fn_name (str): Lowercase operation name.
-        args (tuple[object, ...]): Operation arguments.
+        args (tuple[EagerValue, ...]): Operation arguments.
 
     Returns:
-        tuple[bool, object]: Handled flag and result.
+        tuple[bool, EagerValue]: Handled flag and result.
     """
     if fn_name in _BINARY_OPS and len(args) >= 2:
         return True, cast(Callable[..., EagerValue], _BINARY_OPS[fn_name])(args[0], args[1])
@@ -231,15 +230,15 @@ def _eval_ragged_axis1_reduction(
     if fn_name == "count":
         res: EagerValue = [len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data]
     elif fn_name == "sum":
-        res = [sum(sub) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [sum(cast(list[float], sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     elif fn_name == "mean":
-        res = [sum(sub) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
+        res = [sum(cast(list[float], sub)) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
     elif fn_name == "min":
         res = [min([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
     elif fn_name == "max":
         res = [max([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
     else:
-        res = [math.prod(sub) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [math.prod(cast(list[float], sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     return True, res
 
 
@@ -260,14 +259,14 @@ def _eval_ragged_global_reduction(
     if fn_name == "count":
         res: EagerValue = len([x for x in flat_items if x is not None])
     elif fn_name == "sum":
-        res = sum(getattr(flat_items, "__iter__")())
+        res = sum(cast(list[float], flat_items))
     elif fn_name == "mean":
-        res = sum(getattr(flat_items, "__iter__")()) / len(flat_items) if flat_items else 0.0
+        res = sum(cast(list[float], flat_items)) / len(flat_items) if flat_items else 0.0
     elif fn_name in ("min", "max"):
         flat_floats = [float(x) for x in flat_items if isinstance(x, (int, float))]
         res = (min(flat_floats) if fn_name == "min" else max(flat_floats)) if flat_floats else None
     else:
-        res = getattr(math, "prod")(flat_items) if flat_items else 1
+        res = math.prod(cast(list[float], flat_items)) if flat_items else 1
     return True, res
 
 
@@ -280,11 +279,11 @@ def _eval_ragged_fallback(
 
     Args:
         fn_name (str): Lowercase operation name.
-        args (tuple[object, ...]): Operation input arguments.
-        kwargs (dict[str, object]): Keyword options such as axis.
+        args (tuple[EagerValue, ...]): Operation input arguments.
+        kwargs (dict[str, EagerValue]): Keyword options such as axis.
 
     Returns:
-        tuple[bool, object]: Handled flag and resulting structure.
+        tuple[bool, EagerValue]: Handled flag and resulting structure.
     """
     if not args or not isinstance(args[0], (list, tuple)):
         return False, None
@@ -333,69 +332,74 @@ def _try_awkward_module_op(
     return False, None
 
 
-def _try_numpy_ufunc(
-    numpy_mod: EagerValue,
-    fn_name: str,
-    actual_args: tuple[EagerValue, ...],
-    kwargs: dict[str, EagerValue],
-) -> tuple[bool, EagerValue]:
-    """Attempt to execute operation via NumPy ufunc dispatch.
+def _apply_math_recursive(fn: Callable[[float], float], val: EagerValue) -> EagerValue:
+    """Recursively apply a scalar math function across ragged or nested structures.
 
     Args:
-        numpy_mod (EagerValue): Loaded NumPy module.
+        fn (Callable[[float], float]): Scalar mathematical function.
+        val (EagerValue): Input Awkward array, nested list, or scalar.
+
+    Returns:
+        EagerValue: Transformed structure preserving raggedness.
+    """
+    source = getattr(val, "to_list")() if hasattr(val, "to_list") else val
+    if isinstance(source, (list, tuple)):
+        import awkward as ak
+
+        return cast(EagerValue, ak.Array([_apply_math_recursive(fn, x) for x in source]))
+    return fn(float(cast(float, source)))
+
+
+def _try_math_ufunc(
+    fn_name: str,
+    actual_args: tuple[EagerValue, ...],
+) -> tuple[bool, EagerValue]:
+    """Attempt to execute unary mathematical operation on Awkward or nested data.
+
+    Args:
         fn_name (str): Lowercase operation name.
         actual_args (tuple[EagerValue, ...]): Unwrapped positional arguments.
-        kwargs (dict[str, EagerValue]): Keyword arguments.
 
     Returns:
         tuple[bool, EagerValue]: Handled flag and evaluated result.
 
     Raises:
-        BackendNotSupportedError: When NumPy ufunc invocation fails.
+        BackendNotSupportedError: When mathematical evaluation fails.
     """
-    np_name = UFUNC_NAMES.get(fn_name)
-    if np_name and hasattr(numpy_mod, np_name):
+    if fn_name in _MATH_UFUNCS and actual_args:
         try:
-            return True, getattr(numpy_mod, np_name)(*actual_args, **kwargs)
+            fn = getattr(math, fn_name) if hasattr(math, fn_name) else _MATH_UFUNCS[fn_name]
+            return True, _apply_math_recursive(fn, actual_args[0])
         except Exception as exc:
-            msg = f"Failed executing NumPy ufunc {np_name} on Awkward array: {exc}"
+            msg = f"Failed executing math ufunc {fn_name} on Awkward array: {exc}"
             raise BackendNotSupportedError(msg) from exc
     return False, None
 
 
 def execute_op(
-    cls_or_op: EagerValue,
-    op_type_or_first: EagerValue = None,
+    op_type: str,
     *args: EagerValue,
     **kwargs: EagerValue,
 ) -> EagerValue:
     """Execute operation eagerly on Awkward Array backend supporting native ragged structures.
 
     Args:
-        cls_or_op (object): Caller class context or operation name string.
-        op_type_or_first (object): Operation name string or first argument.
-        *args (object): Input tensor parameters.
-        **kwargs (object): Additional keyword attributes.
+        op_type (str): Operation name string.
+        *args (EagerValue): Input tensor parameters.
+        **kwargs (EagerValue): Additional keyword attributes.
 
     Returns:
-        object: Evaluated Awkward array or scalar.
+        EagerValue: Evaluated Awkward array or scalar.
 
     Raises:
         BackendNotSupportedError: When the operation cannot be resolved or executed.
     """
-    if isinstance(cls_or_op, type):
-        op_type = str(op_type_or_first)
-        raw_args = args
-    else:
-        op_type = str(cls_or_op)
-        raw_args = (op_type_or_first,) + args if op_type_or_first is not None else args
-
     try:
         ak_mod = importlib.import_module("awkward")
     except Exception:
         ak_mod = None
 
-    actual_args = tuple(_unwrap_arg(a) for a in raw_args)
+    actual_args = tuple(_unwrap_arg(a) for a in args)
     fn_name = op_type.lower()
 
     ak_handled, ak_res = _try_awkward_module_op(ak_mod, fn_name, actual_args, kwargs)
@@ -406,8 +410,7 @@ def execute_op(
     if handled:
         return op_res
 
-    numpy_mod = _np_mod()
-    ufunc_handled, ufunc_res = _try_numpy_ufunc(numpy_mod, fn_name, actual_args, kwargs)
+    ufunc_handled, ufunc_res = _try_math_ufunc(fn_name, actual_args)
     if ufunc_handled:
         return ufunc_res
 
@@ -419,8 +422,7 @@ def execute_op(
 
     registered_func = global_eager_registry.get(op_type)
     if registered_func is not None:
-        backend_context = ak_mod if ak_mod is not None else numpy_mod
-        return registered_func(backend_context, *actual_args, **kwargs)
+        return registered_func(ak_mod, *actual_args, **kwargs)
 
     msg = f"Operation '{op_type}' not supported in Awkward backend."
     raise BackendNotSupportedError(msg)

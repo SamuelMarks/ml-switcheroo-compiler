@@ -1,36 +1,26 @@
-"""I/O and memory operations."""
+"""Sparse activation and elementwise I/O operations."""
 
 from __future__ import annotations
 
-import glob  # noqa: F401
-import os  # noqa: F401
-import shutil  # noqa: F401
-
-from ml_switcheroo_compiler.backends.registry import EagerValue
-from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
-from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
-from ml_switcheroo_compiler.core.tensor import Tensor  # noqa: F401
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat  # noqa: F401
-from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat  # noqa: F401
-from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
 @register_op("SparsePlus")
 class SparsePlus(OpDef):
-    """SparsePlus operation."""
+    """SparsePlus operation definition."""
 
     op_name = "SparsePlus"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for SparsePlus.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -45,19 +35,19 @@ class SparsePlus(OpDef):
 
 @register_op("SparseSigmoid")
 class SparseSigmoid(OpDef):
-    """SparseSigmoid operation."""
+    """SparseSigmoid operation definition."""
 
     op_name = "SparseSigmoid"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer broadcasted output shape for SparseSigmoid.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword operation attributes.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -70,15 +60,15 @@ class SparseSigmoid(OpDef):
         return res
 
 
-def sparse_plus(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """SparsePlus frontend.
+def sparse_plus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse plus activation function.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional input tensors.
+        **kwargs (TensorOrScalar): Keyword operation arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Resulting tensor after applying sparse plus.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -88,18 +78,24 @@ def sparse_plus(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         return get_active_backend().execute_op("SparsePlus", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("SparsePlus", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
+    return _emit_shape_node(
+        "SparsePlus",
+        list(args),
+        kwargs,
+        getattr(args[0], "shape", ()) if args else (),
+        getattr(args[0], "dtype", "float32") if args else "float32",
+    )
 
 
-def sparse_sigmoid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """SparseSigmoid frontend.
+def sparse_sigmoid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse sigmoid activation function.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional input tensors.
+        **kwargs (TensorOrScalar): Keyword operation arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Resulting tensor after applying sparse sigmoid.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -109,4 +105,10 @@ def sparse_sigmoid(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         return get_active_backend().execute_op("SparseSigmoid", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("SparseSigmoid", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
+    return _emit_shape_node(
+        "SparseSigmoid",
+        list(args),
+        kwargs,
+        getattr(args[0], "shape", ()) if args else (),
+        getattr(args[0], "dtype", "float32") if args else "float32",
+    )

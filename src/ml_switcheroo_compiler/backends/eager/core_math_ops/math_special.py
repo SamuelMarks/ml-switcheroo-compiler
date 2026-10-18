@@ -6,13 +6,13 @@ import builtins  # noqa: F401
 from types import ModuleType
 from typing import cast
 
+from ml_switcheroo_compiler.backends.eager.utils import get_special_submodule
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry
-from ml_switcheroo_compiler.distributed.host_collectives import _scipy_mod
 
 
 @global_eager_registry.register("Erf")
 def _erf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _erf operation.
+    """Execute the eager erf operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -20,7 +20,7 @@ def _erf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -44,7 +44,7 @@ def _erf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
 
 @global_eager_registry.register("Erfc")
 def _erfc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _erfc operation.
+    """Execute the eager erfc operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -52,7 +52,7 @@ def _erfc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -63,7 +63,7 @@ def _erfc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 @global_eager_registry.register("Erfinv")
 def _erfinv(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _erfinv operation.
+    """Execute the eager erfinv operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -71,7 +71,7 @@ def _erfinv(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     x = cast(EagerTensorProtocol, args[0])
@@ -89,7 +89,7 @@ def _erfinv(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
 
 @global_eager_registry.register("BesselI0")
 def _bessel_i0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_i0 operation.
+    """Execute the eager bessel i0 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -97,14 +97,14 @@ def _bessel_i0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").i0(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").i0(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselI0e")
 def _bessel_i0e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_i0e operation.
+    """Execute the eager bessel i0e operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -112,14 +112,14 @@ def _bessel_i0e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").i0e(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").i0e(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselI1")
 def _bessel_i1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_i1 operation.
+    """Execute the eager bessel i1 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -127,14 +127,14 @@ def _bessel_i1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").i1(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").i1(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselI1e")
 def _bessel_i1e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_i1e operation.
+    """Execute the eager bessel i1e operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -142,14 +142,14 @@ def _bessel_i1e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").i1e(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").i1e(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselJ0")
 def _bessel_j0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_j0 operation.
+    """Execute the eager bessel j0 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -157,14 +157,14 @@ def _bessel_j0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").j0(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").j0(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselJ1")
 def _bessel_j1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_j1 operation.
+    """Execute the eager bessel j1 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -172,14 +172,14 @@ def _bessel_j1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").j1(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").j1(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselJn")
 def _bessel_jn(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_jn operation.
+    """Execute the eager bessel jn operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -187,14 +187,14 @@ def _bessel_jn(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").jv(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").jv(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselK0")
 def _bessel_k0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_k0 operation.
+    """Execute the eager bessel k0 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -202,14 +202,14 @@ def _bessel_k0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").k0(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").k0(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselK0e")
 def _bessel_k0e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_k0e operation.
+    """Execute the eager bessel k0e operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -217,14 +217,14 @@ def _bessel_k0e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").k0e(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").k0e(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselK1")
 def _bessel_k1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_k1 operation.
+    """Execute the eager bessel k1 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -232,14 +232,14 @@ def _bessel_k1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").k1(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").k1(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselK1e")
 def _bessel_k1e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_k1e operation.
+    """Execute the eager bessel k1e operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -247,14 +247,14 @@ def _bessel_k1e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").k1e(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").k1e(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselY0")
 def _bessel_y0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_y0 operation.
+    """Execute the eager bessel y0 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -262,14 +262,14 @@ def _bessel_y0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").y0(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").y0(*args, **kwargs))
 
 
 @global_eager_registry.register("BesselY1")
 def _bessel_y1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _bessel_y1 operation.
+    """Execute the eager bessel y1 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -277,14 +277,14 @@ def _bessel_y1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").y1(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").y1(*args, **kwargs))
 
 
 @global_eager_registry.register("Digamma")
 def _digamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _digamma operation.
+    """Execute the eager digamma operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -292,14 +292,14 @@ def _digamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").digamma(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").digamma(*args, **kwargs))
 
 
 @global_eager_registry.register("Igammac")
 def _igammac(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _igammac operation.
+    """Execute the eager igammac operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -307,14 +307,14 @@ def _igammac(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").gammaincc(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").gammaincc(*args, **kwargs))
 
 
 @global_eager_registry.register("Polygamma")
 def _polygamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _polygamma operation.
+    """Execute the eager polygamma operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -322,14 +322,14 @@ def _polygamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").polygamma(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").polygamma(*args, **kwargs))
 
 
 @global_eager_registry.register("Igamma")
 def _igamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _igamma operation.
+    """Execute the eager igamma operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -337,14 +337,14 @@ def _igamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").gammainc(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").gammainc(*args, **kwargs))
 
 
 @global_eager_registry.register("Gamma")
 def _gamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _gamma operation.
+    """Execute the eager gamma operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -352,14 +352,14 @@ def _gamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").gamma(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").gamma(*args, **kwargs))
 
 
 @global_eager_registry.register("ModifiedBesselI1")
 def _np_modifiedbesseli1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_modifiedbesseli1 operation.
+    """Execute the eager np modifiedbesseli1 operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -367,6 +367,6 @@ def _np_modifiedbesseli1(backend_module: EagerValue, *args: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
-    return cast(EagerValue, _scipy_mod("special").i1(*args, **kwargs))
+    return cast(EagerValue, get_special_submodule("special").i1(*args, **kwargs))

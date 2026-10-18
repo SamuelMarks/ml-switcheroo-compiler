@@ -8,9 +8,9 @@ from typing import cast
 from ml_switcheroo_compiler.backends.eager.utils import (
     _from_numpy_array,
     _to_numpy_array,
+    host_backend,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry
-from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig, ResizeOptions
 
 from .vision_utils import (
@@ -33,17 +33,17 @@ def _standardize_image_input(
         data_format: Optional data format string ('channels_first' or 'channels_last').
 
     Returns:
-        tuple[np.ndarray, bool]: 4D array and flag indicating if original input was 3D.
+        tuple[host_backend.ndarray, bool]: 4D array and flag indicating if original input was 3D.
     """
     arr_t = cast(EagerTensorProtocol, arr)
     if arr_t.ndim == 2:
         return arr_t[None, :, :, None], False
     if arr_t.ndim == 3:
         if data_format == "channels_first" or (arr_t.shape[0] in (1, 3, 4) and arr_t.shape[2] not in (1, 3, 4)):
-            return cast(EagerTensorProtocol, np.transpose(arr_t, (1, 2, 0)))[None, ...], True
+            return cast(EagerTensorProtocol, host_backend.transpose(arr_t, (1, 2, 0)))[None, ...], True
         return arr_t[None, ...], True
     if arr_t.ndim == 4 and data_format == "channels_first":
-        return np.transpose(arr_t, (0, 2, 3, 1)), False
+        return host_backend.transpose(arr_t, (0, 2, 3, 1)), False
     return arr_t, False
 
 
@@ -55,7 +55,7 @@ def _invert_homography(np_mod: EagerValue, h_fwd: EagerValue) -> EagerValue:
         h_fwd: 3x3 or (B, 3, 3) forward homography matrix.
 
     Returns:
-        np.ndarray: Inverse homography matrix mapping destination to source.
+        host_backend.ndarray: Inverse homography matrix mapping destination to source.
     """
     h_fwd_t = cast(EagerTensorProtocol, h_fwd)
     if h_fwd_t.ndim == 2:
@@ -70,7 +70,7 @@ def perspective_transform_eager(
     end_points: EagerValue,
     config: PerspectiveConfig,
 ) -> EagerValue:
-    """Evaluate perspective_transform_eager operation.
+    """Execute the eager perspective transform eager operation on the active backend array.
 
     Args:
         backend_module: The execution backend module.
@@ -80,12 +80,12 @@ def perspective_transform_eager(
         config (PerspectiveConfig): Configuration parameters including interpolation and fill.
 
     Returns:
-        Any: Transformed images matching input backend representation.
+        EagerValue: Transformed images matching input backend representation.
     """
     if images is None:
         return 0
 
-    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
     name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
@@ -102,7 +102,7 @@ def perspective_transform_eager(
         out = cast(EagerTensorProtocol, _apply_perspective_batch(np_mod, arr, h_inv, config))
 
     if data_format == "channels_first":
-        out = np.transpose(out, (0, 3, 1, 2))
+        out = host_backend.transpose(out, (0, 3, 1, 2))
     if was_3d and out.shape[0] == 1:
         out = out[0]
 
@@ -118,12 +118,12 @@ def _apply_elastic_batch(np_mod: EagerValue, imgs: EagerValue, config: Transform
         config (TransformInterpolationConfig): Configuration containing target coordinates and order.
 
     Returns:
-        Any: Warped batched images array.
+        EagerValue: Warped batched images array.
     """
     if imgs is None or config is None:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
+    np_mod = host_backend if np_mod is None else np_mod
     b_count, _, _, c_count = cast(tuple[int, ...], getattr(imgs, "shape"))
     out = getattr(np_mod, "zeros_like")(imgs)
 
@@ -166,18 +166,18 @@ class ElasticGridContext:
 
 
 def _compute_elastic_grid(ctx: ElasticGridContext) -> EagerValue:
-    """Evaluate _compute_elastic_grid operation.
+    """Execute the eager compute elastic grid operation on the active backend array.
 
     Args:
         ctx (ElasticGridContext): Elastic distortion context.
 
     Returns:
-        Any: Tuple of (new_y, new_x) distorted sampling coordinates.
+        EagerValue: Tuple of (new_y, new_x) distorted sampling coordinates.
     """
     if ctx is None:
         return 0
 
-    np_mod = np if ctx.np_mod is None else ctx.np_mod
+    np_mod = host_backend if ctx.np_mod is None else ctx.np_mod
     h = ctx.H
     w = ctx.W
 
@@ -213,7 +213,7 @@ def elastic_transform_eager(
     displacement: EagerValue,
     config: ElasticConfig,
 ) -> EagerValue:
-    """Evaluate elastic_transform_eager operation.
+    """Execute the eager elastic transform eager operation on the active backend array.
 
     Args:
         backend_module: Execution backend module.
@@ -222,12 +222,12 @@ def elastic_transform_eager(
         config (ElasticConfig): Configuration containing interpolation and fill options.
 
     Returns:
-        Any: Elastically distorted images.
+        EagerValue: Elastically distorted images.
     """
     if images is None:
         return 0
 
-    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
     name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
@@ -251,7 +251,7 @@ def elastic_transform_eager(
         out = cast(EagerTensorProtocol, _apply_elastic_batch(np_mod, arr, cfg))
 
     if data_format == "channels_first":
-        out = np.transpose(out, (0, 3, 1, 2))
+        out = host_backend.transpose(out, (0, 3, 1, 2))
     if was_3d and out.shape[0] == 1:
         out = out[0]
 
@@ -275,19 +275,19 @@ def _get_resize_interpolation_order(interpolation: str) -> int:
 
 
 def _compute_resize_grid(np_mod: EagerValue, ctx: ResizeContext) -> EagerValue:
-    """Evaluate _compute_resize_grid operation.
+    """Execute the eager compute resize grid operation on the active backend array.
 
     Args:
         np_mod: NumPy-compatible execution module.
         ctx (ResizeContext): Spatial resizing context.
 
     Returns:
-        Any: Tuple of (y_grid, x_grid) continuous coordinates.
+        EagerValue: Tuple of (y_grid, x_grid) continuous coordinates.
     """
     if ctx is None:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
+    np_mod = host_backend if np_mod is None else np_mod
     h, w = ctx.H, ctx.W
     new_h, new_w = ctx.new_H, ctx.new_W
     align_corners = ctx.align_corners
@@ -322,16 +322,16 @@ def _apply_resize_batch(np_mod: EagerValue, imgs: EagerValue, out: EagerValue, c
         order (int): Spline interpolation order (0, 1, or 3).
 
     Returns:
-        Any: Resized output array.
+        EagerValue: Resized output array.
     """
     if imgs is None or coords is None:
         return 0
 
-    np_mod = np if np_mod is None else np_mod
+    np_mod = host_backend if np_mod is None else np_mod
     b_count, _, _, c_count = cast(tuple[int, ...], getattr(imgs, "shape"))
     y_coords, x_coords = cast("tuple[EagerTensorProtocol, EagerTensorProtocol]", coords)
 
-    target_out: EagerTensorProtocol = cast(EagerTensorProtocol, out) if isinstance(out, np.ndarray) else getattr(np_mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=getattr(imgs, "dtype"))
+    target_out: EagerTensorProtocol = cast(EagerTensorProtocol, out) if isinstance(out, host_backend.ndarray) else getattr(np_mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=getattr(imgs, "dtype"))
 
     for b in range(b_count):
         for c in range(c_count):
@@ -387,7 +387,7 @@ def _upsample_1d_linear(
         align_corners: Whether grid extrema align with corner endpoints.
 
     Returns:
-        np.ndarray: Upsampled 1D array of shape (B, C, target_len).
+        host_backend.ndarray: Upsampled 1D array of shape (B, C, target_len).
     """
     b, c, orig_len = cast(tuple[int, ...], getattr(x, "shape"))
     if orig_len == target_len:
@@ -395,16 +395,16 @@ def _upsample_1d_linear(
 
     if align_corners:
         scale = (orig_len - 1.0) / max(target_len - 1.0, 1.0) if target_len > 1 else 0.0
-        src = np.arange(target_len, dtype=np.float32) * scale
+        src = host_backend.arange(target_len, dtype=host_backend.float32) * scale
     else:
         scale = float(orig_len) / float(target_len)
-        src = (np.arange(target_len, dtype=np.float32) + 0.5) * scale - 0.5
+        src = (host_backend.arange(target_len, dtype=host_backend.float32) + 0.5) * scale - 0.5
 
-    i0 = np.clip(np.floor(src).astype(int), 0, orig_len - 1)
-    i1 = np.clip(i0 + 1, 0, orig_len - 1)
-    w = np.clip(src - i0, 0.0, 1.0)
+    i0 = host_backend.clip(host_backend.floor(src).astype(int), 0, orig_len - 1)
+    i1 = host_backend.clip(i0 + 1, 0, orig_len - 1)
+    w = host_backend.clip(src - i0, 0.0, 1.0)
 
-    out = np.zeros((b, c, target_len), dtype=getattr(x, "dtype"))
+    out = host_backend.zeros((b, c, target_len), dtype=getattr(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
             out[b_idx, c_idx] = (1.0 - w) * cast(EagerTensorProtocol, x)[b_idx, c_idx, i0] + w * cast(EagerTensorProtocol, x)[b_idx, c_idx, i1]
@@ -424,7 +424,7 @@ def _upsample_3d_trilinear(
         align_corners: Whether grid extrema align with corner voxels.
 
     Returns:
-        np.ndarray: Upsampled 3D array of shape (B, C, target_d, target_h, target_w).
+        host_backend.ndarray: Upsampled 3D array of shape (B, C, target_d, target_h, target_w).
     """
     b, c, d, h, w = cast(tuple[int, ...], getattr(x, "shape"))
     td, th, tw = target_shape
@@ -437,24 +437,24 @@ def _upsample_3d_trilinear(
             target_len (int): Target upsampled dimension size.
 
         Returns:
-            tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple of (idx0, idx1, weight) arrays.
+            tuple[host_backend.ndarray, host_backend.ndarray, host_backend.ndarray]: Tuple of (idx0, idx1, weight) arrays.
         """
         if align_corners:
             scale = (orig_len - 1.0) / max(target_len - 1.0, 1.0) if target_len > 1 else 0.0
-            src = np.arange(target_len, dtype=np.float32) * scale
+            src = host_backend.arange(target_len, dtype=host_backend.float32) * scale
         else:
             scale = float(orig_len) / float(target_len)
-            src = (np.arange(target_len, dtype=np.float32) + 0.5) * scale - 0.5
-        idx0 = np.clip(np.floor(src).astype(int), 0, orig_len - 1)
-        idx1 = np.clip(idx0 + 1, 0, orig_len - 1)
-        weight = np.clip(src - idx0, 0.0, 1.0)
+            src = (host_backend.arange(target_len, dtype=host_backend.float32) + 0.5) * scale - 0.5
+        idx0 = host_backend.clip(host_backend.floor(src).astype(int), 0, orig_len - 1)
+        idx1 = host_backend.clip(idx0 + 1, 0, orig_len - 1)
+        weight = host_backend.clip(src - idx0, 0.0, 1.0)
         return idx0, idx1, weight
 
     d0, d1, wd = _get_coords(d, td)
     h0, h1, wh = _get_coords(h, th)
     w0, w1, ww = _get_coords(w, tw)
 
-    out = np.zeros((b, c, td, th, tw), dtype=getattr(x, "dtype"))
+    out = host_backend.zeros((b, c, td, th, tw), dtype=getattr(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
             vol = cast(EagerTensorProtocol, x)[b_idx, c_idx]
@@ -491,13 +491,13 @@ def _upsample_nearest_eager(backend_module: EagerValue, *args: EagerValue, **kwa
         **kwargs: Keyword arguments containing size, scale_factor, and data_format.
 
     Returns:
-        Any: Upsampled tensor using nearest-neighbor interpolation.
+        EagerValue: Upsampled tensor using nearest-neighbor interpolation.
     """
     if not args or args[0] is None:
         return 0
 
     x = args[0]
-    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
     name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
@@ -514,12 +514,12 @@ def _upsample_nearest_eager(backend_module: EagerValue, *args: EagerValue, **kwa
         orig_len = spatial_shape[0]
         t_len = target_spatial[0]
         scale = float(orig_len) / float(t_len)
-        src = (np.arange(t_len, dtype=np.float32) + 0.5) * scale - 0.5
-        idx = np.clip(np.round(src).astype(int), 0, orig_len - 1)
+        src = (host_backend.arange(t_len, dtype=host_backend.float32) + 0.5) * scale - 0.5
+        idx = host_backend.clip(host_backend.round(src).astype(int), 0, orig_len - 1)
         out = arr[:, :, idx]
     elif len(spatial_shape) == 2:
         # Channels-first to channels-last for 2D resize helper
-        arr_last = np.transpose(arr, (0, 2, 3, 1))
+        arr_last = host_backend.transpose(arr, (0, 2, 3, 1))
         ctx = ResizeContext(
             H=spatial_shape[0],
             W=spatial_shape[1],
@@ -534,14 +534,14 @@ def _upsample_nearest_eager(backend_module: EagerValue, *args: EagerValue, **kwa
             dtype=arr.dtype,
         )
         out_last = _apply_resize_batch(np_mod, arr_last, out_last, coords, order=0)
-        out = np.transpose(out_last, (0, 3, 1, 2))
+        out = host_backend.transpose(out_last, (0, 3, 1, 2))
     elif len(spatial_shape) == 3:
         td, th, tw = target_spatial
         d, h, w = spatial_shape
         sd, sh, sw = float(d) / float(td), float(h) / float(th), float(w) / float(tw)
-        id_z = np.clip(np.round((np.arange(td, dtype=np.float32) + 0.5) * sd - 0.5).astype(int), 0, d - 1)
-        id_y = np.clip(np.round((np.arange(th, dtype=np.float32) + 0.5) * sh - 0.5).astype(int), 0, h - 1)
-        id_x = np.clip(np.round((np.arange(tw, dtype=np.float32) + 0.5) * sw - 0.5).astype(int), 0, w - 1)
+        id_z = host_backend.clip(host_backend.round((host_backend.arange(td, dtype=host_backend.float32) + 0.5) * sd - 0.5).astype(int), 0, d - 1)
+        id_y = host_backend.clip(host_backend.round((host_backend.arange(th, dtype=host_backend.float32) + 0.5) * sh - 0.5).astype(int), 0, h - 1)
+        id_x = host_backend.clip(host_backend.round((host_backend.arange(tw, dtype=host_backend.float32) + 0.5) * sw - 0.5).astype(int), 0, w - 1)
         out = arr[:, :, id_z[:, None, None], id_y[None, :, None], id_x[None, None, :]]
     else:
         out = arr.copy()
@@ -561,13 +561,13 @@ def _upsample_linear_eager(backend_module: EagerValue, *args: EagerValue, **kwar
         **kwargs: Keyword arguments containing size, scale_factor, and align_corners.
 
     Returns:
-        Any: Linearly interpolated upsampled tensor.
+        EagerValue: Linearly interpolated upsampled tensor.
     """
     if not args or args[0] is None:
         return 0
 
     x = args[0]
-    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
     name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
@@ -583,7 +583,7 @@ def _upsample_linear_eager(backend_module: EagerValue, *args: EagerValue, **kwar
     if len(spatial_shape) == 1:
         out = _upsample_1d_linear(arr, target_spatial[0], align_corners=align_corners)
     elif len(spatial_shape) == 2:
-        arr_last = np.transpose(arr, (0, 2, 3, 1))
+        arr_last = host_backend.transpose(arr, (0, 2, 3, 1))
         ctx = ResizeContext(
             H=spatial_shape[0],
             W=spatial_shape[1],
@@ -598,7 +598,7 @@ def _upsample_linear_eager(backend_module: EagerValue, *args: EagerValue, **kwar
             dtype=arr.dtype,
         )
         out_last = _apply_resize_batch(np_mod, arr_last, out_last, coords, order=1)
-        out = np.transpose(out_last, (0, 3, 1, 2))
+        out = host_backend.transpose(out_last, (0, 3, 1, 2))
     elif len(spatial_shape) == 3:
         out = _upsample_3d_trilinear(
             arr,
@@ -621,13 +621,13 @@ def _upsample_bicubic_eager(backend_module: EagerValue, *args: EagerValue, **kwa
         **kwargs: Keyword arguments containing size, scale_factor, and align_corners.
 
     Returns:
-        Any: Bicubically interpolated upsampled tensor.
+        EagerValue: Bicubically interpolated upsampled tensor.
     """
     if not args or args[0] is None:
         return 0
 
     x = args[0]
-    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
     name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
@@ -640,7 +640,7 @@ def _upsample_bicubic_eager(backend_module: EagerValue, *args: EagerValue, **kwa
     spatial_shape = arr.shape[2:]
     target_spatial = _extract_upsample_size(spatial_shape, size, scale_factor)
 
-    arr_last = np.transpose(arr, (0, 2, 3, 1))
+    arr_last = host_backend.transpose(arr, (0, 2, 3, 1))
     ctx = ResizeContext(
         H=spatial_shape[0],
         W=spatial_shape[1],
@@ -652,7 +652,7 @@ def _upsample_bicubic_eager(backend_module: EagerValue, *args: EagerValue, **kwa
     coords = _compute_resize_grid(np_mod, ctx)
     out_last = np_mod.zeros((b, target_spatial[0], target_spatial[1], c), dtype=arr.dtype)
     out_last = _apply_resize_batch(np_mod, arr_last, out_last, coords, order=3)
-    out = np.transpose(out_last, (0, 3, 1, 2))
+    out = host_backend.transpose(out_last, (0, 3, 1, 2))
 
     return _from_numpy_array(backend_module, out, name, x)
 
@@ -663,7 +663,7 @@ def resize_eager(
     size: tuple[int, int],
     config: ResizeOptions,
 ) -> EagerValue:
-    """Evaluate resize_eager operation.
+    """Execute the eager resize eager operation on the active backend array.
 
     Args:
         backend_module: Execution backend module.
@@ -672,12 +672,12 @@ def resize_eager(
         config (ResizeOptions): Configuration options for interpolation and corner alignment.
 
     Returns:
-        Any: Resized images matching input backend representation.
+        EagerValue: Resized images matching input backend representation.
     """
     if images is None or size is None:
         return 0
 
-    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
     name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
@@ -706,7 +706,7 @@ def resize_eager(
     out = cast(EagerTensorProtocol, _apply_resize_batch(np_mod, arr, out, coords, order=order))
 
     if data_format == "channels_first":
-        out = np.transpose(out, (0, 3, 1, 2))
+        out = host_backend.transpose(out, (0, 3, 1, 2))
     if was_3d and out.shape[0] == 1:
         out = out[0]
 

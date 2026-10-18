@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -31,10 +32,8 @@ def test_loss_extras() -> None:
     try:
         t_true = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
         t_pred = Tensor(np.array([0.5]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
-        try:
-            binary_crossentropy(t_true, t_pred, label_smoothing=0.1)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
+        res_bce = binary_crossentropy(t_true, t_pred, label_smoothing=0.1)
+        assert res_bce is not None
         t_true_c = Tensor(np.array([[1.0, 0.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
         t_pred_c = Tensor(np.array([[0.8, 0.2]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
         categorical_crossentropy(t_true_c, t_pred_c, label_smoothing=0.1, from_logits=True)
@@ -170,10 +169,8 @@ def test_loss_extra_functions_2() -> None:
         # Test adaptive_log_softmax_with_loss tracing exception
         config.eager_mode = False
         state.global_tracing_state.is_tracing = False
-        try:
+        with pytest.raises(RuntimeError, match="Must be tracing"):
             cast("Callable[..., EagerTensorProtocol]", loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
-        except RuntimeError as _exc:
-            assert _exc is not None
 
         state.global_tracing_state.is_tracing = True
         cast("Callable[..., EagerTensorProtocol]", loss.adaptive_log_softmax_with_loss)(mt, mt, [1])

@@ -8,7 +8,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.registry import EagerValue
+    from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 
 
 class DeviceType(Enum):
@@ -77,9 +77,9 @@ class StreamContext:
         """Exit context.
 
         Args:
-            exc_type (object): exception type
-            exc_val (object): exception value
-            exc_tb (object): exception traceback
+            exc_type (type[BaseException] | None): Exception type.
+            exc_val (BaseException | None): Exception value.
+            exc_tb (TracebackType | None): Exception traceback.
         """
         self.stream = None
 
@@ -100,12 +100,12 @@ def clear_cache() -> None:
 class FunctionExporter:
     """Provide a context managing class for exporting multiple traces of the same function."""
 
-    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+    def __init__(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
         """Initialize FunctionExporter.
 
         Args:
-            args (object): args
-            kwargs (object): kwargs
+            *args (TensorOrScalar): Positional arguments for function export.
+            **kwargs (AttrValue): Keyword arguments for function export.
         """
         self.args = args
         self.kwargs = kwargs
@@ -118,24 +118,29 @@ class FunctionExporter:
         """
         return self
 
-    def __exit__(self, exc_type: EagerValue, exc_val: EagerValue, exc_tb: EagerValue) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Exit context.
 
         Args:
-            exc_type (object): exception type
-            exc_val (object): exception value
-            exc_tb (object): exception traceback
+            exc_type (type[BaseException] | None): Exception type.
+            exc_val (BaseException | None): Exception value.
+            exc_tb (TracebackType | None): Exception traceback.
         """
         self.args = ()
         self.kwargs = {}
 
 
-def export_function(*args: EagerValue, **kwargs: EagerValue) -> None:
+def export_function(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
     """Export a computational trace or function for unified persistence.
 
     Args:
-        *args: Positional arguments.
-        **kwargs: Keyword arguments.
+        *args (TensorOrScalar): Positional arguments.
+        **kwargs (AttrValue): Keyword arguments.
 
     Raises:
         BackendNotSupportedError: If the backend does not support exporting.
@@ -150,12 +155,12 @@ def export_function(*args: EagerValue, **kwargs: EagerValue) -> None:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support export_function()")
 
 
-def exporter(*args: EagerValue, **kwargs: EagerValue) -> FunctionExporter:
+def exporter(*args: TensorOrScalar, **kwargs: AttrValue) -> FunctionExporter:
     """Make a callable object to export multiple traces of a function to a file.
 
     Args:
-        *args: Positional arguments.
-        **kwargs: Keyword arguments.
+        *args (TensorOrScalar): Positional arguments.
+        **kwargs (AttrValue): Keyword arguments.
 
     Returns:
         FunctionExporter: The exporter context manager.

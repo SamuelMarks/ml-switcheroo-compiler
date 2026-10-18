@@ -16,6 +16,9 @@ class ZerosModule(Protocol):
 
         Args:
             shape: The shape parameter.
+
+        Returns:
+            Union[tuple[str, tuple[int, ...]], tuple[int, ...]]: Computed result.
         """
         ...
 
@@ -41,6 +44,9 @@ class ArrayModule(Protocol):
         Args:
             data: The data parameter.
             dtype: The dtype parameter.
+
+        Returns:
+            Union[tuple[str, Union[list[int], list[float], tuple[int, ...], int, float, str], Union[str, type, None]], list[int], list[float]]: Computed result.
         """
         ...
 
@@ -63,6 +69,9 @@ class AsArrayModule(Protocol):
 
         Args:
             data: The data parameter.
+
+        Returns:
+            Union[tuple[str, Union[list[int], list[float], tuple[int, ...], int, float, str]], list[int], list[float]]: Computed result.
         """
         ...
 
@@ -71,7 +80,11 @@ class HasItem(Protocol):
     """Protocol for objects providing item method."""
 
     def item(self) -> Union[float, int]:
-        """Extract item."""
+        """Extract item.
+
+        Returns:
+            Union[float, int]: Computed result.
+        """
         ...
 
 

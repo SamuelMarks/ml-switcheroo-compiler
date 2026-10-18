@@ -108,7 +108,7 @@ class RCCLDriver:
         """Transfer memory buffer from host NumPy array to accelerator device pointer.
 
         Args:
-            host_array (object): Source host NumPy array or buffer.
+            host_array (EagerValue): Source host NumPy array or buffer.
             dev_ptr (int): Destination accelerator device pointer address.
         """
         buf_ptr = getattr(getattr(host_array, "ctypes", None), "data", None)
@@ -130,7 +130,7 @@ class RCCLDriver:
 
         Args:
             dev_ptr (int): Source accelerator device pointer address.
-            out_array (object): Destination host NumPy array or buffer.
+            out_array (EagerValue): Destination host NumPy array or buffer.
         """
         buf_ptr = getattr(getattr(out_array, "ctypes", None), "data", None)
         nbytes = int(getattr(out_array, "nbytes", 0))

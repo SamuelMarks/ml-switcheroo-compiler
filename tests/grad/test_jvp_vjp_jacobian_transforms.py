@@ -24,7 +24,7 @@ def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tenso
     """Helper to construct Tensor from array values.
 
     Args:
-        val (object): Input data values.
+        val (EagerValue): Input data values.
         shape (tuple[int, ...] | None): Tensor dimensions.
 
     Returns:

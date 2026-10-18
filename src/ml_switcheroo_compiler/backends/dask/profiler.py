@@ -38,7 +38,7 @@ def _sync_dask_result(result: Union[EagerValue, list[EagerValue], tuple[EagerVal
         result (Union[object, list[object], tuple[object, ...], dict[str, object]]): Lazy Dask array or container.
 
     Returns:
-        object: Computed concrete array or structure.
+        EagerValue: Computed concrete array or structure.
     """
     if da is None:
         return result
@@ -158,7 +158,7 @@ class DaskProfiler:
             """Execute a single evaluation step on Dask backend with compute synchronization.
 
             Returns:
-                object: Concrete evaluated array or structure.
+                EagerValue: Concrete evaluated array or structure.
             """
             if has_ops and compiled_fn is not None:
                 lazy_res = compiled_fn(da_inputs)

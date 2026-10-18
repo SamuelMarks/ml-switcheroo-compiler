@@ -1,16 +1,25 @@
 """Backend Registry."""
 
 import logging
-from typing import Callable, Literal, Union
+from typing import TYPE_CHECKING, Callable, Literal, Union
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.eager_registry import (
+    DataclassProtocol as DataclassProtocol,
+)
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol as EagerTensorProtocol,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue as EagerValue,
 )
+from ml_switcheroo_compiler.backends.eager_registry import (
+    ShapeProtocol as ShapeProtocol,
+)
 from ml_switcheroo_compiler.core.config import config
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.sparse.types import COOTensor as COOTensor
 
 
 def _load_numpy() -> None:

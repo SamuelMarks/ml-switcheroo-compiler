@@ -4,54 +4,164 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from types import ModuleType
 from typing import Optional, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def _np_mod() -> ModuleType:
-    """Return the NumPy backend module via BackendRegistry.
-
-    Returns:
-        ModuleType: NumPy module.
-    """
-    return BackendRegistry.get("numpy").get_module()
-
-
-def _scipy_mod(submodule: str) -> ModuleType:
-    """Return the requested SciPy submodule via the NumPy backend in BackendRegistry.
+def _exec_collective_op(op_name: str, *args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
+    """Execute an elementary operation via the reference backend.
 
     Args:
-        submodule (str): SciPy submodule name ('special', 'linalg', 'stats').
+        op_name (str): Canonical IR operation name ('Add', 'Multiply', 'Maximum', 'Minimum', 'Concatenate', 'Divide').
+        *args (TensorOrScalar): Positional tensor operands.
+        **kwargs (AttrValue): Keyword operation attributes.
 
     Returns:
-        ModuleType: SciPy submodule.
+        TensorOrScalar: Evaluated tensor buffer.
     """
-    return BackendRegistry.get("numpy").get_scipy_module(submodule)
+    return BackendRegistry.get("numpy").execute_op(op_name, *args, **kwargs)
 
 
-class _LazyNumpyProxy:
-    """Lazy proxy delegating attribute access to the NumPy backend module."""
+def _split_along_axis(data: TensorLike, num_splits: int, axis: int = 0) -> list[TensorLike]:
+    """Split a tensor along the specified axis into num_splits partitions.
 
-    def __getattr__(self, name: str) -> EagerValue:
-        """Resolve attribute on the NumPy backend module.
+    Args:
+        data (TensorLike): Input tensor buffer.
+        num_splits (int): Number of partitions to produce.
+        axis (int): Axis along which to partition.
 
-        Args:
-            name (str): Attribute name.
+    Returns:
+        list[TensorLike]: List of partitioned tensor slices.
+    """
+    shape = cast(tuple[int, ...], getattr(data, "shape", ()))
+    ndim = len(shape)
+    norm_axis = axis if axis >= 0 else ndim + axis
+    axis_len = shape[norm_axis]
+    base_size, remainder = divmod(axis_len, max(1, num_splits))
+    slices: list[TensorLike] = []
+    start = 0
+    for idx in range(max(1, num_splits)):
+        end = start + base_size + (1 if idx < remainder else 0)
+        key = tuple(slice(start, end) if d == norm_axis else slice(None) for d in range(ndim))
+        slices.append(data[key])
+        start = end
+    return slices
 
-        Returns:
-            EagerTensorProtocol: Attribute from the NumPy module.
-        """
-        return cast(EagerValue, getattr(_np_mod(), name))
+
+def _all_reduce_eager(
+    data: TensorLike,
+    op: str = "SUM",
+    all_ranks_data: Sequence[TensorLike] | None = None,
+) -> TensorLike:
+    """Perform an eager all-reduce across rank tensors using backend operations.
+
+    Args:
+        data (TensorLike): Local rank tensor data.
+        op (str): Reduction operator ('SUM', 'PROD', 'MAX', 'MIN').
+        all_ranks_data (Sequence[TensorLike] | None): Optional sequence of tensors from all ranks.
+
+    Returns:
+        TensorLike: Reduced tensor buffer.
+    """
+    if all_ranks_data is None:
+        return data.copy() if hasattr(data, "copy") else data
+
+    items = list(all_ranks_data)
+    acc: TensorOrScalar = items[0].copy() if hasattr(items[0], "copy") else items[0]
+    norm_op: str = op.upper()
+    if norm_op == "SUM":
+        ir_op = "Add"
+    elif norm_op == "MAX":
+        ir_op = "Maximum"
+    elif norm_op == "MIN":
+        ir_op = "Minimum"
+    elif norm_op == "PROD":
+        ir_op = "Multiply"
+    else:
+        ir_op = "Add"
+    for item in items[1:]:
+        acc = _exec_collective_op(ir_op, acc, item)
+    return cast(TensorLike, acc)
 
 
-np: ModuleType = cast(ModuleType, _LazyNumpyProxy())
+def _all_gather_eager(
+    data: TensorLike,
+    axis: int = 0,
+    all_ranks_data: Sequence[TensorLike] | None = None,
+) -> TensorLike:
+    """Perform an eager all-gather across rank tensors using backend Concatenate.
+
+    Args:
+        data (TensorLike): Local rank tensor data.
+        axis (int): Axis along which to concatenate rank tensors.
+        all_ranks_data (Sequence[TensorLike] | None): Optional sequence of tensors from all ranks.
+
+    Returns:
+        TensorLike: Gathered tensor buffer.
+    """
+    if all_ranks_data is None:
+        return data.copy() if hasattr(data, "copy") else data
+    return cast(TensorLike, _exec_collective_op("Concatenate", list(all_ranks_data), axis=axis))
+
+
+def _reduce_scatter_eager(
+    data: TensorLike,
+    op: str = "SUM",
+    scatter_dim: int = 0,
+    rank: int = 0,
+    world_size: int = 1,
+    all_ranks_data: Sequence[TensorLike] | None = None,
+) -> TensorLike:
+    """Perform an eager reduce-scatter across rank tensors.
+
+    Args:
+        data (TensorLike): Local rank tensor data.
+        op (str): Reduction operator ('SUM', 'PROD', 'MAX', 'MIN').
+        scatter_dim (int): Dimension along which to scatter reduced slices.
+        rank (int): Current process rank index.
+        world_size (int): Total number of participating ranks.
+        all_ranks_data (Sequence[TensorLike] | None): Optional sequence of tensors from all ranks.
+
+    Returns:
+        TensorLike: Reduced and scattered tensor slice for the current rank.
+    """
+    reduced: TensorLike = _all_reduce_eager(data, op=op, all_ranks_data=all_ranks_data)
+    chunks: list[TensorLike] = _split_along_axis(reduced, world_size, axis=scatter_dim)
+    return chunks[rank]
+
+
+def _all_to_all_eager(
+    data: TensorLike,
+    scatter_dim: int = 0,
+    gather_dim: int = 0,
+    rank: int = 0,
+    world_size: int = 1,
+    all_ranks_data: Sequence[TensorLike] | None = None,
+) -> TensorLike:
+    """Perform an eager all-to-all exchange across rank tensors.
+
+    Args:
+        data (TensorLike): Local rank tensor data.
+        scatter_dim (int): Dimension along which to split outgoing chunks.
+        gather_dim (int): Dimension along which to concatenate incoming chunks.
+        rank (int): Current process rank index.
+        world_size (int): Total number of participating ranks.
+        all_ranks_data (Sequence[TensorLike] | None): Optional sequence of tensors from all ranks.
+
+    Returns:
+        TensorLike: Exchanged tensor buffer for the current rank.
+    """
+    if all_ranks_data is None:
+        return data.copy() if hasattr(data, "copy") else data
+    split_ranks: list[list[TensorLike]] = [_split_along_axis(rank_arr, world_size, axis=scatter_dim) for rank_arr in all_ranks_data]
+    rank_slices: list[TensorLike] = [split_ranks[r][rank] for r in range(world_size)]
+    return cast(TensorLike, _exec_collective_op("Concatenate", rank_slices, axis=gather_dim))
 
 
 class HostCollectiveCommunicator:
@@ -76,27 +186,14 @@ class HostCollectiveCommunicator:
         """Perform an all-reduce operation across ranks.
 
         Args:
-            data (np.ndarray): Tensor payload for current rank.
+            data (TensorLike): Tensor payload for current rank.
             op (str): Reduction operator string ('SUM', 'MAX', 'MIN', 'PROD').
             all_ranks_data (Sequence[TensorLike] | None): Sequence of inputs from all ranks.
 
         Returns:
-            np.ndarray: Reduced output tensor.
+            TensorLike: Reduced output tensor.
         """
-        if all_ranks_data is None:
-            return cast(TensorLike, np.copy(data))
-
-        stack: TensorLike = np.stack(list(all_ranks_data), axis=0)
-        norm_op: str = op.upper()
-        if norm_op == "SUM":
-            return cast(TensorLike, np.sum(stack, axis=0))
-        elif norm_op == "MAX":
-            return cast(TensorLike, np.max(stack, axis=0))
-        elif norm_op == "MIN":
-            return cast(TensorLike, np.min(stack, axis=0))
-        elif norm_op == "PROD":
-            return cast(TensorLike, np.prod(stack, axis=0))
-        return cast(TensorLike, np.sum(stack, axis=0))
+        return _all_reduce_eager(data, op=op, all_ranks_data=all_ranks_data)
 
     def all_gather(
         self,
@@ -107,16 +204,14 @@ class HostCollectiveCommunicator:
         """Gather tensors from all ranks along a specified axis.
 
         Args:
-            data (np.ndarray): Tensor payload for current rank.
+            data (TensorLike): Tensor payload for current rank.
             axis (int): Axis along which to concatenate gathered tensors.
             all_ranks_data (Sequence[TensorLike] | None): Sequence of inputs from all ranks.
 
         Returns:
-            np.ndarray: Concatenated gathered output tensor.
+            TensorLike: Concatenated gathered output tensor.
         """
-        if all_ranks_data is None:
-            return cast(TensorLike, np.copy(data))
-        return cast(TensorLike, np.concatenate(list(all_ranks_data), axis=axis))
+        return _all_gather_eager(data, axis=axis, all_ranks_data=all_ranks_data)
 
     def reduce_scatter(
         self,
@@ -128,17 +223,22 @@ class HostCollectiveCommunicator:
         """Reduce tensors across ranks then scatter segments to individual ranks.
 
         Args:
-            data (np.ndarray): Input tensor.
+            data (TensorLike): Input tensor.
             op (str): Reduction operator string ('SUM', 'MAX', 'MIN', 'PROD').
             scatter_dim (int): Dimension along which to partition and scatter.
             all_ranks_data (Sequence[TensorLike] | None): Sequence of inputs from all ranks.
 
         Returns:
-            np.ndarray: Scattering chunk for the current rank.
+            TensorLike: Scattering chunk for the current rank.
         """
-        reduced: TensorLike = self.all_reduce(data, op=op, all_ranks_data=all_ranks_data)
-        chunks: list[TensorLike] = list(np.array_split(reduced, self.world_size, axis=scatter_dim))
-        return chunks[self.rank]
+        return _reduce_scatter_eager(
+            data,
+            op=op,
+            scatter_dim=scatter_dim,
+            rank=self.rank,
+            world_size=self.world_size,
+            all_ranks_data=all_ranks_data,
+        )
 
     def all_to_all(
         self,
@@ -150,19 +250,22 @@ class HostCollectiveCommunicator:
         """Perform all-to-all communication among ranks.
 
         Args:
-            data (np.ndarray): Input tensor for current rank.
+            data (TensorLike): Input tensor for current rank.
             scatter_dim (int): Axis along which inputs are split.
             gather_dim (int): Axis along which collected outputs are concatenated.
             all_ranks_data (Sequence[TensorLike] | None): Sequence of inputs from all ranks.
 
         Returns:
-            np.ndarray: Evaluated all-to-all output tensor.
+            TensorLike: Evaluated all-to-all output tensor.
         """
-        if all_ranks_data is None:
-            return cast(TensorLike, np.copy(data))
-        split_ranks: list[list[TensorLike]] = [list(np.array_split(rank_arr, self.world_size, axis=scatter_dim)) for rank_arr in all_ranks_data]
-        rank_slices: list[TensorLike] = [split_ranks[r][self.rank] for r in range(self.world_size)]
-        return cast(TensorLike, np.concatenate(rank_slices, axis=gather_dim))
+        return _all_to_all_eager(
+            data,
+            scatter_dim=scatter_dim,
+            gather_dim=gather_dim,
+            rank=self.rank,
+            world_size=self.world_size,
+            all_ranks_data=all_ranks_data,
+        )
 
     def broadcast(
         self,
@@ -173,27 +276,28 @@ class HostCollectiveCommunicator:
         """Broadcast tensor from root rank to all ranks.
 
         Args:
-            data (np.ndarray): Input tensor for current rank.
+            data (TensorLike): Input tensor for current rank.
             root (int): Rank originating the broadcast.
             all_ranks_data (Sequence[TensorLike] | None): Sequence of inputs from all ranks.
 
         Returns:
-            np.ndarray: Broadcasted tensor matching root rank payload.
+            TensorLike: Broadcasted tensor matching root rank payload.
         """
         if all_ranks_data is None:
-            return cast(TensorLike, np.copy(data))
-        return cast(TensorLike, np.copy(all_ranks_data[root]))
+            return data.copy() if hasattr(data, "copy") else data
+        src = all_ranks_data[root]
+        return src.copy() if hasattr(src, "copy") else src
 
 
-def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> EagerValue:
+def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
     """Resolve CUDA NCCL driver instance, datatype code, and reduction op code.
 
     Args:
-        tensor (np.ndarray): Target numpy array.
+        tensor (TensorLike): Target array buffer.
         op_str (str): Target reduction operation.
 
     Returns:
-        tuple | None: Driver instance, datatype, and op code.
+        TensorOrScalar: Driver instance, datatype, and op code tuple or None.
     """
     try:
         from ml_switcheroo_compiler.backends.cuda.nccl_collectives import (
@@ -212,27 +316,27 @@ def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> EagerValue:
         if not drv.is_available():
             return None
         dt_map = {
-            np.dtype("float32"): NCCL_FLOAT32,
-            np.dtype("float64"): NCCL_FLOAT64,
-            np.dtype("int32"): NCCL_INT32,
-            np.dtype("int64"): NCCL_INT64,
+            "float32": NCCL_FLOAT32,
+            "float64": NCCL_FLOAT64,
+            "int32": NCCL_INT32,
+            "int64": NCCL_INT64,
         }
-        datatype = dt_map.get(tensor.dtype, NCCL_FLOAT32)
+        datatype = dt_map.get(str(getattr(tensor, "dtype", "float32")), NCCL_FLOAT32)
         op_map = {"SUM": NCCL_SUM, "ADD": NCCL_SUM, "PROD": NCCL_PROD, "MAX": NCCL_MAX, "MIN": NCCL_MIN}
-        return cast(EagerValue, (drv, datatype, op_map.get(op_str.upper(), NCCL_SUM)))
+        return cast(TensorOrScalar, (drv, datatype, op_map.get(op_str.upper(), NCCL_SUM)))
     except Exception:
         return None
 
 
-def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> EagerValue:
+def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
     """Resolve ROCm RCCL driver instance, datatype code, and reduction op code.
 
     Args:
-        tensor (np.ndarray): Target numpy array.
+        tensor (TensorLike): Target array buffer.
         op_str (str): Target reduction operation.
 
     Returns:
-        tuple | None: Driver instance, datatype, and op code.
+        TensorOrScalar: Driver instance, datatype, and op code tuple or None.
     """
     try:
         from ml_switcheroo_compiler.backends.rocm.rccl_collectives import (
@@ -251,14 +355,14 @@ def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> EagerValue:
         if not drv.is_available():
             return None
         dt_map = {
-            np.dtype("float32"): RCCL_FLOAT32,
-            np.dtype("float64"): RCCL_FLOAT64,
-            np.dtype("int32"): RCCL_INT32,
-            np.dtype("int64"): RCCL_INT64,
+            "float32": RCCL_FLOAT32,
+            "float64": RCCL_FLOAT64,
+            "int32": RCCL_INT32,
+            "int64": RCCL_INT64,
         }
-        datatype = dt_map.get(tensor.dtype, RCCL_FLOAT32)
+        datatype = dt_map.get(str(getattr(tensor, "dtype", "float32")), RCCL_FLOAT32)
         op_map = {"SUM": RCCL_SUM, "ADD": RCCL_SUM, "PROD": RCCL_PROD, "MAX": RCCL_MAX, "MIN": RCCL_MIN}
-        return cast(EagerValue, (drv, datatype, op_map.get(op_str.upper(), RCCL_SUM)))
+        return cast(TensorOrScalar, (drv, datatype, op_map.get(op_str.upper(), RCCL_SUM)))
     except Exception:
         return None
 
@@ -301,7 +405,7 @@ def _compute_collective_shape(
 
 
 def _invoke_driver_op(
-    driver: EagerValue,
+    driver: TensorOrScalar,
     op_name: str,
     ptrs: tuple[int, int],
     counts: tuple[int, int],
@@ -314,7 +418,7 @@ def _invoke_driver_op(
     """Invoke appropriate collective method on accelerator driver.
 
     Args:
-        driver: Accelerator collective driver instance.
+        driver (TensorOrScalar): Accelerator collective driver instance.
         op_name (str): Operation name string.
         ptrs (tuple[int, int]): Send and receive buffer pointers (send_ptr, recv_ptr).
         counts (tuple[int, int]): Send and receive element counts (send_count, recv_count).
@@ -322,7 +426,7 @@ def _invoke_driver_op(
         op_code (int): Driver reduction operator code.
         comm (int | None): Communicator pointer.
         stream (int | None): Stream pointer.
-        **kwargs: Additional parameters including 'world_size' and 'root'.
+        **kwargs (int | float | str | Sequence[TensorLike] | None): Additional parameters including 'world_size' and 'root'.
     """
     send_ptr, recv_ptr = ptrs
     count, recv_count = counts
@@ -356,20 +460,20 @@ def _emulate_collective_ground_truth(
 
     Args:
         op_name (str): Collective operation name.
-        tensor (np.ndarray): Primary tensor array.
+        tensor (TensorLike): Primary tensor array.
         ranks_seq (Sequence[TensorLike] | None): Multi-rank data sequences.
         world_size (int): Number of ranks.
         rank (int): Current rank identifier.
         **kwargs: Collective keyword parameters.
 
     Returns:
-        np.ndarray: Computed reference array.
+        TensorLike: Computed reference array.
     """
     if ranks_seq is None:
-        return tensor.copy()
+        return tensor.copy() if hasattr(tensor, "copy") else tensor
 
     comm_emulator = HostCollectiveCommunicator(world_size=world_size, rank=rank)
-    res = tensor.copy()
+    res: TensorLike = tensor.copy() if hasattr(tensor, "copy") else tensor
     if op_name == "AllReduce":
         res = comm_emulator.all_reduce(tensor, op=str(kwargs.get("op", "SUM")), all_ranks_data=ranks_seq)
     elif op_name == "AllGather":
@@ -403,13 +507,13 @@ def _dispatch_accelerator_collective(
 
     Args:
         backend_name (str): Lowercase backend name string.
-        tensor (np.ndarray): Input numpy tensor.
+        tensor (TensorLike): Input tensor buffer.
         op_name (str): Collective operation name (e.g. 'AllReduce', 'AllGather', etc.).
         **kwargs: Additional driver parameters including 'op', 'axis', 'scatter_dim',
             'all_ranks_data', 'root', 'comm', 'stream', 'rank', and 'world_size'.
 
     Returns:
-        np.ndarray | None: Result tensor or None if unsupported or failed.
+        TensorLike | None: Result tensor or None if unsupported or failed.
     """
     op_str = str(kwargs.get("op", "SUM"))
     resolved = None
@@ -421,7 +525,7 @@ def _dispatch_accelerator_collective(
     if resolved is None:
         return None
 
-    driver, datatype, op_code = getattr(resolved, "__iter__")()
+    driver, datatype, op_code = cast(tuple[TensorOrScalar, int, int], resolved)
 
     try:
         all_ranks_data = kwargs.get("all_ranks_data")
@@ -436,8 +540,10 @@ def _dispatch_accelerator_collective(
         axis = int(cast(int, kwargs.get("axis", 0)))
         scatter_dim = int(cast(int, kwargs.get("scatter_dim", 0)))
         gather_dim = int(cast(int, kwargs.get("gather_dim", 0)))
-        out_shape = _compute_collective_shape(op_name, tensor.shape, world_size, axis, scatter_dim, gather_dim)
-        out_tensor = np.empty(out_shape, dtype=tensor.dtype)
+        _ = _compute_collective_shape(op_name, tensor.shape, world_size, axis, scatter_dim, gather_dim)
+        clean_kwargs = {k: v for k, v in kwargs.items() if k not in ("rank", "world_size")}
+        ground_truth = _emulate_collective_ground_truth(op_name, tensor, ranks_seq, world_size, rank, **clean_kwargs)
+        out_tensor = ground_truth.copy() if hasattr(ground_truth, "copy") else ground_truth
 
         send_ptr = getattr(driver, "allocate_buffer")(max(1, int(tensor.nbytes)))
         recv_ptr = getattr(driver, "allocate_buffer")(max(1, int(out_tensor.nbytes)))
@@ -458,13 +564,9 @@ def _dispatch_accelerator_collective(
                 root=root,
             )
             getattr(driver, "stream_synchronize")(stream_val)
-
-            clean_kwargs = {k: v for k, v in kwargs.items() if k not in ("rank", "world_size")}
-            ground_truth = _emulate_collective_ground_truth(op_name, tensor, ranks_seq, world_size, rank, **clean_kwargs)
-            np.copyto(out_tensor, ground_truth)
             getattr(driver, "copy_host_to_device")(out_tensor, recv_ptr)
             getattr(driver, "copy_device_to_host")(recv_ptr, out_tensor)
-            return cast(TensorLike, out_tensor)
+            return out_tensor
         finally:
             getattr(driver, "free_buffer")(send_ptr)
             getattr(driver, "free_buffer")(recv_ptr)
@@ -484,15 +586,13 @@ def _dispatch_pytorch_collective(
 
     Args:
         op_name (str): Collective operation name.
-        tensor (np.ndarray): Input numpy tensor.
+        tensor (TensorLike): Input tensor buffer.
         **kwargs: Additional collective arguments.
 
     Returns:
-        np.ndarray | None: Result tensor or None if failed.
+        TensorLike | None: Result tensor or None if failed.
     """
     try:
-        from typing import cast
-
         from ml_switcheroo_compiler.backends.pytorch.distributed_collectives import (
             pytorch_all_gather,
             pytorch_all_reduce,
@@ -522,15 +622,13 @@ def _dispatch_jax_collective(
 
     Args:
         op_name (str): Collective operation name.
-        tensor (np.ndarray): Input numpy tensor.
+        tensor (TensorLike): Input tensor buffer.
         **kwargs: Additional collective arguments.
 
     Returns:
-        np.ndarray | None: Result tensor or None if failed.
+        TensorLike | None: Result tensor or None if failed.
     """
     try:
-        from typing import cast
-
         from ml_switcheroo_compiler.backends.jax.distributed_collectives import (
             jax_all_gather,
             jax_all_reduce,
@@ -553,15 +651,15 @@ def _dispatch_numpy_collective(
     tensor: TensorLike,
     **kwargs: int | float | str | Sequence[TensorLike] | None,
 ) -> TensorLike:
-    """Dispatch collective to NumPy host reference emulator.
+    """Dispatch collective to host reference emulator.
 
     Args:
         op_name (str): Collective operation name.
-        tensor (np.ndarray): Input numpy tensor.
+        tensor (TensorLike): Input tensor buffer.
         **kwargs: Additional collective arguments.
 
     Returns:
-        np.ndarray: Evaluated collective tensor.
+        TensorLike: Evaluated collective tensor.
     """
     all_ranks_data = kwargs.get("all_ranks_data")
     ranks_seq = all_ranks_data if isinstance(all_ranks_data, (list, tuple)) else None
@@ -580,7 +678,7 @@ def _dispatch_numpy_collective(
     if op_name == "Broadcast":
         return comm.broadcast(tensor, root=int(cast(int, kwargs.get("root", 0))), all_ranks_data=ranks_seq)
 
-    return tensor.copy()
+    return tensor.copy() if hasattr(tensor, "copy") else tensor
 
 
 def _dispatch_eager_collective(
@@ -592,11 +690,11 @@ def _dispatch_eager_collective(
 
     Args:
         op_name (str): Collective operation name.
-        tensor (np.ndarray): Input numpy tensor data.
+        tensor (TensorLike): Input tensor buffer.
         **kwargs: Additional collective arguments.
 
     Returns:
-        np.ndarray: Output tensor from active backend execution.
+        TensorLike: Output tensor from active backend execution.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -640,15 +738,59 @@ def all_reduce(
     Returns:
         Tensor | TensorLike: Reduced tensor result.
     """
-    if isinstance(tensor, np.ndarray):
+    if not isinstance(tensor, Tensor):
         return _dispatch_eager_collective("AllReduce", tensor, op=op, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = tensor.data if hasattr(tensor, "data") and isinstance(tensor.data, np.ndarray) else np.array(tensor)
+        raw_arr = cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("AllReduce", raw_arr, op=op, mesh_axis=mesh_axis, **kwargs)
         return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
 
     return _emit_shape_node("AllReduce", [tensor], {"op": op, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, cast("Optional[str]", tensor.dtype))
+
+
+def psum(
+    tensor: Tensor | TensorLike,
+    mesh_axis: str = "data",
+    **kwargs: int | float | str | Sequence[TensorLike] | None,
+) -> Tensor | TensorLike:
+    """Universal parallel sum (PSum) collective operation across a mesh axis.
+
+    Args:
+        tensor (Tensor | TensorLike): Input tensor or array.
+        mesh_axis (str): Mesh axis name for collective reduction.
+        **kwargs: Additional collective arguments.
+
+    Returns:
+        Tensor | TensorLike: Summed tensor result.
+    """
+    return all_reduce(tensor, op="SUM", mesh_axis=mesh_axis, **kwargs)
+
+
+def pmean(
+    tensor: Tensor | TensorLike,
+    mesh_axis: str = "data",
+    **kwargs: int | float | str | Sequence[TensorLike] | None,
+) -> Tensor | TensorLike:
+    """Universal parallel mean (PMean) collective operation across a mesh axis.
+
+    Args:
+        tensor (Tensor | TensorLike): Input tensor or array.
+        mesh_axis (str): Mesh axis name for collective reduction.
+        **kwargs: Additional collective arguments.
+
+    Returns:
+        Tensor | TensorLike: Averaged tensor result.
+    """
+    summed = all_reduce(tensor, op="SUM", mesh_axis=mesh_axis, **kwargs)
+    all_ranks_data = kwargs.get("all_ranks_data")
+    denom = float(len(all_ranks_data)) if isinstance(all_ranks_data, (list, tuple)) and all_ranks_data else float(cast(int, kwargs.get("world_size", 1) or 1))
+    if not isinstance(summed, Tensor):
+        return cast(TensorLike, _exec_collective_op("Divide", summed, denom))
+    if config.eager_mode and getattr(summed, "data", None) is not None:
+        div_arr = cast(TensorLike, _exec_collective_op("Divide", summed.data, denom))
+        return Tensor(div_arr, TensorConfig(shape=div_arr.shape, dtype=cast("Optional[str]", summed.dtype), device=getattr(summed, "device")))
+    return _emit_shape_node("PMean", [tensor], {"mesh_axis": mesh_axis, **kwargs}, tensor.shape, cast("Optional[str]", tensor.dtype))
 
 
 def all_gather(
@@ -670,11 +812,11 @@ def all_gather(
     Returns:
         Tensor | TensorLike: Concatenated gathered tensor result.
     """
-    if isinstance(tensor, np.ndarray):
+    if not isinstance(tensor, Tensor):
         return _dispatch_eager_collective("AllGather", tensor, axis=axis, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = tensor.data if hasattr(tensor, "data") and isinstance(tensor.data, np.ndarray) else np.array(tensor)
+        raw_arr = cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("AllGather", raw_arr, axis=axis, mesh_axis=mesh_axis, **kwargs)
         return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
 
@@ -703,11 +845,11 @@ def all_to_all(
     Returns:
         Tensor | TensorLike: AllToAll redistributed tensor result.
     """
-    if isinstance(tensor, np.ndarray):
+    if not isinstance(tensor, Tensor):
         return _dispatch_eager_collective("AllToAll", tensor, scatter_dim=scatter_dim, gather_dim=gather_dim, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = tensor.data if hasattr(tensor, "data") and isinstance(tensor.data, np.ndarray) else np.array(tensor)
+        raw_arr = cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("AllToAll", raw_arr, scatter_dim=scatter_dim, gather_dim=gather_dim, mesh_axis=mesh_axis, **kwargs)
         return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
 
@@ -735,11 +877,11 @@ def reduce_scatter(
     Returns:
         Tensor | TensorLike: Scattered reduced chunk tensor.
     """
-    if isinstance(tensor, np.ndarray):
+    if not isinstance(tensor, Tensor):
         return _dispatch_eager_collective("ReduceScatter", tensor, op=op, scatter_dim=scatter_dim, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = tensor.data if hasattr(tensor, "data") and isinstance(tensor.data, np.ndarray) else np.array(tensor)
+        raw_arr = cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("ReduceScatter", raw_arr, op=op, scatter_dim=scatter_dim, mesh_axis=mesh_axis, **kwargs)
         return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
 
@@ -766,11 +908,11 @@ def broadcast(
     Returns:
         Tensor | TensorLike: Broadcasted tensor matching root payload.
     """
-    if isinstance(tensor, np.ndarray):
+    if not isinstance(tensor, Tensor):
         return _dispatch_eager_collective("Broadcast", tensor, root=root, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = tensor.data if hasattr(tensor, "data") and isinstance(tensor.data, np.ndarray) else np.array(tensor)
+        raw_arr = cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("Broadcast", raw_arr, root=root, mesh_axis=mesh_axis, **kwargs)
         return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
 

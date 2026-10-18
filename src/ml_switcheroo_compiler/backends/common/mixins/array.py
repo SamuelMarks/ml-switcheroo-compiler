@@ -164,7 +164,7 @@ class ArrayASTVisitor(CommonASTVisitor):
             A string containing the backend-specific code for computing the top k elements.
         """
         k = node.attributes.get("k", 1)
-        k_val = k.expr if hasattr(k, "expr") else str(k)
+        k_val = str(getattr(k, "expr")) if hasattr(k, "expr") else str(k)
         is_idx = node.attributes.get("return_indices", False)
         pfx = self.generator.get_fallback_prefix()
         var = input_vars[0]

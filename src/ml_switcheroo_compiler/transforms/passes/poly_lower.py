@@ -141,7 +141,9 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     body_graph.nodes["false_violations"] = IRNode(id="false_violations", op_type="Constant", inputs=[], attributes={"value": False})
     body_graph.outputs = ["array", "next_idx", "false_violations"]
 
-    node.attributes = {"cond": cond_graph, "body": body_graph}
+    from ml_switcheroo_ir import AttributeValue
+
+    node.attributes = cast("dict[str, AttributeValue]", {"cond": cond_graph, "body": body_graph})
 
     return node
 

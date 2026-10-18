@@ -13,7 +13,7 @@ class ImageASTVisitor(CommonASTVisitor):
     """Image processing AST generator mixin."""
 
     def visit_AdjustBrightness(self, node: IRNode, input_vars: list[str], **kwargs: float) -> str:
-        """Evaluate visit_AdjustBrightness operation.
+        """Emit target backend code or IR transformation for the AdjustBrightness operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -28,7 +28,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_adjust_brightness({input_vars[0]}, {delta})"
 
     def visit_AdjustContrast(self, node: IRNode, input_vars: list[str], **kwargs: float) -> str:
-        """Evaluate visit_AdjustContrast operation.
+        """Emit target backend code or IR transformation for the AdjustContrast operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -43,7 +43,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_adjust_contrast({input_vars[0]}, {contrast_factor})"
 
     def visit_AdjustHue(self, node: IRNode, input_vars: list[str], **kwargs: float) -> str:
-        """Evaluate visit_AdjustHue operation.
+        """Emit target backend code or IR transformation for the AdjustHue operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -58,7 +58,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_adjust_hue({input_vars[0]}, {delta})"
 
     def visit_AdjustSaturation(self, node: IRNode, input_vars: list[str], **kwargs: float) -> str:
-        """Evaluate visit_AdjustSaturation operation.
+        """Emit target backend code or IR transformation for the AdjustSaturation operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -73,7 +73,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_adjust_saturation({input_vars[0]}, {saturation_factor})"
 
     def visit_AffineGenerator(self, node: IRNode, input_vars: list[str], **kwargs: int) -> str:
-        """Evaluate visit_AffineGenerator operation.
+        """Emit target backend code or IR transformation for the AffineGenerator operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -88,7 +88,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_affine_generator({batch_size}, {', '.join(input_vars)})"
 
     def visit_AffineGrid(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_AffineGrid operation.
+        """Emit target backend code or IR transformation for the AffineGrid operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -104,7 +104,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_affine_grid({input_vars[0]}, size={size}, align_corners={align_corners})"
 
     def visit_AffineTransform(self, node: IRNode, input_vars: list[str], **kwargs: str) -> str:
-        """Evaluate visit_AffineTransform operation.
+        """Emit target backend code or IR transformation for the AffineTransform operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -119,7 +119,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_affine_transform({input_vars[0]}, {input_vars[1]}, interpolation='{interpolation}')"
 
     def visit_AugMix(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_AugMix operation.
+        """Emit target backend code or IR transformation for the AugMix operation.
 
         Args:
             node (IRNode): The node parameter.
@@ -133,7 +133,7 @@ class ImageASTVisitor(CommonASTVisitor):
         return f"{pfx}_augmix({input_vars[0]})"
 
     def visit_AutoContrast(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_AutoContrast operation.
+        """Emit target backend code or IR transformation for the AutoContrast operation.
 
         Args:
             node (IRNode): The node parameter.

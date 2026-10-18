@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-
-# ruff: noqa: E501
 from unittest.mock import patch
 
 import pytest
@@ -285,15 +283,9 @@ def test_control_flow_extra_more_branches() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow.less", return_value="less"):
         with patch("ml_switcheroo_compiler.ops.control_flow.cond", side_effect=lambda a, b, c: b()):
-            try:
-                cast("Callable[..., EagerTensorProtocol]", switch)(cast("Callable[..., EagerTensorProtocol]", DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
-            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-                assert _exc is not None
+            cast("Callable[..., EagerTensorProtocol]", switch)(cast("Callable[..., EagerTensorProtocol]", DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
         with patch("ml_switcheroo_compiler.ops.control_flow.cond", side_effect=lambda a, b, c: c()):
-            try:
-                cast("Callable[..., EagerTensorProtocol]", switch)(cast("Callable[..., EagerTensorProtocol]", DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
-            except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-                assert _exc is not None
+            cast("Callable[..., EagerTensorProtocol]", switch)(cast("Callable[..., EagerTensorProtocol]", DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
     config.eager_mode = False
     _exercise_custom_gradient_variants(custom_gradient)
     assert cast("Callable[..., EagerTensorProtocol]", scan_bind)("f", "xs") == ("f", "xs")

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
@@ -92,12 +93,12 @@ class Packbits(OpDef):
 
     op_name = "Packbits"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -119,12 +120,12 @@ class Unpackbits(OpDef):
 
     op_name = "Unpackbits"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -191,12 +192,12 @@ class Iscomplexobj(OpDef):
     op_name = "Iscomplexobj"
     np_op_name = "iscomplexobj"
 
-    def infer_shape(self, x: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, x: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            x (Any): The x parameter.
-            **kwargs (Any): Keyword args.
+            x (TensorOrScalar): The x parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -212,12 +213,12 @@ class Isrealobj(OpDef):
     op_name = "Isrealobj"
     np_op_name = "isrealobj"
 
-    def infer_shape(self, x: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, x: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            x (Any): The x parameter.
-            **kwargs (Any): Keyword args.
+            x (TensorOrScalar): The x parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -233,12 +234,12 @@ class Issubdtype(OpDef):
     op_name = "Issubdtype"
     np_op_name = "issubdtype"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -252,12 +253,12 @@ class Isin(OpDef):
 
     op_name = "Isin"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (object): Positional args (element, test_elements).
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args (element, test_elements).
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result shape matching element.
@@ -266,11 +267,11 @@ class Isin(OpDef):
         return tuple(getattr(element, "shape", getattr(element, "shape_metadata", element if isinstance(element, (list, tuple)) else ())))
 
 
-def _get_size_from_shape(obj: EagerValue) -> int | None:
+def _get_size_from_shape(obj: TensorOrScalar) -> int | None:
     """Calculate the total number of elements from an Any's shape.
 
     Args:
-        obj (Any): The Any.
+        obj (TensorOrScalar): The Any.
 
     Returns:
         int | None: The size.
@@ -298,12 +299,12 @@ class Ediff1d(OpDef):
     op_name = "Ediff1d"
     np_op_name = "ediff1d"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result 1D shape.
@@ -331,12 +332,12 @@ class Ediff1d(OpDef):
         return (size,)
 
 
-def population_count(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def population_count(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Calculate element-wise population count (a.k.a. popcount, bitsum, bitcount).
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -346,12 +347,12 @@ def population_count(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("PopulationCount", *args, **kwargs)
 
 
-def isin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def isin(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Calculate element in test_elements, broadcasting over element only.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -361,12 +362,12 @@ def isin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Isin", *args, **kwargs)
 
 
-def iscomplex(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def iscomplex(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return a bool array, where True if input element is complex.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -376,12 +377,12 @@ def iscomplex(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Iscomplex", *args, **kwargs)
 
 
-def iscomplexobj(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def iscomplexobj(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Check for a complex type or an array of complex numbers.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -391,12 +392,12 @@ def iscomplexobj(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Iscomplexobj", *args, **kwargs)
 
 
-def isreal(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def isreal(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return a bool array, where True if input element is real.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -406,12 +407,12 @@ def isreal(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Isreal", *args, **kwargs)
 
 
-def isrealobj(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def isrealobj(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return True if x is a not complex type or an array of complex numbers.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -421,12 +422,12 @@ def isrealobj(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Isrealobj", *args, **kwargs)
 
 
-def issubdtype(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def issubdtype(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return True if first argument is a typecode lower/equal in type hierarchy.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -436,12 +437,12 @@ def issubdtype(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Issubdtype", *args, **kwargs)
 
 
-def reduce_precision(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def reduce_precision(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Reduce precision operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

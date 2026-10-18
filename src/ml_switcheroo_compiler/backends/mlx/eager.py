@@ -44,13 +44,13 @@ def _get_mlx_func(op_type: str) -> EagerValue:
 
 
 def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate execute_op operation.
+    """Execute the eager execute op operation on the active backend array.
 
     Args:
         cls (type): The class.
         op_type (str): The op_type parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -77,12 +77,12 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
 
 @mlx_eager_registry.register("Cast")
 def _mlx_cast(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_cast operation.
+    """Execute the eager mlx cast operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -100,13 +100,13 @@ def _mlx_relu(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kw
     """Evaluate ReLU activation using MLX.
 
     Args:
-        backend_module (object): The MLX core module.
-        x (object): Input tensor array.
-        *args (object): Additional positional arguments.
-        **kwargs (object): Additional keyword arguments.
+        backend_module (ModuleType): The MLX core module.
+        x (EagerValue): Input tensor array.
+        *args (EagerValue): Additional positional arguments.
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Rectified linear activated tensor array.
+        EagerValue: Rectified linear activated tensor array.
     """
     try:
         import mlx.nn as nn
@@ -121,13 +121,13 @@ def _mlx_ragged_tensor_to_dense(backend_module: ModuleType, rt_input: EagerValue
     """Convert a ragged tensor representation to a dense padded array using MLX.
 
     Args:
-        backend_module (object): The MLX backend module.
-        rt_input (object): The input ragged tensor, sequence of arrays, or dict.
-        default_value (object): The value used to pad the ragged dimensions.
-        **kwargs (object): Additional keyword arguments.
+        backend_module (ModuleType): The MLX backend module.
+        rt_input (EagerValue): The input ragged tensor, sequence of arrays, or dict.
+        default_value (EagerValue): The value used to pad the ragged dimensions.
+        **kwargs (EagerValue): Additional keyword arguments.
 
     Returns:
-        object: Dense padded array.
+        EagerValue: Dense padded array.
     """
     if isinstance(rt_input, (list, tuple)) and len(rt_input) > 0 and hasattr(rt_input[0], "shape"):
         max_len = max(x.shape[0] if len(x.shape) > 0 else 1 for x in rt_input)
@@ -183,12 +183,12 @@ def _mlx_ragged_tensor_to_dense(backend_module: ModuleType, rt_input: EagerValue
 
 @mlx_eager_registry.register("TakeAlongAxis")
 def _mlx_take_along_axis(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_take_along_axis operation.
+    """Execute the eager mlx take along axis operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -198,12 +198,12 @@ def _mlx_take_along_axis(backend_module: ModuleType, *args: EagerValue, **kwargs
 
 @mlx_eager_registry.register("Take")
 def _mlx_take(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_take operation.
+    """Execute the eager mlx take operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -213,12 +213,12 @@ def _mlx_take(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @mlx_eager_registry.register("TensorScatterUpdate")
 def _mlx_tensor_scatter_update(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_tensor_scatter_update operation.
+    """Execute the eager mlx tensor scatter update operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -235,9 +235,9 @@ def _mlx_tensor_scatter_add(backend_module: ModuleType, *args: EagerValue, **kwa
     """Implement TensorScatterAdd.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -254,9 +254,9 @@ def _mlx_tensor_scatter_max(backend_module: ModuleType, *args: EagerValue, **kwa
     """Implement TensorScatterMax.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -275,9 +275,9 @@ def _mlx_tensor_scatter_min(backend_module: ModuleType, *args: EagerValue, **kwa
     """Implement TensorScatterMin.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -293,12 +293,12 @@ def _mlx_tensor_scatter_min(backend_module: ModuleType, *args: EagerValue, **kwa
 
 @mlx_eager_registry.register("ScatterNd")
 def _mlx_scatter_nd(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_scatter_nd operation.
+    """Execute the eager mlx scatter nd operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -321,12 +321,12 @@ def _mlx_scatter_nd(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @mlx_eager_registry.register("Reshape")
 def _mlx_reshape(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_reshape operation.
+    """Execute the eager mlx reshape operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -352,8 +352,8 @@ def _resolve_dtype(backend_module: ModuleType, dtype_val: EagerValue) -> EagerVa
     """Resolve a given dtype object or string to a valid MLX dtype.
 
     Args:
-        backend_module (object): The MLX backend module.
-        dtype_val (object): The requested dtype.
+        backend_module (ModuleType): The MLX backend module.
+        dtype_val (EagerValue): The requested dtype.
 
     Returns: mx.array: The resolved MLX dtype.
     """
@@ -370,12 +370,12 @@ def _resolve_dtype(backend_module: ModuleType, dtype_val: EagerValue) -> EagerVa
 
 @mlx_eager_registry.register("Zeros")
 def _mlx_zeros(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_zeros operation.
+    """Execute the eager mlx zeros operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -397,12 +397,12 @@ def _mlx_zeros(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
 
 @mlx_eager_registry.register("Ones")
 def _mlx_ones(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_ones operation.
+    """Execute the eager mlx ones operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -424,12 +424,12 @@ def _mlx_ones(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 @mlx_eager_registry.register("Full")
 def _mlx_full(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_full operation.
+    """Execute the eager mlx full operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -455,7 +455,7 @@ def _parse_partition_k(k: EagerValue) -> int:
     """Parse k parameter for partition.
 
     Args:
-        k (object): The k parameter.
+        k (EagerValue): The k parameter.
 
     Returns:
         int: Result.
@@ -468,12 +468,12 @@ def _parse_partition_k(k: EagerValue) -> int:
 
 
 def _mlx_partition(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_partition operation.
+    """Execute the eager mlx partition operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -496,12 +496,12 @@ def _mlx_partition(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
 
 @mlx_eager_registry.register("NanToNum")
 def _mlx_nan_to_num(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_nan_to_num operation.
+    """Execute the eager mlx nan to num operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -522,12 +522,12 @@ def _mlx_nan_to_num(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @mlx_eager_registry.register("Cummax")
 def _mlx_cummax(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_cummax operation.
+    """Execute the eager mlx cummax operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -541,12 +541,12 @@ def _mlx_cummax(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @mlx_eager_registry.register("Cummin")
 def _mlx_cummin(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_cummin operation.
+    """Execute the eager mlx cummin operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -560,12 +560,12 @@ def _mlx_cummin(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
 @mlx_eager_registry.register("Cumprod")
 def _mlx_cumprod(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_cumprod operation.
+    """Execute the eager mlx cumprod operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -579,12 +579,12 @@ def _mlx_cumprod(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
 
 @mlx_eager_registry.register("Slice")
 def _mlx_slice(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_slice operation.
+    """Execute the eager mlx slice operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -601,12 +601,12 @@ def _mlx_slice(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
 
 @mlx_eager_registry.register("Eye")
 def _mlx_eye(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_eye operation.
+    """Execute the eager mlx eye operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -627,9 +627,9 @@ def _mlx_rope(backend_module: ModuleType, x: EagerValue, **kwargs: EagerValue) -
     """Apply Rotary Positional Encoding using MLX.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -644,12 +644,12 @@ def _mlx_rope(backend_module: ModuleType, x: EagerValue, **kwargs: EagerValue) -
 
 @mlx_eager_registry.register("Variance")
 def _mlx_variance(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _mlx_variance operation.
+    """Execute the eager mlx variance operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -663,9 +663,9 @@ def _mlx_all_reduce(backend_module: ModuleType, tensor: EagerValue, **kwargs: Ea
     """Implement AllReduce for MLX eager mode.
 
     Args:
-        backend_module (object): The MLX backend module.
-        tensor (object): The input tensor.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The MLX backend module.
+        tensor (EagerValue): The input tensor.
+        **kwargs (EagerValue): Keyword args.
 
     Returns: mx.array: The reduced tensor.
     """
@@ -681,9 +681,9 @@ def _mlx_all_gather(backend_module: ModuleType, tensor: EagerValue, **kwargs: Ea
     """Implement AllGather for MLX eager mode.
 
     Args:
-        backend_module (object): The MLX backend module.
-        tensor (object): The input tensor.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The MLX backend module.
+        tensor (EagerValue): The input tensor.
+        **kwargs (EagerValue): Keyword args.
 
     Returns: mx.array: The gathered tensor.
     """
@@ -699,9 +699,9 @@ def _mlx_all_to_all(backend_module: ModuleType, tensor: EagerValue, **kwargs: Ea
     """Implement AllToAll for MLX eager mode.
 
     Args:
-        backend_module (object): The MLX backend module.
-        tensor (object): The input tensor.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The MLX backend module.
+        tensor (EagerValue): The input tensor.
+        **kwargs (EagerValue): Keyword args.
 
     Returns: mx.array: The distributed tensor.
     """
@@ -823,12 +823,12 @@ def _mlx_reduce_scatter(backend_module: ModuleType, tensor: EagerValue, **kwargs
     """Implement ReduceScatter for MLX eager mode using native collectives or ring reduce-scatter fallback.
 
     Args:
-        backend_module (object): The MLX backend module.
-        tensor (object): The input tensor.
-        **kwargs (object): Keyword args including op_type, scatter_dim, rank, world_size, all_ranks_data.
+        backend_module (ModuleType): The MLX backend module.
+        tensor (EagerValue): The input tensor.
+        **kwargs (EagerValue): Keyword args including op_type, scatter_dim, rank, world_size, all_ranks_data.
 
     Returns:
-        object: The scattered reduced tensor.
+        EagerValue: The scattered reduced tensor.
     """
     mx_mod = backend_module
 

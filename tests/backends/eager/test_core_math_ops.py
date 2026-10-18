@@ -8,6 +8,7 @@ import warnings
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pytest
 
 import ml_switcheroo_compiler.backends.eager.core_math_ops as cmo
 import ml_switcheroo_compiler.backends.eager.core_math_ops as core_math_ops
@@ -28,33 +29,15 @@ def _test_core_math_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
     res = core_math_ops._true_divide(np, 10.0, 2.0)
     assert res == 5.0
     res = core_math_ops._true_divide(object, 10.0, 2.0)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # Fft, Rfft, Fftn
+    assert res is None
     res = core_math_ops._fft(np, np.array([1.0, 2.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._rfft(np, np.array([1.0, 2.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._fftn(np, np.array([1.0, 2.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
+    assert res is not None
     res = core_math_ops._fft(object, np.array([1.0, 2.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is None
     getattr(_state, "update")({"res": res})
     _state.update(locals())
 
@@ -66,32 +49,15 @@ def _test_core_math_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     res = core_math_ops._rfft(object, np.array([1.0, 2.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is None
     res = core_math_ops._fftn(object, np.array([1.0, 2.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # Erf, Erfc, Expm1, Erfinv
+    assert res is None
     res = core_math_ops._erf(np, 0.5)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._erfc(np, 0.5)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._expm1(np, 0.5)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     getattr(_state, "update")({"res": res})
     _state.update(locals())
 
@@ -133,10 +99,7 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
     dummy = DummyMock()
     res = core_math_ops._erf(dummy, 0.5)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     getattr(_state, "update")({"DummyMock": DummyMock, "dummy": dummy, "res": res})
     _state.update(locals())
 
@@ -149,34 +112,15 @@ def _test_core_math_ops_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     """
     dummy = _state["dummy"]
     res = core_math_ops._erfc(dummy, 0.5)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._expm1(dummy, 0.5)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._erfinv(dummy, 0.5)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # NanToNum
+    assert res is not None
     res = core_math_ops._nan_to_num(np, np.array([np.nan, 1.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._nan_to_num(dummy, np.array([np.nan, 1.0]))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # Einsum
+    assert res is not None
     res = core_math_ops._einsum(np, "i,i->", np.array([1.0]), np.array([2.0]))
     getattr(_state, "update")({"res": res})
     _state.update(locals())
@@ -188,36 +132,16 @@ def _test_core_math_ops_coverage_part_5(_state: dict[str, EagerTensorProtocol]) 
     Args:
         _state: Shared test state dictionary.
     """
-    dummy, res = _state["dummy"], _state["res"]
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    (dummy, res) = (_state["dummy"], _state["res"])
+    assert res is not None
     res = cast("EagerTensorProtocol", core_math_ops._einsum(dummy, "i,i->", np.array([1.0]), np.array([2.0])))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # Allclose
+    assert res is not None
     res = cast("EagerTensorProtocol", core_math_ops._allclose(np, np.array([1.0]), np.array([1.0])))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
+    assert res is not None
     res = cast("EagerTensorProtocol", core_math_ops._allclose(dummy, np.array([1.0]), np.array([1.0])))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # Psum, Pmean
+    assert res is not None
     res = cast("EagerTensorProtocol", core_math_ops._psum(np, np.array([1.0])))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = cast("EagerTensorProtocol", core_math_ops._pmean(np, np.array([1.0])))
     getattr(_state, "update")({"res": res})
     _state.update(locals())
@@ -230,41 +154,25 @@ def _test_core_math_ops_coverage_part_6(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     res = _state["res"]
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
 
-    # Polygamma
     class DummyMockPolygamma:
         """Test class DummyMockPolygamma."""
 
         pass
 
     res = cast("EagerTensorProtocol", core_math_ops._polygamma(DummyMockPolygamma, 1, 1))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
 
-    # Digamma
     class DummyMockDigamma:
         """Test class DummyMockDigamma."""
 
         pass
 
     res = cast("EagerTensorProtocol", core_math_ops._digamma(DummyMockDigamma, 1))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # Lgamma
+    assert res is not None
     res = cast("EagerTensorProtocol", core_math_ops._np_zerofraction(np, np.array([0.0, 1.0])))
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     getattr(_state, "update")({"DummyMockDigamma": DummyMockDigamma, "DummyMockPolygamma": DummyMockPolygamma, "res": res})
     _state.update(locals())
 
@@ -289,23 +197,14 @@ def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) 
 
     res = core_math_ops._np_zerofraction(MockRandomZeroFraction, np.array([0.0, 1.0]))
     assert res == 0.5
-
-    # Zeta
     res = core_math_ops._np_zeta(np, 2.0, 1.0)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     res = core_math_ops._np_zeta(object, 2.0, 1.0)
-    try:
-        assert res is not None
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    assert res is not None
     getattr(_state, "update")({"MockRandomZeroFraction": MockRandomZeroFraction, "res": res})
 
 
 def test_core_math_ops_coverage() -> None:
-    # TrueDivide
     """Test function test_core_math_ops_coverage."""
     _state: dict[str, EagerTensorProtocol] = {}
     _test_core_math_ops_coverage_part_1(_state)
@@ -351,13 +250,10 @@ def test_missing_i0() -> None:
     x = np.array([1.0])
     mod._i0(BkWithI0(), x)
     mod._i0(BkWithoutI0(), x)
-
     mod._iscomplex(BkWithI0(), x)
     mod._iscomplex(BkWithoutI0(), x)
-
     mod._isreal(BkWithI0(), x)
     mod._isreal(BkWithoutI0(), x)
-
     mod._signbit(BkWithI0(), x)
     mod._signbit(BkWithoutI0(), x)
     assert x is not None or x is None
@@ -469,7 +365,7 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
     Args:
         _state: Shared test state dictionary.
     """
-    arg, arg_int, sig = _state["arg"], _state["arg_int"], _state["sig"]
+    (arg, arg_int, sig) = (_state["arg"], _state["arg_int"], _state["sig"])
 
     def build_call(bk: EagerValue, use_int: EagerValue = False, use_one_arg: EagerValue = False, sig: EagerValue = sig) -> EagerValue:
         """Test function build_call."""
@@ -484,17 +380,15 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
                     args.extend([val, val])
             elif p.kind == inspect.Parameter.VAR_KEYWORD:
                 pass
+            elif p.name == "axis":
+                kwargs["axis"] = 0
+            elif p.name == "axes":
+                getattr(kwargs, "__setitem__")("axes", (0,))
+            elif p.default != inspect.Parameter.empty:
+                pass
             else:
-                if p.name == "axis":
-                    kwargs["axis"] = 0
-                elif p.name == "axes":
-                    getattr(kwargs, "__setitem__")("axes", (0,))
-                else:
-                    if p.default != inspect.Parameter.empty:
-                        pass
-                    else:
-                        args.append(val)
-        return args, kwargs
+                args.append(val)
+        return (args, kwargs)
 
     getattr(_state, "update")({"build_call": build_call})
     _state.update(locals())
@@ -506,21 +400,20 @@ def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol
     Args:
         _state: Shared test state dictionary.
     """
-    all_bk, arg, build_call, fb = _state["all_bk"], _state["arg"], _state["build_call"], _state["fb"]
+    (all_bk, arg, build_call, fb) = (_state["all_bk"], _state["arg"], _state["build_call"], _state["fb"])
     op = _state["op"]
     for bk in [all_bk, fb]:
         for use_int in [False, True]:
             for use_one_arg in [False, True]:
-                args, kwargs = build_call(bk, use_int, use_one_arg)
+                (args, kwargs) = build_call(bk, use_int, use_one_arg)
                 try:
                     cast("Callable[..., EagerTensorProtocol]", op)(*args, **cast("dict[str, EagerValue]", kwargs))
-                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-                    assert _exc is not None
-
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+                    _caught_err = True
                 try:
                     op(bk, arg)
-                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-                    assert _exc is not None
+                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+                    _caught_err = True
     _state.update(locals())
 
 
@@ -530,8 +423,8 @@ def _test_all_core_math_ops_coverage_sub_4(_state: dict[str, EagerTensorProtocol
     Args:
         _state: Shared test state dictionary.
     """
-    build_call, fb = _state["build_call"], _state["fb"]
-    args, kwargs = build_call(fb)
+    (build_call, fb) = (_state["build_call"], _state["fb"])
+    (args, kwargs) = build_call(fb)
     orig_scipy = sys.modules.get("scipy.special")
     orig_scipy2 = sys.modules.get("scipy.linalg")
     getattr(sys.modules, "__setitem__")("scipy.special", None)
@@ -547,23 +440,21 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
     Args:
         _state: Shared test state dictionary.
     """
-    args, kwargs, op, orig_scipy = _state["args"], _state["kwargs"], _state["op"], _state["orig_scipy"]
+    (args, kwargs, op, orig_scipy) = (_state["args"], _state["kwargs"], _state["op"], _state["orig_scipy"])
     orig_scipy2 = _state["orig_scipy2"]
     try:
         cast("Callable[..., EagerTensorProtocol]", op)(*args, **cast("dict[str, EagerValue]", kwargs))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+        _caught_err = True
     finally:
         if orig_scipy is not None:
             getattr(sys.modules, "__setitem__")("scipy.special", orig_scipy)
-        else:
-            if "scipy.special" in sys.modules:
-                del sys.modules["scipy.special"]
+        elif "scipy.special" in sys.modules:
+            del sys.modules["scipy.special"]
         if orig_scipy2 is not None:
             getattr(sys.modules, "__setitem__")("scipy.linalg", orig_scipy2)
-        else:
-            if "scipy.linalg" in sys.modules:
-                del sys.modules["scipy.linalg"]
+        elif "scipy.linalg" in sys.modules:
+            del sys.modules["scipy.linalg"]
         if "scipy" in sys.modules:
             del sys.modules["scipy"]
     _state.update(locals())
@@ -576,21 +467,13 @@ def test_all_core_math_ops_coverage() -> None:
     all_bk = AllBackend()
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
     arg_int = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
-
     hide = [name[1:] for name in dir(cmo) if name.startswith("_") and callable(getattr(cmo, name))]
     fb = FallbackBackend(hide)
-
     for op in ops:
         _state: dict[str, EagerTensorProtocol] = dict(locals())
         getattr(_state, "update")({"all_bk": all_bk, "arg": arg, "arg_int": arg_int, "fb": fb})
         getattr(_state, "update")({"hide": hide, "op": op, "ops": ops})
-        for _sub_fn in (
-            _test_all_core_math_ops_coverage_sub_1,
-            _test_all_core_math_ops_coverage_sub_2,
-            _test_all_core_math_ops_coverage_sub_3,
-            _test_all_core_math_ops_coverage_sub_4,
-            _test_all_core_math_ops_coverage_sub_5,
-        ):
+        for _sub_fn in (_test_all_core_math_ops_coverage_sub_1, _test_all_core_math_ops_coverage_sub_2, _test_all_core_math_ops_coverage_sub_3, _test_all_core_math_ops_coverage_sub_4, _test_all_core_math_ops_coverage_sub_5):
             _sub_fn(_state)
         assert isinstance(_state, dict)
 
@@ -622,19 +505,9 @@ def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
                 return x
 
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-
-    try:
-        cast("Callable[..., EagerTensorProtocol]", mod._apply_causal_mask)(cast("Callable[..., EagerTensorProtocol]", EmptyBk)(), arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        cast("Callable[..., EagerTensorProtocol]", mod._apply_softmax)(cast("Callable[..., EagerTensorProtocol]", NNSoftmaxBk)(), arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        cast("Callable[..., EagerTensorProtocol]", mod._apply_softmax)(cast("Callable[..., EagerTensorProtocol]", EmptyBk)(), arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", mod._apply_causal_mask)(cast("Callable[..., EagerTensorProtocol]", EmptyBk)(), arg)
+    cast("Callable[..., EagerTensorProtocol]", mod._apply_softmax)(cast("Callable[..., EagerTensorProtocol]", NNSoftmaxBk)(), arg)
+    cast("Callable[..., EagerTensorProtocol]", mod._apply_softmax)(cast("Callable[..., EagerTensorProtocol]", EmptyBk)(), arg)
     getattr(_state, "update")({"EmptyBk": EmptyBk, "NNSoftmaxBk": NNSoftmaxBk, "arg": arg, "mod": mod})
     getattr(_state, "update")({"np": np})
     _state.update(locals())
@@ -646,7 +519,7 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
     Args:
         _state: Shared test state dictionary.
     """
-    arg, mod, np = _state["arg"], _state["mod"], _state["np"]
+    (arg, mod, np) = (_state["arg"], _state["mod"], _state["np"])
 
     class DummyItem:
         """Test class DummyItem."""
@@ -662,14 +535,8 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
             """Test function tolist."""
             return 1.0
 
-    try:
-        cast("Callable[..., EagerTensorProtocol]", mod._allclose)(np, arg, arg, rtol=cast("Callable[..., EagerTensorProtocol]", DummyItem)())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        cast("Callable[..., EagerTensorProtocol]", mod._allclose)(np, arg, arg, rtol=cast("Callable[..., EagerTensorProtocol]", DummyList)())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", mod._allclose)(np, arg, arg, rtol=cast("Callable[..., EagerTensorProtocol]", DummyItem)())
+    cast("Callable[..., EagerTensorProtocol]", mod._allclose)(np, arg, arg, rtol=cast("Callable[..., EagerTensorProtocol]", DummyList)())
 
     class MatmulBk:
         """Test class MatmulBk."""
@@ -689,20 +556,12 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
     Args:
         _state: Shared test state dictionary.
     """
-    EmptyBk, MatmulBk, arg, mod = _state["EmptyBk"], _state["MatmulBk"], _state["arg"], _state["mod"]
+    (EmptyBk, MatmulBk, arg, mod) = (_state["EmptyBk"], _state["MatmulBk"], _state["arg"], _state["mod"])
     np = _state["np"]
-    try:
+    with pytest.raises(AttributeError):
         mod._scaled_dot_product_attention_eager(EmptyBk(), arg, arg, arg, scale=1.0, is_causal=True, mask=arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._scaled_dot_product_attention_eager(MatmulBk(), arg, arg, arg, scale=1.0, is_causal=True, mask=arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._scaled_dot_product_attention_eager(np, arg, arg, arg, scale=1.0, is_causal=True, mask=arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    mod._scaled_dot_product_attention_eager(MatmulBk(), arg, arg, arg, scale=1.0, is_causal=True, mask=arg)
+    mod._scaled_dot_product_attention_eager(np, arg, arg, arg, scale=1.0, is_causal=True, mask=arg)
 
     class BkWithWhere:
         """Test class BkWithWhere."""
@@ -723,7 +582,6 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
             return 1
 
     cast("Callable[..., EagerTensorProtocol]", mod._fix)(cast("Callable[..., EagerTensorProtocol]", BkWithWhere)(), arg)
-
     mod._adaptive_max_pool3d_indices(np, arg, 1)
     getattr(_state, "update")({"BkWithWhere": BkWithWhere})
     _state.update(locals())
@@ -735,7 +593,7 @@ def _test_missing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> Non
     Args:
         _state: Shared test state dictionary.
     """
-    arg, mod, np = _state["arg"], _state["mod"], _state["np"]
+    (arg, mod, np) = (_state["arg"], _state["mod"], _state["np"])
     mod._add_n(np, [arg, arg])
 
 
@@ -768,12 +626,13 @@ def test_empty_backend() -> None:
         args_to_pass = [empty_bk] + [arg] * (len(sig.parameters) - 1)
         try:
             op(*args_to_pass[: len(sig.parameters)])
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+            _caught_err = True
         try:
             op(*args_to_pass)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
+        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+            _caught_err = True
+    assert callable(test_empty_backend)
 
 
 def _test_remaining_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -888,28 +747,13 @@ def _test_remaining_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    BkWithLinalg, mod, np = _state["BkWithLinalg"], _state["mod"], _state["np"]
+    (BkWithLinalg, mod, np) = (_state["BkWithLinalg"], _state["mod"], _state["np"])
     bk = BkWithLinalg()
     arg = np.array([1.0])
-
-    # 1843, 1867, 1891, 2371, 2392, 2414, 2435, 2456, 2477, 2498, 2519, 2722, 2792, 2809, 2816, 2928, 2935, 4198
-
-    try:
-        mod._cholesky_solve(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._banded_triangular_solve(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._svd(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._tensorinv(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    mod._cholesky_solve(bk, arg)
+    mod._banded_triangular_solve(bk, arg)
+    mod._svd(bk, arg)
+    mod._tensorinv(bk, arg)
     getattr(_state, "update")({"arg": arg, "bk": bk})
     _state.update(locals())
 
@@ -920,23 +764,13 @@ def _test_remaining_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    arg, bk, mod = _state["arg"], _state["bk"], _state["mod"]
-    try:
-        mod._tensorsolve(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
+    (arg, bk, mod) = (_state["arg"], _state["bk"], _state["mod"])
+    mod._tensorsolve(bk, arg)
+    with pytest.raises(AttributeError):
         mod._cross(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
+    with pytest.raises(AttributeError):
         mod._outer(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._det(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    mod._det(bk, arg)
     _state.update(locals())
 
 
@@ -946,23 +780,11 @@ def _test_remaining_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    arg, bk, mod = _state["arg"], _state["bk"], _state["mod"]
-    try:
-        mod._eig(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._eigh(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._eigvals(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._eigvalsh(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    (arg, bk, mod) = (_state["arg"], _state["bk"], _state["mod"])
+    mod._eig(bk, arg)
+    mod._eigh(bk, arg)
+    mod._eigvals(bk, arg)
+    mod._eigvalsh(bk, arg)
     _state.update(locals())
 
 
@@ -972,24 +794,11 @@ def _test_remaining_coverage_sub_6(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    arg, bk, mod, np = _state["arg"], _state["bk"], _state["mod"], _state["np"]
-    try:
-        mod._cholesky(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._matrix_power(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        mod._norm(bk, arg)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-
-    # 1393-1396
+    (arg, bk, mod, np) = (_state["arg"], _state["bk"], _state["mod"], _state["np"])
+    mod._cholesky(bk, arg)
+    mod._matrix_power(bk, arg)
+    mod._norm(bk, arg)
     mod._add_n(np, [arg, arg])
-
-    # 1591 (AssociativeScan)
     mod._associative_scan(np, lambda a, b: a + b, np.array([1.0, 2.0]))
     _state.update(locals())
 
@@ -997,14 +806,7 @@ def _test_remaining_coverage_sub_6(_state: dict[str, EagerTensorProtocol]) -> No
 def test_remaining_coverage() -> None:
     """Test function test_remaining_coverage."""
     _state: dict[str, EagerTensorProtocol] = dict(locals())
-    for _sub_fn in (
-        _test_remaining_coverage_sub_1,
-        _test_remaining_coverage_sub_2,
-        _test_remaining_coverage_sub_3,
-        _test_remaining_coverage_sub_4,
-        _test_remaining_coverage_sub_5,
-        _test_remaining_coverage_sub_6,
-    ):
+    for _sub_fn in (_test_remaining_coverage_sub_1, _test_remaining_coverage_sub_2, _test_remaining_coverage_sub_3, _test_remaining_coverage_sub_4, _test_remaining_coverage_sub_5, _test_remaining_coverage_sub_6):
         _sub_fn(_state)
     assert isinstance(_state, dict)
 
@@ -1022,11 +824,8 @@ def test_unfold_coverage_manual() -> None:
             """Test function asarray."""
             return x
 
-    # Case 1: kernel_size int, stride int, 4D valid
     res = _np_unfold(DummyBackend(), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 4, 4)
-
-    # Case 2: 4D out_H <= 0
     res = _np_unfold(DummyBackend(), np.ones((1, 1, 2, 2)), kernel_size=3, stride=1)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 2, 2)
 
@@ -1172,9 +971,7 @@ def _test_even_more_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
     BkSpecial = _state["BkSpecial"]
     bk = BkSpecial()
     arg = np.array([1.0])
-
     mod._accumulate_n(np, [arg, arg])
-
     mod._householder_product(bk, arg)
     mod._fft2(bk, arg)
     mod._fftfreq(bk, arg)
@@ -1184,13 +981,11 @@ def _test_even_more_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
     mod._ifft2(bk, arg)
     mod._ifftn(bk, arg)
     mod._ifftshift(bk, arg)
-
     mod._infeed(bk, arg)
     mod._outfeed(bk, arg)
     mod._pshuffle(bk, arg)
     mod._pswapaxes(bk, arg)
     mod._ppermute(bk, arg)
-
     mod._np_tridiagonal(bk, arg)
     getattr(_state, "update")({"arg": arg, "bk": bk})
     _state.update(locals())
@@ -1202,7 +997,7 @@ def _test_even_more_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    arg, bk = _state["arg"], _state["bk"]
+    (arg, bk) = (_state["arg"], _state["bk"])
     mod._fftn(bk, arg)
     mod._psumscatter(bk, arg)
     assert arg is not None or arg is None

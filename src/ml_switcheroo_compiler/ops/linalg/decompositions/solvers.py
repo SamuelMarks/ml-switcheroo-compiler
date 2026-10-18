@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -18,12 +19,12 @@ if TYPE_CHECKING:
 class TriangularSolve(OpDef):
     """TriangularSolve Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer solution shape for triangular system AX = B.
 
         Args:
-            *args (object): Matrix A and RHS B arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Matrix A and RHS B arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
@@ -57,12 +58,12 @@ class TriangularSolve(OpDef):
 class Lu(OpDef):
     """Lu Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer P, L, U factor shapes.
 
         Args:
-            *args (object): Input matrix A argument.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input matrix A argument.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (P_shape, L_shape, U_shape).
@@ -85,12 +86,12 @@ class Lu(OpDef):
 class LuSolve(OpDef):
     """LuSolve Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer solution shape for LU solve.
 
         Args:
-            *args (object): LU, pivots, rhs arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): LU, pivots, rhs arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
@@ -131,12 +132,12 @@ class LuSolve(OpDef):
 class Norm(OpDef):
     """Norm Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -147,12 +148,12 @@ class Norm(OpDef):
 class MatrixExponential(OpDef):
     """MatrixExponential Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -172,12 +173,12 @@ class MatrixExponential(OpDef):
 class Cross(OpDef):
     """Cross Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -188,8 +189,8 @@ class Cross(OpDef):
         b = args[1]
         shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
         shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", ())))
-        dim = kwargs.get("dim", -1)
-        if getattr(shape_a, "__getitem__")(dim) != 3 or getattr(shape_b, "__getitem__")(dim) != 3:
+        axis = int(cast(int, kwargs.get("axis", -1)))
+        if shape_a[axis] != 3 or shape_b[axis] != 3:
             raise ValueError("Cross requires dimension size 3")
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -200,12 +201,12 @@ class Cross(OpDef):
 class PowerIteration(OpDef):
     """Power Iteration Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape for Power Iteration.
 
         Args:
-            *args (Any): The positional arguments.
-            **kwargs (Any): The keyword arguments.
+            *args (EagerTensorProtocol): The positional arguments.
+            **kwargs (EagerTensorProtocol): The keyword arguments.
 
         Returns: Tensor: The tuple containing output shapes and dtypes.
         """
@@ -220,12 +221,12 @@ class PowerIteration(OpDef):
 class Polar(OpDef):
     """Polar Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -237,12 +238,12 @@ class Polar(OpDef):
 class TridiagonalSolve(OpDef):
     """TridiagonalSolve Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -250,7 +251,7 @@ class TridiagonalSolve(OpDef):
         return args[3].shape
 
 
-def lu(a: Tensor) -> EagerValue:
+def lu(a: Tensor) -> TensorOrScalar:
     """Compute the LU decomposition of a matrix.
 
     Args:
@@ -272,7 +273,7 @@ def lu(a: Tensor) -> EagerValue:
     return _emit_linalg_node("Lu", [a], {}, [a.shape, a.shape, a.shape], [a.dtype] * 3)
 
 
-def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> EagerValue:
+def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> TensorOrScalar:
     """Solve an equation system, a x = b, given the LU factorization of a.
 
     Args:
@@ -292,7 +293,7 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> EagerValue:
     return _emit_linalg_node("LuSolve", [lu, piv, b], {}, [b.shape], [b.dtype])
 
 
-def polar(a: Tensor, side: str = "right") -> EagerValue:
+def polar(a: Tensor, side: str = "right") -> TensorOrScalar:
     """Compute the polar decomposition of a matrix.
 
     Args:
@@ -314,7 +315,7 @@ def polar(a: Tensor, side: str = "right") -> EagerValue:
     return _emit_linalg_node("Polar", [a], {"side": side}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> EagerValue:
+def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> TensorOrScalar:
     """Solves a tridiagonal linear system.
 
     Args:
@@ -341,15 +342,15 @@ class TridiagonalMatmul(OpDef):
 
     op_name = "TridiagonalMatmul"
 
-    def infer_shape(self, dl: EagerTensorProtocol, d: EagerTensorProtocol, du: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, dl: EagerTensorProtocol, d: EagerTensorProtocol, du: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            dl (Any): The dl parameter.
-            d (Any): The d parameter.
-            du (Any): The du parameter.
-            b (Any): The b parameter.
-            **kwargs (Any): Keyword args.
+            dl (EagerTensorProtocol): The dl parameter.
+            d (EagerTensorProtocol): The d parameter.
+            du (EagerTensorProtocol): The du parameter.
+            b (EagerTensorProtocol): The b parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

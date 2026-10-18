@@ -246,9 +246,9 @@ def test_transpile_classdef() -> None:
 
 def test_cst_coverage_edge_cases() -> None:
     """Test function test_cst_coverage_edge_cases."""
-    source = "class MyModel(object):\n    def __call__(x):\n        return x\n"
+    source = "class MyModel(TensorOrScalar):\n    def __call__(x):\n        return x\n"
     res = transpile_source(source, target_framework="pytorch")
-    assert "class MyModel(object):" in res
+    assert "class MyModel(TensorOrScalar):" in res
     assert "def __call__(x):" in res
 
     source2 = "class MyModel(nn.Module):\n    pass\n"

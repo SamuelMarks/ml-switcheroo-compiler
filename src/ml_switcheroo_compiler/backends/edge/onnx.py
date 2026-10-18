@@ -14,6 +14,7 @@ from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -230,7 +231,7 @@ def serialize_attribute(name: str, val: EagerValue, graph_serializer: Callable[[
 
     Args:
         name (str): Attribute key name.
-        val (object): Attribute payload value.
+        val (EagerValue): Attribute payload value.
         graph_serializer (Optional[Callable[[IRGraph, str], bytes]]): Subgraph serializer callback.
 
     Returns:
@@ -504,6 +505,8 @@ def validate_onnx_model_bytes(binary_data: bytes) -> dict[str, int | str]:
     }
 
 
+@register_backend("edge")
+@register_backend("edge_onnx")
 class ONNXCodeGenerator(BaseGenerator):
     """ONNX Code Generator for emitting ONNX graph representations and binary protobuf files.
 
@@ -519,7 +522,7 @@ class ONNXCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (Optional[T], optional): Visitor delegates.
         """
-        getattr(super(), "__init__")(graph, delegates)
+        super().__init__(graph, cast("list[BaseGenerator] | None", delegates))
         self.var_map: dict[str, str] = {}
 
         yaml_path: str = os.path.join(os.path.dirname(__file__), "onnx_schema.yaml")
@@ -923,6 +926,9 @@ class ONNXCodeGenerator(BaseGenerator):
         Args:
             graph_name: The graph_name parameter.
             dynamic_axes: The dynamic_axes parameter.
+
+        Returns:
+            bytes: Computed result.
         """
         inputs_bytes: list[bytes] = []
         for n in self.sorted_nodes:
@@ -1059,10 +1065,10 @@ class ONNXCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): The target computation graph to compile.
-            **kwargs (object): Optional compiler arguments ('opset_version', 'dynamic_axes').
+            **kwargs (EagerValue): Optional compiler arguments ('opset_version', 'dynamic_axes').
 
         Returns:
-            object: Runnable execution session callable executing the ONNX model.
+            EagerValue: Runnable execution session callable executing the ONNX model.
         """
         opset_version = int(cast(int, kwargs.get("opset_version", 18)))
         dynamic_axes = kwargs.get("dynamic_axes")
@@ -1071,24 +1077,23 @@ class ONNXCodeGenerator(BaseGenerator):
         model_bytes = self.serialize_model_to_bytes(dynamic_axes=dyn_map, opset_version=opset_version)
 
         try:
-            import importlib
+            import onnx.reference
 
-            ort = importlib.import_module("onnxruntime")
-            session = ort.InferenceSession(model_bytes)
+            session = onnx.reference.ReferenceEvaluator(model_bytes)
 
-            def onnx_runtime_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
-                """Execute ONNX model via ONNXRuntime InferenceSession.
+            def onnx_reference_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
+                """Execute ONNX model via ONNX ReferenceEvaluator.
 
                 Args:
-                    *w_args (object): Input tensor values.
-                    **w_kwargs (object): Keyword inputs.
+                    *w_args (EagerValue): Input tensor values.
+                    **w_kwargs (EagerValue): Keyword inputs.
 
                 Returns:
-                    object: Computed outputs.
+                    EagerValue: Computed outputs.
                 """
                 return cast(EagerValue, session.run(None, self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
 
-            return onnx_runtime_runner
+            return onnx_reference_runner
         except Exception:
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
@@ -1096,11 +1101,11 @@ class ONNXCodeGenerator(BaseGenerator):
                 """Execute graph via interpreter evaluator fallback.
 
                 Args:
-                    *w_args (object): Input tensors.
-                    **w_kwargs (object): Keyword arguments.
+                    *w_args (EagerValue): Input tensors.
+                    **w_kwargs (EagerValue): Keyword arguments.
 
                 Returns:
-                    object: Evaluated output tensors.
+                    EagerValue: Evaluated output tensors.
                 """
                 evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
                 outputs = getattr(graph, "outputs", None)

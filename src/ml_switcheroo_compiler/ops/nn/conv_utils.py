@@ -13,7 +13,8 @@ from typing import (
     cast,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -102,7 +103,7 @@ def _build_conv_config(
     kwargs: dict[str, int | str | Sequence[int] | Sequence[tuple[int, int]] | None],
     dimension_numbers: tuple[str, str, str] | tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
 ) -> ConvConfig:
-    """Evaluate _build_conv_config operation.
+    """Compute the build conv config tensor operation.
 
     Args:
         kwargs (dict): The kwargs parameter.
@@ -137,9 +138,9 @@ def _prepare_depthwise_conv(
     rhs: Tensor,
     spatial_dims: int,
     dimension_numbers: tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
-    config_obj: EagerValue = None,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    config_obj: TensorOrScalar = None,
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Prepare configuration and reshape weights for depthwise convolution.
 
     Args:
@@ -147,8 +148,8 @@ def _prepare_depthwise_conv(
         rhs (Tensor): The rhs parameter.
         spatial_dims (int): The spatial_dims parameter.
         dimension_numbers (tuple): The dimension_numbers parameter.
-        config_obj (Any): The config_obj parameter.
-        **kwargs (Any): Keyword args.
+        config_obj (TensorOrScalar): The config_obj parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         tuple: Result.
@@ -167,7 +168,7 @@ def _prepare_depthwise_conv(
         in_channels = lhs.shape[-1]
 
         config_obj = cast(
-            EagerValue,
+            TensorOrScalar,
             cast("Callable[..., EagerTensorProtocol]", ConvConfig)(
                 window_strides=cast("Sequence[int]", strides),
                 padding=kwargs.get("padding", "VALID"),
@@ -187,15 +188,15 @@ def _prepare_depthwise_conv(
     return rhs_reshaped, config_obj
 
 
-def atrous_conv2d(value: EagerValue, filters: EagerValue, rate: EagerValue, padding: EagerValue, name: EagerValue = None) -> EagerValue:
+def atrous_conv2d(value: TensorOrScalar, filters: TensorOrScalar, rate: TensorOrScalar, padding: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Atrous convolution.
 
     Args:
-        value (Any): The value parameter.
-        filters (Any): The filters parameter.
-        rate (Any): The rate parameter.
-        padding (Any): The padding parameter.
-        name (Any): The name parameter.
+        value (TensorOrScalar): The value parameter.
+        filters (TensorOrScalar): The filters parameter.
+        rate (TensorOrScalar): The rate parameter.
+        padding (TensorOrScalar): The padding parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -206,20 +207,20 @@ def atrous_conv2d(value: EagerValue, filters: EagerValue, rate: EagerValue, padd
 
 
 def atrous_conv2d_transpose(
-    value: EagerValue,
-    filters: EagerValue,
-    output_shape: EagerValue,
+    value: TensorOrScalar,
+    filters: TensorOrScalar,
+    output_shape: TensorOrScalar,
     config: typing.Optional[GenericConvConfig] = None,
-    name: EagerValue = None,
-) -> EagerValue:
+    name: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Atrous convolution transpose.
 
     Args:
-        value (Any): The value parameter.
-        filters (Any): The filters parameter.
-        output_shape (Any): The output_shape parameter.
-        config (Any): The config parameter.
-        name (Any): The name parameter.
+        value (TensorOrScalar): The value parameter.
+        filters (TensorOrScalar): The filters parameter.
+        output_shape (TensorOrScalar): The output_shape parameter.
+        config (typing.Optional[GenericConvConfig]): The config parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -231,14 +232,14 @@ def atrous_conv2d_transpose(
     return conv2d_transpose(value, filters, strides=1, padding=conf.padding, dilation_rate=conf.dilation_rate)
 
 
-def bias_add(value: EagerValue, bias: EagerValue, data_format: EagerValue = None, name: EagerValue = None) -> EagerValue:
+def bias_add(value: TensorOrScalar, bias: TensorOrScalar, data_format: TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
     """Add `bias` to `value`.
 
     Args:
-        value (Any): The value parameter.
-        bias (Any): The bias parameter.
-        data_format (Any): The data_format parameter.
-        name (Any): The name parameter.
+        value (TensorOrScalar): The value parameter.
+        bias (TensorOrScalar): The bias parameter.
+        data_format (TensorOrScalar): The data_format parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -246,13 +247,13 @@ def bias_add(value: EagerValue, bias: EagerValue, data_format: EagerValue = None
     return add(value, bias)
 
 
-def collapse_repeated(labels: EagerValue, seq_length: EagerValue, name: EagerValue = None) -> EagerValue:
+def collapse_repeated(labels: TensorOrScalar, seq_length: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Merge repeated labels into single labels.
 
     Args:
-        labels (Any): The labels parameter.
-        seq_length (Any): The seq_length parameter.
-        name (Any): The name parameter.
+        labels (TensorOrScalar): The labels parameter.
+        seq_length (TensorOrScalar): The seq_length parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -263,20 +264,21 @@ def collapse_repeated(labels: EagerValue, seq_length: EagerValue, name: EagerVal
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         return get_active_backend().execute_op("CollapseRepeated", labels, seq_length=seq_length, name=name)
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    out = _emit_shape_node("CollapseRepeated", [labels], {"seq_length": seq_length, "name": name}, getattr(labels, "shape", ()), getattr(labels, "dtype", "int32"))
-    return out, Tensor(None, TensorConfig(getattr(labels, "shape", ()), "int32", "cpu"))
+    attrs = {"seq_length": seq_length, "name": name}
+    out = _emit_shape_node("CollapseRepeated", [labels], attrs, getattr(labels, "shape", ()), getattr(labels, "dtype", "int32"))
+    new_seq_len = _emit_shape_node("CollapseRepeatedSeqLength", [labels], attrs, getattr(labels, "shape", ()), "int32")
+    return out, new_seq_len
 
 
-def compute_average_loss(per_example_loss: EagerValue, sample_weight: EagerValue = None, global_batch_size: EagerValue = None) -> EagerValue:
+def compute_average_loss(per_example_loss: TensorOrScalar, sample_weight: TensorOrScalar = None, global_batch_size: TensorOrScalar = None) -> TensorOrScalar:
     """Compute the average loss.
 
     Args:
-        per_example_loss (Any): The per_example_loss parameter.
-        sample_weight (Any): The sample_weight parameter.
-        global_batch_size (Any): The global_batch_size parameter.
+        per_example_loss (TensorOrScalar): The per_example_loss parameter.
+        sample_weight (TensorOrScalar): The sample_weight parameter.
+        global_batch_size (TensorOrScalar): The global_batch_size parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -291,14 +293,14 @@ def depthwise_conv2d(
     filter: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
     name: typing.Optional[str] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Depthwise 2-D convolution.
 
     Args:
         input (Tensor): The input parameter.
         filter (Tensor): The filter parameter.
-        config (Any): The config parameter.
-        name (Any): The name parameter.
+        config (typing.Optional[GenericConvConfig]): The config parameter.
+        name (typing.Optional[str]): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -318,47 +320,85 @@ def depthwise_conv2d(
 
 
 def depthwise_conv2d_backprop_filter(
-    input: EagerValue,
-    filter_sizes: EagerValue,
-    out_backprop: EagerValue,
+    input: TensorOrScalar,
+    filter_sizes: TensorOrScalar,
+    out_backprop: TensorOrScalar,
     config: typing.Optional[GenericConvConfig] = None,
-    name: EagerValue = None,
-) -> EagerValue:
+    name: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Compute the gradients of depthwise convolution with respect to the filter.
 
     Args:
-        input (Any): The input parameter.
-        filter_sizes (Any): The filter_sizes parameter.
-        out_backprop (Any): The out_backprop parameter.
-        config (Any): The config parameter.
-        name (Any): The name parameter.
+        input (TensorOrScalar): Input activation tensor.
+        filter_sizes (TensorOrScalar): Shape tuple of the filter tensor.
+        out_backprop (TensorOrScalar): Upstream gradient tensor with respect to convolution output.
+        config (Optional[GenericConvConfig]): Optional convolution configuration.
+        name (TensorOrScalar): Optional operation name.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Filter gradient tensor of shape `filter_sizes`.
     """
-    return Tensor(None, cast("Callable[..., TensorConfig]", TensorConfig)(filter_sizes, "float32", "cpu"))
+    from ml_switcheroo_compiler.core.config import config as core_config
+
+    raw_filter_shape = getattr(filter_sizes, "shape", None)
+    target_shape: tuple[int | str, ...] = (int(filter_sizes),) if isinstance(filter_sizes, int) else tuple(cast("Sequence[Union[int, str]]", filter_sizes)) if isinstance(filter_sizes, (list, tuple)) else tuple(raw_filter_shape) if isinstance(raw_filter_shape, (list, tuple)) else ()
+    dtype = getattr(input, "dtype", "float32")
+    if core_config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("DepthwiseConv2dNativeBackpropFilter", getattr(input, "data", input), filter_sizes, getattr(out_backprop, "data", out_backprop), config=config, name=name)
+        return Tensor(data, TensorConfig(target_shape, dtype, getattr(input, "device", "cpu")))
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    return _emit_shape_node(
+        "DepthwiseConv2dNativeBackpropFilter",
+        [input, filter_sizes, out_backprop],
+        {"config": config, "name": name},
+        target_shape,
+        dtype,
+    )
 
 
 def depthwise_conv2d_backprop_input(
-    input_sizes: EagerValue,
-    filter: EagerValue,
-    out_backprop: EagerValue,
+    input_sizes: TensorOrScalar,
+    filter: TensorOrScalar,
+    out_backprop: TensorOrScalar,
     config: typing.Optional[GenericConvConfig] = None,
-    name: EagerValue = None,
-) -> EagerValue:
+    name: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Compute the gradients of depthwise convolution with respect to the input.
 
     Args:
-        input_sizes (Any): The input_sizes parameter.
-        filter (Any): The filter parameter.
-        out_backprop (Any): The out_backprop parameter.
-        config (Any): The config parameter.
-        name (Any): The name parameter.
+        input_sizes (TensorOrScalar): Shape tuple of the input tensor.
+        filter (TensorOrScalar): Depthwise filter tensor.
+        out_backprop (TensorOrScalar): Upstream gradient tensor with respect to convolution output.
+        config (Optional[GenericConvConfig]): Optional convolution configuration.
+        name (TensorOrScalar): Optional operation name.
 
     Returns:
-            tuple[int, ...]: Result.
+        TensorOrScalar: Input gradient tensor of shape `input_sizes`.
     """
-    return Tensor(None, cast("Callable[..., TensorConfig]", TensorConfig)(input_sizes, "float32", "cpu"))
+    from ml_switcheroo_compiler.core.config import config as core_config
+
+    raw_input_shape = getattr(input_sizes, "shape", None)
+    target_shape: tuple[int | str, ...] = (int(input_sizes),) if isinstance(input_sizes, int) else tuple(cast("Sequence[Union[int, str]]", input_sizes)) if isinstance(input_sizes, (list, tuple)) else tuple(raw_input_shape) if isinstance(raw_input_shape, (list, tuple)) else ()
+    dtype = getattr(filter, "dtype", "float32")
+    if core_config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("DepthwiseConv2dNativeBackpropInput", input_sizes, getattr(filter, "data", filter), getattr(out_backprop, "data", out_backprop), config=config, name=name)
+        return Tensor(data, TensorConfig(target_shape, dtype, getattr(filter, "device", "cpu")))
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    return _emit_shape_node(
+        "DepthwiseConv2dNativeBackpropInput",
+        [input_sizes, filter, out_backprop],
+        {"config": config, "name": name},
+        target_shape,
+        dtype,
+    )
 
 
 @dataclass
@@ -374,16 +414,16 @@ class ConvSpatialArgs:
 
 
 def dilation2d(
-    input: EagerValue,
-    filter: EagerValue,
+    input: TensorOrScalar,
+    filter: TensorOrScalar,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the grayscale dilation of 4-D `input` and 3-D `filter` tensors.
 
     Args:
-        input (Any): The input parameter.
-        filter (Any): The filter parameter.
-        args (Any): The args parameter.
+        input (TensorOrScalar): The input parameter.
+        filter (TensorOrScalar): The filter parameter.
+        args (typing.Optional[ConvSpatialArgs]): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -400,16 +440,16 @@ def dilation2d(
 
 
 def erosion2d(
-    value: EagerValue,
-    kernel: EagerValue,
+    value: TensorOrScalar,
+    kernel: TensorOrScalar,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the grayscale erosion of 4-D `value` and 3-D `kernel` tensors.
 
     Args:
-        value (Any): The value parameter.
-        kernel (Any): The kernel parameter.
-        args (Any): The args parameter.
+        value (TensorOrScalar): The value parameter.
+        kernel (TensorOrScalar): The kernel parameter.
+        args (typing.Optional[ConvSpatialArgs]): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -426,16 +466,16 @@ def erosion2d(
 
 
 def convolution(
-    input: EagerValue,
-    filters: EagerValue,
+    input: TensorOrScalar,
+    filters: TensorOrScalar,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute sums of N-D convolutions (actually cross-correlation).
 
     Args:
-        input (Any): The input parameter.
-        filters (Any): The filters parameter.
-        args (Any): The args parameter.
+        input (TensorOrScalar): The input parameter.
+        filters (TensorOrScalar): The filters parameter.
+        args (typing.Optional[ConvSpatialArgs]): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -456,18 +496,18 @@ def convolution(
 
 
 def conv_transpose(
-    input: EagerValue,
-    filters: EagerValue,
-    output_shape: EagerValue,
+    input: TensorOrScalar,
+    filters: TensorOrScalar,
+    output_shape: TensorOrScalar,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Return the transpose of `convolution`.
 
     Args:
-        input (Any): The input parameter.
-        filters (Any): The filters parameter.
-        output_shape (Any): The output_shape parameter.
-        args (Any): The args parameter.
+        input (TensorOrScalar): The input parameter.
+        filters (TensorOrScalar): The filters parameter.
+        output_shape (TensorOrScalar): The output_shape parameter.
+        args (typing.Optional[ConvSpatialArgs]): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.

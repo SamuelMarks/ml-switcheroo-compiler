@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def ball(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | str) -> Tensor:
-    """Evaluate ball operation.
+    """Execute ball for compiler processing.
 
     Args:
         *args (Tensor | float | int | str): Positional args.

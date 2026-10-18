@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-
-# ruff: noqa: E501
 from unittest.mock import patch
 
 import numpy as np
@@ -44,25 +42,19 @@ def test_ragged_ops() -> None:
     """Test the ragged ops behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        with patch("ml_switcheroo_compiler.ops.ragged.frontend._ragged_op") as mock_ragged:
-            mock_ragged.return_value = "res"
-            res1 = ragged_stack()
-            assert cast("EagerTensorProtocol", res1) == cast("EagerTensorProtocol", "res")
-            res2 = ragged_stack_dynamic_partitions()
-            assert cast("EagerTensorProtocol", res2) == cast("EagerTensorProtocol", "res")
-            res3 = ragged_dot()
-            assert cast("EagerTensorProtocol", res3) == cast("EagerTensorProtocol", "res")
-        op = RaggedDot()
-        res4 = op.infer_shape()
-        assert res4 == ()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
-
-
-# ruff: noqa: E501
+    with patch("ml_switcheroo_compiler.ops.ragged.frontend._ragged_op") as mock_ragged:
+        mock_ragged.return_value = "res"
+        res1 = ragged_stack()
+        assert cast("EagerTensorProtocol", res1) == cast("EagerTensorProtocol", "res")
+        res2 = ragged_stack_dynamic_partitions()
+        assert cast("EagerTensorProtocol", res2) == cast("EagerTensorProtocol", "res")
+        res3 = ragged_dot()
+        assert cast("EagerTensorProtocol", res3) == cast("EagerTensorProtocol", "res")
+    op = RaggedDot()
+    res4 = op.infer_shape()
+    assert res4 == ()
 
 
 def _test_ragged_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -73,7 +65,6 @@ def _test_ragged_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
     """
     config.eager_mode = True
     t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
-
     assert RaggedGather().infer_shape() == ()
     assert RaggedTensorToDense().infer_shape() == ()
     assert RaggedAdd().infer_shape() == ()
@@ -102,7 +93,6 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
         assert cast("Callable[..., EagerTensorProtocol]", ragged_tensor_to_dense)(t) is not None
-
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -119,7 +109,6 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
-
         assert cast("Callable[..., EagerTensorProtocol]", ragged_tensor_to_dense)(t) is not None
         config.eager_mode = True
         global_tracing_state.is_tracing = False
@@ -155,7 +144,7 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
     Args:
         _state: Shared test state dictionary.
     """
-    DummyOp, orig_eager, orig_get_op, t = _state["DummyOp"], _state["orig_eager"], _state["orig_get_op"], _state["t"]
+    (DummyOp, orig_eager, orig_get_op, t) = (_state["DummyOp"], _state["orig_eager"], _state["orig_get_op"], _state["t"])
     try:
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state

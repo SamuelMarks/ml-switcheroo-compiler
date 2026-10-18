@@ -1,13 +1,10 @@
-"""Define tensor creation operations for the ML Switcheroo framework.
-
-This module contains operations that generate new tensors, such as zeros, ones, full,
-and arange, along with their shape inference and NumPy evaluation implementations
-"""
+"""Tensor creation, windowing, and index generation operation definitions."""
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 
 
@@ -15,7 +12,7 @@ def _coerce_shape(val: OpArgValue) -> tuple[int, ...] | None:
     """Coerce a raw shape argument into a tuple of integers or None.
 
     Args:
-        val: Raw shape specification (tuple, list, int, or None).
+        val (OpArgValue): Raw shape specification (tuple, list, int, or None).
 
     Returns:
         tuple[int, ...] | None: Coerced shape tuple or None.
@@ -24,11 +21,7 @@ def _coerce_shape(val: OpArgValue) -> tuple[int, ...] | None:
 
 
 class CreationOp(OpDef):
-    """Define base class for tensor creation operations.
-
-    Provides common implementations for shape inference and NumPy evaluation
-    for operations that create tensors of a specified shape (e.g., Zeros, Ones).
-    """
+    """Base class for tensor creation operations that produce a tensor of a target shape."""
 
     op_name: str = ""
 
@@ -36,11 +29,11 @@ class CreationOp(OpDef):
         """Infer the output shape of the tensor creation operation.
 
         Args:
-            *args: Positional arguments containing the target shape.
-            **kwargs: Keyword arguments containing optional shape specification.
+            *args (OpArgValue): Positional arguments containing the target shape.
+            **kwargs (OpArgValue): Keyword arguments containing optional shape specification.
 
         Returns:
-            tuple[int, ...] | None: The inferred output tensor shape.
+            tuple[int, ...] | None: Inferred output tensor shape.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         return _coerce_shape(shape)
@@ -48,33 +41,33 @@ class CreationOp(OpDef):
 
 @register_op("Zeros")
 class Zeros(CreationOp):
-    """Provide an operation that creates a tensor of a specified shape filled with zeros."""
+    """Create a tensor of a specified shape filled with zeros."""
 
     op_name = "Zeros"
 
 
 @register_op("Ones")
 class Ones(CreationOp):
-    """Provide an operation that creates a tensor of a specified shape filled with ones."""
+    """Create a tensor of a specified shape filled with ones."""
 
     op_name = "Ones"
 
 
 @register_op("Full")
 class Full(CreationOp):
-    """Provide an operation that creates a tensor of a specified shape filled with a constant value."""
+    """Create a tensor of a specified shape filled with a constant scalar value."""
 
     op_name = "Full"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
-        """Infer the output shape of the Full operation.
+        """Infer the output shape of the `Full` operation.
 
         Args:
-            *args: Positional arguments containing shape and fill_value.
-            **kwargs: Keyword arguments containing optional shape specification.
+            *args (OpArgValue): Positional arguments containing shape and fill_value.
+            **kwargs (OpArgValue): Keyword arguments containing optional shape specification.
 
         Returns:
-            tuple[int, ...] | None: The inferred output tensor shape.
+            tuple[int, ...] | None: Inferred output tensor shape.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         return _coerce_shape(shape)
@@ -82,17 +75,17 @@ class Full(CreationOp):
 
 @register_op("Arange")
 class Arange(OpDef):
-    """Provide an operation that creates a 1-D tensor containing evenly spaced values."""
+    """Create a 1-D tensor containing evenly spaced values within a half-open interval."""
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
-        """Infer the output shape of the Arange operation.
+        """Return None because `Arange` output length depends on runtime start/stop/step values.
 
         Args:
-            *args: Positional arguments (start, stop, step).
-            **kwargs: Keyword arguments.
+            *args (OpArgValue): Positional arguments (`start`, `stop`, `step`).
+            **kwargs (OpArgValue): Keyword arguments.
 
         Returns:
-            tuple[int, ...] | None: None because Arange output length depends on values.
+            tuple[int, ...] | None: None.
         """
         del args, kwargs
         return None
@@ -100,19 +93,19 @@ class Arange(OpDef):
 
 @register_op("Rand")
 class Rand(CreationOp):
-    """Create a tensor with random numbers from a uniform distribution [0, 1)."""
+    """Create a tensor with random samples from a uniform distribution over `[0, 1)`."""
 
     op_name = "Rand"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Infer the output shape of the Rand operation.
+        """Infer the output shape of the `Rand` operation.
 
         Args:
-            *args: Dimensions or shape tuple.
-            **kwargs: Keyword arguments containing optional size.
+            *args (OpArgValue): Dimensions or shape tuple.
+            **kwargs (OpArgValue): Keyword arguments containing optional `size`.
 
         Returns:
-            tuple[int, ...]: The inferred output shape.
+            tuple[int, ...]: Inferred output shape tuple.
         """
         if "size" in kwargs:
             return _coerce_shape(kwargs["size"]) or ()
@@ -123,26 +116,26 @@ class Rand(CreationOp):
 
 @register_op("Randn")
 class Randn(Rand):
-    """Create a tensor with random numbers from a standard normal distribution."""
+    """Create a tensor with random samples from a standard normal distribution."""
 
     op_name = "Randn"
 
 
 @register_op("Randint")
 class Randint(CreationOp):
-    """Create a tensor with random integers from [low, high)."""
+    """Create a tensor with random integers sampled uniformly from `[low, high)`."""
 
     op_name = "Randint"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Infer the output shape of the Randint operation.
+        """Infer the output shape of the `Randint` operation.
 
         Args:
-            *args: Positional arguments (low, high, size).
-            **kwargs: Keyword arguments containing optional size.
+            *args (OpArgValue): Positional arguments (`low`, `high`, `size`).
+            **kwargs (OpArgValue): Keyword arguments containing optional `size`.
 
         Returns:
-            tuple[int, ...]: The inferred output shape.
+            tuple[int, ...]: Inferred output shape tuple.
         """
         if "size" in kwargs:
             return _coerce_shape(kwargs["size"]) or ()
@@ -153,158 +146,165 @@ class Randint(CreationOp):
 
 @register_op("ManualSeed")
 class ManualSeed(OpDef):
-    """Set the seed for generating random numbers."""
+    """Set the random number generator seed."""
 
     op_name = "ManualSeed"
 
-    def infer_shape(self, seed: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer the output shape of the operation.
+    def infer_shape(self, seed: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer scalar `()` shape for `ManualSeed`.
 
         Args:
-            seed (Any): The seed to process.
-            **kwargs (Any): Additional keyword arguments.
+            seed (EagerTensorProtocol): Seed integer or tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            The computed shape or evaluation result.
+            TensorOrScalar: Empty shape tuple `()`.
         """
+        _ = (seed, kwargs)
         return ()
 
 
 @register_op("ConstantOfShape")
 class ConstantOfShape(OpDef):
-    """ConstantOfShape operator."""
+    """Generate a tensor of a given shape filled with a constant value."""
 
-    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer output shape from the first shape argument.
 
         Args:
-            *shapes: Input shapes
-            **kwargs: Extra kwargs
+            *shapes (EagerTensorProtocol): Target shape tuple arguments.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            The output shape
+            TensorOrScalar: Inferred output shape.
         """
+        _ = kwargs
         return shapes[0] if shapes else ()
 
 
 @register_op("Range")
 class Range(OpDef):
-    """Range operator."""
+    """Generate a 1D range sequence tensor."""
 
-    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer shape.
+    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer output shape for `Range`.
 
         Args:
-            *shapes: Input shapes
-            **kwargs: Extra kwargs
+            *shapes (EagerTensorProtocol): Input bound arguments.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            The output shape
+            TensorOrScalar: Inferred shape tuple.
         """
-        # This is a bit tricky, but in eager mode we just rely on eager_eval.
+        _ = kwargs
         return shapes[0] if shapes else ()
 
 
 @register_op("Blackman")
 class Blackman(OpDef):
-    """Blackman window."""
+    """Return the Blackman window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer the output shape.
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer 1D `(M,)` output shape for `Blackman`.
 
         Args:
-            M (Any): The M parameter.
-            **kwargs (Any): Keyword args.
+            M (EagerTensorProtocol): Number of points in the output window.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: 1-tuple `(M,)`.
         """
+        _ = kwargs
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
 @register_op("Bartlett")
 class Bartlett(OpDef):
-    """Bartlett window."""
+    """Return the Bartlett triangular window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer the output shape.
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer 1D `(M,)` output shape for `Bartlett`.
 
         Args:
-            M (Any): The M parameter.
-            **kwargs (Any): Keyword args.
+            M (EagerTensorProtocol): Number of points in the output window.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: 1-tuple `(M,)`.
         """
+        _ = kwargs
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
 @register_op("Hamming")
 class Hamming(OpDef):
-    """Hamming window."""
+    """Return the Hamming window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer the output shape.
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer 1D `(M,)` output shape for `Hamming`.
 
         Args:
-            M (Any): The M parameter.
-            **kwargs (Any): Keyword args.
+            M (EagerTensorProtocol): Number of points in the output window.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: 1-tuple `(M,)`.
         """
+        _ = kwargs
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
 @register_op("Hanning")
 class Hanning(OpDef):
-    """Hanning window."""
+    """Return the Hanning (Hann) window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer the output shape.
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer 1D `(M,)` output shape for `Hanning`.
 
         Args:
-            M (Any): The M parameter.
-            **kwargs (Any): Keyword args.
+            M (EagerTensorProtocol): Number of points in the output window.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: 1-tuple `(M,)`.
         """
+        _ = kwargs
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
 @register_op("Kaiser")
 class Kaiser(OpDef):
-    """Kaiser window."""
+    """Return the Kaiser window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
-        """Infer the output shape.
+    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Infer 1D `(M,)` output shape for `Kaiser`.
 
         Args:
-            M (Any): The M parameter.
-            **kwargs (Any): Keyword args.
+            M (EagerTensorProtocol): Number of points in the output window.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            TensorOrScalar: 1-tuple `(M,)`.
         """
+        _ = kwargs
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
 @register_op("TrilIndices")
 class TrilIndices(OpDef):
-    """TrilIndices operator definition."""
+    """Return the indices for the lower-triangle of an `(n, m)` array."""
 
     op_name = "TrilIndices"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Infer shape for TrilIndices.
+        """Infer shape for `TrilIndices`.
 
         Args:
-            *args: Positional arguments.
-            **kwargs: Keyword arguments.
+            *args (OpArgValue): Positional dimension arguments.
+            **kwargs (OpArgValue): Keyword arguments.
 
         Returns:
-            tuple[int, ...]: Computed shape.
+            tuple[int, ...]: Inferred shape tuple.
         """
         del kwargs
         return (_coerce_shape(args[0]) or ()) if args else ()
@@ -312,19 +312,19 @@ class TrilIndices(OpDef):
 
 @register_op("TrilIndicesFrom")
 class TrilIndicesFrom(OpDef):
-    """TrilIndicesFrom operator definition."""
+    """Return the indices for the lower-triangle of a given 2D array."""
 
     op_name = "TrilIndicesFrom"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Infer shape for TrilIndicesFrom.
+        """Infer shape for `TrilIndicesFrom`.
 
         Args:
-            *args: Positional arguments.
-            **kwargs: Keyword arguments.
+            *args (OpArgValue): Positional input array arguments.
+            **kwargs (OpArgValue): Keyword arguments.
 
         Returns:
-            tuple[int, ...]: Computed shape.
+            tuple[int, ...]: Inferred shape tuple.
         """
         del kwargs
         return (_coerce_shape(args[0]) or ()) if args else ()
@@ -332,19 +332,19 @@ class TrilIndicesFrom(OpDef):
 
 @register_op("TriuIndices")
 class TriuIndices(OpDef):
-    """TriuIndices operator definition."""
+    """Return the indices for the upper-triangle of an `(n, m)` array."""
 
     op_name = "TriuIndices"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Infer shape for TriuIndices.
+        """Infer shape for `TriuIndices`.
 
         Args:
-            *args: Positional arguments.
-            **kwargs: Keyword arguments.
+            *args (OpArgValue): Positional dimension arguments.
+            **kwargs (OpArgValue): Keyword arguments.
 
         Returns:
-            tuple[int, ...]: Computed shape.
+            tuple[int, ...]: Inferred shape tuple.
         """
         del kwargs
         return (_coerce_shape(args[0]) or ()) if args else ()
@@ -352,19 +352,19 @@ class TriuIndices(OpDef):
 
 @register_op("TriuIndicesFrom")
 class TriuIndicesFrom(OpDef):
-    """TriuIndicesFrom operator definition."""
+    """Return the indices for the upper-triangle of a given 2D array."""
 
     op_name = "TriuIndicesFrom"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Infer shape for TriuIndicesFrom.
+        """Infer shape for `TriuIndicesFrom`.
 
         Args:
-            *args: Positional arguments.
-            **kwargs: Keyword arguments.
+            *args (OpArgValue): Positional input array arguments.
+            **kwargs (OpArgValue): Keyword arguments.
 
         Returns:
-            tuple[int, ...]: Computed shape.
+            tuple[int, ...]: Inferred shape tuple.
         """
         del kwargs
         return (_coerce_shape(args[0]) or ()) if args else ()
@@ -372,16 +372,16 @@ class TriuIndicesFrom(OpDef):
 
 @register_op("Logspace")
 class Logspace(CreationOp):
-    """Logspace op."""
+    """Return numbers spaced evenly on a log scale."""
 
     op_name = "Logspace"
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Infer shape for Logspace.
+        """Infer 1D `(num,)` output shape for `Logspace`.
 
         Args:
-            *args: Positional arguments (start, stop, num).
-            **kwargs: Keyword arguments.
+            *args (OpArgValue): Positional arguments (`start`, `stop`, `num`).
+            **kwargs (OpArgValue): Keyword arguments.
 
         Returns:
             tuple[int, ...]: Inferred 1-D output shape.
@@ -392,17 +392,17 @@ class Logspace(CreationOp):
 
 @register_op("Frombuffer")
 class Frombuffer(OpDef):
-    """Operator Frombuffer."""
+    """Interpret a buffer as a 1-dimensional array."""
 
     def infer_shape(self, *args: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
-        """Infer shape for Frombuffer.
+        """Infer 1D `(count,)` shape for `Frombuffer` if `count` is specified.
 
         Args:
-            *args: Positional arguments.
-            **kwargs: Keyword arguments containing optional count.
+            *args (OpArgValue): Positional buffer arguments.
+            **kwargs (OpArgValue): Keyword arguments containing optional `count`.
 
         Returns:
-            tuple[int, ...] | None: Inferred 1-D shape if count is specified, else None.
+            tuple[int, ...] | None: Inferred 1-D shape if `count != -1`, else None.
         """
         del args
         count_val = kwargs.get("count", -1)

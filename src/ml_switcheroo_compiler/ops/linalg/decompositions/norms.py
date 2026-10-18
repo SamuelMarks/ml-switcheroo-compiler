@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
-def matrix_power(input: Tensor, n: int) -> EagerValue:
+def matrix_power(input: Tensor, n: int) -> TensorOrScalar:
     """Raise a square matrix to the integer power `n`.
 
     Args:
@@ -34,11 +34,11 @@ def matrix_power(input: Tensor, n: int) -> EagerValue:
 
 
 def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None, keepdims: bool) -> tuple[int, ...]:
-    """Evaluate _norm_out_shape operation.
+    """Compute the norm out shape tensor operation.
 
     Args:
-        x_shape (Any): The x_shape parameter.
-        axis (Any): The axis parameter.
+        x_shape (tuple[int, ...]): The x_shape parameter.
+        axis (int | tuple[int, ...] | None): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -55,13 +55,13 @@ def norm(
     ord: int | str | None = None,
     axis: int | tuple[int, ...] | None = None,
     keepdims: bool = False,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Matrix or vector norm.
 
     Args:
         x (Tensor): The x parameter.
-        ord (Any): The ord parameter.
-        axis (Any): The axis parameter.
+        ord (int | str | None): The ord parameter.
+        axis (int | tuple[int, ...] | None): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -80,8 +80,8 @@ def norm(
     return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [getattr(x, "dtype", None)])
 
 
-def matrix_exponential(a: Tensor) -> EagerValue:
-    """Evaluate matrix_exponential operation.
+def matrix_exponential(a: Tensor) -> TensorOrScalar:
+    """Compute the matrix exponential tensor operation.
 
     Args:
         a (Tensor): The a parameter.
@@ -98,8 +98,8 @@ def matrix_exponential(a: Tensor) -> EagerValue:
     return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])
 
 
-def matrix_exp(a: Tensor) -> EagerValue:
-    """Evaluate matrix_exp operation.
+def matrix_exp(a: Tensor) -> TensorOrScalar:
+    """Compute the matrix exp tensor operation.
 
     Args:
         a (Tensor): The a parameter.
@@ -114,13 +114,13 @@ def _power_iteration_eager(
     input: Tensor,
     num_iters: int,
     u: Tensor | None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Execute power iteration eagerly.
 
     Args:
         input (Tensor): The input parameter.
         num_iters (int): The num_iters parameter.
-        u (Any): The u parameter.
+        u (Tensor | None): The u parameter.
 
     Returns:
         tuple: Result.
@@ -150,13 +150,13 @@ def power_iteration(
     input: Tensor,
     num_iters: int = 1,
     u: Tensor | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the dominant singular value and vectors using power iteration.
 
     Args:
         input (Tensor): The input parameter.
         num_iters (int): The num_iters parameter.
-        u (Any): The u parameter.
+        u (Tensor | None): The u parameter.
 
     Returns:
         tuple: Result.

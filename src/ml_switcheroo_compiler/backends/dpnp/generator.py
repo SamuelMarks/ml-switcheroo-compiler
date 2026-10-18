@@ -76,7 +76,7 @@ class DPNPGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Code string.
@@ -90,7 +90,7 @@ class DPNPGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Code string.
@@ -104,7 +104,7 @@ class DPNPGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Code string.
@@ -118,7 +118,7 @@ class DPNPGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Code string.
@@ -132,7 +132,7 @@ class DPNPGenerator(PythonStringGenerator):
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Code string.
@@ -146,7 +146,7 @@ class DPNPGenerator(PythonStringGenerator):
         Args:
             node (IRNode): The node to process.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Extra attributes.
+            **kwargs (EagerValue): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -158,10 +158,10 @@ class DPNPGenerator(PythonStringGenerator):
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (object): Optional compilation options.
+            **kwargs (EagerValue): Optional compilation options.
 
         Returns:
-            object: Execution callable.
+            EagerValue: Execution callable.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -172,11 +172,11 @@ class DPNPGenerator(PythonStringGenerator):
             """Execute graph targeting DPNP device.
 
             Args:
-                *w_args (object): Input tensor values.
-                **w_kw (object): Keyword inputs.
+                *w_args (EagerValue): Input tensor values.
+                **w_kw (EagerValue): Keyword inputs.
 
             Returns:
-                object: Output results.
+                EagerValue: Output results.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {}

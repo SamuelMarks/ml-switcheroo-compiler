@@ -1,13 +1,14 @@
 """Attention operations."""
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def scaled_dot_product_attention(q: Tensor, k: Tensor, v: Tensor, scale_factor: Tensor) -> EagerValue:
+def scaled_dot_product_attention(q: Tensor, k: Tensor, v: Tensor, scale_factor: Tensor) -> TensorOrScalar:
     """Scaled Dot-Product Attention.
 
     Args:
@@ -38,15 +39,15 @@ class ScaledDotProductAttention(OpDef):
 
     op_name = "ScaledDotProductAttention"
 
-    def infer_shape(self, q: EagerTensorProtocol, k: EagerTensorProtocol, v: EagerTensorProtocol, scale_factor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, q: EagerTensorProtocol, k: EagerTensorProtocol, v: EagerTensorProtocol, scale_factor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            q (Any): The q parameter.
-            k (Any): The k parameter.
-            v (Any): The v parameter.
-            scale_factor (Any): The scale factor parameter.
-            **kwargs (Any): Keyword args.
+            q (EagerTensorProtocol): The q parameter.
+            k (EagerTensorProtocol): The k parameter.
+            v (EagerTensorProtocol): The v parameter.
+            scale_factor (EagerTensorProtocol): The scale factor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

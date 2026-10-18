@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pytest
 
 import ml_switcheroo_compiler.ops.optimizers.updates as upd
 from ml_switcheroo_compiler.core.config import config
@@ -40,11 +41,6 @@ def test_missing_optimizers_coverage() -> None:
 
         shape = (1,)
 
-    try:
+    with pytest.raises(TypeError):
         cast("Callable[..., EagerTensorProtocol]", ApplyRMSProp)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        cast("Callable[..., EagerTensorProtocol]", AdamaxHyperparamsOp)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)())
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", AdamaxHyperparamsOp)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)())

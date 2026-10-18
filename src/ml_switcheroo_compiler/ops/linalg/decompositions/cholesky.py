@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -18,12 +19,12 @@ if TYPE_CHECKING:
 class Cholesky(OpDef):
     """Cholesky Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer output shape for Cholesky decomposition.
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Triangular factor output shape (..., N, N).
@@ -35,7 +36,7 @@ class Cholesky(OpDef):
         return shape
 
 
-def cholesky(input: Tensor) -> EagerValue:
+def cholesky(input: Tensor) -> TensorOrScalar:
     """Compute the Cholesky decomposition of a symmetric/Hermitian positive-definite.
 
     Args:
@@ -58,12 +59,12 @@ def cholesky(input: Tensor) -> EagerValue:
 class CholeskyEx(OpDef):
     """CholeskyEx Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer output shapes for CholeskyEx decomposition.
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (factor_shape (..., N, N), info_shape (...)).
@@ -76,7 +77,7 @@ class CholeskyEx(OpDef):
         return (shape, info_shape)
 
 
-def cholesky_ex(input: Tensor, check_errors: bool = False) -> EagerValue:
+def cholesky_ex(input: Tensor, check_errors: bool = False) -> TensorOrScalar:
     """Compute the Cholesky decomposition with an info tensor.
 
     Args:

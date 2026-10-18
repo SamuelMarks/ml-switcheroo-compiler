@@ -41,8 +41,8 @@ class MockGPUArray:
 
         Args:
             shape (tuple): Array dimensions.
-            dtype (object): Data type.
-            data (object): Memory buffer.
+            dtype (EagerValue): Data type.
+            data (EagerValue): Memory buffer.
         """
         self.shape = shape
         self.ndim = cast("Callable[..., EagerTensorProtocol]", len)(shape)

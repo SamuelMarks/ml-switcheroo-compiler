@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
-
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import (
@@ -12,9 +10,6 @@ from ml_switcheroo_compiler.core.dtype import (
     check_dtype_for_op,
     validate_dtype_for_op,
 )
-
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_transcendental_ops_accept_floats_and_complex() -> None:
@@ -71,62 +66,17 @@ def test_general_ops_accept_integers() -> None:
         check_dtype_for_op(op, DType.Int32)
 
 
-def test_validate_dtype_fallback_and_string_inputs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify validate_dtype_for_op fallback behavior when compliance import fails.
-
-    Args:
-        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
-    """
-    import importlib
-
-    real_import = importlib.import_module
-
-    def mock_import(name: str, package: str | None = None) -> EagerValue:
-        """Test function mock_import."""
-        if "ml_ecosystem_snapshots" in name:
-            raise ImportError("Simulated missing module")
-        return real_import(name, package)
-
-    monkeypatch.setattr(importlib, "import_module", mock_import)
-
-    # Test string dtype and fallback logic
-    valid, err = validate_dtype_for_op("sin", "float32")
+def test_validate_dtype_string_inputs() -> None:
+    """Verify validate_dtype_for_op with string dtype inputs and qualified op names."""
+    valid, err = validate_dtype_for_op("math.sin", "float32")
     assert valid is True
     assert err is None
 
-    invalid, err_msg = validate_dtype_for_op("sin", "int32")
+    invalid, err_msg = validate_dtype_for_op("math.sin", "int32")
     assert invalid is False
     assert err_msg is not None
     assert "not supported for transcendental" in err_msg
 
-    # Test non-transcendental op fallback
-    valid_op, err_op = validate_dtype_for_op("add", "int32")
+    valid_op, err_op = validate_dtype_for_op("math.add", "int32")
     assert valid_op is True
     assert err_op is None
-
-
-def test_validate_dtype_fn_is_none(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify fallback behavior when compliance module exists but function attribute is None.
-
-    Args:
-        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
-    """
-    import importlib
-
-    real_import = importlib.import_module
-
-    class DummyMod:
-        """Test class DummyMod."""
-
-        validate_dtype_for_op = None
-
-    def mock_import(name: str, package: str | None = None) -> EagerValue:
-        """Test function mock_import."""
-        if "ml_ecosystem_snapshots" in name:
-            return cast("EagerTensorProtocol", DummyMod())
-        return real_import(name, package)
-
-    monkeypatch.setattr(importlib, "import_module", mock_import)
-    valid, err = validate_dtype_for_op("sin", "float32")
-    assert valid is True
-    assert err is None

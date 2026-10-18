@@ -2,9 +2,89 @@
 
 from __future__ import annotations
 
-from typing import TypeVar, Union
+from collections.abc import Callable, Mapping, Sequence
+from types import ModuleType
+from typing import TYPE_CHECKING, TypeVar, Union
+
+if TYPE_CHECKING:
+    import builtins
+    import ctypes
+
+    from ml_switcheroo_ir import DType as IRDType
+    from ml_switcheroo_ir import SymInt as IRSymInt
+    from ml_switcheroo_ir import SymNode as IRSymNode
+    from ml_switcheroo_ir import TensorShape, TensorSpec
+
+    from ml_switcheroo_compiler.backends.registry import (
+        COOTensor,
+        DataclassProtocol,
+        EagerTensorProtocol,
+        ShapeProtocol,
+    )
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.grad.utils import GradTensorProtocol
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalGraph, LogicalNode
+    from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode, SymVar
 
 DimT = TypeVar("DimT", int, Union[int, str])
+SymbolicDim = Union[str, "SymNode", "SymInt", "SymVar", "IRSymNode", "IRSymInt"]
+ShapeLike = Union[
+    tuple[Union[int, SymbolicDim, None], ...],
+    Sequence[Union[int, SymbolicDim, None]],
+    int,
+    "SymbolicDim",
+    "TensorShape",
+    "Tensor",
+    "EagerTensorProtocol",
+    "ShapeProtocol",
+    None,
+]
+AxesLike = Union[int, Sequence[int], "Tensor", "EagerTensorProtocol", None]
+ScalarLike = Union[int, float, bool, complex]
+TensorOrScalar = Union[
+    int,
+    float,
+    complex,
+    Sequence["TensorOrScalar"],
+    Mapping["TensorOrScalar", "TensorOrScalar"],
+    Mapping[str, "TensorOrScalar"],
+    Mapping[Union[str, int], "TensorOrScalar"],
+    set["TensorOrScalar"],
+    slice,
+    str,
+    bool,
+    Callable[..., "TensorOrScalar"],
+    type,
+    ModuleType,
+    "builtins.ellipsis",
+    "ctypes.Array[ctypes.c_char]",
+    "ctypes.Array[ctypes.c_void_p]",
+    "COOTensor",
+    "TensorLike",
+    "GradTensorProtocol",
+    "Tensor",
+    "DType",
+    "IRDType",
+    "Device",
+    "TensorShape",
+    "TensorSpec",
+    "SymVar",
+    "SymNode",
+    "SymInt",
+    "IRSymNode",
+    "IRSymInt",
+    "LogicalNode",
+    "LogicalGraph",
+    "IRGraph",
+    "DataclassProtocol",
+    "EagerTensorProtocol",
+    "ShapeProtocol",
+    None,
+]
+AttrValue = TensorOrScalar
 
 
 def _broadcast_dim(

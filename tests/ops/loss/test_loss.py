@@ -1,6 +1,9 @@
-"""Tests for test_loss."""
+"""Tests for loss operations in `ml_switcheroo_compiler.ops.loss`."""
 
-# ruff: noqa: E501
+from __future__ import annotations
+
+from typing import cast
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
@@ -27,47 +30,83 @@ from ml_switcheroo_compiler.ops.loss import (
 
 
 def test_losses_eager() -> None:
-    """Test function test_losses_eager."""
+    """Verify numerical outputs of eager loss functions."""
     config.eager_mode = True
     t = Tensor(np.array([[1.0, 2.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
     t2 = Tensor(np.array([[1.5, 2.5]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
-    assert isinstance(l1_loss(t, t2), Tensor)
-    assert isinstance(mse_loss(t, t2), Tensor)
-    assert isinstance(huber_loss(t, t2), Tensor)
-    assert isinstance(smooth_l1_loss(t, t2), Tensor)
-    assert isinstance(smooth_l1_loss(t, t2, beta=0.0), Tensor)
-    assert isinstance(cosine_similarity_loss(t, t2), Tensor)
-    assert isinstance(kl_div_loss(t, t2), Tensor)
-    assert isinstance(hinge_loss(t, t2), Tensor)
+
+    res_l1 = cast(Tensor, l1_loss(t, t2))
+    np.testing.assert_allclose(np.asarray(res_l1.data), 0.5, rtol=1e-5)
+
+    res_mse = cast(Tensor, mse_loss(t, t2))
+    np.testing.assert_allclose(np.asarray(res_mse.data), 0.25, rtol=1e-5)
+
+    res_huber = cast(Tensor, huber_loss(t, t2))
+    np.testing.assert_allclose(np.asarray(res_huber.data), 0.125, rtol=1e-5)
+
+    res_sl1 = cast(Tensor, smooth_l1_loss(t, t2))
+    np.testing.assert_allclose(np.asarray(res_sl1.data), 0.125, rtol=1e-5)
+
+    res_sl1_zero = cast(Tensor, smooth_l1_loss(t, t2, beta=0.0))
+    np.testing.assert_allclose(np.asarray(res_sl1_zero.data), 0.5, rtol=1e-5)
+
+    res_cos = cast(Tensor, cosine_similarity_loss(t, t2))
+    assert float(np.asarray(res_cos.data)) >= 0.0
+
+    res_kl = cast(Tensor, kl_div_loss(t, t2))
+    assert isinstance(res_kl, Tensor)
+    assert np.isfinite(np.asarray(res_kl.data)).all()
+
+    res_hinge = cast(Tensor, hinge_loss(t, t2))
+    assert isinstance(res_hinge, Tensor)
+    assert np.isfinite(np.asarray(res_hinge.data)).all()
+
     var = Tensor(np.array([[1.0, 1.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
-    assert isinstance(gaussian_nll_loss(t, t2, var), Tensor)
-    assert isinstance(log_cosh_loss(t, t2), Tensor)
+    res_gnll = cast(Tensor, gaussian_nll_loss(t, t2, var))
+    np.testing.assert_allclose(np.asarray(res_gnll.data), 0.125, rtol=1e-5)
+
+    res_log_cosh = cast(Tensor, log_cosh_loss(t, t2))
+    np.testing.assert_allclose(np.asarray(res_log_cosh.data), float(np.log(np.cosh(-0.5))), rtol=1e-5)
+
     target = Tensor(np.array([[1.0]], dtype=np.float32), TensorConfig((1, 1), "float32", "cpu"))
-    assert isinstance(margin_ranking_loss(t, t2, target), Tensor)
+    res_mrl = cast(Tensor, margin_ranking_loss(t, t2, target))
+    assert float(np.asarray(res_mrl.data)) > 0.0
+
     y_true_indices = Tensor(np.array([1], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
-    assert isinstance(nll_loss(t, y_true_indices), Tensor)
+    res_nll = cast(Tensor, nll_loss(t, y_true_indices))
+    np.testing.assert_allclose(np.asarray(res_nll.data), -2.0, rtol=1e-5)
+
     anc = Tensor(np.array([[1.0, 2.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
     pos = Tensor(np.array([[1.1, 2.1]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
     neg = Tensor(np.array([[0.0, 0.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
-    assert isinstance(triplet_loss(anc, pos, neg), Tensor)
-    assert isinstance(triplet_loss(anc, pos, neg, p=1.0), Tensor)
-    assert isinstance(msle_loss(t, t2), Tensor)
-    assert isinstance(mape_loss(t, t2), Tensor)
+    res_trip2 = cast(Tensor, triplet_loss(anc, pos, neg))
+    assert float(np.asarray(res_trip2.data)) >= 0.0
+    res_trip1 = cast(Tensor, triplet_loss(anc, pos, neg, p=1.0))
+    assert float(np.asarray(res_trip1.data)) >= 0.0
+
+    res_msle = cast(Tensor, msle_loss(t, t2))
+    assert float(np.asarray(res_msle.data)) > 0.0
+    res_mape = cast(Tensor, mape_loss(t, t2))
+    assert float(np.asarray(res_mape.data)) > 0.0
 
 
-def test_dummy_losses() -> None:
-    """Test function test_dummy_losses."""
-    config.eager_mode = False
-    t = Tensor(np.array([[1.0, 2.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
-    try:
-        ctc_loss(t, t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        circle_loss(t, t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        categorical_generalized_cross_entropy(t, t)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+def test_specialized_losses_eager() -> None:
+    """Verify eager evaluation of ctc_loss, circle_loss, and categorical_generalized_cross_entropy."""
+    config.eager_mode = True
+    y_true = Tensor(np.array([[1.0, 0.0]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
+    y_pred = Tensor(np.array([[0.8, 0.2]], dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
+
+    res_circle = cast(Tensor, circle_loss(y_true, y_pred))
+    assert isinstance(res_circle, Tensor)
+    assert np.isfinite(np.asarray(res_circle.data)).all()
+
+    res_gce = cast(Tensor, categorical_generalized_cross_entropy(y_true, y_pred))
+    assert isinstance(res_gce, Tensor)
+    assert np.isfinite(np.asarray(res_gce.data)).all()
+
+    logits = Tensor(np.zeros((2, 1, 3), dtype=np.float32), TensorConfig((2, 1, 3), "float32", "cpu"))
+    labels = Tensor(np.array([[1]], dtype=np.int32), TensorConfig((1, 1), "int32", "cpu"))
+    label_len = Tensor(np.array([1], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
+    logit_len = Tensor(np.array([2], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
+    res_ctc = ctc_loss(labels, logits, label_len, logit_len)
+    assert isinstance(res_ctc, Tensor)

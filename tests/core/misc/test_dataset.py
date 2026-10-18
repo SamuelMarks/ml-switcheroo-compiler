@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-# ruff: noqa: E501
 import numpy as np
 import pytest
 
@@ -274,18 +273,10 @@ def test_dataset_remaining() -> None:
 
     CsvDataset("f")
     TFRecordReader("f")
-    try:
+    with pytest.raises(ValueError):
         Dataset.from_tensor_slices()
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        Dataset.from_list([])
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
-    try:
-        Dataset().unbatch()
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    Dataset.from_list([])
+    Dataset().unbatch()
 
 
 def test_dataset_image_iter(monkeypatch: EagerTensorProtocol) -> None:
@@ -362,21 +353,17 @@ def test_image_dataset_missing_branches() -> None:
     d = cast("Callable[..., EagerTensorProtocol]", ImageDataset)(empty_tensor, target_size=(2, 2), normalize=True).batch(2)
     res = list(d)
     assert len(res) == 0
-
     t_3d = create_eager_tensor(np.ones((2, 2, 1)))
     d2 = cast("Callable[..., EagerTensorProtocol]", ImageDataset)(t_3d, target_size=(2, 2), normalize=False).batch(1)
     res2 = list(d2)
     assert len(res2) == 2
     assert res2[0][0].shape == (1, 2, 1)
-
     t_4d = create_eager_tensor(np.ones((1, 2, 2, 1)))
     d3 = cast("Callable[..., EagerTensorProtocol]", ImageDataset)(t_4d, target_size=None, normalize=False).batch(1)
     res3 = list(d3)
     assert len(res3) == 1
     assert res3[0][0].shape == (1, 2, 2, 1)
-
     t_norm = create_eager_tensor(np.full((1, 2, 2, 1), 255.0))
     d4 = cast("Callable[..., EagerTensorProtocol]", ImageDataset)(t_norm, target_size=None, normalize=True).batch(1)
     res4 = list(d4)
-    # The normalization divides by 255
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", res4[0][0].numpy)(), cast("Callable[..., EagerTensorProtocol]", np.ones)((1, 2, 2, 1)))

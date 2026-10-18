@@ -5,12 +5,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TypeVar
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef
 
 _REGISTRY: dict[str, type[OpDef]] = {}
 _YAML_REGISTRY: dict[str, dict[str, dict[str, dict[str, str]]]] = {}
-_UTIL_REGISTRY: dict[str, Callable[..., EagerValue]] = {}
+_UTIL_REGISTRY: dict[str, Callable[..., TensorOrScalar]] = {}
 
 
 def _load_yaml_registry(force: bool = False) -> None:
@@ -58,7 +58,7 @@ def register_op(name: str) -> Callable[[type], type]:
     return decorator
 
 
-F = TypeVar("F", bound=Callable[..., EagerValue])
+F = TypeVar("F", bound=Callable[..., TensorOrScalar])
 
 
 def register_util(name: str) -> Callable[[F], F]:
@@ -86,14 +86,14 @@ def register_util(name: str) -> Callable[[F], F]:
     return decorator
 
 
-def get_util(name: str) -> Callable[..., EagerValue]:
+def get_util(name: str) -> Callable[..., TensorOrScalar]:
     """Retrieve a registered utility function by name.
 
     Args:
         name (str): Identifier of the utility function.
 
     Returns:
-        Callable[..., EagerValue]: Registered utility callable.
+        Callable[..., TensorOrScalar]: Registered utility callable.
 
     Raises:
         KeyError: If the utility function is not registered.

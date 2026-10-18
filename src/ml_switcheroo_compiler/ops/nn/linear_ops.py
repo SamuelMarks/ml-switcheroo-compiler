@@ -5,7 +5,7 @@ from typing import (
     cast,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add
 from ml_switcheroo_compiler.ops.linalg.einsum_frontend import einsum
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
 
 
-def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> EagerValue:
+def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> TensorOrScalar:
     """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
@@ -30,7 +30,7 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Eage
     return out
 
 
-def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> EagerValue:
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> TensorOrScalar:
     """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).

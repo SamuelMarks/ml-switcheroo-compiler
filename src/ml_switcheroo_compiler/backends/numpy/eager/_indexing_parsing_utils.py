@@ -12,10 +12,10 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 
 def _eval_constant(node: ast.AST) -> EagerValue:
-    """Evaluate _eval_constant operation.
+    """Execute the eager eval constant operation on the active backend array.
 
     Args:
-        node (object): The node parameter.
+        node (ast.AST): The node parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -26,11 +26,11 @@ def _eval_constant(node: ast.AST) -> EagerValue:
 
 
 def _eval_slice_call(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> slice:
-    """Evaluate _eval_slice_call operation.
+    """Execute the eager eval slice call operation on the active backend array.
 
     Args:
-        node (object): The node parameter.
-        _eval_fn (object): The _eval_fn parameter.
+        node (ast.AST): The node parameter.
+        _eval_fn (Callable[..., EagerValue]): The _eval_fn parameter.
 
     Returns:
         slice: Result.
@@ -39,11 +39,11 @@ def _eval_slice_call(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> slic
 
 
 def _eval_array_call(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> EagerValue:
-    """Evaluate _eval_array_call operation.
+    """Execute the eager eval array call operation on the active backend array.
 
     Args:
-        node (object): The node parameter.
-        _eval_fn (object): The _eval_fn parameter.
+        node (ast.AST): The node parameter.
+        _eval_fn (Callable[..., EagerValue]): The _eval_fn parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -69,11 +69,11 @@ def _is_np_array_call(node: ast.AST) -> bool:
 
 
 def _eval_call(node: ast.AST, _eval_fn: EagerValue) -> EagerValue:
-    """Evaluate _eval_call operation.
+    """Execute the eager eval call operation on the active backend array.
 
     Args:
-        node (object): The node parameter.
-        _eval_fn (object): The _eval_fn parameter.
+        node (ast.AST): The node parameter.
+        _eval_fn (EagerValue): The _eval_fn parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -90,10 +90,10 @@ def _eval_call(node: ast.AST, _eval_fn: EagerValue) -> EagerValue:
 
 
 def _eval_name(node: ast.AST) -> EagerValue:
-    """Evaluate _eval_name operation.
+    """Execute the eager eval name operation on the active backend array.
 
     Args:
-        node (object): The node parameter.
+        node (ast.AST): The node parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -107,11 +107,11 @@ def _eval_name(node: ast.AST) -> EagerValue:
 
 
 def _eval_unary_op(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> EagerValue:
-    """Evaluate _eval_unary_op operation.
+    """Execute the eager eval unary op operation on the active backend array.
 
     Args:
-        node (object): The node parameter.
-        _eval_fn (object): The _eval_fn parameter.
+        node (ast.AST): The node parameter.
+        _eval_fn (Callable[..., EagerValue]): The _eval_fn parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -155,10 +155,10 @@ def _safe_parse_key(key_str: str) -> EagerValue:
     evaluators = _get_node_evaluators()
 
     def _eval(node: ast.AST) -> EagerValue:
-        """Evaluate _eval operation.
+        """Execute the eager eval operation on the active backend array.
 
         Args:
-            node (object): The node parameter.
+            node (ast.AST): The node parameter.
 
         Returns:
             tuple[int, ...]: Result.

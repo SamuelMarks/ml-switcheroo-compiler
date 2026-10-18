@@ -11,9 +11,9 @@ from ml_switcheroo_ir import AttributeValue, LogicalNode
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
@@ -25,7 +25,7 @@ def _build_linalg_output_tensors(
     out_dtypes: Sequence[DType | str | None],
     device: Device | str | None,
 ) -> list[Tensor]:
-    """Evaluate _build_linalg_output_tensors operation.
+    """Compute the build linalg output tensors tensor operation.
 
     Args:
         out_ids (list[str]): The out_ids parameter.
@@ -47,8 +47,8 @@ def _build_linalg_output_tensors(
 
 def _emit_linalg_node(
     op_type: str,
-    inputs: Sequence[Tensor | EagerValue],
-    attrs: dict[str, EagerValue] | None,
+    inputs: Sequence[Tensor | TensorOrScalar],
+    attrs: dict[str, TensorOrScalar] | None,
     out_shapes: Sequence[Sequence[int | str | SymNode | SymInt | None]],
     out_dtypes: Sequence[DType | str | None],
 ) -> Tensor | tuple[Tensor, ...]:

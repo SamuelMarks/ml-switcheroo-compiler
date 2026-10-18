@@ -56,10 +56,10 @@ def _sample_ast_reflected_func(x: EagerValue) -> EagerValue:
     """Sample function for AST shape reflection.
 
     Args:
-        x (object): Input tensor.
+        x (EagerValue): Input tensor.
 
     Returns:
-        object: Result tuple.
+        EagerValue: Result tuple.
     """
     return (10, 20)
 

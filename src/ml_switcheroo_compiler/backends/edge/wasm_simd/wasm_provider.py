@@ -15,6 +15,9 @@ def load_yaml(file_name: str) -> dict[str, Union[dict[str, dict[str, str]], dict
 
     Args:
         file_name: The file_name parameter.
+
+    Returns:
+        dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]: Computed result.
     """
     file_path: Path = Path(__file__).parent / file_name
     with open(file_path) as f:
@@ -29,6 +32,9 @@ def load_yaml_dir(dir_name: str) -> dict[str, Union[dict[str, dict[str, str]], d
 
     Args:
         dir_name: The dir_name parameter.
+
+    Returns:
+        dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]: Computed result.
     """
     import glob
 
@@ -78,6 +84,9 @@ def get_js_orchestration_template(name: str) -> str:
 
     Args:
         name: The name parameter.
+
+    Returns:
+        str: Computed result.
     """
     global _WASM_TEMPLATES
     if not _WASM_TEMPLATES:
@@ -90,7 +99,11 @@ def get_js_orchestration_template(name: str) -> str:
 
 
 def get_cpp_helpers() -> list[str]:
-    """Get cpp helpers."""
+    """Get cpp helpers.
+
+    Returns:
+        list[str]: Computed result.
+    """
     global _WASM_TEMPLATES
     if not _WASM_TEMPLATES:
         _WASM_TEMPLATES = load_yaml_dir("wasm_templates")

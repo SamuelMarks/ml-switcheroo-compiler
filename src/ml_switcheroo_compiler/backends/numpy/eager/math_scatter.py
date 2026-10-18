@@ -186,7 +186,7 @@ def _np_gather_nd(
     params: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate gather_nd operation.
+    """Execute the eager np gather nd operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.
@@ -207,7 +207,7 @@ def _np_take_along_axis(
     indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     axis: int,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate take_along_axis operation.
+    """Execute the eager np take along axis operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.

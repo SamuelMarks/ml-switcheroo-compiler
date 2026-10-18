@@ -253,7 +253,7 @@ def test_load_edge_control_flow_templates(tmp_path: EagerTensorProtocol) -> None
     """Test loading and validating edge control flow templates from YAML file.
 
     Args:
-        tmp_path (object): Pytest temporary path fixture.
+        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
     """
     import os
 

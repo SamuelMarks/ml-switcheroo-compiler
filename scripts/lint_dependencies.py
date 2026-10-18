@@ -20,6 +20,8 @@ Allowed backend-specific single external dependencies:
 - backends/numpy (and backends/eager): scipy
 """
 
+from __future__ import annotations
+
 import ast
 import os
 import sys
@@ -102,7 +104,6 @@ STDLIB_MODULES: set[str] = (
         "string",
     }
 )
-
 ALLOWED_GLOBAL_EXTERNAL: set[str] = {
     "yaml",
     "PIL",
@@ -120,6 +121,8 @@ BACKEND_ALLOWED: dict[str, set[str]] = {
     "jax": {"jax"},
     "mlx": {"mlx"},
     "cupy": {"cupy"},
+    "cuda": set(),
+    "rocm": set(),
     "dask": {"dask"},
     "tensorflow": {"tensorflow", "tf"},
     "keras": {"keras", "keras_core"},
@@ -134,6 +137,64 @@ BACKEND_ALLOWED: dict[str, set[str]] = {
 }
 
 FORBIDDEN_UPWARD_PREFIXES: tuple[str, ...] = ("zero_", "zero_zoo", "zero")
+
+
+def _extract_dynamic_import_mod_name(node: ast.Call) -> str | None:
+    """Extract the top-level module name from a dynamic import call if statically resolvable.
+
+    Args:
+        node (ast.Call): AST Call node to inspect.
+
+    Returns:
+        str | None: Top-level module name if the call is `__import__` or `import_module` with a literal/f-string prefix, else None.
+    """
+    is_dyn_import: bool = False
+    if isinstance(node.func, ast.Name) and node.func.id in ("__import__", "import_module"):
+        is_dyn_import = True
+    elif isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == "importlib" and node.func.attr == "import_module":
+        is_dyn_import = True
+
+    if not is_dyn_import or not node.args:
+        return None
+
+    first_arg: ast.expr = node.args[0]
+    if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
+        return first_arg.value.lstrip(".").split(".")[0]
+    if isinstance(first_arg, ast.JoinedStr) and first_arg.values:
+        first_part: ast.expr = first_arg.values[0]
+        if isinstance(first_part, ast.Constant) and isinstance(first_part.value, str):
+            prefix: str = first_part.value.lstrip(".").split(".")[0]
+            if prefix:
+                return prefix
+    return None
+
+
+def _scan_ast_imports(
+    tree: ast.AST,
+    file_path: str,
+    backend_allowed: set[str],
+    root: str,
+    violations: list[str],
+) -> None:
+    """Walk an AST and check all static and dynamic import nodes against dependency rules.
+
+    Args:
+        tree (ast.AST): Parsed Python module AST.
+        file_path (str): Path to the file being scanned.
+        backend_allowed (set[str]): Set of allowed backend-specific top-level module names.
+        root (str): Directory containing the file.
+        violations (list[str]): Mutable list accumulating violation descriptions.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                _check_module_name(alias.name.split(".")[0], file_path, node.lineno, backend_allowed, root, violations)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            _check_module_name(node.module.split(".")[0], file_path, node.lineno, backend_allowed, root, violations)
+        elif isinstance(node, ast.Call):
+            dyn_mod: str | None = _extract_dynamic_import_mod_name(node)
+            if dyn_mod:
+                _check_module_name(dyn_mod, file_path, node.lineno, backend_allowed, root, violations)
 
 
 def check_dependencies(directory: str) -> list[str]:
@@ -158,8 +219,7 @@ def check_dependencies(directory: str) -> list[str]:
 
             backend_allowed: set[str] = set()
             if parts[0] == "backends" and len(parts) > 1:
-                bname: str = parts[1]
-                backend_allowed = BACKEND_ALLOWED.get(bname, set())
+                backend_allowed = BACKEND_ALLOWED.get(parts[1], set())
 
             try:
                 with open(file_path, encoding="utf-8") as f:
@@ -167,15 +227,7 @@ def check_dependencies(directory: str) -> list[str]:
             except Exception:
                 continue
 
-            for node in ast.walk(tree):
-                mod_name: str = ""
-                if isinstance(node, ast.Import):
-                    for alias in node.names:
-                        mod_name = alias.name.split(".")[0]
-                        _check_module_name(mod_name, file_path, node.lineno, backend_allowed, root, violations)
-                elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-                    mod_name = node.module.split(".")[0]
-                    _check_module_name(mod_name, file_path, node.lineno, backend_allowed, root, violations)
+            _scan_ast_imports(tree, file_path, backend_allowed, root, violations)
 
     return violations
 

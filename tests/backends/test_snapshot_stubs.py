@@ -24,12 +24,6 @@ ALL_BACKENDS: list[str] = [
     "pyarrow_compute",
     "llvm_cpp",
     "edge",
-    "edge_onnx",
-    "edge_stablehlo",
-    "edge_mlir",
-    "edge_wasm",
-    "edge_webgl",
-    "webgpu",
     "pure_python",
 ]
 

@@ -81,7 +81,7 @@ def register_jvp(op_name: str) -> Callable[[JVPRuleCallable], JVPRuleCallable]:
     """
 
     def decorator(func: JVPRuleCallable) -> JVPRuleCallable:
-        """Evaluate decorator operation.
+        """Execute decorator for compiler processing.
 
         Args:
             func (JVPRuleCallable): The func parameter.

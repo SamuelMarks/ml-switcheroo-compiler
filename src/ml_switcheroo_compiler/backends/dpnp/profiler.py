@@ -62,7 +62,7 @@ def _sync_dpnp_result(result: EagerValue, sycl_queue: EagerValue | None = None) 
     """Synchronize SYCL execution queue or DPNP array evaluations.
 
     Args:
-        result (object): Evaluated array or collection of arrays.
+        result (EagerValue): Evaluated array or collection of arrays.
         sycl_queue (object | None): Optional SYCL execution queue.
     """
     _safe_wait(sycl_queue)

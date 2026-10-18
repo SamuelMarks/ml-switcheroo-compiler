@@ -27,11 +27,11 @@ def _convert_arg(arg: EagerValue, keras: Optional[EagerValue]) -> EagerValue:
     """Convert input sequence argument to Keras tensor if possible.
 
     Args:
-        arg (object): Argument to convert.
+        arg (EagerValue): Argument to convert.
         keras (Optional[object]): Loaded keras module.
 
     Returns:
-        object: Converted tensor or original object.
+        EagerValue: Converted tensor or original object.
     """
     ops_mod = getattr(keras, "ops", None) if keras is not None else None
     if isinstance(arg, (list, tuple)) and ops_mod is not None and hasattr(ops_mod, "convert_to_tensor"):
@@ -76,7 +76,7 @@ def _try_dispatch_mapped_op(
         method = getattr(args[0], cast("str", target_api), None)
         if method is not None and callable(method):
             return cast(Optional[EagerValue], method(*args[1:], **translated_kwargs))
-    return cast(Optional[EagerValue], func(*args, **translated_kwargs))
+    return func(*args, **translated_kwargs)
 
 
 def execute_op(
@@ -90,11 +90,11 @@ def execute_op(
     Args:
         cls (type): The caller class or context.
         op_type (str): The name of the operation.
-        *args (object): Positional arguments for the op.
-        **kwargs (object): Keyword arguments for the op.
+        *args (EagerValue): Positional arguments for the op.
+        **kwargs (EagerValue): Keyword arguments for the op.
 
     Returns:
-        object: Result of native Keras evaluation.
+        EagerValue: Result of native Keras evaluation.
 
     Raises:
         BackendNotSupportedError: If Keras is unavailable or op is unmapped.

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-# ruff: noqa: E501
 import numpy as np
 import pytest
 
@@ -22,87 +21,64 @@ def test_tree_util_extra() -> None:
     """Test the tree util extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        device = Device("cpu")
-        t1 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
-        t2 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
-        assert tree_leaves({"a": t1, "b": t2}) == [t1, t2]
-        assert tree_structure({"a": t1, "b": t2}) is not None
-        assert tree_all([True, True])
-        assert not tree_all([True, False])
-        assert cast("Callable[..., EagerTensorProtocol]", tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
-        assert cast("Callable[..., EagerTensorProtocol]", tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    device = Device("cpu")
+    t1 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
+    t2 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
+    assert tree_leaves({"a": t1, "b": t2}) == [t1, t2]
+    assert tree_structure({"a": t1, "b": t2}) is not None
+    assert tree_all([True, True])
+    assert not tree_all([True, False])
+    assert cast("Callable[..., EagerTensorProtocol]", tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
+    assert cast("Callable[..., EagerTensorProtocol]", tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
 
 
 def test_tree_flatten_unflatten() -> None:
     """Test the tree flatten unflatten behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        "Test tree_flatten_unflatten."
-        tree = {"a": 1, "b": [2, 3], "c": (4, {"d": 5})}
-        (leaves, treedef) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)(tree)
-        assert leaves == [1, 2, 3, 4, 5]
-        assert repr(treedef).startswith("TreeDef")
-        # Verify behavioral equality and hashing invariants
-        _, treedef2 = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": [1, 2], "b": {"c": 3, "d": (4, 5)}})
-        # Verify behavioral equality and hashing invariants
-        _, treedef2 = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": [1, 2], "b": {"c": 3, "d": (4, 5)}})
-        assert treedef == treedef2
-        assert hash(treedef) == hash(treedef2)
-        _, mutated_treedef = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": [1, 2], "b": {"c": 3, "d": (4, 6)}})
-        # Even with different values, structural equality holds
-        assert treedef == mutated_treedef
-
-        _, different_treedef = tree_flatten({"a": [1, 2], "b": [3, 4, 5]})
-        assert treedef != different_treedef
-        assert hash(treedef) != hash(different_treedef)
-        _, mutated_treedef = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": [1, 2], "b": {"c": 3, "d": (4, 6)}})
-        # Even with different values, structural equality holds
-        assert treedef == mutated_treedef
-
-        _, different_treedef = tree_flatten({"a": [1, 2], "b": [3, 4, 5]})
-        assert treedef != different_treedef
-        assert hash(treedef) != hash(different_treedef)
-        assert treedef != TreeDef(list)
-        assert treedef != "Not a TreeDef"
-        tree_reconstructed = cast("Callable[..., EagerTensorProtocol]", tree_unflatten)(treedef, leaves)
-        assert tree == tree_reconstructed
-        with pytest.raises(ValueError, match="Too few leaves"):
-            cast("Callable[..., EagerTensorProtocol]", tree_unflatten)(treedef, [1, 2, 3, 4])
-        with pytest.raises(ValueError, match="Too many leaves"):
-            cast("Callable[..., EagerTensorProtocol]", tree_unflatten)(treedef, [1, 2, 3, 4, 5, 6])
-        with pytest.raises(ValueError, match="Unsupported treedef node_type"):
-            tree_unflatten(TreeDef(set), [])
-        with pytest.raises(ValueError, match="Dict treedef must have keys"):
-            tree_unflatten(TreeDef(dict), [])
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    tree = {"a": 1, "b": [2, 3], "c": (4, {"d": 5})}
+    (leaves, treedef) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)(tree)
+    assert leaves == [1, 2, 3, 4, 5]
+    assert repr(treedef).startswith("TreeDef")
+    (_, treedef2) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": [2, 3], "c": (4, {"d": 5})})
+    assert treedef == treedef2
+    assert hash(treedef) == hash(treedef2)
+    (_, mutated_treedef) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 10, "b": [20, 30], "c": (40, {"d": 50})})
+    assert treedef == mutated_treedef
+    (_, different_treedef) = tree_flatten({"a": [1, 2], "b": [3, 4, 5]})
+    assert treedef != different_treedef
+    assert hash(treedef) != hash(different_treedef)
+    assert treedef != TreeDef(list)
+    assert treedef != "Not a TreeDef"
+    tree_reconstructed = cast("Callable[..., EagerTensorProtocol]", tree_unflatten)(treedef, leaves)
+    assert tree == tree_reconstructed
+    with pytest.raises(ValueError, match="Too few leaves"):
+        cast("Callable[..., EagerTensorProtocol]", tree_unflatten)(treedef, [1, 2, 3, 4])
+    with pytest.raises(ValueError, match="Too many leaves"):
+        cast("Callable[..., EagerTensorProtocol]", tree_unflatten)(treedef, [1, 2, 3, 4, 5, 6])
+    with pytest.raises(ValueError, match="Unsupported treedef node_type"):
+        tree_unflatten(TreeDef(set), [])
+    with pytest.raises(ValueError, match="Dict treedef must have keys"):
+        tree_unflatten(TreeDef(dict), [])
 
 
 def test_tree_map() -> None:
     """Test the tree map behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        "Test tree_map."
-        tree1 = {"a": 1, "b": [2, 3]}
-        tree2 = {"a": 10, "b": [20, 30]}
-        res = cast("Callable[..., EagerTensorProtocol]", tree_map)(lambda x, y: x + y, tree1, tree2)
-        assert res == {"a": 11, "b": [22, 33]}
-        tree3 = {"a": 1, "b": 2}
-        with pytest.raises(ValueError, match="All trees must have the same structure"):
-            cast("Callable[..., EagerTensorProtocol]", tree_map)(lambda x, y: x + y, tree1, tree3)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    tree1 = {"a": 1, "b": [2, 3]}
+    tree2 = {"a": 10, "b": [20, 30]}
+    res = cast("Callable[..., EagerTensorProtocol]", tree_map)(lambda x, y: x + y, tree1, tree2)
+    assert res == {"a": 11, "b": [22, 33]}
+    tree3 = {"a": 1, "b": 2}
+    with pytest.raises(ValueError, match="All trees must have the same structure"):
+        cast("Callable[..., EagerTensorProtocol]", tree_map)(lambda x, y: x + y, tree1, tree3)
 
 
 def test_tree_def_repr() -> None:
@@ -227,18 +203,14 @@ def test_tree_def_hash_eq() -> None:
     """Test the tree def hash eq behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        "Test tree def hash and eq."
-        (flat1, tree_def1) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": [2, 3]})
-        (flat2, tree_def2) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": [2, 3]})
-        (flat3, tree_def3) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": [2, 4]})
-        (flat4, tree_def4) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": {"c": 3}})
-        assert hash(tree_def1) == hash(tree_def2)
-        assert tree_def1 == tree_def2
-        assert tree_def1 == tree_def3
-        assert tree_def1 != tree_def4
-        assert tree_def1 != "not a treedef"
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    (flat1, tree_def1) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": [2, 3]})
+    (flat2, tree_def2) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": [2, 3]})
+    (flat3, tree_def3) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": [2, 4]})
+    (flat4, tree_def4) = cast("Callable[..., EagerTensorProtocol]", tree_flatten)({"a": 1, "b": {"c": 3}})
+    assert hash(tree_def1) == hash(tree_def2)
+    assert tree_def1 == tree_def2
+    assert tree_def1 == tree_def3
+    assert tree_def1 != tree_def4
+    assert tree_def1 != "not a treedef"

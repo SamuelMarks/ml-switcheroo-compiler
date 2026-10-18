@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-
-# ruff: noqa: E501
 from unittest.mock import patch
+
+import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_basic import _create_backend_array, _get_dtype_val, _infer_dtype, _try_create_array, array, asarray, convert_to_numpy, convert_to_tensor, empty, empty_like, frombuffer, full, full_like, ones, ones_like, zeros, zeros_like
@@ -73,10 +73,8 @@ def test_frontend_basic() -> None:
             """Test function array."""
             raise Exception()
 
-    try:
+    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         cast("Callable[..., EagerTensorProtocol]", _try_create_array)(cast("Callable[..., EagerTensorProtocol]", DummyBackendThrow)(), [1], None)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend", return_value=DummyBackend()):
         assert cast("EagerTensorProtocol", getattr(_create_backend_array([1], None), "dtype")) == "float32"
         from ml_switcheroo_compiler.core.config import config
@@ -286,10 +284,8 @@ def test_frontend_basic_missing_branches() -> None:
     _infer_dtype(np.array([1], dtype="int8"))
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend") as m:
         m.return_value.array.side_effect = Exception("test")
-        try:
+        with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
             _create_backend_array([1], None)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend") as m:
         m.return_value.asarray.side_effect = Exception("test")
 
@@ -298,10 +294,8 @@ def test_frontend_basic_missing_branches() -> None:
 
             pass
 
-        try:
+        with pytest.raises(ValueError):
             convert_to_tensor([1])
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
     config.eager_mode = True
     import ml_switcheroo_compiler.backends.registry as reg
 

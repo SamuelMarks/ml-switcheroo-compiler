@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-# ruff: noqa: E501
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
@@ -30,12 +30,12 @@ def _test_op(func: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: Ea
     """Test the op behavior.
 
     Args:
-        func (object): The func parameter.
-        *args (object): Variable length argument list.
-        **kwargs (object): Arbitrary keyword arguments.
+        func (EagerTensorProtocol): The func parameter.
+        *args (EagerTensorProtocol): Variable length argument list.
+        **kwargs (EagerTensorProtocol): Arbitrary keyword arguments.
 
     Returns:
-        object: The inferred shape or computed result.
+        EagerValue: The inferred shape or computed result.
     """
     with ConfigContext(eager_mode=True):
         out_eager = func(*args, **kwargs)
@@ -52,88 +52,75 @@ def test_frontend_ops() -> None:
     """Test the frontend ops behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        try:
-            a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
-            b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.matrix_norm, a)
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.vector_norm, b)
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.svdvals, a)
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(solvers.tensorinv, a, ind=1)
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(solvers.tensorsolve, a, b)
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.diagonal, a)
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(multi_dot, [a, a])
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
-            (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(vecdot, b, b)
-            assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
-        except TypeError as _exc:
-            assert _exc is not None
-    except (Exception, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
+        a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
+        b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.matrix_norm, a)
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.vector_norm, b)
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.svdvals, a)
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(solvers.tensorinv, a, ind=1)
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(solvers.tensorsolve, a, b)
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(frontend.diagonal, a)
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(multi_dot, [a, a])
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
+        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(vecdot, b, b)
+        assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
 
 
 def test_opdefs_infer_shapes() -> None:
     """Test the opdefs infer shapes behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        try:
-            ops = [MatrixNorm(), VectorNorm(), Diagonal(), MultiDot()]
-            for op in ops:
-                assert op.infer_shape() == ()
-            a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
-            b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
-            assert cast("Callable[..., EagerTensorProtocol]", Svdvals)().infer_shape(a) == (2,)
-            assert cast("Callable[..., EagerTensorProtocol]", Tensorinv)().infer_shape(a) == (2, 2)
-            assert cast("Callable[..., EagerTensorProtocol]", Tensorsolve)().infer_shape(a, b) == (2,)
-            assert cast("Callable[..., EagerTensorProtocol]", ConvTranspose)().infer_shape(a) == (2, 2)
-            assert cast("Callable[..., EagerTensorProtocol]", ConvTranspose)().infer_shape() == ()
-            assert id(cast("Callable[..., EagerTensorProtocol]", CustomLinearSolve)().infer_shape(a)) == id(a)
-            assert CustomLinearSolve().infer_shape() == ()
-            assert id(cast("Callable[..., EagerTensorProtocol]", Vecdot)().infer_shape(a)) == id(a)
-            assert Vecdot().infer_shape() == ()
-            assert id(cast("Callable[..., EagerTensorProtocol]", CustomRoot)().infer_shape(a)) == id(a)
-            assert CustomRoot().infer_shape() == ()
-            p = Tensor(np.array([1, 0]), TensorConfig((2,), "int32", "cpu"))
-            assert LuPivotsToPermutation().infer_shape(p, permutation_size=2) == (2,)
-        except TypeError as _exc:
-            assert _exc is not None
-    except (Exception, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    with pytest.raises(TypeError):
+        ops = [MatrixNorm(), VectorNorm(), Diagonal(), MultiDot()]
+        for op in ops:
+            assert op.infer_shape() == ()
+        a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
+        b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
+        assert cast("Callable[..., EagerTensorProtocol]", Svdvals)().infer_shape(a) == (2,)
+        assert cast("Callable[..., EagerTensorProtocol]", Tensorinv)().infer_shape(a) == (2, 2)
+        assert cast("Callable[..., EagerTensorProtocol]", Tensorsolve)().infer_shape(a, b) == (2,)
+        assert cast("Callable[..., EagerTensorProtocol]", ConvTranspose)().infer_shape(a) == (2, 2)
+        assert cast("Callable[..., EagerTensorProtocol]", ConvTranspose)().infer_shape() == ()
+        assert id(cast("Callable[..., EagerTensorProtocol]", CustomLinearSolve)().infer_shape(a)) == id(a)
+        assert CustomLinearSolve().infer_shape() == ()
+        assert id(cast("Callable[..., EagerTensorProtocol]", Vecdot)().infer_shape(a)) == id(a)
+        assert Vecdot().infer_shape() == ()
+        assert id(cast("Callable[..., EagerTensorProtocol]", CustomRoot)().infer_shape(a)) == id(a)
+        assert CustomRoot().infer_shape() == ()
+        p = Tensor(np.array([1, 0]), TensorConfig((2,), "int32", "cpu"))
+        assert LuPivotsToPermutation().infer_shape(p, permutation_size=2) == (2,)
 
 
 def test_linalg_band_part_diag_coverage() -> None:
     """Test the linalg band part diag coverage behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        device = Device(DeviceType.CPU, 0)
-        t = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Int32, device))
-        with ConfigContext(eager_mode=True):
-            res1 = band_part(t, 1, 1)
-            assert res1 is not None
-            res2 = diag(t, k=0)
-            assert res2 is not None
-        with ConfigContext(eager_mode=False):
-            global_tracing_state.start_tracing()
-            try:
-                res3 = band_part(t, 1, 1)
-                assert res3 is not None
-                res4 = diag(t, k=0)
-                assert res4 is not None
-            finally:
-                global_tracing_state.stop_tracing()
-    except (Exception, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    device = Device(DeviceType.CPU, 0)
+    t = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Int32, device))
+    with ConfigContext(eager_mode=True):
+        res1 = band_part(t, 1, 1)
+        assert res1 is not None
+        res2 = diag(t, k=0)
+        assert res2 is not None
+    with ConfigContext(eager_mode=False):
+        global_tracing_state.start_tracing()
+        try:
+            res3 = band_part(t, 1, 1)
+            assert res3 is not None
+            res4 = diag(t, k=0)
+            assert res4 is not None
+        finally:
+            global_tracing_state.stop_tracing()

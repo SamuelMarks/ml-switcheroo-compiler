@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -14,7 +15,7 @@ from .decompositions.solvers import TriangularSolve
 from .utils import _emit_linalg_node
 
 
-def cholesky_solve(chol: Tensor, rhs: Tensor) -> EagerValue:
+def cholesky_solve(chol: Tensor, rhs: Tensor) -> TensorOrScalar:
     """Solve systems of linear equations A X = RHS given the Cholesky factorization of A.
 
     Args:
@@ -32,7 +33,7 @@ def cholesky_solve(chol: Tensor, rhs: Tensor) -> EagerValue:
     return _emit_linalg_node("CholeskySolve", [chol, rhs], {}, [tuple(out_shape)], [rhs.dtype])
 
 
-def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjoint: bool = False) -> EagerValue:
+def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjoint: bool = False) -> TensorOrScalar:
     """Solve systems of linear equations for a banded triangular matrix.
 
     Args:
@@ -59,20 +60,20 @@ def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjo
 
 
 def conjugate_gradient(
-    operator: EagerValue,
-    rhs: EagerValue,
-    tol: EagerValue = 1e-05,
-    max_iter: EagerValue = 20,
-    name: EagerValue = "conjugate_gradient",
-) -> EagerValue:
+    operator: TensorOrScalar,
+    rhs: TensorOrScalar,
+    tol: TensorOrScalar = 1e-05,
+    max_iter: TensorOrScalar = 20,
+    name: TensorOrScalar = "conjugate_gradient",
+) -> TensorOrScalar:
     """Solve a system of linear equations using the conjugate gradient method.
 
     Args:
-        operator (Any): The linear operator or matrix A.
-        rhs (Any): The right-hand side vector.
-        tol (Any): The tolerance for convergence. Defaults to 1e-05.
-        max_iter (Any): The maximum number of iterations. Defaults to 20.
-        name (Any): The name of the operation. Defaults to "conjugate_gradient".
+        operator (TensorOrScalar): The linear operator or matrix A.
+        rhs (TensorOrScalar): The right-hand side vector.
+        tol (TensorOrScalar): The tolerance for convergence. Defaults to 1e-05.
+        max_iter (TensorOrScalar): The maximum number of iterations. Defaults to 20.
+        name (TensorOrScalar): The name of the operation. Defaults to "conjugate_gradient".
 
     Returns: Tensor: The approximate solution to the system.
     """
@@ -86,12 +87,12 @@ class Lstsq(OpDef):
     Computes the least squares solution to a linear matrix equation.
     """
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the least squares operation.
 
         Args:
-            *args (Any): Positional arguments, typically the input matrices A and B.
-            **kwargs (Any): Additional keyword arguments.
+            *args (EagerTensorProtocol): Positional arguments, typically the input matrices A and B.
+            **kwargs (EagerTensorProtocol): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -109,13 +110,13 @@ def lstsq(
     a: Tensor,
     b: Tensor,
     rcond: float | None = None,
-) -> EagerValue:
-    """Evaluate lstsq operation.
+) -> TensorOrScalar:
+    """Compute the lstsq tensor operation.
 
     Args:
         a (Tensor): The a parameter.
         b (Tensor): The b parameter.
-        rcond (Any): The rcond parameter.
+        rcond (float | None): The rcond parameter.
 
     Returns:
         Tensor: Result.
@@ -133,13 +134,13 @@ def lstsq(
     return _emit_linalg_node("Lstsq", [a, b], {"rcond": rcond}, [tuple(out_shape)], [b.dtype])
 
 
-def lu(input: EagerValue, output_idx_type: EagerValue = None, name: EagerValue = None) -> EagerValue:
-    """Evaluate lu operation.
+def lu(input: TensorOrScalar, output_idx_type: TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Compute the lu tensor operation.
 
     Args:
-        input (Any): The input parameter.
-        output_idx_type (Any): The output_idx_type parameter.
-        name (Any): The name parameter.
+        input (TensorOrScalar): The input parameter.
+        output_idx_type (TensorOrScalar): The output_idx_type parameter.
+        name (TensorOrScalar): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -147,8 +148,8 @@ def lu(input: EagerValue, output_idx_type: EagerValue = None, name: EagerValue =
     return input, input, input
 
 
-def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: EagerValue = False, name: EagerValue = None) -> EagerValue:
-    """Evaluate lu_matrix_inverse operation.
+def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Compute the lu matrix inverse tensor operation.
 
     Args:
         lower_upper (Tensor): The lower_upper parameter.
@@ -173,7 +174,7 @@ def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: EagerVal
     )
 
 
-def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: EagerValue = False, name: EagerValue = None) -> EagerValue:
+def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
     """Reconstruct a matrix from its LU decomposition and permutation.
 
     Args:
@@ -194,27 +195,27 @@ def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: EagerValue 
 
 
 def lu_solve(
-    lower_upper: EagerValue,
-    perm: EagerValue,
-    rhs: EagerValue,
-    validate_args: EagerValue = False,
-    name: EagerValue = None,
-) -> EagerValue:
+    lower_upper: TensorOrScalar,
+    perm: TensorOrScalar,
+    rhs: TensorOrScalar,
+    validate_args: TensorOrScalar = False,
+    name: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Solve a system of linear equations using the LU decomposition of the matrix.
 
     Args:
-        lower_upper (Any): The LU factorized matrix.
-        perm (Any): The permutation vector or matrix.
-        rhs (Any): The right-hand side tensor.
-        validate_args (Any): Whether to validate the inputs. Defaults to False.
-        name (Any): Optional name for the operation. Defaults to None.
+        lower_upper (TensorOrScalar): The LU factorized matrix.
+        perm (TensorOrScalar): The permutation vector or matrix.
+        rhs (TensorOrScalar): The right-hand side tensor.
+        validate_args (TensorOrScalar): Whether to validate the inputs. Defaults to False.
+        name (TensorOrScalar): Optional name for the operation. Defaults to None.
 
     Returns: Tensor: The solution to the linear system.
     """
     return rhs
 
 
-def triangular_solve(matrix: Tensor, rhs: Tensor, lower: EagerValue = True, adjoint: EagerValue = False, name: EagerValue = None) -> EagerValue:
+def triangular_solve(matrix: Tensor, rhs: Tensor, lower: TensorOrScalar = True, adjoint: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
     """Solve a system of linear equations with a triangular matrix.
 
     Args:
@@ -242,28 +243,28 @@ def triangular_solve(matrix: Tensor, rhs: Tensor, lower: EagerValue = True, adjo
 
 
 def tridiagonal_solve(
-    diagonals: EagerValue,
-    rhs: EagerValue,
-    diagonals_format: EagerValue = "...",
-    partial_pivoting: EagerValue = True,
-    name: EagerValue = None,
-) -> EagerValue:
+    diagonals: TensorOrScalar,
+    rhs: TensorOrScalar,
+    diagonals_format: TensorOrScalar = "...",
+    partial_pivoting: TensorOrScalar = True,
+    name: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Solve systems of linear equations with tridiagonal matrices.
 
     Args:
-        diagonals (Any): The diagonals of the tridiagonal matrix.
-        rhs (Any): The right-hand side tensor.
-        diagonals_format (Any): The format of the diagonals representation. Defaults to "...".
-        partial_pivoting (Any): Whether to use partial pivoting. Defaults to True.
-        name (Any): Optional name for the operation. Defaults to None.
+        diagonals (TensorOrScalar): The diagonals of the tridiagonal matrix.
+        rhs (TensorOrScalar): The right-hand side tensor.
+        diagonals_format (TensorOrScalar): The format of the diagonals representation. Defaults to "...".
+        partial_pivoting (TensorOrScalar): Whether to use partial pivoting. Defaults to True.
+        name (TensorOrScalar): Optional name for the operation. Defaults to None.
 
     Returns: Tensor: The solution to the tridiagonal system.
     """
     return rhs
 
 
-def tensorinv(a: Tensor, ind: EagerValue = 2, name: EagerValue = None) -> EagerValue:
-    """Evaluate tensorinv operation.
+def tensorinv(a: Tensor, ind: TensorOrScalar = 2, name: TensorOrScalar = None) -> TensorOrScalar:
+    """Compute the tensorinv tensor operation.
 
     Args:
         a (Tensor): The a parameter.
@@ -280,13 +281,13 @@ def tensorinv(a: Tensor, ind: EagerValue = 2, name: EagerValue = None) -> EagerV
     return _emit_linalg_node("Tensorinv", [a], {"ind": ind}, [()], [a.dtype])
 
 
-def tensorsolve(a: Tensor, b: Tensor, axes: EagerValue = None, name: EagerValue = None) -> EagerValue:
+def tensorsolve(a: Tensor, b: Tensor, axes: TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
     """Solve a tensor equation equation `a x = b` for x.
 
     Args:
         a (Tensor): The coefficient tensor.
         b (Tensor): The right-hand side tensor.
-        axes (Any): The axes of `a` to sum over. Defaults to None.
+        axes (TensorOrScalar): The axes of `a` to sum over. Defaults to None.
         name (str): Optional name for the operation. Defaults to None.
 
     Returns:
@@ -306,12 +307,12 @@ class Pinv(OpDef):
     Computes the Moore-Penrose pseudo-inverse of a matrix.
     """
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape of the pseudo-inverse operation.
 
         Args:
-            a (Any): The input tensor.
-            **kwargs (Any): Additional keyword arguments.
+            a (EagerTensorProtocol): The input tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -332,12 +333,12 @@ class Sqrtm(OpDef):
 
     op_name = "Sqrtm"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the square root operation.
 
         Args:
-            a (Any): The input tensor.
-            **kwargs (Any): Additional keyword arguments.
+            a (EagerTensorProtocol): The input tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -353,13 +354,13 @@ class CholeskySolve(OpDef):
 
     op_name = "CholeskySolve"
 
-    def infer_shape(self, chol: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, chol: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer the shape of the output tensor for the Cholesky solve operation.
 
         Args:
-            chol (object): The Cholesky factorization tensor.
-            rhs (object): The right-hand side tensor.
-            **kwargs (object): Additional keyword arguments.
+            chol (EagerTensorProtocol): The Cholesky factorization tensor.
+            rhs (EagerTensorProtocol): The right-hand side tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
@@ -394,13 +395,13 @@ class BandedTriangularSolve(OpDef):
 
     op_name = "BandedTriangularSolve"
 
-    def infer_shape(self, bands: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, bands: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer the shape of the output tensor for the banded triangular solve operation.
 
         Args:
-            bands (object): The banded triangular matrix tensor.
-            rhs (object): The right-hand side tensor.
-            **kwargs (object): Additional keyword arguments.
+            bands (EagerTensorProtocol): The banded triangular matrix tensor.
+            rhs (EagerTensorProtocol): The right-hand side tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
@@ -435,13 +436,13 @@ class EighTridiagonal(OpDef):
 
     op_name = "EighTridiagonal"
 
-    def infer_shape(self, alpha: EagerTensorProtocol, beta: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, alpha: EagerTensorProtocol, beta: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the eigensolver operation.
 
         Args:
-            alpha (Any): The diagonal elements of the tridiagonal matrix.
-            beta (Any): The off-diagonal elements of the tridiagonal matrix.
-            **kwargs (Any): Additional keyword arguments.
+            alpha (EagerTensorProtocol): The diagonal elements of the tridiagonal matrix.
+            beta (EagerTensorProtocol): The off-diagonal elements of the tridiagonal matrix.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: A tuple containing the inferred shapes for the eigenvalues and eigenvectors.
         """
@@ -458,12 +459,12 @@ class MatrixNorm(OpDef):
 
     op_name = "MatrixNorm"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the matrix norm operation.
 
         Args:
-            *args (Any): Positional arguments, typically the input matrix.
-            **kwargs (Any): Additional keyword arguments.
+            *args (EagerTensorProtocol): Positional arguments, typically the input matrix.
+            **kwargs (EagerTensorProtocol): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -472,18 +473,18 @@ class MatrixNorm(OpDef):
 
         a = args[0]
         shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
-        dim = kwargs.get("dim", (-2, -1))
-        keepdims = kwargs.get("keepdims", False)
+        axis = kwargs.get("axis", (-2, -1))
+        keepdims = bool(kwargs.get("keepdims", False))
 
-        dims = (dim,) if isinstance(dim, int) else dim
+        axes = (axis,) if isinstance(axis, int) else cast("tuple[int, ...]", axis)
         if keepdims:
             out_shape = list(shape)
-            for d in getattr(dims, "__iter__")():
+            for d in axes:
                 out_shape[d] = 1
             return tuple(out_shape)
 
-        dim_indices = [d if d >= 0 else len(shape) + d for d in getattr(dims, "__iter__")()]
-        return tuple(s for i, s in enumerate(shape) if i not in dim_indices)
+        axis_indices = [d if d >= 0 else len(shape) + d for d in axes]
+        return tuple(s for i, s in enumerate(shape) if i not in axis_indices)
 
 
 @register_op("VectorNorm")
@@ -495,12 +496,12 @@ class VectorNorm(OpDef):
 
     op_name = "VectorNorm"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the vector norm operation.
 
         Args:
-            *args (Any): Positional arguments, typically the input vector.
-            **kwargs (Any): Additional keyword arguments.
+            *args (EagerTensorProtocol): Positional arguments, typically the input vector.
+            **kwargs (EagerTensorProtocol): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -509,18 +510,18 @@ class VectorNorm(OpDef):
 
         a = args[0]
         shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
-        dim = kwargs.get("dim", -1)
-        keepdims = kwargs.get("keepdims", False)
+        axis = kwargs.get("axis", -1)
+        keepdims = bool(kwargs.get("keepdims", False))
 
-        dims = (dim,) if isinstance(dim, int) else dim
+        axes = (axis,) if isinstance(axis, int) else cast("tuple[int, ...]", axis)
         if keepdims:
             out_shape = list(shape)
-            for d in getattr(dims, "__iter__")():
+            for d in axes:
                 out_shape[d] = 1
             return tuple(out_shape)
 
-        dim_indices = [d if d >= 0 else len(shape) + d for d in getattr(dims, "__iter__")()]
-        return tuple(s for i, s in enumerate(shape) if i not in dim_indices)
+        axis_indices = [d if d >= 0 else len(shape) + d for d in axes]
+        return tuple(s for i, s in enumerate(shape) if i not in axis_indices)
 
 
 @register_op("Svdvals")
@@ -532,12 +533,12 @@ class Svdvals(OpDef):
 
     op_name = "Svdvals"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the singular values operation.
 
         Args:
-            *args (Any): Positional arguments, typically the input matrix.
-            **kwargs (Any): Additional keyword arguments.
+            *args (EagerTensorProtocol): Positional arguments, typically the input matrix.
+            **kwargs (EagerTensorProtocol): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -554,12 +555,12 @@ class Tensorinv(OpDef):
 
     op_name = "Tensorinv"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the tensor inverse operation.
 
         Args:
-            a (Any): The input tensor.
-            **kwargs (Any): Additional keyword arguments.
+            a (EagerTensorProtocol): The input tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -577,13 +578,13 @@ class Tensorsolve(OpDef):
 
     op_name = "Tensorsolve"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the tensor solve operation.
 
         Args:
-            a (Any): The coefficient tensor.
-            b (Any): The right-hand side tensor.
-            **kwargs (Any): Additional keyword arguments.
+            a (EagerTensorProtocol): The coefficient tensor.
+            b (EagerTensorProtocol): The right-hand side tensor.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -599,13 +600,13 @@ class LuMatrixInverse(OpDef):
 
     op_name = "LuMatrixInverse"
 
-    def infer_shape(self, lower_upper: EagerTensorProtocol, perm: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, lower_upper: EagerTensorProtocol, perm: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the LU matrix inverse operation.
 
         Args:
-            lower_upper (Any): The LU factorized matrix.
-            perm (Any): The permutation vector or matrix.
-            **kwargs (Any): Additional keyword arguments.
+            lower_upper (EagerTensorProtocol): The LU factorized matrix.
+            perm (EagerTensorProtocol): The permutation vector or matrix.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -621,13 +622,13 @@ class LuReconstruct(OpDef):
 
     op_name = "LuReconstruct"
 
-    def infer_shape(self, lower_upper: EagerTensorProtocol, perm: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, lower_upper: EagerTensorProtocol, perm: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the shape of the output tensor for the LU reconstruct operation.
 
         Args:
-            lower_upper (Any): The LU factorized matrix.
-            perm (Any): The permutation vector or matrix.
-            **kwargs (Any): Additional keyword arguments.
+            lower_upper (EagerTensorProtocol): The LU factorized matrix.
+            perm (EagerTensorProtocol): The permutation vector or matrix.
+            **kwargs (TensorOrScalar): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """

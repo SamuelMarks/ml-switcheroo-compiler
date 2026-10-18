@@ -3,18 +3,11 @@
 from __future__ import annotations
 
 import builtins
-import ctypes
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from collections.abc import Callable, Generator, Iterable, Sequence
 from types import ModuleType
 from typing import TYPE_CHECKING, Optional, Protocol, Union, cast, runtime_checkable
 
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.sparse.types import COOTensor
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.grad.utils import GradTensorProtocol
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalGraph, LogicalNode
-    from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode, SymVar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 
 @runtime_checkable
@@ -23,7 +16,11 @@ class DataclassProtocol(Protocol):
 
     @property
     def __dataclass_fields__(self) -> Iterable[str]:
-        """Return dataclass fields."""
+        """Return dataclass fields.
+
+        Returns:
+            Iterable[str]: Computed result.
+        """
         ...
 
 
@@ -120,7 +117,7 @@ class EagerTensorProtocol(Protocol):
             """Equality comparison.
 
             Args:
-                other (object): Other value.
+                other (TensorOrScalar): Other value.
 
             Returns:
                 bool: Equality result.
@@ -142,7 +139,7 @@ class EagerTensorProtocol(Protocol):
             """Inequality comparison.
 
             Args:
-                other (object): Other value.
+                other (TensorOrScalar): Other value.
 
             Returns:
                 bool: Inequality result.
@@ -622,39 +619,7 @@ class EagerTensorProtocol(Protocol):
 
 
 BackendArray = EagerTensorProtocol
-EagerValue = Union[
-    int,
-    float,
-    complex,
-    Sequence["EagerValue"],
-    Mapping["EagerValue", "EagerValue"],
-    Mapping[str, "EagerValue"],
-    Mapping[Union[str, int], "EagerValue"],
-    set["EagerValue"],
-    slice,
-    str,
-    bool,
-    Callable[..., "EagerValue"],
-    type,
-    ModuleType,
-    "builtins.ellipsis",
-    "ctypes.Array[ctypes.c_char]",
-    "ctypes.Array[ctypes.c_void_p]",
-    "COOTensor",
-    "TensorLike",
-    "GradTensorProtocol",
-    "Tensor",
-    "SymVar",
-    "SymNode",
-    "SymInt",
-    "LogicalNode",
-    "LogicalGraph",
-    "IRGraph",
-    DataclassProtocol,
-    EagerTensorProtocol,
-    ShapeProtocol,
-    None,
-]
+EagerValue = TensorOrScalar
 
 
 class EagerOpRegistry:
@@ -675,7 +640,7 @@ class EagerOpRegistry:
         """
 
         def decorator(func: Callable[..., EagerValue]) -> Callable[..., EagerValue]:
-            """Evaluate decorator operation.
+            """Execute the eager decorator operation on the active backend array.
 
             Args:
                 func (Callable): The func parameter.

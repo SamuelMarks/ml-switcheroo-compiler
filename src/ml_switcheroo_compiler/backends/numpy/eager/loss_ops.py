@@ -12,9 +12,9 @@ def _np_ctc_loss_update_alpha(t: int, S: int, augmented: EagerValue, alpha: Eage
     """Update CTC loss alpha matrix.
 
     Args:
-        alpha (object): The alpha matrix.
-        probs (object): The probabilities.
-        augmented (object): The augmented labels.
+        alpha (EagerValue): The alpha matrix.
+        probs (EagerValue): The probabilities.
+        augmented (EagerValue): The augmented labels.
         t (int): Time step.
         S (int): Sequence length.
         blank (int): Blank token index.
@@ -67,15 +67,15 @@ def _np_ctc_loss_single(probs: EagerValue, b_labels: EagerValue, T: int, L: int)
 
 @numpy_eager_registry.register("CtcLoss")
 def _np_ctc_loss(backend_module: ModuleType, labels: EagerValue, logits: EagerValue, label_length: EagerValue, logit_length: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_ctc_loss operation.
+    """Execute the eager np ctc loss operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        labels (object): The labels parameter.
-        logits (object): The logits parameter.
-        label_length (object): The label_length parameter.
-        logit_length (object): The logit_length parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        labels (EagerValue): The labels parameter.
+        logits (EagerValue): The logits parameter.
+        label_length (EagerValue): The label_length parameter.
+        logit_length (EagerValue): The logit_length parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -119,12 +119,12 @@ def _np_ctc_loss(backend_module: ModuleType, labels: EagerValue, logits: EagerVa
 
 @numpy_eager_registry.register("CircleLoss")
 def _np_circle_loss(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_circle_loss operation.
+    """Execute the eager np circle loss operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -166,12 +166,12 @@ def _np_circle_loss(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 @numpy_eager_registry.register("CategoricalGeneralizedCrossEntropy")
 def _np_categorical_generalized_cross_entropy(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_categorical_generalized_cross_entropy operation.
+    """Execute the eager np categorical generalized cross entropy operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -186,3 +186,27 @@ def _np_categorical_generalized_cross_entropy(backend_module: ModuleType, *args:
     # GCE = (1 - sum(y_true * y_pred^q)) / q
     res = (1.0 - np.sum(y_true * getattr(np, "power")(y_pred, q), axis=-1)) / q
     return cast(EagerValue, np.mean(res))
+
+
+@numpy_eager_registry.register("InTopK")
+def _np_in_top_k(backend_module: ModuleType, targets: EagerValue, predictions: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Evaluate InTopK operation in NumPy eager mode.
+
+    Args:
+        backend_module (ModuleType): NumPy backend module.
+        targets (EagerValue): Target class indices of shape (batch_size,) or (batch_size, ...).
+        predictions (EagerValue): Prediction scores of shape (batch_size, num_classes).
+        **kwargs (EagerValue): Keyword arguments including 'k'.
+
+    Returns:
+        EagerValue: Boolean array indicating if target is within top K predictions.
+    """
+    _ = backend_module
+    k = int(cast(int, kwargs.get("k", 1)))
+    t_arr = np.asarray(targets, dtype=np.int64).reshape(-1)
+    p_arr = np.asarray(predictions)
+    if p_arr.ndim == 1:
+        p_arr = p_arr.reshape(1, -1)
+    sorted_indices = np.argsort(-p_arr, axis=-1)[:, : max(1, k)]
+    result = [bool(t_arr[i] in sorted_indices[i % len(sorted_indices)]) for i in range(len(t_arr))]
+    return cast(EagerValue, np.array(result, dtype=bool).reshape(np.asarray(targets).shape))

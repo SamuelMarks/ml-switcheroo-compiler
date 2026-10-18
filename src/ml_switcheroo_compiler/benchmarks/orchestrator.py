@@ -42,6 +42,9 @@ class _ProfilerProtocol(Protocol):
             device: The device parameter.
             num_iters: The num_iters parameter.
             warmup_iters: The warmup_iters parameter.
+
+        Returns:
+            ProfilerMetrics: Computed result.
         """
         ...
 

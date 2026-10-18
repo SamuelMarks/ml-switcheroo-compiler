@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import struct
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.constants import SAFETENSORS_HEADER_SIZE_BYTES
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
@@ -18,10 +18,10 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         """Load safetensors weights.
 
         Args:
-        filepath (str): The filepath parameter.
+            filepath (str): The filepath parameter.
 
         Returns:
-        dict: Result.
+            dict[str, TensorLike]: Loaded weights dictionary.
         """
         with open(filepath, "rb") as f:
             header_size_bytes = f.read(8)
@@ -51,11 +51,11 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
             return weights
 
-    def save(self, weights_np: EagerValue, filepath: str) -> None:
+    def save(self, weights_np: TensorOrScalar, filepath: str) -> None:
         """Save safetensors weights.
 
         Args:
-            weights_np (dict): The weights_np parameter.
+            weights_np (TensorOrScalar): The weights_np parameter.
             filepath (str): The filepath parameter.
         """
         header = {}
@@ -86,7 +86,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
             header[k] = {
                 "dtype": st_dtype,
-                "shape": list[object](getattr(v, "shape")),
+                "shape": list(getattr(v, "shape")),
                 "data_offsets": [offset, offset + length],
             }
 

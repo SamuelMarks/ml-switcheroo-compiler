@@ -1,10 +1,11 @@
 """NLP operations."""
 
 from dataclasses import dataclass, field
-from typing import Optional  # noqa: F401
+from typing import Optional, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 # Base logic implementation
@@ -56,27 +57,55 @@ class NLPOpsConfig:
     name: Optional[str] = None
 
 
-def all_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
+def all_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
     """Generate all candidates for sampling operations.
 
     Args:
-        true_classes: The true classes for the current batch.
-        config: Configuration for the sampling operation.
+        true_classes (TensorOrScalar): The true classes for the current batch.
+        config (NLPOpsConfig): Configuration for the sampling operation.
 
     Returns:
-        A tuple containing the number of sampled candidates, true expected counts,
-        and sampled expected counts.
+        TensorOrScalar: Tuple of (sampled_candidates, true_expected_count, sampled_expected_count).
     """
-    num_sampled_tensor = Tensor(None, TensorConfig((config.sampling.num_sampled,), "int32", "cpu"))
-    true_expected_count = Tensor(
-        None,
-        TensorConfig(getattr(true_classes, "shape"), "float32", "cpu"),
-    )
-    sampled_expected_count = Tensor(None, TensorConfig((config.sampling.num_sampled,), "float32", "cpu"))
+    from ml_switcheroo_compiler.core.config import config as core_config
+
+    true_shape = getattr(true_classes, "shape", (1,))
+    sampled_shape = (config.sampling.num_sampled,)
+    if core_config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        sampled, true_exp, sampled_exp = cast(
+            "tuple[TensorOrScalar, TensorOrScalar, TensorOrScalar]",
+            backend.execute_op(
+                "AllCandidateSampler",
+                getattr(true_classes, "data", true_classes),
+                num_sampled=config.sampling.num_sampled,
+                num_classes=max(config.sampling.num_sampled, config.sampling.num_true),
+                unique=config.sampling.unique,
+                seed=config.sampling.seed,
+            ),
+        )
+        return (
+            Tensor(sampled, TensorConfig(sampled_shape, "int32", "cpu")),
+            Tensor(true_exp, TensorConfig(true_shape, "float32", "cpu")),
+            Tensor(sampled_exp, TensorConfig(sampled_shape, "float32", "cpu")),
+        )
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    attrs = {
+        "num_sampled": config.sampling.num_sampled,
+        "num_classes": max(config.sampling.num_sampled, config.sampling.num_true),
+        "unique": config.sampling.unique,
+        "seed": config.sampling.seed,
+    }
+    num_sampled_tensor = _emit_shape_node("AllCandidateSampler", [true_classes], attrs, sampled_shape, "int32")
+    true_expected_count = _emit_shape_node("AllCandidateSamplerTrueExpected", [true_classes], attrs, true_shape, "float32")
+    sampled_expected_count = _emit_shape_node("AllCandidateSamplerSampledExpected", [true_classes], attrs, sampled_shape, "float32")
     return num_sampled_tensor, true_expected_count, sampled_expected_count
 
 
-def compute_accidental_hits(true_classes: EagerValue, sampled_candidates: EagerValue, config: NLPOpsConfig) -> EagerValue:
+def compute_accidental_hits(true_classes: TensorOrScalar, sampled_candidates: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
     """Compute accidental hits for candidate sampling.
 
     Identifies cases where a sampled candidate matches a true class and returns
@@ -138,10 +167,10 @@ class SamplerConfig:
 
 
 def fixed_unigram_candidate_sampler(
-    true_classes: EagerValue,
+    true_classes: TensorOrScalar,
     config: NLPOpsConfig,
     sampler_config: Optional[SamplerConfig] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Sample candidates using a fixed unigram distribution.
 
     Generates a set of sampled candidates according to a provided unigram
@@ -158,7 +187,7 @@ def fixed_unigram_candidate_sampler(
     return all_candidate_sampler(true_classes, config)
 
 
-def learned_unigram_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
+def learned_unigram_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
     """Sample candidates using a learned unigram distribution.
 
     Generates candidates by continuously updating a unigram distribution
@@ -174,7 +203,7 @@ def learned_unigram_candidate_sampler(true_classes: EagerValue, config: NLPOpsCo
     return all_candidate_sampler(true_classes, config)
 
 
-def log_uniform_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
+def log_uniform_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
     """Sample candidates using a log-uniform (Zipfian) distribution.
 
     Useful when classes are ordered by decreasing frequency.
@@ -189,7 +218,7 @@ def log_uniform_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig
     return all_candidate_sampler(true_classes, config)
 
 
-def uniform_candidate_sampler(true_classes: EagerValue, config: NLPOpsConfig) -> EagerValue:
+def uniform_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
     """Sample candidates using a uniform distribution.
 
     Generates candidates where each candidate ID has an equal probability
@@ -222,12 +251,12 @@ class NCELossConfig:
 
 
 def nce_loss(
-    weights: EagerValue,
-    biases: EagerValue,
-    labels: EagerValue,
-    inputs: EagerValue,
+    weights: TensorOrScalar,
+    biases: TensorOrScalar,
+    labels: TensorOrScalar,
+    inputs: TensorOrScalar,
     config: NCELossConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the noise-contrastive estimation (NCE) training loss.
 
     This function calculates the NCE loss which is often used for training
@@ -264,12 +293,12 @@ class SampledSoftmaxConfig:
 
 
 def sampled_softmax_loss(
-    weights: EagerValue,
-    biases: EagerValue,
-    labels: EagerValue,
-    inputs: EagerValue,
+    weights: TensorOrScalar,
+    biases: TensorOrScalar,
+    labels: TensorOrScalar,
+    inputs: TensorOrScalar,
     config: SampledSoftmaxConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the sampled softmax training loss.
 
     This function approximates the full softmax loss by sampling a subset
@@ -289,51 +318,74 @@ def sampled_softmax_loss(
 
 
 def ctc_beam_search_decoder(
-    inputs: EagerValue,
-    sequence_length: EagerValue,
-    beam_width: EagerValue = 100,
-    top_paths: EagerValue = 1,
-    merge_repeated: EagerValue = True,
-) -> EagerValue:
+    inputs: TensorOrScalar,
+    sequence_length: TensorOrScalar,
+    beam_width: TensorOrScalar = 100,
+    top_paths: TensorOrScalar = 1,
+    merge_repeated: TensorOrScalar = True,
+) -> TensorOrScalar:
     """Perform beam search decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
     network using the beam search algorithm.
 
     Args:
-        inputs: A tensor of input logits.
-        sequence_length: A tensor containing the length of each sequence.
-        beam_width: The width of the beam search.
-        top_paths: The number of top paths to return.
-        merge_repeated: Whether to merge repeated labels.
+        inputs (TensorOrScalar): A tensor of input logits.
+        sequence_length (TensorOrScalar): A tensor containing the length of each sequence.
+        beam_width (TensorOrScalar): The width of the beam search.
+        top_paths (TensorOrScalar): The number of top paths to return.
+        merge_repeated (TensorOrScalar): Whether to merge repeated labels.
 
     Returns:
-        A tuple containing the decoded paths and the log probabilities.
+        TensorOrScalar: A tuple containing the decoded paths and the log probabilities.
     """
-    return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
+    from ml_switcheroo_compiler.core.config import config as core_config
+
+    if core_config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        decoded, log_probs = cast(
+            "tuple[TensorOrScalar, TensorOrScalar]",
+            backend.execute_op(
+                "CtcBeamSearchDecoder",
+                getattr(inputs, "data", inputs),
+                getattr(sequence_length, "data", sequence_length),
+                beam_width=beam_width,
+                top_paths=top_paths,
+                merge_repeated=merge_repeated,
+            ),
+        )
+        return [decoded], Tensor(log_probs, TensorConfig(getattr(log_probs, "shape", (1,)), "float32", "cpu"))
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    attrs = {"beam_width": beam_width, "top_paths": top_paths, "merge_repeated": merge_repeated}
+    path_node = _emit_shape_node("CtcBeamSearchDecoder", [inputs, sequence_length], attrs, getattr(inputs, "shape", (1,)), "int64")
+    log_prob_node = _emit_shape_node("CtcBeamSearchDecoderLogProb", [inputs, sequence_length], attrs, (1,), "float32")
+    return [path_node], log_prob_node
 
 
 def ctc_greedy_decoder(
-    inputs: EagerValue,
-    sequence_length: EagerValue,
-    merge_repeated: EagerValue = True,
-    blank_index: EagerValue = None,
-) -> EagerValue:
+    inputs: TensorOrScalar,
+    sequence_length: TensorOrScalar,
+    merge_repeated: TensorOrScalar = True,
+    blank_index: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Perform greedy decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
     network by greedily selecting the most likely class at each timestep.
 
     Args:
-        inputs: A tensor of input logits.
-        sequence_length: A tensor containing the length of each sequence.
-        merge_repeated: Whether to merge repeated labels.
-        blank_index: The index of the blank label.
+        inputs (TensorOrScalar): A tensor of input logits.
+        sequence_length (TensorOrScalar): A tensor containing the length of each sequence.
+        merge_repeated (TensorOrScalar): Whether to merge repeated labels.
+        blank_index (TensorOrScalar): The index of the blank label.
 
     Returns:
-        A tuple containing the decoded paths and the log probabilities.
+        TensorOrScalar: A tuple containing the decoded paths and the log probabilities.
     """
-    return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
+    return ctc_beam_search_decoder(inputs, sequence_length, beam_width=1, top_paths=1, merge_repeated=merge_repeated)
 
 
 @dataclass
@@ -356,7 +408,7 @@ def ctc_loss(
     label_length: Tensor,
     logit_length: Tensor,
     options: Optional[CTCLossOptions] = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute the Connectionist Temporal Classification (CTC) Loss.
 
     Calculates the loss between a continuous sequence of logits and a target
@@ -389,20 +441,39 @@ def ctc_loss(
     )
 
 
-def ctc_unique_labels(labels: EagerValue, name: EagerValue = None) -> EagerValue:
+def ctc_unique_labels(labels: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
     """Extract unique labels and indices for batched data.
 
     Utility function typically used in conjunction with CTC loss to find
     unique labels across a batch.
 
     Args:
-        labels: A tensor containing batched target labels.
-        name: An optional name for the operation.
+        labels (TensorOrScalar): A tensor containing batched target labels.
+        name (TensorOrScalar): An optional name for the operation.
 
     Returns:
-        A tuple containing the unique labels and their indices.
+        TensorOrScalar: A tuple containing the unique labels and their indices.
     """
-    return Tensor(None, TensorConfig((1,), "int32", "cpu")), Tensor(None, TensorConfig((1,), "int32", "cpu"))
+    from ml_switcheroo_compiler.core.config import config as core_config
+
+    lbl_shape = getattr(labels, "shape", (1,))
+    if core_config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        unique, indices = cast(
+            "tuple[TensorOrScalar, TensorOrScalar]",
+            backend.execute_op("CtcUniqueLabels", getattr(labels, "data", labels), name=name),
+        )
+        return (
+            Tensor(unique, TensorConfig(getattr(unique, "shape", lbl_shape), "int32", "cpu")),
+            Tensor(indices, TensorConfig(getattr(indices, "shape", lbl_shape), "int32", "cpu")),
+        )
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    u_node = _emit_shape_node("CtcUniqueLabels", [labels], {"name": name}, lbl_shape, "int32")
+    idx_node = _emit_shape_node("CtcUniqueLabelsIndices", [labels], {"name": name}, lbl_shape, "int32")
+    return u_node, idx_node
 
 
 __all__ = [
@@ -437,7 +508,7 @@ class CtcLoss(OpDef):
 
     op_name = "CtcLoss"
 
-    def infer_shape(self, labels: EagerTensorProtocol, logits: EagerTensorProtocol, label_length: EagerTensorProtocol, logit_length: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, labels: EagerTensorProtocol, logits: EagerTensorProtocol, label_length: EagerTensorProtocol, logit_length: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the CTC loss operation.
 
         Args:

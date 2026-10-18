@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -18,12 +19,12 @@ if TYPE_CHECKING:
 class Solve(OpDef):
     """Solve Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer solution shape for linear system AX = B.
 
         Args:
-            *args (object): Matrix A and RHS B arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Matrix A and RHS B arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
@@ -59,12 +60,12 @@ class Solve(OpDef):
 class SolveEx(OpDef):
     """SolveEx Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer solution and info shapes for SolveEx.
 
         Args:
-            *args (object): Matrix A and RHS B arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Matrix A and RHS B arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (solution_shape, info_shape).
@@ -97,7 +98,7 @@ class SolveEx(OpDef):
         return (sol_shape, info_shape)
 
 
-def solve(a: Tensor, b: Tensor) -> EagerValue:
+def solve(a: Tensor, b: Tensor) -> TensorOrScalar:
     """Solves a linear matrix equation, or system of linear scalar equations.
 
     Args:
@@ -123,7 +124,7 @@ def solve(a: Tensor, b: Tensor) -> EagerValue:
     return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
 
 
-def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> EagerValue:
+def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> TensorOrScalar:
     """Solves a linear matrix equation with info tensor.
 
     Args:
@@ -159,7 +160,7 @@ def solve_triangular(
     b: Tensor,
     lower: bool = False,
     unit_diagonal: bool = False,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Solves the equation `a x = b` for `x`, assuming `a` is a triangular matrix.
 
     Args:

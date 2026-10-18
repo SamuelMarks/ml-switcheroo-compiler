@@ -6,9 +6,9 @@ import glob  # noqa: F401
 import os  # noqa: F401
 import shutil  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor  # noqa: F401
 from ml_switcheroo_compiler.ops.base import OpDef, register_op  # noqa: F401
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat  # noqa: F401
@@ -16,11 +16,11 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
-def set_default_stream(stream: EagerValue) -> None:
+def set_default_stream(stream: TensorOrScalar) -> None:
     """Set the default stream for the active backend.
 
     Args:
-        stream (Any): The stream parameter.
+        stream (TensorOrScalar): The stream parameter.
 
     Returns:
         NoneType: Result.

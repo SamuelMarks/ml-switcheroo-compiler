@@ -56,7 +56,7 @@ def test_checkpoint_gradient_exact_numerical_match() -> None:
     """Verify exact float-for-float equivalence between standard autodiff and checkpointed backward pass."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Nonlinear function."""
+        """Verify the behavior and output invariants of f."""
         y = ops.multiply(x, x)
         z = ops.add(y, ops.multiply(x, 3.0))
         return ops.multiply(z, ops.subtract(y, 1.0))

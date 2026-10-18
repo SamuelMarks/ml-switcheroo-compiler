@@ -1,11 +1,11 @@
-"""io module."""
+"""Unified I/O operations package."""
 
 from .async_io import (
     AsyncIOFuture,
     NonblockingLoad,
     NonblockingSave,
-    nonblocking_load,  # noqa: F401
-    nonblocking_save,  # noqa: F401
+    nonblocking_load,
+    nonblocking_save,
 )
 from .base64_io import (
     DecodeBase64,
@@ -68,6 +68,8 @@ from .system_io import (
     set_wired_limit,
 )
 from .tf_io import (
+    BinaryRecordOptions,
+    BinaryRecordWriter,
     DecodeCsv,
     ParseExample,
     ParseSequenceExample,
@@ -78,12 +80,17 @@ from .tf_io import (
     decode_csv,
     parse_example,
     parse_sequence_example,
+    parse_single_sequence_example,
     parse_tensor,
+    read_binary_records,
+    read_tfrecords,
     serialize_tensor,
 )
 
 __all__ = [
     "AsyncIOFuture",
+    "BinaryRecordOptions",
+    "BinaryRecordWriter",
     "DecodeBase64",
     "DecodeCsv",
     "DecodeImage",
@@ -128,10 +135,15 @@ __all__ = [
     "gfile_makedirs",
     "gfile_stat",
     "load",
+    "nonblocking_load",
+    "nonblocking_save",
     "parse_example",
     "parse_sequence_example",
+    "parse_single_sequence_example",
     "parse_tensor",
+    "read_binary_records",
     "read_file",
+    "read_tfrecords",
     "save",
     "save_gguf",
     "save_safetensors",

@@ -18,7 +18,7 @@ def _np_segment_sum(
     num_segments: int | None = None,
     **kwargs: Union[int, float, str, None],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-    """Evaluate _np_segment_sum operation.
+    """Execute the eager np segment sum operation on the active backend array.
 
     Args:
         backend_module (ModuleType): Active backend module.

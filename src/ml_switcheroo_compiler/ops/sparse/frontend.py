@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
-
 # from ml_switcheroo_compiler.ops.sparse import (
 #    SparseBincount,
 #    SparseCrossHashed,
@@ -29,18 +27,19 @@ from ml_switcheroo_compiler.backends.registry import EagerValue
 #    SparseSoftmax,
 # )
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpArgValue, get_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
 def _sparse_op(op_name: str, *args: OpArgValue, **kwargs: OpArgValue) -> Tensor | tuple[Tensor, ...]:
-    """Evaluate _sparse_op operation.
+    """Compute the sparse op tensor operation.
 
     Args:
-        op_name (Any): The op_name parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        op_name (str): The op_name parameter.
+        *args (OpArgValue): Positional args.
+        **kwargs (OpArgValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -65,12 +64,12 @@ def _sparse_op(op_name: str, *args: OpArgValue, **kwargs: OpArgValue) -> Tensor 
     return _emit_linalg_node(op_name, list(args), kwargs, [tuple(getattr(out_shape, "__iter__")())], [getattr(args[0], "dtype", "float32")])
 
 
-def sparse_bincount(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_bincount operation.
+def sparse_bincount(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse bincount tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -78,12 +77,12 @@ def sparse_bincount(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseBincount", *args, **kwargs)
 
 
-def sparse_cross_hashed(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_cross_hashed operation.
+def sparse_cross_hashed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse cross hashed tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -91,12 +90,12 @@ def sparse_cross_hashed(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseCrossHashed", *args, **kwargs)
 
 
-def sparse_expand_dims(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_expand_dims operation.
+def sparse_expand_dims(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse expand dims tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -104,12 +103,12 @@ def sparse_expand_dims(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseExpandDims", *args, **kwargs)
 
 
-def sparse_eye(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_eye operation.
+def sparse_eye(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse eye tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -117,12 +116,12 @@ def sparse_eye(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseEye", *args, **kwargs)
 
 
-def sparse_fill_empty_rows(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_fill_empty_rows operation.
+def sparse_fill_empty_rows(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse fill empty rows tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -130,12 +129,12 @@ def sparse_fill_empty_rows(*args: EagerValue, **kwargs: EagerValue) -> EagerValu
     return _sparse_op("SparseFillEmptyRows", *args, **kwargs)
 
 
-def sparse_map_values(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_map_values operation.
+def sparse_map_values(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse map values tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -143,12 +142,12 @@ def sparse_map_values(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseMapValues", *args, **kwargs)
 
 
-def sparse_mask(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_mask operation.
+def sparse_mask(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse mask tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -156,12 +155,12 @@ def sparse_mask(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseMask", *args, **kwargs)
 
 
-def sparse_maximum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_maximum operation.
+def sparse_maximum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse maximum tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -169,12 +168,12 @@ def sparse_maximum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseMaximum", *args, **kwargs)
 
 
-def sparse_minimum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_minimum operation.
+def sparse_minimum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse minimum tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -182,12 +181,12 @@ def sparse_minimum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseMinimum", *args, **kwargs)
 
 
-def sparse_reduce_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_reduce_max operation.
+def sparse_reduce_max(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse reduce max tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -195,12 +194,12 @@ def sparse_reduce_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseReduceMax", *args, **kwargs)
 
 
-def sparse_reduce_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_reduce_sum operation.
+def sparse_reduce_sum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse reduce sum tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -208,12 +207,12 @@ def sparse_reduce_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseReduceSum", *args, **kwargs)
 
 
-def sparse_reorder(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_reorder operation.
+def sparse_reorder(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse reorder tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -221,12 +220,12 @@ def sparse_reorder(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseReorder", *args, **kwargs)
 
 
-def sparse_reset_shape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_reset_shape operation.
+def sparse_reset_shape(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse reset shape tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -234,12 +233,12 @@ def sparse_reset_shape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseResetShape", *args, **kwargs)
 
 
-def sparse_reshape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_reshape operation.
+def sparse_reshape(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse reshape tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -247,12 +246,12 @@ def sparse_reshape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseReshape", *args, **kwargs)
 
 
-def sparse_retain(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_retain operation.
+def sparse_retain(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse retain tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -260,12 +259,12 @@ def sparse_retain(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseRetain", *args, **kwargs)
 
 
-def sparse_segment_mean(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_segment_mean operation.
+def sparse_segment_mean(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse segment mean tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -273,12 +272,12 @@ def sparse_segment_mean(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseSegmentMean", *args, **kwargs)
 
 
-def sparse_segment_sqrt_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_segment_sqrt_n operation.
+def sparse_segment_sqrt_n(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse segment sqrt n tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -286,12 +285,12 @@ def sparse_segment_sqrt_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     return _sparse_op("SparseSegmentSqrtN", *args, **kwargs)
 
 
-def sparse_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_segment_sum operation.
+def sparse_segment_sum(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse segment sum tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -299,12 +298,12 @@ def sparse_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseSegmentSum", *args, **kwargs)
 
 
-def sparse_slice(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_slice operation.
+def sparse_slice(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse slice tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -312,12 +311,12 @@ def sparse_slice(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseSlice", *args, **kwargs)
 
 
-def sparse_softmax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_softmax operation.
+def sparse_softmax(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse softmax tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -325,12 +324,12 @@ def sparse_softmax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseSoftmax", *args, **kwargs)
 
 
-def sparse_to_indicator(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_to_indicator operation.
+def sparse_to_indicator(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse to indicator tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -338,12 +337,12 @@ def sparse_to_indicator(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseToIndicator", *args, **kwargs)
 
 
-def sparse_transpose(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_transpose operation.
+def sparse_transpose(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse transpose tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -351,12 +350,12 @@ def sparse_transpose(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseTranspose", *args, **kwargs)
 
 
-def sparse_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_add operation.
+def sparse_add(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse add tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -364,12 +363,12 @@ def sparse_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseAdd", *args, **kwargs)
 
 
-def sparse_dense_matmul(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_dense_matmul operation.
+def sparse_dense_matmul(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse dense matmul tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -377,12 +376,12 @@ def sparse_dense_matmul(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseDenseMatMul", *args, **kwargs)
 
 
-def sparse_sampled_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate sparse_sampled_add operation.
+def sparse_sampled_add(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the sparse sampled add tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -390,12 +389,12 @@ def sparse_sampled_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseSampledAdd", *args, **kwargs)
 
 
-def smm(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate smm operation.
+def smm(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the smm tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -403,12 +402,12 @@ def smm(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("Smm", *args, **kwargs)
 
 
-def sparse_concat(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def sparse_concat(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Sparse concat.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -416,12 +415,12 @@ def sparse_concat(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseConcat", *args, **kwargs)
 
 
-def sparse_split(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def sparse_split(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Sparse split.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -429,12 +428,12 @@ def sparse_split(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _sparse_op("SparseSplit", *args, **kwargs)
 
 
-def sparse_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def sparse_to_dense(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Sparse to dense.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

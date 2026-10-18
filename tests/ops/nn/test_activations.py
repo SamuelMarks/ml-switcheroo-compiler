@@ -74,7 +74,7 @@ def test_isotonic_regression_eager() -> None:
 
 
 def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test activations eager mode."""
     config.eager_mode = True
 
     class DummyBackend:
@@ -92,7 +92,7 @@ def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
 
 
 def test_rrelu_non_eager_mode() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test rrelu non eager mode."""
     config.eager_mode = False
 
     class DummyNode:
@@ -105,7 +105,7 @@ def test_rrelu_non_eager_mode() -> None:
 
 
 def test_activations_infer_shape_broadcast() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test activations infer shape broadcast."""
 
     class DummyTensor:
         """Test class DummyTensor."""
@@ -135,7 +135,7 @@ def test_activations_infer_shape_broadcast() -> None:
 
 
 def test_onehot_infer_shape() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test onehot infer shape."""
     op = OneHot()
 
     class DummyTensor:
@@ -152,7 +152,7 @@ def test_onehot_infer_shape() -> None:
 
 
 def test_activations_non_eager_mode() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test activations non eager mode."""
     config.eager_mode = False
 
     class DummyNode:
@@ -184,7 +184,7 @@ def test_activations_non_eager_mode() -> None:
 
 
 def test_activations_infer_shape_missing() -> None:
-    """Test function."""
+    """Verify the behavior and output invariants of test activations infer shape missing."""
     # Rrelu missing shapes
     assert Rrelu().infer_shape() == ()
 

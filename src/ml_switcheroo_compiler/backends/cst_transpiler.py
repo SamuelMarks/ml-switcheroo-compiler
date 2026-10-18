@@ -6,7 +6,6 @@ import os
 from typing import cast
 
 import libcst as cst
-import libcst.matchers as m  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.transpiler_config_models import (
@@ -31,13 +30,13 @@ KNOWN_SOURCE_FRAMEWORKS = {"torch", "jax", "mlx", "numpy", "cupy", "dask", "kera
 
 
 def _build_attribute_chain(names: list[str]) -> cst.BaseExpression:
-    """Build a libcst Attribute chain from a list of strings.
+    """Build a LibCST Attribute chain expression from a sequence of identifier names.
 
     Args:
-        names (list[str]): The names parameter.
+        names (list[str]): Ordered list of attribute path components.
 
     Returns:
-        cst.BaseExpression: Result.
+        cst.BaseExpression: Constructed LibCST Name or nested Attribute expression.
     """
     if not names:
         return cst.Name("empty")
@@ -166,8 +165,8 @@ class ASTPatternMatcher:
             if def_rule.op_name == op_name and def_rule.target_framework in (target_framework, "all", None):
                 existing_kw = {a.keyword.value for a in new_args if a.keyword}
                 for k, v in def_rule.default_kwargs.items():
-                    if k not in existing_kw:
-                        new_args.append(cst.Arg(keyword=cst.Name(k), value=getattr(self, "_literal_to_cst_expr")(v)))
+                    if k not in existing_kw and isinstance(v, (bool, int, float, str)):
+                        new_args.append(cst.Arg(keyword=cst.Name(k), value=self._literal_to_cst_expr(v)))
         return new_args
 
     def _apply_keyword_to_positional(self, op_name: str, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:
@@ -299,7 +298,14 @@ class CSTTransformer(cst.CSTTransformer):
         elif isinstance(updated_node.module, cst.Attribute):
 
             def _get_base_name(node: cst.BaseExpression) -> str:
-                """Get the base name of a node."""
+                """Extract the root module identifier from a nested CST attribute expression.
+
+                Args:
+                    node (cst.BaseExpression): CST Name or Attribute node.
+
+                Returns:
+                    str: Root module name string.
+                """
                 if isinstance(node, cst.Name):
                     return node.value
                 elif isinstance(node, cst.Attribute):
@@ -886,7 +892,7 @@ class StateLiftingTransformer(cst.CSTTransformer):
             param_var_name (str): Name of the parameters argument.
 
         Returns:
-            tuple[dict[str, object], str]: Extracted parameter dict and functional code string.
+            tuple[dict[str, EagerValue], str]: Extracted parameter dict and functional code string.
         """
         from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
@@ -951,14 +957,14 @@ class TypeInferenceVisitor(cst.CSTVisitor):
 
 
 def transpile_source(source_code: str, target_framework: str = "jax") -> str:
-    """Parse source files while retaining 100% formatting, whitespace, comments.
+    """Transpile Python source code to the target backend while preserving formatting and comments.
 
     Args:
-        source_code (str): The source_code parameter.
-        target_framework (str): The target_framework parameter.
+        source_code (str): Input Python source code string.
+        target_framework (str): Target backend framework name.
 
     Returns:
-        str: Result.
+        str: Transpiled Python source code string.
     """
     tree: cst.Module = cst.parse_module(source_code)
     wrapper: cst.MetadataWrapper = cst.MetadataWrapper(tree)
@@ -971,14 +977,14 @@ transpile_cst = transpile_source
 
 
 def validate_diff(source_code: str, transpiled_code: str) -> bool:
-    """Implement a Source-Level Diff Validator.
+    """Validate that `transpiled_code` differs from `source_code` and parses as valid Python syntax.
 
     Args:
-        source_code (str): The source_code parameter.
-        transpiled_code (str): The transpiled_code parameter.
+        source_code (str): Original source code string.
+        transpiled_code (str): Transpiled source code string.
 
     Returns:
-        bool: Result.
+        bool: True if transpiled code is modified and syntactically valid, else False.
     """
     if source_code == transpiled_code:
         return False
@@ -990,13 +996,13 @@ def validate_diff(source_code: str, transpiled_code: str) -> bool:
 
 
 def type_infer_dry_run(source_code: str) -> dict[str, str]:
-    """Implement Hybrid Type-Inference.
+    """Perform a dry-run CST parse and literal assignment type-inference pass.
 
     Args:
-        source_code (str): The source_code parameter.
+        source_code (str): Input Python source code string.
 
     Returns:
-        dict[str, str]: Result.
+        dict[str, str]: Mapping of variable names to inferred type names plus `'dry_run'` status.
     """
     try:
         tree: cst.Module = cst.parse_module(source_code)

@@ -37,9 +37,9 @@ def _np_sparsedensematmul(backend_module: ModuleType, *args: EagerValue, **kwarg
     """Implement SparseDenseMatMul.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         tuple[int, ...]: Result.
@@ -54,9 +54,9 @@ def _np_sparsemapvalues(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """Implement SparseMapValues.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -71,9 +71,9 @@ def _np_sparsereshape(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     """Implement SparseReshape.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -86,9 +86,9 @@ def _np_sparsesampledadd(backend_module: ModuleType, *args: EagerValue, **kwargs
     """Implement SparseSampledAdd.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -101,9 +101,9 @@ def _np_sparsetranspose(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """Implement SparseTranspose.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -113,12 +113,12 @@ def _np_sparsetranspose(backend_module: ModuleType, *args: EagerValue, **kwargs:
 
 @numpy_eager_registry.register("decode_csv")
 def _np_decode_csv(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_decode_csv operation.
+    """Execute the eager np decode csv operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -128,12 +128,12 @@ def _np_decode_csv(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
 
 @numpy_eager_registry.register("decode_image")
 def _np_decode_image(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_decode_image operation.
+    """Execute the eager np decode image operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -143,12 +143,12 @@ def _np_decode_image(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("parse_example")
 def _np_parse_example(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_parse_example operation.
+    """Execute the eager np parse example operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -158,12 +158,12 @@ def _np_parse_example(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 @numpy_eager_registry.register("parse_tensor")
 def _np_parse_tensor(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_parse_tensor operation.
+    """Execute the eager np parse tensor operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -173,12 +173,12 @@ def _np_parse_tensor(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("read_file")
 def _np_read_file(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_read_file operation.
+    """Execute the eager np read file operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -188,12 +188,12 @@ def _np_read_file(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
 
 @numpy_eager_registry.register("write_file")
 def _np_write_file(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_write_file operation.
+    """Execute the eager np write file operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -207,7 +207,7 @@ def _parse_csv_row(row: list[str], record_defaults: EagerValue, np: ModuleType) 
     Args:
         row (list): The row parameter.
         record_defaults (list): The record_defaults parameter.
-        np (object): The np parameter.
+        np (ModuleType): The np parameter.
 
     Returns:
         list: Result.
@@ -263,12 +263,12 @@ def _get_csv_defaults(
 
 @numpy_eager_registry.register("DecodeCsv")
 def _np_decode_csv_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_decode_csv_camel operation.
+    """Execute the eager np decode csv camel operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -333,12 +333,12 @@ def _decode_png_bytes(data: bytes) -> tuple[int, int, int]:
 @numpy_eager_registry.register("DecodeJpeg")
 @numpy_eager_registry.register("DecodePng")
 def _np_decode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_decode_image_camel operation.
+    """Execute the eager np decode image camel operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         np.ndarray: Decoded image array.
@@ -367,12 +367,12 @@ def _np_decode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwar
 @numpy_eager_registry.register("EncodeJpeg")
 @numpy_eager_registry.register("EncodePng")
 def _np_encode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate encode operation.
+    """Execute the eager np encode image camel operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
         np.ndarray: Encoded image bytes wrapped in a NumPy scalar array.
@@ -409,12 +409,12 @@ def _np_encode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwar
 
 @numpy_eager_registry.register("ParseExample")
 def _np_parse_example_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_parse_example_camel operation.
+    """Execute the eager np parse example camel operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -447,12 +447,12 @@ def _np_parse_example_camel(backend_module: ModuleType, *args: EagerValue, **kwa
 
 @numpy_eager_registry.register("ParseTensor")
 def _np_parse_tensor_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_parse_tensor_camel operation.
+    """Execute the eager np parse tensor camel operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -476,12 +476,12 @@ def _np_parse_tensor_camel(backend_module: ModuleType, *args: EagerValue, **kwar
 
 @numpy_eager_registry.register("ReadFile")
 def _np_read_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_read_file_camel operation.
+    """Execute the eager np read file camel operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -503,12 +503,12 @@ def _np_read_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs:
 
 @numpy_eager_registry.register("WriteFile")
 def _np_write_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> None:
-    """Evaluate _np_write_file_camel operation.
+    """Execute the eager np write file camel operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

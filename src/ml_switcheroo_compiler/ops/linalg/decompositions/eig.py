@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -18,12 +19,12 @@ if TYPE_CHECKING:
 class Eig(OpDef):
     """Eig Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer eigenvalues and eigenvectors output shapes.
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (eigenvalues_shape (..., N), eigenvectors_shape (..., N, N)).
@@ -40,12 +41,12 @@ class Eig(OpDef):
 class Eigh(OpDef):
     """Eigh Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer Hermitian/symmetric eigenvalues and eigenvectors output shapes.
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (eigenvalues_shape (..., N), eigenvectors_shape (..., N, N)).
@@ -62,12 +63,12 @@ class Eigh(OpDef):
 class Eigvalsh(OpDef):
     """Eigvalsh Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer Hermitian/symmetric eigenvalues output shape (..., N).
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Eigenvalues output shape (..., N).
@@ -79,7 +80,7 @@ class Eigvalsh(OpDef):
         return shape[:-1] if len(shape) >= 1 else ()
 
 
-def eigh(input: Tensor, UPLO: str = "L") -> EagerValue:
+def eigh(input: Tensor, UPLO: str = "L") -> TensorOrScalar:
     """Compute the eigenvalues and eigenvectors of a complex Hermitian or real symmetric.
 
     Args:
@@ -101,7 +102,7 @@ def eigh(input: Tensor, UPLO: str = "L") -> EagerValue:
     return _emit_linalg_node("Eigh", [input], {"UPLO": UPLO}, [input.shape[:-1], input.shape], [getattr(input, "dtype", None)] * 2)
 
 
-def eigvalsh(input: Tensor, UPLO: str = "L") -> EagerValue:
+def eigvalsh(input: Tensor, UPLO: str = "L") -> TensorOrScalar:
     """Compute the eigenvalues of a complex Hermitian or real symmetric matrix.
 
     Args:
@@ -128,12 +129,12 @@ def eigvalsh(input: Tensor, UPLO: str = "L") -> EagerValue:
 class Eigvals(OpDef):
     """Eigvals Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer eigenvalues output shape (..., N).
 
         Args:
-            *args (object): Input tensor or shape arguments.
-            **kwargs (object): Optional keyword arguments.
+            *args (EagerTensorProtocol): Input tensor or shape arguments.
+            **kwargs (EagerTensorProtocol): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Eigenvalues output shape (..., N).
@@ -145,7 +146,7 @@ class Eigvals(OpDef):
         return shape[:-1] if len(shape) >= 1 else ()
 
 
-def eigvals(input: Tensor) -> EagerValue:
+def eigvals(input: Tensor) -> TensorOrScalar:
     """Compute the eigenvalues of a general matrix.
 
     Args:
@@ -167,7 +168,7 @@ def eigvals(input: Tensor) -> EagerValue:
     return _emit_linalg_node("Eigvals", [input], {}, [input.shape[:-1]], [getattr(input, "dtype", None)])
 
 
-def eig(input: Tensor) -> EagerValue:
+def eig(input: Tensor) -> TensorOrScalar:
     """Compute the eigenvalues and eigenvectors of a square matrix.
 
     Args:

@@ -36,10 +36,10 @@ def test_numba_dynamic_control_flow_visitors_and_parity() -> None:
     assert "else:" in "\n".join(gen.code)
 
     # Eager Cond
-    assert execute_op(NumbaGenerator, "Cond", True, 42, 99) == 42
-    assert execute_op(NumbaGenerator, "Cond", False, 42, 99) == 99
-    assert execute_op(NumbaGenerator, "Cond", True, lambda: 100, lambda: 200) == 100
-    assert execute_op(NumbaGenerator, "Cond", False, lambda: 100, lambda: 200) == 200
+    assert execute_op("Cond", True, 42, 99) == 42
+    assert execute_op("Cond", False, 42, 99) == 99
+    assert execute_op("Cond", True, lambda: 100, lambda: 200) == 100
+    assert execute_op("Cond", False, lambda: 100, lambda: 200) == 200
 
     # 2. WhileLoop visitor and eager execution
     gen_while = NumbaGenerator(g, fastmath=True)
@@ -49,7 +49,7 @@ def test_numba_dynamic_control_flow_visitors_and_parity() -> None:
     assert "while iter_while_node < 5:" in "\n".join(gen_while.code)
 
     # Eager WhileLoop
-    assert execute_op(NumbaGenerator, "WhileLoop", 10, max_iters=5) == 15
+    assert execute_op("WhileLoop", 10, max_iters=5) == 15
 
     # 3. Scan visitor and eager execution
     gen_scan = NumbaGenerator(g, fastmath=True)
@@ -59,7 +59,7 @@ def test_numba_dynamic_control_flow_visitors_and_parity() -> None:
     assert "for i_scan_node in range(len(xs)):" in "\n".join(gen_scan.code)
 
     # Eager Scan
-    scan_res = execute_op(NumbaGenerator, "Scan", 0, [1.0, 2.0, 3.0, 4.0])
+    scan_res = execute_op("Scan", 0, [1.0, 2.0, 3.0, 4.0])
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(scan_res, [1.0, 3.0, 6.0, 10.0])
 
 
@@ -115,11 +115,11 @@ def test_numba_eager_dispatch_and_tensor_unwrap() -> None:
     assert _unwrap_arg(t1) is not None
     assert _unwrap_arg(5) == 5
 
-    res_add = execute_op(NumbaGenerator, "Add", t1, t2)
+    res_add = execute_op("Add", t1, t2)
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_add, [5.0, 7.0, 9.0])
 
     # Direct numpy function
-    res_sin = execute_op(NumbaGenerator, "sin", np.array([0.0, np.pi / 2.0]))
+    res_sin = execute_op("sin", np.array([0.0, np.pi / 2.0]))
     cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_sin, [0.0, 1.0], atol=1e-5)
 
     # Eager registry fallback
@@ -129,14 +129,14 @@ def test_numba_eager_dispatch_and_tensor_unwrap() -> None:
         return "custom_numba_res"
 
     with mock.patch.dict(global_eager_registry._registry, {"CustomNumbaOp": mock_nb_custom}):
-        assert execute_op(NumbaGenerator, "CustomNumbaOp", 1) == "custom_numba_res"
+        assert execute_op("CustomNumbaOp", 1) == "custom_numba_res"
 
     # Unsupported operation and non-callable attribute
     with pytest.raises(BackendNotSupportedError, match="not implemented"):
-        execute_op(NumbaGenerator, "CompletelyUnknownNumbaOpXYZ", t1)
+        execute_op("CompletelyUnknownNumbaOpXYZ", t1)
 
     with pytest.raises(BackendNotSupportedError, match="not implemented"):
-        execute_op(NumbaGenerator, "pi", t1)
+        execute_op("pi", t1)
 
 
 def test_numba_profiler_and_memory_metrics() -> None:
@@ -234,4 +234,5 @@ def test_numba_generator_aot_and_classmethods() -> None:
     assert cast("EagerTensorProtocol", getattr(NumbaGenerator.asarray([1.0, 2.0]), "shape")) == (2,)
     assert nb_pkg.item(np.array([42.0])) == 42.0
     assert NumbaGenerator.item(np.array([42.0])) == 42.0
-    assert nb_pkg.execute_op(NumbaGenerator, "Add", 1, 2) == 3
+    assert nb_pkg.execute_op("Add", 1, 2) == 3
+    assert NumbaGenerator.execute_op("Add", 1, 2) == 3

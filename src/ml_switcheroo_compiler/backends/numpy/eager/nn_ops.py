@@ -12,12 +12,12 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 @numpy_eager_registry.register("Dropout2d")
 def _np_dropout2d(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_dropout2d operation.
+    """Execute the eager np dropout2d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -43,12 +43,12 @@ def _np_dropout2d(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
 
 @numpy_eager_registry.register("BlockMaskedMm")
 def _np_block_masked_mm(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_block_masked_mm operation.
+    """Execute the eager np block masked mm operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -66,9 +66,9 @@ def _np_mul(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
     """Evaluate elementwise multiplication in NumPy eager mode.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): Input operands.
-        **kwargs (object): Optional kwargs.
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): Input operands.
+        **kwargs (EagerValue): Optional kwargs.
 
     Returns:
         np.ndarray: Multiplied product array.
@@ -81,9 +81,9 @@ def _np_max_pool2d_with_argmax_forward(backend_module: ModuleType, *args: EagerV
     """Evaluate 2D max pooling forward in NumPy eager mode.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): Input tensor [x].
-        **kwargs (object): Kernel and stride specs.
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): Input tensor [x].
+        **kwargs (EagerValue): Kernel and stride specs.
 
     Returns:
         np.ndarray: Max pooled output.
@@ -110,9 +110,9 @@ def _np_batch_norm(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """Evaluate BatchNorm forward in NumPy eager mode.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): Positional inputs [x, gamma, beta].
-        **kwargs (object): Keyword arguments (eps, epsilon).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): Positional inputs [x, gamma, beta].
+        **kwargs (EagerValue): Keyword arguments (eps, epsilon).
 
     Returns:
         np.ndarray: Normalized output tensor.
@@ -144,9 +144,9 @@ def _np_batch_norm_input_grad(backend_module: ModuleType, *args: EagerValue, **k
     """Evaluate exact analytical gradient of BatchNorm with respect to input.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x, gamma].
-        **kwargs (object): Keyword arguments (eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x, gamma].
+        **kwargs (EagerValue): Keyword arguments (eps).
 
     Returns:
         np.ndarray: Input gradient tensor matching x shape.
@@ -182,9 +182,9 @@ def _np_batch_norm_gamma_grad(backend_module: ModuleType, *args: EagerValue, **k
     """Evaluate exact gradient of BatchNorm with respect to scale (gamma).
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x].
-        **kwargs (object): Keyword arguments (eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x].
+        **kwargs (EagerValue): Keyword arguments (eps).
 
     Returns:
         np.ndarray: Gamma gradient vector.
@@ -205,9 +205,9 @@ def _np_batch_norm_beta_grad(backend_module: ModuleType, *args: EagerValue, **kw
     """Evaluate exact gradient of BatchNorm with respect to shift (beta).
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out].
-        **kwargs (object): Optional keyword arguments.
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out].
+        **kwargs (EagerValue): Optional keyword arguments.
 
     Returns:
         np.ndarray: Beta gradient vector.
@@ -222,9 +222,9 @@ def _np_layer_norm(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """Evaluate LayerNorm forward in NumPy eager mode.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): Positional arguments [x, gamma, beta].
-        **kwargs (object): Keyword arguments (eps, axis).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): Positional arguments [x, gamma, beta].
+        **kwargs (EagerValue): Keyword arguments (eps, axis).
 
     Returns:
         np.ndarray: Layer-normalized output.
@@ -247,9 +247,9 @@ def _np_layer_norm_input_grad(backend_module: ModuleType, *args: EagerValue, **k
     """Evaluate exact analytical gradient of LayerNorm with respect to input.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x, gamma].
-        **kwargs (object): Keyword arguments (eps, axis).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x, gamma].
+        **kwargs (EagerValue): Keyword arguments (eps, axis).
 
     Returns:
         np.ndarray: Input gradient matching x shape.
@@ -279,9 +279,9 @@ def _np_layer_norm_gamma_grad(backend_module: ModuleType, *args: EagerValue, **k
     """Evaluate exact gradient of LayerNorm with respect to gamma.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x].
-        **kwargs (object): Keyword arguments (eps, axis).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x].
+        **kwargs (EagerValue): Keyword arguments (eps, axis).
 
     Returns:
         np.ndarray: Gamma gradient.
@@ -303,9 +303,9 @@ def _np_layer_norm_beta_grad(backend_module: ModuleType, *args: EagerValue, **kw
     """Evaluate exact gradient of LayerNorm with respect to beta.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out].
-        **kwargs (object): Keyword arguments (axis).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out].
+        **kwargs (EagerValue): Keyword arguments (axis).
 
     Returns:
         np.ndarray: Beta gradient.
@@ -321,9 +321,9 @@ def _np_rms_norm(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
     """Evaluate RMSNorm forward in NumPy eager mode.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): Positional arguments [x, gamma].
-        **kwargs (object): Keyword arguments (eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): Positional arguments [x, gamma].
+        **kwargs (EagerValue): Keyword arguments (eps).
 
     Returns:
         np.ndarray: Normalized tensor.
@@ -343,9 +343,9 @@ def _np_rms_norm_input_grad(backend_module: ModuleType, *args: EagerValue, **kwa
     """Evaluate exact analytical gradient of RMSNorm with respect to input.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x, gamma].
-        **kwargs (object): Keyword arguments (eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x, gamma].
+        **kwargs (EagerValue): Keyword arguments (eps).
 
     Returns:
         np.ndarray: Input gradient matching x shape.
@@ -369,9 +369,9 @@ def _np_rms_norm_gamma_grad(backend_module: ModuleType, *args: EagerValue, **kwa
     """Evaluate exact gradient of RMSNorm with respect to gamma.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x].
-        **kwargs (object): Keyword arguments (eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x].
+        **kwargs (EagerValue): Keyword arguments (eps).
 
     Returns:
         np.ndarray: Gamma gradient vector.
@@ -391,9 +391,9 @@ def _np_group_norm(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """Evaluate GroupNorm forward in NumPy eager mode.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [x, gamma, beta].
-        **kwargs (object): Keyword arguments (num_groups, groups, eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [x, gamma, beta].
+        **kwargs (EagerValue): Keyword arguments (num_groups, groups, eps).
 
     Returns:
         np.ndarray: Group-normalized output.
@@ -425,9 +425,9 @@ def _np_group_norm_input_grad(backend_module: ModuleType, *args: EagerValue, **k
     """Evaluate exact gradient of GroupNorm with respect to input.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x, gamma].
-        **kwargs (object): Keyword arguments (num_groups, groups, eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x, gamma].
+        **kwargs (EagerValue): Keyword arguments (num_groups, groups, eps).
 
     Returns:
         np.ndarray: Input gradient matching x shape.
@@ -467,9 +467,9 @@ def _np_group_norm_gamma_grad(backend_module: ModuleType, *args: EagerValue, **k
     """Evaluate exact gradient of GroupNorm with respect to gamma.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x].
-        **kwargs (object): Keyword arguments (num_groups, groups, eps).
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x].
+        **kwargs (EagerValue): Keyword arguments (num_groups, groups, eps).
 
     Returns:
         np.ndarray: Gamma gradient vector.
@@ -499,9 +499,9 @@ def _np_group_norm_beta_grad(backend_module: ModuleType, *args: EagerValue, **kw
     """Evaluate exact gradient of GroupNorm with respect to beta.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out].
-        **kwargs (object): Optional keyword arguments.
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out].
+        **kwargs (EagerValue): Optional keyword arguments.
 
     Returns:
         np.ndarray: Beta gradient vector.
@@ -516,9 +516,9 @@ def _np_avg_pool2d(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """Evaluate AvgPool2D forward in NumPy eager mode.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): Positional args [x].
-        **kwargs (object): Kernel and stride specs.
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): Positional args [x].
+        **kwargs (EagerValue): Kernel and stride specs.
 
     Returns:
         np.ndarray: Average-pooled output tensor.
@@ -548,9 +548,9 @@ def _np_avg_pool2d_grad(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """Evaluate exact gradient of AvgPool2D with respect to input.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x].
-        **kwargs (object): Kernel and stride specs.
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x].
+        **kwargs (EagerValue): Kernel and stride specs.
 
     Returns:
         np.ndarray: Input gradient matching x shape.
@@ -580,9 +580,9 @@ def _np_max_pool2d_with_argmax_grad(backend_module: ModuleType, *args: EagerValu
     """Evaluate exact gradient of MaxPool2DWithArgmax with respect to input.
 
     Args:
-        backend_module (object): Backend provider module.
-        *args (object): [d_out, x].
-        **kwargs (object): Kernel and stride specs.
+        backend_module (ModuleType): Backend provider module.
+        *args (EagerValue): [d_out, x].
+        **kwargs (EagerValue): Kernel and stride specs.
 
     Returns:
         np.ndarray: Input gradient matching x shape.

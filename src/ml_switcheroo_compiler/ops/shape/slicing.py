@@ -7,11 +7,12 @@ import math
 from collections.abc import Sequence
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -23,14 +24,14 @@ def slice(
     start: int | None = None,
     end: int | None = None,
     step: int = 1,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Slice the input tensor along a specific dimension.
 
     Args:
         input (Tensor): The input parameter.
         axis (int): The axis parameter.
-        start (Any): The start parameter.
-        end (Any): The end parameter.
+        start (int | None): The start parameter.
+        end (int | None): The end parameter.
         step (int): The step parameter.
 
     Returns:
@@ -81,7 +82,7 @@ def strided_slice(
     begin: Sequence[int],
     end: Sequence[int],
     strides: Sequence[int],
-) -> EagerValue:
+) -> TensorOrScalar:
     """Extract a strided slice from the input tensor.
 
     Args:
@@ -127,12 +128,12 @@ def strided_slice(
 class Slice(OpDef):
     """Slice operator definition."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -144,12 +145,12 @@ class Slice(OpDef):
 class StridedSlice(OpDef):
     """StridedSlice operator definition."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape for StridedSlice.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (TensorOrScalar): Positional args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple: Result.
@@ -164,15 +165,15 @@ class Choose(OpDef):
     op_name = "Choose"
     np_op_name = "choose"
 
-    def infer_shape(self, a: EagerTensorProtocol, choices: EagerTensorProtocol, out: EagerValue = None, mode: str = "raise", **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, a: EagerTensorProtocol, choices: EagerTensorProtocol, out: TensorOrScalar = None, mode: str = "raise", **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape.
 
         Args:
-            a (Any): The a parameter.
-            choices (Any): The choices parameter.
-            out (Any): The out parameter.
+            a (EagerTensorProtocol): The a parameter.
+            choices (EagerTensorProtocol): The choices parameter.
+            out (TensorOrScalar): The out parameter.
             mode (str): The mode parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -186,12 +187,12 @@ class IndexInDim(OpDef):
 
     op_name = "IndexInDim"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -227,12 +228,12 @@ class UpdateSlice(OpDef):
 
     op_name = "UpdateSlice"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -244,12 +245,12 @@ class UpdateSlice(OpDef):
         return tuple(int(d) for d in raw)
 
 
-def index_in_dim(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def index_in_dim(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Return the index in a dimension.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -259,12 +260,12 @@ def index_in_dim(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("IndexInDim", *args, **kwargs)
 
 
-def update_slice(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def update_slice(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Update a slice.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

@@ -4,16 +4,17 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.registry import get_util
 
 _emit_shape_node = get_util("_emit_shape_node")
 
 
-def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> EagerValue:
+def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> TensorOrScalar:
     """Scatter values from a source tensor into the input tensor along a specified.
 
     Args:
@@ -42,7 +43,7 @@ def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> EagerValue:
     )
 
 
-def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> EagerValue:
+def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> TensorOrScalar:
     """Scatter updates into a new tensor of specified shape using indices.
 
     Args:
@@ -68,7 +69,7 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> EagerV
     )
 
 
-def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> EagerValue:
+def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> TensorOrScalar:
     """Add values from a source tensor to the input tensor at specified indices along a.
 
     Args:
@@ -97,7 +98,7 @@ def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> EagerVa
     )
 
 
-def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
+def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> TensorOrScalar:
     """Update the value of a tensor at given indices.
 
     Args:
@@ -127,7 +128,7 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> E
     )
 
 
-def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
+def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> TensorOrScalar:
     """Update a tensor at given indices with the maximum of the current value and the update.
 
     Args:
@@ -157,7 +158,7 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Eage
     )
 
 
-def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
+def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> TensorOrScalar:
     """Update a tensor at given indices with the minimum of the current value and the update.
 
     Args:
@@ -187,7 +188,7 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Eage
     )
 
 
-def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> EagerValue:
+def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> TensorOrScalar:
     """Add updates to a tensor at given indices.
 
     Args:

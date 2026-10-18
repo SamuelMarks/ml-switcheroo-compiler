@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _to_numpy_array
+from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _to_numpy_array, host_backend
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-from ml_switcheroo_compiler.distributed.host_collectives import np
 from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
 
@@ -96,7 +95,7 @@ def _prepare_eager_transform(
     Returns:
         EagerTransformContext: Standardized context containing channels-last images.
     """
-    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
     name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     if images is None:
@@ -108,7 +107,7 @@ def _prepare_eager_transform(
             name=name,
             np_mod=np_mod,
             imgs=np_mod.empty((0, 0, 0, 0), dtype=np_mod.float32),
-            rng=np.random.default_rng(seed) if seed is not None else np.random.default_rng(0),
+            rng=host_backend.random.default_rng(seed) if seed is not None else host_backend.random.default_rng(0),
         )
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
@@ -118,14 +117,14 @@ def _prepare_eager_transform(
         arr = arr[None, :, :, None]
     elif arr.ndim == 3:
         if data_format == "channels_first" or (arr.shape[0] in (1, 3, 4) and arr.shape[2] not in (1, 3, 4)):
-            arr = np.transpose(arr, (1, 2, 0))[None, ...]
+            arr = host_backend.transpose(arr, (1, 2, 0))[None, ...]
         else:
             arr = arr[None, ...]
     elif arr.ndim == 4 and data_format == "channels_first":
-        arr = np.transpose(arr, (0, 2, 3, 1))
+        arr = host_backend.transpose(arr, (0, 2, 3, 1))
 
     b, h, w, c = arr.shape
-    rng = np.random.default_rng(seed) if seed is not None else np.random.default_rng()
+    rng = host_backend.random.default_rng(seed) if seed is not None else host_backend.random.default_rng()
     return EagerTransformContext(B=b, H=h, W=w, C=c, name=name, np_mod=np_mod, imgs=arr, rng=rng)
 
 
@@ -193,12 +192,12 @@ def _map_coords_nearest(ctx: MapCoordsContext) -> EagerValue:
         ctx: MapCoordsContext containing source image and coordinate grids.
 
     Returns:
-        Any: Interpolated 2D array sampled at integer-rounded coordinate locations.
+        EagerValue: Interpolated 2D array sampled at integer-rounded coordinate locations.
     """
     if ctx is None or ctx.image is None or ctx.y is None or ctx.x is None:
         return 0
 
-    np_mod = cast(ModuleType, np if ctx.np_mod is None else ctx.np_mod)
+    np_mod = cast(ModuleType, host_backend if ctx.np_mod is None else ctx.np_mod)
     img = cast(EagerTensorProtocol, ctx.image)
     h, w = img.shape[:2]
 
@@ -226,12 +225,12 @@ def _map_coords_bilinear(ctx: MapCoordsContext) -> EagerValue:
         ctx: MapCoordsContext containing source image and subpixel coordinates.
 
     Returns:
-        Any: Bilinearly interpolated 2D array.
+        EagerValue: Bilinearly interpolated 2D array.
     """
     if ctx is None or ctx.image is None or ctx.y is None or ctx.x is None:
         return 0
 
-    np_mod = cast(ModuleType, np if ctx.np_mod is None else ctx.np_mod)
+    np_mod = cast(ModuleType, host_backend if ctx.np_mod is None else ctx.np_mod)
     img = cast(EagerTensorProtocol, ctx.image)
     h, w = img.shape[:2]
 
@@ -277,16 +276,16 @@ def _cubic_kernel(t: EagerValue, a: float = -0.5) -> EagerValue:
         a: Cubic spline spline tension parameter (typically -0.5 or -0.75).
 
     Returns:
-        Any: Evaluated cubic weights.
+        EagerValue: Evaluated cubic weights.
     """
-    abs_t: EagerTensorProtocol = np.abs(t)
+    abs_t: EagerTensorProtocol = host_backend.abs(t)
     abs_t2 = abs_t * abs_t
     abs_t3 = abs_t2 * abs_t
 
     w1 = (a + 2.0) * abs_t3 - (a + 3.0) * abs_t2 + 1.0
     w2 = a * abs_t3 - 5.0 * a * abs_t2 + 8.0 * a * abs_t - 4.0 * a
 
-    return cast(EagerValue, np.where(abs_t <= 1.0, w1, np.where(abs_t < 2.0, w2, 0.0)))
+    return cast(EagerValue, host_backend.where(abs_t <= 1.0, w1, host_backend.where(abs_t < 2.0, w2, 0.0)))
 
 
 def _map_coords_bicubic(ctx: MapCoordsContext) -> EagerValue:
@@ -296,12 +295,12 @@ def _map_coords_bicubic(ctx: MapCoordsContext) -> EagerValue:
         ctx: MapCoordsContext containing source image and subpixel coordinates.
 
     Returns:
-        Any: Bicubic interpolated 2D array.
+        EagerValue: Bicubic interpolated 2D array.
     """
     if ctx is None or ctx.image is None or ctx.y is None or ctx.x is None:
         return 0
 
-    np_mod = cast(ModuleType, np if ctx.np_mod is None else ctx.np_mod)
+    np_mod = cast(ModuleType, host_backend if ctx.np_mod is None else ctx.np_mod)
     img = cast(EagerTensorProtocol, ctx.image)
     h, w = img.shape[:2]
 
@@ -349,12 +348,12 @@ def _np_map_coordinates(
         fill_value: Extrapolation fill value for coordinates outside image bounds.
 
     Returns:
-        Any: Resampled image array matching the spatial shape of coords.
+        EagerValue: Resampled image array matching the spatial shape of coords.
     """
     if image is None or coords is None:
         return 0
 
-    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    mod = cast(ModuleType, host_backend if np_mod is None else np_mod)
     coords_t = cast(EagerTensorProtocol, coords)
     y: EagerTensorProtocol = mod.asarray(coords_t[0], dtype=mod.float32)
     x: EagerTensorProtocol = mod.asarray(coords_t[1], dtype=mod.float32)
@@ -407,7 +406,7 @@ def _compute_single_homography(np_mod: EagerValue, src: EagerValue, dst: EagerVa
         dst: 4x2 array of destination coordinates (u, v).
 
     Returns:
-        np.ndarray: 3x3 normalized homography matrix mapping src to dst.
+        host_backend.ndarray: 3x3 normalized homography matrix mapping src to dst.
 
     Raises:
         ValueError: If points are collinear or SVD produces a singular matrix.
@@ -448,7 +447,7 @@ def _compute_perspective_matrix(np_mod: EagerValue, src: EagerValue, dst: EagerV
         dst: Destination points array of shape (4, 2) or (B, 4, 2).
 
     Returns:
-        Any: 3x3 or (B, 3, 3) projective transformation matrices.
+        EagerValue: 3x3 or (B, 3, 3) projective transformation matrices.
 
     Raises:
         ValueError: If input points are collinear or singular.
@@ -456,7 +455,7 @@ def _compute_perspective_matrix(np_mod: EagerValue, src: EagerValue, dst: EagerV
     if src is None or dst is None:
         return 0
 
-    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    mod = cast(ModuleType, host_backend if np_mod is None else np_mod)
     src_arr = mod.asarray(src, dtype=mod.float64)
     dst_arr = mod.asarray(dst, dtype=mod.float64)
 
@@ -477,12 +476,12 @@ def _generate_perspective_coords(np_mod: EagerValue, h_batch: EagerValue, coords
         coords: Meshgrid of homogeneous pixel coordinates of shape (H, W, 3).
 
     Returns:
-        Any: Tuple of (ys, xs) backward-mapped coordinate grids.
+        EagerValue: Tuple of (ys, xs) backward-mapped coordinate grids.
     """
     if h_batch is None or coords is None:
         return 0
 
-    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    mod = cast(ModuleType, host_backend if np_mod is None else np_mod)
     h = mod.asarray(h_batch, dtype=mod.float32)
     c = mod.asarray(coords, dtype=mod.float32)
 
@@ -514,12 +513,12 @@ def _generate_perspective_grid(np_mod: EagerValue, H: int, W: int) -> EagerValue
         W: Target grid width.
 
     Returns:
-        Any: Array of shape (H, W, 3) containing (x, y, 1.0) coordinates.
+        EagerValue: Array of shape (H, W, 3) containing (x, y, 1.0) coordinates.
     """
     if H <= 0 or W <= 0:
         return 0
 
-    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    mod = cast(ModuleType, host_backend if np_mod is None else np_mod)
     y, x = mod.meshgrid(
         mod.arange(H, dtype=mod.float32),
         mod.arange(W, dtype=mod.float32),
@@ -570,12 +569,12 @@ def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> EagerValue:
         pctx: PerspectiveChannelContext bundling arrays, coordinates, and configurations.
 
     Returns:
-        Any: Updated output array with warped image channels.
+        EagerValue: Updated output array with warped image channels.
     """
     if pctx is None or pctx.imgs is None or pctx.ctx is None:
         return 0
 
-    np_mod = np if pctx.np_mod is None else pctx.np_mod
+    np_mod = host_backend if pctx.np_mod is None else pctx.np_mod
     b = pctx.ctx.b
     coords = pctx.ctx.coords
     order = 1 if getattr(pctx.config, "interpolation", "bilinear") == "bilinear" else 0
@@ -603,12 +602,12 @@ def _apply_perspective_batch(np_mod: EagerValue, imgs: EagerValue, h: EagerValue
         config: PerspectiveConfig controlling interpolation method and padding values.
 
     Returns:
-        Any: Transformed batched image array of shape (B, H, W, C).
+        EagerValue: Transformed batched image array of shape (B, H, W, C).
     """
     if imgs is None or h is None:
         return 0
 
-    mod = cast(ModuleType, np if np_mod is None else np_mod)
+    mod = cast(ModuleType, host_backend if np_mod is None else np_mod)
     b_count, h_dim, w_dim, _ = cast(EagerTensorProtocol, imgs).shape
     grid = _generate_perspective_grid(mod, h_dim, w_dim)
     out = mod.zeros_like(imgs)

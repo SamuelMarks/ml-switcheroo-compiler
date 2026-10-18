@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def triangular(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | str) -> Tensor:
-    """Evaluate triangular operation.
+    """Execute triangular for compiler processing.
 
     Args:
         *args (Tensor | float | int | str): Positional args.

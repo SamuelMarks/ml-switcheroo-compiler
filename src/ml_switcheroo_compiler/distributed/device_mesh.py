@@ -184,7 +184,7 @@ class DeviceMesh:
         """Equality check.
 
         Args:
-            other (object): The object to compare with.
+            other (TensorOrScalar): The object to compare with.
 
         Returns:
             bool: True if shapes, axis names, and devices are identical.

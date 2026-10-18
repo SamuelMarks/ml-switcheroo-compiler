@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def random_gamma_p(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | str) -> Tensor:
-    """Evaluate random_gamma_p operation.
+    """Execute random gamma p for compiler processing.
 
     Args:
         *args (Tensor | float | int | str): Positional args.

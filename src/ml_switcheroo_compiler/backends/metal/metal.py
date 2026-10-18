@@ -3,7 +3,9 @@
 import ctypes
 import ctypes.util
 import logging
+import math
 import os
+import struct
 from typing import Callable, Optional, Protocol, Union, cast, runtime_checkable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -18,7 +20,6 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -29,7 +30,11 @@ class TensorLike(Protocol):
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Shape tuple of tensor."""
+        """Shape tuple of tensor.
+
+        Returns:
+            tuple[int, ...]: Computed result.
+        """
         ...
 
 
@@ -145,7 +150,7 @@ def _evaluate_metal_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Ea
         args (tuple[object, ...]): Input positional arguments.
 
     Returns:
-        object: Resulting tensor or tuple of tensors.
+        EagerValue: Resulting tensor or tuple of tensors.
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
@@ -261,7 +266,7 @@ class MetalCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (Optional[list[CodeGeneratorVisitor]], optional): Visitor delegates.
         """
-        getattr(super(), "__init__")(graph, delegates)
+        super().__init__(graph, delegates)
         yaml_dir: str = os.path.join(os.path.dirname(__file__), "metal_orchestration")
         yaml_path: str = os.path.join(os.path.dirname(__file__), "msl_templates.yaml")
         self.config = load_hardware_templates(yaml_dir, yaml_path)
@@ -496,10 +501,10 @@ class MetalCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (object): Compiler options such as optimization levels and metallib targets.
+            **kwargs (EagerValue): Compiler options such as optimization levels and metallib targets.
 
         Returns:
-            object: Executable compiled artifact.
+            EagerValue: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
         from ml_switcheroo_compiler.backends.hardware_compilers import MetalCompiler
@@ -513,11 +518,11 @@ class MetalCodeGenerator(BaseGenerator):
             """Execute compiled Metal artifact with runtime dispatch or fallback.
 
             Args:
-                *args (object): Input tensor or buffer arguments.
-                **runner_kwargs (object): Optional execution options.
+                *args (EagerValue): Input tensor or buffer arguments.
+                **runner_kwargs (EagerValue): Optional execution options.
 
             Returns:
-                object: Output tensor or tuple of output tensors.
+                EagerValue: Output tensor or tuple of output tensors.
             """
             if MetalRunner.is_available():
                 try:
@@ -787,19 +792,21 @@ class MetalRunner:
         encoder = cmd_buf.computeCommandEncoder()
         encoder.setComputePipelineState_(pipeline_state)
 
-        numpy_mod = _np_mod()
         for i, arr in enumerate(inputs):
-            contiguous_arr = numpy_mod.ascontiguousarray(arr, dtype=numpy_mod.float32)
+            raw_bytes = self._to_float32_bytes(arr)
+            c_buf = ctypes.create_string_buffer(raw_bytes, len(raw_bytes))
             buf = self.device.newBufferWithBytes_length_options_(
-                contiguous_arr.ctypes.data,
-                contiguous_arr.nbytes,
+                ctypes.addressof(c_buf),
+                len(raw_bytes),
                 Metal.MTLResourceStorageModeShared,
             )
             encoder.setBuffer_offset_atIndex_(buf, 0, i)
 
         first_in = inputs[0] if inputs else None
         out_shape = getattr(first_in, "shape", (1,))
-        num_elements = int(numpy_mod.prod(out_shape))
+        num_elements = 1
+        for dim_val in out_shape:
+            num_elements *= int(dim_val)
         out_bytes = num_elements * 4
         out_buf = self.device.newBufferWithLength_options_(out_bytes, Metal.MTLResourceStorageModeShared)
         encoder.setBuffer_offset_atIndex_(out_buf, 0, len(inputs))
@@ -814,7 +821,25 @@ class MetalRunner:
         cmd_buf.waitUntilCompleted()
 
         out_ptr = out_buf.contents()
-        return cast(ArrayBufferType, numpy_mod.ctypeslib.as_array(ctypes.cast(out_ptr, ctypes.POINTER(ctypes.c_float)), shape=out_shape).copy())
+        c_floats = ctypes.cast(out_ptr, ctypes.POINTER(ctypes.c_float))
+        return cast(ArrayBufferType, [float(c_floats[idx]) for idx in range(num_elements)])
+
+    @staticmethod
+    def _to_float32_bytes(data: EagerValue) -> bytes:
+        """Convert an array, sequence, or byte buffer into contiguous float32 bytes.
+
+        Args:
+            data (EagerValue): Input array, sequence, or byte buffer.
+
+        Returns:
+            bytes: Contiguous float32 byte representation.
+        """
+        if isinstance(data, (bytes, bytearray, memoryview)):
+            return bytes(data)
+        if isinstance(data, (list, tuple)):
+            float_arr = (ctypes.c_float * len(data))(*(float(x) for x in data))
+            return bytes(float_arr)
+        return bytes(getattr(getattr(data, "astype")("float32"), "tobytes")())
 
     def _prepare_device_buffers(self, inputs: dict[str, ArrayBufferType]) -> dict[str, EagerValue]:
         """Allocate and populate input Metal buffers from host inputs.
@@ -829,14 +854,7 @@ class MetalRunner:
 
         device_buffers: dict[str, EagerValue] = {}
         for inp_name, data in inputs.items():
-            if isinstance(data, (bytes, memoryview)):
-                raw_bytes = bytes(data)
-            elif isinstance(data, list):
-                float_arr = (ctypes.c_float * len(data))(*data)
-                raw_bytes = bytes(float_arr)
-            else:
-                numpy_mod = _np_mod()
-                raw_bytes = bytes(numpy_mod.ascontiguousarray(data, dtype=numpy_mod.float32))
+            raw_bytes = self._to_float32_bytes(data)
             buf = self.device.newBufferWithBytes_length_options_(
                 raw_bytes,
                 len(raw_bytes),
@@ -858,8 +876,8 @@ class MetalRunner:
         Args:
             node (IRNode): IR node.
             node_idx (int): Current node index.
-            library (object): MTLLibrary instance.
-            encoder (object): Compute command encoder.
+            library (EagerValue): MTLLibrary instance.
+            encoder (EagerValue): Compute command encoder.
             device_buffers (dict[str, object]): Buffer map.
         """
         import Metal
@@ -950,7 +968,7 @@ class MetalRunner:
         """Execute multi-pass parallel tree reduction on Metal GPU device.
 
         Args:
-            np_arr (object): Contiguous NumPy array or buffer.
+            np_arr (EagerValue): Contiguous array or byte buffer.
             fallback (float): Value to return on compilation or dispatch failure.
 
         Returns:
@@ -958,9 +976,9 @@ class MetalRunner:
         """
         import Metal
 
-        numpy_mod = _np_mod()
-        flat_arr = numpy_mod.ascontiguousarray(getattr(np_arr, "flatten")(), dtype=numpy_mod.float32)
-        n_elements = int(flat_arr.size)
+        raw_bytes = self._to_float32_bytes(np_arr)
+        n_elements = len(raw_bytes) // 4
+        c_buf = ctypes.create_string_buffer(raw_bytes, len(raw_bytes))
 
         msl_kernel = (
             "#include <metal_stdlib>\n"
@@ -1014,8 +1032,8 @@ class MetalRunner:
 
         queue = self.device.newCommandQueue()
         in_buf = self.device.newBufferWithBytes_length_options_(
-            flat_arr.ctypes.data,
-            flat_arr.nbytes,
+            ctypes.addressof(c_buf),
+            len(raw_bytes),
             Metal.MTLResourceStorageModeShared,
         )
         curr_n = n_elements
@@ -1067,20 +1085,21 @@ class MetalRunner:
             arr (Union[TensorLike, list[float], tuple[float, ...], bytes, memoryview]): Input array to reduce.
 
         Returns:
-            float: Evaluated scalar sum equivalent to NumPy sum.
+            float: Evaluated scalar sum.
         """
-        numpy_mod = _np_mod()
-        np_arr = numpy_mod.asarray(arr, dtype=numpy_mod.float32)
-        if np_arr.size == 0:
+        raw_bytes = self._to_float32_bytes(arr)
+        n_elements = len(raw_bytes) // 4
+        if n_elements == 0:
             return 0.0
-        if np_arr.size == 1:
-            return float(np_arr.flat[0])
+        floats = struct.unpack(f"<{n_elements}f", raw_bytes)
+        if n_elements == 1:
+            return float(floats[0])
 
-        default_result = float(numpy_mod.sum(np_arr))
+        default_result = float(math.fsum(floats))
         if not self.is_available() or self.device is None:
             return default_result
 
         try:
-            return self._execute_metal_reduction_passes(np_arr, default_result)
+            return self._execute_metal_reduction_passes(raw_bytes, default_result)
         except Exception:
             return default_result

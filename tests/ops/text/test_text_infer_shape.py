@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Test infer_shape for text ops."""
 
 from __future__ import annotations
@@ -8,25 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.shape_system import SymVar
-from ml_switcheroo_compiler.ops.text.ops import (
-    AsString,
-    EditDistance,
-    Hashing,
-    IntegerLookup,
-    Lookup,
-    RegexFullMatch,
-    RegexReplace,
-    StringJoin,
-    StringLength,
-    StringLookup,
-    StringLower,
-    StringSplit,
-    StringSubstr,
-    StringToHash,
-    StringToNumber,
-    StringUpper,
-    TextVectorization,
-)
+from ml_switcheroo_compiler.ops.text.ops import AsString, EditDistance, Hashing, IntegerLookup, Lookup, RegexFullMatch, RegexReplace, StringJoin, StringLength, StringLookup, StringLower, StringSplit, StringSubstr, StringToHash, StringToNumber, StringUpper, TextVectorization
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,10 +19,9 @@ def test_text_infer_shape() -> None:
     """Test the text infer shape behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     try:
-        "Test text ops infer_shape."
         t = Tensor("dummy", TensorConfig((2, 2), DType.String, None))
         assert StringToHash().infer_shape() == ()
         assert RegexReplace().infer_shape() == ()

@@ -9,9 +9,9 @@ from typing import Callable, cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.registry import register_util
@@ -22,8 +22,8 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 @register_util("_emit_shape_node")
 def _emit_shape_node(
     op_type: str,
-    inputs: Sequence[Tensor | TensorLike | bytes | EagerValue],
-    attrs: Mapping[str, EagerValue] | None,
+    inputs: Sequence[Tensor | TensorLike | bytes | TensorOrScalar],
+    attrs: Mapping[str, TensorOrScalar] | None,
     out_shape: Sequence[int | str],
     out_dtype: DType | str | None,
 ) -> Tensor:
@@ -63,8 +63,8 @@ def compute_reduction_shape(x_shape: tuple[int, ...], axes: tuple[int, ...], kee
     """Reusable utility to compute the shape after a reduction operation.
 
     Args:
-        x_shape (Any): The x_shape parameter.
-        axes (Any): The axes parameter.
+        x_shape (tuple[int, ...]): The x_shape parameter.
+        axes (tuple[int, ...]): The axes parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:

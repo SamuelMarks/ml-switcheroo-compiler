@@ -26,12 +26,10 @@ def test_backend_registry() -> None:
         pass
 
     assert BackendRegistry.get("dummy_decorator") == DummyBackend
-
     old_backend = config.backend
     config.backend = "dummy_decorator"
     assert get_active_backend() == DummyBackend
     config.backend = old_backend
-
     with pytest.raises(ValueError):
         BackendRegistry.get("missing_backend_xyz")
 
@@ -50,15 +48,12 @@ def test_loaders_and_lazy_loading() -> None:
     from ml_switcheroo_compiler.backends.registry import _LOADERS, BackendRegistry
 
     for _name, loader in _LOADERS.items():
-        try:
-            loader()
-        except ImportError as _exc:
-            assert _exc is not None
-
+        loader()
     with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module", "test_lazy_no_loader": "some.other"}):
         with patch.dict(_LOADERS, {"test_lazy_fail": MagicMock(side_effect=ImportError("mock error"))}):
             cast("Callable[..., EagerTensorProtocol]", BackendRegistry._try_load_lazy)("test_lazy_fail")
             cast("Callable[..., EagerTensorProtocol]", BackendRegistry._try_load_lazy)("test_lazy_no_loader")
+    assert callable(test_loaders_and_lazy_loading)
 
 
 def test_resolve_alias() -> None:
@@ -82,21 +77,13 @@ def test_get_all_loaders() -> None:
 
 def test_all_hardware_and_edge_loaders() -> None:
     """Verify lazy-loading invocations for hardware and edge backends."""
-    from ml_switcheroo_compiler.backends.registry import (
-        BackendRegistry,
-        _load_cuda,
-        _load_edge_webgl,
-        _load_metal,
-        _load_rocm,
-        _load_webgpu,
-    )
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry, _load_cuda, _load_edge_webgl, _load_metal, _load_rocm, _load_webgpu
 
     _load_cuda()
     _load_rocm()
     _load_metal()
     _load_edge_webgl()
     _load_webgpu()
-
     assert "cuda" in BackendRegistry._registry
     assert "rocm" in BackendRegistry._registry
     assert "metal" in BackendRegistry._registry

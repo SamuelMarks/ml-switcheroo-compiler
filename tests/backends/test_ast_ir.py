@@ -180,7 +180,7 @@ class MyMLP(torch.nn.Module):
     # Fallback framework
     unknown_class = emit_ir_to_class(graph_class, "custom_fw", class_name="MyMLP")
     unknown_code = cst.Module(body=[unknown_class]).code
-    assert "class MyMLP(object):" in unknown_code
+    assert "class MyMLP(TensorOrScalar):" in unknown_code
 
 
 def test_roundtrip_transpilation_mlp() -> None:

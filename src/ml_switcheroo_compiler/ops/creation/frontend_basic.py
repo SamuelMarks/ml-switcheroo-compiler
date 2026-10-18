@@ -6,10 +6,11 @@ import typing
 from collections.abc import Sequence
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -18,7 +19,7 @@ from .frontend_utils import _emit_creation_node
 
 
 def _unpack_shape(shape: Sequence[int | Tensor]) -> tuple[int, ...]:
-    """Evaluate _unpack_shape operation.
+    """Compute the unpack shape tensor operation.
 
     Args:
         shape (tuple): The shape parameter.
@@ -40,11 +41,11 @@ def _unpack_shape(shape: Sequence[int | Tensor]) -> tuple[int, ...]:
     return tuple(getattr(unpacked_shape, "__iter__")())
 
 
-def _infer_dtype(val_arr: EagerValue) -> DType:
+def _infer_dtype(val_arr: TensorOrScalar) -> DType:
     """Infers the DType from a backend array.
 
     Args:
-        val_arr (Any): The val_arr parameter.
+        val_arr (TensorOrScalar): The val_arr parameter.
 
     Returns:
         DType: Result.
@@ -61,10 +62,10 @@ def _get_dtype_val(dtype: DType | str | type | None) -> str | type | None:
     """Get the backend dtype value.
 
     Args:
-        dtype (Any): The dtype parameter.
+        dtype (DType | str | type | None): The dtype parameter.
 
     Returns:
-        Any: Result.
+        str | type | None: Result.
     """
     if hasattr(dtype, "value"):
         return str(getattr(dtype, "value"))
@@ -74,43 +75,43 @@ def _get_dtype_val(dtype: DType | str | type | None) -> str | type | None:
 
 
 def _try_create_array(
-    backend: EagerValue,
-    obj: EagerValue | Tensor | Sequence[EagerValue],
+    backend: TensorOrScalar,
+    obj: TensorOrScalar | Tensor | Sequence[TensorOrScalar],
     dtype_val: str | type | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Try create array.
 
     Args:
-        backend (Any): The backend parameter.
-        obj (Any): The obj parameter.
-        dtype_val (Any): The dtype_val parameter.
+        backend (TensorOrScalar): The backend parameter.
+        obj (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): The obj parameter.
+        dtype_val (str | type | None): The dtype_val parameter.
 
     Returns:
-        Any: Result.
+        TensorOrScalar: Result.
     """
     if dtype_val is None:
         try:
-            return cast(EagerValue, getattr(backend, "array")(obj))
+            return cast(TensorOrScalar, getattr(backend, "array")(obj))
         except ValueError:
-            return cast(EagerValue, getattr(backend, "array")(obj, dtype="Any"))
+            return cast(TensorOrScalar, getattr(backend, "array")(obj, dtype="Any"))
     try:
-        return cast(EagerValue, getattr(backend, "array")(obj, dtype=dtype_val))
+        return cast(TensorOrScalar, getattr(backend, "array")(obj, dtype=dtype_val))
     except TypeError:
-        return cast(EagerValue, getattr(backend, "array")(obj))
+        return cast(TensorOrScalar, getattr(backend, "array")(obj))
 
 
 def _create_backend_array(
-    Any: EagerValue | Tensor | Sequence[EagerValue],
+    Any: TensorOrScalar | Tensor | Sequence[TensorOrScalar],
     dtype: DType | str | type | None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Create the backend array.
 
     Args:
-        Any (Any): The Any parameter.
-        dtype (Any): The dtype parameter.
+        Any (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): The Any parameter.
+        dtype (DType | str | type | None): The dtype parameter.
 
     Returns:
-        Any: Result.
+        TensorOrScalar: Result.
     """
     backend = get_active_backend()
     dtype_val = None
@@ -123,14 +124,14 @@ def _create_backend_array(
 
 
 def array(
-    Any: EagerValue,
+    Any: TensorOrScalar,
     dtype: DType | None = None,
 ) -> Tensor:
     """Create an array.
 
     Args:
-        Any (Any): The Any parameter.
-        dtype (Any): The dtype parameter.
+        Any (TensorOrScalar): The Any parameter.
+        dtype (DType | None): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -150,14 +151,14 @@ def array(
 
 
 def asarray(
-    a: EagerValue,
+    a: TensorOrScalar,
     dtype: DType | None = None,
 ) -> Tensor:
     """Convert the input to an array.
 
     Args:
-        a (Any): The a parameter.
-        dtype (Any): The dtype parameter.
+        a (TensorOrScalar): The a parameter.
+        dtype (DType | None): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -172,13 +173,13 @@ def asarray(
 
 
 def convert_to_tensor(
-    x: EagerValue,
+    x: TensorOrScalar,
     dtype: DType | None = None,
 ) -> Tensor:
     """Convert the given Any to a Tensor.
 
     Args:
-        x (Any): Object to convert.
+        x (TensorOrScalar): Object to convert.
         dtype (Optional[DType]): The data type.
 
     Returns:
@@ -249,10 +250,10 @@ def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int 
     """Extract fill value.
 
     Args:
-        fill_value (Any): The fill_value parameter.
+        fill_value (float | int | bool | Tensor): The fill_value parameter.
 
     Returns:
-        Any: Result.
+        float | int | bool: Result.
     """
     val = fill_value.data if hasattr(fill_value, "data") else fill_value
     if hasattr(val, "item"):
@@ -262,12 +263,12 @@ def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int 
     return typing.cast("float | int | bool", val)
 
 
-def _full_eager(shape: tuple[int, ...], fill_value: EagerValue, dtype: DType, device: Device) -> Tensor:
+def _full_eager(shape: tuple[int, ...], fill_value: TensorOrScalar, dtype: DType, device: Device) -> Tensor:
     """Full eager.
 
     Args:
         shape (tuple): The shape parameter.
-        fill_value (Any): The fill_value parameter.
+        fill_value (TensorOrScalar): The fill_value parameter.
         dtype (DType): The dtype parameter.
         device (Device): The device parameter.
 
@@ -288,10 +289,10 @@ def full(
     """Return a tensor filled with `fill_value`.
 
     Args:
-        shape (Any): The shape parameter.
+        shape (int | Sequence[int]): The shape parameter.
         fill_value (float): The fill_value parameter.
-        dtype (Any): The dtype parameter.
-        device (Any): The device parameter.
+        dtype (DType | None): The dtype parameter.
+        device (Device | None): The device parameter.
 
     Returns:
         Tensor: Result.
@@ -380,8 +381,8 @@ def full_like(
     Args:
         input (Tensor): The input parameter.
         fill_value (float): The fill_value parameter.
-        dtype (Any): The dtype parameter.
-        device (Any): The device parameter.
+        dtype (DType | None): The dtype parameter.
+        device (Device | None): The device parameter.
 
     Returns:
         Tensor: Result.
@@ -449,14 +450,14 @@ def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
     return empty(x.shape, dtype=dtype if dtype is not None else x.dtype)
 
 
-def convert_to_numpy(x: Tensor) -> EagerValue:
+def convert_to_numpy(x: Tensor) -> TensorOrScalar:
     """Convert a tensor to a numpy array.
 
     Args:
         x (Tensor): Input tensor.
 
     Returns:
-        Any: A numpy array.
+        TensorOrScalar: A numpy array.
     """
     if hasattr(x, "numpy"):
         return x.numpy()
@@ -466,7 +467,7 @@ def convert_to_numpy(x: Tensor) -> EagerValue:
 
 
 def frombuffer(
-    buffer: EagerValue,
+    buffer: TensorOrScalar,
     dtype: DType | None = None,
     count: int = -1,
     offset: int = 0,
@@ -474,7 +475,7 @@ def frombuffer(
     """Create a 1-D tensor from a buffer.
 
     Args:
-        buffer (Any): An Any that exposes the buffer interface.
+        buffer (TensorOrScalar): An Any that exposes the buffer interface.
         dtype (Optional[DType]): Data type of the returned array.
         count (int): Number of items to read. -1 means all data in the buffer.
         offset (int): Start reading the buffer from this offset.

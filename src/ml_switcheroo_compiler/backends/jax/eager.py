@@ -15,14 +15,14 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, 
 
 
 def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
-    """_execute_adaptive_avg_pool function.
+    """Execute the eager execute adaptive avg pool operation on the active backend array.
 
     Args:
         operand: The operand parameter.
         output_size: The output_size parameter.
 
     Returns:
-        object: Result.
+        EagerValue: Result.
     """
     import jax
     import jax.numpy as jnp
@@ -62,14 +62,14 @@ def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> 
 
 
 def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
-    """_execute_adaptive_max_pool function.
+    """Execute the eager execute adaptive max pool operation on the active backend array.
 
     Args:
         operand: The operand parameter.
         output_size: The output_size parameter.
 
     Returns:
-        object: Result.
+        EagerValue: Result.
     """
     import jax
     import jax.numpy as jnp
@@ -100,14 +100,14 @@ def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> 
 
 
 def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_accumulate_n operation.
+    """Execute the eager execute accumulate n operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
 
     Raises:
         ValueError: An exception.
@@ -122,14 +122,14 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
 
 
 def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_binom_cdf operation.
+    """Execute the eager execute binom cdf operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     k, n, p = cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]), cast(EagerTensorProtocol, args[2])
     loc: float = float(cast(float, kwargs.get("loc", 0.0)))
@@ -137,79 +137,79 @@ def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_bessel_jn operation.
+    """Execute the eager execute bessel jn operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, jax.scipy.special.bessel_jn(args[1], v=args[0]))
 
 
 def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_unsorted_segment_sum operation.
+    """Execute the eager execute unsorted segment sum operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(jax.ops, "segment_sum")(*args, **kwargs))
 
 
 def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_unsorted_segment_max operation.
+    """Execute the eager execute unsorted segment max operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(jax.ops, "segment_max")(*args, **kwargs))
 
 
 def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_unsorted_segment_min operation.
+    """Execute the eager execute unsorted segment min operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(jax.ops, "segment_min")(*args, **kwargs))
 
 
 def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_unsorted_segment_prod operation.
+    """Execute the eager execute unsorted segment prod operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     return cast(EagerValue, getattr(jax.ops, "segment_prod")(*args, **kwargs))
 
 
 def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_variance operation.
+    """Execute the eager execute variance operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     import jax.numpy as jnp
 
@@ -218,14 +218,14 @@ def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_cast operation.
+    """Execute the eager execute cast operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     tensor: EagerValue = args[0]
     dtype: EagerValue = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -246,14 +246,14 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
 
 
 def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _execute_ragged_tensor_to_dense operation.
+    """Execute the eager execute ragged tensor to dense operation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     import jax.numpy as jnp
 
@@ -370,7 +370,7 @@ _OP_DISPATCH = {
 
 
 def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate execute_op operation.
+    """Execute the eager execute op operation on the active backend array.
 
     Args:
         cls (type): The class.
@@ -379,7 +379,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
 
     Raises:
         BackendNotSupportedError: An exception.

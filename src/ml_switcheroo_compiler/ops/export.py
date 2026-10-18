@@ -2,7 +2,7 @@
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -10,11 +10,11 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 class _DotGraphVisitor:
     """Visitor for DOT graph export."""
 
-    def __init__(self, graph: EagerValue) -> None:
+    def __init__(self, graph: TensorOrScalar) -> None:
         """Initialize the visitor.
 
         Args:
-            graph (Any): The IR graph.
+            graph (TensorOrScalar): The IR graph.
         """
         self.graph = graph
         self.visited: set[str] = set()
@@ -47,13 +47,13 @@ class _DotGraphVisitor:
             self.visit(inp_id)
 
 
-def export_to_dot(file: typing.Union[str, typing.IO[str]], *arrays: Tensor, **kwargs: EagerValue) -> None:
+def export_to_dot(file: typing.Union[str, typing.IO[str]], *arrays: Tensor, **kwargs: TensorOrScalar) -> None:
     """Export the computation graph of the given arrays to a DOT format file.
 
     Args:
-        file (Any): The file parameter.
+        file (typing.Union[str, typing.IO[str]]): The file parameter.
         *arrays (Tensor): Positional args.
-        **kwargs (Any): Keyword args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Raises:
         RuntimeError: An exception.

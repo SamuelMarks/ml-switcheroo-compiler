@@ -2,20 +2,21 @@
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def shard_tensor(tensor: Tensor, device_mesh: EagerValue, layout: EagerValue) -> EagerValue:
+def shard_tensor(tensor: Tensor, device_mesh: TensorOrScalar, layout: TensorOrScalar) -> TensorOrScalar:
     """Shard a tensor across devices.
 
     Args:
         tensor (Tensor): The tensor parameter.
-        device_mesh (Any): The device_mesh parameter.
-        layout (Any): The layout parameter.
+        device_mesh (TensorOrScalar): The device_mesh parameter.
+        layout (TensorOrScalar): The layout parameter.
 
     Returns:
         Tensor: Result.
@@ -38,12 +39,12 @@ class ShardTensor(OpDef):
 
     op_name = "ShardTensor"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -51,7 +52,7 @@ class ShardTensor(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> EagerValue:
+def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
     """NCCL all-reduce.
 
     Args:
@@ -74,12 +75,12 @@ class NcclAllReduce(OpDef):
 
     op_name = "NcclAllReduce"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -87,7 +88,7 @@ class NcclAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> EagerValue:
+def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
     """Hierarchical copy all-reduce.
 
     Args:
@@ -110,12 +111,12 @@ class HierarchicalCopyAllReduce(OpDef):
 
     op_name = "HierarchicalCopyAllReduce"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -123,7 +124,7 @@ class HierarchicalCopyAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def broadcast(tensor: Tensor, root_rank: int = 0) -> EagerValue:
+def broadcast(tensor: Tensor, root_rank: int = 0) -> TensorOrScalar:
     """Broadcast.
 
     Args:
@@ -146,12 +147,12 @@ class Broadcast(OpDef):
 
     op_name = "Broadcast"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -159,7 +160,7 @@ class Broadcast(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_gather(tensor: Tensor, axis: int = 0) -> EagerValue:
+def all_gather(tensor: Tensor, axis: int = 0) -> TensorOrScalar:
     """All-gather.
 
     Args:
@@ -182,12 +183,12 @@ class AllGather(OpDef):
 
     op_name = "AllGather"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -200,7 +201,7 @@ class AllGather(OpDef):
         return tuple(shape)
 
 
-def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> EagerValue:
+def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> TensorOrScalar:
     """Reduce.
 
     Args:
@@ -229,12 +230,12 @@ class Reduce(OpDef):
 
     op_name = "Reduce"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -242,7 +243,7 @@ class Reduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_reduce(tensor: Tensor, op_type: str = "sum") -> EagerValue:
+def all_reduce(tensor: Tensor, op_type: str = "sum") -> TensorOrScalar:
     """Provide generic SPMD AllReduce.
 
     Args:
@@ -265,12 +266,12 @@ class AllReduce(OpDef):
 
     op_name = "AllReduce"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -278,7 +279,7 @@ class AllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> EagerValue:
+def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> TensorOrScalar:
     """Provide generic SPMD ReduceScatter.
 
     Args:
@@ -302,12 +303,12 @@ class ReduceScatter(OpDef):
 
     op_name = "ReduceScatter"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            tensor (Any): The tensor parameter.
-            **kwargs (Any): Keyword args.
+            tensor (EagerTensorProtocol): The tensor parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -326,12 +327,12 @@ class AllToAll(OpDef):
 
     op_name = "AllToAll"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -353,12 +354,12 @@ class BroadcastArrays(OpDef):
 
     op_name = "BroadcastArrays"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -380,12 +381,12 @@ class BroadcastTo(OpDef):
 
     op_name = "BroadcastTo"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -409,12 +410,12 @@ class BroadcastToRank(OpDef):
 
     op_name = "BroadcastToRank"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -432,12 +433,12 @@ class BroadcastedIota(OpDef):
 
     op_name = "BroadcastedIota"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -459,12 +460,12 @@ class Pbroadcast(OpDef):
 
     op_name = "Pbroadcast"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -480,12 +481,12 @@ class Pbroadcast(OpDef):
         return res
 
 
-def all_to_all(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def all_to_all(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """AllToAll frontend.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -495,12 +496,12 @@ def all_to_all(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _emit_shape_node("AllToAll", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_arrays(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def broadcast_arrays(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """BroadcastArrays frontend.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -510,12 +511,12 @@ def broadcast_arrays(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _emit_shape_node("BroadcastArrays", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def broadcast_to(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """BroadcastTo frontend.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -525,12 +526,12 @@ def broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _emit_shape_node("BroadcastTo", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_to_rank(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def broadcast_to_rank(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """BroadcastToRank frontend.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -540,12 +541,12 @@ def broadcast_to_rank(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _emit_shape_node("BroadcastToRank", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcasted_iota(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def broadcasted_iota(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """BroadcastedIota frontend.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -555,12 +556,12 @@ def broadcasted_iota(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return _emit_shape_node("BroadcastedIota", list(args), kwargs, (), "int32")
 
 
-def pbroadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def pbroadcast(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Pbroadcast frontend.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -576,12 +577,12 @@ class Pmax(OpDef):
 
     op_name = "Pmax"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -596,12 +597,12 @@ class Pmin(OpDef):
 
     op_name = "Pmin"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -616,12 +617,12 @@ class Outfeed(OpDef):
 
     op_name = "Outfeed"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -635,12 +636,12 @@ class Pshuffle(OpDef):
 
     op_name = "Pshuffle"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -655,12 +656,12 @@ class Pswapaxes(OpDef):
 
     op_name = "Pswapaxes"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -686,12 +687,12 @@ class Ppermute(OpDef):
 
     op_name = "Ppermute"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -706,12 +707,12 @@ class PsumScatter(OpDef):
 
     op_name = "PsumScatter"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -728,12 +729,12 @@ class PsumScatter(OpDef):
         return tuple(shape)
 
 
-def outfeed(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def outfeed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Write to the outfeed queue.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -743,12 +744,12 @@ def outfeed(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Outfeed", *args, **kwargs)
 
 
-def pmax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate pmax operation.
+def pmax(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the pmax tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -758,12 +759,12 @@ def pmax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Pmax", *args, **kwargs)
 
 
-def pmin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate pmin operation.
+def pmin(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the pmin tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -773,12 +774,12 @@ def pmin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Pmin", *args, **kwargs)
 
 
-def ppermute(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def ppermute(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Permute data across the mapped axis.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -788,12 +789,12 @@ def ppermute(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Ppermute", *args, **kwargs)
 
 
-def pshuffle(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def pshuffle(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Shuffle data across the mapped axis.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -803,12 +804,12 @@ def pshuffle(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Pshuffle", *args, **kwargs)
 
 
-def psum_scatter(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def psum_scatter(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Scatter sum across a mapped axis.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -818,12 +819,12 @@ def psum_scatter(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("PsumScatter", *args, **kwargs)
 
 
-def pswapaxes(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def pswapaxes(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Swap axes of the data.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -839,12 +840,12 @@ class Send(OpDef):
 
     op_name = "Send"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns: Tensor: Empty tuple as Send does not return tensor data.
         """
@@ -857,32 +858,35 @@ class Recv(OpDef):
 
     op_name = "Recv"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape based on expected kwargs.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns: Tensor: Expected received tensor shape.
         """
         return kwargs.get("shape", ())
 
 
-def send(tensor: EagerValue, dst_rank: int, tag: int = 0) -> EagerValue:
+def send(tensor: TensorOrScalar, dst_rank: int, tag: int = 0) -> TensorOrScalar:
     """Send tensor to destination rank.
 
     Args:
         tensor: The tensor parameter.
         dst_rank: The dst_rank parameter.
         tag: The tag parameter.
+
+    Returns:
+        TensorOrScalar: Computed result.
     """
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
     return TracingNodeBuilder.emit_tracing_node("Send", tensor, dst_rank=dst_rank, tag=tag)
 
 
-def recv(shape: EagerValue, dtype: str, src_rank: int, tag: int = 0) -> EagerValue:
+def recv(shape: TensorOrScalar, dtype: str, src_rank: int, tag: int = 0) -> TensorOrScalar:
     """Receive tensor from source rank.
 
     Args:
@@ -890,6 +894,9 @@ def recv(shape: EagerValue, dtype: str, src_rank: int, tag: int = 0) -> EagerVal
         dtype: The dtype parameter.
         src_rank: The src_rank parameter.
         tag: The tag parameter.
+
+    Returns:
+        TensorOrScalar: Computed result.
     """
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 

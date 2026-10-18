@@ -29,7 +29,7 @@ def test_vjp_registry_coverage() -> None:
         """Evaluate and process the fake vjp operation.
 
         Returns:
-            object: The evaluated or processed output.
+            TensorOrScalar: The evaluated or processed output.
         """
 
     with pytest.raises(ValueError, match="already registered"):
@@ -39,7 +39,7 @@ def test_vjp_registry_coverage() -> None:
             """Evaluate and process the fake vjp2 operation.
 
             Returns:
-                object: The evaluated or processed output.
+                TensorOrScalar: The evaluated or processed output.
             """
 
     assert get_vjp("fake_op") == fake_vjp

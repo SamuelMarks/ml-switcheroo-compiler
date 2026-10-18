@@ -84,7 +84,7 @@ class Allclose(OpDef):
     """Provide an operation class for checking if two arrays are element-wise equal within a tolerance."""
 
     def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
-        """Evaluate infer_shape operation.
+        """Compute the infer shape tensor operation.
 
         Args:
             *shapes: Positional args.

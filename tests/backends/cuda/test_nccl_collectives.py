@@ -385,7 +385,7 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state: dict[str, EagerT
         """Simulate successful cudaMalloc.
 
         Args:
-            ptr_ref (object): Pointer reference.
+            ptr_ref (EagerValue): Pointer reference.
             size (int): Allocation size.
 
         Returns:

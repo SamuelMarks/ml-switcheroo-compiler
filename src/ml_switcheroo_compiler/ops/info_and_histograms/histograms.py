@@ -2,7 +2,8 @@
 
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -12,12 +13,12 @@ class Histogram(OpDef):
 
     op_name = "Histogram"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -36,12 +37,12 @@ class Histogram2d(OpDef):
 
     op_name = "Histogram2d"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -52,7 +53,7 @@ class Histogram2d(OpDef):
                 b1, b2 = bins
                 b1_len = b1 if isinstance(b1, int) else (int(getattr(b1, "shape")[0]) - 1 if hasattr(b1, "shape") else 10)
                 b2_len = b2 if isinstance(b2, int) else (int(getattr(b2, "shape")[0]) - 1 if hasattr(b2, "shape") else 10)
-                return cast(EagerValue, (b1_len, b2_len))
+                return cast(TensorOrScalar, (b1_len, b2_len))
         return (10, 10)
 
 
@@ -62,19 +63,19 @@ class HistogramBinEdges(OpDef):
 
     op_name = "HistogramBinEdges"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
         bins = kwargs.get("bins", 10)
         if hasattr(bins, "shape") and len(getattr(bins, "shape")) > 0:
-            return cast(EagerValue, getattr(bins, "shape"))
+            return cast(TensorOrScalar, getattr(bins, "shape"))
         if isinstance(bins, int):
             return (bins + 1,)
         return (11,)
@@ -86,12 +87,12 @@ class Histogramdd(OpDef):
 
     op_name = "Histogramdd"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (EagerTensorProtocol): Positional args.
+            **kwargs (EagerTensorProtocol): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -103,12 +104,12 @@ class Histogramdd(OpDef):
         return tuple(10 for _ in range(n_dim))
 
 
-def histogram(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate histogram operation.
+def histogram(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the histogram tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -118,12 +119,12 @@ def histogram(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Histogram", *args, **kwargs)
 
 
-def histogram2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate histogram2d operation.
+def histogram2d(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the histogram2d tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -133,12 +134,12 @@ def histogram2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("Histogram2d", *args, **kwargs)
 
 
-def histogram_bin_edges(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def histogram_bin_edges(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Provide function to calculate only the edges of the bins used by the histogram function.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -148,12 +149,12 @@ def histogram_bin_edges(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     return dispatch_op("HistogramBinEdges", *args, **kwargs)
 
 
-def histogramdd(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate histogramdd operation.
+def histogramdd(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Compute the histogramdd tensor operation.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

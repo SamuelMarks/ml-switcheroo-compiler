@@ -114,7 +114,7 @@ def test_dynamic_slice_validation_and_shapes(mocker: EagerTensorProtocol) -> Non
     """Verify that dynamic_slice computes exact shapes and raises on rank mismatch.
 
     Args:
-        mocker (object): Pytest mocker fixture.
+        mocker (EagerTensorProtocol): Pytest mocker fixture.
     """
     import pytest
 

@@ -17,17 +17,29 @@ class CostModel(Protocol):
 
     @property
     def compute_heavy_threshold(self) -> int:
-        """Threshold for heavy compute cost."""
+        """Threshold for heavy compute cost.
+
+        Returns:
+            int: Computed result.
+        """
         ...
 
     @property
     def heavy_interleave_penalty(self) -> int:
-        """Penalty for sequential heavy nodes."""
+        """Penalty for sequential heavy nodes.
+
+        Returns:
+            int: Computed result.
+        """
         ...
 
     @property
     def light_interleave_penalty(self) -> int:
-        """Penalty for sequential light nodes."""
+        """Penalty for sequential light nodes.
+
+        Returns:
+            int: Computed result.
+        """
         ...
 
     def get_memory_cost(self, node: IRNode) -> int | str:
@@ -36,6 +48,9 @@ class CostModel(Protocol):
         Args:
             node (IRNode): The node parameter.
             int | str: Result.
+
+        Returns:
+            int | str: Computed result.
         """
         ...
 
@@ -45,6 +60,9 @@ class CostModel(Protocol):
         Args:
             node (IRNode): The node parameter.
             int: Result.
+
+        Returns:
+            int: Computed result.
         """
         ...
 
@@ -64,17 +82,29 @@ class DefaultCostModel:
 
     @property
     def compute_heavy_threshold(self) -> int:
-        """Threshold for heavy compute cost."""
+        """Threshold for heavy compute cost.
+
+        Returns:
+            int: Computed result.
+        """
         return self.config.compute_heavy_threshold
 
     @property
     def heavy_interleave_penalty(self) -> int:
-        """Penalty for sequential heavy nodes."""
+        """Penalty for sequential heavy nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self.config.heavy_interleave_penalty
 
     @property
     def light_interleave_penalty(self) -> int:
-        """Penalty for sequential light nodes."""
+        """Penalty for sequential light nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self.config.light_interleave_penalty
 
     def get_memory_cost(self, node: IRNode) -> int | str:
@@ -160,17 +190,29 @@ class CpuCostModel:
 
     @property
     def compute_heavy_threshold(self) -> int:
-        """Threshold for heavy compute cost."""
+        """Threshold for heavy compute cost.
+
+        Returns:
+            int: Computed result.
+        """
         return self._compute_heavy_threshold
 
     @property
     def heavy_interleave_penalty(self) -> int:
-        """Penalty for sequential heavy nodes."""
+        """Penalty for sequential heavy nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self._heavy_interleave_penalty
 
     @property
     def light_interleave_penalty(self) -> int:
-        """Penalty for sequential light nodes."""
+        """Penalty for sequential light nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self._light_interleave_penalty
 
     def get_memory_cost(self, node: IRNode) -> int | str:
@@ -271,17 +313,29 @@ class GpuCostModel:
 
     @property
     def compute_heavy_threshold(self) -> int:
-        """Threshold for heavy compute cost."""
+        """Threshold for heavy compute cost.
+
+        Returns:
+            int: Computed result.
+        """
         return self._compute_heavy_threshold
 
     @property
     def heavy_interleave_penalty(self) -> int:
-        """Penalty for sequential heavy nodes."""
+        """Penalty for sequential heavy nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self._heavy_interleave_penalty
 
     @property
     def light_interleave_penalty(self) -> int:
-        """Penalty for sequential light nodes."""
+        """Penalty for sequential light nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self._light_interleave_penalty
 
     def get_memory_cost(self, node: IRNode) -> int | str:
@@ -368,17 +422,29 @@ class EdgeCostModel:
 
     @property
     def compute_heavy_threshold(self) -> int:
-        """Threshold for heavy compute cost."""
+        """Threshold for heavy compute cost.
+
+        Returns:
+            int: Computed result.
+        """
         return self._compute_heavy_threshold
 
     @property
     def heavy_interleave_penalty(self) -> int:
-        """Penalty for sequential heavy nodes."""
+        """Penalty for sequential heavy nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self._heavy_interleave_penalty
 
     @property
     def light_interleave_penalty(self) -> int:
-        """Penalty for sequential light nodes."""
+        """Penalty for sequential light nodes.
+
+        Returns:
+            int: Computed result.
+        """
         return self._light_interleave_penalty
 
     def get_memory_cost(self, node: IRNode) -> int | str:

@@ -17,5 +17,5 @@ def test_vector_norm_shape() -> None:
     # keepdims=True
     assert op.infer_shape(a, keepdims=True) == (4, 5, 1)
 
-    # dim=(0, 2)
-    assert op.infer_shape(a, dim=(0, 2)) == (5,)
+    # axis=(0, 2)
+    assert op.infer_shape(a, axis=(0, 2)) == (5,)

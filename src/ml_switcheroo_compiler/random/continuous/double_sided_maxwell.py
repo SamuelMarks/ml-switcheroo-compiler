@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def double_sided_maxwell(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | str) -> Tensor:
-    """Evaluate double_sided_maxwell operation.
+    """Execute double sided maxwell for compiler processing.
 
     Args:
         *args (Tensor | float | int | str): Positional args.

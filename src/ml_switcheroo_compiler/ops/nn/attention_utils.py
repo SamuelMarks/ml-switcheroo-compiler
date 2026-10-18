@@ -2,8 +2,9 @@
 
 import math
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import multiply, subtract
@@ -22,12 +23,12 @@ class RopeOp(OpDef):
 
     op_name = "Rope"
 
-    def infer_shape(self, input: EagerTensorProtocol, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
-            input (Any): The input parameter.
-            **kwargs (Any): Keyword args.
+            input (EagerTensorProtocol): The input parameter.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -40,7 +41,7 @@ def rope(
     axis: int,
     base: float = 10000.0,
     offset: int = 0,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Apply Rotary Positional Encoding (RoPE) to the input tensor.
 
     Args:
@@ -68,8 +69,8 @@ def sinusoidal_positional_encoding(
     seq_len: int,
     axis: int,
     base: float = 10000.0,
-    dtype: EagerValue = None,
-) -> EagerValue:
+    dtype: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Generate sinusoidal positional encodings.
 
     Args:
@@ -91,8 +92,8 @@ def sinusoidal_positional_encoding(
 def alibi_mask(
     seq_len: int,
     num_heads: int,
-    dtype: EagerValue = None,
-) -> EagerValue:
+    dtype: TensorOrScalar = None,
+) -> TensorOrScalar:
     """Generate an ALiBi (Attention with Linear Biases) mask.
 
     Args:

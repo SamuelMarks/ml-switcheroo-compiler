@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None) -> EagerValue:
+def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None) -> TensorOrScalar:
     """Apply mixup to a pair of batches of images.
 
     Args:
@@ -30,7 +31,7 @@ def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None
     return _emit_shape_node("Mixup", [images1, images2], {"alpha": alpha, "seed": seed}, (), images1.dtype)
 
 
-def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None) -> EagerValue:
+def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None) -> TensorOrScalar:
     """Apply cutmix to a pair of batches of images.
 
     Args:

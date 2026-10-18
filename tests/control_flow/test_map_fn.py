@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Control flow map_fn tests."""
 
 from __future__ import annotations
@@ -19,7 +18,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-
 device = Device(DeviceType.CPU, 0)
 
 
@@ -27,9 +25,8 @@ def test_map_fn_eager() -> None:
     """Test the map fn eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the eager execution of the map_fn operator.\n\n    Verifies that map_fn correctly loops over a tensor, applying a function\n    and stacking results, when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
@@ -37,10 +34,10 @@ def test_map_fn_eager() -> None:
             """Evaluate and process the f operation.
 
             Args:
-                x (object): Required parameter for x.
+                x (EagerValue): Required parameter for x.
 
             Returns:
-                object: The evaluated or processed output.
+                EagerValue: The evaluated or processed output.
             """
             y = getattr(x, "data") * 2
             return Tensor(y, TensorConfig((), DType.Int32, device))
@@ -53,9 +50,8 @@ def test_map_fn_trace() -> None:
     """Test the map fn trace behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the tracing behavior of the map_fn operator.\n\n    Verifies that map_fn correctly records the map operation into the active\n    tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         xs = Tensor(ProxyTensor(id="mock", shape=(), dtype="int32"), TensorConfig((3,), DType.Int32, device))
 
@@ -63,10 +59,10 @@ def test_map_fn_trace() -> None:
             """Evaluate and process the f operation.
 
             Args:
-                x (object): Required parameter for x.
+                x (EagerValue): Required parameter for x.
 
             Returns:
-                object: The evaluated or processed output.
+                EagerValue: The evaluated or processed output.
             """
             return x
 

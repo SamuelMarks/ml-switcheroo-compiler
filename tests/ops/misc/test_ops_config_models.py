@@ -91,7 +91,7 @@ class _MockCustomModule:
         """Mock array.
 
         Args:
-            data (object): Input data.
+            data (EagerValue): Input data.
             dtype (object | None): Data type.
 
         Returns:
@@ -103,7 +103,7 @@ class _MockCustomModule:
         """Mock asarray.
 
         Args:
-            data (object): Input data.
+            data (EagerValue): Input data.
 
         Returns:
             tuple[str, object]: Descriptor.
@@ -114,7 +114,7 @@ class _MockCustomModule:
         """Mock item.
 
         Args:
-            data (object): Input object.
+            data (EagerValue): Input object.
 
         Returns:
             float: 99.9.

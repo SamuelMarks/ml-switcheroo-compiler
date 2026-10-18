@@ -328,7 +328,7 @@ class Polynomial:
         """Evaluate equality between two polynomials.
 
         Args:
-            other (object): Other object to compare against.
+            other (TensorOrScalar): Other object to compare against.
 
         Returns:
             bool: True if both polynomials have identical canonical terms.
@@ -746,7 +746,7 @@ class SymConst(SymNode):
         """Check equality with constant.
 
         Args:
-            other (object): Other object.
+            other (TensorOrScalar): Other object.
 
         Returns:
             bool: True if values match.
@@ -842,7 +842,7 @@ class SymVar(SymNode):
         """Check equality with another variable.
 
         Args:
-            other (object): Other object.
+            other (TensorOrScalar): Other object.
 
         Returns:
             bool: True if variable names match.
@@ -1192,7 +1192,7 @@ class SymBinaryOp(SymNode):
         """Check structural equality with another binary operation node.
 
         Args:
-            other (object): Other object.
+            other (TensorOrScalar): Other object.
 
         Returns:
             bool: True if other is a SymBinaryOp with identical op, left, and right operands.
@@ -1364,7 +1364,7 @@ class SymPiecewise(SymNode):
         """Check structural equality.
 
         Args:
-            other (object): Other object.
+            other (TensorOrScalar): Other object.
 
         Returns:
             bool: True if cases and default match.
@@ -1621,7 +1621,7 @@ class SymInt:
         return SymInt(self.node.canonical())
 
     def __add__(self, other: SymInt | int | SymNode | str) -> SymInt:
-        """Evaluate __add__ operation.
+        """Execute add for compiler processing.
 
         Args:
             other (Union[SymInt, int, SymNode, str]): The other operand.
@@ -1633,7 +1633,7 @@ class SymInt:
         return SymInt(SymBinaryOp("+", self.node, other_node))
 
     def __radd__(self, other: int | str) -> SymInt:
-        """Evaluate __radd__ operation.
+        """Execute radd for compiler processing.
 
         Args:
             other (Union[int, str]): The other operand.
@@ -1645,7 +1645,7 @@ class SymInt:
         return SymInt(SymBinaryOp("+", other_node, self.node))
 
     def __sub__(self, other: SymInt | int | SymNode | str) -> SymInt:
-        """Evaluate __sub__ operation.
+        """Execute sub for compiler processing.
 
         Args:
             other (Union[SymInt, int, SymNode, str]): The other operand.
@@ -1657,7 +1657,7 @@ class SymInt:
         return SymInt(SymBinaryOp("-", self.node, other_node))
 
     def __rsub__(self, other: int | SymNode | str) -> SymInt:
-        """Evaluate __rsub__ operation.
+        """Execute rsub for compiler processing.
 
         Args:
             other (Union[int, SymNode, str]): The other operand.
@@ -1669,7 +1669,7 @@ class SymInt:
         return SymInt(SymBinaryOp("-", other_node, self.node))
 
     def __mul__(self, other: SymInt | int | SymNode | str) -> SymInt:
-        """Evaluate __mul__ operation.
+        """Execute mul for compiler processing.
 
         Args:
             other (Union[SymInt, int, SymNode, str]): The other operand.
@@ -1681,7 +1681,7 @@ class SymInt:
         return SymInt(SymBinaryOp("*", self.node, other_node))
 
     def __rmul__(self, other: int | str) -> SymInt:
-        """Evaluate __rmul__ operation.
+        """Execute rmul for compiler processing.
 
         Args:
             other (Union[int, str]): The other operand.
@@ -1693,7 +1693,7 @@ class SymInt:
         return SymInt(SymBinaryOp("*", other_node, self.node))
 
     def __floordiv__(self, other: SymInt | int | SymNode | str) -> SymInt:
-        """Evaluate __floordiv__ operation.
+        """Execute floordiv for compiler processing.
 
         Args:
             other (Union[SymInt, int, SymNode, str]): The other operand.
@@ -1705,7 +1705,7 @@ class SymInt:
         return SymInt(SymBinaryOp("//", self.node, other_node))
 
     def __rfloordiv__(self, other: int | SymNode | str) -> SymInt:
-        """Evaluate __rfloordiv__ operation.
+        """Execute rfloordiv for compiler processing.
 
         Args:
             other (Union[int, SymNode, str]): The other operand.
@@ -1717,7 +1717,7 @@ class SymInt:
         return SymInt(SymBinaryOp("//", other_node, self.node))
 
     def __str__(self) -> str:
-        """Evaluate __str__ operation.
+        """Execute str for compiler processing.
 
         Returns:
             str: String expression.
@@ -1725,7 +1725,7 @@ class SymInt:
         return str(self.node)
 
     def __repr__(self) -> str:
-        """Evaluate __repr__ operation.
+        """Execute repr for compiler processing.
 
         Returns:
             str: Debugging representation.
@@ -1733,7 +1733,7 @@ class SymInt:
         return f"SymInt({self.node})"
 
     def __hash__(self) -> int:
-        """Evaluate __hash__ operation.
+        """Execute hash for compiler processing.
 
         Returns:
             int: Hash integer.
@@ -1744,7 +1744,7 @@ class SymInt:
         """Evaluate __eq__ operation using canonical polynomial consistency.
 
         Args:
-            other (object): The other object to compare.
+            other (TensorOrScalar): The other object to compare.
 
         Returns:
             bool: True if expressions are mathematically consistent.

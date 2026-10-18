@@ -9,7 +9,11 @@ from ml_switcheroo_compiler.backends.edge.config_models import WebrtcCollectives
 
 
 def emit_webrtc_init() -> str:
-    """Emit WebRTC initialization JavaScript string."""
+    """Emit WebRTC initialization JavaScript string.
+
+    Returns:
+        str: Computed result.
+    """
     yaml_path = os.path.join(os.path.dirname(__file__), "../../distributed/webrtc_topology.yaml")
     if not os.path.exists(yaml_path):
         return ""
@@ -48,6 +52,9 @@ def emit_webrtc_op(op_type: str, local_tensor_var: str, op_id: str) -> str:
         op_type: The op_type parameter.
         local_tensor_var: The local_tensor_var parameter.
         op_id: The op_id parameter.
+
+    Returns:
+        str: Computed result.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "../../distributed/webrtc_topology.yaml")
     if not os.path.exists(yaml_path):

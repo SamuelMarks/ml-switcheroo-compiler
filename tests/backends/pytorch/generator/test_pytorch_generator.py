@@ -32,45 +32,28 @@ def test_generator_basics(monkeypatch: EagerTensorProtocol) -> None:
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)
     assert gen.get_fallback_prefix() == "torch"
-
-    # visit_PowerIteration
     n_power = DummyNode({"num_iters": 2}, "PowerIteration")
     res = cast("Callable[..., EagerTensorProtocol]", gen.visit_PowerIteration)(n_power, ["x", "u"])
     assert res == "pt_power_iteration(x, 2, u)"
     res = cast("Callable[..., EagerTensorProtocol]", gen.visit_PowerIteration)(n_power, ["x"])
     assert res == "pt_power_iteration(x, 2, None)"
-
-    # visit_RaggedDot
     n_ragged = DummyNode({}, "RaggedDot")
     assert cast("Callable[..., EagerTensorProtocol]", gen.visit_RaggedDot)(n_ragged, ["x", "y"]) == "pt_ragged_dot(x, y)"
-
-    # visit_Einsum
     n_einsum = DummyNode({}, "Einsum")
     assert cast("Callable[..., EagerTensorProtocol]", gen.visit_Einsum)(n_einsum, ["x", "y"], equation="ij,jk->ik") == "torch.einsum('ij,jk->ik', x, y)"
-
-    # _emit_constant_assignment
     gen._emit_constant_assignment("var", "val")
     assert "var = self.var" in gen.code[0]
-
-    # _get_prefix_code
     prefix = gen._get_prefix_code()
     assert "import torch" in prefix[0]
-
-    # _emit_init_body
     n_const = DummyNode({"value": 1.0}, "Constant")
     setattr(gen, "sorted_nodes", [n_const])
     gen.code = []
     assert gen._emit_init_body() is True
     assert "register_parameter" in gen.code[0]
-
     setattr(gen, "sorted_nodes", [cast("Callable[..., EagerTensorProtocol]", DummyNode)({}, "Unknown")])
     assert gen._emit_init_body() is False
-
-    # Mock torch load and save
     monkeypatch.setattr(torch, "save", lambda *args, **kwargs: "mock_save")
     monkeypatch.setattr(torch, "load", lambda *args, **kwargs: "mock_load")
-
-    # Save/load static methods
     assert PyTorchCodeGenerator.save("path", np.array([1, 2, 3])) is None
     assert PyTorchCodeGenerator.load("path.npy") == "mock_load"
     assert PyTorchCodeGenerator.savez("path") is None
@@ -103,11 +86,9 @@ def test_pytorch_generator_distributed_visitor() -> None:
         attributes = {"root": 2}
 
     assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Broadcast)(cast("Callable[..., EagerTensorProtocol]", DummyBcNode)(), ["tensor"]) == "torch.distributed.broadcast(tensor, src=2)"
-
     from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchNNMixin
 
     nn_vis = PyTorchNNMixin()
-    # Need to give it an add_line method for the mixin to work
     lines = cast("list[EagerTensorProtocol]", [])
     setattr(nn_vis, "add_line", lines.append)
 
@@ -122,21 +103,16 @@ def test_pytorch_generator_distributed_visitor() -> None:
     res_send = cast("Callable[..., EagerTensorProtocol]", nn_vis.visit_Send)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"dst_rank": 1, "tag": 2}), ["tensor"])
     assert res_send == ""
     assert "torch.distributed.isend(tensor, dst=1, tag=2)" in lines[0]
-
     res_recv = cast("Callable[..., EagerTensorProtocol]", nn_vis.visit_Recv)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"src_rank": 1, "tag": 2, "shape": (2, 2), "dtype": "float32"}), [])
     assert res_recv == "v_n1"
     assert "v_n1 = torch.empty([2, 2], dtype=torch.float32, device=self.device)" in lines[1]
     assert "torch.distributed.irecv(v_n1, src=1, tag=2)" in lines[2]
-
-    # Test _add_line delegation to self.generator
     from unittest.mock import MagicMock
 
     mock_gen = MagicMock()
     nn_with_gen = PyTorchNNMixin(generator=mock_gen)
     nn_with_gen._add_line("code_line")
     mock_gen.add_line.assert_called_with("code_line")
-
-    # Test _add_line when generator is None and self has no add_line
     nn_no_gen = PyTorchNNMixin(generator=None)
     nn_no_gen._add_line("noop_line")
 
@@ -152,9 +128,4 @@ def test_missing_methods() -> None:
     assert gen._get_creation_ops({}) is not None
     assert gen._get_array_ops({}) is not None
     assert gen.get_ops_map({}) is not None
-
-    # cover line 112
-    try:
-        cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({}, "SomeUnknownOp"), [])
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
+    cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({}, "SomeUnknownOp"), [])

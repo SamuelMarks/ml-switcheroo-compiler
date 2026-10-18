@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import importlib
 from collections.abc import Callable
 from typing import Optional, cast
 
+from ml_switcheroo_compiler.backends.dpnp.types import _get_dpnp_module
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.distributed.host_collectives import _np_mod
 
 _DPNP_OP_ALIASES: dict[str, str] = {
     # Unary arithmetic & elementary functions
@@ -174,7 +173,7 @@ def _get_target_function(module: EagerValue, target_path: str) -> EagerValue | N
     """Retrieve target function from module resolving dot-delimited submodules.
 
     Args:
-        module (object): The root module (dpnp or numpy).
+        module (EagerValue): The root module (dpnp or numpy).
         target_path (str): Function attribute name or dotted path like 'linalg.cholesky'.
 
     Returns:
@@ -192,10 +191,10 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     """Unwrap framework Tensor objects to underlying array buffers.
 
     Args:
-        arg (object): Argument to inspect.
+        arg (EagerValue): Argument to inspect.
 
     Returns:
-        object: Unwrapped buffer or original value.
+        EagerValue: Unwrapped buffer or original value.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
         return cast(EagerValue, getattr(arg, "data"))
@@ -233,38 +232,25 @@ def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | N
 
 
 def execute_op(
-    cls_or_op: EagerValue,
-    op_type_or_first: EagerValue = None,
+    op_type: str,
     *args: EagerValue,
     **kwargs: EagerValue,
 ) -> EagerValue:
     """Execute operation eagerly on DPNP backend with Intel SYCL target.
 
     Args:
-        cls_or_op (object): Caller class context or operation name string.
-        op_type_or_first (object): Operation name string or first argument.
-        *args (object): Input tensor parameters.
-        **kwargs (object): Additional keyword attributes.
+        op_type (str): Operation name string.
+        *args (EagerValue): Input tensor parameters.
+        **kwargs (EagerValue): Additional keyword attributes.
 
     Returns:
-        object: Evaluated DPNP array.
+        EagerValue: Evaluated DPNP array.
 
     Raises:
         BackendNotSupportedError: When the operation cannot be resolved.
     """
-    if isinstance(cls_or_op, type):
-        op_type = str(op_type_or_first)
-        raw_args = args
-    else:
-        op_type = str(cls_or_op)
-        raw_args = (op_type_or_first,) + args if op_type_or_first is not None else args
-
-    actual_args = tuple(_unwrap_arg(a) for a in raw_args)
-
-    try:
-        dpnp_mod = importlib.import_module("dpnp")
-    except Exception:
-        dpnp_mod = _np_mod()
+    actual_args = tuple(_unwrap_arg(a) for a in args)
+    dpnp_mod = _get_dpnp_module()
 
     fn = _resolve_dpnp_callable(dpnp_mod, op_type.lower())
     if fn is not None:

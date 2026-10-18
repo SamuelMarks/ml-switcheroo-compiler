@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from typing import cast
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-# ruff: noqa
+import numpy as np
+import pytest
+
+import ml_switcheroo_compiler.backends.eager as eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_generator, _np_affine_grid, _np_affine_transform, _np_elastic_transform, _np_extract_bounding_boxes, _np_iou, _np_nms, _np_perspective_transform
-import numpy as np
-import ml_switcheroo_compiler.backends.eager as eager_mod
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_np_affine_generator() -> None:
@@ -45,10 +45,8 @@ def test_np_iou() -> None:
         """Test function _dummy_iou."""
         return np.ones((1,))
 
-    try:
+    with pytest.raises(IndexError):
         _np_iou(np, None, None)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_np_nms() -> None:
@@ -59,10 +57,8 @@ def test_np_nms() -> None:
         """Test function _dummy_nms."""
         return np.ones((1,))
 
-    try:
+    with pytest.raises(TypeError):
         _np_nms(np, None, None, 1)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_np_perspective_transform() -> None:
@@ -91,55 +87,50 @@ def test_numpy_vision_geometry_eager_extra() -> None:
     """Test the numpy vision geometry eager extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
+    with pytest.raises(TypeError):
+        _np_elastic_transform(np, np.ones((2, 2, 3)), np.ones((2, 2, 2)))
+        _np_extract_bounding_boxes(np, np.ones((2, 2, 3)), np.array([0, 0, 10, 10]), np.array([0]))
+        original_iou = eager_mod.iou_eager
+
+        def mock_iou(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Evaluate and process the mock iou operation.
+
+            Args:
+                *args (EagerValue): Variable positional arguments.
+                **kwargs (EagerValue): Arbitrary keyword arguments.
+
+            Returns:
+                EagerValue: The evaluated or processed output.
+            """
+            return args[1]
+
+        eager_mod.iou_eager = mock_iou
         try:
-            _np_elastic_transform(np, np.ones((2, 2, 3)), np.ones((2, 2, 2)))
-            _np_extract_bounding_boxes(np, np.ones((2, 2, 3)), np.array([0, 0, 10, 10]), np.array([0]))
-            original_iou = eager_mod.iou_eager
+            _np_iou(np, np.array([0, 0, 10, 10]), np.array([5, 5, 15, 15]))
+        finally:
+            eager_mod.iou_eager = original_iou
+        original_nms = eager_mod.nms_eager
 
-            def mock_iou(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Evaluate and process the mock iou operation.
+        def mock_nms(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            """Evaluate and process the mock nms operation.
 
-                Args:
-                    *args (object): Variable positional arguments.
-                    **kwargs (object): Arbitrary keyword arguments.
+            Args:
+                *args (EagerValue): Variable positional arguments.
+                **kwargs (EagerValue): Arbitrary keyword arguments.
 
-                Returns:
-                    object: The evaluated or processed output.
-                """
-                return args[1]
+            Returns:
+                EagerValue: The evaluated or processed output.
+            """
+            return args[1]
 
-            eager_mod.iou_eager = mock_iou
-            try:
-                _np_iou(np, np.array([0, 0, 10, 10]), np.array([5, 5, 15, 15]))
-            finally:
-                eager_mod.iou_eager = original_iou
-            original_nms = eager_mod.nms_eager
-
-            def mock_nms(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Evaluate and process the mock nms operation.
-
-                Args:
-                    *args (object): Variable positional arguments.
-                    **kwargs (object): Arbitrary keyword arguments.
-
-                Returns:
-                    object: The evaluated or processed output.
-                """
-                return args[1]
-
-            eager_mod.nms_eager = mock_nms
-            try:
-                _np_nms(np, np.array([[0, 0, 10, 10]]), np.array([0.9]), max_output_size=1, threshold=0.5)
-            finally:
-                eager_mod.nms_eager = original_nms
-            _np_perspective_transform(np, np.ones((2, 2, 3)), np.eye(3), np.eye(3), config=None)
-            _np_affine_grid(np, np.eye(2, 3), size=(4, 4))
-            _np_affine_transform(np, np.ones((2, 2, 3)), np.eye(2, 3))
-            _np_affine_generator(np, 2, np.ones(1), np.ones(1), np.ones(1))
-        except (ValueError, AttributeError, AssertionError, TypeError) as _exc:
-            assert _exc is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+        eager_mod.nms_eager = mock_nms
+        try:
+            _np_nms(np, np.array([[0, 0, 10, 10]]), np.array([0.9]), max_output_size=1, threshold=0.5)
+        finally:
+            eager_mod.nms_eager = original_nms
+        _np_perspective_transform(np, np.ones((2, 2, 3)), np.eye(3), np.eye(3), config=None)
+        _np_affine_grid(np, np.eye(2, 3), size=(4, 4))
+        _np_affine_transform(np, np.ones((2, 2, 3)), np.eye(2, 3))
+        _np_affine_generator(np, 2, np.ones(1), np.ones(1), np.ones(1))

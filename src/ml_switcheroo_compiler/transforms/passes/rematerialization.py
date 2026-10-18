@@ -6,7 +6,7 @@ import os
 
 import yaml
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -15,7 +15,7 @@ def _load_rules() -> dict[str, list[str] | dict[str, float | int]]:
     """Load rematerialization rules from YAML config.
 
     Returns:
-        dict[str, object]: The loaded rules.
+        dict[str, list[str] | dict[str, float | int]]: The loaded rules.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "rematerialization_rules.yaml")
     with open(yaml_path) as f:
@@ -44,12 +44,12 @@ def _estimate_memory(node: IRNode) -> float:
     return bytes_val
 
 
-def _estimate_compute(node: IRNode, rules: EagerValue) -> float:
+def _estimate_compute(node: IRNode, rules: TensorOrScalar) -> float:
     """Estimate FLOPs of a node.
 
     Args:
         node (IRNode): The IR node.
-        rules (dict): The rules dict.
+        rules (TensorOrScalar): The rules dict.
 
     Returns:
         float: Estimated FLOPs.
@@ -66,14 +66,19 @@ def _estimate_compute(node: IRNode, rules: EagerValue) -> float:
     return flops
 
 
-def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], node_indices: dict[str, int], rules: EagerValue) -> list[IRNode]:
+def _find_target_nodes(
+    nodes: list[IRNode],
+    consumers: dict[str, list[str]],
+    node_indices: dict[str, int],
+    rules: TensorOrScalar,
+) -> list[IRNode]:
     """Find nodes suitable for rematerialization.
 
     Args:
         nodes (list[IRNode]): Sorted nodes.
-        consumers (dict): Mapping from node ID to consumer node IDs.
-        node_indices (dict): Mapping from node ID to its topological index.
-        rules (dict): The rules dict.
+        consumers (dict[str, list[str]]): Mapping from node ID to consumer node IDs.
+        node_indices (dict[str, int]): Mapping from node ID to its topological index.
+        rules (TensorOrScalar): The rules dict.
 
     Returns:
         list[IRNode]: List of nodes to rematerialize.

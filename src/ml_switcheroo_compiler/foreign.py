@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import cast
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _infer_shape_from_subgraph(first: EagerValue) -> tuple[int, ...] | None:
+def _infer_shape_from_subgraph(first: TensorOrScalar) -> tuple[int, ...] | None:
     """Extract output shape metadata from an attached subgraph's output nodes.
 
     Args:
-        first: Target object potentially containing a subgraph attribute.
+        first (TensorOrScalar): Target object potentially containing a subgraph attribute.
 
     Returns:
         tuple[int, ...] | None: Inferred shape tuple if found, else None.
@@ -27,11 +28,11 @@ def _infer_shape_from_subgraph(first: EagerValue) -> tuple[int, ...] | None:
     return None
 
 
-def _infer_shape_from_attributes(first: EagerValue) -> tuple[int, ...] | None:
+def _infer_shape_from_attributes(first: TensorOrScalar) -> tuple[int, ...] | None:
     """Extract output shape from common tensor or module shape attributes.
 
     Args:
-        first: Target object or module to inspect.
+        first (TensorOrScalar): Target object or module to inspect.
 
     Returns:
         tuple[int, ...] | None: Inferred shape tuple if present, else None.
@@ -51,7 +52,7 @@ def _is_int_type_sequence(seq: tuple[int | type, ...]) -> bool:
     """Check whether all elements in a type argument tuple are integers or the int type.
 
     Args:
-        seq (tuple): Sequence of type arguments.
+        seq (tuple[int | type, ...]): Sequence of type arguments.
 
     Returns:
         bool: True if all elements are int instances or the int type.
@@ -59,11 +60,11 @@ def _is_int_type_sequence(seq: tuple[int | type, ...]) -> bool:
     return all(isinstance(x, int) or x is int for x in seq)
 
 
-def _infer_shape_from_callable_annotations(first: Callable[..., EagerValue]) -> tuple[int, ...] | None:
+def _infer_shape_from_callable_annotations(first: Callable[..., TensorOrScalar]) -> tuple[int, ...] | None:
     """Infer output shape from callable return type hints or signature annotations.
 
     Args:
-        first (Callable): Target callable to inspect.
+        first (Callable[..., TensorOrScalar]): Target callable to inspect.
 
     Returns:
         tuple[int, ...] | None: Inferred shape tuple if found, else None.
@@ -118,11 +119,11 @@ def _extract_return_tuple_dims(src_code: str) -> tuple[int, ...] | None:
     return None
 
 
-def _infer_shape_from_callable_ast(first: Callable[..., EagerValue]) -> tuple[int, ...] | None:
+def _infer_shape_from_callable_ast(first: Callable[..., TensorOrScalar]) -> tuple[int, ...] | None:
     """Infer output shape by parsing the callable's source AST for constant tuple returns.
 
     Args:
-        first (Callable): Target callable to inspect.
+        first (Callable[..., TensorOrScalar]): Target callable to inspect.
 
     Returns:
         tuple[int, ...] | None: Inferred shape tuple if found, else None.
@@ -141,11 +142,11 @@ def _infer_shape_from_callable_ast(first: Callable[..., EagerValue]) -> tuple[in
         return None
 
 
-def _infer_shape_from_callable(first: Callable[..., EagerValue]) -> tuple[int, ...] | None:
+def _infer_shape_from_callable(first: Callable[..., TensorOrScalar]) -> tuple[int, ...] | None:
     """Infer output shape from a callable via annotations or AST introspection.
 
     Args:
-        first (Callable): Target callable to inspect.
+        first (Callable[..., TensorOrScalar]): Target callable to inspect.
 
     Returns:
         tuple[int, ...] | None: Inferred shape tuple if found, else None.
@@ -160,12 +161,12 @@ def _infer_shape_from_callable(first: Callable[..., EagerValue]) -> tuple[int, .
 class ForeignCall(OpDef):
     """Universal ForeignCall op for external graphs/modules."""
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: AttrValue) -> tuple[int, ...]:
         """Infer the shape of the output for ForeignCall via introspection.
 
         Args:
-            *args: Positional arguments (callable, inputs, ...).
-            **kwargs: Keyword arguments including optional 'output_shape'.
+            *args (TensorOrScalar): Positional arguments (callable, inputs, ...).
+            **kwargs (AttrValue): Keyword arguments including optional 'output_shape'.
 
         Returns:
             tuple[int, ...]: The inferred shape.
@@ -195,15 +196,15 @@ def _handle_fx_placeholder(
     node: LogicalNode,
     graph: LogicalGraph,
     node_map: dict[str, str],
-    modules: dict[str, Callable[..., EagerValue]] | None = None,
+    modules: dict[str, Callable[..., TensorOrScalar]] | None = None,
 ) -> None:
     """Register a Torch FX placeholder node in the node mapping.
 
     Args:
-        node: The Torch FX node representing an input placeholder.
-        graph: Target LogicalGraph being populated.
-        node_map: Mapping from FX node names to LogicalNode IDs.
-        modules: Optional mapping of named submodules.
+        node (LogicalNode): The Torch FX node representing an input placeholder.
+        graph (LogicalGraph): Target LogicalGraph being populated.
+        node_map (dict[str, str]): Mapping from FX node names to LogicalNode IDs.
+        modules (dict[str, Callable[..., TensorOrScalar]] | None): Optional mapping of named submodules.
     """
     del graph, modules
     node_name = getattr(node, "name", "")
@@ -214,15 +215,15 @@ def _handle_fx_call_method(
     node: LogicalNode,
     graph: LogicalGraph,
     node_map: dict[str, str],
-    modules: dict[str, Callable[..., EagerValue]] | None = None,
+    modules: dict[str, Callable[..., TensorOrScalar]] | None = None,
 ) -> None:
     """Translate a Torch FX call_method node into a LogicalNode.
 
     Args:
-        node: The Torch FX call_method node.
-        graph: Target LogicalGraph being populated.
-        node_map: Mapping from FX node names to LogicalNode IDs.
-        modules: Optional mapping of named submodules.
+        node (LogicalNode): The Torch FX call_method node.
+        graph (LogicalGraph): Target LogicalGraph being populated.
+        node_map (dict[str, str]): Mapping from FX node names to LogicalNode IDs.
+        modules (dict[str, Callable[..., TensorOrScalar]] | None): Optional mapping of named submodules.
     """
     del modules
     target_name = str(getattr(node, "target", ""))
@@ -254,7 +255,7 @@ def _handle_fx_call_method(
     l_node = LogicalNode(
         id=node_name,
         op_type=op_type,
-        attributes=attributes,
+        attributes=cast("Mapping[str, AttributeValue]", attributes),
         inputs=inputs,
         shape_metadata=(),
     )
@@ -275,12 +276,12 @@ _FX_MODULE_TYPE_MAP: tuple[tuple[str, str], ...] = (
 )
 
 
-def _resolve_fx_module_op_type(target_name: str, modules: dict[str, Callable[..., EagerValue]] | None) -> str:
+def _resolve_fx_module_op_type(target_name: str, modules: dict[str, Callable[..., TensorOrScalar]] | None) -> str:
     """Resolve the compiler op_type for a Torch FX submodule target.
 
     Args:
-        target_name: The target submodule path string.
-        modules: Optional mapping of named submodules.
+        target_name (str): The target submodule path string.
+        modules (dict[str, Callable[..., TensorOrScalar]] | None): Optional mapping of named submodules.
 
     Returns:
         str: Resolved IR op_type string.
@@ -297,15 +298,15 @@ def _handle_fx_call_module(
     node: LogicalNode,
     graph: LogicalGraph,
     node_map: dict[str, str],
-    modules: dict[str, Callable[..., EagerValue]] | None = None,
+    modules: dict[str, Callable[..., TensorOrScalar]] | None = None,
 ) -> None:
     """Translate a Torch FX call_module node into a LogicalNode.
 
     Args:
-        node: The Torch FX call_module node.
-        graph: Target LogicalGraph being populated.
-        node_map: Mapping from FX node names to LogicalNode IDs.
-        modules: Optional mapping of named submodules.
+        node (LogicalNode): The Torch FX call_module node.
+        graph (LogicalGraph): Target LogicalGraph being populated.
+        node_map (dict[str, str]): Mapping from FX node names to LogicalNode IDs.
+        modules (dict[str, Callable[..., TensorOrScalar]] | None): Optional mapping of named submodules.
     """
     target_name = str(getattr(node, "target", ""))
     op_type = _resolve_fx_module_op_type(target_name, modules)
@@ -323,7 +324,7 @@ def _handle_fx_call_module(
     l_node = LogicalNode(
         id=node_name,
         op_type=op_type,
-        attributes=attributes,
+        attributes=cast("Mapping[str, AttributeValue]", attributes),
         inputs=inputs,
         shape_metadata=(),
     )
@@ -335,15 +336,15 @@ def _handle_fx_get_attr(
     node: LogicalNode,
     graph: LogicalGraph,
     node_map: dict[str, str],
-    modules: dict[str, Callable[..., EagerValue]] | None = None,
+    modules: dict[str, Callable[..., TensorOrScalar]] | None = None,
 ) -> None:
     """Translate a Torch FX get_attr node into a Constant LogicalNode.
 
     Args:
-        node: The Torch FX get_attr node.
-        graph: Target LogicalGraph being populated.
-        node_map: Mapping from FX node names to LogicalNode IDs.
-        modules: Optional mapping of named submodules.
+        node (LogicalNode): The Torch FX get_attr node.
+        graph (LogicalGraph): Target LogicalGraph being populated.
+        node_map (dict[str, str]): Mapping from FX node names to LogicalNode IDs.
+        modules (dict[str, Callable[..., TensorOrScalar]] | None): Optional mapping of named submodules.
     """
     del modules
     node_name = getattr(node, "name", "")
@@ -362,15 +363,15 @@ def _handle_fx_call_function(
     node: LogicalNode,
     graph: LogicalGraph,
     node_map: dict[str, str],
-    modules: dict[str, Callable[..., EagerValue]] | None = None,
+    modules: dict[str, Callable[..., TensorOrScalar]] | None = None,
 ) -> None:
     """Translate a Torch FX call_function node into a LogicalNode.
 
     Args:
-        node: The Torch FX call_function node.
-        graph: Target LogicalGraph being populated.
-        node_map: Mapping from FX node names to LogicalNode IDs.
-        modules: Optional mapping of named submodules.
+        node (LogicalNode): The Torch FX call_function node.
+        graph (LogicalGraph): Target LogicalGraph being populated.
+        node_map (dict[str, str]): Mapping from FX node names to LogicalNode IDs.
+        modules (dict[str, Callable[..., TensorOrScalar]] | None): Optional mapping of named submodules.
     """
     del modules
     target_obj = getattr(node, "target", "")
@@ -441,7 +442,7 @@ def _handle_fx_call_function(
     l_node = LogicalNode(
         id=node_name,
         op_type=op_type,
-        attributes=attributes,
+        attributes=cast("Mapping[str, AttributeValue]", attributes),
         inputs=inputs,
         shape_metadata=(),
     )
@@ -453,15 +454,15 @@ def _handle_fx_output(
     node: LogicalNode,
     graph: LogicalGraph,
     node_map: dict[str, str],
-    modules: dict[str, Callable[..., EagerValue]] | None = None,
+    modules: dict[str, Callable[..., TensorOrScalar]] | None = None,
 ) -> None:
     """Populate graph outputs from a Torch FX output node.
 
     Args:
-        node: The Torch FX output node.
-        graph: Target LogicalGraph being populated.
-        node_map: Mapping from FX node names to LogicalNode IDs.
-        modules: Optional mapping of named submodules.
+        node (LogicalNode): The Torch FX output node.
+        graph (LogicalGraph): Target LogicalGraph being populated.
+        node_map (dict[str, str]): Mapping from FX node names to LogicalNode IDs.
+        modules (dict[str, Callable[..., TensorOrScalar]] | None): Optional mapping of named submodules.
     """
     del node_map, modules
     outputs: list[str] = []
@@ -476,11 +477,11 @@ def _handle_fx_output(
     graph.outputs = outputs
 
 
-def ingest_torch_fx(fx_graph_module: EagerValue) -> LogicalGraph:
+def ingest_torch_fx(fx_graph_module: TensorOrScalar) -> LogicalGraph:
     """Ingest a Torch FX GraphModule into a LogicalGraph.
 
     Args:
-        fx_graph_module: The Torch FX GraphModule instance to convert.
+        fx_graph_module (TensorOrScalar): The Torch FX GraphModule instance to convert.
 
     Returns:
         LogicalGraph: Converted compiler intermediate representation graph.
@@ -505,7 +506,7 @@ def ingest_torch_fx(fx_graph_module: EagerValue) -> LogicalGraph:
         "output": _handle_fx_output,
     }
 
-    modules: dict[str, Callable[..., EagerValue]] = {}
+    modules: dict[str, Callable[..., TensorOrScalar]] = {}
     if hasattr(fx_graph_module, "named_modules"):
         modules = dict(fx_graph_module.named_modules())
 
@@ -516,12 +517,12 @@ def ingest_torch_fx(fx_graph_module: EagerValue) -> LogicalGraph:
     return graph
 
 
-def _extract_jaxpr_constants(jaxpr: EagerValue, graph: LogicalGraph) -> None:
+def _extract_jaxpr_constants(jaxpr: TensorOrScalar, graph: LogicalGraph) -> None:
     """Extract constant values from a JAX jaxpr into Constant LogicalNodes.
 
     Args:
-        jaxpr: The JAX jaxpr object containing constants.
-        graph: Target LogicalGraph being populated.
+        jaxpr (TensorOrScalar): The JAX jaxpr object containing constants.
+        graph (LogicalGraph): Target LogicalGraph being populated.
     """
     if hasattr(jaxpr, "consts"):
         constvars = getattr(jaxpr, "constvars", None)
@@ -539,12 +540,12 @@ def _extract_jaxpr_constants(jaxpr: EagerValue, graph: LogicalGraph) -> None:
             graph.nodes[const_id] = l_node
 
 
-def _translate_jax_equation(eqn: EagerValue, graph: LogicalGraph) -> None:
+def _translate_jax_equation(eqn: TensorOrScalar, graph: LogicalGraph) -> None:
     """Translate a single JAXpr equation into a LogicalNode.
 
     Args:
-        eqn: The JAXpr equation object.
-        graph: Target LogicalGraph being populated.
+        eqn (TensorOrScalar): The JAXpr equation object.
+        graph (LogicalGraph): Target LogicalGraph being populated.
     """
     op_type = "Unknown"
     primitive_obj = getattr(eqn, "primitive", "")
@@ -560,8 +561,6 @@ def _translate_jax_equation(eqn: EagerValue, graph: LogicalGraph) -> None:
 
     outvars = list(getattr(eqn, "outvars", []))
     out_id = str(id(outvars[0])) if outvars else "out"
-
-    from ml_switcheroo_ir import AttributeValue
 
     attributes: dict[str, AttributeValue] = {}
     if hasattr(eqn, "params"):
@@ -586,11 +585,11 @@ def _translate_jax_equation(eqn: EagerValue, graph: LogicalGraph) -> None:
     graph.nodes[out_id] = l_node
 
 
-def ingest_jaxpr(jaxpr: EagerValue) -> LogicalGraph:
+def ingest_jaxpr(jaxpr: TensorOrScalar) -> LogicalGraph:
     """Ingest a JAX jaxpr into a LogicalGraph.
 
     Args:
-        jaxpr: The JAX jaxpr object to convert.
+        jaxpr (TensorOrScalar): The JAX jaxpr object to convert.
 
     Returns:
         LogicalGraph: Converted compiler intermediate representation graph.

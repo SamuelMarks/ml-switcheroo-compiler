@@ -4,23 +4,22 @@ from __future__ import annotations
 
 
 def test_edge_inits_symbol_exports() -> None:
-    """Verify that all standalone edge and webgpu packages export canonical generators."""
+    """Verify that canonical edge package and BackendRegistry export all edge generators."""
     import ml_switcheroo_compiler.backends.edge as edge
     import ml_switcheroo_compiler.backends.edge.distributed_webrtc as edge_webrtc
-    import ml_switcheroo_compiler.backends.edge_mlir as edge_mlir
-    import ml_switcheroo_compiler.backends.edge_onnx as edge_onnx
-    import ml_switcheroo_compiler.backends.edge_stablehlo as edge_stablehlo
-    import ml_switcheroo_compiler.backends.edge_wasm as edge_wasm
-    import ml_switcheroo_compiler.backends.edge_webgl as edge_webgl
     import ml_switcheroo_compiler.backends.llvm_cpp as llvm_cpp
-    import ml_switcheroo_compiler.backends.webgpu as webgpu
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
+    assert hasattr(edge, "MLIRBytecodeEncoder")
+    assert edge.MLIRBytecodeEncoder is not None
     assert hasattr(edge, "ONNXCodeGenerator")
     assert edge.ONNXCodeGenerator is not None
     assert hasattr(edge, "StableHLOCodeGenerator")
     assert edge.StableHLOCodeGenerator is not None
     assert hasattr(edge, "WasmCodeGenerator")
     assert edge.WasmCodeGenerator is not None
+    assert hasattr(edge, "WebGLCodeGenerator")
+    assert edge.WebGLCodeGenerator is not None
     assert hasattr(edge, "WebGPUCodeGenerator")
     assert edge.WebGPUCodeGenerator is not None
 
@@ -36,21 +35,11 @@ def test_edge_inits_symbol_exports() -> None:
     assert hasattr(llvm_cpp, "LLVMCPPRunner")
     assert llvm_cpp.LLVMCPPRunner is not None
 
-    assert hasattr(edge_mlir, "MLIRBytecodeEncoder")
-    assert edge_mlir.MLIRBytecodeEncoder is not None
-    assert edge_mlir.MLIRBytecodeEncoder is not None
-
-    assert hasattr(edge_onnx, "ONNXCodeGenerator")
-    assert edge_onnx.ONNXCodeGenerator is not None
-
-    assert hasattr(edge_stablehlo, "StableHLOCodeGenerator")
-    assert edge_stablehlo.StableHLOCodeGenerator is not None
-
-    assert hasattr(edge_wasm, "WasmCodeGenerator")
-    assert edge_wasm.WasmCodeGenerator is not None
-
-    assert hasattr(edge_webgl, "WebGLCodeGenerator")
-    assert edge_webgl.WebGLCodeGenerator is not None
-
-    assert hasattr(webgpu, "WebGPUCodeGenerator")
-    assert webgpu.WebGPUCodeGenerator is not None
+    assert BackendRegistry.get("edge") is edge.ONNXCodeGenerator
+    assert BackendRegistry.get("edge_onnx") is edge.ONNXCodeGenerator
+    assert BackendRegistry.get("edge_stablehlo") is edge.StableHLOCodeGenerator
+    assert BackendRegistry.get("edge_wasm") is edge.WasmCodeGenerator
+    assert BackendRegistry.get("edge_wasm_simd") is edge.WasmCodeGenerator
+    assert BackendRegistry.get("edge_webgl") is edge.WebGLCodeGenerator
+    assert BackendRegistry.get("edge_wgsl") is edge.WebGPUCodeGenerator
+    assert BackendRegistry.get("webgpu") is edge.WebGPUCodeGenerator

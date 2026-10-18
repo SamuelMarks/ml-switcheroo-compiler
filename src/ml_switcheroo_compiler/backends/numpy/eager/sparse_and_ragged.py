@@ -15,9 +15,9 @@ def _np_sparse_bincount(backend_module: ModuleType, x: EagerValue, **kwargs: Eag
     """Implement sparse bincount in Numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -30,9 +30,9 @@ def _np_sparse_reduce_max(backend_module: ModuleType, x: EagerValue, **kwargs: E
     """Implement sparse reduce max in Numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -45,9 +45,9 @@ def _np_sparse_reduce_sum(backend_module: ModuleType, x: EagerValue, **kwargs: E
     """Implement sparse reduce sum in Numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -60,11 +60,11 @@ def _np_sparse_segment_mean(backend_module: ModuleType, data: EagerValue, indice
     """Implement sparse segment mean in Numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        data (object): The data parameter.
-        indices (object): The indices parameter.
-        segment_ids (object): The segment_ids parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        data (EagerValue): The data parameter.
+        indices (EagerValue): The indices parameter.
+        segment_ids (EagerValue): The segment_ids parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -77,11 +77,11 @@ def _np_sparse_segment_sqrt_n(backend_module: ModuleType, data: EagerValue, indi
     """Implement sparse segment sqrt n in Numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        data (object): The data parameter.
-        indices (object): The indices parameter.
-        segment_ids (object): The segment_ids parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        data (EagerValue): The data parameter.
+        indices (EagerValue): The indices parameter.
+        segment_ids (EagerValue): The segment_ids parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -94,11 +94,11 @@ def _np_sparse_segment_sum(backend_module: ModuleType, data: EagerValue, indices
     """Implement sparse segment sum in Numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        data (object): The data parameter.
-        indices (object): The indices parameter.
-        segment_ids (object): The segment_ids parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        data (EagerValue): The data parameter.
+        indices (EagerValue): The indices parameter.
+        segment_ids (EagerValue): The segment_ids parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -111,10 +111,10 @@ def _np_sparse_expand_dims(backend_module: ModuleType, x: EagerValue, axis: Eage
     """Implement sparse expand dims in Numpy.
 
     Args:
-        backend_module (object): The backend module.
-        x (object): The input array.
+        backend_module (ModuleType): The backend module.
+        x (EagerValue): The input array.
         axis (int | None): The axis to expand.
-        **kwargs (object): Keyword arguments.
+        **kwargs (EagerValue): Keyword arguments.
 
     Returns: np.ndarray: The expanded array.
     """
@@ -131,10 +131,10 @@ def _np_ragged_dot(backend_module: ModuleType, a: EagerValue, b: EagerValue, **k
     """Implement ragged dot in Numpy.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
-        b (object): The b parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
+        b (EagerValue): The b parameter.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

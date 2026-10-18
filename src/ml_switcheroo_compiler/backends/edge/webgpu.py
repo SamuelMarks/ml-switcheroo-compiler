@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
+@register_backend("webgpu")
 @register_backend("edge_wgsl")
 class WebGPUCodeGenerator(BaseGenerator):
     """WebGPU WGSL Code Generator for emitting compute shader module code and browser JS orchestrator.
@@ -29,9 +30,9 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): The IR graph to process.
-            delegates (list, optional): Visitor delegates.
+            delegates (list[CodeGeneratorVisitor] | None): Visitor delegates.
         """
-        getattr(super(), "__init__")(graph, delegates)
+        super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
         self.body_lines: list[str] = []
         self.emitter = WGSLEmitter()
@@ -105,7 +106,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Get the shape and contiguous strides of an IR node.
 
         Args:
-            node (object): The IR node to analyze.
+            node (IRNode | None): The IR node to analyze.
 
         Returns:
             Tuple[List[int], List[int]]: The shape as a list of dimensions and the corresponding strides.
@@ -133,14 +134,14 @@ class WebGPUCodeGenerator(BaseGenerator):
         return shape, strides
 
     def _num_elements(self, shape: list[int]) -> int:
-        """_num_elements function.
+        """Execute num elements for compiler processing.
 
         Args:
-        self (object): The self parameter.
-        shape (object): The shape parameter.
+        self (TensorOrScalar): The self parameter.
+        shape (list[int]): The shape parameter.
 
         Returns:
-        object: Result.
+        int: Result.
         """
         n: int = 1
         for s in shape:
@@ -151,9 +152,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         """Process a node and return its generated WGSL variable name.
 
         Args:
-            node (object): The IR node.
+            node (IRNode): The IR node.
             input_vars (List[str]): Names of the input variables.
-            **kwargs (object): Additional attributes.
+            **kwargs (EagerValue): Additional attributes.
 
         Returns:
             str: Variable name of the evaluated node.
@@ -169,6 +170,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             strides: The strides parameter.
             out_var: The out_var parameter.
             base_offset_words: The base_offset_words parameter.
+
+        Returns:
+            list[str]: Computed result.
         """
         if not shape:
             return [f"let {out_var}: u32 = {base_offset_words}u;"]
@@ -511,6 +515,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -525,6 +532,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -539,6 +549,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -553,6 +566,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -567,6 +583,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
@@ -581,6 +600,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))  # noqa: F841
         nelem = int(cast("int", kwargs.get("nelem", 1)))
@@ -655,6 +677,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))  # noqa: F841
         nelem = int(cast("int", kwargs.get("nelem", 1)))
@@ -670,7 +695,7 @@ class WebGPUCodeGenerator(BaseGenerator):
             """Lower a branch subgraph into WGSL strings.
 
             Args:
-                branch_graph (object): The subgraph to lower.
+                branch_graph (EagerValue): The subgraph to lower.
                 default_val (str): The default input value string.
 
             Returns:
@@ -714,6 +739,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))  # noqa: F841
         nelem = int(cast("int", kwargs.get("nelem", 1)))
@@ -1047,7 +1075,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs.
+            **kwargs (EagerValue): Additional generation kwargs.
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
@@ -1060,7 +1088,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs.
+            **kwargs (EagerValue): Additional generation kwargs.
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
@@ -1073,7 +1101,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs.
+            **kwargs (EagerValue): Additional generation kwargs.
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
@@ -1086,7 +1114,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node representing the attention op.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs (shape, nelem, clean_id).
+            **kwargs (EagerValue): Additional generation kwargs (shape, nelem, clean_id).
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch (x, y, z) expressions.
@@ -1136,7 +1164,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs.
+            **kwargs (EagerValue): Additional generation kwargs.
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
@@ -1149,7 +1177,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs.
+            **kwargs (EagerValue): Additional generation kwargs.
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
@@ -1162,7 +1190,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs.
+            **kwargs (EagerValue): Additional generation kwargs.
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
@@ -1175,7 +1203,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (object): Additional generation kwargs.
+            **kwargs (EagerValue): Additional generation kwargs.
 
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
@@ -1262,6 +1290,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         return cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
 
@@ -1272,6 +1303,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         return cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
 
@@ -1282,6 +1316,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         return cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
 
@@ -1292,6 +1329,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))
         nelem = int(cast("int", kwargs.get("nelem", 1)))  # noqa: F841
@@ -1333,6 +1373,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
@@ -1377,6 +1420,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
@@ -1433,6 +1479,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
@@ -1489,6 +1538,9 @@ class WebGPUCodeGenerator(BaseGenerator):
             node: The node parameter.
             input_vars: The input_vars parameter.
             **kwargs: The kwargs parameter.
+
+        Returns:
+            tuple[list[str], str, str, str]: Computed result.
         """
         shape = cast("list[int]", kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
@@ -1543,7 +1595,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         Args:
             graph (IRGraph): The computation graph to compile.
-            **kwargs (object): Compilation options.
+            **kwargs (EagerValue): Compilation options.
 
         Returns:
             dict[str, object]: Bundle containing shader code, pipeline layout, and status.

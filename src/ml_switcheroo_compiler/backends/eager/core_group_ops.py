@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 
 
 def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
-    """Evaluate _get_reduction_axes operation.
+    """Execute the eager get reduction axes operation on the active backend array.
 
     Args:
         reshaped_dims (list[int]): The reshaped_dims parameter.
@@ -26,7 +26,7 @@ def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
 
 
 def _invoke_grouped_op(backend_module: EagerValue, op_name: str, reshaped_x: EagerValue, reduction_axes: tuple[int, ...]) -> EagerValue:
-    """Evaluate _invoke_grouped_op operation.
+    """Execute the eager invoke grouped op operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -35,7 +35,7 @@ def _invoke_grouped_op(backend_module: EagerValue, op_name: str, reshaped_x: Eag
         reduction_axes (tuple[int, ...]): The reduction_axes parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
 
     Raises:
         ValueError: An exception.
@@ -56,7 +56,7 @@ def _invoke_grouped_op(backend_module: EagerValue, op_name: str, reshaped_x: Eag
 
 
 def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerValue, **kwargs: int) -> EagerValue:
-    """Evaluate _apply_grouped_reduction operation.
+    """Execute the eager apply grouped reduction operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -65,7 +65,7 @@ def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     groups: int = kwargs["groups"]
@@ -85,7 +85,7 @@ def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerV
 
 @global_eager_registry.register("GroupMean")
 def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _group_mean operation.
+    """Execute the eager group mean operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -93,7 +93,7 @@ def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     x = args[0]
     groups: int = int(cast(int, kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(cast(int, str(args[1]))))()))
@@ -103,7 +103,7 @@ def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
 @global_eager_registry.register("GroupVariance")
 def _group_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _group_variance operation.
+    """Execute the eager group variance operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -111,7 +111,7 @@ def _group_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     x = args[0]
     groups: int = int(cast(int, kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(cast(int, str(args[1]))))()))
@@ -129,7 +129,7 @@ def _apply_affine_transform(backend_module: EagerValue, out: EagerValue, axis: i
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     weight = kwargs.get("weight")
@@ -151,7 +151,7 @@ def _apply_affine_transform(backend_module: EagerValue, out: EagerValue, axis: i
 
 
 def _parse_group_norm_args(args: tuple[EagerValue, ...], kwargs: dict[str, EagerValue]) -> tuple[EagerValue, int, Optional[EagerValue], Optional[EagerValue], int, float]:
-    """Evaluate _parse_group_norm_args operation.
+    """Execute the eager parse group norm args operation on the active backend array.
 
     Args:
         args: The args parameter.
@@ -170,7 +170,7 @@ def _parse_group_norm_args(args: tuple[EagerValue, ...], kwargs: dict[str, Eager
 
 
 def _compute_group_norm(backend_module: EagerValue, x: EagerValue, shape: list[int], group_params: tuple[int, int], stats: tuple[EagerValue, EagerValue, float]) -> EagerValue:
-    """Evaluate _compute_group_norm operation.
+    """Execute the eager compute group norm operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -180,7 +180,7 @@ def _compute_group_norm(backend_module: EagerValue, x: EagerValue, shape: list[i
         stats: The stats parameter.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     mod = cast(ModuleType, backend_module)
     axis, groups = group_params
@@ -195,7 +195,7 @@ def _compute_group_norm(backend_module: EagerValue, x: EagerValue, shape: list[i
 
 @global_eager_registry.register("GroupNorm")
 def _group_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _group_norm operation.
+    """Execute the eager group norm operation on the active backend array.
 
     Args:
         backend_module: The backend_module parameter.
@@ -203,7 +203,7 @@ def _group_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+            EagerValue: Result.
     """
     x, groups, weight, bias, axis, epsilon = _parse_group_norm_args(args, kwargs)
     shape: list[int] = list(cast(EagerTensorProtocol, x).shape)

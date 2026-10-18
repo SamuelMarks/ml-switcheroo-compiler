@@ -23,13 +23,13 @@ class FFTConfig:
 
 @numpy_eager_registry.register("Fft3d")
 def _np_fft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_fft3d operation.
+    """Execute the eager np fft3d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -40,13 +40,13 @@ def _np_fft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | Non
 
 @numpy_eager_registry.register("Ifft3d")
 def _np_ifft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_ifft3d operation.
+    """Execute the eager np ifft3d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -57,13 +57,13 @@ def _np_ifft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | No
 
 @numpy_eager_registry.register("Rfft2d")
 def _np_rfft2d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rfft2d operation.
+    """Execute the eager np rfft2d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -74,13 +74,13 @@ def _np_rfft2d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | No
 
 @numpy_eager_registry.register("Rfft3d")
 def _np_rfft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rfft3d operation.
+    """Execute the eager np rfft3d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -91,13 +91,13 @@ def _np_rfft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | No
 
 @numpy_eager_registry.register("Irfft2d")
 def _np_irfft2d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_irfft2d operation.
+    """Execute the eager np irfft2d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -108,13 +108,13 @@ def _np_irfft2d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | N
 
 @numpy_eager_registry.register("Irfft3d")
 def _np_irfft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_irfft3d operation.
+    """Execute the eager np irfft3d operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -125,13 +125,13 @@ def _np_irfft3d(backend_module: ModuleType, a: EagerValue, config: FFTConfig | N
 
 @numpy_eager_registry.register("Fftnd")
 def _np_fftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_fftnd operation.
+    """Execute the eager np fftnd operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -142,13 +142,13 @@ def _np_fftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | Non
 
 @numpy_eager_registry.register("Ifftnd")
 def _np_ifftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_ifftnd operation.
+    """Execute the eager np ifftnd operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -159,13 +159,13 @@ def _np_ifftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | No
 
 @numpy_eager_registry.register("Rfftnd")
 def _np_rfftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_rfftnd operation.
+    """Execute the eager np rfftnd operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -176,13 +176,13 @@ def _np_rfftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | No
 
 @numpy_eager_registry.register("Irfftnd")
 def _np_irfftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | None = None, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_irfftnd operation.
+    """Execute the eager np irfftnd operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        a (EagerValue): The a parameter.
         config (FFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -193,13 +193,13 @@ def _np_irfftnd(backend_module: ModuleType, a: EagerValue, config: FFTConfig | N
 
 @numpy_eager_registry.register("WindowHann")
 def _np_window_hann(backend_module: ModuleType, length: int, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_window_hann operation.
+    """Execute the eager np window hann operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
+        backend_module (ModuleType): The backend_module parameter.
         length (int): The length parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -209,13 +209,13 @@ def _np_window_hann(backend_module: ModuleType, length: int, *args: EagerValue, 
 
 @numpy_eager_registry.register("WindowHamming")
 def _np_window_hamming(backend_module: ModuleType, length: int, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_window_hamming operation.
+    """Execute the eager np window hamming operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
+        backend_module (ModuleType): The backend_module parameter.
         length (int): The length parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -225,15 +225,15 @@ def _np_window_hamming(backend_module: ModuleType, length: int, *args: EagerValu
 
 @numpy_eager_registry.register("Stft")
 def _np_stft(backend_module: ModuleType, x: EagerValue, nfft: int, noverlap: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_stft operation.
+    """Execute the eager np stft operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
         nfft (int): The nfft parameter.
         noverlap (int): The noverlap parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -254,15 +254,15 @@ def _np_stft(backend_module: ModuleType, x: EagerValue, nfft: int, noverlap: int
 
 @numpy_eager_registry.register("Istft")
 def _np_istft(backend_module: ModuleType, x: EagerValue, nfft: int, noverlap: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Evaluate _np_istft operation.
+    """Execute the eager np istft operation on the active backend array.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
+        backend_module (ModuleType): The backend_module parameter.
+        x (EagerValue): The x parameter.
         nfft (int): The nfft parameter.
         noverlap (int): The noverlap parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (EagerValue): Positional args.
+        **kwargs (EagerValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

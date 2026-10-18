@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def lognormal(*args: Tensor | float | int | str, **kwargs: Tensor | float | int | str) -> Tensor:
-    """Evaluate lognormal operation.
+    """Execute lognormal for compiler processing.
 
     Args:
         *args (Tensor | float | int | str): Positional args.

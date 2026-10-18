@@ -24,7 +24,7 @@ from ml_switcheroo_compiler.transforms.passes.state_lifting import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class DummyBlock:
@@ -175,50 +175,6 @@ def test_lift_node_state_defaults() -> None:
     assert bool(cast("Callable[..., EagerTensorProtocol]", _lift_node_state)(other_node, "n3", block)) is False
 
 
-def test_extract_state_named_parameters_and_buffers() -> None:
-    """Test extract_state with named_parameters and named_buffers."""
-    pass_obj = StateLiftingPass()
-
-    class ModelWithNamed:
-        """Model defining named_parameters and named_buffers."""
-
-        def __init__(self) -> None:
-            """Initialize ModelWithNamed."""
-            self.w = MockTensor()
-            self.b = MockTensor()
-
-        def named_parameters(self) -> list[tuple[str, EagerValue]]:
-            """Return named parameters."""
-            return [("w", self.w)]
-
-        def named_buffers(self) -> list[tuple[str, EagerValue]]:
-            """Return named buffers."""
-            return [("b", self.b)]
-
-    model = ModelWithNamed()
-    params, buffers = cast("Callable[..., EagerTensorProtocol]", pass_obj.extract_state)(model, prefix="sub.")
-    assert "sub.w" in params
-    assert "sub.b" in buffers
-    assert pass_obj.identity_map[id(model.w)] == "sub.w"
-    assert pass_obj.identity_map[id(model.b)] == "sub.b"
-
-    # Test when only named_buffers is provided
-    class ModelOnlyBuffers:
-        """Model with only named_buffers."""
-
-        def __init__(self) -> None:
-            """Initialize ModelOnlyBuffers."""
-            self.b = MockTensor()
-
-        def named_buffers(self) -> list[tuple[str, EagerValue]]:
-            """Return named buffers."""
-            return [("buf", self.b)]
-
-    params2, buffers2 = cast("Callable[..., EagerTensorProtocol]", StateLiftingPass)().extract_state(cast("Callable[..., EagerTensorProtocol]", ModelOnlyBuffers)())
-    assert params2 == {}
-    assert "buf" in buffers2
-
-
 def test_extract_state_reflection() -> None:
     """Test extract_state via reflection over __dict__."""
     pass_obj = StateLiftingPass()
@@ -250,10 +206,6 @@ def test_extract_state_reflection() -> None:
             self.sub = SubModule()
             self.primitive_int = 42
             self.instance_fn = lambda: 123
-
-        def forward(self) -> None:
-            """Dummy forward method."""
-            pass
 
     model = RootModel()
     params, buffers = cast("Callable[..., EagerTensorProtocol]", pass_obj.extract_state)(model)
@@ -355,42 +307,12 @@ def test_functionalize_callable() -> None:
     assert model.counter is init_state["counter"]
 
 
-def test_functionalize_forward_method() -> None:
-    """Test functionalize with non-callable model having forward method."""
-    pass_obj = StateLiftingPass()
-
-    class ForwardModel:
-        """Model with forward method."""
-
-        def __init__(self) -> None:
-            """Initialize ForwardModel."""
-            self.val = MockTensor(shape=(1,))
-
-        def forward(self, delta: float) -> float:
-            """Forward implementation.
-
-            Args:
-                delta (float): Increment value.
-
-            Returns:
-                float: Result.
-            """
-            return typing.cast(float, self.val) + delta
-
-    model = ForwardModel()
-    init_state, pure_fn = cast("Callable[..., EagerTensorProtocol]", pass_obj.functionalize)(model)
-    out, new_state = pure_fn({"val": 100.0}, 25.0)
-    assert out == 125.0
-    assert new_state["val"] == 100.0
-    assert id(model.val) == id(init_state["val"])
-
-
 def test_functionalize_type_error_restore() -> None:
-    """Test functionalize raises TypeError and restores state if model has no forward or __call__."""
+    """Test functionalize raises TypeError and restores state if container is not callable."""
     pass_obj = StateLiftingPass()
 
     class InertModel:
-        """Model without callable or forward."""
+        """Container without __call__."""
 
         def __init__(self) -> None:
             """Initialize InertModel."""
@@ -398,31 +320,31 @@ def test_functionalize_type_error_restore() -> None:
 
     model = InertModel()
     init_state, pure_fn = cast("Callable[..., EagerTensorProtocol]", pass_obj.functionalize)(model)
-    with pytest.raises(TypeError, match="is not callable and has no forward method"):
+    with pytest.raises(TypeError, match="is not callable"):
         pure_fn({"p": "temporary"})
     assert id(model.p) == id(init_state["p"])
 
 
 def test_functionalize_nested_state() -> None:
-    """Test functionalize with nested module paths."""
+    """Test functionalize with nested container paths."""
     pass_obj = StateLiftingPass()
 
     class InnerSub:
-        """Inner submodule."""
+        """Inner subcontainer."""
 
         def __init__(self) -> None:
             """Initialize InnerSub."""
             self.param = MockTensor(requires_grad=True)
 
     class OuterSub:
-        """Outer submodule containing nested submodule."""
+        """Outer container containing nested subcontainer."""
 
         def __init__(self) -> None:
             """Initialize OuterSub."""
             self.inner = InnerSub()
 
-        def forward(self, factor: int) -> int:
-            """Forward function.
+        def __call__(self, factor: int) -> int:
+            """Evaluate container.
 
             Args:
                 factor (int): Multiplier factor.

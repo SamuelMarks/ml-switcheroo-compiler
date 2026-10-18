@@ -29,7 +29,11 @@ class JaxDistributedVisitor:
 
     @property
     def code(self) -> list[str]:
-        """Get code list from the generator."""
+        """Get code list from the generator.
+
+        Returns:
+            list[str]: Computed result.
+        """
         return getattr(self.generator, "code", [])
 
     @staticmethod
@@ -37,7 +41,7 @@ class JaxDistributedVisitor:
         """Obtain mutable target code list from visitor or generator.
 
         Args:
-            target (object): Generator or visitor instance.
+            target (EagerValue): Generator or visitor instance.
 
         Returns:
             list[str]: Mutable code lines list.
@@ -56,7 +60,7 @@ class JaxDistributedVisitor:
         Args:
             node (IRNode): The IR node representing the Send operation.
             input_vars (list[str]): Input variable names to send.
-            **kwargs (Any): Additional attributes and parameters.
+            **kwargs (EagerValue): Additional attributes and parameters.
 
         Returns:
             str: Empty string as send is a statement emitted directly into generator code.
@@ -78,7 +82,7 @@ class JaxDistributedVisitor:
         Args:
             node (IRNode): The IR node representing the Recv operation.
             input_vars (list[str]): Input variable names (tokens or dependencies).
-            **kwargs (Any): Additional attributes and parameters.
+            **kwargs (EagerValue): Additional attributes and parameters.
 
         Returns:
             str: The name of the variable storing the received tensor.

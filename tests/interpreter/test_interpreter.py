@@ -27,7 +27,7 @@ def test_evaluate_graph() -> None:
     """Test the evaluate graph behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -44,7 +44,7 @@ def test_missing_input() -> None:
     """Test the missing input behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["in"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -56,7 +56,7 @@ def test_not_implemented() -> None:
     """Test the not implemented behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -69,7 +69,7 @@ def test_missing_output() -> None:
     """Test the missing output behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["missing"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -81,7 +81,7 @@ def test_all_ops() -> None:
     """Test the all ops behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in1"] = LogicalNode(id="in1", op_type="Input")

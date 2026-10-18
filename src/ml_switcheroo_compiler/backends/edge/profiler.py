@@ -107,7 +107,7 @@ class EdgeProfiler:
             """Execute a single evaluation step on edge target.
 
             Returns:
-                object: Evaluated output tensors or input buffers.
+                EagerValue: Evaluated output tensors or input buffers.
             """
             if has_ops:
                 try:

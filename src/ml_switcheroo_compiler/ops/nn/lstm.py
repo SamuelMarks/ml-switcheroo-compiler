@@ -51,10 +51,10 @@ def lstm_cell(
 
 
 def _sigmoid(x: Tensor) -> Tensor:
-    """Evaluate _sigmoid operation.
+    """Compute the sigmoid tensor operation.
 
     Args:
-        x (Any): The x parameter.
+        x (Tensor): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.

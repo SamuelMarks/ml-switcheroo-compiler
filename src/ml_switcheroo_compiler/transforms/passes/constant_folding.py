@@ -106,9 +106,11 @@ def _try_fold_single_node(
         return False
 
     try:
+        from ml_switcheroo_ir import AttributeValue
+
         val = cast("Callable[..., EagerTensorProtocol]", _evaluate_constant_node)(node, canonical_inputs, graph, backend)
         graph.nodes[node.id].op_type = "Constant"
-        graph.nodes[node.id].attributes = {"value": val}
+        graph.nodes[node.id].attributes = cast("dict[str, AttributeValue]", {"value": val})
         graph.nodes[node.id].inputs = []
         return True
     except (ValueError, TypeError, RuntimeError) as e:

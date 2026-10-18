@@ -22,14 +22,18 @@ class DaskGenerator(PythonStringGenerator):
     """Generate Dask python code from IR."""
 
     @classmethod
-    def get_memory_info(cls, device: EagerValue = None) -> EagerValue:
-        """Get memory info.
+    def get_memory_info(cls, device: EagerValue = None) -> dict[str, int]:
+        """Retrieve current and peak host RSS memory telemetry using stdlib resource.
 
         Args:
-            device: The device parameter.
+            device (EagerValue): Optional device identifier (unused for host RSS).
+
+        Returns:
+            dict[str, int]: Mapping with 'current' and 'peak' memory usage in bytes.
         """
-        psutil = __import__("psutil")
-        rss = psutil.Process().memory_info().rss
+        import resource
+
+        rss: int = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         return {"current": rss, "peak": rss}
 
     @classmethod
@@ -96,10 +100,10 @@ class DaskGenerator(PythonStringGenerator):
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (object): Optional compiler arguments ('optimize_graph').
+            **kwargs (EagerValue): Optional compiler arguments ('optimize_graph').
 
         Returns:
-            object: Execution callable evaluating the optimized Dask task graph.
+            EagerValue: Execution callable evaluating the optimized Dask task graph.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -108,10 +112,10 @@ class DaskGenerator(PythonStringGenerator):
             """Evaluate the graph with Dask arrays.
 
             Args:
-                *fn_args (object): Input tensor values.
+                *fn_args (EagerValue): Input tensor values.
 
             Returns:
-                object: Output tensor or collection of tensors.
+                EagerValue: Output tensor or collection of tensors.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {}
@@ -136,11 +140,11 @@ class DaskGenerator(PythonStringGenerator):
                 """Execute optimized Dask task graph.
 
                 Args:
-                    *w_args (object): Input tensors.
-                    **w_kwargs (object): Keyword arguments.
+                    *w_args (EagerValue): Input tensors.
+                    **w_kwargs (EagerValue): Keyword arguments.
 
                 Returns:
-                    object: Computed outputs.
+                    EagerValue: Computed outputs.
                 """
                 da_args = [getattr(da, "from_array")(a.data if isinstance(a, Tensor) else a) for a in w_args]
                 task = delayed_fn(*da_args)

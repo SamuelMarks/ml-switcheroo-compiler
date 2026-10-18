@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import cast
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
@@ -177,10 +178,14 @@ def load_transpiler_config(yaml_path: str) -> TranspilerConfig:
             syntactic_patterns=SyntacticPatternsConfig(),
         )
 
-    frameworks: dict[str, FrameworkConfig] = data.get("frameworks", {}) or {}
-    ast_to_ir_ops: dict[str, str] = dict(data.get("ast_to_ir_ops", {}))
-    ir_to_ast_ops: dict[str, dict[str, list[str]]] = dict(data.get("ir_to_ast_ops", {}))
-    import_remappings: dict[str, dict[str, str]] = dict(data.get("import_remappings", {})) if isinstance(data.get("import_remappings"), dict) else {}
+    raw_fw = data.get("frameworks", {})
+    frameworks: dict[str, FrameworkConfig] = cast("dict[str, FrameworkConfig]", raw_fw) if isinstance(raw_fw, dict) else {}
+    raw_a2i = data.get("ast_to_ir_ops", {})
+    ast_to_ir_ops: dict[str, str] = dict(cast("dict[str, str]", raw_a2i)) if isinstance(raw_a2i, dict) else {}
+    raw_i2a = data.get("ir_to_ast_ops", {})
+    ir_to_ast_ops: dict[str, dict[str, list[str]]] = dict(cast("dict[str, dict[str, list[str]]]", raw_i2a)) if isinstance(raw_i2a, dict) else {}
+    raw_imp = data.get("import_remappings")
+    import_remappings: dict[str, dict[str, str]] = dict(cast("dict[str, dict[str, str]]", raw_imp)) if isinstance(raw_imp, dict) else {}
     raw_patterns = data.get("syntactic_patterns", {})
     syntactic_patterns: SyntacticPatternsConfig = SyntacticPatternsConfig.model_validate(raw_patterns) if isinstance(raw_patterns, dict) else SyntacticPatternsConfig()
 

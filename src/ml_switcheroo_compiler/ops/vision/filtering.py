@@ -4,22 +4,23 @@ from __future__ import annotations
 
 from typing import Callable, Optional, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def gaussian_blur(images: Tensor, config_obj: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def gaussian_blur(images: Tensor, config_obj: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Apply Gaussian blur to the image(s).
 
     Args:
         images (Tensor): The images parameter.
-        config_obj (Any): The config_obj parameter.
-        **kwargs (Any): Keyword args.
+        config_obj (TensorOrScalar): The config_obj parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -31,7 +32,7 @@ def gaussian_blur(images: Tensor, config_obj: EagerValue = None, **kwargs: Eager
             kernel_size = (kernel_size, kernel_size)
         if isinstance(sigma, (float, int)):
             sigma = (float(sigma), float(sigma))
-        config_obj = cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", BlurConfig)(kernel_size=kernel_size, sigma=sigma, data_format=cast("Optional[str]", kwargs.get("data_format", None))))
+        config_obj = cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", BlurConfig)(kernel_size=kernel_size, sigma=sigma, data_format=cast("Optional[str]", kwargs.get("data_format", None))))
 
     padding = kwargs.get("padding", "same")
 
@@ -58,14 +59,14 @@ def median_filter(
     kernel_size: int | tuple[int, int],
     padding: str = "same",
     data_format: str | None = None,
-) -> EagerValue:
+) -> TensorOrScalar:
     """Apply a median filter to the image(s).
 
     Args:
         images (Tensor): The images parameter.
-        kernel_size (Any): The kernel_size parameter.
+        kernel_size (int | tuple[int, int]): The kernel_size parameter.
         padding (str): The padding parameter.
-        data_format (Any): The data_format parameter.
+        data_format (str | None): The data_format parameter.
 
     Returns:
         Tensor: Result.
@@ -100,7 +101,7 @@ def iou(
     boxes1: Tensor,
     boxes2: Tensor,
     bounding_box_format: str = "xyxy",
-) -> EagerValue:
+) -> TensorOrScalar:
     """Compute Intersection-Over-Union between two sets of bounding boxes.
 
     Args:
@@ -138,7 +139,7 @@ def non_max_suppression(
     max_output_size: int,
     iou_threshold: float = 0.5,
     score_threshold: float = float("-inf"),
-) -> EagerValue:
+) -> TensorOrScalar:
     """Greedily selects a subset of bounding boxes in descending order of score.
 
     Args:
@@ -176,7 +177,7 @@ def non_max_suppression(
     )
 
 
-def sharpen(images: Tensor, factor: float = 1.0) -> EagerValue:
+def sharpen(images: Tensor, factor: float = 1.0) -> TensorOrScalar:
     """Sharpen images.
 
     Args:
@@ -201,15 +202,15 @@ def random_gaussian_blur(
     images: Tensor,
     kernel_size: int | tuple[int, int],
     sigma: float | tuple[float, float],
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """Randomly apply Gaussian blur.
 
     Args:
         images (Tensor): The images parameter.
-        kernel_size (Any): The kernel_size parameter.
-        sigma (Any): The sigma parameter.
-        **kwargs (Any): Keyword args.
+        kernel_size (int | tuple[int, int]): The kernel_size parameter.
+        sigma (float | tuple[float, float]): The sigma parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -240,13 +241,13 @@ def random_gaussian_blur(
     )
 
 
-def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: EagerValue) -> EagerValue:
+def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Randomly adjust sharpness.
 
     Args:
         images (Tensor): The images parameter.
-        factor (Any): The factor parameter.
-        **kwargs (Any): Keyword args.
+        factor (float | tuple[float, float]): The factor parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.

@@ -24,7 +24,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
         shape (tuple[int, ...]): The shape of the tensor.
 
     Returns:
-        object: The zeros tensor.
+        EagerValue: The zeros tensor.
     """
     return generic_zeros(cp, shape)
 
@@ -38,7 +38,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
         dtype: The target dtype.
 
     Returns:
-        object: The array tensor.
+        EagerValue: The array tensor.
     """
     return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(cp, data, dtype))
 
@@ -51,7 +51,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         data: The input data.
 
     Returns:
-        object: The array tensor.
+        EagerValue: The array tensor.
     """
     return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(cp, data))
 

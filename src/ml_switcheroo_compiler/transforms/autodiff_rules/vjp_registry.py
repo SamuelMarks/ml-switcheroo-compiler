@@ -81,7 +81,7 @@ def register_vjp(op_name: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
     """
 
     def decorator(func: VJPRuleCallable) -> VJPRuleCallable:
-        """Evaluate decorator operation.
+        """Execute decorator for compiler processing.
 
         Args:
             func (VJPRuleCallable): The func parameter.

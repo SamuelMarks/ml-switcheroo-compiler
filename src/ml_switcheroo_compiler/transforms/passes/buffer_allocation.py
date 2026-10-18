@@ -154,7 +154,7 @@ def _try_reuse_buffer(node: IRNode, graph: IRGraph, size: int, i: int, last_use:
             if last_use.get(inp_id, -1) == i:
                 inp_offset = inp_node.attributes.get("buffer_offset")
                 inp_size = inp_node.attributes.get("buffer_size", 0)
-                if inp_offset is not None and int(inp_size) >= size:
+                if isinstance(inp_offset, (int, float)) and isinstance(inp_size, (int, float)) and int(inp_size) >= size:
                     return int(inp_offset)
     return -1
 

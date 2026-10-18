@@ -20,7 +20,7 @@ from .tensor_array import TensorArray
 
 
 def image_data_format() -> str:
-    """Evaluate image_data_format operation.
+    """Execute image data format for compiler processing.
 
     Returns:
         str: Result.

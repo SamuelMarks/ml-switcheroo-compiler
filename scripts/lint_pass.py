@@ -12,26 +12,48 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from scripts.lint_any import scan_directory_for_any
 
 
+def _node_is_verification(sub: ast.AST) -> bool:
+    """Return True if an AST node is an assertion, raise, or verification call.
+
+    Args:
+        sub (ast.AST): AST node to inspect.
+
+    Returns:
+        bool: True if the node performs test verification.
+    """
+    if isinstance(sub, (ast.Assert, ast.Raise)):
+        return True
+    if isinstance(sub, ast.Call):
+        target: ast.expr = sub.func
+        if isinstance(target, ast.Call) and isinstance(target.func, ast.Name) and target.func.id == "cast" and len(target.args) == 2:
+            target = target.args[1]
+        if isinstance(target, ast.Name) and (target.id.startswith("assert") or target.id.startswith("_check") or target.id.startswith("verify") or target.id.startswith("_test") or target.id.startswith("_run")):
+            return True
+        if isinstance(target, ast.Attribute) and (target.attr.startswith("assert") or target.attr in ("raises", "warns", "fail", "approx") or target.attr.startswith("check") or target.attr.startswith("verify")):
+            return True
+    return False
+
+
 def _has_assertion_or_verification(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    """Check whether a test function AST contains at least one assertion or verification call.
+    """Check whether a test function AST contains at least one assertion or verification call outside except blocks.
 
     Args:
         func_node (ast.FunctionDef | ast.AsyncFunctionDef): Function AST node to inspect.
 
     Returns:
-        bool: True if an assertion, raises context, or verification call is present.
+        bool: True if an assertion, raises context, or verification call is present outside except blocks.
     """
+    except_nodes: set[int] = set()
     for sub in ast.walk(func_node):
-        if isinstance(sub, (ast.Assert, ast.Raise)):
+        if isinstance(sub, ast.ExceptHandler):
+            for child in ast.walk(sub):
+                except_nodes.add(id(child))
+
+    for sub in ast.walk(func_node):
+        if id(sub) in except_nodes:
+            continue
+        if _node_is_verification(sub):
             return True
-        if isinstance(sub, ast.Call):
-            target: ast.expr = sub.func
-            if isinstance(target, ast.Call) and isinstance(target.func, ast.Name) and target.func.id == "cast" and len(target.args) == 2:
-                target = target.args[1]
-            if isinstance(target, ast.Name) and (target.id.startswith("assert") or target.id.startswith("_check") or target.id.startswith("verify")):
-                return True
-            if isinstance(target, ast.Attribute) and (target.attr.startswith("assert") or target.attr in ("raises", "warns", "fail", "approx") or target.attr.startswith("check") or target.attr.startswith("verify")):
-                return True
     return False
 
 
@@ -50,7 +72,60 @@ def _check_assert_node(path: str, node: ast.Assert) -> str | None:
         return f"FAILED: Vacuous 'assert {test_expr.value}' found in {path}:{node.lineno}"
     if isinstance(test_expr, ast.Compare) and len(test_expr.ops) == 1 and isinstance(test_expr.ops[0], (ast.Eq, ast.Is)) and ast.dump(test_expr.left) == ast.dump(test_expr.comparators[0]):
         return f"FAILED: Tautological comparison found in {path}:{node.lineno}"
+    if isinstance(test_expr, ast.Compare) and len(test_expr.ops) == 1 and isinstance(test_expr.ops[0], ast.IsNot) and isinstance(test_expr.left, ast.Name) and test_expr.left.id == "_exc":
+        return f"FAILED: Tautological 'assert _exc is not None' found in {path}:{node.lineno}"
     return None
+
+
+def _check_except_handler(path: str, node: ast.ExceptHandler) -> list[str]:
+    """Check an ast.ExceptHandler for swallowed exceptions, AssertionError catches, and _exc tautologies.
+
+    Args:
+        path (str): File path of the test module.
+        node (ast.ExceptHandler): ExceptHandler AST node.
+
+    Returns:
+        list[str]: List of violation messages.
+    """
+    errs: list[str] = []
+    if node.type is None:
+        errs.append(f"FAILED: Vacuous 'except: pass' found in {path}:{node.lineno}")
+    else:
+        for sub in ast.walk(node.type):
+            if isinstance(sub, ast.Name) and sub.id == "AssertionError":
+                errs.append(f"FAILED: Catching AssertionError in except handler at {path}:{node.lineno}")
+        if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
+            errs.append(f"FAILED: Vacuous 'except Exception: pass' found in {path}:{node.lineno}")
+    if node.name == "_exc":
+        errs.append(f"FAILED: Tautological 'as _exc' handler found in {path}:{node.lineno}")
+    return errs
+
+
+def _is_suppress_call(node: ast.Call) -> bool:
+    """Check whether a Call AST node invokes `contextlib.suppress` or `suppress`.
+
+    Args:
+        node (ast.Call): Call AST node.
+
+    Returns:
+        bool: True if it calls `suppress`.
+    """
+    if isinstance(node.func, ast.Name) and node.func.id == "suppress":
+        return True
+    return isinstance(node.func, ast.Attribute) and node.func.attr == "suppress"
+
+
+def _check_try_node(path: str, node: ast.Try) -> list[str]:
+    """Check an ast.Try node for stray string literals inside its body.
+
+    Args:
+        path (str): File path of the test module.
+        node (ast.Try): Try AST node.
+
+    Returns:
+        list[str]: List of violation messages.
+    """
+    return [f"FAILED: Stray string literal inside try block at {path}:{s.lineno}" for s in node.body if isinstance(s, ast.Expr) and isinstance(s.value, ast.Constant) and isinstance(s.value.value, str)]
 
 
 def check_test_file_ast(
@@ -82,11 +157,12 @@ def check_test_file_ast(
             err = _check_assert_node(path, node)
             if err is not None:
                 errors.append(err)
+        elif isinstance(node, ast.Try):
+            errors.extend(_check_try_node(path, node))
+        elif isinstance(node, ast.Call) and _is_suppress_call(node):
+            errors.append(f"FAILED: Prohibited contextlib.suppress usage in {path}:{node.lineno}")
         elif check_swallowed_exceptions and isinstance(node, ast.ExceptHandler):
-            if node.type is None:
-                errors.append(f"FAILED: Vacuous 'except: pass' found in {path}:{node.lineno}")
-            elif len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
-                errors.append(f"FAILED: Vacuous 'except Exception: pass' found in {path}:{node.lineno}")
+            errors.extend(_check_except_handler(path, node))
         elif check_zero_assertions and isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             if node.name.startswith("test_") and not _has_assertion_or_verification(node):
                 errors.append(f"FAILED: Zero assertions in test function '{node.name}' at {path}:{node.lineno}")

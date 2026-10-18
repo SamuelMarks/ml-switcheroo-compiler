@@ -1,6 +1,6 @@
 """Core Random."""
 
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,12 +10,12 @@ class Rademacher(OpDef):
 
     op_name = "Rademacher"
 
-    def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -29,12 +29,12 @@ class Rademacher(OpDef):
         return tuple(getattr(s, "__iter__")())
 
 
-def rademacher(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def rademacher(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """Draw samples from a Rademacher distribution.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (TensorOrScalar): Positional args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

@@ -34,13 +34,15 @@ def axis_translation_pass(graph: IRGraph) -> bool:
                     transp_in_id = f"transpose_{uuid.uuid4().hex[:8]}"
 
                     # Estimate new shape metadata
+                    from typing import cast
+
                     orig_shape = graph.nodes[inp_id].shape_metadata if inp_id in graph.nodes else None
                     new_meta: Optional[Sequence[Union[int, str]]]
                     if orig_shape and isinstance(orig_shape, (tuple, list)) and len(orig_shape) == 4:
                         new_shape = (orig_shape[0], orig_shape[2], orig_shape[3], orig_shape[1])
-                        new_meta = new_shape
+                        new_meta = cast("Optional[Sequence[Union[int, str]]]", new_shape)
                     else:
-                        new_meta = orig_shape
+                        new_meta = cast("Optional[Sequence[Union[int, str]]]", orig_shape)
 
                     transp_in_node = IRNode(id=transp_in_id, op_type="Transpose", inputs=[inp_id], attributes={"axes": [0, 2, 3, 1]}, shape_metadata=new_meta)
                     graph.nodes[transp_in_id] = transp_in_node

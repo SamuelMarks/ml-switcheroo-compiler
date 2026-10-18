@@ -14,7 +14,8 @@ from typing import Callable, cast
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import TensorSpec
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
@@ -24,11 +25,11 @@ def _wrap_proxy_inputs(
     args: tuple[Tensor | tuple[Tensor, ...] | int | float | bool | None, ...],
     subgraph: LogicalGraph,
 ) -> tuple[list[str], list[Tensor | tuple[Tensor, ...] | int | float | bool | None]]:
-    """Evaluate _wrap_proxy_inputs operation.
+    """Compute the wrap proxy inputs tensor operation.
 
     Args:
-        args (Any): The args parameter.
-        subgraph (Any): The subgraph parameter.
+        args (tuple[Tensor | tuple[Tensor, ...] | int | float | bool | None, ...]): The args parameter.
+        subgraph (LogicalGraph): The subgraph parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -63,11 +64,11 @@ def _wrap_proxy_inputs(
     return input_ids, proxy_args
 
 
-def _get_tensor_ids(obj: EagerValue) -> list[str]:
-    """Evaluate _get_tensor_ids operation.
+def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
+    """Compute the get tensor ids tensor operation.
 
     Args:
-        obj (Any): The obj parameter.
+        obj (TensorOrScalar): The obj parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -95,7 +96,7 @@ def _get_tensor_ids(obj: EagerValue) -> list[str]:
 
 
 def _process_trace_outputs(out: Tensor | tuple[Tensor, ...] | list[Tensor], subgraph: LogicalGraph) -> str:
-    """Evaluate _process_trace_outputs operation.
+    """Compute the process trace outputs tensor operation.
 
     Args:
         out: The out parameter.

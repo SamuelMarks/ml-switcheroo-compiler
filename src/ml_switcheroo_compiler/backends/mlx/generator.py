@@ -114,7 +114,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Init.
 
         Args:
-            graph (object): The graph parameter.
+            graph (IRGraph): The graph parameter.
         """
         super().__init__(graph)
         self.visitors.extend(
@@ -150,7 +150,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """Set the default stream.
 
         Args:
-            stream (object): The stream parameter.
+            stream (EagerValue): The stream parameter.
         """
         import mlx.core as mx
 
@@ -198,7 +198,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         return "mx"
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
-        """Evaluate _emit_constant_assignment operation.
+        """Execute emit constant assignment for compiler processing.
 
         Args:
             var_name (str): The var_name parameter.
@@ -250,7 +250,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
         Args:
             file (str): The file parameter.
-            arr (object): The arr parameter.
+            arr (EagerValue): The arr parameter.
             allow_pickle (bool): The allow_pickle parameter.
             fix_imports (bool): The fix_imports parameter.
         """
@@ -264,8 +264,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
         Args:
             file (str): The file parameter.
-            *args (object): Positional args.
-            **kwds (object): Keyword args.
+            *args (EagerValue): Positional args.
+            **kwds (EagerValue): Keyword args.
         """
         import mlx.core as mx
 
@@ -279,8 +279,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
         Args:
             file (str): The file parameter.
-            *args (object): Positional args.
-            **kwds (object): Keyword args.
+            *args (EagerValue): Positional args.
+            **kwds (EagerValue): Keyword args.
         """
         import mlx.core as mx
 
@@ -294,10 +294,10 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (object): Optional compiler arguments (e.g. 'shapeless').
+            **kwargs (EagerValue): Optional compiler arguments (e.g. 'shapeless').
 
         Returns:
-            object: Compiled execution callable.
+            EagerValue: Compiled execution callable.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
@@ -318,11 +318,11 @@ class MLXCodeGenerator(ClassBasedGenerator):
                 """Execute AOT compiled MLX graph function.
 
                 Args:
-                    *w_args (object): Input tensors.
-                    **w_kwargs (object): Keyword arguments.
+                    *w_args (EagerValue): Input tensors.
+                    **w_kwargs (EagerValue): Keyword arguments.
 
                 Returns:
-                    object: Computed outputs.
+                    EagerValue: Computed outputs.
                 """
                 mlx_args = [getattr(mx, "array")(a.data if isinstance(a, Tensor) else a) for a in w_args]
                 return cast(EagerValue, compiled_fn(*mlx_args, **w_kwargs))
@@ -335,10 +335,10 @@ class MLXCodeGenerator(ClassBasedGenerator):
                 """Execute interpreter graph evaluation fallback.
 
                 Args:
-                    *fn_args (object): Positional input arguments.
+                    *fn_args (EagerValue): Positional input arguments.
 
                 Returns:
-                    object: Evaluated output tensors.
+                    EagerValue: Evaluated output tensors.
                 """
                 input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
                 inputs: dict[str, EagerValue] = {}

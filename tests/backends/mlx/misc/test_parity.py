@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Tests for MLX parity."""
 
 from __future__ import annotations
@@ -9,16 +8,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.grad as grad_module
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.device import (
-    Device,
-    DeviceType,
-    FunctionExporter,
-    Stream,
-    StreamContext,
-    clear_cache,
-    export_function,
-    exporter,
-)
+from ml_switcheroo_compiler.core.device import Device, DeviceType, FunctionExporter, Stream, StreamContext, clear_cache, export_function, exporter
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if TYPE_CHECKING:
@@ -31,7 +21,7 @@ def test_mlx_parity_coverage() -> None:
     """Test the mlx parity coverage behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     t = Tensor(np.array(1), TensorConfig((), "float32", Device(DeviceType.CPU)))
@@ -53,10 +43,10 @@ def test_mlx_parity_coverage() -> None:
         """Evaluate and process the f operation.
 
         Args:
-            x (object): Required parameter for x.
+            x (EagerValue): Required parameter for x.
 
         Returns:
-            object: The evaluated or processed output.
+            EagerValue: The evaluated or processed output.
         """
         return x
 
@@ -70,52 +60,38 @@ def test_device_dunders() -> None:
     """Test the device dunders behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        "Tests Device dunder methods."
-        try:
-            d1 = Device(DeviceType.CPU, 0)
-            d2 = Device(DeviceType.CPU, 0)
-            d3 = Device(DeviceType.GPU, 1)
-            assert d1 == d2
-            assert d1 != d3
-            assert cast("EagerTensorProtocol", d1) != cast("EagerTensorProtocol", "not a device")
-            assert hash(d1) == hash(d2)
-            assert repr(d1) == "Device(cpu:0)"
-        except (ValueError, AttributeError, AssertionError, TypeError, RuntimeError, IndexError) as _exc:
-            assert _exc is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    d1 = Device(DeviceType.CPU, 0)
+    d2 = Device(DeviceType.CPU, 0)
+    d3 = Device(DeviceType.GPU, 1)
+    assert d1 == d2
+    assert d1 != d3
+    assert cast("EagerTensorProtocol", d1) != cast("EagerTensorProtocol", "not a device")
+    assert hash(d1) == hash(d2)
+    assert repr(d1) == "Device(cpu:0)"
 
 
 def test_grad_coverage_extra() -> None:
     """Test the grad coverage extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    try:
-        "Tests extra grad methods."
-        try:
 
-            def f(x: EagerValue) -> EagerValue:
-                """Evaluate and process the f operation.
+    def f(x: EagerValue) -> EagerValue:
+        """Evaluate and process the f operation.
 
-                Args:
-                    x (object): Required parameter for x.
+        Args:
+            x (EagerValue): Required parameter for x.
 
-                Returns:
-                    object: The evaluated or processed output.
-                """
-                return x
+        Returns:
+            EagerValue: The evaluated or processed output.
+        """
+        return x
 
-            assert grad_module.grad(f)(1) == 1
-            assert cast("Callable[..., EagerTensorProtocol]", grad_module.jit)(f)(1) == 1
-            with grad_module.disable_jit():
-                pass
-            assert grad_module.eval_shape(f, 1) == 1
-        except (ValueError, AttributeError, AssertionError, TypeError, RuntimeError, IndexError) as _exc:
-            assert _exc is not None
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError) as _exc:
-        assert _exc is not None
+    assert grad_module.grad(f)(1) == 1
+    assert cast("Callable[..., EagerTensorProtocol]", grad_module.jit)(f)(1) == 1
+    with grad_module.disable_jit():
+        pass
+    assert grad_module.eval_shape(f, 1) == 1

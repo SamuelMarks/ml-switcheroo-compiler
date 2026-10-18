@@ -7,7 +7,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Callable, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 from ml_switcheroo_compiler.ops.configs import ConvConfig
@@ -34,7 +35,7 @@ def conv_general_dilated(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvConfig,
-) -> EagerValue:
+) -> TensorOrScalar:
     """General N-dimensional convolution with support for strides, padding, and dilations.
 
     Args:
@@ -62,7 +63,7 @@ def conv_general_dilated(
     )
     out_shape = op.infer_shape(lhs, rhs, cfg)
 
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
+    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
 
 
 @dispatch_eager("ConvGeneralDilatedLocal")
@@ -70,15 +71,15 @@ def conv_general_dilated_local(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvLocalHyperparams,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    **kwargs: TensorOrScalar,
+) -> TensorOrScalar:
     """ConvGeneralDilatedLocal.
 
     Args:
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
         config (ConvLocalHyperparams): The config parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -97,15 +98,15 @@ def conv_general_dilated_local(
 
 
 @dispatch_eager("ConvGeneralDilatedPatches")
-def conv_general_dilated_patches(lhs: Tensor, filter_shape: EagerValue, window_strides: EagerValue, padding: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def conv_general_dilated_patches(lhs: Tensor, filter_shape: TensorOrScalar, window_strides: TensorOrScalar, padding: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """ConvGeneralDilatedPatches.
 
     Args:
         lhs (Tensor): The lhs parameter.
-        filter_shape (Any): The filter_shape parameter.
-        window_strides (Any): The window_strides parameter.
-        padding (Any): The padding parameter.
-        **kwargs (Any): Keyword args.
+        filter_shape (TensorOrScalar): The filter_shape parameter.
+        window_strides (TensorOrScalar): The window_strides parameter.
+        padding (TensorOrScalar): The padding parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -123,15 +124,15 @@ def conv_general_dilated_patches(lhs: Tensor, filter_shape: EagerValue, window_s
 
 
 @dispatch_eager("ConvWithGeneralPadding")
-def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: EagerValue, padding: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: TensorOrScalar, padding: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """ConvWithGeneralPadding.
 
     Args:
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
-        window_strides (Any): The window_strides parameter.
-        padding (Any): The padding parameter.
-        **kwargs (Any): Keyword args.
+        window_strides (TensorOrScalar): The window_strides parameter.
+        padding (TensorOrScalar): The padding parameter.
+        **kwargs (TensorOrScalar): Keyword args.
 
     Returns:
         Tensor: Result.

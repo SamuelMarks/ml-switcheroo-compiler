@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-# ruff: noqa: E501
 import numpy as np
 import pytest
 
@@ -30,7 +29,7 @@ def test_stop_gradient_eager_extra() -> None:
     """Test the stop gradient eager extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     try:
@@ -45,7 +44,7 @@ def test_stop_gradient_tracing_extra() -> None:
     """Test the stop gradient tracing extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = False
     global_tracing_state.start_tracing()
@@ -64,7 +63,7 @@ def test_pmap_eager_extra() -> None:
     """Test the pmap eager extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     try:
@@ -75,10 +74,10 @@ def test_pmap_eager_extra() -> None:
             """Evaluate and process the f operation.
 
             Args:
-                x (object): Required parameter for x.
+                x (EagerValue): Required parameter for x.
 
             Returns:
-                object: The evaluated or processed output.
+                EagerValue: The evaluated or processed output.
             """
             return x
 
@@ -92,7 +91,7 @@ def test_assert_value_eager_extra() -> None:
     """Test the assert value eager extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     try:
@@ -107,7 +106,7 @@ def test_assert_value_tracing_extra() -> None:
     """Test the assert value tracing extra behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = False
     global_tracing_state.start_tracing()
@@ -125,7 +124,7 @@ def test_scan_tuple_return() -> None:
     """Test the scan tuple return behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     try:
@@ -136,11 +135,11 @@ def test_scan_tuple_return() -> None:
             """Evaluate and process the f operation.
 
             Args:
-                c (object): Required parameter for c.
-                x (object): Required parameter for x.
+                c (EagerValue): Required parameter for c.
+                x (EagerValue): Required parameter for x.
 
             Returns:
-                object: The evaluated or processed output.
+                EagerValue: The evaluated or processed output.
             """
             return (c, (x, x))
 
@@ -154,7 +153,7 @@ def test_map_tuple_return() -> None:
     """Test the map tuple return behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     try:
@@ -165,10 +164,10 @@ def test_map_tuple_return() -> None:
             """Evaluate and process the f operation.
 
             Args:
-                x (object): Required parameter for x.
+                x (EagerValue): Required parameter for x.
 
             Returns:
-                object: The evaluated or processed output.
+                EagerValue: The evaluated or processed output.
             """
             return (x, x)
 
@@ -182,7 +181,7 @@ def test_tracing_exceptions() -> None:
     """Test the tracing exceptions behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     dev = Device(DeviceType.CPU)
     t = Tensor(np.array([1]), TensorConfig((1,), DType.Float32, dev))
@@ -204,7 +203,7 @@ def test_assert_op_infer_shape() -> None:
     """Test the assert op infer shape behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     assert cast("Callable[..., EagerTensorProtocol]", AssertOp)().infer_shape(None) == ()
 
@@ -213,7 +212,7 @@ def test_pmap_tracing_non_tensor() -> None:
     """Test the pmap tracing non tensor behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     dev = Device(DeviceType.CPU)
     t = Tensor(np.array([1]), TensorConfig((1,), DType.Float32, dev))
@@ -235,9 +234,8 @@ def test_vmap_eager() -> None:
     """Test the vmap eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the eager execution of the vectorized map (vmap) operator.\n\n    Verifies that vmap correctly applies a function element-wise or along a\n    batch dimension when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
@@ -245,10 +243,10 @@ def test_vmap_eager() -> None:
             """Func.
 
             Args:
-            t (object): The t parameter
+            t (EagerValue): The t parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return Tensor(getattr(t, "data") * 2, TensorConfig(getattr(t, "shape"), getattr(t, "dtype"), getattr(t, "device")))
 
@@ -260,9 +258,8 @@ def test_pmap_eager() -> None:
     """Test the pmap eager behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the eager execution of the parallel map (pmap) operator.\n\n    Verifies that pmap correctly maps a function over a tensor in eager mode\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
@@ -270,10 +267,10 @@ def test_pmap_eager() -> None:
             """Func.
 
             Args:
-            t (object): The t parameter
+            t (EagerValue): The t parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return Tensor(getattr(t, "data") * 2, TensorConfig(getattr(t, "shape"), getattr(t, "dtype"), getattr(t, "device")))
 
@@ -285,9 +282,8 @@ def test_vmap_trace() -> None:
     """Test the vmap trace behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the tracing behavior of the vectorized map (vmap) operator.\n\n    Verifies that vmap correctly records the vectorization operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         x = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((3,), DType.Int32, device))
 
@@ -295,10 +291,10 @@ def test_vmap_trace() -> None:
             """Func.
 
             Args:
-            t (object): The t parameter
+            t (EagerValue): The t parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return t
 
@@ -312,9 +308,8 @@ def test_pmap_trace() -> None:
     """Test the pmap trace behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests the tracing behavior of the parallel map (pmap) operator.\n\n    Verifies that pmap correctly records the parallel map operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         x = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((3,), DType.Int32, device))
 
@@ -322,10 +317,10 @@ def test_pmap_trace() -> None:
             """Func.
 
             Args:
-            t (object): The t parameter
+            t (EagerValue): The t parameter
 
             Returns:
-            object: The resulting output.
+            EagerValue: The resulting output.
             """
             return t
 
@@ -339,15 +334,14 @@ def test_trace_function_type_error() -> None:
     """Test the trace function type error behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests that tracing a function that returns an invalid type raises a TypeError.\n\n    Verifies that _trace_function enforces that control flow functions must\n    return a Tensor or a tuple of Tensors, raising a TypeError otherwise\n\n    Returns:\n    None\n    "
 
     def bad_func(*args: EagerValue) -> int:
         """Bad func.
 
         Args:
-        *args (object): Additional keyword arguments.
+        *args (EagerValue): Additional keyword arguments.
 
         Returns:
         int: The resulting output.
@@ -366,9 +360,8 @@ def test_control_flow_outside_tracing() -> None:
     """Test the control flow outside tracing behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Tests that control flow operators raise errors when called outside a tracing.\n\n    context\n\n    Verifies that calling cond, while_loop, scan, vmap, or pmap in non-eager\n    mode without an active tracer raises a RuntimeError\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
         with pytest.raises((RuntimeError, TracingError, Exception), match="Cannot emit Cond node outside of a tracing context."):
@@ -387,9 +380,8 @@ def test_stop_gradient() -> None:
     """Test the stop gradient behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Test stop_gradient."
     device = Device(DeviceType.CPU)
     t_eager = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
     t_out = stop_gradient(t_eager)
@@ -421,9 +413,8 @@ def test_vmap_tuple_axes() -> None:
     """Test the vmap tuple axes behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
-    "Test vmap with tuple in_axes."
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
 
@@ -431,10 +422,10 @@ def test_vmap_tuple_axes() -> None:
             """Evaluate and process the f operation.
 
             Args:
-                x (object): Required parameter for x.
+                x (EagerValue): Required parameter for x.
 
             Returns:
-                object: The evaluated or processed output.
+                EagerValue: The evaluated or processed output.
             """
             return Negative()(x)
 
@@ -448,7 +439,7 @@ def test_new_control_flow_fori() -> None:
     """Test the new control flow fori behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
 
@@ -456,11 +447,11 @@ def test_new_control_flow_fori() -> None:
         """Evaluate and process the body fun operation.
 
         Args:
-            i (object): Required parameter for i.
-            x (object): Required parameter for x.
+            i (EagerValue): Required parameter for i.
+            x (EagerValue): Required parameter for x.
 
         Returns:
-            object: The evaluated or processed output.
+            EagerValue: The evaluated or processed output.
         """
         return ops.add(x, 1.0)
 
@@ -475,7 +466,7 @@ def test_new_control_flow_map() -> None:
     """Test the new control flow map behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     elems = ops.array(np.array([1.0, 2.0, 3.0]).astype(np.float32))
@@ -489,7 +480,7 @@ def test_new_control_flow_switch() -> None:
     """Test the new control flow switch behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     index = ops.array(np.array(1).astype(np.int32))
@@ -503,7 +494,7 @@ def test_new_control_flow_custom_gradient() -> None:
     """Test the new control flow custom gradient behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        TensorOrScalar: The inferred shape or computed result.
     """
     config.eager_mode = True
     arg = ops.array(np.array(10.0).astype(np.float32))
@@ -513,10 +504,10 @@ def test_new_control_flow_custom_gradient() -> None:
         """Evaluate and process the my fn operation.
 
         Args:
-            x (object): Required parameter for x.
+            x (EagerValue): Required parameter for x.
 
         Returns:
-            object: The evaluated or processed output.
+            EagerValue: The evaluated or processed output.
         """
         return (ops.multiply(x, 2.0), lambda g: ops.multiply(g, 2.0))
 
@@ -548,11 +539,8 @@ def test_map_fn_lazy() -> None:
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
         t = Tensor(np.array([1.0]), TensorConfig((1,), "float32", Device(DeviceType.CPU)))
-
-        try:
+        with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
             map_fn(lambda x: x, t)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
     finally:
         config.eager_mode = orig
 
@@ -572,7 +560,7 @@ def test_dyn_custom_grad_infer_shape_and_vjp() -> None:
             shape = (1,)
             dtype = "float32"
 
-        return Val(), lambda g: g
+        return (Val(), lambda g: g)
 
     orig = config.eager_mode
     try:
@@ -584,21 +572,17 @@ def test_dyn_custom_grad_infer_shape_and_vjp() -> None:
             pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
             out = cast("Callable[..., EagerTensorProtocol]", my_op)(pt)
             assert out is not None
-
             node = cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(cast("EagerTensorProtocol", getattr(out, "_data")).id))
             op_obj = getattr(node, "op", getattr(node, "op_type", None))
-
             from ml_switcheroo_compiler.ops.registry import get_op
 
             OpCls = cast("Callable[..., EagerTensorProtocol]", get_op)(op_obj)
             inst = OpCls()
             assert inst.infer_shape() == (1,)
-
             from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
             vjp_fn = cast("Callable[..., EagerTensorProtocol]", get_vjp)(op_obj)
             assert vjp_fn(graph, None, "cot") == tuple()
-
         finally:
             global_tracing_state.stop_tracing()
     finally:
@@ -615,30 +599,24 @@ def test_case_and_switch_case() -> None:
     orig = config.eager_mode
     try:
         config.eager_mode = True
-
         with pytest.raises(ValueError, match="case requires at least one"):
             case([])
-
         assert cast("Callable[..., EagerTensorProtocol]", case)([], default=lambda: 42) == 42
-
         with pytest.raises(ValueError, match="switch_case requires at least one branch"):
             from ml_switcheroo_compiler.core.device import Device, DeviceType
             from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
             t = Tensor(0, TensorConfig((), "int32", Device(DeviceType.CPU)))
             switch_case(t, {})
-
         from ml_switcheroo_compiler.core.device import Device, DeviceType
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
         t = Tensor(0, TensorConfig((), "int32", Device(DeviceType.CPU)))
         assert switch_case(t, {}, default=lambda: 42) == 42
-
         import numpy as np
 
         t_index = Tensor(np.array(1), TensorConfig((), "int32", Device(DeviceType.CPU)))
         cast("Callable[..., EagerTensorProtocol]", switch_case)(t_index, {0: lambda: 10, 1: lambda: 20})
-
     finally:
         config.eager_mode = orig
 
@@ -649,14 +627,10 @@ def test_infer_shapes() -> None:
 
     assert DebugInfs().infer_shape() == ()
     assert DebugInfs().infer_shape(1) == 1
-
     assert DebugNans().infer_shape() == ()
     assert DebugNans().infer_shape(2) == 2
-
     assert cast("Callable[..., EagerTensorProtocol]", SwitchOp)().infer_shape(None, None) == ()
-
     assert ScanOp().infer_shape() == ()
-
     assert AssociativeScan().infer_shape() == ()
     assert AssociativeScan().infer_shape(3) == 3
 
@@ -675,13 +649,10 @@ def test_associative_scan_eager() -> None:
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
         t = Tensor(np.array([1.0]), TensorConfig((1,), "float32", Device(DeviceType.CPU)))
-
-        try:
-            associative_scan(t)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-            assert _exc is not None
+        associative_scan(t)
     finally:
         config.eager_mode = orig
+    assert callable(test_associative_scan_eager)
 
 
 def test_associative_scan_lazy() -> None:
@@ -709,5 +680,5 @@ def test_scan_bind() -> None:
     """Test scan_bind."""
     from ml_switcheroo_compiler.ops.control_flow import scan_bind
 
-    f, xs = cast("Callable[..., EagerTensorProtocol]", scan_bind)(lambda x: x, [1, 2], 3, kw=4)
+    (f, xs) = cast("Callable[..., EagerTensorProtocol]", scan_bind)(lambda x: x, [1, 2], 3, kw=4)
     assert xs == [1, 2]

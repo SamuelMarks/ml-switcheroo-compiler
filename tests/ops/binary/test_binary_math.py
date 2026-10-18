@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-
-# ruff: noqa: E501
 from unittest.mock import patch
+
+import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -31,10 +31,8 @@ def test_binary_math_extra_coverage() -> None:
     type("T", (), {"shape": (2,)})()
     assert Clip().infer_shape() == ()
     config.eager_mode = True
-    try:
+    with pytest.raises(TypeError):
         rem(1, 2)
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, AssertionError, Exception) as _exc:
-        assert _exc is not None
 
 
 def test_eager_eval_branches() -> None:

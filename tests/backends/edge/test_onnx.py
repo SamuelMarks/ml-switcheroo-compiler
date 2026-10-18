@@ -953,7 +953,7 @@ def test_onnx_aot_compilation_and_runner() -> None:
 
     gen_multi = ONNXCodeGenerator(g_multi)
     # Force exception inside try block to activate fallback_runner
-    with patch("onnxruntime.InferenceSession", side_effect=RuntimeError("Forced ORT error")):
+    with patch("onnx.reference.ReferenceEvaluator", side_effect=RuntimeError("Forced ReferenceEvaluator error")):
         fb_runner = gen_multi.compile_aot(g_multi, dynamic_axes=None)
 
     # Call fallback_runner with 1 positional arg and 1 kwarg (covers i >= len(w_args) and kwarg Tensor)

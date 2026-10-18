@@ -12,9 +12,9 @@ class PyTorchScatterVisitor:
         """Handle TensorScatterUpdate nodes.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -25,9 +25,9 @@ class PyTorchScatterVisitor:
         """Handle TensorScatterAdd nodes.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -35,12 +35,12 @@ class PyTorchScatterVisitor:
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]}, accumulate=True)"
 
     def visit_TensorScatterMax(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_TensorScatterMax operation.
+        """Emit target backend code or IR transformation for the TensorScatterMax operation.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -48,12 +48,12 @@ class PyTorchScatterVisitor:
         return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
     def visit_TensorScatterMin(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Evaluate visit_TensorScatterMin operation.
+        """Emit target backend code or IR transformation for the TensorScatterMin operation.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -68,9 +68,9 @@ class PyTorchDistributedVisitor:
         """Generate code for all_gather.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -82,9 +82,9 @@ class PyTorchDistributedVisitor:
         """Generate code for reduce_scatter.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -96,9 +96,9 @@ class PyTorchDistributedVisitor:
         """Generate code for all_reduce.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -110,9 +110,9 @@ class PyTorchDistributedVisitor:
         """Generate code for all_to_all.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -124,9 +124,9 @@ class PyTorchDistributedVisitor:
         """Generate code for broadcast.
 
         Args:
-        node (object): The node parameter.
-        input_vars (object): The input_vars parameter.
-        **kwargs (object): Keyword args.
+        node (LogicalNode): The node parameter.
+        input_vars (list[str]): The input_vars parameter.
+        **kwargs (EagerValue): Keyword args.
 
         Returns:
         str: Result.
@@ -147,9 +147,9 @@ class PyTorchNNMixin:
         """Initialize PyTorchNNMixin.
 
         Args:
-            *args (object): Variable length arguments.
-            generator (object): The parent code generator instance.
-            **kwargs (object): Arbitrary keyword arguments.
+            *args (EagerValue): Variable length arguments.
+            generator (EagerValue): The parent code generator instance.
+            **kwargs (EagerValue): Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
         self.generator = generator
@@ -169,9 +169,9 @@ class PyTorchNNMixin:
         """Send tensor.
 
         Args:
-            node (object): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variables.
-            **kwargs (object): Additional attributes.
+            **kwargs (EagerValue): Additional attributes.
 
         Returns:
             str: PyTorch code for send.
@@ -185,9 +185,9 @@ class PyTorchNNMixin:
         """Receive tensor.
 
         Args:
-            node (object): The IR node.
+            node (LogicalNode): The IR node.
             input_vars (list[str]): Input variables.
-            **kwargs (object): Additional attributes.
+            **kwargs (EagerValue): Additional attributes.
 
         Returns:
             str: PyTorch code for recv.
@@ -206,9 +206,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for 1D convolution.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv1d expression.
@@ -225,9 +225,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for 2D convolution.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv2d expression.
@@ -244,9 +244,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for 3D convolution.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv3d expression.
@@ -263,9 +263,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for MultiHeadAttention / ScaledDotProductAttention.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Query, Key, Value input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch attention expression.
@@ -279,9 +279,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for scaled dot product attention.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Query, Key, Value input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch attention expression.
@@ -292,9 +292,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for LayerNorm.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch layer_norm expression.
@@ -310,9 +310,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for RMSNorm.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch rms_norm expression.
@@ -327,9 +327,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for BatchNorm.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch batch_norm expression.
@@ -344,9 +344,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for GroupNorm.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch group_norm expression.
@@ -360,9 +360,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for MaxPool2D.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch max_pool2d expression.
@@ -376,9 +376,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for AvgPool2D.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch avg_pool2d expression.
@@ -392,9 +392,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for AdaptiveAvgPool2D.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch adaptive_avg_pool2d expression.
@@ -407,9 +407,9 @@ class PyTorchNNMixin:
         """Generate PyTorch code for Linear projection.
 
         Args:
-            node (object): The IR node.
+            node (EagerValue): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (object): Additional operation attributes.
+            **kwargs (EagerValue): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch linear expression.
