@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for conv_ops.py."""
+"""Implementation of conv ops operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.conv_ops`)."""
 
 from typing import Union
 

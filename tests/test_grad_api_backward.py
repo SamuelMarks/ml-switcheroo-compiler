@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_backward_basic() -> None:
@@ -26,7 +24,7 @@ def test_backward_basic() -> None:
 
     dt = DummyTensor()
     with pytest.raises(TracingError, match="tracing is not active"):
-        cast("Callable[..., EagerTensorProtocol]", backward)(dt)
+        cast("EagerCallableProtocol", backward)(dt)
 
     t = Tensor(1.0, TensorConfig((), "float32", "cpu"))
     with pytest.raises(TracingError, match="tracing is not active"):
@@ -144,7 +142,7 @@ def test_backward_tracing() -> None:
         getattr(_state, "update")({"t_non_scalar": t_non_scalar, "t_scalar": t_scalar})
         for _sub_fn in (_test_backward_tracing_sub_1, _test_backward_tracing_sub_2):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
 
 
 def test_custom_jvp_vjp() -> None:
@@ -155,11 +153,19 @@ def test_custom_jvp_vjp() -> None:
     from ml_switcheroo_compiler.grad.custom_vjp_ops import custom_vjp
 
     def my_fn(x: EagerValue) -> EagerValue:
-        """Test function my_fn."""
+        """Test function my_fn.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     def my_vjp(x: EagerValue) -> EagerValue:
-        """Test function my_vjp."""
+        """Test function my_vjp.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     f2 = custom_vjp(my_fn)
@@ -169,11 +175,21 @@ def test_custom_jvp_vjp() -> None:
 
     # Just call it directly
     def mock_fwd(t: EagerValue, g: EagerValue) -> EagerValue:
-        """Test function mock_fwd."""
+        """Test function mock_fwd.
+
+        Args:
+            t: Test parameter `t`.
+            g: Test parameter `g`.
+        """
         return t, g
 
     def mock_bwd(g: EagerValue, g_in: EagerValue) -> EagerValue:
-        """Test function mock_bwd."""
+        """Test function mock_bwd.
+
+        Args:
+            g: Test parameter `g`.
+            g_in: Test parameter `g_in`.
+        """
         return g, None
 
     # Directly access locals via trace or just redefine to hit the lines if we can't easily reach them
@@ -197,7 +213,11 @@ def test_ir_grad() -> None:
     from ml_switcheroo_compiler.grad.options import GradOptions
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     f_grad = ir_grad(f)
@@ -205,11 +225,11 @@ def test_ir_grad() -> None:
 
     with patch("ml_switcheroo_compiler.grad.api._compute_grad_and_value", return_value=(("val", "aux"), {"x": "grad"})):
         f_grad_val = ir_grad(f)
-        assert cast("Callable[..., EagerTensorProtocol]", f_grad_val)(1) == {"x": "grad"}
+        assert cast("EagerCallableProtocol", f_grad_val)(1) == {"x": "grad"}
 
         f_grad_2 = grad(f)
         assert f_grad_2(1) == {"x": "grad"}
 
         opts = GradOptions(has_aux=True)
         f_grad_aux = value_and_grad(f, opts)
-        assert cast("Callable[..., EagerTensorProtocol]", f_grad_aux)(1) == (("val", "aux"), {"x": "grad"})
+        assert cast("EagerCallableProtocol", f_grad_aux)(1) == (("val", "aux"), {"x": "grad"})

@@ -31,9 +31,7 @@ from ml_switcheroo_compiler.backends.llvm_cpp.config_models import (
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_hardware_config_models_dump() -> None:
@@ -108,7 +106,7 @@ def test_hardware_template_config_equality_and_validation() -> None:
     assert cfg.templates["list_tpl"] == ["item1", "item2"]
 
     # Test _validate_templates non-dict bypass
-    raw_val = cast("Callable[..., EagerTensorProtocol]", HardwareTemplatesConfig._validate_templates)("not_a_dict")
+    raw_val = cast("EagerCallableProtocol", HardwareTemplatesConfig._validate_templates)("not_a_dict")
     assert raw_val == "not_a_dict"
 
 
@@ -315,7 +313,7 @@ def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTen
         _state: Shared test state dictionary.
     """
     calculate_hardware_launch_config, empty_mm, g, tpl = _state["calculate_hardware_launch_config"], _state["empty_mm"], _state["g"], _state["tpl"]
-    grid_empty_mm, _ = cast("Callable[..., EagerTensorProtocol]", resolve_hardware_launch_grid_and_args)(empty_mm, tpl, {}, "out_mm", 1, 1, g)
+    grid_empty_mm, _ = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(empty_mm, tpl, {}, "out_mm", 1, 1, g)
     assert grid_empty_mm == ("(1 + block_1.x - 1) / block_1.x", "(1 + block_1.y - 1) / block_1.y", "1")
 
     # 3. BatchMatMul
@@ -323,17 +321,17 @@ def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTen
     in_bm1 = IRNode("bm_in1", "Input", shape_metadata=(4, 16, 32))
     out_bmm = IRNode("bm_out", "BatchMatMul", inputs=["bm_in0", "bm_in1"], shape_metadata=(4, 8, 32))
     g.nodes.update({"bm_in0": in_bm0, "bm_in1": in_bm1, "bm_out": out_bmm})
-    grid_bmm, args_bmm = cast("Callable[..., EagerTensorProtocol]", resolve_hardware_launch_grid_and_args)(out_bmm, tpl, {"bm_in0": "in_bm0", "bm_in1": "in_bm1"}, "out_bmm", 1024, 2, g)
+    grid_bmm, args_bmm = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(out_bmm, tpl, {"bm_in0": "in_bm0", "bm_in1": "in_bm1"}, "out_bmm", 1024, 2, g)
     assert grid_bmm == ("(32 + block_2.x - 1) / block_2.x", "(8 + block_2.y - 1) / block_2.y", "4")
     assert args_bmm[-5:] == ["out_bmm", "4", "8", "32", "16"]
 
     empty_bmm = IRNode("empty_bmm", "BatchMatMul", inputs=[], shape_metadata=())
-    grid_empty_bmm, _ = cast("Callable[..., EagerTensorProtocol]", resolve_hardware_launch_grid_and_args)(empty_bmm, tpl, {}, "out_bmm", 1, 2, g)
+    grid_empty_bmm, _ = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(empty_bmm, tpl, {}, "out_bmm", 1, 2, g)
     assert grid_empty_bmm == ("(1 + block_2.x - 1) / block_2.x", "(1 + block_2.y - 1) / block_2.y", "1")
 
     # 4. FusedElementwise
     out_fused = IRNode("fused_out", "FusedElementwise", inputs=["c_in0"], shape_metadata=(2, 3))
-    grid_fused, args_fused = cast("Callable[..., EagerTensorProtocol]", resolve_hardware_launch_grid_and_args)(out_fused, tpl, {"c_in0": "in_0"}, "out_fused", 6, 3, g)
+    grid_fused, args_fused = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(out_fused, tpl, {"c_in0": "in_0"}, "out_fused", 6, 3, g)
     assert grid_fused == ("(6 + block_3.x - 1) / block_3.x", "1", "1")
     assert args_fused == ["in_0", "out_fused", "6"]
 
@@ -425,7 +423,7 @@ def test_hardware_launch_helpers_and_dispatch() -> None:
     _test_hardware_launch_helpers_and_dispatch_part_2(_state)
     _test_hardware_launch_helpers_and_dispatch_part_3(_state)
     _test_hardware_launch_helpers_and_dispatch_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_kernel_templates_manifest_and_models() -> None:
@@ -702,10 +700,10 @@ def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTens
         KernelTemplatesManifestModel,
     )
 
-    dummy_manifest = cast("Callable[..., EagerTensorProtocol]", KernelTemplatesManifestModel)(
+    dummy_manifest = cast("EagerCallableProtocol", KernelTemplatesManifestModel)(
         kernel_templates={
-            "no_body_op": cast("Callable[..., EagerTensorProtocol]", KernelTemplateModel)(opcode="no_body_op", name="no_body", cuda_body="", rocm_body="", metal_body=""),
-            "with_body_op": cast("Callable[..., EagerTensorProtocol]", KernelTemplateModel)(opcode="with_body_op", name="with_body", cuda_body="void f() {}", rocm_body="void f() {}", metal_body="void f() {}"),
+            "no_body_op": cast("EagerCallableProtocol", KernelTemplateModel)(opcode="no_body_op", name="no_body", cuda_body="", rocm_body="", metal_body=""),
+            "with_body_op": cast("EagerCallableProtocol", KernelTemplateModel)(opcode="with_body_op", name="with_body", cuda_body="void f() {}", rocm_body="void f() {}", metal_body="void f() {}"),
         }
     )
     cfg_empty_body = HardwareTemplatesConfig(templates={})
@@ -715,7 +713,7 @@ def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTens
     assert "no_body_op" not in cfg_empty_body.templates
 
     # _merge_unified_kernel_templates when load_kernel_templates_manifest raises
-    with cast("Callable[..., EagerTensorProtocol]", patch)("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", side_effect=cast("Callable[..., EagerTensorProtocol]", RuntimeError)("fail")):
+    with cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", side_effect=cast("EagerCallableProtocol", RuntimeError)("fail")):
         _merge_unified_kernel_templates(cfg_cuda, "cuda")
 
     # load_hardware_templates with backend param
@@ -779,4 +777,4 @@ def test_hardware_config_models_100_coverage() -> None:
     _test_hardware_config_models_100_coverage_part_2(_state)
     _test_hardware_config_models_100_coverage_part_3(_state)
     _test_hardware_config_models_100_coverage_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

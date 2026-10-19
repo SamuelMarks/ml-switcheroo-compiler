@@ -18,13 +18,17 @@ from ml_switcheroo_compiler.distributed.collectives import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _worker_all_reduce(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
-    """Worker process evaluating simulated multi-rank AllReduce."""
+    """Worker process evaluating simulated multi-rank AllReduce.
+
+    Args:
+        rank: Test parameter `rank`.
+        world_size: Test parameter `world_size`.
+        return_dict: Test parameter `return_dict`.
+    """
     all_data = [np.array([i + 1.0, (i + 1.0) * 2.0], dtype=np.float32) for i in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllReduce", local_tensor, backend="numpy", op_type="SUM", rank=rank, all_ranks_data=all_data)
@@ -32,7 +36,13 @@ def _worker_all_reduce(rank: int, world_size: int, return_dict: dict[str, EagerV
 
 
 def _worker_all_gather(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
-    """Worker process evaluating simulated multi-rank AllGather."""
+    """Worker process evaluating simulated multi-rank AllGather.
+
+    Args:
+        rank: Test parameter `rank`.
+        world_size: Test parameter `world_size`.
+        return_dict: Test parameter `return_dict`.
+    """
     all_data = [np.array([[float(i)]], dtype=np.float32) for i in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllGather", local_tensor, backend="numpy", axis=0, rank=rank, all_ranks_data=all_data)
@@ -40,7 +50,13 @@ def _worker_all_gather(rank: int, world_size: int, return_dict: dict[str, EagerV
 
 
 def _worker_reduce_scatter(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
-    """Worker process evaluating simulated multi-rank ReduceScatter."""
+    """Worker process evaluating simulated multi-rank ReduceScatter.
+
+    Args:
+        rank: Test parameter `rank`.
+        world_size: Test parameter `world_size`.
+        return_dict: Test parameter `return_dict`.
+    """
     # Each rank has 4 elements: [rank, rank*2, rank*3, rank*4]
     all_data = [np.array([float(rank_idx + 1) * (k + 1) for k in range(world_size)], dtype=np.float32) for rank_idx in range(world_size)]
     local_tensor = all_data[rank]
@@ -49,7 +65,13 @@ def _worker_reduce_scatter(rank: int, world_size: int, return_dict: dict[str, Ea
 
 
 def _worker_all_to_all(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
-    """Worker process evaluating simulated multi-rank AllToAll."""
+    """Worker process evaluating simulated multi-rank AllToAll.
+
+    Args:
+        rank: Test parameter `rank`.
+        world_size: Test parameter `world_size`.
+        return_dict: Test parameter `return_dict`.
+    """
     # Matrix of shape (world_size, 2)
     all_data = [np.arange(world_size * 2, dtype=np.float32).reshape(world_size, 2) + rank_idx * 10 for rank_idx in range(world_size)]
     local_tensor = all_data[rank]
@@ -154,7 +176,13 @@ def test_backend_collective_dispatchers() -> None:
     called = []
 
     def custom_dispatcher(op: str, tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]], **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function custom_dispatcher."""
+        """Test function custom_dispatcher.
+
+        Args:
+            op: Test parameter `op`.
+            tensor: Test parameter `tensor`.
+            kwargs: Test parameter `kwargs`.
+        """
         called.append(op)
         return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerTensorProtocol", tensor) * cast("EagerTensorProtocol", 2))
 
@@ -164,34 +192,34 @@ def test_backend_collective_dispatchers() -> None:
     inp = np.array([1.0, 2.0], dtype=np.float32)
     res = dispatch_collective("AllReduce", inp, backend="custom_backend")
     assert called == ["AllReduce"]
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, cast("Callable[..., EagerTensorProtocol]", np.array)([2.0, 4.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, cast("EagerCallableProtocol", np.array)([2.0, 4.0]))
 
     # PyTorch and JAX dispatches without initialized cluster
     pt_res = dispatch_collective("AllReduce", inp, backend="pytorch")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(pt_res, inp)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(pt_res, inp)
     assert dispatch_collective("AllGather", inp, backend="pytorch") is not None
     assert dispatch_collective("ReduceScatter", inp, backend="pytorch") is not None
     assert dispatch_collective("Broadcast", inp, backend="pytorch") is not None
 
     jax_res = dispatch_collective("AllReduce", inp, backend="jax")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(jax_res, inp)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(jax_res, inp)
     assert dispatch_collective("AllGather", inp, backend="jax") is not None
     assert dispatch_collective("Broadcast", inp, backend="jax") is not None
 
     # Reduction ops: PROD, MAX, MIN
     all_data = [np.array([2.0, 5.0]), np.array([3.0, 1.0])]
     prod_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="PROD", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(prod_res, cast("Callable[..., EagerTensorProtocol]", np.array)([6.0, 5.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_res, cast("EagerCallableProtocol", np.array)([6.0, 5.0]))
 
     max_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="MAX", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(max_res, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 5.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(max_res, cast("EagerCallableProtocol", np.array)([3.0, 5.0]))
 
     min_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="MIN", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(min_res, cast("Callable[..., EagerTensorProtocol]", np.array)([2.0, 1.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(min_res, cast("EagerCallableProtocol", np.array)([2.0, 1.0]))
 
     # Broadcast
     bc_res = dispatch_collective("Broadcast", all_data[0], backend="numpy", root=1, all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(bc_res, all_data[1])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(bc_res, all_data[1])
 
 
 def test_nccl_driver_bindings() -> None:

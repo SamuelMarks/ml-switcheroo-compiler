@@ -75,7 +75,11 @@ def test_buffer_allocation_dynamic() -> None:
         """Test class MockCostModel."""
 
         def get_memory_cost(self, n: EagerValue) -> EagerValue:
-            """Test function get_memory_cost."""
+            """Test function get_memory_cost.
+
+            Args:
+                n: Test parameter `n`.
+            """
             return 256
 
     with patch("ml_switcheroo_compiler.transforms.passes.graph_scheduling.DefaultCostModel", return_value=MockCostModel()):
@@ -85,7 +89,11 @@ def test_buffer_allocation_dynamic() -> None:
         """Test class MockCostModelStr."""
 
         def get_memory_cost(self, n: EagerValue) -> EagerValue:
-            """Test function get_memory_cost."""
+            """Test function get_memory_cost.
+
+            Args:
+                n: Test parameter `n`.
+            """
             return "symbolic"
 
     with patch("ml_switcheroo_compiler.transforms.passes.graph_scheduling.DefaultCostModel", return_value=MockCostModelStr()):
@@ -95,7 +103,11 @@ def test_buffer_allocation_dynamic() -> None:
         """Test class MockCostModelFloat."""
 
         def get_memory_cost(self, n: EagerValue) -> EagerValue:
-            """Test function get_memory_cost."""
+            """Test function get_memory_cost.
+
+            Args:
+                n: Test parameter `n`.
+            """
             return 128.5
 
     with patch("ml_switcheroo_compiler.transforms.passes.graph_scheduling.DefaultCostModel", return_value=MockCostModelFloat()):
@@ -166,7 +178,7 @@ def test_buffer_allocation_branch_coverage() -> None:
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n4]):
         with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value="size_expr"):
             buffer_allocation_pass(g2)
-    assert n4 is not None or n4 is None
+    assert n4.attributes.get("buffer_offset_symbolic") == "offset_n4"
 
 
 def test_buffer_allocation_pass_class() -> None:

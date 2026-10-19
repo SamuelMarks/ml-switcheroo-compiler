@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_wgsl_provider_functions() -> None:
@@ -74,7 +72,7 @@ def test_wgsl_provider_non_dict_fallback() -> None:
         with patch("os.listdir", return_value=["ignore.txt", "broken.yaml"]):
             with patch("builtins.open", side_effect=OSError("corrupted file")):
                 d: dict[str, EagerValue] = {}
-                cast("Callable[..., EagerTensorProtocol]", provider._merge_modular_templates)(d)
+                cast("EagerCallableProtocol", provider._merge_modular_templates)(d)
 
     # Reset
     provider._WGSL_TEMPLATES = {}
@@ -182,7 +180,7 @@ def test_wgsl_grounding_schema_missing_and_validate_edges() -> None:
     with mock.patch("os.path.exists", return_value=True):
         with mock.patch("builtins.open", mock.mock_open(read_data=mock_json_content)):
             schema_loaded = wp.get_wgsl_grounding_schema()
-            assert cast("Callable[..., EagerTensorProtocol]", len)(schema_loaded["ops"]) == 3
+            assert cast("EagerCallableProtocol", len)(schema_loaded["ops"]) == 3
 
     # 4. validate_wgsl_statement finding op in ops_list
     assert wp.validate_wgsl_statement("mock_op") is True

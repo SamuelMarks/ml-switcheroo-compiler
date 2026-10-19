@@ -5,12 +5,11 @@ from __future__ import annotations
 import typing  # noqa: F401
 from collections.abc import Sequence
 from typing import (
-    Callable,
     Union,  # noqa: F401
     cast,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
@@ -32,7 +31,7 @@ def conv3d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs
         Tensor: The result of the convolution.
     """
     if config_obj is None:
-        config_obj = cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _build_conv_config)(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
+        config_obj = cast(TensorOrScalar, cast("EagerCallableProtocol", _build_conv_config)(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
 
     return conv_general_dilated(lhs, rhs, config_obj)
 

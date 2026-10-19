@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -81,7 +81,7 @@ class ProxyMathOverloadsMixin:
 
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return cast(ProxyTensor, cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
+        return cast(ProxyTensor, cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
 
     def _unary_op(self, op_type: str) -> ProxyTensor:
         """Trace a unary mathematical operation and append it to the computation graph.
@@ -197,7 +197,7 @@ class ProxyMathOverloadsMixin:
 
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return cast(ProxyTensor, cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
+        return cast(ProxyTensor, cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
 
     def assign(self, value: ProxyTensor) -> ProxyTensor:
         """Trace an assignment operation, updating a variable's state.

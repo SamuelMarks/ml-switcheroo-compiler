@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_shape_debugger() -> None:
@@ -44,17 +42,25 @@ def test_shape_debugger() -> None:
 
     # Test debug_shapes success
     def dummy_model(x: EagerValue) -> EagerValue:
-        """Test function dummy_model."""
+        """Test function dummy_model.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
-    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model, (2, 2))
+    res = cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" in res
     assert "| output | (2, 2) |" in res
 
     # Test debug_shapes error
     def error_model(x: EagerValue) -> None:
-        """Test function error_model."""
+        """Test function error_model.
+
+        Args:
+            x: Test parameter `x`.
+        """
         raise RuntimeError("boom")
 
     res = cast("EagerTensorProtocol", debug_shapes(error_model, (2, 2)))
@@ -63,7 +69,11 @@ def test_shape_debugger() -> None:
 
     # Test debug_shapes unknown shape
     def unknown_model(x: EagerValue) -> EagerValue:
-        """Test function unknown_model."""
+        """Test function unknown_model.
+
+        Args:
+            x: Test parameter `x`.
+        """
 
         class Dummy:
             """Test class Dummy."""
@@ -72,7 +82,7 @@ def test_shape_debugger() -> None:
 
         return cast("EagerTensorProtocol", Dummy())
 
-    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(unknown_model, (2, 2))
+    res = cast("EagerCallableProtocol", debug_shapes)(unknown_model, (2, 2))
     assert "| output | unknown |" in res
 
     # Test to_graphviz

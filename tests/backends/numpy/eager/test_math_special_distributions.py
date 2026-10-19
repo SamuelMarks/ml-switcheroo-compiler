@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_np_rawmatmul() -> None:
@@ -25,15 +23,15 @@ def test_np_rawmatmul() -> None:
     a = np.ones((2, 2))
     b = np.ones((2, 2))
     res = _np_rawmatmul(np, a, b)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, cast("Callable[..., EagerTensorProtocol]", np.matmul)(a, b))
+    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.matmul)(a, b))
 
 
 def test_np_rawmerge() -> None:
     """Test function test_np_rawmerge."""
     a = np.ones((2, 2))
-    res, status = cast("Callable[..., EagerTensorProtocol]", _np_rawmerge)(np, [a, a])
+    res, status = cast("EagerCallableProtocol", _np_rawmerge)(np, [a, a])
     assert res is not None
-    res_empty, status_empty = cast("Callable[..., EagerTensorProtocol]", _np_rawmerge)(np, [])
+    res_empty, status_empty = cast("EagerCallableProtocol", _np_rawmerge)(np, [])
     assert res_empty is None
 
 
@@ -58,7 +56,7 @@ def test_np_confusion_matrix_fallback() -> None:
     a = np.array([0, 1])
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("confusion_matrix")
-    res = cast("Callable[..., EagerTensorProtocol]", fn)(np, a, b)
+    res = cast("EagerCallableProtocol", fn)(np, a, b)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
@@ -66,16 +64,16 @@ def test_np_descriptive() -> None:
     """Test function test_np_descriptive."""
     a = np.array([1.0, 2.0, 3.0])
     fn = numpy_eager_registry.get("descriptive")
-    res = cast("Callable[..., EagerTensorProtocol]", fn)(np, a)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 3
+    res = cast("EagerCallableProtocol", fn)(np, a)
+    assert cast("EagerCallableProtocol", len)(res) == 3
 
 
 def test_np_distributions() -> None:
     """Test function test_np_distributions."""
     a = np.array([1.0, 2.0, 3.0])
     fn = numpy_eager_registry.get("distributions")
-    res = cast("Callable[..., EagerTensorProtocol]", fn)(np, a)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    res = cast("EagerCallableProtocol", fn)(np, a)
+    assert cast("EagerCallableProtocol", len)(res) == 2
 
 
 def test_np_confusion_matrix_camel() -> None:
@@ -83,20 +81,24 @@ def test_np_confusion_matrix_camel() -> None:
     a = np.array([0, 1])
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("ConfusionMatrix")
-    res = cast("Callable[..., EagerTensorProtocol]", fn)(np, a, b, num_classes=3)
+    res = cast("EagerCallableProtocol", fn)(np, a, b, num_classes=3)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
 
 
 def test_np_decode_csv_empty() -> None:
     """Test function test_np_decode_csv_empty."""
     fn = numpy_eager_registry.get("DecodeCsv")
-    res = cast("Callable[..., EagerTensorProtocol]", fn)(np, "", record_defaults=[1.0, 2.0])
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    res = cast("EagerCallableProtocol", fn)(np, "", record_defaults=[1.0, 2.0])
+    assert cast("EagerCallableProtocol", len)(res) == 2
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 1.0
 
 
 def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_fallback_snippets_mock."""
+    """Test function test_fallback_snippets_mock.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.ops as ops
     from ml_switcheroo_compiler.ops.base import OpDef
 
@@ -104,7 +106,12 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
         """Test class FakeOp."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeOp:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             obj = super().__new__(cls)
             setattr(obj, "hit", True)
             return cast("FakeOp", cast("EagerTensorProtocol", obj))
@@ -117,33 +124,37 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
     monkeypatch.setattr(ops, "descriptive", FakeOp, raising=False)
     monkeypatch.setattr(ops, "distributions", FakeOp, raising=False)
 
-    res1 = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("RawMatMul")(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+    res1 = cast("EagerCallableProtocol", numpy_eager_registry.get)("RawMatMul")(np, cast("EagerCallableProtocol", np.ones)((2, 2)), cast("EagerCallableProtocol", np.ones)((2, 2)))
     if isinstance(res1, FakeOp):
         assert res1.hit
 
-    res2 = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("SparseDenseMatMul")(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+    res2 = cast("EagerCallableProtocol", numpy_eager_registry.get)("SparseDenseMatMul")(np, cast("EagerCallableProtocol", np.ones)((2, 2)), cast("EagerCallableProtocol", np.ones)((2, 2)))
     if isinstance(res2, FakeOp):
         assert res2.hit
 
-    res3 = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("rem")(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+    res3 = cast("EagerCallableProtocol", numpy_eager_registry.get)("rem")(np, cast("EagerCallableProtocol", np.ones)((2, 2)), cast("EagerCallableProtocol", np.ones)((2, 2)))
     if isinstance(res3, FakeOp):
         assert res3.hit
 
-    res4 = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("confusion_matrix")(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1], dtype=np.int32), cast("Callable[..., EagerTensorProtocol]", np.array)([1], dtype=np.int32))
+    res4 = cast("EagerCallableProtocol", numpy_eager_registry.get)("confusion_matrix")(np, cast("EagerCallableProtocol", np.array)([1], dtype=np.int32), cast("EagerCallableProtocol", np.array)([1], dtype=np.int32))
     if isinstance(res4, FakeOp):
         assert res4.hit
 
-    res5 = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("descriptive")(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+    res5 = cast("EagerCallableProtocol", numpy_eager_registry.get)("descriptive")(np, cast("EagerCallableProtocol", np.ones)((2, 2)))
     if isinstance(res5, FakeOp):
         assert res5.hit
 
-    res6 = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("distributions")(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+    res6 = cast("EagerCallableProtocol", numpy_eager_registry.get)("distributions")(np, cast("EagerCallableProtocol", np.ones)((2, 2)))
     if isinstance(res6, FakeOp):
         assert res6.hit
 
 
 def test_fallback_snippets_importerror(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_fallback_snippets_importerror."""
+    """Test function test_fallback_snippets_importerror.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     assert callable(test_fallback_snippets_importerror)
 
 

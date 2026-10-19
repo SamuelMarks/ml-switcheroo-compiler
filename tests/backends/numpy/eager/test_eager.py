@@ -25,9 +25,7 @@ from ml_switcheroo_compiler.ops.configs import ConvConfig, WindowConfig
 from tests.testing_utils import DummyDimSpecs
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 _reduce_window = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager.window_reductions"), "_reduce_window"))
 
 
@@ -40,9 +38,9 @@ def test_segment_sum_coverage() -> None:
     data = np.array([1, 2, 3, 4, 5])
     segment_ids = np.array([0, 0, 1, 1, 2])
     res1 = mod._np_segment_sum(np, data, segment_ids)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res1, [3, 7, 5])
+    assert cast("EagerCallableProtocol", np.array_equal)(res1, [3, 7, 5])
     res2 = mod._np_segment_sum(np, data, segment_ids, num_segments=4)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res2, [3, 7, 5, 0])
+    assert cast("EagerCallableProtocol", np.array_equal)(res2, [3, 7, 5, 0])
 
 
 def test_conv_general_dilated_all_coverage() -> None:
@@ -54,14 +52,14 @@ def test_conv_general_dilated_all_coverage() -> None:
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _get_transpose)(123, "OIW")
-    out1 = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding=None, dimension_numbers=("NCW", "OIW", "NCW")))
+        cast("EagerCallableProtocol", _get_transpose)(123, "OIW")
+    out1 = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding=None, dimension_numbers=("NCW", "OIW", "NCW")))
     assert cast("EagerTensorProtocol", getattr(out1, "shape")) == (1, 4, 3)
-    out2 = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=cast("Callable[..., EagerTensorProtocol]", DummyDimSpecs)()))
+    out2 = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=cast("EagerCallableProtocol", DummyDimSpecs)()))
     assert out2 is not None
     lhs2 = np.ones((1, 4, 5))
     rhs2 = np.ones((4, 2, 3))
-    out3 = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs2, rhs2, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", feature_group_count=2, dimension_numbers=("NCW", "OIW", "NCW")))
+    out3 = cast("EagerCallableProtocol", _conv_general_dilated)(lhs2, rhs2, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", feature_group_count=2, dimension_numbers=("NCW", "OIW", "NCW")))
     assert out3 is not None
     out4 = _conv_general_dilated(lhs, rhs, ConvConfig(window_strides=(1,), padding="VALID", dimension_numbers=None))
     assert out4 is not None
@@ -89,15 +87,15 @@ def test_conv_general_dilated_coverage() -> None:
     """
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="SAME", dimension_numbers=("NCW", "OIW", "NCW")))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="SAME", dimension_numbers=("NCW", "OIW", "NCW")))
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 4, 5)
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW")))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW")))
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 4, 3)
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="UNKNOWN", dimension_numbers=("NCW", "OIW", "NCW")))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), lhs_dilation=(2,), rhs_dilation=(2,)))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="UNKNOWN", dimension_numbers=("NCW", "OIW", "NCW")))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), lhs_dilation=(2,), rhs_dilation=(2,)))
     lhs_group = np.ones((1, 4, 5))
     rhs_group = np.ones((4, 2, 3))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs_group, rhs_group, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), feature_group_count=2))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs_group, rhs_group, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), feature_group_count=2))
     lhs2 = np.ones((1, 2, 5, 5))
     rhs2 = np.ones((4, 2, 3, 3))
 
@@ -108,7 +106,7 @@ def test_conv_general_dilated_coverage() -> None:
         rhs_spec = (0, 1, 2, 3)
         out_spec = (0, 1, 2, 3)
 
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs2, rhs2, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1, 1), padding="SAME", dimension_numbers=cast("Callable[..., EagerTensorProtocol]", DimensionNumbers)()))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs2, rhs2, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1, 1), padding="SAME", dimension_numbers=cast("EagerCallableProtocol", DimensionNumbers)()))
 
 
 def test_band_part_coverage() -> None:
@@ -336,13 +334,13 @@ def test_numpy_eager_coverage() -> None:
     x.ndim = 2
     for op in ops:
         try:
-            cast("Callable[..., EagerTensorProtocol]", execute_op)(None, op, x, x)
+            cast("EagerCallableProtocol", execute_op)(None, op, x, x)
         except Exception:
             try:
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, op, x)
+                cast("EagerCallableProtocol", execute_op)(None, op, x)
             except Exception:
                 try:
-                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, op, x, 1)
+                    cast("EagerCallableProtocol", execute_op)(None, op, x, 1)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
     assert callable(test_numpy_eager_coverage)
@@ -358,10 +356,8 @@ def test_conv_general_dilated_extra() -> None:
 
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding=None))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(
-        lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=cast("Callable[..., EagerTensorProtocol]", ConvDimensionNumbers)(lhs_spec=(0, 1, 2), rhs_spec=(0, 1, 2), out_spec=(0, 1, 2)))
-    )
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding=None))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=cast("EagerCallableProtocol", ConvDimensionNumbers)(lhs_spec=(0, 1, 2), rhs_spec=(0, 1, 2), out_spec=(0, 1, 2))))
     assert callable(test_conv_general_dilated_extra)
 
 
@@ -372,7 +368,7 @@ def test_numpy_eager_conv_extra() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     ConvTranspose = numpy_eager_registry.get("ConvTranspose")
-    cast("Callable[..., EagerTensorProtocol]", ConvTranspose)(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((1, 1, 1, 1)), cast("Callable[..., EagerTensorProtocol]", np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
+    cast("EagerCallableProtocol", ConvTranspose)(np, cast("EagerCallableProtocol", np.ones)((1, 1, 1, 1)), cast("EagerCallableProtocol", np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
     assert callable(test_numpy_eager_conv_extra)
 
 
@@ -384,9 +380,9 @@ def test_numpy_eager_linalg_extra() -> None:
     """
     BandPart = numpy_eager_registry.get("BandPart")
     x = np.ones((2, 2))
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", BandPart)(np, x, 0, 0), "shape")) == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", BandPart)(np, x, 0, 0), "shape")) == (2, 2)
     Svd = numpy_eager_registry.get("Svd")
-    (u, s, v) = cast("Callable[..., EagerTensorProtocol]", Svd)(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), full_matrices=False, compute_uv=True)
+    (u, s, v) = cast("EagerCallableProtocol", Svd)(np, cast("EagerCallableProtocol", np.ones)((2, 2)), full_matrices=False, compute_uv=True)
     assert cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
 
 
@@ -397,15 +393,11 @@ def test_numpy_eager_math_extra() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     TruncateDiv = numpy_eager_registry.get("TruncateDiv")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(
-        cast("Callable[..., EagerTensorProtocol]", TruncateDiv)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([5.5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0])), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0])
-    )
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", TruncateDiv)(np, cast("EagerCallableProtocol", np.array)([5.5]), cast("EagerCallableProtocol", np.array)([2.0])), cast("EagerCallableProtocol", np.array)([2.0]))
     TruncateMod = numpy_eager_registry.get("TruncateMod")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(
-        cast("Callable[..., EagerTensorProtocol]", TruncateMod)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([5.5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0])), cast("Callable[..., EagerTensorProtocol]", np.array)([1.5])
-    )
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", TruncateMod)(np, cast("EagerCallableProtocol", np.array)([5.5]), cast("EagerCallableProtocol", np.array)([2.0])), cast("EagerCallableProtocol", np.array)([1.5]))
     Betainc = numpy_eager_registry.get("Betainc")
-    cast("Callable[..., EagerTensorProtocol]", Betainc)(np, 1.0, 1.0, 0.5)
+    cast("EagerCallableProtocol", Betainc)(np, 1.0, 1.0, 0.5)
 
 
 def test_numpy_eager_random_extra() -> None:
@@ -415,7 +407,7 @@ def test_numpy_eager_random_extra() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     Dropout = numpy_eager_registry.get("Dropout")
-    res = cast("Callable[..., EagerTensorProtocol]", Dropout)(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2,)), 0.5)
+    res = cast("EagerCallableProtocol", Dropout)(np, cast("EagerCallableProtocol", np.ones)((2,)), 0.5)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
 
 
@@ -427,7 +419,7 @@ def test_numpy_eager_shape_extra() -> None:
     """
     SparseExpandDims = numpy_eager_registry.get("SparseExpandDims")
     x = np.array([1])
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", SparseExpandDims)(np, x), "shape")) == (1, 1)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", SparseExpandDims)(np, x), "shape")) == (1, 1)
 
 
 def test_numpy_nn_eager_extra() -> None:
@@ -438,11 +430,11 @@ def test_numpy_nn_eager_extra() -> None:
     """
     _gelu(np.array([-1.0, 2.0, 5.0]))
     res = _np_relu(np, np.array([-1.0, 2.0, 5.0]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, [0.0, 2.0, 5.0])
+    assert cast("EagerCallableProtocol", np.allclose)(res, [0.0, 2.0, 5.0])
     res = _np_alpha_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, training=True)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
     res = _np_alpha_dropout(np, np.ones((2, 2)), rate=0.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, 1.0)
+    assert cast("EagerCallableProtocol", np.allclose)(res, 1.0)
     res = _np_alpha_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, noise_shape=(2, 1), training=True)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
     res = _np_activity_regularization(np, np.ones((2, 2)), l1=0.1, l2=0.2)
@@ -450,7 +442,7 @@ def test_numpy_nn_eager_extra() -> None:
     res = _np_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, training=True)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
     res = _np_dropout(np, np.ones((2, 2)), rate=0.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, 1.0)
+    assert cast("EagerCallableProtocol", np.allclose)(res, 1.0)
     res = _np_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, noise_shape=(2, 1), training=True)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
@@ -621,22 +613,22 @@ def test_numpy_lax_mocks() -> None:
             Returns:
                 EagerValue: The evaluated or processed output.
             """
-            return cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)(op)(np, *args, **kwargs)
+            return cast("EagerCallableProtocol", numpy_eager_registry.get)(op)(np, *args, **kwargs)
 
-        (a, b) = cast("Callable[..., EagerTensorProtocol]", execute)("ApproxMaxK", cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(a, cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(b, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-        (a, b) = cast("Callable[..., EagerTensorProtocol]", execute)("ApproxMaxK", cast("Callable[..., EagerTensorProtocol]", np.array)([]))
+        (a, b) = cast("EagerCallableProtocol", execute)("ApproxMaxK", cast("EagerCallableProtocol", np.array)([1, 2]))
+        assert cast("EagerCallableProtocol", np.array_equal)(a, cast("EagerCallableProtocol", np.array)([2]))
+        assert cast("EagerCallableProtocol", np.array_equal)(b, cast("EagerCallableProtocol", np.array)([1]))
+        (a, b) = cast("EagerCallableProtocol", execute)("ApproxMaxK", cast("EagerCallableProtocol", np.array)([]))
         assert cast("EagerTensorProtocol", getattr(a, "size")) == 0
         assert cast("EagerTensorProtocol", getattr(b, "size")) == 0
         c = execute("ForiLoop", None, None, np.array([3]))
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(c, cast("Callable[..., EagerTensorProtocol]", np.array)([3]))
+        assert cast("EagerCallableProtocol", np.array_equal)(c, cast("EagerCallableProtocol", np.array)([3]))
         c = execute("ForiLoop", None)
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(c, cast("Callable[..., EagerTensorProtocol]", np.array)(0))
+        assert cast("EagerCallableProtocol", np.array_equal)(c, cast("EagerCallableProtocol", np.array)(0))
         d = execute("IgammaGradA", np.array([4]))
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(d, cast("Callable[..., EagerTensorProtocol]", np.array)([4]))
+        assert cast("EagerCallableProtocol", np.array_equal)(d, cast("EagerCallableProtocol", np.array)([4]))
         d = execute("IgammaGradA")
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(d, cast("Callable[..., EagerTensorProtocol]", np.array)(0))
+        assert cast("EagerCallableProtocol", np.array_equal)(d, cast("EagerCallableProtocol", np.array)(0))
 
 
 class DummyDimSpecsLocal:
@@ -658,14 +650,14 @@ def test_conv_general_dilated_all_coverage_2() -> None:
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _get_transpose)(123, "OIW")
-    out1 = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding=None, dimension_numbers=("NCW", "OIW", "NCW")))
+        cast("EagerCallableProtocol", _get_transpose)(123, "OIW")
+    out1 = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding=None, dimension_numbers=("NCW", "OIW", "NCW")))
     assert cast("EagerTensorProtocol", getattr(out1, "shape")) == (1, 4, 3)
-    out2 = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=cast("Callable[..., EagerTensorProtocol]", DummyDimSpecs)()))
+    out2 = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=cast("EagerCallableProtocol", DummyDimSpecs)()))
     assert out2 is not None
     lhs2 = np.ones((1, 4, 5))
     rhs2 = np.ones((4, 2, 3))
-    out3 = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs2, rhs2, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", feature_group_count=2, dimension_numbers=("NCW", "OIW", "NCW")))
+    out3 = cast("EagerCallableProtocol", _conv_general_dilated)(lhs2, rhs2, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", feature_group_count=2, dimension_numbers=("NCW", "OIW", "NCW")))
     assert out3 is not None
     out4 = _conv_general_dilated(lhs, rhs, ConvConfig(window_strides=(1,), padding="VALID", dimension_numbers=None))
     assert out4 is not None
@@ -680,9 +672,9 @@ def test_segment_sum_coverage_2() -> None:
     data = np.array([1, 2, 3, 4, 5])
     segment_ids = np.array([0, 0, 1, 1, 2])
     res1 = mod._np_segment_sum(np, data, segment_ids)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res1, [3, 7, 5])
+    assert cast("EagerCallableProtocol", np.array_equal)(res1, [3, 7, 5])
     res2 = mod._np_segment_sum(np, data, segment_ids, num_segments=4)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res2, [3, 7, 5, 0])
+    assert cast("EagerCallableProtocol", np.array_equal)(res2, [3, 7, 5, 0])
 
 
 def test_numpy_eager_coverage_2() -> None:
@@ -900,13 +892,13 @@ def test_numpy_eager_coverage_2() -> None:
     x.ndim = 2
     for op in ops:
         try:
-            cast("Callable[..., EagerTensorProtocol]", execute_op)(None, op, x, x)
+            cast("EagerCallableProtocol", execute_op)(None, op, x, x)
         except Exception:
             try:
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, op, x)
+                cast("EagerCallableProtocol", execute_op)(None, op, x)
             except Exception:
                 try:
-                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, op, x, 1)
+                    cast("EagerCallableProtocol", execute_op)(None, op, x, 1)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
     assert callable(test_numpy_eager_coverage_2)
@@ -934,15 +926,15 @@ def test_conv_general_dilated_coverage_2() -> None:
     """
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="SAME", dimension_numbers=("NCW", "OIW", "NCW")))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="SAME", dimension_numbers=("NCW", "OIW", "NCW")))
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 4, 5)
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW")))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW")))
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 4, 3)
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="UNKNOWN", dimension_numbers=("NCW", "OIW", "NCW")))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs, rhs, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), lhs_dilation=(2,), rhs_dilation=(2,)))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="UNKNOWN", dimension_numbers=("NCW", "OIW", "NCW")))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs, rhs, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), lhs_dilation=(2,), rhs_dilation=(2,)))
     lhs_group = np.ones((1, 4, 5))
     rhs_group = np.ones((4, 2, 3))
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs_group, rhs_group, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), feature_group_count=2))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs_group, rhs_group, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), feature_group_count=2))
     lhs2 = np.ones((1, 2, 5, 5))
     rhs2 = np.ones((4, 2, 3, 3))
 
@@ -953,7 +945,7 @@ def test_conv_general_dilated_coverage_2() -> None:
         rhs_spec = (0, 1, 2, 3)
         out_spec = (0, 1, 2, 3)
 
-    res = cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(lhs2, rhs2, cast("Callable[..., EagerTensorProtocol]", ConvConfig)(window_strides=(1, 1), padding="SAME", dimension_numbers=cast("Callable[..., EagerTensorProtocol]", DimensionNumbers)()))
+    res = cast("EagerCallableProtocol", _conv_general_dilated)(lhs2, rhs2, cast("EagerCallableProtocol", ConvConfig)(window_strides=(1, 1), padding="SAME", dimension_numbers=cast("EagerCallableProtocol", DimensionNumbers)()))
 
 
 def test_band_part_coverage_2() -> None:
@@ -973,7 +965,7 @@ def test_numpy_eager_conv_extra_2() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     ConvTranspose = numpy_eager_registry.get("ConvTranspose")
-    cast("Callable[..., EagerTensorProtocol]", ConvTranspose)(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((1, 1, 1, 1)), cast("Callable[..., EagerTensorProtocol]", np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
+    cast("EagerCallableProtocol", ConvTranspose)(np, cast("EagerCallableProtocol", np.ones)((1, 1, 1, 1)), cast("EagerCallableProtocol", np.ones)((1, 1, 1, 1)), strides=1, padding="SAME")
     assert callable(test_numpy_eager_conv_extra_2)
 
 
@@ -985,9 +977,9 @@ def test_numpy_eager_linalg_extra_2() -> None:
     """
     BandPart = numpy_eager_registry.get("BandPart")
     x = np.ones((2, 2))
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", BandPart)(np, x, 0, 0), "shape")) == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", BandPart)(np, x, 0, 0), "shape")) == (2, 2)
     Svd = numpy_eager_registry.get("Svd")
-    (u, s, v) = cast("Callable[..., EagerTensorProtocol]", Svd)(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), full_matrices=False, compute_uv=True)
+    (u, s, v) = cast("EagerCallableProtocol", Svd)(np, cast("EagerCallableProtocol", np.ones)((2, 2)), full_matrices=False, compute_uv=True)
     assert cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
 
 
@@ -998,15 +990,11 @@ def test_numpy_eager_math_extra_2() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     TruncateDiv = numpy_eager_registry.get("TruncateDiv")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(
-        cast("Callable[..., EagerTensorProtocol]", TruncateDiv)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([5.5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0])), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0])
-    )
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", TruncateDiv)(np, cast("EagerCallableProtocol", np.array)([5.5]), cast("EagerCallableProtocol", np.array)([2.0])), cast("EagerCallableProtocol", np.array)([2.0]))
     TruncateMod = numpy_eager_registry.get("TruncateMod")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(
-        cast("Callable[..., EagerTensorProtocol]", TruncateMod)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([5.5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0])), cast("Callable[..., EagerTensorProtocol]", np.array)([1.5])
-    )
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", TruncateMod)(np, cast("EagerCallableProtocol", np.array)([5.5]), cast("EagerCallableProtocol", np.array)([2.0])), cast("EagerCallableProtocol", np.array)([1.5]))
     Betainc = numpy_eager_registry.get("Betainc")
-    cast("Callable[..., EagerTensorProtocol]", Betainc)(np, 1.0, 1.0, 0.5)
+    cast("EagerCallableProtocol", Betainc)(np, 1.0, 1.0, 0.5)
 
 
 def test_numpy_eager_random_extra_2() -> None:
@@ -1016,7 +1004,7 @@ def test_numpy_eager_random_extra_2() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     Dropout = numpy_eager_registry.get("Dropout")
-    res = cast("Callable[..., EagerTensorProtocol]", Dropout)(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2,)), 0.5)
+    res = cast("EagerCallableProtocol", Dropout)(np, cast("EagerCallableProtocol", np.ones)((2,)), 0.5)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
 
 
@@ -1028,7 +1016,7 @@ def test_numpy_eager_shape_extra_2() -> None:
     """
     SparseExpandDims = numpy_eager_registry.get("SparseExpandDims")
     x = np.array([1])
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", SparseExpandDims)(np, x), "shape")) == (1, 1)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", SparseExpandDims)(np, x), "shape")) == (1, 1)
 
 
 def test_np_polynomial_and_bessel_ops() -> None:
@@ -1075,7 +1063,7 @@ def test_np_polynomial_get_sc() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
 
     sc = _get_sc()
-    assert sc is not None or sc is None
+    assert sc is None or hasattr(sc, "jv")
 
 
 def test_np_polynomial_get_sc_fallback() -> None:
@@ -1125,7 +1113,7 @@ def test_np_fft_ops() -> None:
     a = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     for op_name in ops:
         out = backend.execute_op(op_name, a)
-    assert a is not None or a is None
+        assert out is not None
 
 
 def test_np_rfftfreq_op() -> None:
@@ -1289,8 +1277,8 @@ def test_io_fallbacks() -> None:
     pass
     pass
     writer = TFRecordWriter("/tmp/test.tfrecord")
-    assert cast("Callable[..., EagerTensorProtocol]", writer.write)(b"") is None
-    assert cast("Callable[..., EagerTensorProtocol]", writer.close)() is None
+    assert cast("EagerCallableProtocol", writer.write)(b"") is None
+    assert cast("EagerCallableProtocol", writer.close)() is None
 
 
 def test_io_fallbacks_decode() -> None:
@@ -1320,7 +1308,12 @@ def test_io_fallbacks_load() -> None:
 
             @classmethod
             def load(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function load."""
+                """Test function load.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 raise NotImplementedError()
 
         mock_get.return_value = DummyBackend
@@ -1339,17 +1332,32 @@ def test_io_fallbacks_decode_backend() -> None:
 
             @classmethod
             def encode_base64(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function encode_base64."""
+                """Test function encode_base64.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "encoded"
 
             @classmethod
             def decode_base64(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function decode_base64."""
+                """Test function decode_base64.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "decoded"
 
             @classmethod
             def parse_sequence_example(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function parse_sequence_example."""
+                """Test function parse_sequence_example.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return ("parsed", "parsed2")
 
         mock_get.return_value = DummyBackend
@@ -1370,7 +1378,12 @@ def test_io_fallbacks_load_file() -> None:
 
             @classmethod
             def load(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function load."""
+                """Test function load.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 raise NotImplementedError()
 
         mock_get.return_value = DummyBackend
@@ -1391,22 +1404,42 @@ def test_np_io_dummy_ops_with_backends() -> None:
 
             @classmethod
             def decode_jpeg(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function decode_jpeg."""
+                """Test function decode_jpeg.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "jpeg"
 
             @classmethod
             def decode_png(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function decode_png."""
+                """Test function decode_png.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "png"
 
             @classmethod
             def decode_gif(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function decode_gif."""
+                """Test function decode_gif.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "gif"
 
             @classmethod
             def decode_bmp(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function decode_bmp."""
+                """Test function decode_bmp.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "bmp"
 
         mock_get.return_value = DummyBackend
@@ -1423,19 +1456,19 @@ def test_core_math_ops_trig_fallbacks() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _acos, _acosh, _asin, _asinh, _atan, _atan2, _atanh
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _acos)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _acos)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _acosh)(np, 1.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _acosh)(np, 1.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _asin)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _asin)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _asinh)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _asinh)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _atan)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _atan)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _atanh)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _atanh)(np, 0.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _atan2)(np, 0.5, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _atan2)(np, 0.5, 0.5)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1450,13 +1483,13 @@ def test_core_math_ops_degrees_radians_fallbacks() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _deg2rad, _degrees, _rad2deg, _radians
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _deg2rad)(np, 180.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _deg2rad)(np, 180.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _degrees)(np, 3.14)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _degrees)(np, 3.14)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _rad2deg)(np, 3.14)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _rad2deg)(np, 3.14)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _radians)(np, 180.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _radians)(np, 180.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1492,26 +1525,39 @@ def test_core_math_ops_cbrt_fallback() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _cbrt
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cbrt)(np, 27.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cbrt)(np, 27.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
 
         def sign(self, x: EagerValue) -> EagerValue:
-            """Test function sign."""
+            """Test function sign.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return 1.0 if cast("EagerTensorProtocol", x) >= cast("EagerTensorProtocol", 0) else -cast("EagerTensorProtocol", 1.0)
 
         def abs(self, x: EagerValue) -> EagerValue:
-            """Test function abs."""
+            """Test function abs.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x if cast("EagerTensorProtocol", x) >= cast("EagerTensorProtocol", 0) else -cast("EagerTensorProtocol", x)
 
         def power(self, x: EagerValue, y: EagerValue) -> EagerValue:
-            """Test function power."""
+            """Test function power.
+
+            Args:
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+            """
             return cast("EagerTensorProtocol", x) ** cast("EagerTensorProtocol", y)
 
     db = DummyBackend()
-    assert cast("Callable[..., EagerTensorProtocol]", abs)(cast("Callable[..., EagerTensorProtocol]", _cbrt)(db, 27.0) - 3.0) < 1e-05
-    assert cast("Callable[..., EagerTensorProtocol]", abs)(cast("Callable[..., EagerTensorProtocol]", _cbrt)(db, -27.0) - -3.0) < 1e-05
+    assert cast("EagerCallableProtocol", abs)(cast("EagerCallableProtocol", _cbrt)(db, 27.0) - 3.0) < 1e-05
+    assert cast("EagerCallableProtocol", abs)(cast("EagerCallableProtocol", _cbrt)(db, -27.0) - -3.0) < 1e-05
 
 
 def test_core_math_ops_fix_copysign() -> None:
@@ -1521,35 +1567,57 @@ def test_core_math_ops_fix_copysign() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _copysign, _fix
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fix)(np, 1.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fix)(np, 1.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _copysign)(np, 1.0, -cast("EagerTensorProtocol", 1.0))(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _copysign)(np, 1.0, -cast("EagerTensorProtocol", 1.0))(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
 
         def floor(self, x: EagerValue) -> EagerValue:
-            """Test function floor."""
+            """Test function floor.
+
+            Args:
+                x: Test parameter `x`.
+            """
             import math
 
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", math.floor)(x))
+            return cast("EagerValue", cast("EagerCallableProtocol", math.floor)(x))
 
         def ceil(self, x: EagerValue) -> EagerValue:
-            """Test function ceil."""
+            """Test function ceil.
+
+            Args:
+                x: Test parameter `x`.
+            """
             import math
 
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", math.ceil)(x))
+            return cast("EagerValue", cast("EagerCallableProtocol", math.ceil)(x))
 
         def where(self, cond: EagerValue, x: EagerValue, y: EagerValue) -> EagerValue:
-            """Test function where."""
+            """Test function where.
+
+            Args:
+                cond: Test parameter `cond`.
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+            """
             return x if cond else y
 
         def abs(self, x: EagerValue) -> EagerValue:
-            """Test function abs."""
+            """Test function abs.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x if cast("EagerTensorProtocol", x) >= cast("EagerTensorProtocol", 0) else -cast("EagerTensorProtocol", x)
 
         def sign(self, x: EagerValue) -> EagerValue:
-            """Test function sign."""
+            """Test function sign.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return 1.0 if cast("EagerTensorProtocol", x) >= cast("EagerTensorProtocol", 0) else -cast("EagerTensorProtocol", 1.0)
 
     db = DummyBackend()
@@ -1565,15 +1633,15 @@ def test_core_math_ops_f_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _float_power, _fmax, _fmin, _fmod, _frexp
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _float_power)(np, 2, 3)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _float_power)(np, 2, 3)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fmax)(np, 1, 2)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fmax)(np, 1, 2)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fmin)(np, 1, 2)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fmin)(np, 1, 2)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fmod)(np, 5, 2)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fmod)(np, 5, 2)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _frexp)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _frexp)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1594,24 +1662,28 @@ def test_core_math_ops_hypot_i0_imag() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _hypot, _i0, _imag
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _hypot)(np, 3, 4)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _hypot)(np, 3, 4)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _i0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _i0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _imag)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _imag)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
 
         def sqrt(self, x: EagerValue) -> EagerValue:
-            """Test function sqrt."""
+            """Test function sqrt.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return cast("EagerTensorProtocol", x) ** cast("EagerTensorProtocol", 0.5)
 
     db = DummyBackend()
     assert _hypot(db, 3, 4) == 5.0
     _i0(db, 1.0)
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _imag)(db, 1.0))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _imag)(db, 1.0))(db, None)
 
 
 def test_core_math_ops_is_funcs() -> None:
@@ -1621,11 +1693,11 @@ def test_core_math_ops_is_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _isclose, _iscomplex, _isreal
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _isclose)(np, 1.0, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _isclose)(np, 1.0, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _iscomplex)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _iscomplex)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _isreal)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _isreal)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1634,7 +1706,7 @@ def test_core_math_ops_is_funcs() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _isclose)(db, 1.0, 1.0))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _isclose)(db, 1.0, 1.0))(db, None)
     _iscomplex(db, 1.0)
     _isreal(db, 1.0)
 
@@ -1646,11 +1718,11 @@ def test_core_math_ops_k_l_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _kaiser, _lcm, _ldexp
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _kaiser)(np, 14, 14)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _kaiser)(np, 14, 14)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _lcm)(np, 12, 20)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _lcm)(np, 12, 20)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _ldexp)(np, 1.0, 2)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _ldexp)(np, 1.0, 2)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1659,11 +1731,11 @@ def test_core_math_ops_k_l_funcs() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _kaiser)(db, 14, 14))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _kaiser)(db, 14, 14))(db, None)
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _lcm)(db, 12, 20))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _lcm)(db, 12, 20))(db, None)
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _ldexp)(db, 1.0, 2))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _ldexp)(db, 1.0, 2))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_n_p_r_funcs() -> None:
@@ -1673,11 +1745,11 @@ def test_core_math_ops_n_p_r_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _nextafter, _polyval, _real
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _nextafter)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _nextafter)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _polyval)(np, [1, 2, 3], 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _polyval)(np, [1, 2, 3], 2.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _real)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _real)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1686,11 +1758,11 @@ def test_core_math_ops_n_p_r_funcs() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _nextafter)(db, 1.0, 2.0))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _nextafter)(db, 1.0, 2.0))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _polyval)(db, [1, 2, 3], 2.0))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _polyval)(db, [1, 2, 3], 2.0))(db, None)
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _real)(db, 1.0))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _real)(db, 1.0))(db, None)
 
 
 def test_core_math_ops_s_funcs() -> None:
@@ -1700,11 +1772,11 @@ def test_core_math_ops_s_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _signbit, _sinc, _spacing
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _signbit)(np, -cast("EagerTensorProtocol", 1.0))(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _signbit)(np, -cast("EagerTensorProtocol", 1.0))(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _sinc)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _sinc)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _spacing)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _spacing)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1715,9 +1787,9 @@ def test_core_math_ops_s_funcs() -> None:
     assert _signbit(db, -1.0) is True
     assert _signbit(db, 1.0) is False
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _sinc)(db, 1.0))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _sinc)(db, 1.0))(db, None)
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _spacing)(db, 1.0))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _spacing)(db, 1.0))(db, None)
 
 
 def test_core_math_ops_u_z_funcs() -> None:
@@ -1727,9 +1799,9 @@ def test_core_math_ops_u_z_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _np_zeta, _unwrap
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _unwrap)(np, [0.0, 3.14, 6.28])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _unwrap)(np, [0.0, 3.14, 6.28])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _np_zeta)(np, 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _np_zeta)(np, 2.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1743,7 +1815,7 @@ def test_core_math_ops_u_z_funcs() -> None:
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _np_zeta)(db, 2.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _np_zeta)(db, 2.0))(db, None)
 
 
 def test_core_math_ops_bessel_i_funcs() -> None:
@@ -1753,13 +1825,13 @@ def test_core_math_ops_bessel_i_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _bessel_i0, _bessel_i0e, _bessel_i1, _bessel_i1e
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_i0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_i0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_i0e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_i0e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_i1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_i1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_i1e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_i1e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1772,13 +1844,13 @@ def test_core_math_ops_bessel_i_funcs() -> None:
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_i0)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_i0)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_i0e)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_i0e)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_i1)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_i1)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_i1e)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_i1e)(db, 1.0))(db, None)
 
 
 def test_core_math_ops_bessel_j_funcs() -> None:
@@ -1788,11 +1860,11 @@ def test_core_math_ops_bessel_j_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _bessel_j0, _bessel_j1, _bessel_jn
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_j0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_j0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_j1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_j1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_jn)(np, 2, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_jn)(np, 2, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1805,11 +1877,11 @@ def test_core_math_ops_bessel_j_funcs() -> None:
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_j0)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_j0)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_j1)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_j1)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_jn)(db, 2, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_jn)(db, 2, 1.0))(db, None)
 
 
 def test_core_math_ops_bessel_k_y_funcs() -> None:
@@ -1819,17 +1891,17 @@ def test_core_math_ops_bessel_k_y_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _bessel_k0, _bessel_k0e, _bessel_k1, _bessel_k1e, _bessel_y0, _bessel_y1
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_k0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_k0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_k0e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_k0e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_k1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_k1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_k1e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_k1e)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_y0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_y0)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bessel_y1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bessel_y1)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1842,17 +1914,17 @@ def test_core_math_ops_bessel_k_y_funcs() -> None:
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_k0)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_k0)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_k0e)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_k0e)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_k1)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_k1)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_k1e)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_k1e)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_y0)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_y0)(db, 1.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bessel_y1)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bessel_y1)(db, 1.0))(db, None)
 
 
 def test_core_math_ops_beta_digamma_funcs() -> None:
@@ -1862,11 +1934,11 @@ def test_core_math_ops_beta_digamma_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _beta, _betainc, _digamma
 
     with pytest.raises(IndexError):
-        cast("Callable[..., EagerTensorProtocol]", _beta)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _beta)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _betainc)(np, 1.0, 2.0, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _betainc)(np, 1.0, 2.0, 0.5)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _digamma)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _digamma)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1879,11 +1951,11 @@ def test_core_math_ops_beta_digamma_funcs() -> None:
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _beta)(db, 1.0, 2.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _beta)(db, 1.0, 2.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _betainc)(db, 1.0, 2.0, 0.5))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _betainc)(db, 1.0, 2.0, 0.5))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _digamma)(db, 1.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _digamma)(db, 1.0))(db, None)
 
 
 def test_core_math_ops_igammac_polygamma_funcs() -> None:
@@ -1893,9 +1965,9 @@ def test_core_math_ops_igammac_polygamma_funcs() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _igammac, _polygamma
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _igammac)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _igammac)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _polygamma)(np, 1, 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _polygamma)(np, 1, 2.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1908,9 +1980,9 @@ def test_core_math_ops_igammac_polygamma_funcs() -> None:
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _igammac)(db, 1.0, 2.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _igammac)(db, 1.0, 2.0))(db, None)
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _polygamma)(db, 1, 2.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _polygamma)(db, 1, 2.0))(db, None)
 
 
 def test_core_math_ops_heaviside_fallback() -> None:
@@ -1920,13 +1992,19 @@ def test_core_math_ops_heaviside_fallback() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _heaviside
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _heaviside)(np, 1.0, 0.5)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _heaviside)(np, 1.0, 0.5)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
 
         def where(self, cond: EagerValue, t: EagerValue, f: EagerValue) -> EagerValue:
-            """Test function where."""
+            """Test function where.
+
+            Args:
+                cond: Test parameter `cond`.
+                t: Test parameter `t`.
+                f: Test parameter `f`.
+            """
             return t if cond else f
 
     db = DummyBackend()
@@ -1944,9 +2022,9 @@ def test_core_math_ops_accumulate_addn() -> None:
     assert _accumulate_n(np, [1, 2, 3]) == 6
     assert _add_n(np, [1, 2, 3]) == 6
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _accumulate_n)(np, [])(np, None)
+        cast("EagerCallableProtocol", _accumulate_n)(np, [])(np, None)
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _add_n)(np, [])(np, None)
+        cast("EagerCallableProtocol", _add_n)(np, [])(np, None)
 
 
 def test_core_math_ops_adjoint_det() -> None:
@@ -1957,9 +2035,9 @@ def test_core_math_ops_adjoint_det() -> None:
 
     x = np.array([[1.0 + 1j, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _adjoint)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _adjoint)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _det)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _det)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -1968,20 +2046,28 @@ def test_core_math_ops_adjoint_det() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _adjoint)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _adjoint)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _det)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _det)(db, x))(db, not cast("EagerTensorProtocol", None))
 
     class DummyBackend2:
         """Test class DummyBackend2."""
 
         def conj(self, x: EagerValue) -> EagerValue:
-            """Test function conj."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.conj)(x))
+            """Test function conj.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.conj)(x))
 
         def transpose(self, x: EagerValue) -> EagerValue:
-            """Test function transpose."""
-            return cast("Callable[..., EagerTensorProtocol]", np.transpose)(x)
+            """Test function transpose.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerCallableProtocol", np.transpose)(x)
 
     assert _adjoint(DummyBackend2(), x) is not None
 
@@ -1994,13 +2080,13 @@ def test_core_math_ops_eig_funcs() -> None:
 
     x = np.array([[1.0, 0.0], [0.0, 1.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _eig)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _eig)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _eigh)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _eigh)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _eigvals)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _eigvals)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _eigvalsh)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _eigvalsh)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2009,13 +2095,13 @@ def test_core_math_ops_eig_funcs() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _eig)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _eig)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _eigh)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _eigh)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _eigvals)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _eigvals)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _eigvalsh)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _eigvalsh)(db, x))(db, not cast("EagerTensorProtocol", None))
 
     class DummyBackendLinalg:
         """Test class DummyBackendLinalg."""
@@ -2025,22 +2111,38 @@ def test_core_math_ops_eig_funcs() -> None:
 
             @staticmethod
             def eig(x: EagerValue) -> EagerValue:
-                """Test function eig."""
+                """Test function eig.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return x
 
             @staticmethod
             def eigh(x: EagerValue) -> EagerValue:
-                """Test function eigh."""
+                """Test function eigh.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return x
 
             @staticmethod
             def eigvals(x: EagerValue) -> EagerValue:
-                """Test function eigvals."""
+                """Test function eigvals.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return x
 
             @staticmethod
             def eigvalsh(x: EagerValue) -> EagerValue:
-                """Test function eigvalsh."""
+                """Test function eigvalsh.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return x
 
     dbl = DummyBackendLinalg()
@@ -2053,19 +2155,35 @@ def test_core_math_ops_eig_funcs() -> None:
         """Test class DummyBackendFlat."""
 
         def eig(self, x: EagerValue) -> EagerValue:
-            """Test function eig."""
+            """Test function eig.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def eigh(self, x: EagerValue) -> EagerValue:
-            """Test function eigh."""
+            """Test function eigh.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def eigvals(self, x: EagerValue) -> EagerValue:
-            """Test function eigvals."""
+            """Test function eigvals.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def eigvalsh(self, x: EagerValue) -> EagerValue:
-            """Test function eigvalsh."""
+            """Test function eigvalsh.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     dbf = DummyBackendFlat()
@@ -2084,11 +2202,11 @@ def test_core_math_ops_cholesky_funcs() -> None:
     x = np.array([[2.0, 1.0], [1.0, 2.0]])
     b = np.array([1.0, 2.0])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cholesky)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cholesky)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cholesky_ex)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cholesky_ex)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cholesky_solve)(np, b, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cholesky_solve)(np, b, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2097,11 +2215,11 @@ def test_core_math_ops_cholesky_funcs() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _cholesky)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _cholesky)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _cholesky_ex)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _cholesky_ex)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _cholesky_solve)(db, b, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _cholesky_solve)(db, b, x))(db, not cast("EagerTensorProtocol", None))
 
     class DummyBackendLinalg:
         """Test class DummyBackendLinalg."""
@@ -2111,16 +2229,30 @@ def test_core_math_ops_cholesky_funcs() -> None:
 
             @staticmethod
             def cholesky(x: EagerValue) -> EagerValue:
-                """Test function cholesky."""
+                """Test function cholesky.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return x
 
             @staticmethod
             def cho_solve(b: EagerValue, x: EagerValue) -> EagerValue:
-                """Test function cho_solve."""
+                """Test function cho_solve.
+
+                Args:
+                    b: Test parameter `b`.
+                    x: Test parameter `x`.
+                """
                 return b
 
         def zeros(self, shape: EagerValue, dtype: EagerValue) -> EagerValue:
-            """Test function zeros."""
+            """Test function zeros.
+
+            Args:
+                shape: Test parameter `shape`.
+                dtype: Test parameter `dtype`.
+            """
             return 0
 
     dbl = DummyBackendLinalg()
@@ -2132,11 +2264,20 @@ def test_core_math_ops_cholesky_funcs() -> None:
         """Test class DummyBackendFlat."""
 
         def cholesky(self, x: EagerValue) -> EagerValue:
-            """Test function cholesky."""
+            """Test function cholesky.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def cho_solve(self, b: EagerValue, x: EagerValue) -> EagerValue:
-            """Test function cho_solve."""
+            """Test function cho_solve.
+
+            Args:
+                b: Test parameter `b`.
+                x: Test parameter `x`.
+            """
             return b
 
     dbf = DummyBackendFlat()
@@ -2154,7 +2295,7 @@ def test_core_math_ops_banded_householder_funcs() -> None:
     a = np.array([[0, 1], [2, 3], [4, 0]])
     b = np.array([1, 2])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _banded_triangular_solve)(np, a, b)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _banded_triangular_solve)(np, a, b)(np, not cast("EagerTensorProtocol", None))
     v = np.array([[1.0, 0.0], [0.0, 1.0]])
     tau = np.array([1.0, 1.0])
 
@@ -2165,13 +2306,13 @@ def test_core_math_ops_banded_householder_funcs() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _banded_triangular_solve)(db, a, b))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _banded_triangular_solve)(db, a, b))(db, not cast("EagerTensorProtocol", None))
     import sys
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"torch": None}):
         with pytest.raises(AttributeError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _householder_product)(db, v, tau))(db, not cast("EagerTensorProtocol", None))
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _householder_product)(db, v, tau))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_matrix_power_rank() -> None:
@@ -2182,9 +2323,9 @@ def test_core_math_ops_matrix_power_rank() -> None:
 
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _matrix_power)(np, x, 2)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _matrix_power)(np, x, 2)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _matrix_rank)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _matrix_rank)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2193,9 +2334,9 @@ def test_core_math_ops_matrix_power_rank() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _matrix_power)(db, x, 2))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _matrix_power)(db, x, 2))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _matrix_rank)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _matrix_rank)(db, x))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_norm_pinv() -> None:
@@ -2206,9 +2347,9 @@ def test_core_math_ops_norm_pinv() -> None:
 
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _norm)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _norm)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _pinv)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _pinv)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2217,9 +2358,9 @@ def test_core_math_ops_norm_pinv() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _norm)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _norm)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _pinv)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _pinv)(db, x))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_qr_slogdet() -> None:
@@ -2230,9 +2371,9 @@ def test_core_math_ops_qr_slogdet() -> None:
 
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _qr)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _qr)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _slogdet)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _slogdet)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2241,9 +2382,9 @@ def test_core_math_ops_qr_slogdet() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _qr)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _qr)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _slogdet)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _slogdet)(db, x))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_solve_svd() -> None:
@@ -2255,9 +2396,9 @@ def test_core_math_ops_solve_svd() -> None:
     a = np.array([[1.0, 2.0], [3.0, 5.0]])
     b = np.array([1.0, 2.0])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _solve)(np, a, b)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _solve)(np, a, b)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _svd)(np, a)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _svd)(np, a)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2266,9 +2407,9 @@ def test_core_math_ops_solve_svd() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _solve)(db, a, b))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _solve)(db, a, b))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _svd)(db, a))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _svd)(db, a))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_tensorinv_solve() -> None:
@@ -2280,9 +2421,9 @@ def test_core_math_ops_tensorinv_solve() -> None:
     a = np.eye(4).reshape(2, 2, 2, 2)
     b = np.eye(2)
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _tensorinv)(np, a)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _tensorinv)(np, a)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _tensorsolve)(np, a, b)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _tensorsolve)(np, a, b)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2291,9 +2432,9 @@ def test_core_math_ops_tensorinv_solve() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _tensorinv)(db, a))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _tensorinv)(db, a))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _tensorsolve)(db, a, b))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _tensorsolve)(db, a, b))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_bincount_correlate() -> None:
@@ -2303,9 +2444,9 @@ def test_core_math_ops_bincount_correlate() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _bincount, _correlate
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _bincount)(np, [1, 1, 2])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _bincount)(np, [1, 1, 2])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _correlate)(np, [1, 2, 3], [0, 1])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _correlate)(np, [1, 2, 3], [0, 1])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2314,9 +2455,9 @@ def test_core_math_ops_bincount_correlate() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _bincount)(db, [1, 1, 2]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _bincount)(db, [1, 1, 2]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _correlate)(db, [1, 2, 3], [0, 1]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _correlate)(db, [1, 2, 3], [0, 1]))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_cross_cummax_cummin() -> None:
@@ -2326,11 +2467,11 @@ def test_core_math_ops_cross_cummax_cummin() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _cross, _cummax, _cummin
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cross)(np, [1, 0, 0], [0, 1, 0])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cross)(np, [1, 0, 0], [0, 1, 0])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cummax)(np, [1, 3, 2])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cummax)(np, [1, 3, 2])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cummin)(np, [2, 1, 3])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cummin)(np, [2, 1, 3])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2339,11 +2480,11 @@ def test_core_math_ops_cross_cummax_cummin() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _cross)(db, [1, 0, 0], [0, 1, 0]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _cross)(db, [1, 0, 0], [0, 1, 0]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _cummax)(db, [1, 3, 2]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _cummax)(db, [1, 3, 2]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _cummin)(db, [2, 1, 3]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _cummin)(db, [2, 1, 3]))(db, not cast("EagerTensorProtocol", None))
 
     class DummyBackendAcc:
         """Test class DummyBackendAcc."""
@@ -2353,7 +2494,12 @@ def test_core_math_ops_cross_cummax_cummin() -> None:
 
             @staticmethod
             def accumulate(x: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function accumulate."""
+                """Test function accumulate.
+
+                Args:
+                    x: Test parameter `x`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return x
 
         class minimum:
@@ -2361,7 +2507,12 @@ def test_core_math_ops_cross_cummax_cummin() -> None:
 
             @staticmethod
             def accumulate(x: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function accumulate."""
+                """Test function accumulate.
+
+                Args:
+                    x: Test parameter `x`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return x
 
     dba = DummyBackendAcc()
@@ -2376,9 +2527,9 @@ def test_core_math_ops_cumlogsumexp() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _cumlogsumexp, _cumulative_logsumexp
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cumlogsumexp)(np, [1.0, 2.0, 3.0])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cumlogsumexp)(np, [1.0, 2.0, 3.0])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _cumulative_logsumexp)(np, [1.0, 2.0, 3.0])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _cumulative_logsumexp)(np, [1.0, 2.0, 3.0])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2387,7 +2538,7 @@ def test_core_math_ops_cumlogsumexp() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _cumlogsumexp)(db, [1.0, 2.0, 3.0]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _cumlogsumexp)(db, [1.0, 2.0, 3.0]))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_divide_multiply_no_nan() -> None:
@@ -2407,22 +2558,42 @@ def test_core_math_ops_divide_multiply_no_nan() -> None:
         """Test class DummyBackend."""
 
         def divide(self, x: EagerValue, y: EagerValue) -> EagerValue:
-            """Test function divide."""
-            return cast("EagerTensorProtocol", x) / cast("EagerTensorProtocol", y) if cast("EagerTensorProtocol", y) != cast("EagerTensorProtocol", 0) else cast("Callable[..., EagerTensorProtocol]", float)("inf")
+            """Test function divide.
+
+            Args:
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+            """
+            return cast("EagerTensorProtocol", x) / cast("EagerTensorProtocol", y) if cast("EagerTensorProtocol", y) != cast("EagerTensorProtocol", 0) else cast("EagerCallableProtocol", float)("inf")
 
         def multiply(self, x: EagerValue, y: EagerValue) -> EagerValue:
-            """Test function multiply."""
+            """Test function multiply.
+
+            Args:
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+            """
             return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", y)
 
         def where(self, cond: EagerValue, t: EagerValue, f: EagerValue) -> EagerValue:
-            """Test function where."""
+            """Test function where.
+
+            Args:
+                cond: Test parameter `cond`.
+                t: Test parameter `t`.
+                f: Test parameter `f`.
+            """
             return t if cond else f
 
         def isnan(self, x: EagerValue) -> EagerValue:
-            """Test function isnan."""
+            """Test function isnan.
+
+            Args:
+                x: Test parameter `x`.
+            """
             import math
 
-            return cast("Callable[..., EagerTensorProtocol]", math.isnan)(x)
+            return cast("EagerCallableProtocol", math.isnan)(x)
 
     db = DummyBackend()
     assert _divide_no_nan(db, 1.0, 0.0) == 0.0
@@ -2436,9 +2607,9 @@ def test_core_math_ops_extract_fft2() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _extract, _fft2
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _extract)(np, [True, False], [1, 2])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _extract)(np, [True, False], [1, 2])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fft2)(np, [[1.0, 2.0], [3.0, 4.0]])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fft2)(np, [[1.0, 2.0], [3.0, 4.0]])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2447,9 +2618,9 @@ def test_core_math_ops_extract_fft2() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _extract)(db, [True, False], [1, 2]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _extract)(db, [True, False], [1, 2]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fft2)(db, [[1.0, 2.0], [3.0, 4.0]]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fft2)(db, [[1.0, 2.0], [3.0, 4.0]]))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_fftfreq_fftnd() -> None:
@@ -2459,9 +2630,9 @@ def test_core_math_ops_fftfreq_fftnd() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _fftfreq, _fftnd
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fftfreq)(np, 8)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fftfreq)(np, 8)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fftnd)(np, [[1.0, 2.0], [3.0, 4.0]])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fftnd)(np, [[1.0, 2.0], [3.0, 4.0]])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2470,9 +2641,9 @@ def test_core_math_ops_fftfreq_fftnd() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fftfreq)(db, 8))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fftfreq)(db, 8))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fftnd)(db, [[1.0, 2.0], [3.0, 4.0]]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fftnd)(db, [[1.0, 2.0], [3.0, 4.0]]))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_fftshift_ifft() -> None:
@@ -2482,9 +2653,9 @@ def test_core_math_ops_fftshift_ifft() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _fftshift, _ifft
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fftshift)(np, [1.0, 2.0, 3.0, 4.0])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fftshift)(np, [1.0, 2.0, 3.0, 4.0])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _ifft)(np, [1.0, 2.0, 3.0, 4.0])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _ifft)(np, [1.0, 2.0, 3.0, 4.0])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2493,9 +2664,9 @@ def test_core_math_ops_fftshift_ifft() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fftshift)(db, [1.0, 2.0, 3.0, 4.0]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fftshift)(db, [1.0, 2.0, 3.0, 4.0]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _ifft)(db, [1.0, 2.0, 3.0, 4.0]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _ifft)(db, [1.0, 2.0, 3.0, 4.0]))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_ifft2_ifftn() -> None:
@@ -2506,9 +2677,9 @@ def test_core_math_ops_ifft2_ifftn() -> None:
 
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _ifft2)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _ifft2)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _ifftn)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _ifftn)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2517,9 +2688,9 @@ def test_core_math_ops_ifft2_ifftn() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _ifft2)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _ifft2)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _ifftn)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _ifftn)(db, x))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_ifftshift_igamma() -> None:
@@ -2530,9 +2701,9 @@ def test_core_math_ops_ifftshift_igamma() -> None:
 
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _ifftshift)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _ifftshift)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _igamma)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _igamma)(np, 1.0, 2.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2541,13 +2712,13 @@ def test_core_math_ops_ifftshift_igamma() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _ifftshift)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _ifftshift)(db, x))(db, not cast("EagerTensorProtocol", None))
     import sys
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         with pytest.raises(ModuleNotFoundError):
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _igamma)(db, 1.0, 2.0))(db, None)
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", _igamma)(db, 1.0, 2.0))(db, None)
 
 
 def test_core_math_ops_inner_inv() -> None:
@@ -2557,10 +2728,10 @@ def test_core_math_ops_inner_inv() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _inner, _inv
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _inner)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _inner)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _inv)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _inv)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2569,9 +2740,9 @@ def test_core_math_ops_inner_inv() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _inner)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _inner)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _inv)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _inv)(db, x))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_is_funcs_2() -> None:
@@ -2581,13 +2752,13 @@ def test_core_math_ops_is_funcs_2() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _isinf, _isnan, _isneginf, _isposinf
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _isinf)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _isinf)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _isnan)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _isnan)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _isneginf)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _isneginf)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _isposinf)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _isposinf)(np, 1.0)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2596,13 +2767,13 @@ def test_core_math_ops_is_funcs_2() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _isinf)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _isinf)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _isnan)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _isnan)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _isneginf)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _isneginf)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _isposinf)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _isposinf)(db, 1.0))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_kronecker_outer() -> None:
@@ -2612,9 +2783,9 @@ def test_core_math_ops_kronecker_outer() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _kronecker, _outer
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _kronecker)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _kronecker)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _outer)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _outer)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2623,9 +2794,9 @@ def test_core_math_ops_kronecker_outer() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _kronecker)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _kronecker)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _outer)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _outer)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_fabs_fill_diagonal() -> None:
@@ -2635,10 +2806,10 @@ def test_core_math_ops_fabs_fill_diagonal() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _fabs, _fill_diagonal
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fabs)(np, -cast("EagerTensorProtocol", 1.5))(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fabs)(np, -cast("EagerTensorProtocol", 1.5))(np, not cast("EagerTensorProtocol", None))
     x = np.zeros((3, 3))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fill_diagonal)(np, x, 1)(np, None)
+        cast("EagerCallableProtocol", _fill_diagonal)(np, x, 1)(np, None)
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2647,7 +2818,7 @@ def test_core_math_ops_fabs_fill_diagonal() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fabs)(db, -cast("EagerTensorProtocol", 1.5)))(db, None)
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fabs)(db, -cast("EagerTensorProtocol", 1.5)))(db, None)
     _fill_diagonal(db, x, 1)
 
 
@@ -2658,9 +2829,9 @@ def test_core_math_ops_fftconvolve_flatnonzero() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _fftconvolve, _flatnonzero
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fftconvolve)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fftconvolve)(np, [1, 2], [3, 4])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _flatnonzero)(np, [0, 1, 0, 2])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _flatnonzero)(np, [0, 1, 0, 2])(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2669,9 +2840,9 @@ def test_core_math_ops_fftconvolve_flatnonzero() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fftconvolve)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fftconvolve)(db, [1, 2], [3, 4]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _flatnonzero)(db, [0, 1, 0, 2]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _flatnonzero)(db, [0, 1, 0, 2]))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_fliplr_flipud() -> None:
@@ -2682,9 +2853,9 @@ def test_core_math_ops_fliplr_flipud() -> None:
 
     x = np.array([[1, 2], [3, 4]])
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fliplr)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fliplr)(np, x)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _flipud)(np, x)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _flipud)(np, x)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2693,9 +2864,9 @@ def test_core_math_ops_fliplr_flipud() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fliplr)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fliplr)(db, x))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _flipud)(db, x))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _flipud)(db, x))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_fromiter_fromstring() -> None:
@@ -2705,9 +2876,9 @@ def test_core_math_ops_fromiter_fromstring() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _fromiter, _fromstring
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fromiter)(np, [1, 2, 3])(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fromiter)(np, [1, 2, 3])(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _fromstring)(np, "1, 2", sep=",")(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _fromstring)(np, "1, 2", sep=",")(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2716,9 +2887,9 @@ def test_core_math_ops_fromiter_fromstring() -> None:
 
     db = DummyBackend()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fromiter)(db, [1, 2, 3]))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fromiter)(db, [1, 2, 3]))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _fromstring)(db, "1, 2", sep=","))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _fromstring)(db, "1, 2", sep=","))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_core_math_ops_gamma_gcd() -> None:
@@ -2728,9 +2899,9 @@ def test_core_math_ops_gamma_gcd() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _gamma, _gcd
 
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _gamma)(np, 2.0)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _gamma)(np, 2.0)(np, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", _gcd)(np, 12, 20)(np, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", _gcd)(np, 12, 20)(np, not cast("EagerTensorProtocol", None))
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -2739,9 +2910,9 @@ def test_core_math_ops_gamma_gcd() -> None:
 
     db = DummyBackend()
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _gamma)(db, 2.0))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _gamma)(db, 2.0))(db, not cast("EagerTensorProtocol", None))
     with pytest.raises(TypeError):
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _gcd)(db, 12, 20))(db, not cast("EagerTensorProtocol", None))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", _gcd)(db, 12, 20))(db, not cast("EagerTensorProtocol", None))
 
 
 def test_math_misc_brute_coverage() -> None:
@@ -2754,8 +2925,12 @@ def test_math_misc_brute_coverage() -> None:
         """Test class DummyBackend."""
 
         def __getattr__(self, name: EagerValue) -> EagerValue:
-            """Test function __getattr__."""
-            if cast("Callable[..., EagerTensorProtocol]", hasattr)(np, name):
+            """Test function __getattr__.
+
+            Args:
+                name: Test parameter `name`.
+            """
+            if cast("EagerCallableProtocol", hasattr)(np, name):
                 return cast("EagerTensorProtocol", getattr(np, str(name)))
             return lambda *args, **kwargs: np.array([1.0])
 
@@ -2855,7 +3030,7 @@ def test_math_misc_specifics() -> None:
     Resize = numpy_eager_registry.get("Resize")
     if Resize:
         Resize(np, np.array([1, 2]), (2, 2))
-    assert Resize is not None or Resize is None
+    assert callable(Resize)
 
 
 def test_math_misc_direct_calls() -> None:
@@ -2924,7 +3099,11 @@ def test_math_misc_exceptions() -> None:
         """Test class ThrowingBackend."""
 
         def __getattr__(self, name: EagerValue) -> None:
-            """Test function __getattr__."""
+            """Test function __getattr__.
+
+            Args:
+                name: Test parameter `name`.
+            """
             raise ValueError("Intentional error")
 
     tb = ThrowingBackend()
@@ -2972,43 +3151,61 @@ def test_math_misc_type_calls() -> None:
             """Test class FakeOpType."""
 
             def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 pass
 
         class ThrowingOpType:
             """Test class ThrowingOpType."""
 
             def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 raise ValueError("Intentional error from constructor")
 
         class BackendWithType:
             """Test class BackendWithType."""
 
             def __getattr__(self, name: EagerValue) -> EagerValue:
-                """Test function __getattr__."""
+                """Test function __getattr__.
+
+                Args:
+                    name: Test parameter `name`.
+                """
                 return FakeOpType
 
         class BackendWithThrowingType:
             """Test class BackendWithThrowingType."""
 
             def __getattr__(self, name: EagerValue) -> EagerValue:
-                """Test function __getattr__."""
+                """Test function __getattr__.
+
+                Args:
+                    name: Test parameter `name`.
+                """
                 return ThrowingOpType
 
         b = BackendWithType()
         math_misc._np_rawmatmul(b, np.ones((2, 2)), np.ones((2, 2)))
         math_misc._np_sparsedensematmul(b, np.ones((2, 2)), np.ones((2, 2)))
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_image"))(b, b"img")
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_example"))(b, b"example")
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_tensor"))(b, b"tensor")
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("read_file"))(b, "/tmp/ml_switcheroo_test_file.txt")
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("rem"))(b, cast("Callable[..., EagerTensorProtocol]", np.array)([5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("serialize_tensor"))(b, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("write_file"))(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("confusion_matrix"))(b, cast("Callable[..., EagerTensorProtocol]", np.array)([0]), cast("Callable[..., EagerTensorProtocol]", np.array)([0]))
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_csv"))(b, ["1,2"])
-        cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("descriptive"))(b, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0]))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_image"))(b, b"img")
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_example"))(b, b"example")
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_tensor"))(b, b"tensor")
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("read_file"))(b, "/tmp/ml_switcheroo_test_file.txt")
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("rem"))(b, cast("EagerCallableProtocol", np.array)([5]), cast("EagerCallableProtocol", np.array)([2]))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("serialize_tensor"))(b, cast("EagerCallableProtocol", np.array)([1]))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("write_file"))(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("confusion_matrix"))(b, cast("EagerCallableProtocol", np.array)([0]), cast("EagerCallableProtocol", np.array)([0]))
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_csv"))(b, ["1,2"])
+        cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("descriptive"))(b, cast("EagerCallableProtocol", np.array)([1.0, 2.0]))
         bt = BackendWithThrowingType()
         try:
             math_misc._np_rawmatmul(bt, np.ones((2, 2)), np.ones((2, 2)))
@@ -3055,7 +3252,7 @@ def test_math_misc_type_calls() -> None:
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         try:
-            cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("descriptive"))(bt, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0]))
+            cast("EagerCallableProtocol", cast("EagerCallableProtocol", numpy_eager_registry.get)("descriptive"))(bt, cast("EagerCallableProtocol", np.array)([1.0, 2.0]))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
 
@@ -3071,7 +3268,12 @@ def test_math_misc_np_ops() -> None:
         """Test class FakeThrowingClass."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise ValueError("boom")
 
     class FakeWorkingClass:
@@ -3080,7 +3282,12 @@ def test_math_misc_np_ops() -> None:
         shape = ()
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     original_rawmatmul = None
@@ -3101,17 +3308,17 @@ def test_math_misc_np_ops() -> None:
         math_misc._np_rawmatmul(b, np.ones((2, 2)), np.ones((2, 2)))
         math_misc._np_sparsedensematmul(b, np.ones((2, 2)), np.ones((2, 2)))
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_image")(b, b"img")
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_image")(b, b"img")
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_example")(b, b"example")
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_example")(b, b"example")
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("rem")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("serialize_tensor")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("confusion_matrix")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([0]), cast("Callable[..., EagerTensorProtocol]", np.array)([0]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("rem")(b, cast("EagerCallableProtocol", np.array)([5]), cast("EagerCallableProtocol", np.array)([2]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("serialize_tensor")(b, cast("EagerCallableProtocol", np.array)([1]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("confusion_matrix")(b, cast("EagerCallableProtocol", np.array)([0]), cast("EagerCallableProtocol", np.array)([0]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
         setattr(ops, "RawMatMul", FakeWorkingClass)
         setattr(ops, "SparseDenseMatMul", FakeWorkingClass)
         setattr(ops, "DecodeImage", FakeWorkingClass)
@@ -3132,17 +3339,17 @@ def test_math_misc_np_ops() -> None:
     math_misc._np_rawmatmul(b, np.ones((2, 2)), np.ones((2, 2)))
     math_misc._np_sparsedensematmul(b, np.ones((2, 2)), np.ones((2, 2)))
     with pytest.raises(RuntimeError):
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_image")(b, b"img")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_image")(b, b"img")
     with pytest.raises(RuntimeError):
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_example")(b, b"example")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_example")(b, b"example")
     with pytest.raises(RuntimeError):
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
-    cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
-    cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("rem")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
-    cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("serialize_tensor")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-    cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
-    cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("confusion_matrix")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([0]), cast("Callable[..., EagerTensorProtocol]", np.array)([0]))
-    cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
+    cast("EagerCallableProtocol", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
+    cast("EagerCallableProtocol", numpy_eager_registry.get)("rem")(b, cast("EagerCallableProtocol", np.array)([5]), cast("EagerCallableProtocol", np.array)([2]))
+    cast("EagerCallableProtocol", numpy_eager_registry.get)("serialize_tensor")(b, cast("EagerCallableProtocol", np.array)([1]))
+    cast("EagerCallableProtocol", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
+    cast("EagerCallableProtocol", numpy_eager_registry.get)("confusion_matrix")(b, cast("EagerCallableProtocol", np.array)([0]), cast("EagerCallableProtocol", np.array)([0]))
+    cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
     if original_rawmatmul:
         setattr(ops, "RawMatMul", original_rawmatmul)
 
@@ -3158,7 +3365,12 @@ def test_math_misc_np_ops_lower() -> None:
         """Test class FakeThrowingClass."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise ValueError("boom")
 
     class FakeWorkingClass:
@@ -3167,7 +3379,12 @@ def test_math_misc_np_ops_lower() -> None:
         shape = ()
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     orig_funcs = {k: getattr(ops, k, None) for k in ["decode_image", "parse_example", "parse_tensor", "read_file", "rem", "serialize_tensor", "write_file", "confusion_matrix", "decode_csv"]}
@@ -3183,17 +3400,17 @@ def test_math_misc_np_ops_lower() -> None:
         setattr(ops, "decode_csv", FakeThrowingClass)
         b = math_misc.DummyBackend() if hasattr(math_misc, "DummyBackend") else None
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_image")(b, b"img")
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_image")(b, b"img")
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_example")(b, b"example")
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_example")(b, b"example")
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("rem")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("serialize_tensor")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("confusion_matrix")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([0]), cast("Callable[..., EagerTensorProtocol]", np.array)([0]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("rem")(b, cast("EagerCallableProtocol", np.array)([5]), cast("EagerCallableProtocol", np.array)([2]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("serialize_tensor")(b, cast("EagerCallableProtocol", np.array)([1]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("confusion_matrix")(b, cast("EagerCallableProtocol", np.array)([0]), cast("EagerCallableProtocol", np.array)([0]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
         setattr(ops, "decode_image", FakeWorkingClass)
         setattr(ops, "parse_example", FakeWorkingClass)
         ops.parse_tensor = FakeWorkingClass
@@ -3204,17 +3421,17 @@ def test_math_misc_np_ops_lower() -> None:
         ops.confusion_matrix = FakeWorkingClass
         setattr(ops, "decode_csv", FakeWorkingClass)
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_image")(b, b"img")
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_image")(b, b"img")
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_example")(b, b"example")
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_example")(b, b"example")
         with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("rem")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([5]), cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("serialize_tensor")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("confusion_matrix")(b, cast("Callable[..., EagerTensorProtocol]", np.array)([0]), cast("Callable[..., EagerTensorProtocol]", np.array)([0]))
-        cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
+            cast("EagerCallableProtocol", numpy_eager_registry.get)("parse_tensor")(b, b"tensor")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("rem")(b, cast("EagerCallableProtocol", np.array)([5]), cast("EagerCallableProtocol", np.array)([2]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("serialize_tensor")(b, cast("EagerCallableProtocol", np.array)([1]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("confusion_matrix")(b, cast("EagerCallableProtocol", np.array)([0]), cast("EagerCallableProtocol", np.array)([0]))
+        cast("EagerCallableProtocol", numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
     finally:
         for k, v in orig_funcs.items():
             if v is not None:
@@ -3292,12 +3509,12 @@ def test_reductions() -> None:
         base_dilation = [1]
         padding = "SAME"
 
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "max", cast("Callable[..., EagerTensorProtocol]", DummyConfig)())
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "min", cast("Callable[..., EagerTensorProtocol]", DummyConfig)())
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "sum", cast("Callable[..., EagerTensorProtocol]", DummyConfig)())
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "prod", cast("Callable[..., EagerTensorProtocol]", DummyConfig)())
+    cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "max", cast("EagerCallableProtocol", DummyConfig)())
+    cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "min", cast("EagerCallableProtocol", DummyConfig)())
+    cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "sum", cast("EagerCallableProtocol", DummyConfig)())
+    cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "prod", cast("EagerCallableProtocol", DummyConfig)())
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "unknown", cast("Callable[..., EagerTensorProtocol]", DummyConfig)())
+        cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "unknown", cast("EagerCallableProtocol", DummyConfig)())
 
     class DummyConfig2:
         """Test class DummyConfig2."""
@@ -3308,7 +3525,7 @@ def test_reductions() -> None:
         base_dilation = [2]
         padding = [(1, 1)]
 
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "sum", cast("Callable[..., EagerTensorProtocol]", DummyConfig2)())
+    cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "sum", cast("EagerCallableProtocol", DummyConfig2)())
 
     class DummyConfig3:
         """Test class DummyConfig3."""
@@ -3319,7 +3536,7 @@ def test_reductions() -> None:
         base_dilation = [1]
         padding = None
 
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "sum", cast("Callable[..., EagerTensorProtocol]", DummyConfig3)())
+    cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "sum", cast("EagerCallableProtocol", DummyConfig3)())
 
 
 def test_missing_lines() -> None:
@@ -3340,7 +3557,7 @@ def test_missing_lines() -> None:
         padding = "SAME"
 
     with pytest.raises(IndexError):
-        cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([[1.0, 2.0], [3.0, 4.0]]), 0.0, "max", cast("Callable[..., EagerTensorProtocol]", DummyConfig4)())
+        cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([[1.0, 2.0], [3.0, 4.0]]), 0.0, "max", cast("EagerCallableProtocol", DummyConfig4)())
 
     class DummyConfig5:
         """Test class DummyConfig5."""
@@ -3351,7 +3568,7 @@ def test_missing_lines() -> None:
         base_dilation = [1]
         padding = "VALID"
 
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0]), 0.0, "max", cast("Callable[..., EagerTensorProtocol]", DummyConfig5)())
+    cast("EagerCallableProtocol", red._reduce_window)(cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0]), 0.0, "max", cast("EagerCallableProtocol", DummyConfig5)())
 
     class DummyConfig6:
         """Test class DummyConfig6."""
@@ -3362,7 +3579,7 @@ def test_missing_lines() -> None:
         base_dilation = [1]
         padding = "SAME"
 
-    cast("Callable[..., EagerTensorProtocol]", red._reduce_window)(1.0, 0.0, "max", cast("Callable[..., EagerTensorProtocol]", DummyConfig6)())
+    cast("EagerCallableProtocol", red._reduce_window)(1.0, 0.0, "max", cast("EagerCallableProtocol", DummyConfig6)())
     red._np_approx_min_k(b, [1.0, 2.0, 3.0], 2)
     red._np_top_k(b, [1.0, 2.0, 3.0], 2)
     red._np_approx_max_k(b, [1.0, 2.0, 3.0], 2)
@@ -3422,7 +3639,12 @@ def test_math_fft_signal_fftconvolve() -> None:
         """Dummy."""
 
         def fftconvolve(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Fftconvolve."""
+            """Fftconvolve.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "success"
 
     class DummyBackendWithSignal:

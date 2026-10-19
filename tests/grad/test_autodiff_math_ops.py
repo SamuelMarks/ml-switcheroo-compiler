@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tensor:
@@ -69,12 +67,17 @@ def test_autodiff_unary_math_ops() -> None:
     for op in ops:
 
         def f(inp: Tensor, op_bound: str = op) -> Tensor:
-            """Test function f."""
+            """Test function f.
+
+            Args:
+                inp: Test parameter `inp`.
+                op_bound: Test parameter `op_bound`.
+            """
             return cast("Tensor", dispatch_op(op_bound, inp))
 
         try:
-            primal, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x)
-            grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
+            primal, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x)
+            grads = cast("EagerCallableProtocol", vjp_fn)(cot)
             assert primal is not None
             assert grads is not None
             evaluated_unary += 1
@@ -112,12 +115,18 @@ def test_autodiff_binary_math_ops() -> None:
     for op in ops:
 
         def f(in_a: Tensor, in_b: Tensor, op_bound: str = op) -> Tensor:
-            """Test function f."""
+            """Test function f.
+
+            Args:
+                in_a: Test parameter `in_a`.
+                in_b: Test parameter `in_b`.
+                op_bound: Test parameter `op_bound`.
+            """
             return cast("Tensor", dispatch_op(op_bound, in_a, in_b))
 
         try:
-            primal, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x, y)
-            grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
+            primal, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x, y)
+            grads = cast("EagerCallableProtocol", vjp_fn)(cot)
             assert primal is not None
             assert grads is not None
             evaluated_binary += 1

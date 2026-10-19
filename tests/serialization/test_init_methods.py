@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_keras_np_serialization() -> None:
@@ -32,7 +30,7 @@ def test_keras_np_serialization() -> None:
             """Test function __init__."""
             self.layers = [FakeLayer()]
 
-    cast("Callable[..., EagerTensorProtocol]", save_model)(cast("Callable[..., EagerTensorProtocol]", FakeModel)(), test_file)
+    cast("EagerCallableProtocol", save_model)(cast("EagerCallableProtocol", FakeModel)(), test_file)
     model = load_model(test_file)
     assert hasattr(model, "config")
     if os.path.exists(test_file):

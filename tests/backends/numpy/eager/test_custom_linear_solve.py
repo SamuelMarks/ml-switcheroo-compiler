@@ -9,9 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customlinearsolve
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_custom_linear_solve_fallback() -> None:
@@ -19,8 +17,12 @@ def test_custom_linear_solve_fallback() -> None:
     """Test function test_custom_linear_solve_fallback."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     res = _np_customlinearsolve(np, f, np.array([1, 2]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([1, 2]))

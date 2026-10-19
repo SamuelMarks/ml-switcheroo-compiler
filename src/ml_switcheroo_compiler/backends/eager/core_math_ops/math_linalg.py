@@ -1,12 +1,14 @@
-"""math_linalg module."""
+"""Implementation of math linalg operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_linalg`)."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import get_special_submodule, host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+
+from .math_special import _dispatch_special
 
 
 @global_eager_registry.register("Det")
@@ -308,10 +310,7 @@ def _np_schur(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "schur", getattr(backend_module, "schur", None))
-    if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, get_special_submodule("linalg").schur(*args, **kwargs))
+    return _dispatch_special("Schur", "schur", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Svd")
@@ -329,7 +328,7 @@ def _np_svd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     func = getattr(backend_module, "svd", getattr(backend_module, "svd", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.linalg.svd(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).linalg.svd(*args, **kwargs))
 
 
 @global_eager_registry.register("Svdvals")
@@ -347,7 +346,7 @@ def _np_svdvals(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     func = getattr(backend_module, "svdvals", getattr(backend_module, "svdvals", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.linalg.svd(*args, **kwargs)[1])
+    return cast(EagerValue, _resolve_eager_mod(backend_module).linalg.svd(*args, **kwargs)[1])
 
 
 @global_eager_registry.register("Tensorinv")
@@ -365,7 +364,7 @@ def _np_tensorinv(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     func = getattr(backend_module, "tensorinv", getattr(backend_module, "tensorinv", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.linalg.tensorinv(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).linalg.tensorinv(*args, **kwargs))
 
 
 @global_eager_registry.register("TriInv")
@@ -383,7 +382,7 @@ def _np_triinv(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     func = getattr(backend_module, "triinv", getattr(backend_module, "triinv", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.linalg.inv(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).linalg.inv(args[0]))
 
 
 @global_eager_registry.register("UniqueInverse")
@@ -401,7 +400,7 @@ def _np_uniqueinverse(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     func = getattr(backend_module, "uniqueinverse", getattr(backend_module, "uniqueinverse", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.unique(args[0], return_inverse=True))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).unique(args[0], return_inverse=True))
 
 
 @global_eager_registry.register("Vander")
@@ -419,7 +418,7 @@ def _np_vander(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     func = getattr(backend_module, "vander", getattr(backend_module, "vander", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.vander(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).vander(*args, **kwargs))
 
 
 @global_eager_registry.register("VectorNorm")
@@ -437,4 +436,4 @@ def _np_vectornorm(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     func = getattr(backend_module, "vectornorm", getattr(backend_module, "vectornorm", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.linalg.norm(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).linalg.norm(*args, **kwargs))

@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.ops.sparse import Smm, SparseAdd, SparseDenseMatMul,
 from tests.ops.linalg.decompositions.test_decompositions import _test_op
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_sparse_ops() -> None:
@@ -26,7 +24,7 @@ def test_sparse_ops() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     op = SparseDenseMatMul()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(None, None) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(None, None) == ()
     op2 = SparseAdd()
 
     class Dummy:
@@ -35,16 +33,16 @@ def test_sparse_ops() -> None:
         dense_shape = (2, 2)
         shape = (2, 2)
 
-    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)(), None) == (2, 2)
+    assert cast("EagerCallableProtocol", op2.infer_shape)(cast("EagerCallableProtocol", Dummy)(), None) == (2, 2)
     op3 = SparseReduceSum()
-    assert cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op3.infer_shape)(None) == ()
     op4 = SparseSoftmax()
-    assert cast("Callable[..., EagerTensorProtocol]", op4.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)(), cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (2, 2)
+    assert cast("EagerCallableProtocol", op4.infer_shape)(cast("EagerCallableProtocol", Dummy)()) == (2, 2)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)(), cast("EagerCallableProtocol", Dummy)()) == (2, 2)
     op5 = SparseSampledAdd()
-    assert cast("Callable[..., EagerTensorProtocol]", op5.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)(), None) == (2, 2)
+    assert cast("EagerCallableProtocol", op5.infer_shape)(cast("EagerCallableProtocol", Dummy)(), None) == (2, 2)
     op6 = Smm()
-    assert cast("Callable[..., EagerTensorProtocol]", op6.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)(), cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (2, 2)
+    assert cast("EagerCallableProtocol", op6.infer_shape)(cast("EagerCallableProtocol", Dummy)(), cast("EagerCallableProtocol", Dummy)()) == (2, 2)
 
 
 def test_ragged_ops() -> None:
@@ -77,8 +75,8 @@ def test_sparse_bincount() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_bincount = cast("Callable[..., EagerTensorProtocol]", getattr(_ops_mod, "sparse_bincount"))
-        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(sparse_bincount, a)
+        sparse_bincount = cast("EagerCallableProtocol", getattr(_ops_mod, "sparse_bincount"))
+        (e, t) = cast("EagerCallableProtocol", _test_op)(sparse_bincount, a)
         assert e is not None
 
 
@@ -91,8 +89,8 @@ def test_sparse_reduce_max() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_reduce_max = cast("Callable[..., EagerTensorProtocol]", getattr(_ops_mod, "sparse_reduce_max"))
-        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(sparse_reduce_max, a)
+        sparse_reduce_max = cast("EagerCallableProtocol", getattr(_ops_mod, "sparse_reduce_max"))
+        (e, t) = cast("EagerCallableProtocol", _test_op)(sparse_reduce_max, a)
         assert e is not None
 
 
@@ -105,8 +103,8 @@ def test_sparse_reduce_sum() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_reduce_sum = cast("Callable[..., EagerTensorProtocol]", getattr(_ops_mod, "sparse_reduce_sum"))
-        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(sparse_reduce_sum, a)
+        sparse_reduce_sum = cast("EagerCallableProtocol", getattr(_ops_mod, "sparse_reduce_sum"))
+        (e, t) = cast("EagerCallableProtocol", _test_op)(sparse_reduce_sum, a)
         assert e is not None
 
 
@@ -118,7 +116,7 @@ def test_sparse_segment_mean() -> None:
     """
     from ml_switcheroo_compiler.ops import sparse_segment_mean
 
-    (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(sparse_segment_mean, a, a, a)
+    (e, t) = cast("EagerCallableProtocol", _test_op)(sparse_segment_mean, a, a, a)
     assert e is not None
 
 
@@ -131,8 +129,8 @@ def test_sparse_segment_sqrt_n() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_segment_sqrt_n = cast("Callable[..., EagerTensorProtocol]", getattr(_ops_mod, "sparse_segment_sqrt_n"))
-        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(sparse_segment_sqrt_n, a, a, a)
+        sparse_segment_sqrt_n = cast("EagerCallableProtocol", getattr(_ops_mod, "sparse_segment_sqrt_n"))
+        (e, t) = cast("EagerCallableProtocol", _test_op)(sparse_segment_sqrt_n, a, a, a)
         assert e is not None
 
 
@@ -145,8 +143,8 @@ def test_sparse_segment_sum() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_segment_sum = cast("Callable[..., EagerTensorProtocol]", getattr(_ops_mod, "sparse_segment_sum"))
-        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(sparse_segment_sum, a, a, a)
+        sparse_segment_sum = cast("EagerCallableProtocol", getattr(_ops_mod, "sparse_segment_sum"))
+        (e, t) = cast("EagerCallableProtocol", _test_op)(sparse_segment_sum, a, a, a)
         assert e is not None
 
 
@@ -159,8 +157,8 @@ def test_ragged_dot() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        ragged_dot = cast("Callable[..., EagerTensorProtocol]", getattr(_ops_mod, "ragged_dot"))
-        (e, t) = cast("Callable[..., EagerTensorProtocol]", _test_op)(ragged_dot, a, a)
+        ragged_dot = cast("EagerCallableProtocol", getattr(_ops_mod, "ragged_dot"))
+        (e, t) = cast("EagerCallableProtocol", _test_op)(ragged_dot, a, a)
         assert e is not None
 
 

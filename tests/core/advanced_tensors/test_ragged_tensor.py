@@ -7,16 +7,21 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyTensor:
     """Test class DummyTensor."""
 
     def __init__(self, shape: EagerValue, dtype: EagerValue = "float32", device: EagerValue = "cpu", requires_grad: EagerValue = True) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+            dtype: Test parameter `dtype`.
+            device: Test parameter `device`.
+            requires_grad: Test parameter `requires_grad`.
+        """
         self.shape = shape
         self.dtype = dtype
         self.device = device
@@ -32,7 +37,7 @@ def test_ragged_tensor() -> None:
     v = DummyTensor((4, 2))
     r = DummyTensor((3,))
 
-    rt = cast("Callable[..., EagerTensorProtocol]", RaggedTensor)(v, r)
+    rt = cast("EagerCallableProtocol", RaggedTensor)(v, r)
     assert rt.values == v
     assert rt.row_splits == r
 
@@ -44,5 +49,5 @@ def test_ragged_tensor() -> None:
     # Empty
     v2 = DummyTensor(())
     r2 = DummyTensor((0,))
-    rt2 = cast("Callable[..., EagerTensorProtocol]", RaggedTensor)(v2, r2)
+    rt2 = cast("EagerCallableProtocol", RaggedTensor)(v2, r2)
     assert rt2.shape == (0,)

@@ -1,11 +1,11 @@
-"""math_set module."""
+"""Implementation of math set operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_set`)."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 
 
@@ -39,7 +39,7 @@ def _np_union1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     func = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.union1d(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).union1d(*args, **kwargs))
 
 
 @global_eager_registry.register("Unique")
@@ -57,7 +57,7 @@ def _np_unique(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     func = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.unique(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).unique(*args, **kwargs))
 
 
 @global_eager_registry.register("UniqueAll")
@@ -75,14 +75,15 @@ def _np_uniqueall(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     func = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    arr = host_backend.asarray(args[0]).flatten()
-    values, indices = host_backend.unique(arr, return_index=True)
+    mod = _resolve_eager_mod(backend_module)
+    arr = mod.asarray(args[0]).flatten()
+    values, indices = mod.unique(arr, return_index=True)
     val_to_idx = {v: i for i, v in enumerate(values.tolist())}
-    inverse_indices = host_backend.array([val_to_idx[x] for x in arr.tolist()], dtype=host_backend.intp)
+    inverse_indices = mod.array([val_to_idx[x] for x in arr.tolist()], dtype=mod.intp)
     counts_dict: dict[int, int] = {}
     for idx in inverse_indices.tolist():
         counts_dict[idx] = counts_dict.get(idx, 0) + 1
-    counts = host_backend.array([counts_dict[i] for i in range(len(values))], dtype=host_backend.intp)
+    counts = mod.array([counts_dict[i] for i in range(len(values))], dtype=mod.intp)
     return values, indices, inverse_indices, counts
 
 
@@ -101,12 +102,13 @@ def _np_uniquecounts(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     func = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    arr = host_backend.asarray(args[0]).flatten()
-    values = host_backend.unique(arr)
+    mod = _resolve_eager_mod(backend_module)
+    arr = mod.asarray(args[0]).flatten()
+    values = mod.unique(arr)
     counts_map: dict[EagerValue, int] = {}
     for elem in arr.tolist():
         counts_map[elem] = counts_map.get(elem, 0) + 1
-    counts = host_backend.array([counts_map[v] for v in values.tolist()], dtype=host_backend.intp)
+    counts = mod.array([counts_map[v] for v in values.tolist()], dtype=mod.intp)
     return values, counts
 
 
@@ -125,4 +127,4 @@ def _np_uniquevalues(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     func = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.unique(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).unique(args[0]))

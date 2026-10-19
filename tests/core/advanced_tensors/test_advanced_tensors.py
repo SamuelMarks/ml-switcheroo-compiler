@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_sparse_tensor() -> None:
@@ -60,4 +58,4 @@ def test_tensor_array_eager() -> None:
         stacked = ta.stack()
         assert res.shape == (2, 2)
         assert stacked.shape == (2, 2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res.data, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+        assert cast("EagerCallableProtocol", np.array_equal)(res.data, cast("EagerCallableProtocol", np.ones)((2, 2)))

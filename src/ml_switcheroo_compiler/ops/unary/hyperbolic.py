@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for hyperbolic.py."""
+"""Implementation of hyperbolic operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.hyperbolic`)."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 

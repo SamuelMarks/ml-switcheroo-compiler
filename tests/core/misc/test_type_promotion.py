@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.errors import DTypePromotionError
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_type_promotion_complex128_downgrade() -> None:
@@ -43,7 +41,7 @@ def test_promote_types() -> None:
     assert promote_types(DType.Float64, DType.Complex64) == DType.Complex128
     assert promote_types(DType.Float64, DType.Float32) == DType.Float64
     with pytest.raises(DTypePromotionError):
-        cast("Callable[..., EagerTensorProtocol]", promote_types)("unknown", DType.Float32)
+        cast("EagerCallableProtocol", promote_types)("unknown", DType.Float32)
     config.jax_enable_x64 = False
 
 
@@ -57,7 +55,7 @@ def test_bool_promotion() -> None:
     """Test boolean promotion."""
     assert promote_types(DType.Bool, DType.Bool) == DType.Bool
     with pytest.raises(DTypePromotionError):
-        cast("Callable[..., EagerTensorProtocol]", promote_types)("bool", "bool")
+        cast("EagerCallableProtocol", promote_types)("bool", "bool")
 
 
 def test_promote_complex128_downcast() -> None:
@@ -73,7 +71,11 @@ def test_type_promotion_129() -> None:
         """Custom object equal to DType.Bool but not equal to another FakeType."""
 
         def __eq__(self, other: object) -> bool:
-            """Test function __eq__."""
+            """Test function __eq__.
+
+            Args:
+                other: Test parameter `other`.
+            """
             if type(other) is type(self):
                 return False
             return other == DType.Bool
@@ -82,7 +84,7 @@ def test_type_promotion_129() -> None:
             """Test function __hash__."""
             return hash(DType.Bool)
 
-    res = cast("Callable[..., EagerTensorProtocol]", tp.promote_types)(cast("Callable[..., EagerTensorProtocol]", FakeType)(), cast("Callable[..., EagerTensorProtocol]", FakeType)())
+    res = cast("EagerCallableProtocol", tp.promote_types)(cast("EagerCallableProtocol", FakeType)(), cast("EagerCallableProtocol", FakeType)())
     assert isinstance(res, FakeType)
 
 

@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.eager_evaluator import BackendExecuteOpStrategy, CustomEagerEvalStrategy, EagerEvaluator, EvaluationContext
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_eager_evaluator() -> None:
@@ -20,7 +18,12 @@ def test_eager_evaluator() -> None:
         """Test class DummyOpEager."""
 
         def eager_eval(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function eager_eval."""
+            """Test function eager_eval.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return "custom_eager"
 
     class DummyOpBackend:
@@ -32,17 +35,23 @@ def test_eager_evaluator() -> None:
         """Test class DummyBackend."""
 
         def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return op
 
-    ctx1 = cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(DummyOpEager, "Op1", [], {}, cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
-    assert cast("Callable[..., EagerTensorProtocol]", CustomEagerEvalStrategy)().evaluate(ctx1) == "custom_eager"
+    ctx1 = cast("EagerCallableProtocol", EvaluationContext)(DummyOpEager, "Op1", [], {}, cast("EagerCallableProtocol", DummyBackend)())
+    assert cast("EagerCallableProtocol", CustomEagerEvalStrategy)().evaluate(ctx1) == "custom_eager"
 
-    ctx2 = cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(DummyOpBackend, "Op2", [], {}, cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
-    assert cast("Callable[..., EagerTensorProtocol]", BackendExecuteOpStrategy)().evaluate(ctx2) == "Op2"
+    ctx2 = cast("EagerCallableProtocol", EvaluationContext)(DummyOpBackend, "Op2", [], {}, cast("EagerCallableProtocol", DummyBackend)())
+    assert cast("EagerCallableProtocol", BackendExecuteOpStrategy)().evaluate(ctx2) == "Op2"
 
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", EagerEvaluator._get_strategy)(cast("Callable[..., EagerTensorProtocol]", DummyOpEager)()), CustomEagerEvalStrategy)
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", EagerEvaluator._get_strategy)(cast("Callable[..., EagerTensorProtocol]", DummyOpBackend)()), BackendExecuteOpStrategy)
+    assert isinstance(cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(cast("EagerCallableProtocol", DummyOpEager)()), CustomEagerEvalStrategy)
+    assert isinstance(cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(cast("EagerCallableProtocol", DummyOpBackend)()), BackendExecuteOpStrategy)
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
@@ -60,11 +69,21 @@ def test_eager_evaluator() -> None:
         op_name = "Op1"
 
         def eager_eval(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function eager_eval."""
+            """Test function eager_eval.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return a[0] if a else None
 
         def infer_shape(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return ()
 
     try:

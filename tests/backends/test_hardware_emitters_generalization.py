@@ -19,9 +19,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_calculate_hardware_launch_config() -> None:
@@ -50,7 +48,7 @@ def test_calculate_hardware_launch_config() -> None:
     assert g3[2] >= 1
 
     # 4D with symbolic / string dim handling
-    b4, g4 = cast("Callable[..., EagerTensorProtocol]", calculate_hardware_launch_config)(["batch", 3, 32, 32])
+    b4, g4 = cast("EagerCallableProtocol", calculate_hardware_launch_config)(["batch", 3, 32, 32])
     assert b4[0] == 16
     assert g4[0] == 2
 
@@ -79,7 +77,7 @@ def test_generate_nd_coordinate_offset_logic() -> None:
     assert any("offset = c_idx_1" in ln for ln in lines_bcast)
 
     # Invalid non-integer shape elements fallback to 1
-    lines_invalid = cast("Callable[..., EagerTensorProtocol]", generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
+    lines_invalid = cast("EagerCallableProtocol", generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
     assert any("rem_idx" in ln for ln in lines_invalid)
 
 
@@ -133,7 +131,11 @@ def _mock_device_count(ptr: EagerValue) -> int:
 
 
 def test_cuda_runner_execute_graph_and_availability(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify CUDARunner.is_available, execute_graph dispatch, and BackendNotSupportedError."""
+    """Verify CUDARunner.is_available, execute_graph dispatch, and BackendNotSupportedError.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     # 1. Unavailable -> raises BackendNotSupportedError
     monkeypatch.setattr("ml_switcheroo_compiler.backends.cuda.cuda.cupy", None)
     with patch("ctypes.util.find_library", return_value=None):
@@ -173,7 +175,11 @@ def test_cuda_runner_execute_graph_and_availability(monkeypatch: pytest.MonkeyPa
 
 
 def test_rocm_runner_execute_graph_and_availability(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify ROCmRunner.is_available, execute_graph dispatch, and BackendNotSupportedError."""
+    """Verify ROCmRunner.is_available, execute_graph dispatch, and BackendNotSupportedError.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     # 1. Unavailable -> raises BackendNotSupportedError
     monkeypatch.setattr("ml_switcheroo_compiler.backends.rocm.rocm.cupy", None)
     with patch("ctypes.util.find_library", return_value=None):
@@ -352,7 +358,11 @@ def test_runner_execute_graph_input_types() -> None:
 
 
 def test_runner_availability_via_cupy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify is_available works with cupy runtime detection for CUDA and ROCm."""
+    """Verify is_available works with cupy runtime detection for CUDA and ROCm.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     mock_cupy = MagicMock()
     mock_cupy.cuda.is_available.return_value = True
     mock_cupy.cuda.runtime.getDeviceCount.return_value = 1

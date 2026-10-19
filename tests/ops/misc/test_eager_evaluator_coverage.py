@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class DummyWithShape:
@@ -122,16 +120,16 @@ def test_eager_evaluator_full_coverage() -> None:
     assert isinstance(strat_be, eager_eval_mod.BackendExecuteOpStrategy)
 
     t_in = Tensor(np.array([1.0, 2.0], dtype=np.float32), TensorConfig((2,), "float32", "cpu"))
-    packed_tuple = cast("Callable[..., EagerTensorProtocol]", eager_eval_mod.EagerEvaluator._pack_outputs)(
-        (cast("Callable[..., EagerTensorProtocol]", np.array)([1.0], dtype=np.float32), cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()),
+    packed_tuple = cast("EagerCallableProtocol", eager_eval_mod.EagerEvaluator._pack_outputs)(
+        (cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), cast("EagerCallableProtocol", DummyWithoutShape)()),
         t_in,
         "cpu",
     )
     assert isinstance(packed_tuple, tuple)
     assert len(packed_tuple) == 2
 
-    packed_single_noshape = cast("Callable[..., EagerTensorProtocol]", eager_eval_mod.EagerEvaluator._pack_outputs)(
-        cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)(),
+    packed_single_noshape = cast("EagerCallableProtocol", eager_eval_mod.EagerEvaluator._pack_outputs)(
+        cast("EagerCallableProtocol", DummyWithoutShape)(),
         t_in,
         "cpu",
     )

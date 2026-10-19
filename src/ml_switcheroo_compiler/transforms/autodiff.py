@@ -10,7 +10,6 @@ from typing import Optional, Union, cast  # noqa: F401
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode, topological_sort
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.core.shape import ShapeLike, TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, clone_logical_node
@@ -638,7 +637,12 @@ def _process_jvp_node(
     input_tangents = _get_input_tangents(new_graph, node, tangents)
 
     try:
-        out_tangent = cast("Callable[..., EagerTensorProtocol]", _invoke_jvp_rule)(jvp_func, new_graph, cast("LogicalNode", node), input_tangents)
+        out_tangent = _invoke_jvp_rule(
+            cast("Callable[..., Union[str, tuple[str, ...]]]", jvp_func),
+            new_graph,
+            cast("LogicalNode", node),
+            input_tangents,
+        )
         if out_tangent is not None:
             tangents[getattr(node, "id")] = str(out_tangent)
     except ValueError:
@@ -647,17 +651,17 @@ def _process_jvp_node(
 
 def _forward_pass_jvp(
     new_graph: IRGraph,
-    sorted_nodes: Sequence[LogicalNode] | TensorOrScalar,
+    sorted_nodes: Sequence[LogicalNode],
     tangents: dict[str, str],
 ) -> None:
     """Perform the forward pass to compute JVP.
 
     Args:
         new_graph (IRGraph): The target IR graph.
-        sorted_nodes (Sequence[LogicalNode] | TensorOrScalar): Topologically sorted list of IR nodes.
+        sorted_nodes (Sequence[LogicalNode]): Topologically sorted list of IR nodes.
         tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
     """
-    for node in getattr(sorted_nodes, "__iter__")():
+    for node in sorted_nodes:
         _process_jvp_node(new_graph, node, tangents)
 
 

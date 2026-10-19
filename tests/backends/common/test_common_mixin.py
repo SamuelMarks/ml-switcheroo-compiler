@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_common_ast_visitor() -> None:
@@ -24,5 +22,5 @@ def test_common_ast_visitor() -> None:
         pass
 
     gen = DummyGenerator()
-    vis2 = cast("Callable[..., EagerTensorProtocol]", CommonASTVisitor)(generator=gen)
+    vis2 = cast("EagerCallableProtocol", CommonASTVisitor)(generator=gen)
     assert id(vis2.generator) == id(gen)

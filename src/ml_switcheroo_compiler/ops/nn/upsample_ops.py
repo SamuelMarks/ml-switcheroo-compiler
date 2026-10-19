@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from typing import Callable, Optional, Union, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops import image
@@ -113,7 +113,7 @@ def _upsample_dispatch(
             "bicubic": image.resize_bicubic,
         }
         fn = dispatch_map.get(mode, image.resize_nearest)
-        return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", fn)(input, size=target_size, align_corners=align_corners))
+        return cast(TensorOrScalar, cast("EagerCallableProtocol", fn)(input, size=target_size, align_corners=align_corners))
 
     # 1D or 3D fallback
     dispatch_map_fallback = {

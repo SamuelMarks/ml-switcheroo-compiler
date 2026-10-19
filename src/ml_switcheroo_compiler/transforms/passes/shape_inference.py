@@ -6,7 +6,7 @@ import logging
 import typing
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ShapeInspectionPayload
@@ -145,7 +145,7 @@ def _infer_input_shape(
         tuple[int, ...] | None: Normalized shape.
     """
     del shapes
-    return cast("tuple[int, ...] | None", cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(node.shape_metadata))
+    return cast("tuple[int, ...] | None", cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
 
 
 _SPECIAL_OP_HANDLERS: dict[
@@ -177,10 +177,10 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     try:
         return _infer_op_shape(node, shapes)
     except (KeyError, AttributeError):
-        return cast("tuple[int, ...] | None", cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(node.shape_metadata))
+        return cast("tuple[int, ...] | None", cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
     except ValueError as e:
         if "Operation" in str(e) and "not found" in str(e):
-            return cast("tuple[int, ...] | None", cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(node.shape_metadata))
+            return cast("tuple[int, ...] | None", cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
     except (TypeError, Exception) as e:

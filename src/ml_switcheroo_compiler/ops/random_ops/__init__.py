@@ -1,4 +1,4 @@
-"""Generate random ops module."""
+"""Public package exports and initialization for `ml_switcheroo_compiler.ops.random_ops`."""
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar

@@ -214,7 +214,11 @@ def test_validate_op_definitions_parameters_synthetic() -> None:
 
 
 def test_main_success(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test main() execution when all checks pass."""
+    """Test main() execution when all checks pass.
+
+    Args:
+        capsys: Test parameter `capsys`.
+    """
     with (
         patch("scripts.validate_parameters.validate_backend_mappings_parameters", return_value=[]),
         patch("scripts.validate_parameters.validate_op_definitions_parameters", return_value=[]),
@@ -227,7 +231,11 @@ def test_main_success(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_main_failure(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test main() execution when parameter validation errors are found."""
+    """Test main() execution when parameter validation errors are found.
+
+    Args:
+        capsys: Test parameter `capsys`.
+    """
     with (
         patch("scripts.validate_parameters.validate_backend_mappings_parameters", return_value=["mapping error 1"]),
         patch("scripts.validate_parameters.validate_op_definitions_parameters", return_value=["op error 1"]),

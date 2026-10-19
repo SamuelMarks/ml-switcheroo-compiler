@@ -1,4 +1,4 @@
-"""Core utilities."""
+"""Implementation of math fft operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft`)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import builtins  # noqa: F401
 import typing  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -124,7 +124,7 @@ def _fftconvolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     mode = kwargs.get("mode", "full")
     axes = kwargs.get("axes", None)
 
-    np_mod = host_backend if backend_module is None else getattr(backend_module, "numpy", host_backend)
+    np_mod = _resolve_eager_mod(backend_module)
     a1 = np_mod.asarray(in1)
     a2 = np_mod.asarray(in2)
 
@@ -134,7 +134,7 @@ def _fftconvolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     conv_shape = [s1[i] + s2[i] - 1 for i in range(ndim)]
 
     is_real = not (np_mod.iscomplexobj(a1) or np_mod.iscomplexobj(a2))
-    fft_lib = getattr(np_mod, "fft", host_backend.fft)
+    fft_lib = getattr(np_mod, "fft")
 
     if is_real:
         f1 = fft_lib.rfftn(a1, s=conv_shape, axes=axes)
@@ -293,4 +293,4 @@ def _np_hfft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     fft_mod = getattr(backend_module, "fft", None)
     if fft_mod and hasattr(fft_mod, "hfft"):
         return cast(EagerValue, fft_mod.hfft(*args, **kwargs))
-    return cast(EagerValue, host_backend.fft.hfft(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).fft.hfft(*args, **kwargs))

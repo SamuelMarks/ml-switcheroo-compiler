@@ -1,4 +1,4 @@
-"""math_manipulation module."""
+"""Implementation of math manipulation operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_manipulation`)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import builtins  # noqa: F401
 import typing  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -65,7 +65,8 @@ def _extract(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     if func:
         return cast(EagerValue, func(*args, **kwargs))
     (condition, arr) = (args[0], args[1])
-    return cast(EagerValue, host_backend.extract(host_backend.asarray(condition), host_backend.asarray(arr)))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.extract(mod.asarray(condition), mod.asarray(arr)))
 
 
 @global_eager_registry.register("Pswapaxes")
@@ -240,7 +241,7 @@ def _np_hsplit(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     func = getattr(backend_module, "hsplit", getattr(backend_module, "hsplit", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.hsplit(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).hsplit(args[0], args[1]))
 
 
 @global_eager_registry.register("ScatterApply")
@@ -297,7 +298,7 @@ def _np_tensorarraystack(backend_module: EagerValue, *args: EagerValue, **kwargs
     func = getattr(backend_module, "tensorarraystack", getattr(backend_module, "tensorarraystack", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.stack(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).stack(args[0]))
 
 
 @global_eager_registry.register("TensorScatterUpdate")
@@ -352,7 +353,7 @@ def _np_unstack(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
     axis: int = int(cast(int, kwargs.get("axis", 0)))
-    return cast(EagerValue, host_backend.split(args[0], typing.cast(EagerTensorProtocol, args[0]).shape[axis], axis=axis))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).split(args[0], typing.cast(EagerTensorProtocol, args[0]).shape[axis], axis=axis))
 
 
 @global_eager_registry.register("UpdateSlice")
@@ -392,7 +393,7 @@ def _np_vsplit(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     func = getattr(backend_module, "vsplit", getattr(backend_module, "vsplit", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.vsplit(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).vsplit(args[0], args[1]))
 
 
 @global_eager_registry.register("Transpose")
@@ -412,7 +413,7 @@ def _np_transpose(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         if perm is not None:
             return cast(EagerValue, getattr(backend_module, "transpose")(args[0], axes=perm))
         return cast(EagerValue, getattr(backend_module, "transpose")(args[0]))
-    return cast(EagerValue, host_backend.transpose(args[0], axes=perm))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).transpose(args[0], axes=perm))
 
 
 @global_eager_registry.register("BroadcastTo")
@@ -431,4 +432,4 @@ def _np_broadcast_to(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     target_shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
     if hasattr(backend_module, "broadcast_to"):
         return cast(EagerValue, getattr(backend_module, "broadcast_to")(args[0], target_shape))
-    return cast(EagerValue, host_backend.broadcast_to(args[0], target_shape))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).broadcast_to(args[0], target_shape))

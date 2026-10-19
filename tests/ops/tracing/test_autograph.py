@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, do_not_convert, set_loop_options
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_autograph_coverage() -> None:
@@ -21,7 +19,7 @@ def test_autograph_coverage() -> None:
         """Test function f."""
         return 1
 
-    assert cast("Callable[..., EagerTensorProtocol]", f)() == 1
+    assert cast("EagerCallableProtocol", f)() == 1
     assert cast("EagerTensorProtocol", getattr(f, "_autograph_do_not_convert"))
 
     def f2() -> EagerValue:
@@ -29,7 +27,7 @@ def test_autograph_coverage() -> None:
         return 2
 
     f2_d = do_not_convert(f2)
-    assert cast("Callable[..., EagerTensorProtocol]", f2_d)() == 2
+    assert cast("EagerCallableProtocol", f2_d)() == 2
     assert cast("EagerTensorProtocol", getattr(f2_d, "_autograph_do_not_convert"))
 
     lo = LoopOptions(parallel_iterations=1, swap_memory=True, maximum_iterations=10, shape_invariants=None)

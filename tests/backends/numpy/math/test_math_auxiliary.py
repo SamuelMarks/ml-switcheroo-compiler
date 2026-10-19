@@ -28,15 +28,13 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary import (
 from ml_switcheroo_compiler.core.dtype import DType
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_constant_of_shape() -> None:
     """Test function test_constant_of_shape."""
     res = _np_constant_of_shape(np, (2, 2), 5.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, cast("Callable[..., EagerTensorProtocol]", np.full)((2, 2), 5.0))
+    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.full)((2, 2), 5.0))
 
 
 def test_reduce_window() -> None:
@@ -49,7 +47,7 @@ def test_reduce_window() -> None:
 def test_test_eager_op() -> None:
     """Test function test_test_eager_op."""
     res = _np_test_eager_op(np)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, [1.0, 2.0, 3.0])
+    assert cast("EagerCallableProtocol", np.array_equal)(res, [1.0, 2.0, 3.0])
 
 
 def test_unknown() -> None:
@@ -86,7 +84,7 @@ def test_l2_normalize() -> None:
     """Test function test_l2_normalize."""
     x = np.array([3.0, 4.0])
     res = _np_l2_normalize(np, x)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [0.6, 0.8])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [0.6, 0.8])
 
 
 def test_reduce_euclidean_norm() -> None:
@@ -100,13 +98,13 @@ def test_clamp() -> None:
     """Test function test_clamp."""
     x = np.array([1, 2, 3, 4, 5])
     res = _clamp(np, 2, x, 4)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [2, 2, 3, 4, 4])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [2, 2, 3, 4, 4])
 
 
 def test_logspace() -> None:
     """Test function test_logspace."""
     res = _logspace(np, 1, 2, num=2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    assert cast("EagerCallableProtocol", len)(res) == 2
 
     class SpaceConfig:
         """Test class SpaceConfig."""
@@ -120,14 +118,14 @@ def test_logspace() -> None:
             self.axis = 0
 
     res2 = _logspace(np, 1, 2, SpaceConfig())
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res2) == 2
+    assert cast("EagerCallableProtocol", len)(res2) == 2
 
 
 def test_frombuffer() -> None:
     """Test function test_frombuffer."""
     b = np.array([1.0, 2.0], dtype=np.float32).tobytes()
     res = _np_frombuffer(np, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1.0, 2.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0, 2.0])
 
 
 def test_dtype_op() -> None:
@@ -145,7 +143,7 @@ def test_eager_gradient() -> None:
     x = np.array([1, 2, 4, 7, 11])
     res = _eager_Gradient(np, x)
     expected = np.gradient(x)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_eager_i0() -> None:
@@ -153,14 +151,14 @@ def test_eager_i0() -> None:
     x = np.array([0.0])
     res = _eager_I0(np, x)
     expected = np.i0(x)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_eager_broadcastediota() -> None:
     """Test function test_eager_broadcastediota."""
     res = _eager_BroadcastedIota(np, 3, (2, 3))
     expected = np.broadcast_to(np.arange(3), (2, 3))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_rand_int4() -> None:

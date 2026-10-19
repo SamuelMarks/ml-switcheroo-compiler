@@ -1,5 +1,5 @@
 # ruff: noqa: E402
-"""Text operations module."""
+"""Public package exports and initialization for `ml_switcheroo_compiler.ops.text`."""
 
 from __future__ import annotations
 

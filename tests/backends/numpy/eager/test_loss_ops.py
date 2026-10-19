@@ -10,9 +10,7 @@ import pytest
 from ml_switcheroo_compiler.backends.numpy.eager.loss_ops import _np_categorical_generalized_cross_entropy, _np_circle_loss, _np_ctc_loss, _np_ctc_loss_single
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyBackend:
@@ -20,8 +18,12 @@ class DummyBackend:
 
     @staticmethod
     def zeros(shape: EagerValue) -> EagerValue:
-        """Test function zeros."""
-        return cast("Callable[..., EagerTensorProtocol]", np.zeros)(shape)
+        """Test function zeros.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
+        return cast("EagerCallableProtocol", np.zeros)(shape)
 
 
 def test_loss_ops() -> None:

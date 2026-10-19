@@ -1,11 +1,14 @@
 """Backend Registry."""
 
 import logging
-from typing import TYPE_CHECKING, Callable, Literal, Union
+from typing import Callable, Literal, Union
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
     DataclassProtocol as DataclassProtocol,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerCallableProtocol as EagerCallableProtocol,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol as EagerTensorProtocol,
@@ -18,8 +21,13 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 )
 from ml_switcheroo_compiler.core.config import config
 
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.sparse.types import COOTensor as COOTensor
+
+class COOTensor:
+    """Protocol stub for sparse coordinate tensor compatibility."""
+
+    shape: tuple[int, ...]
+    ndim: int
+    nnz: int
 
 
 def _load_numpy() -> None:

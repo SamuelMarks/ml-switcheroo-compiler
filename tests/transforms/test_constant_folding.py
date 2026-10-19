@@ -17,9 +17,7 @@ from ml_switcheroo_compiler.transforms.passes.constant_folding import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_constant_folding_coverage_brute() -> None:
@@ -82,7 +80,7 @@ def test_constant_folding_numel_branch(monkeypatch: pytest.MonkeyPatch) -> None:
             dict[str, object]: Evaluated outputs dictionary.
         """
         _ = (g, inputs, backend)
-        return {"n1": cast("Callable[..., EagerTensorProtocol]", MockVal)()}
+        return {"n1": cast("EagerCallableProtocol", MockVal)()}
 
     monkeypatch.setattr("ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph", mock_eval)
     mock_backend = MagicMock()
@@ -139,7 +137,12 @@ def test_constant_folding_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     graph.nodes["n1"] = n1
 
     def mock_eval(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function mock_eval."""
+        """Test function mock_eval.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         _ = (args, kwargs)
         raise KeyError("Testing other exceptions")
 
@@ -189,14 +192,14 @@ def test_constant_folding_backend_item_branch() -> None:
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"n1": ScalarNoItem()},
     ):
-        val2 = cast("Callable[..., EagerTensorProtocol]", _evaluate_constant_node)(node, ["c1"], graph, backend=None)
+        val2 = cast("EagerCallableProtocol", _evaluate_constant_node)(node, ["c1"], graph, backend=None)
         assert isinstance(val2, ScalarNoItem)
 
     with mock.patch(
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"n1": np.array([42])},
     ):
-        val3 = cast("Callable[..., EagerTensorProtocol]", _evaluate_constant_node)(node, ["c1"], graph, backend=None)
+        val3 = cast("EagerCallableProtocol", _evaluate_constant_node)(node, ["c1"], graph, backend=None)
         assert val3 == 42
 
 
@@ -224,7 +227,7 @@ def test_constant_folding_backend_instance_item_branch() -> None:
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"c0": np.array([42.0])},
     ):
-        val = cast("Callable[..., EagerTensorProtocol]", _evaluate_constant_node)(node, [], graph, cast("Callable[..., EagerTensorProtocol]", MockBackendWithItem)())
+        val = cast("EagerCallableProtocol", _evaluate_constant_node)(node, [], graph, cast("EagerCallableProtocol", MockBackendWithItem)())
         assert val == 42.0
 
 
@@ -242,7 +245,13 @@ def test_constant_folding_exceptions_and_fallback() -> None:
     g.nodes = {"c1": c1, "n_err": n_val_err, "n_unimpl": n_unimpl, "n_out": n_out}
 
     def mock_eval(node: LogicalNode, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function mock_eval."""
+        """Test function mock_eval.
+
+        Args:
+            node: Test parameter `node`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         _ = (args, kwargs)
         if node.id == "n_err":
             raise ValueError("Value error in folding")

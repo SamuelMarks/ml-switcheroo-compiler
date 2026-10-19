@@ -29,9 +29,7 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_numpy_dataset() -> None:
@@ -157,4 +155,4 @@ def test_pad_sequences() -> None:
 
 def test_split_dataset() -> None:
     """Test function test_split_dataset."""
-    assert cast("Callable[..., EagerTensorProtocol]", split_dataset)("ds") == ("ds", "ds")
+    assert cast("EagerCallableProtocol", split_dataset)("ds") == ("ds", "ds")

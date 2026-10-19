@@ -25,9 +25,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape, get_trace_count, increment_trace_count, reset_trace_count
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def testglobal_tracing_state_tape() -> None:
@@ -153,7 +151,7 @@ def test_proxy_tensor_assign_errors() -> None:
             var_proxy.assign(val_proxy)
         global_tracing_state.add_node(IRNode(id="var_node", op_type="ReadVariable", inputs=[], attributes={"variable_name": "x"}, shape_metadata=()))
         var_proxy_2 = ProxyTensor(id="var_node", shape=(), dtype="float32")
-        out = cast("Callable[..., EagerTensorProtocol]", var_proxy_2.assign)(42.0)
+        out = cast("EagerCallableProtocol", var_proxy_2.assign)(42.0)
         assert out.shape == ()
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(global_tracing_state.active_graph, "nodes")), "__getitem__")(out.id)).op_type == "AssignVariable"
     finally:
@@ -175,12 +173,12 @@ def test_trace_counts() -> None:
         """
         pass
 
-    cast("Callable[..., EagerTensorProtocol]", reset_trace_count)(my_func)
-    assert cast("Callable[..., EagerTensorProtocol]", get_trace_count)(my_func) == 0
-    cast("Callable[..., EagerTensorProtocol]", increment_trace_count)(my_func)
-    assert cast("Callable[..., EagerTensorProtocol]", get_trace_count)(my_func) == 1
-    cast("Callable[..., EagerTensorProtocol]", reset_trace_count)(my_func)
-    assert cast("Callable[..., EagerTensorProtocol]", get_trace_count)(my_func) == 0
+    cast("EagerCallableProtocol", reset_trace_count)(my_func)
+    assert cast("EagerCallableProtocol", get_trace_count)(my_func) == 0
+    cast("EagerCallableProtocol", increment_trace_count)(my_func)
+    assert cast("EagerCallableProtocol", get_trace_count)(my_func) == 1
+    cast("EagerCallableProtocol", reset_trace_count)(my_func)
+    assert cast("EagerCallableProtocol", get_trace_count)(my_func) == 0
 
     def traced_fn() -> EagerValue:
         """Evaluate and process the traced fn operation.
@@ -191,10 +189,10 @@ def test_trace_counts() -> None:
         proxy = ProxyTensor(id="out", shape=(), dtype="float32")
         return Tensor(proxy, TensorConfig((), DType.Float32, "cpu"))
 
-    cast("Callable[..., EagerTensorProtocol]", reset_trace_count)(traced_fn)
-    cast("Callable[..., EagerTensorProtocol]", _trace_function)(traced_fn, (), "test_trace")
-    assert cast("Callable[..., EagerTensorProtocol]", get_trace_count)(traced_fn) == 1
-    cast("Callable[..., EagerTensorProtocol]", reset_trace_count)(traced_fn)
+    cast("EagerCallableProtocol", reset_trace_count)(traced_fn)
+    cast("EagerCallableProtocol", _trace_function)(traced_fn, (), "test_trace")
+    assert cast("EagerCallableProtocol", get_trace_count)(traced_fn) == 1
+    cast("EagerCallableProtocol", reset_trace_count)(traced_fn)
 
 
 def _test_tracing_state_full_branch_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -361,4 +359,4 @@ def test_tracing_state_full_branch_coverage() -> None:
     _test_tracing_state_full_branch_coverage_part_3(_state)
     _test_tracing_state_full_branch_coverage_part_4(_state)
     _test_tracing_state_full_branch_coverage_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

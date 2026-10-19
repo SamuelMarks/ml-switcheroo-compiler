@@ -97,7 +97,11 @@ def test_grad_utils_compute_grad_and_value_tracing_branch() -> None:
     graph.nodes = {}
 
     def f_linear(x: Tensor) -> Tensor:
-        """Verify the behavior and output invariants of f linear."""
+        """Verify the behavior and output invariants of f linear.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     proxy = ProxyTensor(id="in_1", shape=(2,), dtype="float32")

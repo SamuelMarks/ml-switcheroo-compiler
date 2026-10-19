@@ -13,9 +13,7 @@ import yaml
 import scripts.build_registry as br
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_build_registry_multi_op(tmp_path: Path) -> None:
@@ -75,7 +73,7 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
         _state: Shared test state dictionary.
     """
     tmp_path = _state["tmp_path"]
-    empty_maps = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(cast("Callable[..., EagerTensorProtocol]", str)(tmp_path / "nonexistent"))
+    empty_maps = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(cast("EagerCallableProtocol", str)(tmp_path / "nonexistent"))
     assert empty_maps == {}
 
     # Setup dummy backends directory
@@ -94,7 +92,7 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
     (numpy_map_dir / "not_yaml.txt").write_text("ignore", encoding="utf-8")
     (numpy_map_dir / "z_another.yaml").write_text("Z:\n  target_api: np.z\n", encoding="utf-8")
 
-    loaded_maps = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(cast("Callable[..., EagerTensorProtocol]", str)(backends_dir))
+    loaded_maps = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(cast("EagerCallableProtocol", str)(backends_dir))
     assert "numpy" in loaded_maps
     assert loaded_maps["numpy"].get("Add") == "np.add"
 
@@ -108,7 +106,7 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
             "custom": {"generator": "emit_custom"},
         },
     }
-    norm_add = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(br, "_normalize_and_validate_op")))("Add", op_add, loaded_maps)
+    norm_add = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(br, "_normalize_and_validate_op")))("Add", op_add, loaded_maps)
     variants = norm_add["variants"]
     assert isinstance(variants, dict)
     getattr(_state, "update")({"backends_dir": backends_dir, "empty_maps": empty_maps, "loaded_maps": loaded_maps, "norm_add": norm_add})
@@ -137,7 +135,7 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
         },
         "math_semantics": {"differentiable": False},
     }
-    norm_unk = cast("Callable[..., EagerTensorProtocol]", getattr(br, "_normalize_and_validate_op"))("UnknownOp", op_unknown, loaded_maps)
+    norm_unk = cast("EagerCallableProtocol", getattr(br, "_normalize_and_validate_op"))("UnknownOp", op_unknown, loaded_maps)
     unk_variants = norm_unk["variants"]
     assert isinstance(unk_variants, dict)
     assert unk_variants["llvm_cpp"] == {"supported": False}
@@ -150,7 +148,7 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
             "llvm_cpp": {"template": "unary", "scalar_expr": "in0_val"},
         },
     }
-    norm_ident = cast("Callable[..., EagerTensorProtocol]", getattr(br, "_normalize_and_validate_op"))("Identity", op_ident, loaded_maps)
+    norm_ident = cast("EagerCallableProtocol", getattr(br, "_normalize_and_validate_op"))("Identity", op_ident, loaded_maps)
     ident_variants = norm_ident["variants"]
     assert isinstance(ident_variants, dict)
     assert cast("EagerTensorProtocol", cast("EagerTensorProtocol", ident_variants)["llvm_cpp"])["scalar_expr"] == "in0_val"
@@ -208,11 +206,15 @@ def test_load_backend_mappings_and_normalization(tmp_path: Path) -> None:
     _test_load_backend_mappings_and_normalization_part_1(_state)
     _test_load_backend_mappings_and_normalization_part_2(_state)
     _test_load_backend_mappings_and_normalization_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_build_registry_main(tmp_path: Path) -> None:
-    """Test the __main__ block of build_registry.py."""
+    """Test the __main__ block of build_registry.py.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     with patch("scripts.build_registry.build") as mock_build:
         br.main()
         mock_build.assert_called_once()

@@ -19,9 +19,7 @@ from ml_switcheroo_compiler.grad.api import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_hvp_graph_symbolic_lowering() -> None:
@@ -128,5 +126,5 @@ def test_hvp_api_delegation() -> None:
         # H = [[1, 0], [0, 1]]
         # H · v = [1, 1]
         primal, hvp_res = hvp(scalar_quad, (x_val,), (v_val,))
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(getattr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(getattr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)
+        assert cast("EagerCallableProtocol", np.allclose)(getattr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
+        assert cast("EagerCallableProtocol", np.allclose)(getattr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)

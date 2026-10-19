@@ -1,4 +1,4 @@
-"""Backend utilities."""
+"""Implementation of eager operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.jax.eager`)."""
 
 from __future__ import annotations
 
@@ -122,18 +122,57 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
 
 
 def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-    """Execute the eager execute binom cdf operation on the active backend array.
+    """Execute the eager binomial cumulative distribution function on the active backend array.
+
+    Args:
+        *args: Positional args (k, n, p).
+        **kwargs: Keyword args (loc).
+
+    Returns:
+        EagerValue: Binomial CDF array.
+    """
+    k, n, p = cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]), cast(EagerTensorProtocol, args[2])
+    loc: float = float(cast(float, kwargs.get("loc", 0.0)))
+    return cast(EagerValue, getattr(jss, "betainc")(n - (k - loc), (k - loc) + 1, 1 - p))
+
+
+def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Execute the eager binomial probability mass function on the active backend array.
+
+    Args:
+        *args: Positional args (k, n, p).
+        **kwargs: Keyword args.
+
+    Returns:
+        EagerValue: Binomial PMF array.
+    """
+    return cast(EagerValue, getattr(jax.scipy.stats.binom, "pmf")(*args, **kwargs))
+
+
+def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Execute the eager 2D convolution operation on the active backend array.
+
+    Args:
+        *args: Positional args (in1, in2).
+        **kwargs: Keyword args (mode, boundary, fillvalue).
+
+    Returns:
+        EagerValue: Convolved 2D array.
+    """
+    return cast(EagerValue, getattr(jax.scipy.signal, "convolve2d")(*args, **kwargs))
+
+
+def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Execute Welch's power spectral density estimation on the active backend array.
 
     Args:
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+        EagerValue: Sample frequencies and power spectral density.
     """
-    k, n, p = cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]), cast(EagerTensorProtocol, args[2])
-    loc: float = float(cast(float, kwargs.get("loc", 0.0)))
-    return cast(EagerValue, getattr(jss, "betainc")(n - (k - loc), (k - loc) + 1, 1 - p))
+    return cast(EagerValue, getattr(jax.scipy.signal, "welch")(*args, **kwargs))
 
 
 def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:

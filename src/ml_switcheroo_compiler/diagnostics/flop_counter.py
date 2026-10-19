@@ -1,4 +1,4 @@
-"""FLOP estimation module."""
+"""Implementation of flop counter operations and utilities for the diagnostics subsystem (`ml_switcheroo_compiler.diagnostics.flop_counter`)."""
 
 from __future__ import annotations
 

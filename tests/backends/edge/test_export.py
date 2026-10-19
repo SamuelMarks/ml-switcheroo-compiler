@@ -11,18 +11,20 @@ from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerato
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 @pytest.mark.parametrize("op_type", ["Add", "Exp", "Relu", "ReduceMax", "Where", "Cast"])
 def test_onnx_export_ops(op_type: EagerTensorProtocol) -> None:
-    """Test function test_onnx_export_ops."""
+    """Test function test_onnx_export_ops.
+
+    Args:
+        op_type: Test parameter `op_type`.
+    """
     graph = IRGraph()
     n1 = LogicalNode(id="in1", op_type="Input")
     n1.shape_metadata = (10,)
-    n2 = cast("Callable[..., EagerTensorProtocol]", LogicalNode)(id="n2", op_type=op_type, inputs=["in1", "in1"])
+    n2 = cast("EagerCallableProtocol", LogicalNode)(id="n2", op_type=op_type, inputs=["in1", "in1"])
     graph.nodes = {"in1": n1, "n2": n2}
 
     gen = ONNXCodeGenerator(graph)
@@ -33,16 +35,20 @@ def test_onnx_export_ops(op_type: EagerTensorProtocol) -> None:
         return  # Mocked
     assert "graph " in str(code)
     if op_type != "Where":  # Where output structure is slightly different depending on ONNX logic
-        assert op_type in cast("Callable[..., EagerTensorProtocol]", str)(code) or cast("Callable[..., EagerTensorProtocol]", op_type.upper)() in cast("Callable[..., EagerTensorProtocol]", str)(code).upper()
+        assert op_type in cast("EagerCallableProtocol", str)(code) or cast("EagerCallableProtocol", op_type.upper)() in cast("EagerCallableProtocol", str)(code).upper()
 
 
 @pytest.mark.parametrize("op_type", ["Add", "Exp", "Relu", "ReduceMax", "Where", "Cast"])
 def test_stablehlo_export_ops(op_type: EagerTensorProtocol) -> None:
-    """Test function test_stablehlo_export_ops."""
+    """Test function test_stablehlo_export_ops.
+
+    Args:
+        op_type: Test parameter `op_type`.
+    """
     graph = IRGraph()
     n1 = LogicalNode(id="in1", op_type="Input")
     n1.shape_metadata = (10,)
-    n2 = cast("Callable[..., EagerTensorProtocol]", LogicalNode)(id="n2", op_type=op_type, inputs=["in1", "in1"])
+    n2 = cast("EagerCallableProtocol", LogicalNode)(id="n2", op_type=op_type, inputs=["in1", "in1"])
     graph.nodes = {"in1": n1, "n2": n2}
 
     gen = StableHLOCodeGenerator(graph)

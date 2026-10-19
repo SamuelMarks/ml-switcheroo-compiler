@@ -152,7 +152,7 @@ def test_quantized_ops_eager() -> None:
             _test_quantized_ops_eager_sub_3,
         ):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
 
     finally:
         config.eager_mode = orig

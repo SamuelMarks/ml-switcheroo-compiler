@@ -1,4 +1,4 @@
-"""Provide mixin module."""
+"""Implementation of linalg operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.mixins.linalg`)."""
 
 from __future__ import annotations
 

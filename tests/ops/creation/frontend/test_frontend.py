@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.ops import array, diag, rand, randint, randn
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_rand_frontend_eager() -> None:
@@ -27,7 +25,7 @@ def test_rand_frontend_eager() -> None:
     import ml_switcheroo_compiler.backends.registry as reg
 
     setattr(reg, "_ACTIVE_BACKEND", type("D", (), {"execute_op": lambda *a, **k: type("T", (), {"shape": (2, 3)})()})())
-    cast("Callable[..., EagerTensorProtocol]", randn)([2, 3])
+    cast("EagerCallableProtocol", randn)([2, 3])
     pass
     t3 = randint(0, 10, (2, 3))
     assert cast("EagerTensorProtocol", getattr(t3, "shape")) == (2, 3)

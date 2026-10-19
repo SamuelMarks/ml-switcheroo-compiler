@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.ops.linalg.dot import Dot
 from ml_switcheroo_compiler.ops.stats.descriptive import ApplyOverAxes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def _make_tensor(shape: tuple[int, ...]) -> Tensor:
@@ -85,8 +83,8 @@ def test_dot_infer_shape_nd_contractions() -> None:
 
         shape_metadata = ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithMetadata)(), cast("Callable[..., EagerTensorProtocol]", DummyWithMetadata)()) == (3, 4)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyWithMetadata)(), cast("EagerCallableProtocol", DummyWithMetadata)()) == (3, 4)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
     assert op.infer_shape("not_a_shape", "also_not") == ()
 
 

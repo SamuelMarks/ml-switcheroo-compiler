@@ -22,9 +22,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_logical import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_not_equal() -> None:
@@ -115,7 +113,7 @@ def test_where() -> None:
         None
     """
     res = _np_where(np, np.array([True, False]), 1, 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, [1, 0])
+    assert cast("EagerCallableProtocol", np.array_equal)(res, [1, 0])
 
 
 def test_assert() -> None:

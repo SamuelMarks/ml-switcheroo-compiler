@@ -22,9 +22,7 @@ from ml_switcheroo_compiler.backends.rocm.rccl_collectives import (
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_rccl_constants() -> None:
@@ -266,7 +264,7 @@ def _test_rccl_driver_hip_rt_memory_and_streams_part_1(_state: dict[str, EagerTe
         Returns:
             int: Return status code.
         """
-        cast("Callable[..., EagerTensorProtocol]", ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x87654321)
+        cast("EagerCallableProtocol", ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x87654321)
         return 0
 
     mock_rt.hipMalloc = fake_hip_malloc_success
@@ -317,7 +315,7 @@ def _test_rccl_driver_hip_rt_memory_and_streams_part_2(_state: dict[str, EagerTe
 
     setattr(mock_rt.hipMemcpy, "side_effect", RuntimeError("D2H failed"))
     driver.copy_device_to_host(host_buf_ptr, out_arr)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_arr, arr)
+    assert cast("EagerCallableProtocol", np.allclose)(out_arr, arr)
     del real_buf
 
     # Restore hipMalloc with non-zero status branch (fails hipMalloc, falls back to host buffer)
@@ -358,4 +356,4 @@ def test_rccl_driver_hip_rt_memory_and_streams() -> None:
     _test_rccl_driver_hip_rt_memory_and_streams_part_1(_state)
     _test_rccl_driver_hip_rt_memory_and_streams_part_2(_state)
     _test_rccl_driver_hip_rt_memory_and_streams_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

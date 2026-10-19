@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jv
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp, has_vjp
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _make_tensor(data: Union[float, list[float], list[list[float]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], shape: tuple[int, ...] = ()) -> Tensor:
@@ -59,11 +59,11 @@ def _finite_difference_grad(func: Callable[[Tensor], Tensor], x: Tensor, eps: fl
 
             x_arr[idx] = orig_val + eps
             pos_t: Tensor = _make_tensor(x_arr, x.shape)
-            f_pos: float = float(cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("Callable[..., EagerTensorProtocol]", func)(pos_t).data))
+            f_pos: float = float(cast("EagerCallableProtocol", np.sum)(cast("EagerCallableProtocol", func)(pos_t).data))
 
             x_arr[idx] = orig_val - eps
             neg_t: Tensor = _make_tensor(x_arr, x.shape)
-            f_neg: float = float(cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("Callable[..., EagerTensorProtocol]", func)(neg_t).data))
+            f_neg: float = float(cast("EagerCallableProtocol", np.sum)(cast("EagerCallableProtocol", func)(neg_t).data))
 
             num_grad[idx] = (f_pos - f_neg) / (2.0 * eps)
             x_arr[idx] = orig_val
@@ -76,39 +76,53 @@ def test_linear_algebra_vjp_rules() -> None:
 
     # 1. MatMul
     def f_matmul(a: Tensor, b: Tensor) -> Tensor:
-        """Matrix multiplication."""
+        """Matrix multiplication.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("Tensor", dispatch_op("MatMul", a, b))
 
     t_a: Tensor = _make_tensor([[1.0, 2.0], [3.0, 4.0]])
     t_b: Tensor = _make_tensor([[0.5, -0.5], [1.5, 0.0]])
     cot: Tensor = _make_tensor([[1.0, 1.0], [1.0, 1.0]])
 
-    out, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f_matmul, t_a, t_b)
+    out, vjp_fn = cast("EagerCallableProtocol", vjp)(f_matmul, t_a, t_b)
     assert out is not None
-    grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(grads) == 2
+    grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+    assert cast("EagerCallableProtocol", len)(grads) == 2
 
     # 2. Transpose
     def f_transpose(x: Tensor) -> Tensor:
-        """Transpose."""
+        """Transpose.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("Tensor", dispatch_op("Transpose", x))
 
-    out_t, vjp_t = cast("Callable[..., EagerTensorProtocol]", vjp)(f_transpose, t_a)
-    grads_t = cast("Callable[..., EagerTensorProtocol]", vjp_t)(cot)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(grads_t) == 1
+    out_t, vjp_t = cast("EagerCallableProtocol", vjp)(f_transpose, t_a)
+    grads_t = cast("EagerCallableProtocol", vjp_t)(cot)
+    assert cast("EagerCallableProtocol", len)(grads_t) == 1
     assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(grads_t, "__getitem__")(0)), "shape")) == cast("EagerTensorProtocol", getattr(t_a, "shape"))
 
     # 3. Dot
     def f_dot(a: Tensor, b: Tensor) -> Tensor:
-        """Dot product."""
+        """Dot product.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("Tensor", dispatch_op("Dot", a, b))
 
     d_a: Tensor = _make_tensor([1.0, 2.0, 3.0])
     d_b: Tensor = _make_tensor([4.0, 5.0, 6.0])
     cot_d: Tensor = _make_tensor([1.0, 1.0, 1.0])
-    out_d, vjp_d = cast("Callable[..., EagerTensorProtocol]", vjp)(f_dot, d_a, d_b)
-    grads_d = cast("Callable[..., EagerTensorProtocol]", vjp_d)(cot_d)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(grads_d) == 2
+    out_d, vjp_d = cast("EagerCallableProtocol", vjp)(f_dot, d_a, d_b)
+    grads_d = cast("EagerCallableProtocol", vjp_d)(cot_d)
+    assert cast("EagerCallableProtocol", len)(grads_d) == 2
 
 
 def test_activation_vjp_rules() -> None:
@@ -121,16 +135,21 @@ def test_activation_vjp_rules() -> None:
     for act_name in activations:
 
         def f_act(t: Tensor, op_name: str = act_name) -> Tensor:
-            """Activation evaluation."""
+            """Activation evaluation.
+
+            Args:
+                t: Test parameter `t`.
+                op_name: Test parameter `op_name`.
+            """
             return cast("Tensor", dispatch_op(op_name, t))
 
-        out, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f_act, x)
+        out, vjp_fn = cast("EagerCallableProtocol", vjp)(f_act, x)
         assert out is not None
-        grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
-        assert cast("Callable[..., EagerTensorProtocol]", len)(grads) == 1
+        grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+        assert cast("EagerCallableProtocol", len)(grads) == 1
         ana_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(grads, "__getitem__")(0)), "data")))
         num_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_act, x)
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(ana_grad, num_grad, rtol=1e-2, atol=1e-2)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(ana_grad, num_grad, rtol=1e-2, atol=1e-2)
 
 
 def test_reduction_vjp_rules() -> None:
@@ -139,23 +158,31 @@ def test_reduction_vjp_rules() -> None:
 
     # 1. ReduceSum
     def f_sum(t: Tensor) -> Tensor:
-        """Sum reduction."""
+        """Sum reduction.
+
+        Args:
+            t: Test parameter `t`.
+        """
         return cast("Tensor", dispatch_op("ReduceSum", t))
 
-    out_s, vjp_s = cast("Callable[..., EagerTensorProtocol]", vjp)(f_sum, x)
+    out_s, vjp_s = cast("EagerCallableProtocol", vjp)(f_sum, x)
     cot_s: Tensor = _make_tensor(1.0)
-    grads_s = cast("Callable[..., EagerTensorProtocol]", vjp_s)(cot_s)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(grads_s) == 1
+    grads_s = cast("EagerCallableProtocol", vjp_s)(cot_s)
+    assert cast("EagerCallableProtocol", len)(grads_s) == 1
     assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(grads_s, "__getitem__")(0)), "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
     # 2. ReduceMean
     def f_mean(t: Tensor) -> Tensor:
-        """Mean reduction."""
+        """Mean reduction.
+
+        Args:
+            t: Test parameter `t`.
+        """
         return cast("Tensor", dispatch_op("ReduceMean", t))
 
-    out_m, vjp_m = cast("Callable[..., EagerTensorProtocol]", vjp)(f_mean, x)
-    grads_m = cast("Callable[..., EagerTensorProtocol]", vjp_m)(cot_s)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(grads_m) == 1
+    out_m, vjp_m = cast("EagerCallableProtocol", vjp)(f_mean, x)
+    grads_m = cast("EagerCallableProtocol", vjp_m)(cot_s)
+    assert cast("EagerCallableProtocol", len)(grads_m) == 1
 
 
 def test_loss_functions_vjp() -> None:
@@ -168,13 +195,19 @@ def test_loss_functions_vjp() -> None:
     for loss_name in losses:
 
         def f_loss(p: Tensor, t: Tensor, name: str = loss_name) -> Tensor:
-            """Loss function evaluation."""
+            """Loss function evaluation.
+
+            Args:
+                p: Test parameter `p`.
+                t: Test parameter `t`.
+                name: Test parameter `name`.
+            """
             return cast("Tensor", dispatch_op(name, p, t))
 
-        out, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f_loss, pred, target)
+        out, vjp_fn = cast("EagerCallableProtocol", vjp)(f_loss, pred, target)
         assert out is not None
-        grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
-        assert cast("Callable[..., EagerTensorProtocol]", len)(grads) == 2
+        grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+        assert cast("EagerCallableProtocol", len)(grads) == 2
 
 
 def test_normalization_and_spatial_vjp() -> None:
@@ -185,13 +218,19 @@ def test_normalization_and_spatial_vjp() -> None:
     cot: Tensor = _make_tensor([[1.0, 1.0], [1.0, 1.0]])
 
     def f_ln(inp: Tensor, g: Tensor, b: Tensor) -> Tensor:
-        """LayerNorm evaluation."""
+        """LayerNorm evaluation.
+
+        Args:
+            inp: Test parameter `inp`.
+            g: Test parameter `g`.
+            b: Test parameter `b`.
+        """
         return cast("Tensor", dispatch_op("LayerNorm", inp, g, b))
 
-    out_ln, vjp_ln = cast("Callable[..., EagerTensorProtocol]", vjp)(f_ln, x, gamma, beta)
+    out_ln, vjp_ln = cast("EagerCallableProtocol", vjp)(f_ln, x, gamma, beta)
     assert out_ln is not None
-    grads_ln = cast("Callable[..., EagerTensorProtocol]", vjp_ln)(cot)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(grads_ln) == 3
+    grads_ln = cast("EagerCallableProtocol", vjp_ln)(cot)
+    assert cast("EagerCallableProtocol", len)(grads_ln) == 3
 
 
 def test_jvp_linear_algebra_and_activations() -> None:
@@ -200,10 +239,14 @@ def test_jvp_linear_algebra_and_activations() -> None:
     tan: Tensor = _make_tensor([0.1, 0.2])
 
     def f_sig(t: Tensor) -> Tensor:
-        """Sigmoid."""
+        """Sigmoid.
+
+        Args:
+            t: Test parameter `t`.
+        """
         return cast("Tensor", dispatch_op("Sigmoid", t))
 
-    out, jvp_res = cast("Callable[..., EagerTensorProtocol]", jvp)(f_sig, (x,), (tan,))
+    out, jvp_res = cast("EagerCallableProtocol", jvp)(f_sig, (x,), (tan,))
     assert out is not None
     assert jvp_res is not None
 
@@ -308,7 +351,13 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
 
         @register_jvp("CustomTestOpJVP")
         def _dummy_jvp(g: EagerValue, n: EagerValue, t: EagerValue) -> str:
-            """Dummy JVP function."""
+            """Dummy JVP function.
+
+            Args:
+                g: Test parameter `g`.
+                n: Test parameter `n`.
+                t: Test parameter `t`.
+            """
             del g, n, t
             return "ok"
 
@@ -319,7 +368,13 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
 
             @register_jvp("CustomTestOpJVP")
             def _dummy_jvp_dup(g: EagerValue, n: EagerValue, t: EagerValue) -> str:
-                """Duplicate JVP function."""
+                """Duplicate JVP function.
+
+                Args:
+                    g: Test parameter `g`.
+                    n: Test parameter `n`.
+                    t: Test parameter `t`.
+                """
                 del g, n, t
                 return "err"
 
@@ -331,7 +386,13 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
 
         @register_vjp("CustomTestOpVJP")
         def _dummy_vjp(g: EagerValue, n: EagerValue, c: EagerValue) -> tuple[str, ...]:
-            """Dummy VJP function."""
+            """Dummy VJP function.
+
+            Args:
+                g: Test parameter `g`.
+                n: Test parameter `n`.
+                c: Test parameter `c`.
+            """
             del g, n, c
             return ("ok",)
 
@@ -342,7 +403,13 @@ def test_jvp_and_vjp_registry_duplicate_registration_and_coverage() -> None:
 
             @register_vjp("CustomTestOpVJP")
             def _dummy_vjp_dup(g: EagerValue, n: EagerValue, c: EagerValue) -> tuple[str, ...]:
-                """Duplicate VJP function."""
+                """Duplicate VJP function.
+
+                Args:
+                    g: Test parameter `g`.
+                    n: Test parameter `n`.
+                    c: Test parameter `c`.
+                """
                 del g, n, c
                 return ("err",)
 
@@ -362,10 +429,10 @@ def test_rematerialization_error_and_high_cost_coverage() -> None:
 
     high_cost: LogicalNode = LogicalNode(id="hc1", op_type="MatMul", inputs=[], attributes={"rematerialize": False})
     rules: dict[str, list[str]] = {"high_cost_ops": ["MatMul"], "target_ops": ["Relu"]}
-    assert bool(cast("Callable[..., EagerTensorProtocol]", _should_rematerialize)(high_cost, rules)) is False
+    assert bool(cast("EagerCallableProtocol", _should_rematerialize)(high_cost, rules)) is False
 
     target_node: LogicalNode = LogicalNode(id="t1", op_type="Relu", inputs=[], attributes={"checkpoint": True})
-    assert bool(cast("Callable[..., EagerTensorProtocol]", _should_rematerialize)(target_node, rules)) is True
+    assert bool(cast("EagerCallableProtocol", _should_rematerialize)(target_node, rules)) is True
 
 
 def test_expanded_vjp_and_jvp_registry_rules() -> None:
@@ -397,7 +464,11 @@ def test_erf_and_outer_finite_difference_grad() -> None:
 
     # 1. Erf finite-difference verification
     def f_erf(x: Tensor) -> Tensor:
-        """Scalar erf sum."""
+        """Scalar erf sum.
+
+        Args:
+            x: Test parameter `x`.
+        """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
         return cast("Tensor", dispatch_op("Erf", x))
@@ -407,14 +478,18 @@ def test_erf_and_outer_finite_difference_grad() -> None:
 
     # Analytical derivative: 2 / sqrt(pi) * exp(-x^2)
     expected_erf_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = (2.0 / np.sqrt(np.pi)) * np.exp(-(np.array(x.data) ** 2))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(num_grad_erf, expected_erf_grad, rtol=1e-3, atol=1e-3)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(num_grad_erf, expected_erf_grad, rtol=1e-3, atol=1e-3)
 
     # 2. Outer product finite-difference verification
     u: Tensor = _make_tensor([1.0, 2.0, 3.0])
     v_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([4.0, 5.0], dtype=np.float32)
 
     def f_outer(u_in: Tensor) -> Tensor:
-        """Outer product with fixed second vector."""
+        """Outer product with fixed second vector.
+
+        Args:
+            u_in: Test parameter `u_in`.
+        """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
         v_t: Tensor = _make_tensor(v_arr)
@@ -423,7 +498,7 @@ def test_erf_and_outer_finite_difference_grad() -> None:
     num_grad_outer: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_outer, u)
     # Derivative wrt u of sum(u otimes v) is sum(v) for all entries
     expected_outer_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.full_like(u.data, np.sum(v_arr))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(num_grad_outer, expected_outer_grad, rtol=1e-3, atol=1e-3)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(num_grad_outer, expected_outer_grad, rtol=1e-3, atol=1e-3)
 
 
 def test_control_flow_adjoint_lowering() -> None:
@@ -551,7 +626,11 @@ def test_declarative_rematerialization_policies() -> None:
 
     # Checkpoint with named policy
     def f(x: Tensor) -> Tensor:
-        """Checkpoint target function."""
+        """Checkpoint target function.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     cp_fn = checkpoint(f, policy="selective")

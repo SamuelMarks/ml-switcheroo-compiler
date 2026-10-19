@@ -11,13 +11,167 @@ from typing import TextIO
 # Ensure src is discoverable when invoked directly or via pre-commit
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from ml_ecosystem_snapshots.diff import DiffResult, diff_snapshots, generate_changelog
 from ml_switcheroo_ir import AttributeValue
+from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
     SnapshotGroundingEngine,
     _resolve_default_snapshot_dir,
 )
+
+
+class DiffResult(BaseModel):
+    """Result of diffing two snapshots.
+
+    Attributes:
+        added (list[str]): List of added api_paths.
+        removed (list[str]): List of removed api_paths.
+        signature_changed (list[str]): List of api_paths with changed signatures.
+        breaking_signature_changed (list[str]): List of api_paths with breaking signature changes.
+        non_breaking_signature_changed (list[str]): List of api_paths with non-breaking signature changes.
+    """
+
+    added: list[str] = Field(default_factory=list, description="List of added api_paths.")
+    removed: list[str] = Field(default_factory=list, description="List of removed api_paths.")
+    signature_changed: list[str] = Field(default_factory=list, description="List of api_paths with changed signatures.")
+    breaking_signature_changed: list[str] = Field(
+        default_factory=list,
+        description="List of api_paths with breaking signature changes.",
+    )
+    non_breaking_signature_changed: list[str] = Field(
+        default_factory=list,
+        description="List of api_paths with non-breaking signature changes.",
+    )
+
+
+def _is_breaking_param_change(
+    p1_list: list[dict[str, AttributeValue]],
+    p2_list: list[dict[str, AttributeValue]],
+) -> bool:
+    """Determine if parameter list modifications between two snapshots are breaking.
+
+    Args:
+        p1_list (list[dict[str, AttributeValue]]): Old parameter list.
+        p2_list (list[dict[str, AttributeValue]]): New parameter list.
+
+    Returns:
+        bool: True if parameter changes are backwards-incompatible.
+    """
+    p1_map: dict[str, dict[str, AttributeValue]] = {str(p.get("name")): p for p in p1_list if isinstance(p, dict)}
+    p2_map: dict[str, dict[str, AttributeValue]] = {str(p.get("name")): p for p in p2_list if isinstance(p, dict)}
+
+    if any(name not in p2_map for name in p1_map):
+        return True
+
+    for name, p2 in p2_map.items():
+        if name not in p1_map:
+            if p2.get("default") is None and p2.get("kind") not in ("VAR_POSITIONAL", "VAR_KEYWORD"):
+                return True
+        else:
+            p1 = p1_map[name]
+            if (p1.get("default") is not None and p2.get("default") is None) or p1.get("default") != p2.get("default"):
+                return True
+    return False
+
+
+def _flatten_snapshot_items(snap: dict[str, AttributeValue]) -> dict[str, dict[str, AttributeValue]]:
+    """Flatten a snapshot dictionary into a mapping of API paths to item dictionaries.
+
+    Args:
+        snap (dict[str, AttributeValue]): Parsed snapshot dictionary.
+
+    Returns:
+        dict[str, dict[str, AttributeValue]]: Flattened endpoint dictionary.
+    """
+    flattened: dict[str, dict[str, AttributeValue]] = {}
+    categories_dict = snap.get("categories", {})
+    if isinstance(categories_dict, dict):
+        for items in categories_dict.values():
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict):
+                        key = str(item.get("api_path") or item.get("name") or "")
+                        if key:
+                            flattened[key] = item
+    return flattened
+
+
+def diff_snapshots(
+    snap1: dict[str, AttributeValue],
+    snap2: dict[str, AttributeValue],
+) -> DiffResult:
+    """Diff two snapshots to detect added, removed, and signature-changed endpoints.
+
+    Args:
+        snap1 (dict[str, AttributeValue]): Reference old snapshot dictionary.
+        snap2 (dict[str, AttributeValue]): Candidate new snapshot dictionary.
+
+    Returns:
+        DiffResult: Structured diff result model.
+    """
+    flat1 = _flatten_snapshot_items(snap1)
+    flat2 = _flatten_snapshot_items(snap2)
+
+    added: list[str] = []
+    removed: list[str] = [path for path in flat1 if path not in flat2]
+    signature_changed: list[str] = []
+    breaking_signature_changed: list[str] = []
+    non_breaking_signature_changed: list[str] = []
+
+    for path, item2 in flat2.items():
+        if path not in flat1:
+            added.append(path)
+        else:
+            item1 = flat1[path]
+            raw_p1 = item1.get("params", [])
+            raw_p2 = item2.get("params", [])
+            p1 = [p for p in raw_p1 if isinstance(p, dict)] if isinstance(raw_p1, list) else []
+            p2 = [p for p in raw_p2 if isinstance(p, dict)] if isinstance(raw_p2, list) else []
+            sig1 = [(p.get("name"), p.get("kind"), p.get("default"), p.get("annotation")) for p in p1]
+            sig2 = [(p.get("name"), p.get("kind"), p.get("default"), p.get("annotation")) for p in p2]
+            if sig1 != sig2:
+                signature_changed.append(path)
+                if _is_breaking_param_change(p1, p2):
+                    breaking_signature_changed.append(path)
+                else:
+                    non_breaking_signature_changed.append(path)
+
+    return DiffResult(
+        added=sorted(added),
+        removed=sorted(removed),
+        signature_changed=sorted(signature_changed),
+        breaking_signature_changed=sorted(breaking_signature_changed),
+        non_breaking_signature_changed=sorted(non_breaking_signature_changed),
+    )
+
+
+def generate_changelog(diff: DiffResult) -> str:
+    """Generate a Markdown changelog from a DiffResult.
+
+    Args:
+        diff (DiffResult): Computed diff result model.
+
+    Returns:
+        str: Markdown formatted changelog string.
+    """
+    lines: list[str] = ["# Changelog Report", ""]
+    if not diff.added and not diff.removed and not diff.signature_changed:
+        lines.append("No changes detected.")
+        return "\n".join(lines)
+
+    for section_title, entries in (
+        ("## Added", diff.added),
+        ("## Removed (Breaking)", diff.removed),
+        ("## Breaking Signature Changes", diff.breaking_signature_changed),
+        ("## Non-Breaking Signature Changes", diff.non_breaking_signature_changed),
+    ):
+        if entries:
+            lines.append(section_title)
+            for path in entries:
+                lines.append(f"- `{path}`")
+            lines.append("")
+
+    return "\n".join(lines).strip() + "\n"
 
 
 def load_snapshot_file(file_path: str) -> dict[str, AttributeValue]:

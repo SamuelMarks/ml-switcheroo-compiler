@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.variable_ops import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_assign() -> None:
@@ -31,13 +29,17 @@ def test_cast() -> None:
     x = np.array([1.5, 2.5])
     res = _np_cast(np, x, "int32")
     assert cast("EagerTensorProtocol", getattr(res, "dtype")) == np.int32
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 2])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 2])
 
     class MockDtype:
         """Test class MockDtype."""
 
         def __init__(self, val: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.value = val
 
     res2 = _np_cast(np, x, MockDtype("bfloat16"))
@@ -57,7 +59,11 @@ def test_bitcast() -> None:
         """Test class MockDtype."""
 
         def __init__(self, val: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.value = val
 
     res2 = _np_bitcast(np, x, MockDtype("int32"))

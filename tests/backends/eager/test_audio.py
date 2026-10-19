@@ -30,9 +30,7 @@ from ml_switcheroo_compiler.backends.eager.audio import (
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_resolve_module() -> None:
@@ -52,40 +50,40 @@ def test_get_window() -> None:
 
     # Length == 1
     w_one = _get_window(None, "hann", 1)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(w_one, [1.0])
+    assert cast("EagerCallableProtocol", np.allclose)(w_one, [1.0])
 
     # Hann window
     w_hann = _get_window(np, "hann", 5)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(w_hann) == 5
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_hann, "__getitem__")(0)), 0.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_hann, "__getitem__")(2)), 1.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_hann, "__getitem__")(4)), 0.0)
+    assert cast("EagerCallableProtocol", len)(w_hann) == 5
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_hann, "__getitem__")(0)), 0.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_hann, "__getitem__")(2)), 1.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_hann, "__getitem__")(4)), 0.0)
 
     # Hamming window
     w_hamm = _get_window(None, "hamming", 5)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(w_hamm) == 5
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_hamm, "__getitem__")(0)), 0.08)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_hamm, "__getitem__")(2)), 1.0)
+    assert cast("EagerCallableProtocol", len)(w_hamm) == 5
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_hamm, "__getitem__")(0)), 0.08)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_hamm, "__getitem__")(2)), 1.0)
 
     # Blackman window
     w_black = _get_window(np, "blackman", 7)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(w_black) == 7
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_black, "__getitem__")(0)), 0.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_black, "__getitem__")(3)), 1.0)
+    assert cast("EagerCallableProtocol", len)(w_black) == 7
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_black, "__getitem__")(0)), 0.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_black, "__getitem__")(3)), 1.0)
 
     # Bartlett window
     w_bart = _get_window(None, "bartlett", 5)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(w_bart) == 5
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_bart, "__getitem__")(0)), 0.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_bart, "__getitem__")(2)), 1.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w_bart, "__getitem__")(4)), 0.0)
+    assert cast("EagerCallableProtocol", len)(w_bart) == 5
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_bart, "__getitem__")(0)), 0.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_bart, "__getitem__")(2)), 1.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w_bart, "__getitem__")(4)), 0.0)
 
     # Rectangular / default window
     w_rect = _get_window(np, "rectangular", 6)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(w_rect, cast("Callable[..., EagerTensorProtocol]", np.ones)(6))
+    assert cast("EagerCallableProtocol", np.allclose)(w_rect, cast("EagerCallableProtocol", np.ones)(6))
 
     w_unknown = _get_window(None, "custom_window", 4)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(w_unknown, cast("Callable[..., EagerTensorProtocol]", np.ones)(4))
+    assert cast("EagerCallableProtocol", np.allclose)(w_unknown, cast("EagerCallableProtocol", np.ones)(4))
 
 
 def test_mel_conversions() -> None:
@@ -117,12 +115,12 @@ def test_mel_filterbank() -> None:
     }
     matrix = _generate_mel_filterbank_matrix(None, config)
     assert cast("EagerTensorProtocol", getattr(matrix, "shape")) == (65, 20)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("EagerTensorProtocol", matrix) >= cast("EagerTensorProtocol", 0.0))
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("EagerTensorProtocol", matrix) <= cast("EagerTensorProtocol", 1.0))
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerTensorProtocol", matrix) >= cast("EagerTensorProtocol", 0.0))
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerTensorProtocol", matrix) <= cast("EagerTensorProtocol", 1.0))
 
     # Calling mel_filterbank_eager without spectrogram returns matrix
     mat_out = mel_filterbank_eager(None, None, config)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(mat_out, matrix)
+    assert cast("EagerCallableProtocol", np.allclose)(mat_out, matrix)
 
     # Calling with spectrogram performs projection
     spec = np.ones((4, 10, 65), dtype=np.float32)
@@ -139,12 +137,12 @@ def test_power_to_db() -> None:
     # Without clipping
     db_no_clip = _power_to_db(np, power, top_db=0.0)
     expected_db = np.array([0.0, -10.0, -20.0, -50.0], dtype=np.float32)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(db_no_clip, expected_db, atol=1e-3)
+    assert cast("EagerCallableProtocol", np.allclose)(db_no_clip, expected_db, atol=1e-3)
 
     # With top_db = 25.0, values below -25 should be clamped to -25
     db_clipped = _power_to_db(None, power, top_db=25.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(db_clipped, "__getitem__")(0)), 0.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(db_clipped, "__getitem__")(3)), -25.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(db_clipped, "__getitem__")(0)), 0.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(db_clipped, "__getitem__")(3)), -25.0)
 
 
 def test_apply_dct() -> None:
@@ -193,7 +191,11 @@ def test_tensor_conversion_helpers() -> None:
         """Test class DummyTorch."""
 
         def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                arr: Test parameter `arr`.
+            """
             self.arr = arr
 
         def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
@@ -201,13 +203,13 @@ def test_tensor_conversion_helpers() -> None:
             return self.arr
 
     raw_arr = np.array([1.0, 2.0, 3.0], dtype=np.float32)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", _convert_to_np)(np, cast("Callable[..., EagerTensorProtocol]", DummyTorch)(raw_arr), True, False), raw_arr)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", _convert_to_np)(None, raw_arr, False, False), raw_arr)
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", _convert_to_np)(np, cast("EagerCallableProtocol", DummyTorch)(raw_arr), True, False), raw_arr)
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", _convert_to_np)(None, raw_arr, False, False), raw_arr)
 
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", _to_backend_tensor)("test", raw_arr, None, None), raw_arr)
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", _to_backend_tensor)("test", raw_arr, None, None), raw_arr)
 
     c_arr = np.array([1.0 + 2.0j], dtype=np.complex64)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", _to_backend_tensor_complex)("test", c_arr, None, None), c_arr)
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", _to_backend_tensor_complex)("test", c_arr, None, None), c_arr)
 
 
 def test_stft_and_istft_pipeline() -> None:
@@ -253,7 +255,7 @@ def test_stft_and_istft_pipeline() -> None:
     # Reconstruct 1-D via istft_eager
     rec_1d = istft_eager(None, stft_1d, cfg, center=False)
     assert cast("EagerTensorProtocol", getattr(rec_1d, "ndim")) == 1
-    assert cast("Callable[..., EagerTensorProtocol]", len)(rec_1d) > 0
+    assert cast("EagerCallableProtocol", len)(rec_1d) > 0
 
     # Reconstruct 2-D via istft_eager
     rec_2d = istft_eager(np, stft_2d, cfg, center=True)
@@ -276,4 +278,4 @@ def test_stft_and_istft_pipeline() -> None:
 
     # Explicitly test _run_scipy_istft with win=None to verify default window branch
     rec_no_win = _run_scipy_istft(stft_1d, None, (16, 8, 16), False)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(rec_no_win) > 0
+    assert cast("EagerCallableProtocol", len)(rec_no_win) > 0

@@ -1,11 +1,11 @@
-"""math_testing module."""
+"""Implementation of math testing operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing`)."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 
 
@@ -45,7 +45,7 @@ def _allclose(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     if hasattr(backend_module, "allclose"):
         return cast(EagerValue, getattr(backend_module, "allclose")(a, b, rtol=float(cast(float, _val(rtol))), atol=float(cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
-    return cast(EagerValue, host_backend.allclose(a, b, rtol=float(cast(float, _val(rtol))), atol=float(cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(cast(float, _val(rtol))), atol=float(cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
 
 
 @global_eager_registry.register("ArrayEquiv")
@@ -81,12 +81,13 @@ def _assert(backend_module: EagerValue, condition: EagerValue, data: EagerValue 
     Raises:
         AssertionError: When condition evaluates to False.
     """
-    cond_arr = host_backend.asarray(condition)
-    if not host_backend.all(cond_arr):
+    mod = _resolve_eager_mod(backend_module)
+    cond_arr = mod.asarray(condition)
+    if not mod.all(cond_arr):
         node_id = kwargs.get("node_id", "AssertOp")
         msg = kwargs.get("message", "Condition evaluated to False")
         if data is not None:
-            data_arr = host_backend.asarray(data)
+            data_arr = mod.asarray(data)
             flat = data_arr.reshape(-1)
             summary_data = flat[:summarize].tolist() if len(flat) > 0 else []
             raise AssertionError(f"Assertion failed in node '{node_id}': {msg}. Data sample: {summary_data}")

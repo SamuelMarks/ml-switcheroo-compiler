@@ -59,9 +59,7 @@ except Exception:
     torch = MagicMock()
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_numpy_profiler_branches() -> None:
@@ -223,14 +221,14 @@ def test_pytorch_profiler_branches() -> None:
 def test_pytorch_eager_unresolved_mapping_branch() -> None:
     """Test pytorch/eager.py branch 474->476 when resolve_target_api returns None."""
     with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
-        out = cast("Callable[..., EagerTensorProtocol]", torch_execute_op)(None, "Relu", cast("Callable[..., EagerTensorProtocol]", torch.tensor)([-1.0, 2.0]))
+        out = cast("EagerCallableProtocol", torch_execute_op)(None, "Relu", cast("EagerCallableProtocol", torch.tensor)([-1.0, 2.0]))
         assert isinstance(out, torch.Tensor)
 
 
 def test_jax_eager_unresolved_mapping_branch() -> None:
     """Test jax/eager.py branch 391->393 when resolve_target_api returns None."""
     with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
-        out = cast("Callable[..., EagerTensorProtocol]", jax_execute_op)(None, "Sin", cast("Callable[..., EagerTensorProtocol]", jnp.array)([0.0]))
+        out = cast("EagerCallableProtocol", jax_execute_op)(None, "Sin", cast("EagerCallableProtocol", jnp.array)([0.0]))
         assert isinstance(out, jax.Array)
 
 
@@ -379,10 +377,16 @@ def test_backends_pytorch_distributed_collectives_branches() -> None:
     orig_import = builtins.__import__
 
     def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function mock_import."""
+        """Test function mock_import.
+
+        Args:
+            name: Test parameter `name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         if name in ("torch", "torch.distributed"):
             raise ImportError("torch missing")
-        return cast("Callable[..., EagerTensorProtocol]", orig_import)(name, *args, **kwargs)
+        return cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=mock_import):
         assert pytorch_all_reduce("raw_tensor") == "raw_tensor"
@@ -431,7 +435,7 @@ def test_edge_profiler_branches() -> None:
     g_inputs = IRGraph()
     g_inputs.nodes["x"] = IRNode(id="x", op_type="Input")
     inputs_payload = {"x": [1.0, 2.0]}
-    prep = cast("Callable[..., EagerTensorProtocol]", profiler._prepare_inputs)(g_inputs, inputs_payload)
+    prep = cast("EagerCallableProtocol", profiler._prepare_inputs)(g_inputs, inputs_payload)
     assert prep == [[1.0, 2.0]]
 
     # _prepare_inputs when graph has no nodes or input_keys do not match
@@ -569,7 +573,7 @@ def test_numba_profiler_branches() -> None:
     _test_numba_profiler_branches_part_1(_state)
     _test_numba_profiler_branches_part_2(_state)
     _test_numba_profiler_branches_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_sparse_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -641,7 +645,7 @@ def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]
             raise AttributeError("no todense")
 
     mock_sparse_val = _MockSparseNoAttrs()
-    prep_sparse_fallback = cast("Callable[..., EagerTensorProtocol]", profiler._prepare_inputs)(IRGraph(), {"s": mock_sparse_val})
+    prep_sparse_fallback = cast("EagerCallableProtocol", profiler._prepare_inputs)(IRGraph(), {"s": mock_sparse_val})
     assert prep_sparse_fallback == [mock_sparse_val]
 
     # When sparse is None
@@ -723,4 +727,4 @@ def test_sparse_profiler_branches() -> None:
     _test_sparse_profiler_branches_part_2(_state)
     _test_sparse_profiler_branches_part_3(_state)
     _test_sparse_profiler_branches_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

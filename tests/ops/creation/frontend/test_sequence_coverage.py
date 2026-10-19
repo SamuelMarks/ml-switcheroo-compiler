@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
 
@@ -60,7 +58,7 @@ def test_frontend_sequence_coverage() -> None:
 
                 name: str = "float32"
 
-            t2 = cast("Callable[..., EagerTensorProtocol]", seq_mod.arange)(start=1.0, stop=5.0, step=2.0, dtype=cast("Callable[..., EagerTensorProtocol]", DummyDtypeWithoutValue)(), device=cast("Callable[..., EagerTensorProtocol]", Device)("cpu"))
+            t2 = cast("EagerCallableProtocol", seq_mod.arange)(start=1.0, stop=5.0, step=2.0, dtype=cast("EagerCallableProtocol", DummyDtypeWithoutValue)(), device=cast("EagerCallableProtocol", Device)("cpu"))
             assert cast("EagerTensorProtocol", getattr(t2, "shape")) == (2,)
 
         # Non-eager mode
@@ -83,7 +81,7 @@ def test_frontend_sequence_coverage() -> None:
             assert cast("EagerTensorProtocol", getattr(t3, "shape")) == (3,)
 
             # with custom dtype without .value
-            t4 = cast("Callable[..., EagerTensorProtocol]", seq_mod.linspace)(0.0, 1.0, 3, dtype=cast("Callable[..., EagerTensorProtocol]", DummyDtypeWithoutValue)(), device=cast("Callable[..., EagerTensorProtocol]", Device)("cpu"))
+            t4 = cast("EagerCallableProtocol", seq_mod.linspace)(0.0, 1.0, 3, dtype=cast("EagerCallableProtocol", DummyDtypeWithoutValue)(), device=cast("EagerCallableProtocol", Device)("cpu"))
             assert cast("EagerTensorProtocol", getattr(t4, "shape")) == (3,)
 
         # linspace non-eager mode

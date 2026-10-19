@@ -5,13 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_rocm_load_yaml_dict_string."""
+    """Test function test_rocm_load_yaml_dict_string.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
     from unittest.mock import MagicMock, patch
 
@@ -19,11 +21,19 @@ def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     def mock_isdir(path: EagerValue) -> EagerValue:
-        """Test function mock_isdir."""
+        """Test function mock_isdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return True
 
     def mock_listdir(path: EagerValue) -> EagerValue:
-        """Test function mock_listdir."""
+        """Test function mock_listdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return ["test.yaml"]
 
     mock_data = {"templates": {"op1": "string body", "op2": ["not", "string", "or", "dict_with_body"]}}
@@ -41,7 +51,11 @@ def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_rocm_load_fallback_yaml."""
+    """Test function test_rocm_load_fallback_yaml.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
     from unittest.mock import MagicMock, patch
 
@@ -49,11 +63,19 @@ def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     def mock_isdir(path: EagerValue) -> EagerValue:
-        """Test function mock_isdir."""
+        """Test function mock_isdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return False
 
     def mock_exists(path: EagerValue) -> EagerValue:
-        """Test function mock_exists."""
+        """Test function mock_exists.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return True
 
     mock_data = {"templates": {"op3": {"body": "test"}}}
@@ -70,7 +92,11 @@ def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_rocm_runner_init_no_cupy(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_rocm_runner_init_no_cupy."""
+    """Test function test_rocm_runner_init_no_cupy.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -86,7 +112,11 @@ def test_rocm_runner_init_no_cupy(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_rocm_runner_init_ctypes_fail(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_rocm_runner_init_ctypes_fail."""
+    """Test function test_rocm_runner_init_ctypes_fail.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -227,7 +257,7 @@ def test_rocm_runner_write_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert cast("Callable[..., EagerTensorProtocol]", runner.write_buffer)(None, b"test") is None
+    assert cast("EagerCallableProtocol", runner.write_buffer)(None, b"test") is None
 
 
 def test_rocm_runner_read_cupy() -> None:
@@ -288,7 +318,7 @@ def test_rocm_runner_read_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert cast("Callable[..., EagerTensorProtocol]", runner.read_buffer)(None, 4) == b"\x00" * 4
+    assert cast("EagerCallableProtocol", runner.read_buffer)(None, 4) == b"\x00" * 4
 
 
 def test_rocm_runner_read_no_lib() -> None:
@@ -331,7 +361,7 @@ def test_rocm_runner_free_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
         runner = ROCmRunner()
         runner.free_buffer(ctypes.c_void_p(123))
-        assert getattr(runner, "context", None) is None or True
+        assert runner.mode == "cupy"
 
 
 def test_rocm_runner_free_no_ptr() -> None:
@@ -339,8 +369,8 @@ def test_rocm_runner_free_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    cast("Callable[..., EagerTensorProtocol]", runner.free_buffer)(None)
-    assert runner is not None or runner is None
+    cast("EagerCallableProtocol", runner.free_buffer)(None)
+    assert isinstance(runner, ROCmRunner)
 
 
 def test_rocm_runner_compile_cupy() -> None:
@@ -444,4 +474,4 @@ def test_rocm_runner_compile_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = ROCmRunner()
             runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1])
-            assert getattr(runner, "context", None) is None or True
+            assert runner.mode == "ctypes"

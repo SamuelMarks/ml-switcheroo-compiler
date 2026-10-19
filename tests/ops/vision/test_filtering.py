@@ -17,7 +17,11 @@ class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -25,7 +29,11 @@ class MockTensor:
 
 
 def test_vision_filtering_funcs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_filtering_funcs."""
+    """Test function test_vision_filtering_funcs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.filtering._emit_shape_node", return_value="node")
@@ -51,7 +59,11 @@ def test_vision_filtering_funcs(mocker: EagerTensorProtocol) -> None:
 
 
 def test_vision_filtering_kwargs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_filtering_kwargs."""
+    """Test function test_vision_filtering_kwargs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.filtering._emit_shape_node", return_value="node")
@@ -62,7 +74,11 @@ def test_vision_filtering_kwargs(mocker: EagerTensorProtocol) -> None:
 
 
 def test_vision_filtering_eager_extra(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_filtering_eager_extra."""
+    """Test function test_vision_filtering_eager_extra.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.filtering.get_active_backend").return_value
@@ -74,7 +90,11 @@ def test_vision_filtering_eager_extra(mocker: EagerTensorProtocol) -> None:
 
 
 def test_median_filter_tuple(mocker: EagerTensorProtocol) -> None:
-    """Test function test_median_filter_tuple."""
+    """Test function test_median_filter_tuple.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.filtering._emit_shape_node", return_value="node")

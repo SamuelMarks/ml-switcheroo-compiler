@@ -1,5 +1,5 @@
 # ruff: noqa: E402
-"""Core utilities."""
+"""Implementation of math logical operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_logical`)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import typing  # noqa: F401
 from types import ModuleType
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -35,7 +35,7 @@ def _nan_to_num(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     neginf = kwargs.get("neginf", None)
     if hasattr(backend_module, "nan_to_num"):
         return cast(EagerValue, cast(ModuleType, backend_module).nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf))
-    return cast(EagerValue, host_backend.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf))
 
 
 _ACTIVE_AXIS_INDICES: dict[EagerValue, int] = {}
@@ -290,7 +290,7 @@ def _iscomplex(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     func = getattr(backend_module, "iscomplex", None)
     if func:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.iscomplex(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).iscomplex(*args, **kwargs))
 
 
 @global_eager_registry.register("Iscomplexobj")
@@ -309,7 +309,7 @@ def _iscomplexobj(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     if func:
         return cast(EagerValue, func(*args, **kwargs))
     x = args[0]
-    return cast(EagerValue, host_backend.iscomplexobj(x))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).iscomplexobj(x))
 
 
 @global_eager_registry.register("Isnan")
@@ -362,7 +362,7 @@ def _isreal(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     func = getattr(backend_module, "isreal", None)
     if func:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.isreal(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).isreal(*args, **kwargs))
 
 
 @global_eager_registry.register("Isrealobj")
@@ -381,7 +381,7 @@ def _isrealobj(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     if func:
         return cast(EagerValue, func(*args, **kwargs))
     x = args[0]
-    return cast(EagerValue, host_backend.isrealobj(x))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).isrealobj(x))
 
 
 @global_eager_registry.register("Isscalar")
@@ -400,7 +400,7 @@ def _isscalar(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     if func:
         return cast(EagerValue, func(*args, **kwargs))
     x = args[0]
-    return cast(EagerValue, host_backend.isscalar(x))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).isscalar(x))
 
 
 @global_eager_registry.register("Issubdtype")
@@ -415,7 +415,7 @@ def _issubdtype(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, host_backend.issubdtype(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).issubdtype(*args, **kwargs))
 
 
 @global_eager_registry.register("Kaiser")
@@ -430,7 +430,7 @@ def _kaiser(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).array(host_backend.kaiser(*args, **kwargs)))
+    return cast(EagerValue, cast(ModuleType, backend_module).array(_resolve_eager_mod(backend_module).kaiser(*args, **kwargs)))
 
 
 @global_eager_registry.register("Mish")

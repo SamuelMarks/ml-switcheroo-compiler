@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_signal import (
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_math_signal_coverage() -> None:
@@ -29,7 +27,12 @@ def test_math_signal_coverage() -> None:
         """Backend with correlate."""
 
         def correlate(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock correlate."""
+            """Mock correlate.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "correlate_val"
 
     assert _correlate(CorrelateBackend(), [1, 2], [1]) == "correlate_val"
@@ -42,11 +45,11 @@ def test_math_signal_coverage() -> None:
 
     eb = EmptyBackend()
     res1 = _correlate(eb, [1, 2, 3], [0, 1])
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res1) == 2
+    assert cast("EagerCallableProtocol", len)(res1) == 2
 
     # Case with kwargs dictionary containing mode
     res2 = _correlate(eb, [1, 2, 3], [0, 1], mode="full")
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res2) == 4
+    assert cast("EagerCallableProtocol", len)(res2) == 4
 
     # Case where kwargs does not have get
     class NoGetDict:
@@ -56,7 +59,7 @@ def test_math_signal_coverage() -> None:
 
     # Pass non-dict or kwargs without get by unpacking invalid type or passing kwargs
     res3 = _correlate(eb, [1, 2, 3], [0, 1], **{})
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res3) == 2
+    assert cast("EagerCallableProtocol", len)(res3) == 2
 
     # _np_windowhann
     # Case A: backend has windowhann
@@ -64,7 +67,12 @@ def test_math_signal_coverage() -> None:
         """Backend with windowhann."""
 
         def windowhann(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock windowhann."""
+            """Mock windowhann.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "windowhann_val"
 
     assert _np_windowhann(WindowhannBackend(), 5) == "windowhann_val"
@@ -76,7 +84,7 @@ def test_math_signal_coverage() -> None:
         pass
 
     hann_res = _np_windowhann(EmptyBackend2(), 5)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(hann_res) == 5
+    assert cast("EagerCallableProtocol", len)(hann_res) == 5
 
     # Registry
     assert global_eager_registry.get("Correlate") is not None

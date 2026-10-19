@@ -13,20 +13,18 @@ import ml_switcheroo_compiler.ops as _ops
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_confusion_matrix, _np_decode_csv, _np_decode_image, _np_descriptive, _np_distributions, _np_parse_example, _np_parse_tensor, _np_rawmatmul, _np_read_file, _np_rem, _np_serialize_tensor, _np_sparsedensematmul, _np_write_file
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_pmean() -> None:
     """Test function test_pmean."""
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", mm._np_pmean)(np, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), "x"), cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", mm._np_pmean)(np, cast("EagerCallableProtocol", np.ones)((2, 2)), "x"), cast("EagerCallableProtocol", np.ones)((2, 2)))
 
 
 def test_segment_sum() -> None:
     """Test function test_segment_sum."""
     res = mm._np_segment_sum(np, np.array([1, 2, 3, 4]), np.array([0, 0, 1, 1]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [3, 7])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [3, 7])
 
 
 def test_clz() -> None:
@@ -55,7 +53,7 @@ def test_bitcast_convert_type() -> None:
 def test_reduce_precision() -> None:
     """Test function test_reduce_precision."""
     res = mm._np_reduce_precision(np, np.array([1.0]), 8, 23)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
 
 
 def test_custom_linear_solve() -> None:
@@ -79,19 +77,19 @@ def test_sobol_sample() -> None:
 def test_logsumexp() -> None:
     """Test function test_logsumexp."""
     res = mm._np_logsumexp(np, np.ones((2, 2)), keepdims=False)
-    assert cast("Callable[..., EagerTensorProtocol]", np.ndim)(res) == 0
+    assert cast("EagerCallableProtocol", np.ndim)(res) == 0
 
 
 def test_truncate_div() -> None:
     """Test function test_truncate_div."""
     res = mm._np_truncate_div(np, np.array([3.5]), np.array([2.0]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
 
 
 def test_truncate_mod() -> None:
     """Test function test_truncate_mod."""
     res = mm._np_truncate_mod(np, np.array([3.5]), np.array([2.0]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1.5])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.5])
 
 
 def test_math_misc_one_hot() -> None:
@@ -156,11 +154,21 @@ def test_all_mocked_try_blocks() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     op_names = [
@@ -251,11 +259,21 @@ def test_math_misc_more_edges() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     old_di = getattr(ops, "DecodeImage", None)
@@ -278,11 +296,21 @@ def test_all_numpy_math_misc_fallbacks() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     class MockBM:
@@ -293,10 +321,19 @@ def test_all_numpy_math_misc_fallbacks() -> None:
             pass
 
         def __getattr__(self, name: EagerValue) -> EagerValue:
-            """Test function __getattr__."""
+            """Test function __getattr__.
+
+            Args:
+                name: Test parameter `name`.
+            """
 
             def dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function dummy."""
+                """Test function dummy.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return np.ones((2, 2))
 
             return dummy
@@ -319,11 +356,21 @@ def test_all_numpy_math_misc_fallbacks_2() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     class MockBM:
@@ -334,10 +381,19 @@ def test_all_numpy_math_misc_fallbacks_2() -> None:
             pass
 
         def __getattr__(self, name: EagerValue) -> EagerValue:
-            """Test function __getattr__."""
+            """Test function __getattr__.
+
+            Args:
+                name: Test parameter `name`.
+            """
 
             def dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function dummy."""
+                """Test function dummy.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return np.ones((2, 2))
 
             return dummy
@@ -401,11 +457,21 @@ def test_all_numpy_math_misc_fallbacks_3() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     class MockBM:
@@ -416,10 +482,19 @@ def test_all_numpy_math_misc_fallbacks_3() -> None:
             pass
 
         def __getattr__(self, name: EagerValue) -> EagerValue:
-            """Test function __getattr__."""
+            """Test function __getattr__.
+
+            Args:
+                name: Test parameter `name`.
+            """
 
             def dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function dummy."""
+                """Test function dummy.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return np.ones((2, 2))
 
             return dummy
@@ -495,11 +570,21 @@ def test_np_remaining_math_misc() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
     op_names = ["RawMatMul", "SparseDenseMatMul", "decode_csv", "decode_image", "parse_example", "parse_tensor", "confusion_matrix", "descriptive", "distributions"]
@@ -546,11 +631,10 @@ def test_math_misc_polynomials() -> None:
     """Test function test_math_misc_polynomials."""
     x = np.array([0.5])
     n = np.array([2])
-    mm._np_shifted_chebyshev_polynomial_t(np, x, n)
-    mm._np_shifted_chebyshev_polynomial_u(np, x, n)
-    mm._np_shifted_chebyshev_polynomial_v(np, x, n)
-    mm._np_shifted_chebyshev_polynomial_w(np, x, n)
-    assert n is not None or n is None
+    assert mm._np_shifted_chebyshev_polynomial_t(np, x, n) is not None
+    assert mm._np_shifted_chebyshev_polynomial_u(np, x, n) is not None
+    assert mm._np_shifted_chebyshev_polynomial_v(np, x, n) is not None
+    assert mm._np_shifted_chebyshev_polynomial_w(np, x, n) is not None
 
 
 def test_math_misc_scipy_bessels() -> None:
@@ -581,11 +665,21 @@ def test_np_remaining_math_misc_2() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
     op_names = ["encode_image", "encode_jpeg", "encode_png", "encode_base64", "decode_base64", "decode_json_example", "decode_compressed", "read_file", "write_file", "serialize_tensor"]
@@ -614,11 +708,21 @@ def test_np_remaining_math_misc_3() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
     op_names = ["shifted_chebyshev_polynomial_t", "shifted_chebyshev_polynomial_u", "shifted_chebyshev_polynomial_v", "shifted_chebyshev_polynomial_w"]
@@ -653,11 +757,21 @@ def test_remaining_math_misc_stuff() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
     op_names = [
@@ -709,11 +823,21 @@ def test_final_math_misc_mocking() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
     op_names = [
@@ -765,11 +889,21 @@ def test_final_math_misc_mocking_again() -> None:
         """Test class MockOpFunc."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
     op_names = [
@@ -821,22 +955,42 @@ def test_final_math_misc_mocking_once_more() -> None:
         """Test class MockOpFuncWithInit."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> MockOpFuncWithInit:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("MockOpFuncWithInit", np.ones((2, 2)))
 
     class RealMockType:
         """Test class RealMockType."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
     op_names = [
@@ -888,7 +1042,12 @@ def test_final_math_misc_mocking_once_more_2() -> None:
         """Test class RealMockType."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType", np.ones((2, 2)))
 
     op_names = [
@@ -940,7 +1099,12 @@ def test_final_math_misc_mocking_again_and_again() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = [
@@ -992,7 +1156,12 @@ def test_final_math_misc_mocking_again_and_again_again() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise Exception("Trigger catch")
 
     op_names = [
@@ -1043,7 +1212,12 @@ def test_final_math_misc_mocking_again_and_again_again_2() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["decode_csv", "decode_image", "parse_example", "parse_tensor", "serialize_tensor", "encode_image", "encode_jpeg", "encode_png", "encode_base64", "decode_base64", "decode_json_example", "decode_compressed", "read_file", "write_file", "confusion_matrix", "descriptive", "distributions"]
@@ -1075,7 +1249,12 @@ def test_final_math_misc_mocking_again_and_again_again_3() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "EncodeImage", "EncodeJpeg", "EncodePng", "EncodeBase64", "DecodeBase64", "DecodeJsonExample", "DecodeCompressed", "ReadFile", "WriteFile", "ConfusionMatrix", "Descriptive", "Distributions"]
@@ -1121,7 +1300,12 @@ def test_final_math_misc_mocking_again_and_again_again_5() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
@@ -1153,7 +1337,12 @@ def test_final_math_misc_mocking_camel() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
@@ -1185,7 +1374,12 @@ def test_final_math_misc_mocking_again_and_again_again_6() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["decode_csv", "decode_image", "parse_example", "parse_tensor", "serialize_tensor", "read_file", "write_file"]
@@ -1247,7 +1441,12 @@ def test_final_math_misc_mocking_for_remaining() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions", "shifted_chebyshev_polynomial_t", "shifted_chebyshev_polynomial_u", "shifted_chebyshev_polynomial_v", "shifted_chebyshev_polynomial_w", "frombuffer", "rem"]
@@ -1279,7 +1478,12 @@ def test_final_math_misc_mocking_again_and_again_again_8_fixed() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
@@ -1311,7 +1515,12 @@ def test_final_math_misc_mocking_again_and_again_again_9() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
@@ -1343,7 +1552,12 @@ def test_final_math_misc_mocking_again_and_again_again_10() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
@@ -1375,7 +1589,12 @@ def test_final_math_misc_mocking_again_and_again_again_11() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
@@ -1407,7 +1626,12 @@ def test_final_math_misc_mocking_again_and_again_again_12() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["serialize_tensor", "write_file"]
@@ -1439,7 +1663,12 @@ def test_final_math_misc_mocking_again_and_again_again_13() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
@@ -1471,7 +1700,12 @@ def test_final_math_misc_mocking_again_and_again_again_14() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
@@ -1503,7 +1737,12 @@ def test_final_math_misc_mocking_again_and_again_again_15() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file"]
@@ -1535,7 +1774,12 @@ def test_final_math_misc_mocking_again_and_again_again_16() -> None:
         """Test class RealMockType2."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> RealMockType2:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
@@ -1564,18 +1808,22 @@ def test_final_math_misc_mocking_again_and_again_again_17() -> None:
 
     x = np.array([0.5, 0.2])
     n = np.array([2, 3])
-    mm._np_shifted_chebyshev_polynomial_t(np, x, n)
-    mm._np_shifted_chebyshev_polynomial_u(np, x, n)
-    mm._np_shifted_chebyshev_polynomial_v(np, x, n)
-    mm._np_shifted_chebyshev_polynomial_w(np, x, n)
-    assert n is not None or n is None
+    assert mm._np_shifted_chebyshev_polynomial_t(np, x, n) is not None
+    assert mm._np_shifted_chebyshev_polynomial_u(np, x, n) is not None
+    assert mm._np_shifted_chebyshev_polynomial_v(np, x, n) is not None
+    assert mm._np_shifted_chebyshev_polynomial_w(np, x, n) is not None
 
 
 class MockCallableClass:
     """Test class MockCallableClass."""
 
     def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function __call__."""
+        """Test function __call__.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return args
 
 
@@ -1669,7 +1917,7 @@ def test_np_ops_subclass() -> None:
         getattr(_state, "update")({"pytest": pytest})
         for _sub_fn in (_test_np_ops_subclass_sub_1, _test_np_ops_subclass_sub_2):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
 
 
 def _test_np_ops_missing_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1752,7 +2000,7 @@ def test_np_ops_missing() -> None:
         getattr(_state, "update")({"original_write_file": original_write_file})
         for _sub_fn in (_test_np_ops_missing_sub_1, _test_np_ops_missing_sub_2, _test_np_ops_missing_sub_3):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
     finally:
         setattr(_ops, "RawMatMul", original_rawmatmul)
         setattr(_ops, "SparseDenseMatMul", original_sparsedensematmul)

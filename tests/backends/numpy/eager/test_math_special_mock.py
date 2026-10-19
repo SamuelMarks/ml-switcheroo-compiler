@@ -13,14 +13,23 @@ if TYPE_CHECKING:
 
 
 def test_mock(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_mock."""
+    """Test function test_mock.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.ops as ops
 
     class FakeOp:
         """Test class FakeOp."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             self.hit = True
 
     monkeypatch.setattr(ops, "RawMatMul", FakeOp, raising=False)

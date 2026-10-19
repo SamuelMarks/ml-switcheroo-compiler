@@ -183,7 +183,7 @@ class KerasCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates: Visitor delegates.
         """
-        getattr(super(), "__init__")(graph, delegates)
+        super().__init__(graph, delegates)
         self.visitors.extend([*get_shared_ast_visitors(generator=self), KerasVisionVisitor(), KerasAudioVisitor()])
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []

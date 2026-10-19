@@ -558,4 +558,4 @@ def test_metal_runner_execute_graph() -> None:
     _test_metal_runner_execute_graph_part_1(_state)
     _test_metal_runner_execute_graph_part_2(_state)
     _test_metal_runner_execute_graph_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

@@ -1,4 +1,4 @@
-"""Provide mixin module."""
+"""Implementation of control flow operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.mixins.control_flow`)."""
 
 from __future__ import annotations
 

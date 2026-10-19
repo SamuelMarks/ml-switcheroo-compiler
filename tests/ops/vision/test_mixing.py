@@ -17,7 +17,11 @@ class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -25,7 +29,11 @@ class MockTensor:
 
 
 def test_vision_mixing_funcs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_mixing_funcs."""
+    """Test function test_vision_mixing_funcs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t1 = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     t2 = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False

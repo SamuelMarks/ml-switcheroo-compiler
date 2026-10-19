@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 with patch.dict(sys.modules, {"tensorflow": MagicMock()}):
     from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
@@ -24,7 +22,7 @@ def test_tf_types() -> None:
     setattr(mod, "generic_asarray", MagicMock(return_value="asarray"))
     setattr(mod, "generic_item", MagicMock(return_value="item"))
 
-    assert cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2, 2)) == "zeros"
-    assert cast("Callable[..., EagerTensorProtocol]", array)(None, [1]) == "array"
-    assert cast("Callable[..., EagerTensorProtocol]", asarray)(None, [1]) == "asarray"
-    assert cast("Callable[..., EagerTensorProtocol]", item)(None, [1]) == "item"
+    assert cast("EagerCallableProtocol", zeros)(None, (2, 2)) == "zeros"
+    assert cast("EagerCallableProtocol", array)(None, [1]) == "array"
+    assert cast("EagerCallableProtocol", asarray)(None, [1]) == "asarray"
+    assert cast("EagerCallableProtocol", item)(None, [1]) == "item"

@@ -8,13 +8,15 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.utils.np_utils import normalize, to_categorical
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_np_utils(mocker: EagerTensorProtocol) -> None:
-    """Test function test_np_utils."""
+    """Test function test_np_utils.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.ops.max", return_value=1)
     mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="cast")
     mocker.patch("ml_switcheroo_compiler.ops.arange", return_value="arange")
@@ -31,7 +33,11 @@ def test_np_utils(mocker: EagerTensorProtocol) -> None:
 
 
 def test_to_categorical_item(mocker: EagerTensorProtocol) -> None:
-    """Test function test_to_categorical_item."""
+    """Test function test_to_categorical_item.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
 
     class M:
         """Test class M."""
@@ -40,7 +46,7 @@ def test_to_categorical_item(mocker: EagerTensorProtocol) -> None:
             """Test function item."""
             return 2
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch)("ml_switcheroo_compiler.ops.max", return_value=cast("Callable[..., EagerTensorProtocol]", M)())
+    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.ops.max", return_value=cast("EagerCallableProtocol", M)())
     mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="cast")
     mocker.patch("ml_switcheroo_compiler.ops.arange")
     mocker.patch("ml_switcheroo_compiler.ops.expand_dims")

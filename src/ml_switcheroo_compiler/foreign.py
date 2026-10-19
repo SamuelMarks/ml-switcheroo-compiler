@@ -7,7 +7,7 @@ from typing import cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -182,7 +182,7 @@ class ForeignCall(OpDef):
                 return attr_shape
 
             if callable(first):
-                call_shape = cast("Callable[..., EagerTensorProtocol]", _infer_shape_from_callable)(first)
+                call_shape = cast("EagerCallableProtocol", _infer_shape_from_callable)(first)
                 if call_shape is not None:
                     return cast(tuple[int, ...], call_shape)
 

@@ -1,4 +1,4 @@
-"""math_set module."""
+"""Implementation of math set operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_set`)."""
 
 from __future__ import annotations
 

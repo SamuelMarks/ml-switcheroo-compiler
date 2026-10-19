@@ -8,7 +8,7 @@ from typing import cast
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
@@ -139,7 +139,7 @@ def overwrite_with_gradient(tensor: GradValue, gradient: GradValue) -> GradValue
         return g, None
 
     getattr(_overwrite, "defvjp")(_overwrite_fwd, _overwrite_bwd)
-    return cast(GradValue, cast("Callable[..., EagerTensorProtocol]", _overwrite)(tensor, gradient))
+    return cast(GradValue, cast("EagerCallableProtocol", _overwrite)(tensor, gradient))
 
 
 def ir_grad(fun: Callable[..., GradValue], options: GradOptions | GradValue = None) -> Callable[..., GradValue]:
@@ -290,7 +290,7 @@ def hook_gradient(tensor: GradValue, hook: Callable[..., GradValue]) -> GradValu
         return (out_g,)
 
     getattr(_hook_op, "defvjp")(_hook_fwd, _hook_bwd)
-    return cast(GradValue, cast("Callable[..., EagerTensorProtocol]", _hook_op)(tensor))
+    return cast(GradValue, cast("EagerCallableProtocol", _hook_op)(tensor))
 
 
 def jvp(

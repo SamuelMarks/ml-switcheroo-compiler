@@ -11,13 +11,18 @@ import pytest
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, _np_reduce_scatter, set_np_distributed_context
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _worker_process(rank: EagerValue, world_size: EagerValue, port_queue: EagerValue, queue: EagerValue) -> None:
-    """Test function _worker_process."""
+    """Test function _worker_process.
+
+    Args:
+        rank: Test parameter `rank`.
+        world_size: Test parameter `world_size`.
+        port_queue: Test parameter `port_queue`.
+        queue: Test parameter `queue`.
+    """
     try:
         if rank == 0:
             import socket
@@ -28,20 +33,20 @@ def _worker_process(rank: EagerValue, world_size: EagerValue, port_queue: EagerV
             s.close()
             cast("EagerTensorProtocol", getattr(port_queue, "put"))(port)
         else:
-            port = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(port_queue, "get")))()
+            port = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(port_queue, "get")))()
             cast("EagerTensorProtocol", getattr(port_queue, "put"))(port)
-        cast("Callable[..., EagerTensorProtocol]", set_np_distributed_context)(world_size, rank, "127.0.0.1", port)
+        cast("EagerCallableProtocol", set_np_distributed_context)(world_size, rank, "127.0.0.1", port)
         import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
 
         tensor = np.array([rank], dtype=np.float32)
         gathered = _np_all_gather(np, tensor, axis=0)
         reduced_sum = _np_all_reduce(np, tensor, op_type="sum")
         reduced_max = _np_all_reduce(np, tensor, op_type="max")
-        tensor_rs = cast("Callable[..., EagerTensorProtocol]", np.arange)(world_size, dtype=np.float32) * (cast("EagerTensorProtocol", rank) + cast("EagerTensorProtocol", 1))
+        tensor_rs = cast("EagerCallableProtocol", np.arange)(world_size, dtype=np.float32) * (cast("EagerTensorProtocol", rank) + cast("EagerTensorProtocol", 1))
         scattered = _np_reduce_scatter(np, tensor_rs, op_type="sum", axis=0)
         a2a = _np_all_to_all(np, tensor)
         dmod._tcp_dist_ctx.shutdown()
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(queue, "put")))({"rank": rank, "gathered": gathered, "reduced_sum": reduced_sum, "reduced_max": reduced_max, "scattered": scattered, "a2a_len": cast("Callable[..., EagerTensorProtocol]", len)(a2a)})
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(queue, "put")))({"rank": rank, "gathered": gathered, "reduced_sum": reduced_sum, "reduced_max": reduced_max, "scattered": scattered, "a2a_len": cast("EagerCallableProtocol", len)(a2a)})
     except Exception as e:
         cast("EagerTensorProtocol", getattr(queue, "put"))({"rank": rank, "error": str(e)})
 
@@ -105,11 +110,15 @@ def test_tcp_distributed_missing_funcs() -> None:
     tensor = np.array([2.0])
 
     def mock_all_gather(t: EagerValue) -> EagerValue:
-        """Test function mock_all_gather."""
+        """Test function mock_all_gather.
+
+        Args:
+            t: Test parameter `t`.
+        """
         return [t, np.array([3.0])]
 
     setattr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
-    setattr(_tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: cast("Callable[..., EagerTensorProtocol]", np.array)([6.0]) if op == "prod" else cast("Callable[..., EagerTensorProtocol]", np.array)([5.0]) if op == "unknown" else t)
+    setattr(_tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: cast("EagerCallableProtocol", np.array)([6.0]) if op == "prod" else cast("EagerCallableProtocol", np.array)([5.0]) if op == "unknown" else t)
     _tcp_dist_ctx.world_size = 2
     _tcp_dist_ctx.world_size = 2
     assert cast("EagerTensorProtocol", getattr(_np_all_reduce(np, tensor, op_type="prod"), "item"))() == 6.0
@@ -164,13 +173,17 @@ def test_tcp_distributed_context_none_connections_all_reduce() -> None:
             return np.array([0])
 
         def send(self, data: EagerValue) -> None:
-            """Test function send."""
+            """Test function send.
+
+            Args:
+                data: Test parameter `data`.
+            """
             pass
 
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.listener = None
-    setattr(ctx, "send_conns", [cast("Callable[..., EagerTensorProtocol]", DummyConn)()])
-    setattr(ctx, "recv_conns", [cast("Callable[..., EagerTensorProtocol]", DummyConn)()])
+    setattr(ctx, "send_conns", [cast("EagerCallableProtocol", DummyConn)()])
+    setattr(ctx, "recv_conns", [cast("EagerCallableProtocol", DummyConn)()])
     tensor = np.array([1, 2])
     ctx.all_reduce_ring(tensor)
     assert tensor is not None
@@ -211,12 +224,18 @@ def test_tcp_distributed_context_sync_thread() -> None:
         """Test class SyncThread."""
 
         def __init__(self, target: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                target: Test parameter `target`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             self.target = target
 
         def start(self) -> None:
             """Test function start."""
-            cast("Callable[..., EagerTensorProtocol]", self.target)()
+            cast("EagerCallableProtocol", self.target)()
 
         def join(self) -> None:
             """Test function join."""
@@ -239,12 +258,18 @@ def test_tcp_distributed_context_initialize_none_listener() -> None:
         """Test class SyncThread."""
 
         def __init__(self, target: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                target: Test parameter `target`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             self.target = target
 
         def start(self) -> None:
             """Test function start."""
-            cast("Callable[..., EagerTensorProtocol]", self.target)()
+            cast("EagerCallableProtocol", self.target)()
 
         def join(self) -> None:
             """Test function join."""

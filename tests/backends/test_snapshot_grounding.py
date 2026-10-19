@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.backends.snapshot_grounding import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_load_backend_snapshot_targets_default() -> None:
@@ -308,7 +306,11 @@ def test_snapshot_grounding_keyword_validation_discrepancies() -> None:
 
 
 def test_snapshot_grounding_framework_file_candidate(tmp_path: EagerTensorProtocol) -> None:
-    """Test resolving snapshot path via target.framework_file candidate."""
+    """Test resolving snapshot path via target.framework_file candidate.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import os
 
     base_dir = str(tmp_path)
@@ -325,7 +327,11 @@ def test_snapshot_grounding_framework_file_candidate(tmp_path: EagerTensorProtoc
 
 
 def test_snapshot_grounding_list_snapshot_data(tmp_path: EagerTensorProtocol) -> None:
-    """Test loading snapshot formatted as a list of items rather than a category dictionary."""
+    """Test loading snapshot formatted as a list of items rather than a category dictionary.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import json
     import os
 
@@ -360,7 +366,11 @@ def test_snapshot_grounding_list_snapshot_data(tmp_path: EagerTensorProtocol) ->
 
 
 def test_snapshot_grounding_endpoint_item_candidate_roots(tmp_path: EagerTensorProtocol) -> None:
-    """Test resolving endpoint item across canonical roots and alternative roots."""
+    """Test resolving endpoint item across canonical roots and alternative roots.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     engine = SnapshotGroundingEngine()
 
     item = engine.get_endpoint_item("jax", "jax.nn.gelu")
@@ -417,7 +427,11 @@ def test_snapshot_grounding_endpoint_item_candidate_roots(tmp_path: EagerTensorP
 
 
 def test_snapshot_grounding_nonversioned_snapshot_glob(tmp_path: EagerTensorProtocol) -> None:
-    """Test get_snapshot_path candidate selection when candidate snapshot file has no version."""
+    """Test get_snapshot_path candidate selection when candidate snapshot file has no version.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import os
 
     snap_dir = os.path.join(str(tmp_path), "snapshots")
@@ -450,7 +464,11 @@ def test_snapshot_grounding_nonversioned_snapshot_glob(tmp_path: EagerTensorProt
 
 
 def test_snapshot_grounding_unrecognized_snapshot_structure(tmp_path: EagerTensorProtocol) -> None:
-    """Test get_valid_endpoints when snapshot JSON is neither dict nor list."""
+    """Test get_valid_endpoints when snapshot JSON is neither dict nor list.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import json
     import os
 
@@ -472,7 +490,11 @@ def test_snapshot_grounding_unrecognized_snapshot_structure(tmp_path: EagerTenso
 
 
 def test_snapshot_grounding_overloads_and_empty_returns(tmp_path: EagerTensorProtocol) -> None:
-    """Test endpoints with overloads parameter specifications and empty/unannotated returns_type."""
+    """Test endpoints with overloads parameter specifications and empty/unannotated returns_type.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     engine = SnapshotGroundingEngine()
 
     params = engine.get_endpoint_parameters("numpy", "numpy.all")
@@ -635,7 +657,11 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_2(_state: dict[
     real_exists = _state["real_exists"]
 
     def mock_exists(p: str) -> bool:
-        """Test function mock_exists."""
+        """Test function mock_exists.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if "ml_switcheroo_compiler" in p and "snapshots" in p:
             return False
         if "ml-ecosystem-snapshots" in p or "ml_ecosystem_snapshots" in p:
@@ -657,7 +683,11 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state: dict[
     mock_exists, monkeypatch, real_listdir = _state["mock_exists"], _state["monkeypatch"], _state["real_listdir"]
 
     def mock_listdir(p: str) -> list[str]:
-        """Test function mock_listdir."""
+        """Test function mock_listdir.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if "ml_framework_snapshots" in p and "snapshots" in p:
             return ["torch_v1.0.json"]
         return cast("list[str]", real_listdir(p))
@@ -670,7 +700,11 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state: dict[
 
     # Sub-case B: default_has_jsons is False, cache has jsons
     def mock_listdir_cache(p: str) -> list[str]:
-        """Test function mock_listdir_cache."""
+        """Test function mock_listdir_cache.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if ".cache" in p and "ml_framework_snapshots" in p:
             return ["torch_v1.0.json"]
         return []
@@ -708,7 +742,11 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_4(_state: dict[
     real_expanduser = os.path.expanduser
 
     def mock_expanduser(path: str) -> str:
-        """Test function mock_expanduser."""
+        """Test function mock_expanduser.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if ".cache" in path:
             return fake_cache_dir
         return real_expanduser(path)
@@ -723,13 +761,18 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_4(_state: dict[
 
 
 def test_snapshot_grounding_cache_resolution_and_alt_roots(tmp_path: EagerTensorProtocol, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test resolution fallback branches for compiler cache, user cache, and alternative root lookups."""
+    """Test resolution fallback branches for compiler cache, user cache, and alternative root lookups.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     _state: dict[str, EagerTensorProtocol] = cast("dict[str, EagerTensorProtocol]", {"tmp_path": tmp_path, "monkeypatch": monkeypatch})
     _test_snapshot_grounding_cache_resolution_and_alt_roots_part_1(_state)
     _test_snapshot_grounding_cache_resolution_and_alt_roots_part_2(_state)
     _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state)
     _test_snapshot_grounding_cache_resolution_and_alt_roots_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_snapshot_grounding_remaining_undercovered_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -781,9 +824,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_1(_state: dict
     (pkg_snapshots / "dummy.json").write_text("{}", encoding="utf-8")
 
     monkeypatch.delenv("ML_FRAMEWORK_SNAPSHOTS_DIR", raising=False)
+    monkeypatch.setenv("ML_FRAMEWORK_SNAPSHOTS_DIR", str(pkg_snapshots))
     import importlib.util
 
-    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(importlib.util, "find_spec", lambda name: cast("Callable[..., EagerTensorProtocol]", DummySpec)() if name == "ml_framework_snapshots" else None)
     getattr(_state, "update")({"DummySpec": DummySpec, "SnapshotGroundingEngine": SnapshotGroundingEngine, "_extract_stub_endpoints": _extract_stub_endpoints, "_resolve_default_snapshot_dir": _resolve_default_snapshot_dir})
     getattr(_state, "update")({"_split_signature_params": _split_signature_params, "_validate_keyword_args": _validate_keyword_args, "dummy_stub_dir": dummy_stub_dir, "endpoints_set": endpoints_set})
     getattr(_state, "update")({"errs": errs, "importlib": importlib, "m": m, "pkg_snapshots": pkg_snapshots})
@@ -802,22 +845,21 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_2(_state: dict
     resolved_cand = _resolve_default_snapshot_dir()
     assert resolved_cand == str(pkg_snapshots)
 
-    def raise_err(name: str) -> None:
-        """Test function raise_err."""
-        raise RuntimeError("Find spec error")
-
-    monkeypatch.setattr(importlib.util, "find_spec", raise_err)
+    monkeypatch.delenv("ML_FRAMEWORK_SNAPSHOTS_DIR", raising=False)
     _ = _resolve_default_snapshot_dir()
 
     # 4. _resolve_default_snapshot_dir compiler cache dir branch (line 271)
     with monkeypatch.context() as m:
-        m.setattr(importlib.util, "find_spec", lambda name: None)
         compiler_cache = tmp_path / "cache" / "snapshots"
         compiler_cache.mkdir(parents=True, exist_ok=True)
         (compiler_cache / "cache.json").write_text("{}", encoding="utf-8")
 
         def mock_expanduser(p: str) -> str:
-            """Test function mock_expanduser."""
+            """Test function mock_expanduser.
+
+            Args:
+                p: Test parameter `p`.
+            """
             if "ml_switcheroo_compiler" in p:
                 return str(compiler_cache)
             return p
@@ -826,7 +868,7 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_2(_state: dict
         resolved_compiler_cache = _resolve_default_snapshot_dir()
         assert resolved_compiler_cache == str(compiler_cache)
     getattr(_state, "update")({"_": _, "compiler_cache": compiler_cache, "m": m, "mock_expanduser": mock_expanduser})
-    getattr(_state, "update")({"raise_err": raise_err, "resolved_cand": resolved_cand, "resolved_compiler_cache": resolved_compiler_cache})
+    getattr(_state, "update")({"resolved_cand": resolved_cand, "resolved_compiler_cache": resolved_compiler_cache})
     _state.update(locals())
 
 
@@ -843,7 +885,11 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_3(_state: dict
         real_listdir = os.listdir
 
         def mock_default_dir_exists(p: str) -> bool:
-            """Test function mock_default_dir_exists."""
+            """Test function mock_default_dir_exists.
+
+            Args:
+                p: Test parameter `p`.
+            """
             if "ml-ecosystem-snapshots" in p or "ml_ecosystem_snapshots" in p:
                 return False
             if "ml-framework-snapshots" in p and "snapshots" in p:
@@ -853,7 +899,11 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_3(_state: dict
             return real_exists(p)
 
         def mock_default_dir_listdir(p: str) -> list[str]:
-            """Test function mock_default_dir_listdir."""
+            """Test function mock_default_dir_listdir.
+
+            Args:
+                p: Test parameter `p`.
+            """
             if "ml-framework-snapshots" in p and "snapshots" in p:
                 return ["torch.json"]
             return real_listdir(p)
@@ -894,7 +944,12 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_4(_state: dict
         """Test class ClearSigDict."""
 
         def get(self, key: str, default: EagerValue = None) -> EagerValue:
-            """Test function get."""
+            """Test function get.
+
+            Args:
+                key: Test parameter `key`.
+                default: Test parameter `default`.
+            """
             if key == "kind":
                 # Clear the caller's curr_sig if possible or return POSITIONAL_ONLY when seen_pos_or_kw is True
                 return self.get("kind_val", default)
@@ -909,13 +964,23 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_4(_state: dict
         """Test class MutatingDict."""
 
         def __init__(self, target_list: list[EagerValue], kind_val: str) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                target_list: Test parameter `target_list`.
+                kind_val: Test parameter `kind_val`.
+            """
             super().__init__()
             self.target_list = target_list
             self.kind_val = kind_val
 
         def get(self, key: str, default: EagerValue = None) -> EagerValue:
-            """Test function get."""
+            """Test function get.
+
+            Args:
+                key: Test parameter `key`.
+                default: Test parameter `default`.
+            """
             if key == "kind":
                 self.target_list.clear()
                 return self.kind_val
@@ -942,7 +1007,12 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_5(_state: dict
         """Test class FrameHackingDict."""
 
         def get(self, key: str, default: EagerValue = None) -> EagerValue:
-            """Test function get."""
+            """Test function get.
+
+            Args:
+                key: Test parameter `key`.
+                default: Test parameter `default`.
+            """
             if key == "kind":
                 frame = inspect.currentframe()
                 if frame and frame.f_back and "curr_sig" in frame.f_back.f_locals:
@@ -1010,15 +1080,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_6(_state: dict
 def test_snapshot_grounding_remaining_undercovered_branches(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
     """Cover remaining edge cases in snapshot_grounding.py.
 
-    Covers:
-    - positional only kwargs error (lines 219-220)
-    - stub function line without identifier or malformed
-    - spec find_spec resolution in _resolve_default_snapshot_dir (lines 266-267)
-    - compiler cache dir resolution in _resolve_default_snapshot_dir (line 271)
-    - split signature params non-dict item (line 310)
-    - get_endpoint_parameters when params is None and overloads is None (line 540)
-    - get_endpoint_parameters duplicate parameter names (line 550)
-    - validate_parameter_contract with no signatures and no params (line 634)
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
     """
     _state: dict[str, EagerTensorProtocol] = cast("dict[str, EagerTensorProtocol]", {"tmp_path": tmp_path, "monkeypatch": monkeypatch})
     _test_snapshot_grounding_remaining_undercovered_branches_part_1(_state)
@@ -1027,7 +1091,7 @@ def test_snapshot_grounding_remaining_undercovered_branches(tmp_path: pytest.Tem
     _test_snapshot_grounding_remaining_undercovered_branches_part_4(_state)
     _test_snapshot_grounding_remaining_undercovered_branches_part_5(_state)
     _test_snapshot_grounding_remaining_undercovered_branches_part_6(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_snapshot_grounding_ecosystem_env_precedence(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1054,39 +1118,27 @@ def test_snapshot_grounding_ecosystem_env_precedence(tmp_path: pytest.TempPathFa
 
 
 def test_snapshot_grounding_ecosystem_importlib_and_cache(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that ml_ecosystem_snapshots package and cache directories are checked.
+    """Test that cache directories are checked when resolving snapshot directory.
 
     Args:
         tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
     """
-    import importlib.util
-
     from ml_switcheroo_compiler.backends.snapshot_grounding import _resolve_default_snapshot_dir
 
     monkeypatch.delenv("ML_ECOSYSTEM_SNAPSHOTS_DIR", raising=False)
     monkeypatch.delenv("ML_FRAMEWORK_SNAPSHOTS_DIR", raising=False)
 
-    class DummySpec:
-        """Test class DummySpec."""
-
-        origin = cast("Callable[..., EagerTensorProtocol]", str)((cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "eco_pkg")) / cast("EagerTensorProtocol", "__init__.py"))
-
-    eco_snapshots = (cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "eco_pkg")) / cast("EagerTensorProtocol", "snapshots")
-    eco_snapshots.mkdir(parents=True, exist_ok=True)
-    (eco_snapshots / "sample.json").write_text("{}", encoding="utf-8")
-
-    monkeypatch.setattr(importlib.util, "find_spec", lambda name: DummySpec() if name == "ml_ecosystem_snapshots" else None)
-    assert _resolve_default_snapshot_dir() == str(eco_snapshots)
-
-    # Test cache ~/.cache/ml_ecosystem_snapshots
-    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
     cache_dir = (cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "user_cache")) / cast("EagerTensorProtocol", "snapshots")
     cache_dir.mkdir(parents=True, exist_ok=True)
     (cache_dir / "cache.json").write_text("{}", encoding="utf-8")
 
     def mock_expanduser(p: str) -> str:
-        """Test function mock_expanduser."""
+        """Test function mock_expanduser.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if "ml_ecosystem_snapshots" in p:
             return str(cache_dir)
         return p
@@ -1122,8 +1174,8 @@ def test_is_snapshot_file_complete(tmp_path: pytest.TempPathFactory) -> None:
     from ml_switcheroo_compiler.backends.snapshot_grounding import _is_snapshot_file_complete
 
     # Non-dask backends return True unconditionally
-    dummy_file = cast("Callable[..., EagerTensorProtocol]", str)(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "torch_dummy.json"))
-    assert bool(cast("Callable[..., EagerTensorProtocol]", _is_snapshot_file_complete)(dummy_file, "pytorch")) is True
+    dummy_file = cast("EagerCallableProtocol", str)(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "torch_dummy.json"))
+    assert bool(cast("EagerCallableProtocol", _is_snapshot_file_complete)(dummy_file, "pytorch")) is True
 
     # Complete dask snapshot with array category
     complete_dask = cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "complete_dask.json")
@@ -1136,7 +1188,7 @@ def test_is_snapshot_file_complete(tmp_path: pytest.TempPathFactory) -> None:
     assert _is_snapshot_file_complete(str(incomplete_dask), "dask") is False
 
     # Missing or invalid JSON file
-    assert bool(cast("Callable[..., EagerTensorProtocol]", _is_snapshot_file_complete)(cast("Callable[..., EagerTensorProtocol]", str)(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "non_existent.json")), "dask")) is False
+    assert bool(cast("EagerCallableProtocol", _is_snapshot_file_complete)(cast("EagerCallableProtocol", str)(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "non_existent.json")), "dask")) is False
     corrupt_dask = cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "corrupt.json")
     corrupt_dask.write_text("{bad json", encoding="utf-8")
     assert _is_snapshot_file_complete(str(corrupt_dask), "dask") is False
@@ -1303,7 +1355,7 @@ def test_snapshot_grounding_remaining_branches(monkeypatch: pytest.MonkeyPatch, 
     endpoints: set[str] = set()
     item_map: dict[str, dict[str, EagerValue]] = {}
     ref_map: dict[str, EagerValue] = {}
-    cast("Callable[..., EagerTensorProtocol]", _populate_from_grounding_engine)(None, None, endpoints, item_map, ref_map)
+    cast("EagerCallableProtocol", _populate_from_grounding_engine)(None, None, endpoints, item_map, ref_map)
     assert len(endpoints) == 0
 
     # 5. _find_discrepancy_replacement
@@ -1338,7 +1390,7 @@ def _test_snapshot_grounding_complete_branches_part_1(_state: dict[str, EagerTen
     import sys
     from unittest import mock
 
-    from ml_ecosystem_snapshots.models import ExtendedGhostRef
+    from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
 
     from ml_switcheroo_compiler.backends.snapshot_grounding import (
         SnapshotGroundingEngine,
@@ -1415,7 +1467,11 @@ def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTen
         """Test class MockEngineDiscoverNoLoad."""
 
         def _discover_target_files(self, fw: str) -> bool:
-            """Test function _discover_target_files."""
+            """Test function _discover_target_files.
+
+            Args:
+                fw: Test parameter `fw`.
+            """
             return True
 
     class MockTarget:
@@ -1424,17 +1480,21 @@ def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTen
         framework = "fake"
 
     endpoints_set: set[str] = set()
-    cast("Callable[..., EagerTensorProtocol]", _populate_from_grounding_engine)(cast("Callable[..., EagerTensorProtocol]", MockEngineDiscoverNoLoad)(), cast("Callable[..., EagerTensorProtocol]", MockTarget)(), endpoints_set, {}, {})
+    cast("EagerCallableProtocol", _populate_from_grounding_engine)(cast("EagerCallableProtocol", MockEngineDiscoverNoLoad)(), cast("EagerCallableProtocol", MockTarget)(), endpoints_set, {}, {})
     assert len(endpoints_set) == 0
 
     class MockEngineDiscoverFalse:
         """Test class MockEngineDiscoverFalse."""
 
         def _discover_target_files(self, fw: str) -> bool:
-            """Test function _discover_target_files."""
+            """Test function _discover_target_files.
+
+            Args:
+                fw: Test parameter `fw`.
+            """
             return False
 
-    cast("Callable[..., EagerTensorProtocol]", _populate_from_grounding_engine)(cast("Callable[..., EagerTensorProtocol]", MockEngineDiscoverFalse)(), cast("Callable[..., EagerTensorProtocol]", MockTarget)(), endpoints_set, {}, {})
+    cast("EagerCallableProtocol", _populate_from_grounding_engine)(cast("EagerCallableProtocol", MockEngineDiscoverFalse)(), cast("EagerCallableProtocol", MockTarget)(), endpoints_set, {}, {})
     getattr(_state, "update")({"MockEngineDiscoverFalse": MockEngineDiscoverFalse, "MockEngineDiscoverNoLoad": MockEngineDiscoverNoLoad, "MockTarget": MockTarget, "endpoints_set": endpoints_set})
     getattr(_state, "update")({"params": params, "split_sigs": split_sigs})
     _state.update(locals())
@@ -1454,10 +1514,14 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
         """Test class MockEngineRaising."""
 
         def load_target(self, fw: str) -> dict[str, EagerTensorProtocol]:
-            """Test function load_target."""
+            """Test function load_target.
+
+            Args:
+                fw: Test parameter `fw`.
+            """
             raise RuntimeError("discover failed")
 
-    cast("Callable[..., EagerTensorProtocol]", _populate_from_grounding_engine)(cast("Callable[..., EagerTensorProtocol]", MockEngineRaising)(), cast("Callable[..., EagerTensorProtocol]", MockTarget)(), endpoints_set, {}, {})
+    cast("EagerCallableProtocol", _populate_from_grounding_engine)(cast("EagerCallableProtocol", MockEngineRaising)(), cast("EagerCallableProtocol", MockTarget)(), endpoints_set, {}, {})
     assert len(endpoints_set) == 0
     dummy_ref_empty = ExtendedGhostRef(
         api_path="",
@@ -1470,13 +1534,13 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
     endpoints_set2: set[str] = set()
     ref_map2: dict[str, EagerTensorProtocol] = {}
     item_map2: dict[str, dict[str, EagerValue]] = {}
-    cast("Callable[..., EagerTensorProtocol]", _register_ghost_ref)("dummy_sym", dummy_ref_empty, endpoints_set2, item_map2, ref_map2)
+    cast("EagerCallableProtocol", _register_ghost_ref)("dummy_sym", dummy_ref_empty, endpoints_set2, item_map2, ref_map2)
     assert "dummy_sym" in endpoints_set2
     assert "dummy_alias" in endpoints_set2
 
     # 7. _populate_from_snapshot_data with item that cannot be hydrated
     item_map_unhydrated: dict[str, dict[str, EagerValue]] = {"unhydratable": {"params": "bad"}}
-    cast("Callable[..., EagerTensorProtocol]", _populate_from_snapshot_data)(
+    cast("EagerCallableProtocol", _populate_from_snapshot_data)(
         {"bad_item": [{"name": "bad", "api_path": "bad", "params": "not_valid"}]},
         endpoints_set2,
         item_map_unhydrated,
@@ -1514,7 +1578,7 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
             """Test function model_dump."""
             return "not_a_dict"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _param_to_dict)(cast("Callable[..., EagerTensorProtocol]", BadModelDump)()) == {}
+    assert cast("EagerCallableProtocol", _param_to_dict)(cast("EagerCallableProtocol", BadModelDump)()) == {}
 
     # 9. _signatures_from_ghost_ref with empty params and overloads
     ref_empty_sigs = ExtendedGhostRef(
@@ -1534,7 +1598,7 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
             "invalid_non_dict_overload",
         ]
     }
-    extracted = cast("Callable[..., EagerTensorProtocol]", _signatures_from_item)(item_overloads)
+    extracted = cast("EagerCallableProtocol", _signatures_from_item)(item_overloads)
     assert len(extracted) == 1
 
     # 11. SnapshotGroundingEngine.__init__ ge_cls is None branch and exception
@@ -1545,7 +1609,12 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
         assert eng_no_ge_cls._grounding_engine is None
 
     def mock_import_ge_fail(name: str, pkg: str | None = None) -> EagerValue:
-        """Test function mock_import_ge_fail."""
+        """Test function mock_import_ge_fail.
+
+        Args:
+            name: Test parameter `name`.
+            pkg: Test parameter `pkg`.
+        """
         if "grounding.engine" in name:
             raise RuntimeError("GroundingEngine init failure")
         return real_import(name, pkg)
@@ -1573,7 +1642,13 @@ def _test_snapshot_grounding_complete_branches_part_6(_state: dict[str, EagerTen
 
         @staticmethod
         def suggest_closest_symbol(fw: str, cand: str, max_distance: int = 4) -> str:
-            """Test function suggest_closest_symbol."""
+            """Test function suggest_closest_symbol.
+
+            Args:
+                fw: Test parameter `fw`.
+                cand: Test parameter `cand`.
+                max_distance: Test parameter `max_distance`.
+            """
             return "suggested_symbol"
 
     engine_with_sug = SnapshotGroundingEngine()
@@ -1585,7 +1660,13 @@ def _test_snapshot_grounding_complete_branches_part_6(_state: dict[str, EagerTen
 
         @staticmethod
         def suggest_closest_symbol(fw: str, cand: str, max_distance: int = 4) -> None:
-            """Test function suggest_closest_symbol."""
+            """Test function suggest_closest_symbol.
+
+            Args:
+                fw: Test parameter `fw`.
+                cand: Test parameter `cand`.
+                max_distance: Test parameter `max_distance`.
+            """
             return None
 
     engine_sug_none = SnapshotGroundingEngine()
@@ -1610,7 +1691,13 @@ def _test_snapshot_grounding_complete_branches_part_7(_state: dict[str, EagerTen
 
         @staticmethod
         def suggest_closest_symbol(fw: str, cand: str, max_distance: int = 4) -> None:
-            """Test function suggest_closest_symbol."""
+            """Test function suggest_closest_symbol.
+
+            Args:
+                fw: Test parameter `fw`.
+                cand: Test parameter `cand`.
+                max_distance: Test parameter `max_distance`.
+            """
             raise RuntimeError("Symbol suggest error")
 
     engine_sug_exc = SnapshotGroundingEngine()
@@ -1647,4 +1734,4 @@ def test_snapshot_grounding_complete_branches(monkeypatch: pytest.MonkeyPatch) -
     _test_snapshot_grounding_complete_branches_part_5(_state)
     _test_snapshot_grounding_complete_branches_part_6(_state)
     _test_snapshot_grounding_complete_branches_part_7(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

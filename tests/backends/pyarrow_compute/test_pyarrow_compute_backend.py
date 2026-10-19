@@ -17,9 +17,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _create_sample_graph(multi_output: bool = False, no_output: bool = False) -> IRGraph:
@@ -76,20 +74,20 @@ def test_pyarrow_compute_generator_and_aot() -> None:
     cfg = TensorConfig((2, 2), "float32", "cpu")
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
-    res = cast("Callable[..., EagerTensorProtocol]", runner)(t_in1, in2=cast("Callable[..., EagerTensorProtocol]", np.array)([[5.0, 6.0], [7.0, 8.0]]))
+    res = cast("EagerCallableProtocol", runner)(t_in1, in2=cast("EagerCallableProtocol", np.array)([[5.0, 6.0], [7.0, 8.0]]))
     assert res is not None
 
     # AOT multi-output
     g_multi = _create_sample_graph(multi_output=True)
     runner_multi = gen._compile_aot_impl(g_multi)
-    res_multi = cast("Callable[..., EagerTensorProtocol]", runner_multi)(t_in1, t_in2)
+    res_multi = cast("EagerCallableProtocol", runner_multi)(t_in1, t_in2)
     assert isinstance(res_multi, tuple)
     assert len(res_multi) == 2
 
     # AOT no outputs
     g_no_out = _create_sample_graph(no_output=True)
     runner_no_out = gen._compile_aot_impl(g_no_out)
-    res_no_out = cast("Callable[..., EagerTensorProtocol]", runner_no_out)(t_in1, t_in2)
+    res_no_out = cast("EagerCallableProtocol", runner_no_out)(t_in1, t_in2)
     assert isinstance(res_no_out, dict)
 
 
@@ -137,7 +135,7 @@ def test_pyarrow_compute_types() -> None:
             """
             return np.array(99.0)
 
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", pa_pkg.item)(cast("Callable[..., EagerTensorProtocol]", NoItemPaObj)()), 99.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", pa_pkg.item)(cast("EagerCallableProtocol", NoItemPaObj)()), 99.0)
 
     # item extraction when to_pylist returns empty list
     class EmptyPylistPaObj:
@@ -159,7 +157,7 @@ def test_pyarrow_compute_types() -> None:
             """
             return 55.0
 
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", pa_pkg.item)(cast("Callable[..., EagerTensorProtocol]", EmptyPylistPaObj)()), 55.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", pa_pkg.item)(cast("EagerCallableProtocol", EmptyPylistPaObj)()), 55.0)
 
     # Test array and asarray exception fallback branch to numpy
     class BadObjPa:
@@ -174,8 +172,8 @@ def test_pyarrow_compute_types() -> None:
             raise TypeError("cannot iterate")
 
     bad_inst = BadObjPa()
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", pa_pkg.array)(bad_inst), np.ndarray)
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", pa_pkg.asarray)(bad_inst), np.ndarray)
+    assert isinstance(cast("EagerCallableProtocol", pa_pkg.array)(bad_inst), np.ndarray)
+    assert isinstance(cast("EagerCallableProtocol", pa_pkg.asarray)(bad_inst), np.ndarray)
 
     # When pa_mod lacks 'array' attribute
     mock_pa_no_array = mock.MagicMock(spec=[])
@@ -406,4 +404,4 @@ def test_pyarrow_compute_chunked_and_tables() -> None:
     _test_pyarrow_compute_chunked_and_tables_part_1(_state)
     _test_pyarrow_compute_chunked_and_tables_part_2(_state)
     _test_pyarrow_compute_chunked_and_tables_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

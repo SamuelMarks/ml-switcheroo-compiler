@@ -11,9 +11,7 @@ import ml_switcheroo_compiler.backends.numpy.eager.math_binary as mb
 from ml_switcheroo_compiler.backends.numpy.eager.math_binary import _np_polygamma, _np_zeta
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_math_binary_coverage() -> None:
@@ -27,9 +25,9 @@ def test_math_binary_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("a", "b", "x", "y"):
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
             else:
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -59,17 +57,25 @@ def test_missing_math_binary() -> None:
         """Test class DummyBk."""
 
         def zeros_like(self, x: EagerValue) -> EagerValue:
-            """Test function zeros_like."""
+            """Test function zeros_like.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.zeros_like(x)
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.asarray(x)
 
     res = mb._np_polygamma(DummyBk(), np.array([1.0]), np.array([2.0]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_almost_equal)(res, cast("Callable[..., EagerTensorProtocol]", np.array)([0.64493407]))
+    cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(res, cast("EagerCallableProtocol", np.array)([0.64493407]))
     res2 = mb._np_zeta(DummyBk(), np.array([1.0]), np.array([2.0]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_almost_equal)(res2, cast("Callable[..., EagerTensorProtocol]", np.array)([cast("Callable[..., EagerTensorProtocol]", float)("inf")]))
+    cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(res2, cast("EagerCallableProtocol", np.array)([cast("EagerCallableProtocol", float)("inf")]))
     mb._np_zeta(DummyBk(), np.array([1.0]))
     mb._np_zeta(DummyBk(), np.array([1.0]), q=np.array([1.0]))
 

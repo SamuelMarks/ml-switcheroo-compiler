@@ -8,9 +8,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 numpy_eager_registry = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager"), "numpy_eager_registry"))
 
@@ -25,20 +23,20 @@ def test_numpy_distributed_simulators() -> None:
     tensor = np.array([1, 2, 3])
 
     # AllGather
-    gathered = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
+    gathered = cast("EagerCallableProtocol", numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
     assert cast("EagerTensorProtocol", getattr(gathered, "shape")) == (1, 3)
 
     # AllReduce
-    reduced = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("AllReduce")(np_mod, tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(reduced, tensor)
+    reduced = cast("EagerCallableProtocol", numpy_eager_registry.get)("AllReduce")(np_mod, tensor)
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(reduced, tensor)
 
     # ReduceScatter
-    scattered = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("ReduceScatter")(np_mod, tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(scattered, tensor)
+    scattered = cast("EagerCallableProtocol", numpy_eager_registry.get)("ReduceScatter")(np_mod, tensor)
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(scattered, tensor)
 
     # AllToAll
-    all_to_all = cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("AllToAll")(np_mod, tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(all_to_all, tensor)
+    all_to_all = cast("EagerCallableProtocol", numpy_eager_registry.get)("AllToAll")(np_mod, tensor)
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(all_to_all, tensor)
 
 
 def test_numpy_distributed_all_reduce_ring_branches() -> None:
@@ -61,16 +59,25 @@ def test_numpy_distributed_all_reduce_ring_branches() -> None:
             """Test class DummyBackend."""
 
             def array_split(self, x: EagerValue, sz: EagerValue) -> EagerValue:
-                """Test function array_split."""
+                """Test function array_split.
+
+                Args:
+                    x: Test parameter `x`.
+                    sz: Test parameter `sz`.
+                """
                 return [np.array([1]), np.array([2])]
 
             def concatenate(self, x: EagerValue) -> EagerValue:
-                """Test function concatenate."""
+                """Test function concatenate.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return np.array([1, 2])
 
-        cast("Callable[..., EagerTensorProtocol]", ctx.all_reduce_ring)(cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2, 3]), op_type="dummy", backend_module=cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
+        cast("EagerCallableProtocol", ctx.all_reduce_ring)(cast("EagerCallableProtocol", np.array)([1, 2, 3]), op_type="dummy", backend_module=cast("EagerCallableProtocol", DummyBackend)())
         ctx.all_gather_tensors(np.array([1, 2, 3]))
-    assert ctx is not None or ctx is None
+    assert ctx.world_size == 2
 
 
 def test_numpy_distributed_init_connection_refused() -> None:
@@ -88,7 +95,7 @@ def test_numpy_distributed_init_connection_refused() -> None:
             with patch("threading.Thread"):
                 with patch("time.sleep"):
                     ctx.initialize()
-    assert ctx is not None or ctx is None
+    assert ctx.rank == 0
 
 
 def test_numpy_distributed_next_rank_same() -> None:
@@ -119,4 +126,4 @@ def test_numpy_distributed_next_rank_same() -> None:
             ctx.topology = "tree"
             ctx.rank = 0
             ctx.initialize()
-    assert ctx is not None or ctx is None
+    assert ctx.topology == "tree"

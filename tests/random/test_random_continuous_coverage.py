@@ -147,4 +147,4 @@ def test_random_continuous_and_transformations() -> None:
     _test_random_continuous_and_transformations_part_1(_state)
     _test_random_continuous_and_transformations_part_2(_state)
     _test_random_continuous_and_transformations_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

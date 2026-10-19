@@ -1,11 +1,11 @@
-"""Core utilities."""
+"""Implementation of math bitwise operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_bitwise`)."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -47,7 +47,7 @@ def _np_packbits(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     func = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.packbits(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).packbits(*args, **kwargs))
 
 
 @global_eager_registry.register("Unpackbits")
@@ -65,4 +65,4 @@ def _np_unpackbits(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     func = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.unpackbits(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).unpackbits(*args, **kwargs))

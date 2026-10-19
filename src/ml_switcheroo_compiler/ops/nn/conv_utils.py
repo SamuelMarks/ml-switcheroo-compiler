@@ -7,13 +7,12 @@ import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import (
-    Callable,
     Optional,
     Union,  # noqa: F401
     cast,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # Base logic implementation
@@ -123,7 +122,7 @@ def _build_conv_config(
         rhs_dilation = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
     return cast(
         ConvConfig,
-        cast("Callable[..., EagerTensorProtocol]", ConvConfig)(
+        cast("EagerCallableProtocol", ConvConfig)(
             window_strides=cast("Sequence[int]", strides),
             padding=kwargs.get("padding", "VALID"),
             lhs_dilation=cast("Optional[Sequence[int]]", lhs_dilation),
@@ -169,7 +168,7 @@ def _prepare_depthwise_conv(
 
         config_obj = cast(
             TensorOrScalar,
-            cast("Callable[..., EagerTensorProtocol]", ConvConfig)(
+            cast("EagerCallableProtocol", ConvConfig)(
                 window_strides=cast("Sequence[int]", strides),
                 padding=kwargs.get("padding", "VALID"),
                 lhs_dilation=cast("Optional[Sequence[int]]", lhs_dilation),

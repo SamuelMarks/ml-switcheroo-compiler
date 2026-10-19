@@ -15,14 +15,16 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 @pytest.mark.parametrize("backend_name", ["numpy", "mlx", "jax"])
 def test_einsum_ellipsis(backend_name: EagerTensorProtocol) -> None:
-    """Test function test_einsum_ellipsis."""
+    """Test function test_einsum_ellipsis.
+
+    Args:
+        backend_name: Test parameter `backend_name`.
+    """
     try:
         with ConfigContext(backend=backend_name):
             backend = get_active_backend()
@@ -43,4 +45,4 @@ def test_einsum_ellipsis(backend_name: EagerTensorProtocol) -> None:
         t_b_b = Tensor(get_active_backend().asarray(b_np), TensorConfig(b_np.shape, DType.Float32, Device("cpu")))
         out_b = ops.einsum("...ab,...bc->...ac", t_a_b, t_b_b)
 
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(out_ref), cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(out_b), rtol=1e-5, atol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", get_active_backend)().asarray(out_ref), cast("EagerCallableProtocol", get_active_backend)().asarray(out_b), rtol=1e-5, atol=1e-5)

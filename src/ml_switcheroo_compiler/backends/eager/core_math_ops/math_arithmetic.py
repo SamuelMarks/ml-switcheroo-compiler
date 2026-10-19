@@ -1,4 +1,4 @@
-"""Core utilities."""
+"""Implementation of math arithmetic operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_arithmetic`)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from types import ModuleType
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -61,7 +61,7 @@ def _accumulate_n(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """
     inputs = cast(Sequence[EagerValue], args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
-        return cast(EagerValue, host_backend.zeros(()))
+        return cast(EagerValue, _resolve_eager_mod(backend_module).zeros(()))
     res = cast(EagerTensorProtocol, inputs[0])
     for i in range(1, len(inputs)):
         res = res + cast(EagerTensorProtocol, inputs[i])
@@ -114,7 +114,7 @@ def _add_n(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     """
     inputs = cast(Sequence[EagerValue], args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
-        return cast(EagerValue, host_backend.zeros(()))
+        return cast(EagerValue, _resolve_eager_mod(backend_module).zeros(()))
     res = cast(EagerTensorProtocol, inputs[0])
     for i in range(1, len(inputs)):
         res = res + cast(EagerTensorProtocol, inputs[i])
@@ -186,7 +186,7 @@ def _np_stringsubstr(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     func = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.asarray(args[0], dtype=str))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).asarray(args[0], dtype=str))
 
 
 @global_eager_registry.register("TensorScatterSub")
@@ -222,7 +222,8 @@ def _np_truncatediv(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     func = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.trunc(host_backend.divide(args[0], args[1])))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.trunc(mod.divide(args[0], args[1])))
 
 
 @global_eager_registry.register("TruncateMod")
@@ -240,7 +241,7 @@ def _np_truncatemod(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     func = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.mod(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).mod(args[0], args[1]))
 
 
 @global_eager_registry.register("Xdivy")
@@ -258,4 +259,5 @@ def _np_xdivy(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     func = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.where(args[0] == 0, 0, host_backend.divide(args[0], args[1])))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.where(args[0] == 0, 0, mod.divide(args[0], args[1])))

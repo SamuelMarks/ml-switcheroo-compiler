@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_mlx_eager_distributed_ops() -> None:
@@ -31,11 +29,10 @@ def test_mlx_eager_distributed_ops() -> None:
         t = mock_mx.array([1.0, 2.0, 3.0])
 
         # Should safely fallback or execute
-        _mlx_all_reduce(mock_mx, t)
-        _mlx_all_gather(mock_mx, t)
-        _mlx_all_to_all(mock_mx, t)
-        _mlx_reduce_scatter(mock_mx, t)
-    assert mock_array is not None or mock_array is None
+        assert _mlx_all_reduce(mock_mx, t) is not None
+        assert _mlx_all_gather(mock_mx, t) is not None
+        assert _mlx_all_to_all(mock_mx, t) is not None
+        assert _mlx_reduce_scatter(mock_mx, t) is not None
 
 
 def test_mlx_generator_distributed_ops() -> None:
@@ -44,14 +41,14 @@ def test_mlx_generator_distributed_ops() -> None:
 
     mixin = MLXOpRegistryMixin()
 
-    ar = cast("Callable[..., EagerTensorProtocol]", mixin.visit_AllReduce)(None, ["tensor"])
+    ar = cast("EagerCallableProtocol", mixin.visit_AllReduce)(None, ["tensor"])
     assert "mx.distributed.all_sum(tensor)" in ar
 
-    ag = cast("Callable[..., EagerTensorProtocol]", mixin.visit_AllGather)(None, ["tensor"])
+    ag = cast("EagerCallableProtocol", mixin.visit_AllGather)(None, ["tensor"])
     assert "mx.distributed.all_gather(tensor)" in ag
 
-    a2a = cast("Callable[..., EagerTensorProtocol]", mixin.visit_AllToAll)(None, ["tensor"])
+    a2a = cast("EagerCallableProtocol", mixin.visit_AllToAll)(None, ["tensor"])
     assert "mx.distributed.all_to_all(tensor)" in a2a
 
-    rs = cast("Callable[..., EagerTensorProtocol]", mixin.visit_ReduceScatter)(None, ["tensor"])
+    rs = cast("EagerCallableProtocol", mixin.visit_ReduceScatter)(None, ["tensor"])
     assert "mx.distributed.recv(tensor)" in rs

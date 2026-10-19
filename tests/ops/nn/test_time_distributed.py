@@ -58,7 +58,11 @@ def test_time_distributed_shape_inference() -> None:
 
 
 def test_time_distributed_dispatch_eager(mocker: pytest.MonkeyPatch) -> None:
-    """Verify eager dispatch calling TimeDistributed op in eager and graph mode."""
+    """Verify eager dispatch calling TimeDistributed op in eager and graph mode.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     import numpy as np
 
     data = np.zeros((2, 3, 4), dtype=np.float32)

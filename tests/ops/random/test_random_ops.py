@@ -59,9 +59,7 @@ from ml_switcheroo_compiler.ops.random_ops.frontend import sobol_sample
 from ml_switcheroo_compiler.ops.random_ops.sobol import SobolSample, generate_sobol
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_random_ops_coverage() -> None:
@@ -139,8 +137,8 @@ def test_random_ops_coverage() -> None:
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value="dispatched_rademacher"):
         assert rademacher(5) == "dispatched_rademacher"
 
-    assert cast("Callable[..., EagerTensorProtocol]", RngBitGenerator)().infer_shape(1, (1, 2), "float32") == (1, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", RngUniform)().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
+    assert cast("EagerCallableProtocol", RngBitGenerator)().infer_shape(1, (1, 2), "float32") == (1, 2)
+    assert cast("EagerCallableProtocol", RngUniform)().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
     assert SobolSample().infer_shape(2, 10, skip=0) == (10, 2)
 
     assert generate_sobol(2, 10, 0).shape == (10, 2)
@@ -161,7 +159,11 @@ def test_random_ops_coverage() -> None:
             nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())

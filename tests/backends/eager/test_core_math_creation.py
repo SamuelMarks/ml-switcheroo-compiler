@@ -19,9 +19,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_creation import (
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_math_creation_coverage() -> None:
@@ -35,31 +33,66 @@ def test_math_creation_coverage() -> None:
         """Mock backend providing creation functions."""
 
         def fromfunction(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock fromfunction."""
+            """Mock fromfunction.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "fromfunction_res"
 
         def from_dlpack(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock from_dlpack."""
+            """Mock from_dlpack.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "from_dlpack_res"
 
         def fromiter(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock fromiter."""
+            """Mock fromiter.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "fromiter_res"
 
         def frompyfunc(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock frompyfunc."""
+            """Mock frompyfunc.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "frompyfunc_res"
 
         def geomspace(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock geomspace."""
+            """Mock geomspace.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "geomspace_res"
 
         def mgrid(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock mgrid."""
+            """Mock mgrid.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "mgrid_res"
 
         def ogrid(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock ogrid."""
+            """Mock ogrid.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "ogrid_res"
 
     backend = MockBackend()
@@ -88,10 +121,10 @@ def test_math_creation_coverage() -> None:
     assert cast("EagerTensorProtocol", getattr(fn_res, "shape")) == (2, 2)
 
     it_res = _np_fromiter(empty_backend, (x * 2 for x in range(3)), dtype=int)
-    assert cast("Callable[..., EagerTensorProtocol]", list)(it_res) == [0, 2, 4]
+    assert cast("EagerCallableProtocol", list)(it_res) == [0, 2, 4]
 
     pyf = _np_frompyfunc(empty_backend, lambda x: x * 3, 1, 1)
-    assert cast("Callable[..., EagerTensorProtocol]", pyf)(5) == 15
+    assert cast("EagerCallableProtocol", pyf)(5) == 15
 
     # Registry verification
     for op_name in [

@@ -10,9 +10,7 @@ from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import get_frontend, get_op, get_util, register_frontend, register_op, register_util
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_registry_register_op() -> None:
@@ -66,7 +64,7 @@ def test_registry_util() -> None:
 def test_registry_frontend() -> None:
     """Test function test_registry_frontend."""
 
-    @cast("Callable[..., EagerTensorProtocol]", register_frontend)("my_frontend")
+    @cast("EagerCallableProtocol", register_frontend)("my_frontend")
     def my_frontend_fn() -> EagerValue:
         """Test function my_frontend_fn."""
         return 42
@@ -95,16 +93,16 @@ def test_registry_files_load() -> None:
     op = get_op("Conv2D")
     assert cast("EagerTensorProtocol", getattr(op, "get_yaml_data"))() is not None
     assert backend_mapping_registry.get_generator_mapping("numpy", "NonExistentOp") is None
-    assert backend_mapping_registry.get_generator_mapping("numpy", "Add") is None or backend_mapping_registry.get_generator_mapping("numpy", "Add") is not None
+    assert backend_mapping_registry.get_generator_mapping("numpy", "Add") is not None
     assert get_backend_mapping("NonExistentOp") == {}
     assert get_backend_mapping("Add") != {}
 
     shim1 = _RegistryShim(_YAML_REGISTRY)
     assert shim1.get_generator_mapping("numpy", "NonExistentOp") is None
-    assert shim1.get_generator_mapping("numpy", "Add") is None or shim1.get_generator_mapping("numpy", "Add") is not None
+    assert shim1.get_generator_mapping("numpy", "Add") is not None
 
     assert backend_mapping_registry.get_eager_mapping("numpy", "NonExistentOp") is None
-    assert backend_mapping_registry.get_eager_mapping("numpy", "Add") is None or backend_mapping_registry.get_eager_mapping("numpy", "Add") is not None
+    assert backend_mapping_registry.get_eager_mapping("numpy", "Add") is not None
 
     assert backend_mapping_registry.get_op("NonExistentOp") is None
     assert backend_mapping_registry.get_op("Add") is not None

@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_strategy_resolvers() -> None:
@@ -171,7 +169,7 @@ def _test_strategy_more_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
     explicit_dt_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "distributed", "distributed_topologies.yaml")
     if os.path.exists(explicit_dt_path):
-        dt_cfg2 = cast("Callable[..., EagerTensorProtocol]", load_distributed_topologies)(path=explicit_dt_path)
+        dt_cfg2 = cast("EagerCallableProtocol", load_distributed_topologies)(path=explicit_dt_path)
         assert "mesh_dp_tp" in dt_cfg2.cluster_meshes
 
     # PerWorkerValue
@@ -229,7 +227,7 @@ def _test_strategy_more_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     setattr(strategy, "config", MagicMock())
     strategy.config.schedule = None
 
-    cast("Callable[..., EagerTensorProtocol]", strategy.generate_microbatch_loop)(g)
+    cast("EagerCallableProtocol", strategy.generate_microbatch_loop)(g)
     assert "microbatch_loop" in g.nodes
     getattr(_state, "update")({"IRGraph": IRGraph, "IRNode": IRNode, "PipelineParallelismStrategy": PipelineParallelismStrategy, "g": g})
     getattr(_state, "update")({"n": n, "n_in": n_in, "n_out": n_out, "patch": patch})
@@ -276,4 +274,4 @@ def test_strategy_more_coverage() -> None:
     _test_strategy_more_coverage_part_3(_state)
     _test_strategy_more_coverage_part_4(_state)
     _test_strategy_more_coverage_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_wasm_missing_methods_extra() -> None:
@@ -66,7 +64,7 @@ def test_wasm_line_coverage_extra() -> None:
     n_cond_unmapped = IRNode(id="n_cond", op_type="Cond", inputs=["dummy"], shape_metadata=[])
     n_cond_unmapped.attributes["then_branch"] = IRGraph()
     setattr(getattr(getattr(n_cond_unmapped, "attributes"), "__getitem__")("then_branch"), "inputs", ["not_in_parent"])
-    getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(n_cond_unmapped.attributes, "__getitem__")("then_branch")), "nodes")), "__setitem__")("sub", cast("Callable[..., EagerTensorProtocol]", IRNode)("sub", "Add", ["not_in_parent"]))
+    getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(n_cond_unmapped.attributes, "__getitem__")("then_branch")), "nodes")), "__setitem__")("sub", cast("EagerCallableProtocol", IRNode)("sub", "Add", ["not_in_parent"]))
 
     for n in [n_conv2d, n_dummy, n_dummy_none, n_avgpool, n_matmul_int, n_dummy_int, n_cond_unmapped]:
         g.nodes[n.id] = n

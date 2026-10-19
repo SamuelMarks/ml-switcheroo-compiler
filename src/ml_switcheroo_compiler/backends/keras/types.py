@@ -1,8 +1,8 @@
-"""Backend utilities."""
+"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.keras.types`)."""
 
-from typing import Callable, Optional, cast
+from typing import Optional, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 try:
     import keras.ops as kops
@@ -41,7 +41,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
     Returns:
         EagerValue: The array tensor.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(kops, data, dtype))
+    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(kops, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -56,8 +56,8 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     """
     del cls
     if hasattr(kops, "asarray"):
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(kops, data))
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(kops, data))
+        return cast(EagerValue, cast("EagerCallableProtocol", generic_asarray)(kops, data))
+    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(kops, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -70,4 +70,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(kops, data))
+    return cast(float, cast("EagerCallableProtocol", generic_item)(kops, data))

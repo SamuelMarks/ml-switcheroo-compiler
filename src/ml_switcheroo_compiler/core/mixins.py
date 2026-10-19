@@ -407,6 +407,24 @@ class TensorLogicalMixin:
         """
         return self._get_op("NotEqual")(cast("Tensor", self), other)
 
+    def __eq__(self, other: object) -> bool:
+        """Compare elementwise equality `self == other`.
 
-setattr(TensorLogicalMixin, "__eq__", TensorLogicalMixin._eq)
-setattr(TensorLogicalMixin, "__ne__", TensorLogicalMixin._ne)
+        Args:
+            other (TensorOrScalar): Right-hand operand.
+
+        Returns:
+            bool: A boolean tensor of equality results.
+        """
+        return cast(bool, self._eq(cast("TensorOrScalar", other)))
+
+    def __ne__(self, other: object) -> bool:
+        """Compare elementwise inequality `self != other`.
+
+        Args:
+            other (TensorOrScalar): Right-hand operand.
+
+        Returns:
+            bool: A boolean tensor of inequality results.
+        """
+        return cast(bool, self._ne(cast("TensorOrScalar", other)))

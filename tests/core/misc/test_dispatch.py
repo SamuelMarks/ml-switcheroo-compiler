@@ -21,7 +21,12 @@ def test_dispatch() -> None:
         """Test class DummySub."""
 
         def func(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function func."""
+            """Test function func.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return "res"
 
     class DummyMod:

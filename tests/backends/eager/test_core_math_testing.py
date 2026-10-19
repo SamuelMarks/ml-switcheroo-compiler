@@ -17,9 +17,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import (
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -33,7 +31,13 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
         """Backend with allclose."""
 
         def allclose(self, a: EagerValue, b: EagerValue, **kwargs: EagerValue) -> bool:
-            """Mock allclose."""
+            """Mock allclose.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+                kwargs: Test parameter `kwargs`.
+            """
             return True
 
     acb = AllcloseBackend()
@@ -51,7 +55,11 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
         """Object with item() method."""
 
         def __init__(self, val: float) -> None:
-            """Initialize with value."""
+            """Initialize with value.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.val = val
 
         def item(self) -> float:
@@ -75,7 +83,11 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
         """Object with tolist() method."""
 
         def __init__(self, val: list[float]) -> None:
-            """Initialize with list."""
+            """Initialize with list.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.val = val
 
         def tolist(self) -> float:
@@ -86,17 +98,21 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
         """Object with data attribute."""
 
         def __init__(self, data: EagerValue) -> None:
-            """Initialize with data."""
+            """Initialize with data.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
     assert (
         bool(
-            cast("Callable[..., EagerTensorProtocol]", _allclose)(
+            cast("EagerCallableProtocol", _allclose)(
                 eb,
                 [1.0],
                 [1.0],
                 rtol=ItemObj(1e-4),
-                atol=cast("Callable[..., EagerTensorProtocol]", DataObj)(cast("Callable[..., EagerTensorProtocol]", ToListObj)([1e-6])),
+                atol=cast("EagerCallableProtocol", DataObj)(cast("EagerCallableProtocol", ToListObj)([1e-6])),
                 equal_nan=DataObj(False),
             )
         )
@@ -108,7 +124,12 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
         """Backend with allclose."""
 
         def allclose(self, a1: EagerValue, a2: EagerValue) -> str:
-            """Mock allclose."""
+            """Mock allclose.
+
+            Args:
+                a1: Test parameter `a1`.
+                a2: Test parameter `a2`.
+            """
             return "allclose_equiv"
 
     assert _array_equiv(ArrayEquivBackend(), [1], [1]) == "allclose_equiv"
@@ -157,11 +178,21 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
         """Backend with type inference methods."""
 
         def promote_types(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock promote_types."""
+            """Mock promote_types.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "promoted"
 
         def result_type(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock result_type."""
+            """Mock result_type.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "result_type"
 
     tb = TypeBackend()
@@ -193,4 +224,4 @@ def test_math_testing_coverage() -> None:
     _test_math_testing_coverage_part_2(_state)
     _test_math_testing_coverage_part_3(_state)
     _test_math_testing_coverage_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

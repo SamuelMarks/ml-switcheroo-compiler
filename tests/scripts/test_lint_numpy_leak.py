@@ -17,9 +17,7 @@ from scripts.lint_numpy_leak import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_check_for_numpy_leaks() -> None:
@@ -162,12 +160,18 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
     first_call = True
 
     def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function mock_import."""
+        """Test function mock_import.
+
+        Args:
+            name: Test parameter `name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         nonlocal first_call
         if "scripts.lint_dependencies" in name and first_call:
             first_call = False
             raise ImportError("Mocked initial import error")
-        return cast("Callable[..., EagerTensorProtocol]", orig_import)(name, *args, **kwargs)
+        return cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
 
     saved_mod = sys.modules.pop("scripts.lint_dependencies", None)
     try:
@@ -180,7 +184,11 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
 
 
 def test_main_block(capsys: CaptureFixture[str]) -> None:
-    """Test the __main__ execution block."""
+    """Test the __main__ execution block.
+
+    Args:
+        capsys: Test parameter `capsys`.
+    """
     import runpy
     import sys
 

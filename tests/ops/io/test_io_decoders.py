@@ -9,9 +9,7 @@ import pytest
 from ml_switcheroo_compiler.ops.io import TFRecordOptions, TFRecordWriter, decode_base64, encode_base64, gfile_copy, gfile_glob, gfile_makedirs, gfile_stat
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_gfile() -> None:
@@ -48,9 +46,9 @@ def test_base64_ops() -> None:
     config.eager_mode = False
     global_tracing_state.start_tracing()
     if True:
-        cast("Callable[..., EagerTensorProtocol]", encode_base64)(None)
+        cast("EagerCallableProtocol", encode_base64)(None)
     if True:
-        cast("Callable[..., EagerTensorProtocol]", decode_base64)(None)
+        cast("EagerCallableProtocol", decode_base64)(None)
     assert callable(global_tracing_state.start_tracing)
 
 
@@ -69,7 +67,7 @@ def test_tfrecord_writer() -> None:
     opts = TFRecordOptions("ZLIB")
     assert opts.compression_type == "ZLIB"
     with TFRecordWriter("path", opts) as writer:
-        cast("Callable[..., EagerTensorProtocol]", writer.write)(None)
+        cast("EagerCallableProtocol", writer.write)(None)
 
 
 def test_base64_ops_success() -> None:
@@ -77,12 +75,9 @@ def test_base64_ops_success() -> None:
     from unittest.mock import MagicMock, patch
 
     mock_backend = MagicMock()
-    mock_backend.execute_op.return_value = "b64"
     mock_backend.execute_op.return_value = "raw"
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend):
-        pass
-        pass
-    assert mock_backend is not None or mock_backend is None
+        assert mock_backend.execute_op() == "raw"
 
 
 def test_parse_sequence_example_success() -> None:
@@ -92,5 +87,4 @@ def test_parse_sequence_example_success() -> None:
     mock_backend = MagicMock()
     mock_backend.execute_op.return_value = ({}, {})
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend):
-        pass
-    assert mock_backend is not None or mock_backend is None
+        assert mock_backend.execute_op() == ({}, {})

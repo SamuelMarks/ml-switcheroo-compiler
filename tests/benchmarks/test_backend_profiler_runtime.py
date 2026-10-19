@@ -12,9 +12,7 @@ import pytest
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_numpy_profiler_runtime() -> None:
@@ -27,10 +25,10 @@ def test_numpy_profiler_runtime() -> None:
         assert getattr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
     assert getattr(res_empty, "__getitem__")("latency_ms") >= 0.0
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res_empty["latencies"]) == 1
+    assert cast("EagerCallableProtocol", len)(res_empty["latencies"]) == 1
     inp = {"a": [1.0, 2.0], "b": np.array([3.0, 4.0], dtype=np.float32)}
-    res_full = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(cast("Callable[..., EagerTensorProtocol]", IRGraph)(), inp, num_iters=2, warmup_iters=1)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res_full["latencies"]) == 2
+    res_full = cast("EagerCallableProtocol", profiler.profile_graph)(cast("EagerCallableProtocol", IRGraph)(), inp, num_iters=2, warmup_iters=1)
+    assert cast("EagerCallableProtocol", len)(res_full["latencies"]) == 2
 
 
 def test_jax_profiler_runtime() -> None:
@@ -53,7 +51,7 @@ def test_jax_profiler_runtime() -> None:
 
     arr = jnp.array([1.0, 2.0], dtype=jnp.float32)
     res_jax = profiler.profile_graph(IRGraph(), {"x": arr, "y": [3.0, 4.0]}, num_iters=2, warmup_iters=1)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res_jax["latencies"]) == 2
+    assert cast("EagerCallableProtocol", len)(res_jax["latencies"]) == 2
 
 
 def _test_pytorch_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -168,7 +166,7 @@ def test_pytorch_profiler_runtime() -> None:
     _test_pytorch_profiler_runtime_part_2(_state)
     _test_pytorch_profiler_runtime_part_3(_state)
     _test_pytorch_profiler_runtime_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_mlx_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -267,7 +265,7 @@ def _test_mlx_profiler_runtime_part_3(_state: dict[str, EagerTensorProtocol]) ->
     MockMlxArray.__name__ = "array"
     m_arr = MockMlxArray()
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", MagicMock()):
-        assert cast("Callable[..., EagerTensorProtocol]", _prepare_mlx_inputs)({"custom": m_arr}) == [m_arr]
+        assert cast("EagerCallableProtocol", _prepare_mlx_inputs)({"custom": m_arr}) == [m_arr]
     g_ops = IRGraph()
     g_ops.nodes["relu"] = LogicalNode("relu", "Relu", ["in1"])
     mock_mlx_ops = MagicMock()
@@ -321,7 +319,7 @@ def test_mlx_profiler_runtime() -> None:
     _test_mlx_profiler_runtime_part_3(_state)
     _test_mlx_profiler_runtime_part_4(_state)
     _test_mlx_profiler_runtime_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_cupy_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -339,7 +337,7 @@ def _test_cupy_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", None):
         res_none = profiler.profile_graph(IRGraph(), {"a": [1.0]}, num_iters=2)
         assert res_none["latency_ms"] == 0.0
-        assert cast("Callable[..., EagerTensorProtocol]", len)(res_none["latencies"]) == 2
+        assert cast("EagerCallableProtocol", len)(res_none["latencies"]) == 2
     mock_cp = MagicMock()
     dummy_arr = MagicMock()
     mock_cp.ndarray = type("DummyArray", (), {})
@@ -372,7 +370,7 @@ def _test_cupy_profiler_runtime_part_2(_state: dict[str, EagerTensorProtocol]) -
         from ml_switcheroo_compiler.ir.core import IRNode
 
         graph_with_ops = IRGraph()
-        getattr(graph_with_ops.nodes, "__setitem__")("relu1", cast("Callable[..., EagerTensorProtocol]", IRNode)("Relu", "relu1", ["arr"]))
+        getattr(graph_with_ops.nodes, "__setitem__")("relu1", cast("EagerCallableProtocol", IRNode)("Relu", "relu1", ["arr"]))
         with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"relu1": inst}) as mock_eval:
             res_ops = profiler.profile_graph(graph_with_ops, {"arr": inst}, num_iters=1, warmup_iters=1)
             assert mock_eval.called
@@ -514,7 +512,7 @@ def _test_cupy_profiler_runtime_part_6(_state: dict[str, EagerTensorProtocol]) -
     mod_cuda_zero = CustomMod()
     setattr(mod_cuda_zero, "cuda", CustomMod())
     setattr(mod_cuda_zero.cuda, "is_available", lambda: True)
-    setattr(mod_cuda_zero.cuda, "runtime", cast("Callable[..., EagerTensorProtocol]", CustomMod)())
+    setattr(mod_cuda_zero.cuda, "runtime", cast("EagerCallableProtocol", CustomMod)())
     setattr(getattr(mod_cuda_zero.cuda, "runtime"), "getDeviceCount", lambda: 0)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_zero):
         assert bool(_is_cupy_available()) is False
@@ -552,4 +550,4 @@ def test_cupy_profiler_runtime() -> None:
     _test_cupy_profiler_runtime_part_5(_state)
     _test_cupy_profiler_runtime_part_6(_state)
     _test_cupy_profiler_runtime_part_7(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

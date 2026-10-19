@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 device = Device(DeviceType.CPU, 0)
 
 
@@ -43,9 +41,9 @@ def test_scan_eager() -> None:
             y = carry + getattr(x, "data")
             return (y, Tensor(y, TensorConfig((), DType.Int32, device)))
 
-        (carry, ys) = cast("Callable[..., EagerTensorProtocol]", scan)(f, 0, xs)
+        (carry, ys) = cast("EagerCallableProtocol", scan)(f, 0, xs)
         assert carry == 6
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(ys.data, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 3, 6]))
+        assert cast("EagerCallableProtocol", np.array_equal)(ys.data, cast("EagerCallableProtocol", np.array)([1, 3, 6]))
 
 
 def test_scan_trace() -> None:
@@ -71,7 +69,7 @@ def test_scan_trace() -> None:
             return (carry, x)
 
         global_tracing_state.start_tracing()
-        (_carry, ys) = cast("Callable[..., EagerTensorProtocol]", scan)(f, init, xs)
+        (_carry, ys) = cast("EagerCallableProtocol", scan)(f, init, xs)
         assert ys.dtype == DType.Int32
         global_tracing_state.stop_tracing()
 
@@ -98,6 +96,6 @@ def test_scan_eager_ndarray() -> None:
             """
             return (carry, Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device)))
 
-        (carry_out, ys_out) = cast("Callable[..., EagerTensorProtocol]", scan)(f, 0, xs)
+        (carry_out, ys_out) = cast("EagerCallableProtocol", scan)(f, 0, xs)
         assert isinstance(ys_out, Tensor)
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(ys_out.data, cast("Callable[..., EagerTensorProtocol]", np.array)([[1, 2], [1, 2], [1, 2]]))
+        assert cast("EagerCallableProtocol", np.array_equal)(ys_out.data, cast("EagerCallableProtocol", np.array)([[1, 2], [1, 2], [1, 2]]))

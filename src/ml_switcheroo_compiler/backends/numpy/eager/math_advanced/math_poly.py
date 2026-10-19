@@ -8,7 +8,7 @@ from typing import Union, cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import (
     _get_np_arg,
     _get_sc,
@@ -48,7 +48,7 @@ def _poly_recurrence(
         t_list.append(p1_func(x_b))
 
     for i in range(2, max_n + 1):
-        getattr(t_list, "append")(cast("Callable[..., EagerTensorProtocol]", p_next_func)(i - 1, x_b, t_list[-1], t_list[-2]))
+        getattr(t_list, "append")(cast("EagerCallableProtocol", p_next_func)(i - 1, x_b, t_list[-1], t_list[-2]))
 
     t_stacked = np.stack(t_list)
     indices = np.indices(n_b.shape)

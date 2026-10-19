@@ -1,5 +1,5 @@
 # ruff: noqa: E402
-"""Core abstractions and logic definitions for generator.py."""
+"""Implementation of generator operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.mlx.generator`)."""
 
 from __future__ import annotations
 

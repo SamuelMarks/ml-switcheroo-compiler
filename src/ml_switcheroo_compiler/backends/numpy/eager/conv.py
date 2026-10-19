@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Callable, Union, cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
 
 if TYPE_CHECKING:
@@ -316,7 +316,12 @@ def _apply_conv_padding_helper(lhs_c: EagerValue, rhs_c: EagerValue, config: Con
     return padded
 
 
-def _preprocess_conv_tensors(lhs: EagerValue, rhs: EagerValue, config: ConvConfig, specs: ConvDimSpecs) -> EagerValue:
+def _preprocess_conv_tensors(
+    lhs: EagerValue,
+    rhs: EagerValue,
+    config: ConvConfig,
+    specs: ConvDimSpecs,
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Execute the eager preprocess conv tensors operation on the active backend array.
 
     Args:
@@ -326,7 +331,7 @@ def _preprocess_conv_tensors(lhs: EagerValue, rhs: EagerValue, config: ConvConfi
         specs (ConvDimSpecs): The specs parameter.
 
     Returns:
-        tuple: Result.
+        tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]: Result.
     """
     lhs_c: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "transpose")(lhs, specs.lhs_spec)
     rhs_c: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "transpose")(rhs, specs.rhs_spec)
@@ -399,8 +404,8 @@ def _conv_general_dilated(lhs: EagerValue, rhs: EagerValue, config: ConvConfig, 
     rhs_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(rhs)
     spatial_dims: int = lhs_arr.ndim - 2
     specs: ConvDimSpecs = _parse_conv_dimension_numbers(lhs_arr.ndim, rhs_arr.ndim, spatial_dims, config.dimension_numbers)
-    (lhs_pad, rhs_c) = getattr(getattr(_preprocess_conv_tensors(lhs_arr, rhs_arr, config, specs), "__iter__")(), "__iter__")()
-    out_shape: list[int] = _compute_out_shape(getattr(lhs_pad, "shape"), getattr(rhs_c, "shape"), spatial_dims, config.window_strides)
+    lhs_pad, rhs_c = _preprocess_conv_tensors(lhs_arr, rhs_arr, config, specs)
+    out_shape: list[int] = _compute_out_shape(lhs_pad.shape, rhs_c.shape, spatial_dims, config.window_strides)
     out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.zeros(out_shape, dtype=lhs_arr.dtype)
     _compute_conv_patches(lhs_pad, rhs_c, out, config)
     inv_out_spec: list[int] = _get_inv_out_spec(specs.out_spec)
@@ -425,7 +430,7 @@ def _np_conv_general_dilated(backend_module: ModuleType, *args: EagerValue, **kw
         lhs, rhs, window_strides, padding = args
         config: ConvConfig = cast("Callable[..., ConvConfig]", ConvConfig)(window_strides=cast("Sequence[int]", window_strides), padding=padding)
         return _conv_general_dilated(lhs, rhs, config, **kwargs)
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _conv_general_dilated)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", _conv_general_dilated)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Conv2D")
@@ -466,26 +471,28 @@ def _np_conv2d(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
     return _conv_general_dilated(lhs, rhs, config)
 
 
-def _calculate_conv_transpose_padding(spatial_in: EagerValue, spatial_k: EagerValue, strides: EagerValue, padding: str) -> EagerValue:
+def _calculate_conv_transpose_padding(
+    spatial_in: Sequence[int],
+    spatial_k: Sequence[int],
+    strides: Sequence[int],
+    padding: str,
+) -> tuple[list[int], list[tuple[int, int]]]:
     """Calculate output spatial shapes and paddings for transposed convolution.
 
     Args:
-        spatial_in (tuple): The spatial_in parameter.
-        spatial_k (tuple): The spatial_k parameter.
-        strides (tuple): The strides parameter.
-        padding (str): The padding parameter.
+        spatial_in (Sequence[int]): Input spatial dimensions.
+        spatial_k (Sequence[int]): Kernel spatial dimensions.
+        strides (Sequence[int]): Stride values along spatial dimensions.
+        padding (str): Padding mode ('VALID' or 'SAME').
 
     Returns:
-        tuple: Result.
+        tuple[list[int], list[tuple[int, int]]]: Output spatial dimensions and padding pairs.
     """
     out_spatial: list[int] = []
     pads: list[tuple[int, int]] = []
-    for s_in, k, st in zip(getattr(spatial_in, "__iter__")(), getattr(spatial_k, "__iter__")(), getattr(strides, "__iter__")()):
-        if padding == "VALID":
-            s_out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = (s_in - 1) * st + k
-        else:
-            s_out = s_in * st
-        getattr(out_spatial, "append")(s_out)
+    for s_in, k, st in zip(spatial_in, spatial_k, strides):
+        s_out: int = (s_in - 1) * st + k if padding == "VALID" else s_in * st
+        out_spatial.append(s_out)
         total_pad: int = s_out - s_in * st + st + k - 2
         pad_r: int = total_pad // 2
         pad_l: int = total_pad - pad_r
@@ -544,13 +551,12 @@ def _np_conv_transpose(backend_module: ModuleType, *args: EagerValue, **kwargs: 
     """
     lhs: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
     rhs: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[1])
-    strides: list[EagerValue] = cast(list[EagerValue], args[2] if len(args) > 2 else kwargs.get("strides", kwargs.get("stride", 1)))
+    raw_strides = args[2] if len(args) > 2 else kwargs.get("strides", kwargs.get("stride", 1))
     padding: str = cast(str, args[3] if len(args) > 3 else kwargs.get("padding", "VALID"))
     spatial_in: tuple[int, ...] = lhs.shape[2:]
     spatial_k: tuple[int, ...] = rhs.shape[2:]
-    if isinstance(strides, int):
-        strides = (strides,) * len(spatial_in)
-    out_spatial, pads = getattr(getattr(_calculate_conv_transpose_padding(spatial_in, spatial_k, strides, padding), "__iter__")(), "__iter__")()
+    strides: Sequence[int] = (raw_strides,) * len(spatial_in) if isinstance(raw_strides, int) else cast(Sequence[int], raw_strides)
+    out_spatial, pads = _calculate_conv_transpose_padding(spatial_in, spatial_k, strides, padding)
     slices, config_obj = cast("Callable[..., tuple[tuple[slice, ...], ConvConfig]]", _build_conv_transpose_config)(spatial_in, spatial_k, strides, pads)
     rhs_rev: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = rhs[slices]
     return _np_conv_general_dilated(backend_module, lhs, rhs_rev, config_obj)

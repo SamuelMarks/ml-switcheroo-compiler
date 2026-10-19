@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for utils.py."""
+"""Implementation of utils operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.utils`)."""
 
 from __future__ import annotations
 

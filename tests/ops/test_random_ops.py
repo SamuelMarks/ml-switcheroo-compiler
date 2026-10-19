@@ -10,9 +10,7 @@ from ml_switcheroo_compiler.ops.random_ops import binomial, categorical, choice,
 from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class DummyShape:
@@ -28,12 +26,12 @@ def test_random_ops_infer_shape() -> None:
         None.
     """
     t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
-    assert cast("Callable[..., EagerTensorProtocol]", categorical)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", dirichlet)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", binomial)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", truncated_normal)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", permutation)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", choice)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", categorical)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", dirichlet)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", binomial)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", truncated_normal)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", permutation)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", choice)().infer_shape(t) == (2, 2)
 
     assert Rademacher().infer_shape(DummyShape().shape) == (2, 2)
     assert Rademacher().infer_shape() == ()

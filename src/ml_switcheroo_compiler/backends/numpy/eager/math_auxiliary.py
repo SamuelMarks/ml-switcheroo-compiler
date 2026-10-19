@@ -1,9 +1,9 @@
 """Numpy extra math operations."""
 
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window
 from ml_switcheroo_compiler.core.dtype import DType
 
@@ -37,7 +37,7 @@ def _np_reduce_window(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _reduce_window)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", _reduce_window)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TestEagerOp")

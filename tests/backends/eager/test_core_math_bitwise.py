@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_bitwise import (
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_math_bitwise_coverage() -> None:
@@ -47,7 +45,12 @@ def test_math_bitwise_coverage() -> None:
         """Dummy backend with packbits."""
 
         def packbits(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock packbits."""
+            """Mock packbits.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "packed"
 
     assert _np_packbits(DummyPackbits(), [1, 0]) == "packed"
@@ -68,14 +71,19 @@ def test_math_bitwise_coverage() -> None:
         """Dummy backend with unpackbits."""
 
         def unpackbits(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock unpackbits."""
+            """Mock unpackbits.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "unpacked"
 
     assert _np_unpackbits(DummyUnpackbits(), [180]) == "unpacked"
 
     # Case B: backend lacks unpackbits (fallback to numpy.unpackbits)
     unpacked_res = _np_unpackbits(DummyNoPackbits(), np.array([180], dtype=np.uint8))
-    assert cast("Callable[..., EagerTensorProtocol]", len)(unpacked_res) == 8
+    assert cast("EagerCallableProtocol", len)(unpacked_res) == 8
 
     # Registry verification
     assert global_eager_registry.get("Signbit") is not None

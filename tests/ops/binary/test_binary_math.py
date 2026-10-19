@@ -8,9 +8,7 @@ from unittest.mock import patch
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_binary_math_extra_coverage() -> None:
@@ -23,7 +21,13 @@ def test_binary_math_extra_coverage() -> None:
         """Test class DummyBackend."""
 
         def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return op
 
     setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
@@ -55,11 +59,11 @@ def test_binary_math_shapes_again() -> None:
         shape_metadata = (1,)
 
     assert Diff().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Digitize)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyTensor)()) == (1,)
+    assert cast("EagerCallableProtocol", Digitize)().infer_shape(cast("EagerCallableProtocol", DummyTensor)()) == (1,)
     assert Digitize().infer_shape() == ()
     assert ArrayEquiv().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Betainc)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", DummyTensor)()) == (1,)
-    assert cast("Callable[..., EagerTensorProtocol]", Clip)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyTensor)()) == (1,)
+    assert cast("EagerCallableProtocol", Betainc)().infer_shape(cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", DummyTensor)()) == (1,)
+    assert cast("EagerCallableProtocol", Clip)().infer_shape(cast("EagerCallableProtocol", DummyTensor)()) == (1,)
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -77,7 +81,11 @@ def test_binary_math_shapes_again() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True
@@ -110,7 +118,11 @@ def test_binary_math_clip_emit() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True

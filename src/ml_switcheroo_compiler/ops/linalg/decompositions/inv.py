@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for inv.py."""
+"""Implementation of inv operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.inv`)."""
 
 from __future__ import annotations
 

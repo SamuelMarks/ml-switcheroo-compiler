@@ -38,7 +38,37 @@ def test_validate_n_to_m() -> None:
         with open(os.path.join(be2_dir, "mappings.yaml"), "w") as f:
             yaml.dump(be2_data, f)
 
-        with patch("glob.glob", return_value=[os.path.join(be1_dir, "mappings.yaml"), os.path.join(be2_dir, "mappings.yaml")]):
+        single_op_file = os.path.join(be2_dir, "op_single.yaml")
+        with open(single_op_file, "w") as f:
+            yaml.dump({"operation": "op_valid", "backend": "be2", "target_api": "something"}, f)
+
+        empty_single_op_file = os.path.join(be2_dir, "op_empty.yaml")
+        with open(empty_single_op_file, "w") as f:
+            yaml.dump({"operation": "op_empty", "backend": "be2"}, f)
+
+        non_dict_file = os.path.join(be2_dir, "non_dict.yaml")
+        with open(non_dict_file, "w") as f:
+            yaml.dump(["not", "a", "dict"], f)
+
+        non_dict_ops_file = os.path.join(be2_dir, "non_dict_ops.yaml")
+        with open(non_dict_ops_file, "w") as f:
+            yaml.dump({"backend_name": "be2", "operations": ["not_a_dict"]}, f)
+
+        with patch(
+            "glob.glob",
+            side_effect=[
+                [
+                    os.path.join(be1_dir, "mappings.yaml"),
+                    os.path.join(be2_dir, "mappings.yaml"),
+                    single_op_file,
+                    empty_single_op_file,
+                    non_dict_file,
+                    non_dict_ops_file,
+                ],
+                [],
+                [],
+            ],
+        ):
             errors = validate_n_to_m()
 
         assert len(errors) == 1
@@ -47,7 +77,11 @@ def test_validate_n_to_m() -> None:
 
 
 def test_main(capsys: EagerTensorProtocol) -> None:
-    """Test function test_main."""
+    """Test function test_main.
+
+    Args:
+        capsys: Test parameter `capsys`.
+    """
     with patch("scripts.validate_rules.validate_n_to_m", return_value=["err1", "err2"]):
         assert main() == 1
         captured = capsys.readouterr()
@@ -55,7 +89,11 @@ def test_main(capsys: EagerTensorProtocol) -> None:
 
 
 def test_main_block(capsys: EagerTensorProtocol) -> None:
-    """Test function test_main_block."""
+    """Test function test_main_block.
+
+    Args:
+        capsys: Test parameter `capsys`.
+    """
     with patch.object(sys, "argv", ["validate_rules.py"]):
         with patch("glob.glob", return_value=[]):
             try:

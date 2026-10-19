@@ -47,7 +47,11 @@ def test_layout_map() -> None:
 
 
 def test_layout_map_serialization_and_from_yaml(tmp_path: Path) -> None:
-    """Test LayoutMap to_dict, to_yaml, and from_yaml with raw text and file paths."""
+    """Test LayoutMap to_dict, to_yaml, and from_yaml with raw text and file paths.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     mesh_mock = MagicMock()
     mesh_mock.name = "mesh_2d"
 

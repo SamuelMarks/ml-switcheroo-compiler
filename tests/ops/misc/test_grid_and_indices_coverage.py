@@ -8,9 +8,7 @@ from unittest.mock import patch
 import ml_switcheroo_compiler.ops.info_and_histograms.grid_and_indices as grid_mod
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class DummyWithShape:
@@ -38,14 +36,14 @@ def test_grid_and_indices_coverage() -> None:
     # Indices infer_shape
     indices_op = grid_mod.Indices()
     assert indices_op.infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", indices_op.infer_shape)((2, 3)) == (2, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", indices_op.infer_shape)(42) == ()
+    assert cast("EagerCallableProtocol", indices_op.infer_shape)((2, 3)) == (2, 2, 3)
+    assert cast("EagerCallableProtocol", indices_op.infer_shape)(42) == ()
 
     # Ix infer_shape
     ix_op = grid_mod.Ix()
     assert ix_op.infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", ix_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((5,)), cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((3,))) == (5, 1)
-    assert cast("Callable[..., EagerTensorProtocol]", ix_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)(), cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((3,))) == (1, 1)
+    assert cast("EagerCallableProtocol", ix_op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)((5,)), cast("EagerCallableProtocol", DummyWithShape)((3,))) == (5, 1)
+    assert cast("EagerCallableProtocol", ix_op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)(), cast("EagerCallableProtocol", DummyWithShape)((3,))) == (1, 1)
 
     # MaskIndices infer_shape
     assert grid_mod.MaskIndices().infer_shape() == (None,)

@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for det.py."""
+"""Implementation of det operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.det`)."""
 
 from __future__ import annotations
 

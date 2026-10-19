@@ -23,9 +23,7 @@ from ml_switcheroo_compiler.distributed.collectives import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockDataChannel:
@@ -48,7 +46,11 @@ class MockDataChannel:
         self.onbufferedamountlow = None
 
     async def send(self, data: bytes) -> None:
-        """Record sent binary data."""
+        """Record sent binary data.
+
+        Args:
+            data: Test parameter `data`.
+        """
         self.sent.append(data)
 
     async def recv(self) -> bytes:
@@ -58,7 +60,11 @@ class MockDataChannel:
         return self.recv_queue.pop(0)
 
     def trigger_message(self, data: bytes) -> None:
-        """Simulate an incoming onmessage event."""
+        """Simulate an incoming onmessage event.
+
+        Args:
+            data: Test parameter `data`.
+        """
         if self.onmessage is not None and callable(self.onmessage):
             self.onmessage(data)
 
@@ -75,12 +81,12 @@ async def test_collectives_send_recv_basic() -> None:
     data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     conn = MockDataChannel()
 
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(conn, data)
+    await cast("EagerCallableProtocol", _send_data)(conn, data)
     assert len(conn.sent) >= 2  # Meta header + chunk
 
     conn.recv_queue = list(conn.sent)
-    received = await cast("Callable[..., EagerTensorProtocol]", _recv_data)(conn)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(data, received)
+    received = await cast("EagerCallableProtocol", _recv_data)(conn)
+    assert cast("EagerCallableProtocol", np.array_equal)(data, received)
 
 
 @pytest.mark.asyncio
@@ -90,12 +96,12 @@ async def test_collectives_chunked_large_tensor() -> None:
     data = np.arange(20000, dtype=np.float32)
     conn = MockDataChannel()
 
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(conn, data, chunk_size=16384)
+    await cast("EagerCallableProtocol", _send_data)(conn, data, chunk_size=16384)
     assert len(conn.sent) == 6  # 1 metadata + 5 chunks
 
     conn.recv_queue = list(conn.sent)
-    received = await cast("Callable[..., EagerTensorProtocol]", _recv_data)(conn)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(data, received)
+    received = await cast("EagerCallableProtocol", _recv_data)(conn)
+    assert cast("EagerCallableProtocol", np.array_equal)(data, received)
 
 
 @pytest.mark.asyncio
@@ -121,11 +127,11 @@ async def test_collectives_datatypes() -> None:
     for dt in dtypes:
         conn = MockDataChannel()
         arr = np.array([0, 1, 2, 3], dtype=dt)
-        await cast("Callable[..., EagerTensorProtocol]", _send_data)(conn, arr)
+        await cast("EagerCallableProtocol", _send_data)(conn, arr)
         conn.recv_queue = list(conn.sent)
-        rec = await cast("Callable[..., EagerTensorProtocol]", _recv_data)(conn)
+        rec = await cast("EagerCallableProtocol", _recv_data)(conn)
         assert cast("EagerTensorProtocol", getattr(rec, "dtype")) == cast("EagerTensorProtocol", getattr(np, "dtype"))(dt)
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(arr, rec)
+        assert cast("EagerCallableProtocol", np.array_equal)(arr, rec)
 
 
 @pytest.mark.asyncio
@@ -135,22 +141,22 @@ async def test_collectives_byte_order_handling() -> None:
     data = np.array([1.5, 2.5, 3.5], dtype=f"{opposite_order}f4")
 
     conn = MockDataChannel()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(conn, data)
+    await cast("EagerCallableProtocol", _send_data)(conn, data)
 
     conn.recv_queue = list(conn.sent)
-    received = await cast("Callable[..., EagerTensorProtocol]", _recv_data)(conn)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(data, received)
+    received = await cast("EagerCallableProtocol", _recv_data)(conn)
+    assert cast("EagerCallableProtocol", np.allclose)(data, received)
 
 
 @pytest.mark.asyncio
 async def test_collectives_backpressure() -> None:
     """Test backpressure flow control pauses sending until drain."""
     conn = MockDataChannel()
-    stream = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(conn, high_watermark=100, low_watermark=50)
+    stream = cast("EagerCallableProtocol", WebRTCDataChannelStream)(conn, high_watermark=100, low_watermark=50)
 
     conn.buffered_amount = 200
 
-    drain_task = cast("Callable[..., EagerTensorProtocol]", asyncio.create_task)(cast("Callable[..., EagerTensorProtocol]", stream.wait_backpressure)())
+    drain_task = cast("EagerCallableProtocol", asyncio.create_task)(cast("EagerCallableProtocol", stream.wait_backpressure)())
     await asyncio.sleep(0.01)
     assert not drain_task.done()
 
@@ -163,7 +169,7 @@ async def test_collectives_backpressure() -> None:
 async def test_collectives_event_listener_stream() -> None:
     """Test WebRTCDataChannelStream event-driven message dispatch."""
     conn = MockDataChannel()
-    stream = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(conn)
+    stream = cast("EagerCallableProtocol", WebRTCDataChannelStream)(conn)
 
     conn.trigger_message(b"test_payload")
     rec = await stream.recv_bytes()
@@ -177,17 +183,17 @@ async def test_collectives_broadcast() -> None:
     conn0, conn1 = MockDataChannel(), MockDataChannel()
 
     # Leader broadcast
-    res = await cast("Callable[..., EagerTensorProtocol]", broadcast)(data, 0, [conn0, conn1], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, data)
+    res = await cast("EagerCallableProtocol", broadcast)(data, 0, [conn0, conn1], 0)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, data)
     assert len(conn1.sent) >= 2
 
     # Follower receive from root (rank 0)
     conn0.recv_queue = list(conn1.sent)
-    res2 = await cast("Callable[..., EagerTensorProtocol]", broadcast)(cast("Callable[..., EagerTensorProtocol]", np.zeros)(2, dtype=np.float32), 0, [conn0, conn1], 1)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res2, data)
+    res2 = await cast("EagerCallableProtocol", broadcast)(cast("EagerCallableProtocol", np.zeros)(2, dtype=np.float32), 0, [conn0, conn1], 1)
+    assert cast("EagerCallableProtocol", np.array_equal)(res2, data)
 
     with pytest.raises(ValueError):
-        await cast("Callable[..., EagerTensorProtocol]", broadcast)(data, 0, [None, conn1], 1)
+        await cast("EagerCallableProtocol", broadcast)(data, 0, [None, conn1], 1)
 
 
 @pytest.mark.asyncio
@@ -198,38 +204,38 @@ async def test_collectives_all_reduce() -> None:
 
     # SUM
     c1_to_0 = MockDataChannel()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1_to_0, data1)
+    await cast("EagerCallableProtocol", _send_data)(c1_to_0, data1)
     c1_to_0.recv_queue = list(c1_to_0.sent)
 
-    res_sum = await cast("Callable[..., EagerTensorProtocol]", all_reduce)(data0, "SUM", [None, c1_to_0], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_sum, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0, 6.0], dtype=np.float32))
+    res_sum = await cast("EagerCallableProtocol", all_reduce)(data0, "SUM", [None, c1_to_0], 0)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_sum, cast("EagerCallableProtocol", np.array)([4.0, 6.0], dtype=np.float32))
 
     # PROD
     c1_to_0.sent.clear()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1_to_0, data1)
+    await cast("EagerCallableProtocol", _send_data)(c1_to_0, data1)
     c1_to_0.recv_queue = list(c1_to_0.sent)
-    res_prod = await cast("Callable[..., EagerTensorProtocol]", all_reduce)(data0, "PROD", [None, c1_to_0], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_prod, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 8.0], dtype=np.float32))
+    res_prod = await cast("EagerCallableProtocol", all_reduce)(data0, "PROD", [None, c1_to_0], 0)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_prod, cast("EagerCallableProtocol", np.array)([3.0, 8.0], dtype=np.float32))
 
     # MAX
     c1_to_0.sent.clear()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1_to_0, data1)
+    await cast("EagerCallableProtocol", _send_data)(c1_to_0, data1)
     c1_to_0.recv_queue = list(c1_to_0.sent)
-    res_max = await cast("Callable[..., EagerTensorProtocol]", all_reduce)(data0, "MAX", [None, c1_to_0], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_max, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 4.0], dtype=np.float32))
+    res_max = await cast("EagerCallableProtocol", all_reduce)(data0, "MAX", [None, c1_to_0], 0)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_max, cast("EagerCallableProtocol", np.array)([3.0, 4.0], dtype=np.float32))
 
     # MIN
     c1_to_0.sent.clear()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1_to_0, data1)
+    await cast("EagerCallableProtocol", _send_data)(c1_to_0, data1)
     c1_to_0.recv_queue = list(c1_to_0.sent)
-    res_min = await cast("Callable[..., EagerTensorProtocol]", all_reduce)(data0, "MIN", [None, c1_to_0], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_min, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+    res_min = await cast("EagerCallableProtocol", all_reduce)(data0, "MIN", [None, c1_to_0], 0)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_min, cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
 
     c1_to_0.sent.clear()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1_to_0, data1)
+    await cast("EagerCallableProtocol", _send_data)(c1_to_0, data1)
     c1_to_0.recv_queue = list(c1_to_0.sent)
     with pytest.raises(ValueError, match="Unsupported reduction operator"):
-        await cast("Callable[..., EagerTensorProtocol]", all_reduce)(data0, "UNKNOWN_OP", [None, c1_to_0], 0)
+        await cast("EagerCallableProtocol", all_reduce)(data0, "UNKNOWN_OP", [None, c1_to_0], 0)
 
 
 @pytest.mark.asyncio
@@ -239,11 +245,11 @@ async def test_collectives_all_gather() -> None:
     data1 = np.array([3.0, 4.0], dtype=np.float32)
 
     c1 = MockDataChannel()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1, data1)
+    await cast("EagerCallableProtocol", _send_data)(c1, data1)
     c1.recv_queue = list(c1.sent)
 
-    gathered = await cast("Callable[..., EagerTensorProtocol]", all_gather)(data0, 0, [None, c1], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(gathered, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
+    gathered = await cast("EagerCallableProtocol", all_gather)(data0, 0, [None, c1], 0)
+    assert cast("EagerCallableProtocol", np.array_equal)(gathered, cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
 
 
 @pytest.mark.asyncio
@@ -253,11 +259,11 @@ async def test_collectives_reduce_scatter() -> None:
     data1 = np.array([3.0, 4.0], dtype=np.float32)
 
     c1 = MockDataChannel()
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1, data1)
+    await cast("EagerCallableProtocol", _send_data)(c1, data1)
     c1.recv_queue = list(c1.sent)
 
-    res0 = await cast("Callable[..., EagerTensorProtocol]", reduce_scatter)(data0, "SUM", 0, [None, c1], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res0, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0], dtype=np.float32))
+    res0 = await cast("EagerCallableProtocol", reduce_scatter)(data0, "SUM", 0, [None, c1], 0)
+    assert cast("EagerCallableProtocol", np.array_equal)(res0, cast("EagerCallableProtocol", np.array)([4.0], dtype=np.float32))
 
 
 @pytest.mark.asyncio
@@ -268,11 +274,11 @@ async def test_collectives_all_to_all() -> None:
     c1_on_0 = MockDataChannel()
 
     chunk_from_1 = np.array([[5.0, 6.0]], dtype=np.float32)
-    await cast("Callable[..., EagerTensorProtocol]", _send_data)(c1_on_0, chunk_from_1)
+    await cast("EagerCallableProtocol", _send_data)(c1_on_0, chunk_from_1)
     c1_on_0.recv_queue = list(c1_on_0.sent)
 
-    res = await cast("Callable[..., EagerTensorProtocol]", all_to_all)(data0, scatter_dim=0, gather_dim=0, conns=[None, c1_on_0], rank=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, cast("Callable[..., EagerTensorProtocol]", np.array)([[1.0, 2.0], [5.0, 6.0]], dtype=np.float32))
+    res = await cast("EagerCallableProtocol", all_to_all)(data0, scatter_dim=0, gather_dim=0, conns=[None, c1_on_0], rank=0)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([[1.0, 2.0], [5.0, 6.0]], dtype=np.float32))
 
 
 @pytest.mark.asyncio
@@ -286,12 +292,12 @@ async def test_collectives_barrier() -> None:
 
     # Follower signals ready
     conn0.recv_queue = [b"g"]
-    await cast("Callable[..., EagerTensorProtocol]", b_follower.wait)([conn0, None])
+    await cast("EagerCallableProtocol", b_follower.wait)([conn0, None])
     assert conn0.sent[0] == b"r"
 
     # Leader receives ready, signals go
     conn1.recv_queue = [b"r"]
-    await cast("Callable[..., EagerTensorProtocol]", b_leader.wait)([None, conn1])
+    await cast("EagerCallableProtocol", b_leader.wait)([None, conn1])
     assert conn1.sent[0] == b"g"
 
     # Missing connection graceful pass
@@ -314,7 +320,7 @@ async def test_stream_event_handlers_snake_case_and_payload_types() -> None:
             self.buffered_amount = lambda: 50
 
     ch = SnakeCaseChannel()
-    stream = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch, low_watermark=100)
+    stream = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch, low_watermark=100)
     assert ch.buffered_amount_low_threshold == 100
     assert ch.on_message == stream._on_message
     assert ch.on_buffered_amount_low == stream._on_buffered_amount_low
@@ -322,20 +328,20 @@ async def test_stream_event_handlers_snake_case_and_payload_types() -> None:
 
     # Test payload types in _on_message:
     # 1. str
-    cast("Callable[..., EagerTensorProtocol]", ch.on_message)("str_message")
+    cast("EagerCallableProtocol", ch.on_message)("str_message")
     assert await stream.recv_bytes() == b"str_message"
 
     # 2. tobytes
     mem = memoryview(b"memoryview_bytes")
-    cast("Callable[..., EagerTensorProtocol]", ch.on_message)(mem)
+    cast("EagerCallableProtocol", ch.on_message)(mem)
     assert await stream.recv_bytes() == b"memoryview_bytes"
 
     # 3. other iterable/convertible to bytes
-    cast("Callable[..., EagerTensorProtocol]", ch.on_message)([65, 66, 67])
+    cast("EagerCallableProtocol", ch.on_message)([65, 66, 67])
     assert await stream.recv_bytes() == b"ABC"
 
     # Channel with no recognized attributes
-    bare_stream = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(cast("Callable[..., EagerTensorProtocol]", object)())
+    bare_stream = cast("EagerCallableProtocol", WebRTCDataChannelStream)(cast("EagerCallableProtocol", object)())
     assert bare_stream.get_buffered_amount() == 0
 
 
@@ -358,7 +364,7 @@ async def test_stream_backpressure_branches() -> None:
             self.bufferedAmount = 0
 
     ch_async = AsyncDrainChannel()
-    s1 = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch_async, high_watermark=100, low_watermark=50)
+    s1 = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_async, high_watermark=100, low_watermark=50)
     await s1.wait_backpressure()
     assert ch_async.drained
 
@@ -377,7 +383,7 @@ async def test_stream_backpressure_branches() -> None:
             self.bufferedAmount = 0
 
     ch_sync = SyncDrainChannel()
-    s2 = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch_sync, high_watermark=100, low_watermark=50)
+    s2 = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_sync, high_watermark=100, low_watermark=50)
     await s2.wait_backpressure()
     assert ch_sync.drained
 
@@ -397,7 +403,7 @@ async def test_stream_backpressure_branches() -> None:
             return 200
 
     ch_loop = LoopDrainChannel()
-    s3 = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch_loop, high_watermark=100, low_watermark=50)
+    s3 = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_loop, high_watermark=100, low_watermark=50)
     await s3.wait_backpressure()
     assert ch_loop.checks > 2
 
@@ -417,16 +423,20 @@ async def _test_stream_send_recv_message_variants_part_1(_state: dict[str, Eager
             self.sent = cast("list[EagerTensorProtocol]", [])
 
         def send(self, data: EagerValue) -> EagerValue:
-            """Test function send."""
+            """Test function send.
+
+            Args:
+                data: Test parameter `data`.
+            """
 
             async def _inner() -> None:
                 """Test function _inner."""
-                cast("Callable[..., EagerTensorProtocol]", self.sent.append)(data)
+                cast("EagerCallableProtocol", self.sent.append)(data)
 
             return cast("EagerTensorProtocol", _inner())
 
     ch_coro = CoroSendChannel()
-    s1 = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch_coro)
+    s1 = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_coro)
     await s1.send_bytes(b"coro_send")
     assert ch_coro.sent == [b"coro_send"]
     getattr(_state, "update")({"CoroSendChannel": CoroSendChannel, "ch_coro": ch_coro, "s1": s1})
@@ -448,11 +458,15 @@ async def _test_stream_send_recv_message_variants_part_2(_state: dict[str, Eager
             self.sent = cast("list[EagerTensorProtocol]", [])
 
         async def sendMessage(self, data: EagerValue) -> None:
-            """Test function sendMessage."""
-            cast("Callable[..., EagerTensorProtocol]", self.sent.append)(data)
+            """Test function sendMessage.
+
+            Args:
+                data: Test parameter `data`.
+            """
+            cast("EagerCallableProtocol", self.sent.append)(data)
 
     ch_msg_async = AsyncSendMessageChannel()
-    s2 = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch_msg_async)
+    s2 = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_msg_async)
     await s2.send_bytes(b"msg_async")
     assert ch_msg_async.sent == [b"msg_async"]
 
@@ -465,11 +479,15 @@ async def _test_stream_send_recv_message_variants_part_2(_state: dict[str, Eager
             self.sent = cast("list[EagerTensorProtocol]", [])
 
         def sendMessage(self, data: EagerValue) -> None:
-            """Test function sendMessage."""
-            cast("Callable[..., EagerTensorProtocol]", self.sent.append)(data)
+            """Test function sendMessage.
+
+            Args:
+                data: Test parameter `data`.
+            """
+            cast("EagerCallableProtocol", self.sent.append)(data)
 
     ch_msg_sync = SyncSendMessageChannel()
-    s3 = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch_msg_sync)
+    s3 = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_msg_sync)
     getattr(_state, "update")({"AsyncSendMessageChannel": AsyncSendMessageChannel, "SyncSendMessageChannel": SyncSendMessageChannel, "ch_msg_async": ch_msg_async, "ch_msg_sync": ch_msg_sync})
     getattr(_state, "update")({"s2": s2, "s3": s3})
     _state.update(locals())
@@ -493,16 +511,20 @@ async def _test_stream_send_recv_message_variants_part_3(_state: dict[str, Eager
             self.sent = cast("list[EagerTensorProtocol]", [])
 
         def sendMessage(self, data: EagerValue) -> EagerValue:
-            """Test function sendMessage."""
+            """Test function sendMessage.
+
+            Args:
+                data: Test parameter `data`.
+            """
 
             async def _inner() -> None:
                 """Test function _inner."""
-                cast("Callable[..., EagerTensorProtocol]", self.sent.append)(data)
+                cast("EagerCallableProtocol", self.sent.append)(data)
 
             return cast("EagerTensorProtocol", _inner())
 
     ch_msg_coro = CoroMsgChannel()
-    s4 = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(ch_msg_coro)
+    s4 = cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_msg_coro)
     await s4.send_bytes(b"msg_coro")
     assert ch_msg_coro.sent == [b"msg_coro"]
     getattr(_state, "update")({"CoroMsgChannel": CoroMsgChannel, "ch_msg_coro": ch_msg_coro, "s4": s4})
@@ -520,7 +542,11 @@ async def _test_stream_send_recv_message_variants_part_4(_state: dict[str, Eager
         """Test class RecvChannel."""
 
         def __init__(self, mode: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                mode: Test parameter `mode`.
+            """
             self.mode = mode
 
         def recv(self) -> EagerValue:
@@ -534,10 +560,10 @@ async def _test_stream_send_recv_message_variants_part_4(_state: dict[str, Eager
                 return cast("EagerTensorProtocol", _inner())
             return b"sync_bytes"
 
-    s_sync = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(cast("Callable[..., EagerTensorProtocol]", RecvChannel)("sync"))
+    s_sync = cast("EagerCallableProtocol", WebRTCDataChannelStream)(cast("EagerCallableProtocol", RecvChannel)("sync"))
     assert await s_sync.recv_bytes() == b"sync_bytes"
 
-    s_coro = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(cast("Callable[..., EagerTensorProtocol]", RecvChannel)("sync_coro"))
+    s_coro = cast("EagerCallableProtocol", WebRTCDataChannelStream)(cast("EagerCallableProtocol", RecvChannel)("sync_coro"))
     assert await s_coro.recv_bytes() == b"bytearray_data"
     getattr(_state, "update")({"RecvChannel": RecvChannel, "s_coro": s_coro, "s_sync": s_sync})
 
@@ -550,7 +576,7 @@ async def test_stream_send_recv_message_variants() -> None:
     await _test_stream_send_recv_message_variants_part_2(_state)
     await _test_stream_send_recv_message_variants_part_3(_state)
     await _test_stream_send_recv_message_variants_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 @pytest.mark.asyncio
@@ -570,22 +596,22 @@ async def test_recv_data_mismatch_and_legacy_format() -> None:
     header = b"META:" + json.dumps(meta).encode("utf-8")
     ch_mismatch.recv_queue = [header, b"too_short"]
     with pytest.raises(ValueError, match="Payload length mismatch"):
-        await cast("Callable[..., EagerTensorProtocol]", _recv_data)(ch_mismatch)
+        await cast("EagerCallableProtocol", _recv_data)(ch_mismatch)
 
     # 2. Legacy non-META format with shape
     ch_legacy = MockDataChannel()
     data_arr = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     ch_legacy.recv_queue = [b"2,2|float32", data_arr.tobytes()]
-    res = await cast("Callable[..., EagerTensorProtocol]", _recv_data)(ch_legacy)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, data_arr)
+    res = await cast("EagerCallableProtocol", _recv_data)(ch_legacy)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, data_arr)
 
     # 3. Legacy non-META format with empty shape ()
     ch_scalar = MockDataChannel()
     scalar_arr = np.array(42.0, dtype=np.float32)
     ch_scalar.recv_queue = [b"|float32", scalar_arr.tobytes()]
-    res_scalar = await cast("Callable[..., EagerTensorProtocol]", _recv_data)(ch_scalar)
+    res_scalar = await cast("EagerCallableProtocol", _recv_data)(ch_scalar)
     assert cast("EagerTensorProtocol", getattr(res_scalar, "shape")) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(res_scalar, 42.0)
+    assert cast("EagerCallableProtocol", np.isclose)(res_scalar, 42.0)
 
 
 @pytest.mark.asyncio
@@ -601,7 +627,7 @@ async def test_stream_remaining_missing_branches() -> None:
             self.bufferedAmountLowThreshold = 0
 
     camel_ch = CamelCaseChannel()
-    cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(camel_ch, low_watermark=2048)
+    cast("EagerCallableProtocol", WebRTCDataChannelStream)(camel_ch, low_watermark=2048)
     assert camel_ch.bufferedAmountLowThreshold == 2048
 
     # Line 118: wait_backpressure break
@@ -613,7 +639,7 @@ async def test_stream_remaining_missing_branches() -> None:
             self.bufferedAmount = 200
 
     drain_ch = DrainEventChannel()
-    stream_drain = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(drain_ch, high_watermark=100, low_watermark=50)
+    stream_drain = cast("EagerCallableProtocol", WebRTCDataChannelStream)(drain_ch, high_watermark=100, low_watermark=50)
 
     async def _trigger_drain() -> None:
         """Test function _trigger_drain."""
@@ -632,12 +658,16 @@ async def test_stream_remaining_missing_branches() -> None:
             self.sent = cast("list[EagerTensorProtocol]", [])
 
         def send(self, data: EagerValue) -> None:
-            """Test function send."""
-            cast("Callable[..., EagerTensorProtocol]", self.sent.append)(data)
+            """Test function send.
+
+            Args:
+                data: Test parameter `data`.
+            """
+            cast("EagerCallableProtocol", self.sent.append)(data)
             return None
 
     non_coro_ch = SyncSendNonCoroChannel()
-    s_non_coro = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(non_coro_ch)
+    s_non_coro = cast("EagerCallableProtocol", WebRTCDataChannelStream)(non_coro_ch)
     await s_non_coro.send_bytes(b"non_coro")
     assert non_coro_ch.sent == [b"non_coro"]
 
@@ -647,7 +677,7 @@ async def test_stream_remaining_missing_branches() -> None:
 
         pass
 
-    s_no_send = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(cast("Callable[..., EagerTensorProtocol]", NoSendMethodChannel)())
+    s_no_send = cast("EagerCallableProtocol", WebRTCDataChannelStream)(cast("EagerCallableProtocol", NoSendMethodChannel)())
     await s_no_send.send_bytes(b"will_not_send")
 
     # Line 162: recv_bytes with empty queue and channel without recv
@@ -656,7 +686,7 @@ async def test_stream_remaining_missing_branches() -> None:
 
         pass
 
-    s_no_recv = cast("Callable[..., EagerTensorProtocol]", WebRTCDataChannelStream)(cast("Callable[..., EagerTensorProtocol]", NoRecvMethodChannel)())
+    s_no_recv = cast("EagerCallableProtocol", WebRTCDataChannelStream)(cast("EagerCallableProtocol", NoRecvMethodChannel)())
 
     async def _put_later() -> None:
         """Test function _put_later."""
@@ -686,27 +716,27 @@ def _test_dispatch_collective_exhaustive_part_1(_state: dict[str, EagerTensorPro
 
     # 1. Fallback when all_ranks_data is None
     res_fallback = dispatch_collective("UnknownOp", t)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_fallback, t)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_fallback, t)
 
     # 2. AllReduce with different reduction ops
     res_sum = dispatch_collective("AllReduce", t, all_ranks_data=ranks_data, op_type="SUM")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_sum, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0, 6.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_sum, cast("EagerCallableProtocol", np.array)([4.0, 6.0], dtype=np.float32))
 
     res_prod = dispatch_collective("AllReduce", t, all_ranks_data=ranks_data, op_type="PROD")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_prod, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 8.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_prod, cast("EagerCallableProtocol", np.array)([3.0, 8.0], dtype=np.float32))
 
     res_max = dispatch_collective("AllReduce", t, all_ranks_data=ranks_data, op_type="MAX")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_max, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 4.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_max, cast("EagerCallableProtocol", np.array)([3.0, 4.0], dtype=np.float32))
 
     res_min = dispatch_collective("AllReduce", t, all_ranks_data=ranks_data, op_type="MIN")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_min, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_min, cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
 
     res_other = dispatch_collective("AllReduce", t, all_ranks_data=ranks_data, op_type="UNKNOWN")
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_other, ranks_data[0])
+    assert cast("EagerCallableProtocol", np.array_equal)(res_other, ranks_data[0])
 
     # 3. AllGather
     res_gather = dispatch_collective("AllGather", t, all_ranks_data=ranks_data, axis=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_gather, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_gather, cast("EagerCallableProtocol", np.array)([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
 
     # 4. ReduceScatter with various op_types
     ranks_data_3 = [
@@ -715,7 +745,7 @@ def _test_dispatch_collective_exhaustive_part_1(_state: dict[str, EagerTensorPro
         np.array([7.0, 8.0, 9.0], dtype=np.float32),
     ]
     res_rs_multi = dispatch_collective("ReduceScatter", t, all_ranks_data=ranks_data_3, rank=0, op_type="MIN", scatter_dim=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_rs_multi, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_rs_multi, cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32))
 
     res_rs_sum = dispatch_collective("ReduceScatter", t, all_ranks_data=ranks_data, rank=0, op_type="SUM", scatter_dim=0)
     getattr(_state, "update")({"dispatch_collective": dispatch_collective, "patch": patch, "ranks_data": ranks_data, "ranks_data_3": ranks_data_3})
@@ -733,18 +763,18 @@ def _test_dispatch_collective_exhaustive_part_2(_state: dict[str, EagerTensorPro
     """
     dispatch_collective, patch, ranks_data, ranks_data_3 = _state["dispatch_collective"], _state["patch"], _state["ranks_data"], _state["ranks_data_3"]
     res_rs_sum, t = _state["res_rs_sum"], _state["t"]
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_rs_sum, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_rs_sum, cast("EagerCallableProtocol", np.array)([4.0], dtype=np.float32))
 
     res_rs_prod = dispatch_collective("ReduceScatter", t, all_ranks_data=ranks_data, rank=1, op_type="PROD", scatter_dim=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_rs_prod, cast("Callable[..., EagerTensorProtocol]", np.array)([8.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_rs_prod, cast("EagerCallableProtocol", np.array)([8.0], dtype=np.float32))
     res_rs_max = dispatch_collective("ReduceScatter", t, all_ranks_data=ranks_data, rank=0, op_type="MAX", scatter_dim=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_rs_max, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_rs_max, cast("EagerCallableProtocol", np.array)([3.0], dtype=np.float32))
 
     res_rs_min = dispatch_collective("ReduceScatter", t, all_ranks_data=ranks_data, rank=1, op_type="MIN", scatter_dim=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_rs_min, cast("Callable[..., EagerTensorProtocol]", np.array)([2.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_rs_min, cast("EagerCallableProtocol", np.array)([2.0], dtype=np.float32))
 
     res_rs_unknown = dispatch_collective("ReduceScatter", t, all_ranks_data=ranks_data_3, rank=0, op_type="UNKNOWN", scatter_dim=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_rs_unknown, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0], dtype=np.float32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_rs_unknown, cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32))
 
     # 5. AllToAll
     data_2x2_0 = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
@@ -754,10 +784,10 @@ def _test_dispatch_collective_exhaustive_part_2(_state: dict[str, EagerTensorPro
 
     # 6. Broadcast and unhandled op with all_ranks_data
     res_bcast = dispatch_collective("Broadcast", t, all_ranks_data=ranks_data, root=1)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_bcast, ranks_data[1])
+    assert cast("EagerCallableProtocol", np.array_equal)(res_bcast, ranks_data[1])
 
     res_unhandled_with_ranks = dispatch_collective("UnhandledOp", t, all_ranks_data=ranks_data)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_unhandled_with_ranks, t)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_unhandled_with_ranks, t)
 
     # 7. PyTorch backend branch and exception handling
     dispatch_collective("AllToAll", t, backend="pytorch")
@@ -786,9 +816,9 @@ def _test_dispatch_collective_exhaustive_part_3(_state: dict[str, EagerTensorPro
     with patch("ml_switcheroo_compiler.backends.pytorch.distributed_collectives.pytorch_broadcast", return_value=t) as mock_pt_bc:
         dispatch_collective("Broadcast", t, backend="pytorch")
         assert mock_pt_bc.called
-    with cast("Callable[..., EagerTensorProtocol]", patch)("ml_switcheroo_compiler.backends.pytorch.distributed_collectives.pytorch_all_reduce", side_effect=cast("Callable[..., EagerTensorProtocol]", RuntimeError)("pt_err")):
+    with cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.pytorch.distributed_collectives.pytorch_all_reduce", side_effect=cast("EagerCallableProtocol", RuntimeError)("pt_err")):
         res_pt_err = dispatch_collective("AllReduce", t, backend="pytorch")
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_pt_err, t)
+        assert cast("EagerCallableProtocol", np.array_equal)(res_pt_err, t)
 
     # 8. JAX backend branch and exception handling
     dispatch_collective("AllToAll", t, backend="jax")
@@ -813,9 +843,9 @@ def _test_dispatch_collective_exhaustive_part_4(_state: dict[str, EagerTensorPro
     with patch("ml_switcheroo_compiler.backends.jax.distributed_collectives.jax_broadcast", return_value=t) as mock_jax_bc:
         dispatch_collective("Broadcast", t, backend="jax")
         assert mock_jax_bc.called
-    with cast("Callable[..., EagerTensorProtocol]", patch)("ml_switcheroo_compiler.backends.jax.distributed_collectives.jax_all_reduce", side_effect=cast("Callable[..., EagerTensorProtocol]", RuntimeError)("jax_err")):
+    with cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.jax.distributed_collectives.jax_all_reduce", side_effect=cast("EagerCallableProtocol", RuntimeError)("jax_err")):
         res_jax_err = dispatch_collective("AllReduce", t, backend="jax")
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_jax_err, t)
+        assert cast("EagerCallableProtocol", np.array_equal)(res_jax_err, t)
     getattr(_state, "update")({"mock_jax_ag": mock_jax_ag, "mock_jax_bc": mock_jax_bc, "res_jax_err": res_jax_err})
 
 
@@ -826,20 +856,29 @@ def test_dispatch_collective_exhaustive() -> None:
     _test_dispatch_collective_exhaustive_part_2(_state)
     _test_dispatch_collective_exhaustive_part_3(_state)
     _test_dispatch_collective_exhaustive_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 class SimulatedPeerChannel:
     """Channel connecting peer A to peer B using asyncio queues."""
 
     def __init__(self, in_q: asyncio.Queue[bytes], out_q: asyncio.Queue[bytes]) -> None:
-        """Initialize channel with input and output queues."""
+        """Initialize channel with input and output queues.
+
+        Args:
+            in_q: Test parameter `in_q`.
+            out_q: Test parameter `out_q`.
+        """
         self.in_q = in_q
         self.out_q = out_q
         self.buffered_amount = 0
 
     async def send(self, data: bytes) -> None:
-        """Send byte message to recipient queue."""
+        """Send byte message to recipient queue.
+
+        Args:
+            data: Test parameter `data`.
+        """
         await self.out_q.put(data)
 
     async def recv(self) -> bytes:
@@ -848,7 +887,11 @@ class SimulatedPeerChannel:
 
 
 def _create_mesh_channels(n: int) -> list[list[Optional[SimulatedPeerChannel]]]:
-    """Create a fully connected mesh of simulated peer channels."""
+    """Create a fully connected mesh of simulated peer channels.
+
+    Args:
+        n: Test parameter `n`.
+    """
     # queues[src][dst]
     queues = cast("EagerTensorProtocol", [[asyncio.Queue() for _ in range(n)] for _ in range(n)])
     mesh: list[list[Optional[SimulatedPeerChannel]]] = []
@@ -858,7 +901,7 @@ def _create_mesh_channels(n: int) -> list[list[Optional[SimulatedPeerChannel]]]:
             if r == peer:
                 row.append(None)
             else:
-                cast("Callable[..., EagerTensorProtocol]", row.append)(cast("Callable[..., EagerTensorProtocol]", SimulatedPeerChannel)(in_q=queues[peer][r], out_q=queues[r][peer]))
+                cast("EagerCallableProtocol", row.append)(cast("EagerCallableProtocol", SimulatedPeerChannel)(in_q=queues[peer][r], out_q=queues[r][peer]))
         mesh.append(row)
     return mesh
 
@@ -877,8 +920,12 @@ async def test_multi_peer_ring_all_reduce() -> None:
     expected_sum = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
 
     async def run_rank_sum(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_sum."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", ring_all_reduce)(inputs[rank], "SUM", mesh[rank], rank))
+        """Test function run_rank_sum.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", ring_all_reduce)(inputs[rank], "SUM", mesh[rank], rank))
 
     results = await asyncio.gather(*[run_rank_sum(r) for r in range(world_size)])
     for res in results:
@@ -889,8 +936,12 @@ async def test_multi_peer_ring_all_reduce() -> None:
     inputs_prod = [np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32) for _ in range(world_size)]
 
     async def run_rank_prod(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_prod."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", all_reduce)(inputs_prod[rank], "PROD", mesh_prod[rank], rank, algorithm="ring"))
+        """Test function run_rank_prod.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", all_reduce)(inputs_prod[rank], "PROD", mesh_prod[rank], rank, algorithm="ring"))
 
     results_prod = await asyncio.gather(*[run_rank_prod(r) for r in range(world_size)])
     expected_prod = np.array([2.0**4, 3.0**4, 4.0**4, 5.0**4], dtype=np.float32)
@@ -902,8 +953,12 @@ async def test_multi_peer_ring_all_reduce() -> None:
     inputs_max = [np.array([float(r), float(r * 2), float(r * 3), float(r * 4)], dtype=np.float32) for r in range(world_size)]
 
     async def run_rank_max(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_max."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", ring_all_reduce)(inputs_max[rank], "MAX", mesh_max[rank], rank))
+        """Test function run_rank_max.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", ring_all_reduce)(inputs_max[rank], "MAX", mesh_max[rank], rank))
 
     results_max = await asyncio.gather(*[run_rank_max(r) for r in range(world_size)])
     expected_max = np.array([3.0, 6.0, 9.0, 12.0], dtype=np.float32)
@@ -914,8 +969,12 @@ async def test_multi_peer_ring_all_reduce() -> None:
     mesh_min = _create_mesh_channels(world_size)
 
     async def run_rank_min(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_min."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", ring_all_reduce)(inputs_max[rank], "MIN", mesh_min[rank], rank))
+        """Test function run_rank_min.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", ring_all_reduce)(inputs_max[rank], "MIN", mesh_min[rank], rank))
 
     results_min = await asyncio.gather(*[run_rank_min(r) for r in range(world_size)])
     expected_min = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
@@ -926,7 +985,7 @@ async def test_multi_peer_ring_all_reduce() -> None:
     # world_size <= 1
     single = np.array([1.0, 2.0], dtype=np.float32)
     res_single = await ring_all_reduce(single, "SUM", [None], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_single, single)
+    assert cast("EagerCallableProtocol", np.allclose)(res_single, single)
 
     # Unsupported op
     with pytest.raises(ValueError, match="Unsupported reduction operator"):
@@ -949,8 +1008,12 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
     expected = np.array([[0.0], [1.0], [2.0], [3.0]], dtype=np.float32)
 
     async def run_rank(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", recursive_halving_doubling_all_gather)(inputs[rank], 0, mesh[rank], rank))
+        """Test function run_rank.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", recursive_halving_doubling_all_gather)(inputs[rank], 0, mesh[rank], rank))
 
     results = await asyncio.gather(*[run_rank(r) for r in range(world_size)])
     for res in results:
@@ -960,8 +1023,12 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
     mesh2 = _create_mesh_channels(world_size)
 
     async def run_rank2(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank2."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", all_gather)(inputs[rank], 0, mesh2[rank], rank, algorithm="recursive_doubling"))
+        """Test function run_rank2.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", all_gather)(inputs[rank], 0, mesh2[rank], rank, algorithm="recursive_doubling"))
 
     results2 = await asyncio.gather(*[run_rank2(r) for r in range(world_size)])
     for res in results2:
@@ -969,7 +1036,7 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
 
     # Edge case: world_size <= 1
     res_single = await recursive_halving_doubling_all_gather(inputs[0], 0, [None], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_single, inputs[0])
+    assert cast("EagerCallableProtocol", np.allclose)(res_single, inputs[0])
 
     # Non-power-of-two world_size (e.g. 3) to exercise partner_rank >= world_size branches
     world_size_3 = 3
@@ -977,8 +1044,12 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
     inputs_3 = [np.array([[float(r)]], dtype=np.float32) for r in range(world_size_3)]
 
     async def run_rank_3(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_3."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", recursive_halving_doubling_all_gather)(inputs_3[rank], 0, mesh_3[rank], rank))
+        """Test function run_rank_3.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", recursive_halving_doubling_all_gather)(inputs_3[rank], 0, mesh_3[rank], rank))
 
     results_3 = await asyncio.gather(*[run_rank_3(r) for r in range(world_size_3)])
     assert len(results_3) == 3
@@ -986,7 +1057,7 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
     # Partial connection mesh with None partner connection
     mesh_partial = [[None, None], [None, None]]
     res_partial = await recursive_halving_doubling_all_gather(inputs[0], 0, mesh_partial[0], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_partial, inputs[0])
+    assert cast("EagerCallableProtocol", np.allclose)(res_partial, inputs[0])
 
 
 @pytest.mark.asyncio
@@ -1002,7 +1073,7 @@ async def test_recv_data_crc_mismatch() -> None:
     conn.recv_queue = [header, chunk_raw]
 
     with pytest.raises(ValueError, match="Checksum mismatch on received WebRTC chunk"):
-        await cast("Callable[..., EagerTensorProtocol]", _recv_data)(conn)
+        await cast("EagerCallableProtocol", _recv_data)(conn)
 
 
 async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1020,8 +1091,12 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTen
     inputs = [np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32) * (r + 1) for r in range(world_size)]
 
     async def run_rank_sum(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_sum."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", ring_reduce_scatter)(inputs[rank], "SUM", 0, mesh[rank], rank))
+        """Test function run_rank_sum.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", ring_reduce_scatter)(inputs[rank], "SUM", 0, mesh[rank], rank))
 
     results = await asyncio.gather(*[run_rank_sum(r) for r in range(world_size)])
     for r, res in enumerate(results):
@@ -1031,8 +1106,12 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTen
     mesh_ring = _create_mesh_channels(world_size)
 
     async def run_rank_ring(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_ring."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", reduce_scatter)(inputs[rank], "SUM", 0, mesh_ring[rank], rank, algorithm="ring"))
+        """Test function run_rank_ring.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", reduce_scatter)(inputs[rank], "SUM", 0, mesh_ring[rank], rank, algorithm="ring"))
 
     results_ring = await asyncio.gather(*[run_rank_ring(r) for r in range(world_size)])
     for r, res in enumerate(results_ring):
@@ -1056,8 +1135,12 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTen
     inputs_prod = [np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32) for _ in range(world_size)]
 
     async def run_rank_prod(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_prod."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", ring_reduce_scatter)(inputs_prod[rank], "PROD", 0, mesh_prod[rank], rank))
+        """Test function run_rank_prod.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", ring_reduce_scatter)(inputs_prod[rank], "PROD", 0, mesh_prod[rank], rank))
 
     results_prod = await asyncio.gather(*[run_rank_prod(r) for r in range(world_size)])
     expected_prod = [2.0**4, 3.0**4, 4.0**4, 5.0**4]
@@ -1065,12 +1148,16 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTen
         assert np.allclose(res, np.array([expected_prod[r]], dtype=np.float32))
 
     # MAX test
-    mesh_max = cast("Callable[..., EagerTensorProtocol]", _create_mesh_channels)(world_size)
+    mesh_max = cast("EagerCallableProtocol", _create_mesh_channels)(world_size)
     inputs_max = [np.array([float(r), float(r * 2), float(r * 3), float(r * 4)], dtype=np.float32) for r in range(world_size)]
 
     async def run_rank_max(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_max."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", ring_reduce_scatter)(inputs_max[rank], "MAX", 0, mesh_max[rank], rank))
+        """Test function run_rank_max.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", ring_reduce_scatter)(inputs_max[rank], "MAX", 0, mesh_max[rank], rank))
 
     results_max = await asyncio.gather(*[run_rank_max(r) for r in range(world_size)])
     expected_max = [3.0, 6.0, 9.0, 12.0]
@@ -1088,24 +1175,28 @@ async def _test_multi_peer_ring_reduce_scatter_part_3(_state: dict[str, EagerTen
     """
     expected_max, inputs_max, results_max, world_size = _state["expected_max"], _state["inputs_max"], _state["results_max"], _state["world_size"]
     for r, res in enumerate(results_max):
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, cast("Callable[..., EagerTensorProtocol]", np.array)([expected_max[r]], dtype=np.float32))
+        assert cast("EagerCallableProtocol", np.allclose)(res, cast("EagerCallableProtocol", np.array)([expected_max[r]], dtype=np.float32))
 
     # MIN test
-    mesh_min = cast("Callable[..., EagerTensorProtocol]", _create_mesh_channels)(world_size)
+    mesh_min = cast("EagerCallableProtocol", _create_mesh_channels)(world_size)
 
     async def run_rank_min(rank: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function run_rank_min."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("Callable[..., EagerTensorProtocol]", ring_reduce_scatter)(inputs_max[rank], "MIN", 0, mesh_min[rank], rank))
+        """Test function run_rank_min.
+
+        Args:
+            rank: Test parameter `rank`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await cast("EagerCallableProtocol", ring_reduce_scatter)(inputs_max[rank], "MIN", 0, mesh_min[rank], rank))
 
     results_min = await asyncio.gather(*[run_rank_min(r) for r in range(world_size)])
     for res_min in results_min:
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_min, cast("Callable[..., EagerTensorProtocol]", np.array)([0.0], dtype=np.float32))
+        assert cast("EagerCallableProtocol", np.allclose)(res_min, cast("EagerCallableProtocol", np.array)([0.0], dtype=np.float32))
 
     # Edge cases:
     # 1. world_size <= 1
     single = np.array([1.0, 2.0], dtype=np.float32)
     res_single = await ring_reduce_scatter(single, "SUM", 0, [None], 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_single, single)
+    assert cast("EagerCallableProtocol", np.allclose)(res_single, single)
 
     # 2. Unsupported op
     with pytest.raises(ValueError, match="Unsupported reduction operator"):
@@ -1125,4 +1216,4 @@ async def test_multi_peer_ring_reduce_scatter() -> None:
     await _test_multi_peer_ring_reduce_scatter_part_1(_state)
     await _test_multi_peer_ring_reduce_scatter_part_2(_state)
     await _test_multi_peer_ring_reduce_scatter_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

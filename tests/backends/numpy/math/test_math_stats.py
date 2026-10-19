@@ -28,9 +28,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_stats import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_average() -> None:
@@ -61,25 +59,25 @@ def test_cov() -> None:
 
 def test_histogram() -> None:
     """Test function test_histogram."""
-    (res, bins) = cast("Callable[..., EagerTensorProtocol]", _np_histogram_)(np, [1, 2, 1], bins=[0, 1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res, [0, 2, 1])
+    (res, bins) = cast("EagerCallableProtocol", _np_histogram_)(np, [1, 2, 1], bins=[0, 1, 2, 3])
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res, [0, 2, 1])
 
 
 def test_histogram2d() -> None:
     """Test function test_histogram2d."""
-    (res, xedges, yedges) = cast("Callable[..., EagerTensorProtocol]", _np_histogram2d_)(np, [1, 2, 1], [1, 2, 1], bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
+    (res, xedges, yedges) = cast("EagerCallableProtocol", _np_histogram2d_)(np, [1, 2, 1], [1, 2, 1], bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
 
 
 def test_histogram_bin_edges() -> None:
     """Test function test_histogram_bin_edges."""
     res = _np_histogram_bin_edges_(np, [1, 2, 1], bins=[0, 1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res, [0, 1, 2, 3])
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res, [0, 1, 2, 3])
 
 
 def test_histogramdd() -> None:
     """Test function test_histogramdd."""
-    (res, edges) = cast("Callable[..., EagerTensorProtocol]", _np_histogramdd_)(np, ([1, 2, 1], [1, 2, 1]), bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
+    (res, edges) = cast("EagerCallableProtocol", _np_histogramdd_)(np, ([1, 2, 1], [1, 2, 1]), bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
 
 
@@ -105,7 +103,11 @@ def test_confusion_matrix() -> None:
         """Test class MockData."""
 
         def __init__(self, data: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
     res_mock = _np_confusion_matrix(np, MockData(y_true), MockData(y_pred))
@@ -117,7 +119,7 @@ def test_descriptive() -> None:
     a = np.array([1, 2, 3, 4, 5])
     res = _np_descriptive(np, a)
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("mean")) == 3.0
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("std")) == cast("Callable[..., EagerTensorProtocol]", pytest.approx)(1.41421356)
+    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("std")) == cast("EagerCallableProtocol", pytest.approx)(1.41421356)
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("min")) == 1
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")("max")) == 5
     res_kwargs = _np_descriptive(np, a=a)
@@ -129,7 +131,11 @@ def test_descriptive() -> None:
         """Test class MockData."""
 
         def __init__(self, data: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
     res_mock = _np_descriptive(np, MockData(a))

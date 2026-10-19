@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 MetricsVal = Union[list[float], float]
 
@@ -225,7 +225,7 @@ def test_edge_profiler_coverage() -> None:
     # 3. profile_graph
     profiler = edge_prof_mod.EdgeProfiler()
     inputs = {"x": np.ones((1, 10), dtype=np.float32)}
-    res = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+    res = cast("EagerCallableProtocol", profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
     assert "latency_ms" in res
     assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
 
@@ -233,10 +233,10 @@ def test_edge_profiler_coverage() -> None:
     failing_graph = IRGraph(name="failing")
     failing_graph.nodes["bad"] = IRNode(id="bad", op_type="NonexistentOp", inputs=["x"])
     failing_graph.inputs = ["x"]
-    res_fallback = cast("Callable[..., EagerTensorProtocol]", profiler.profile_graph)(failing_graph, inputs, num_iters=1, warmup_iters=1)
+    res_fallback = cast("EagerCallableProtocol", profiler.profile_graph)(failing_graph, inputs, num_iters=1, warmup_iters=1)
     assert "latency_ms" in res_fallback
 
     # Mismatched inputs fallback
     mismatched_inputs = {"other_key": np.ones((1, 10), dtype=np.float32)}
-    prepared = cast("Callable[..., EagerTensorProtocol]", profiler._prepare_inputs)(graph, mismatched_inputs)
+    prepared = cast("EagerCallableProtocol", profiler._prepare_inputs)(graph, mismatched_inputs)
     assert len(prepared) == 1

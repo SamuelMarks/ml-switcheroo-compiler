@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, ite
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 pytest.importorskip("tensorflow")
 
 
@@ -53,19 +51,23 @@ def test_tensorflow_generator_coverage() -> None:
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with pytest.raises((NotImplementedError, BackendNotSupportedError)):
-        cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownFakeOp", 1)
-    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1, 1)
-    assert cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2,)) is not None
+        cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", 1)
+    cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 1)
+    assert cast("EagerCallableProtocol", zeros)(None, (2,)) is not None
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2])
+        cast("EagerCallableProtocol", array)(None, [1, 2])
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", asarray)(None, [3, 4])
+        cast("EagerCallableProtocol", asarray)(None, [3, 4])
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", item)(None, cast("Callable[..., EagerTensorProtocol]", tf.constant)([5]))
+        cast("EagerCallableProtocol", item)(None, cast("EagerCallableProtocol", tf.constant)([5]))
 
 
 def test_tensorflow_generator_methods(tmp_path: EagerTensorProtocol) -> None:
-    """Test coverage."""
+    """Test coverage.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     pass
     file_path = str(tmp_path / "dummy_tensor_data.path")
     TensorFlowCodeGenerator.save(file_path, "arr")

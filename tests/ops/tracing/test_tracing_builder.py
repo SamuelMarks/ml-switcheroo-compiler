@@ -8,19 +8,26 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_extract_from_constant(mocker: EagerTensorProtocol) -> None:
-    """Test function test_extract_from_constant."""
+    """Test function test_extract_from_constant.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
 
     class Proxy:
         """Test class Proxy."""
 
         def __init__(self, id: EagerValue, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                id: Test parameter `id`.
+                shape: Test parameter `shape`.
+            """
             self.id = id
             self.shape = shape
 
@@ -34,7 +41,11 @@ def test_extract_from_constant(mocker: EagerTensorProtocol) -> None:
 
 
 def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
-    """Test function test_extract_from_tensor."""
+    """Test function test_extract_from_tensor.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.is_tracing", True)
     mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.active_graph", True)
     mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.add_node")
@@ -47,7 +58,7 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             self.data = type("M", (), {"id": "1"})()
             self.shape = (2,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(cast("Callable[..., EagerTensorProtocol]", MockTensor1)()) == ("1", (2,))
+    assert cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", MockTensor1)()) == ("1", (2,))
 
     class MockTensor2:
         """Test class MockTensor2."""
@@ -57,7 +68,7 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             self.data = 42
             self.shape = ()
 
-    res = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(cast("Callable[..., EagerTensorProtocol]", MockTensor2)())
+    res = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", MockTensor2)())
     assert res[1] == ()
 
     # Test the branch where hasattr(global_tracing_state, "constant_cache") is False
@@ -68,24 +79,33 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
     original_hasattr = hasattr
 
     def custom_hasattr(obj: EagerValue, name: EagerValue) -> EagerValue:
-        """Test function custom_hasattr."""
+        """Test function custom_hasattr.
+
+        Args:
+            obj: Test parameter `obj`.
+            name: Test parameter `name`.
+        """
         if cast("EagerTensorProtocol", obj) is cast("EagerTensorProtocol", global_tracing_state) and cast("EagerTensorProtocol", name) == cast("EagerTensorProtocol", "constant_cache"):
             return False
-        return cast("Callable[..., EagerTensorProtocol]", original_hasattr)(obj, name)
+        return cast("EagerCallableProtocol", original_hasattr)(obj, name)
 
     with patch("builtins.hasattr", side_effect=custom_hasattr):
-        res2 = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(cast("Callable[..., EagerTensorProtocol]", MockTensor2)())
+        res2 = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", MockTensor2)())
         assert res2[1] == ()
 
     # Hit the cache condition
     m2 = MockTensor2()
     with patch.object(global_tracing_state, "constant_cache", {id(m2.data): "cached_id"}, create=True):
-        res3 = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(m2)
+        res3 = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(m2)
         assert res3 == ("cached_id", ())
 
 
 def test_extract_proxy_inputs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_extract_proxy_inputs."""
+    """Test function test_extract_proxy_inputs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.is_tracing", True)
@@ -106,7 +126,11 @@ def test_extract_proxy_inputs(mocker: EagerTensorProtocol) -> None:
 
 
 def test_create_tracing_logical_node(mocker: EagerTensorProtocol) -> None:
-    """Test function test_create_tracing_logical_node."""
+    """Test function test_create_tracing_logical_node.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.is_tracing", True)
     mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.active_graph", True)
     mock_add = mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.add_node")
@@ -116,7 +140,11 @@ def test_create_tracing_logical_node(mocker: EagerTensorProtocol) -> None:
 
 
 def test_emit_tracing_node(mocker: EagerTensorProtocol) -> None:
-    """Test function test_emit_tracing_node."""
+    """Test function test_emit_tracing_node.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     mocker.patch("ml_switcheroo_compiler.tracing.builder.global_tracing_state.is_tracing", True)

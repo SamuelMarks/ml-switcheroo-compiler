@@ -14,7 +14,11 @@ if TYPE_CHECKING:
 
 
 def test_export_mlirbc(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_export_mlirbc."""
+    """Test function test_export_mlirbc.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input")
     g.nodes = {"n1": n1}

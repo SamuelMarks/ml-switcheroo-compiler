@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from typing import cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import BackendRegistry, EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import BackendRegistry, EagerCallableProtocol, get_active_backend
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -108,7 +108,7 @@ def _try_fold_single_node(
     try:
         from ml_switcheroo_ir import AttributeValue
 
-        val = cast("Callable[..., EagerTensorProtocol]", _evaluate_constant_node)(node, canonical_inputs, graph, backend)
+        val = cast("EagerCallableProtocol", _evaluate_constant_node)(node, canonical_inputs, graph, backend)
         graph.nodes[node.id].op_type = "Constant"
         graph.nodes[node.id].attributes = cast("dict[str, AttributeValue]", {"value": val})
         graph.nodes[node.id].inputs = []

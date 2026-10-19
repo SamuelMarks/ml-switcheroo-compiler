@@ -29,9 +29,7 @@ from ml_switcheroo_compiler.distributed.strategy import (
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _make_graph() -> EagerValue:
@@ -55,8 +53,8 @@ def test_parameter_server_strategy() -> None:
     getattr(getattr(graph, "nodes"), "__setitem__")("scalar_const", IRNode(id="scalar_const", op_type="Constant", inputs=[], attributes={"is_scalar": True}))
     cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(graph, "nodes")), "__getitem__")("node_1")).inputs.extend(["const_node", "scalar_const"])
     getattr(getattr(graph, "nodes"), "__setitem__")("add_after", IRNode(id="add_after", op_type="Add", inputs=["grad_node"], attributes={}))
-    cast("Callable[..., EagerTensorProtocol]", strategy.push_gradients)(graph)
-    cast("Callable[..., EagerTensorProtocol]", strategy.pull_weights)(graph)
+    cast("EagerCallableProtocol", strategy.push_gradients)(graph)
+    cast("EagerCallableProtocol", strategy.pull_weights)(graph)
 
     # Verify scalar constant was NOT replaced by Recv
     assert "scalar_const" in cast("EagerTensorProtocol", getattr(graph, "nodes"))
@@ -105,7 +103,7 @@ def test_data_parallel_strategy() -> None:
     """Test function test_data_parallel_strategy."""
     strategy = DataParallelStrategy(mesh_axis="dp")
     graph = _make_graph()
-    assert cast("Callable[..., EagerTensorProtocol]", strategy.sync_gradients)(graph)
+    assert cast("EagerCallableProtocol", strategy.sync_gradients)(graph)
     assert any(n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp" for n in cast("EagerTensorProtocol", getattr(graph, "nodes")).values())
 
     # Try with empty graph
@@ -134,7 +132,7 @@ def test_pipeline_parallel_strategy() -> None:
     strategy = PipelineParallelismStrategy(num_microbatches=4, topology_name="invalid_one")
     # Will use fallback config
     graph = _make_graph()
-    assert cast("Callable[..., EagerTensorProtocol]", strategy.lower)(graph)
+    assert cast("EagerCallableProtocol", strategy.lower)(graph)
     assert "pipeline_schedule" in cast("EagerTensorProtocol", getattr(graph, "attributes"))
     assert not strategy.lower(IRGraph())
 
@@ -143,7 +141,7 @@ def test_pipeline_parallel_strategy() -> None:
 
     with patch("ml_switcheroo_compiler.distributed.strategy._load_strategy_config", return_value={}):
         strategy_noyaml = PipelineParallelismStrategy(num_microbatches=4)
-        cast("Callable[..., EagerTensorProtocol]", strategy_noyaml.lower)(cast("Callable[..., EagerTensorProtocol]", _make_graph)())
+        cast("EagerCallableProtocol", strategy_noyaml.lower)(cast("EagerCallableProtocol", _make_graph)())
 
     # Test yaml driven schedule by mocking _load_strategy_config
     config = TopologyConfig(
@@ -162,13 +160,13 @@ def test_pipeline_parallel_strategy() -> None:
         m.return_value = {"custom": config}
         strategy = PipelineParallelismStrategy(topology_name="custom")
         graph = _make_graph()
-        assert cast("Callable[..., EagerTensorProtocol]", strategy.lower)(graph)
+        assert cast("EagerCallableProtocol", strategy.lower)(graph)
         assert isinstance(strategy.get_communication_protocol(), str)
     s2 = MultiWorkerMirroredStrategy(target_env="browser")
     assert s2.get_communication_protocol() == "webrtc"
 
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", strategy.split_into_stages)(graph, 0)
+        cast("EagerCallableProtocol", strategy.split_into_stages)(graph, 0)
 
     with patch("ml_switcheroo_compiler.distributed.config_models.PipelineTopologiesConfig.get", return_value=None):
         with pytest.raises(ValueError):
@@ -180,10 +178,10 @@ def test_mesh_sharding_strategy() -> None:
     strategy = MeshShardingStrategy()
     graph = _make_graph()
     # propagate_layouts is pass
-    cast("Callable[..., EagerTensorProtocol]", strategy.propagate_layouts)(graph)
+    cast("EagerCallableProtocol", strategy.propagate_layouts)(graph)
 
     setattr(getattr(getattr(graph, "nodes"), "__getitem__")("node_1"), "sharding", "shard1")
-    cast("Callable[..., EagerTensorProtocol]", strategy.lower_sharding)(graph)
+    cast("EagerCallableProtocol", strategy.lower_sharding)(graph)
     strategy.lower_sharding(IRGraph())
     assert graph is not None
 
@@ -349,7 +347,7 @@ def test_server_early_return() -> None:
     """Test function test_server_early_return."""
     server4 = Server()
     server4._run_server()
-    assert server4 is not None or server4 is None
+    assert isinstance(server4, Server)
 
 
 def test_slurm_empty_nodes() -> None:
@@ -413,7 +411,11 @@ def test_server_run_unknown_action_and_send_action() -> None:
         header_len = len(header).to_bytes(4, "big")
 
         def mock_recv_ping(size: EagerValue) -> EagerValue:
-            """Test function mock_recv_ping."""
+            """Test function mock_recv_ping.
+
+            Args:
+                size: Test parameter `size`.
+            """
             if size == 4:
                 server._running = False
                 return header_len
@@ -448,7 +450,11 @@ def test_server_run_unknown_action_and_send_action() -> None:
                 self.calls = 0
 
             def __call__(self, size: EagerValue) -> EagerValue:
-                """Test function __call__."""
+                """Test function __call__.
+
+                Args:
+                    size: Test parameter `size`.
+                """
                 self.calls += 1
                 if self.calls == 1:
                     return header_len
@@ -474,7 +480,12 @@ def test_server_run_unknown_action_and_send_action() -> None:
     server._running = True
 
     def toggle_not_ready(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function toggle_not_ready."""
+        """Test function toggle_not_ready.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         server._running = False
         return ([], [], [])
 

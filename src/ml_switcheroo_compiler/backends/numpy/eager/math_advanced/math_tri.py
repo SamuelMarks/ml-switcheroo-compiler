@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from types import ModuleType
-from typing import TYPE_CHECKING, Callable, Union, cast
+from typing import TYPE_CHECKING, Union, cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import _get_np_arg
 
 if TYPE_CHECKING:
@@ -192,7 +192,7 @@ def _np_asstringconfig(
     """
     from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig
 
-    return cast(AsStringConfig, cast("Callable[..., EagerTensorProtocol]", AsStringConfig)(*args, **kwargs))
+    return cast(AsStringConfig, cast("EagerCallableProtocol", AsStringConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("LinearOperatorBlockLowerTriangular")

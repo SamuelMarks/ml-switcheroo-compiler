@@ -82,6 +82,12 @@ def test_resolve_api_endpoint_success() -> None:
     assert resolve_api_endpoint("getattr") is True
     assert resolve_api_endpoint("da.abs", "dask") is True
     assert resolve_api_endpoint("jnp.sin", "jax") is True
+    assert resolve_api_endpoint("jax.scipy.special.erf", "jax") is True
+    assert resolve_api_endpoint("jax.numpy.linalg.svd", "jax") is True
+    assert resolve_api_endpoint("jax.ops.segment_sum", "jax") is True
+    assert resolve_api_endpoint("ml_switcheroo_compiler.backends.sparse.kernels.coo_add", "sparse") is True
+    assert resolve_api_endpoint("scipy.special.erf", "numpy") is True
+    assert resolve_api_endpoint("torchvision.ops.nms", "pytorch") is True
 
 
 def test_resolve_api_endpoint_invalid_root() -> None:
@@ -196,10 +202,20 @@ def test_validate_mappings_with_temp_files() -> None:
         orig_relpath = os.path.relpath
 
         def mock_relpath(path: str, start: EagerValue = None) -> str:
-            """Test function mock_relpath."""
+            """Test function mock_relpath.
+
+            Args:
+                path: Test parameter `path`.
+                start: Test parameter `start`.
+            """
             return orig_relpath(path, d)
 
-        with patch("glob.glob", side_effect=[[filepath, py_filepath, skip_file, ops_file, non_dict_file], [], []]), patch("os.path.relpath", side_effect=mock_relpath):
+        unknown_be_file: str = os.path.join(d, "unknown_backend", "mappings", "skip_be.yaml")
+        os.makedirs(os.path.dirname(unknown_be_file))
+        with open(unknown_be_file, "w", encoding="utf-8") as f:
+            yaml.dump({"op": {"target_api": "x"}}, f)
+
+        with patch("glob.glob", side_effect=[[filepath, py_filepath, skip_file, ops_file, non_dict_file, unknown_be_file], [], []]), patch("os.path.relpath", side_effect=mock_relpath):
             errors = validate_mappings()
 
         err_str: str = " ".join(errors)

@@ -183,8 +183,20 @@ operations:
     target_api: cupy.ones
   Eye:
     target_api: cupy.eye
+  Identity:
+    target_api: cupy.identity
   Arange:
     target_api: cupy.arange
+  Linspace:
+    target_api: cupy.linspace
+  Triu:
+    target_api: cupy.triu
+  Tril:
+    target_api: cupy.tril
+  Flatten:
+    target_api: cupy.ravel
+  Div:
+    target_api: cupy.divide
   Relu:
     target_api: custom_op
     custom_code: "lambda x: backend_module.maximum(x, 0)"

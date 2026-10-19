@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FallbackHandler, FormatterContext, OpFormatter
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_formatter_context() -> None:
@@ -34,7 +32,7 @@ def test_fallback_handler() -> None:
 
         op_type = "Mean"
 
-    assert cast("Callable[..., EagerTensorProtocol]", FallbackHandler.generate_fallback_code)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
+    assert cast("EagerCallableProtocol", FallbackHandler.generate_fallback_code)(cast("EagerCallableProtocol", DummyNode)(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
 
 
 def test_code_formatter() -> None:
@@ -82,7 +80,7 @@ def test_fallback_handler_missing_op_type() -> None:
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", FallbackHandler.generate_fallback_code)(cast("Callable[..., EagerTensorProtocol]", DummyNodeNoOp)(), ["a"], "np") == "np.unknown(a)"
+    assert cast("EagerCallableProtocol", FallbackHandler.generate_fallback_code)(cast("EagerCallableProtocol", DummyNodeNoOp)(), ["a"], "np") == "np.unknown(a)"
 
 
 def test_op_formatter_edge_cases_continue() -> None:

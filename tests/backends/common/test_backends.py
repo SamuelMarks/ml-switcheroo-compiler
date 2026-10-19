@@ -153,13 +153,17 @@ try:
 except ImportError:
     typ_common = None
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: EagerValue) -> None:
-    """Exercise eager and generator registries on a backend module."""
+    """Exercise eager and generator registries on a backend module.
+
+    Args:
+        mod: Test parameter `mod`.
+        generator_mod: Test parameter `generator_mod`.
+        mock_b: Test parameter `mock_b`.
+    """
     if hasattr(mod, "eager_registry"):
         for _op, func in cast("EagerTensorProtocol", getattr(mod, "eager_registry"))._registry.items():
             if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
@@ -178,7 +182,11 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
 
 
 def _exercise_types_mod(types_mod: EagerValue) -> None:
-    """Exercise to_/from_ functions on a backend types module."""
+    """Exercise to_/from_ functions on a backend types module.
+
+    Args:
+        types_mod: Test parameter `types_mod`.
+    """
     if types_mod is None:
         return
     for func_name in dir(types_mod):
@@ -209,7 +217,7 @@ def test_backends_brute_force() -> None:
     for mod, generator_mod, types_mod in modules:
         _exercise_eager_and_gen(mod, generator_mod, mock_b)
         _exercise_types_mod(types_mod)
-    for fn_call in (lambda: cast("Callable[..., EagerTensorProtocol]", registry.register_backend)("dummy", cast("Callable[..., EagerTensorProtocol]", MagicMock)()), registry.get_active_backend, lambda: cast("EagerTensorProtocol", getattr(registry, "set_active_backend"))("dummy")):
+    for fn_call in (lambda: cast("EagerCallableProtocol", registry.register_backend)("dummy", cast("EagerCallableProtocol", MagicMock)()), registry.get_active_backend, lambda: cast("EagerTensorProtocol", getattr(registry, "set_active_backend"))("dummy")):
         try:
             fn_call()
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):

@@ -9,9 +9,7 @@ import pytest
 from ml_switcheroo_compiler.ops.eager_evaluator import EvaluationContext, EvaluationStrategy
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_evaluation_strategy_base() -> None:
@@ -21,9 +19,13 @@ def test_evaluation_strategy_base() -> None:
         """Test class DummyStrategy."""
 
         def evaluate(self, ctx: EagerValue) -> EagerValue:
-            """Test function evaluate."""
-            return cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(super(), "evaluate")))(ctx)
+            """Test function evaluate.
 
-    ctx = cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
+            Args:
+                ctx: Test parameter `ctx`.
+            """
+            return cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(super(), "evaluate")))(ctx)
+
+    ctx = cast("EagerCallableProtocol", EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
     with pytest.raises(NotImplementedError):
         DummyStrategy().evaluate(ctx)

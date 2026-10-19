@@ -14,33 +14,55 @@ from ml_switcheroo_compiler.backends.eager.optimizers import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockBackend:
     """Mock backend for optimizers."""
 
     def add(self, a: EagerValue, b: EagerValue) -> EagerValue:
-        """Test function add."""
+        """Test function add.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("EagerTensorProtocol", a) + cast("EagerTensorProtocol", b)
 
     def subtract(self, a: EagerValue, b: EagerValue) -> EagerValue:
-        """Test function subtract."""
+        """Test function subtract.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("EagerTensorProtocol", a) - cast("EagerTensorProtocol", b)
 
     def multiply(self, a: EagerValue, b: EagerValue) -> EagerValue:
-        """Test function multiply."""
+        """Test function multiply.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("EagerTensorProtocol", a) * cast("EagerTensorProtocol", b)
 
     def divide(self, a: EagerValue, b: EagerValue) -> EagerValue:
-        """Test function divide."""
+        """Test function divide.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("EagerTensorProtocol", a) / cast("EagerTensorProtocol", b)
 
     def sqrt(self, a: EagerValue) -> EagerValue:
-        """Test function sqrt."""
-        return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.sqrt)(a))
+        """Test function sqrt.
+
+        Args:
+            a: Test parameter `a`.
+        """
+        return cast("EagerValue", cast("EagerCallableProtocol", np.sqrt)(a))
 
 
 def test_apply_adam() -> None:
@@ -52,7 +74,7 @@ def test_apply_adam() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, m_new, v_new = cast("Callable[..., EagerTensorProtocol]", apply_adam)(backend, param, m, v, grad, lr)
+    p_new, m_new, v_new = cast("EagerCallableProtocol", apply_adam)(backend, param, m, v, grad, lr)
     assert cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
     assert cast("EagerTensorProtocol", getattr(m_new, "shape")) == (2,)
     assert cast("EagerTensorProtocol", getattr(v_new, "shape")) == (2,)
@@ -66,7 +88,7 @@ def test_apply_adagrad() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, accum_new = cast("Callable[..., EagerTensorProtocol]", apply_adagrad)(backend, param, accum, grad, lr)
+    p_new, accum_new = cast("EagerCallableProtocol", apply_adagrad)(backend, param, accum, grad, lr)
     assert cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
     assert cast("EagerTensorProtocol", getattr(accum_new, "shape")) == (2,)
 
@@ -80,7 +102,7 @@ def test_apply_ftrl() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, accum_new, linear_new = cast("Callable[..., EagerTensorProtocol]", apply_ftrl)(backend, param, accum, linear, grad, lr)
+    p_new, accum_new, linear_new = cast("EagerCallableProtocol", apply_ftrl)(backend, param, accum, linear, grad, lr)
     assert cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
     assert cast("EagerTensorProtocol", getattr(accum_new, "shape")) == (2,)
     assert cast("EagerTensorProtocol", getattr(linear_new, "shape")) == (2,)
@@ -95,7 +117,7 @@ def test_apply_rmsprop() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, ms_new, mom_new = cast("Callable[..., EagerTensorProtocol]", apply_rmsprop)(backend, param, ms, mom, grad, lr)
+    p_new, ms_new, mom_new = cast("EagerCallableProtocol", apply_rmsprop)(backend, param, ms, mom, grad, lr)
     assert cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
     assert cast("EagerTensorProtocol", getattr(ms_new, "shape")) == (2,)
     assert cast("EagerTensorProtocol", getattr(mom_new, "shape")) == (2,)

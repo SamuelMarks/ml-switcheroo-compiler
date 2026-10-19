@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.backends.common.mixins.variable import VariableASTVi
 from ml_switcheroo_compiler.ir.core import IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class _MockDimWithId:
@@ -63,7 +61,7 @@ class _MockGenerator:
 
 def test_variable_ast_visitor_exhaustive() -> None:
     """Verify VariableASTVisitor code generation methods."""
-    visitor = cast("Callable[..., EagerTensorProtocol]", VariableASTVisitor)(generator=cast("Callable[..., EagerTensorProtocol]", _MockGenerator)())
+    visitor = cast("EagerCallableProtocol", VariableASTVisitor)(generator=cast("EagerCallableProtocol", _MockGenerator)())
 
     node = IRNode("node_assign", "Assign")
     assign_str = visitor.visit_Assign(node, ["dest_var", "src_var"])

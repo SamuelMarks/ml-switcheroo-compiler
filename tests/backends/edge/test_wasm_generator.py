@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_wasm_generator() -> None:
@@ -30,7 +28,7 @@ def test_wasm_generator() -> None:
 
     orig = ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.copy()
     ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.clear()
-    cast("Callable[..., EagerTensorProtocol]", ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update)(OPS_REGISTRY)
+    cast("EagerCallableProtocol", ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update)(OPS_REGISTRY)
 
     try:
         graph = IRGraph()
@@ -42,7 +40,7 @@ def test_wasm_generator() -> None:
         gen = WasmCodeGenerator(graph)
         code = gen.generate()
         assert code is not None
-        assert "export" in code or "(func" in code or "memory" in code or True
+        assert isinstance(code, str) and len(code) > 0
     finally:
         ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.clear()
         ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update(orig)
@@ -266,14 +264,14 @@ def _test_wasm_additional_edges_and_telemetry_part_2(_state: dict[str, EagerTens
     node_tan = IRNode(id="tan_node", op_type="Tan", inputs=["in_tan"])
     gen.code.clear()
     gen._generate_vector_unrolled_op(node_tan, "Tan", "tan_node", ["in_tan"], [4], 4)
-    assert "buf_in_tan" in cast("Callable[..., EagerTensorProtocol]", "\n".join)(gen.code)
+    assert "buf_in_tan" in cast("EagerCallableProtocol", "\n".join)(gen.code)
 
     # _generate_vector_unrolled_op when intrinsics.yaml does not exist
     node_sin = IRNode(id="sin_node", op_type="Sin", inputs=["in_sin"])
     with patch.object(os.path, "exists", return_value=False):
         gen.code.clear()
         gen._generate_vector_unrolled_op(node_sin, "Sin", "sin_node", ["in_sin"], [4], 4)
-        assert "std::sin" in cast("Callable[..., EagerTensorProtocol]", "\n".join)(gen.code)
+        assert "std::sin" in cast("EagerCallableProtocol", "\n".join)(gen.code)
 
     # 3. _generate_vector_unrolled_op when op is completely unimplemented (lines 867->870)
     node_unimpl = IRNode(id="unimpl", op_type="UnknownOpXYZ", inputs=["in0"])
@@ -309,7 +307,7 @@ def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTens
         with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.config_models.WasmIntrinsicsConfig.model_dump", return_value=fake_intrinsics):
             gen.code.clear()
             gen._generate_vector_unrolled_op(node_spec, "SpecialSimd", "spec", ["in0"], [4], 4)
-            code_spec = cast("Callable[..., EagerTensorProtocol]", "\n".join)(gen.code)
+            code_spec = cast("EagerCallableProtocol", "\n".join)(gen.code)
             assert "wasm_f32x4_extract_lane" in code_spec
 
     # 5. apply_shape_telemetry exhaustive branches (lines 1173, 1180->1176, 1182->1188, 1187, 1193->1191, 1199-1200, 1202, 1203->1195, 1205->1191)
@@ -324,7 +322,11 @@ def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTens
             self.node = self
 
         def eval(self, env: dict[str, int]) -> int:
-            """Test function eval."""
+            """Test function eval.
+
+            Args:
+                env: Test parameter `env`.
+            """
             raise RuntimeError("Eval failed")
 
         def __int__(self) -> int:
@@ -334,7 +336,7 @@ def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTens
     n_valid_str = IRNode(id="n1", op_type="Input", shape_metadata=["B", "Seq"])
     n_non_list_concrete = IRNode(id="n2", op_type="Input", shape_metadata=["B"])
     n_len_mismatch = IRNode(id="n3", op_type="Input", shape_metadata=["B", 10])
-    n_failing_eval = cast("Callable[..., EagerTensorProtocol]", IRNode)(id="n4", op_type="Relu", inputs=["n1"], shape_metadata=[cast("Callable[..., EagerTensorProtocol]", FailingEvalDim)()])
+    n_failing_eval = cast("EagerCallableProtocol", IRNode)(id="n4", op_type="Relu", inputs=["n1"], shape_metadata=[cast("EagerCallableProtocol", FailingEvalDim)()])
     getattr(_state, "update")({"FailingEvalDim": FailingEvalDim, "code_spec": code_spec, "n_failing_eval": n_failing_eval, "n_len_mismatch": n_len_mismatch})
     getattr(_state, "update")({"n_non_list_concrete": n_non_list_concrete, "n_valid_str": n_valid_str})
     _state.update(locals())
@@ -373,7 +375,7 @@ def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTens
         "n2": 42,  # not list/tuple (line 1180->1176)
         "n3": [16, 10, 20],  # len mismatch (line 1182->1188)
     }
-    cast("Callable[..., EagerTensorProtocol]", gen2.apply_shape_telemetry)(telemetry_payload)
+    cast("EagerCallableProtocol", gen2.apply_shape_telemetry)(telemetry_payload)
     assert n_valid_str.shape_metadata == (16, 64)
     assert n_failing_eval.shape_metadata == (1,)
     getattr(_state, "update")({"g2": g2, "gen2": gen2, "n_no_meta": n_no_meta, "n_unresolved_str": n_unresolved_str})
@@ -387,7 +389,7 @@ def test_wasm_additional_edges_and_telemetry() -> None:
     _test_wasm_additional_edges_and_telemetry_part_2(_state)
     _test_wasm_additional_edges_and_telemetry_part_3(_state)
     _test_wasm_additional_edges_and_telemetry_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_wasm_generate_wat_expanded_opcodes() -> None:

@@ -43,9 +43,7 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -63,7 +61,13 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
         """Test class DummyBackend."""
 
         def execute_op(self, __op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                __op: Test parameter `__op`.
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
 
             class T:
                 """Test class T."""
@@ -100,12 +104,12 @@ def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", hierarchical_copy_all_reduce)(t), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", broadcast)(t), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", all_gather)(t), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", reduce)(t), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", all_reduce)(t), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", reduce_scatter)(t), "shape")) == (1,)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", hierarchical_copy_all_reduce)(t), "shape")) == (1,)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", broadcast)(t), "shape")) == (1,)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", all_gather)(t), "shape")) == (1,)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", reduce)(t), "shape")) == (1,)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", all_reduce)(t), "shape")) == (1,)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", reduce_scatter)(t), "shape")) == (1,)
     assert cast("EagerTensorProtocol", getattr(all_to_all(t), "shape")) == (1,)
     assert cast("EagerTensorProtocol", getattr(broadcast_arrays(t), "shape")) == (1,)
     assert cast("EagerTensorProtocol", getattr(broadcast_to(t), "shape")) == (1,)
@@ -162,14 +166,14 @@ def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None
     config, dist, has_reg_backend, orig_dist_backend = _state["config"], _state["dist"], _state["has_reg_backend"], _state["orig_dist_backend"]
     orig_reg_backend, patch, reg, t = _state["orig_reg_backend"], _state["patch"], _state["reg"], _state["t"]
     with patch("ml_switcheroo_compiler.ops.distributed_ops._emit_shape_node", return_value="emitted"):
-        assert cast("Callable[..., EagerTensorProtocol]", shard_tensor)(t, None, None) == "emitted"
-        assert cast("Callable[..., EagerTensorProtocol]", nccl_all_reduce)(t) == "emitted"
-        assert cast("Callable[..., EagerTensorProtocol]", hierarchical_copy_all_reduce)(t) == "emitted"
-        assert cast("Callable[..., EagerTensorProtocol]", broadcast)(t) == "emitted"
-        assert cast("Callable[..., EagerTensorProtocol]", all_gather)(t) == "emitted"
-        assert cast("Callable[..., EagerTensorProtocol]", reduce)(t) == "emitted"
-        assert cast("Callable[..., EagerTensorProtocol]", all_reduce)(t) == "emitted"
-        assert cast("Callable[..., EagerTensorProtocol]", reduce_scatter)(t) == "emitted"
+        assert cast("EagerCallableProtocol", shard_tensor)(t, None, None) == "emitted"
+        assert cast("EagerCallableProtocol", nccl_all_reduce)(t) == "emitted"
+        assert cast("EagerCallableProtocol", hierarchical_copy_all_reduce)(t) == "emitted"
+        assert cast("EagerCallableProtocol", broadcast)(t) == "emitted"
+        assert cast("EagerCallableProtocol", all_gather)(t) == "emitted"
+        assert cast("EagerCallableProtocol", reduce)(t) == "emitted"
+        assert cast("EagerCallableProtocol", all_reduce)(t) == "emitted"
+        assert cast("EagerCallableProtocol", reduce_scatter)(t) == "emitted"
         assert all_to_all(t) == "emitted"
         assert broadcast_arrays(t) == "emitted"
         assert broadcast_to(t) == "emitted"
@@ -192,4 +196,4 @@ def test_distributed_ops() -> None:
     _test_distributed_ops_part_2(_state)
     _test_distributed_ops_part_3(_state)
     _test_distributed_ops_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

@@ -25,9 +25,7 @@ from ml_switcheroo_compiler.ops.creation.frontend_basic import (
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def _side_effect_type_error(obj: EagerValue, dtype: EagerValue = None) -> list[EagerValue]:
@@ -82,7 +80,7 @@ def test_frontend_basic_dtype_object_and_unknown() -> None:
 
         dtype = "int32"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _infer_dtype)(cast("Callable[..., EagerTensorProtocol]", DummyObj)()) == DType.Int32
+    assert cast("EagerCallableProtocol", _infer_dtype)(cast("EagerCallableProtocol", DummyObj)()) == DType.Int32
 
 
 def test_frontend_basic_get_dtype_val() -> None:

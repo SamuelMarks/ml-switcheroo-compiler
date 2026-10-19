@@ -10,9 +10,7 @@ from unittest.mock import patch
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 backends_to_test = {
     "mlx": "The 'mlx' backend requires the 'mlx' library to be installed.",
@@ -29,7 +27,12 @@ backends_to_test = {
 
 @pytest.mark.parametrize("backend,error_msg", backends_to_test.items())
 def test_backend_import_error(backend: EagerTensorProtocol, error_msg: EagerTensorProtocol) -> None:
-    """Test function test_backend_import_error."""
+    """Test function test_backend_import_error.
+
+    Args:
+        backend: Test parameter `backend`.
+        error_msg: Test parameter `error_msg`.
+    """
     mod_name = f"ml_switcheroo_compiler.backends.{backend}"
     mod = importlib.import_module(mod_name)
 
@@ -40,13 +43,17 @@ def test_backend_import_error(backend: EagerTensorProtocol, error_msg: EagerTens
             if "sphinx" in sys.modules:
                 del sys.modules["sphinx"]
 
-            with cast("Callable[..., EagerTensorProtocol]", pytest.raises)(ImportError, match=error_msg):
+            with cast("EagerCallableProtocol", pytest.raises)(ImportError, match=error_msg):
                 importlib.reload(mod)
 
 
 @pytest.mark.parametrize("backend", backends_to_test.keys())
 def test_backend_value_error(backend: EagerTensorProtocol) -> None:
-    """Test function test_backend_value_error."""
+    """Test function test_backend_value_error.
+
+    Args:
+        backend: Test parameter `backend`.
+    """
     mod_name = f"ml_switcheroo_compiler.backends.{backend}"
     mod = importlib.import_module(mod_name)
 
@@ -59,4 +66,4 @@ def test_backend_value_error(backend: EagerTensorProtocol) -> None:
 
             # Should not raise ImportError because ValueError means it's loaded
             importlib.reload(mod)
-    assert mod is not None or mod is None
+    assert mod.__name__ == mod_name

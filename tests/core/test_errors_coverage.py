@@ -21,7 +21,11 @@ from ml_switcheroo_compiler.core.errors import (
 
 
 def test_core_errors_exhaustive(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify SwitcherooError formatting, templates, KeyError fallback, and all subclasses."""
+    """Verify SwitcherooError formatting, templates, KeyError fallback, and all subclasses.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     # 1. Base error with custom message and full context metadata
     e = SwitcherooError("Direct message")
     assert str(e) == "Direct message"

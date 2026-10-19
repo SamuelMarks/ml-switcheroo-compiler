@@ -26,9 +26,7 @@ from ml_switcheroo_compiler.serialization import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_load_model_edge_branches() -> None:
@@ -53,9 +51,13 @@ def test_load_model_edge_branches() -> None:
 
         # Test case 2: tmp_path does not exist when entering finally (e.g. removed beforehand)
         def remove_and_load(p: EagerValue) -> EagerValue:
-            """Test function remove_and_load."""
-            if cast("Callable[..., EagerTensorProtocol]", os.path.exists)(p):
-                cast("Callable[..., EagerTensorProtocol]", os.remove)(p)
+            """Test function remove_and_load.
+
+            Args:
+                p: Test parameter `p`.
+            """
+            if cast("EagerCallableProtocol", os.path.exists)(p):
+                cast("EagerCallableProtocol", os.remove)(p)
             return {"w": 2}
 
         with patch("ml_switcheroo_compiler.serialization._load_h5_weights", side_effect=remove_and_load):
@@ -256,7 +258,7 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
         from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
         SafetensorsWeightFormat().save({"st_w": np.ones((1,), dtype=np.float32)}, os.path.join(ckpt_dir, "model.safetensors"))
-        cast("Callable[..., EagerTensorProtocol]", H5WeightFormat)().save({"h5_w": cast("Callable[..., EagerTensorProtocol]", np.ones)((1,), dtype=np.float32)}, cast("Callable[..., EagerTensorProtocol]", os.path.join)(ckpt_dir, "model.h5"))
+        cast("EagerCallableProtocol", H5WeightFormat)().save({"h5_w": cast("EagerCallableProtocol", np.ones)((1,), dtype=np.float32)}, cast("EagerCallableProtocol", os.path.join)(ckpt_dir, "model.h5"))
 
         restored = run_restore_ops(ckpt_dir)
         assert "w1" in restored
@@ -269,20 +271,34 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
             """Test class DummyWeightWithAssign."""
 
             def __init__(self, name: str, shape: tuple[int, ...]) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    name: Test parameter `name`.
+                    shape: Test parameter `shape`.
+                """
                 self.name = name
                 self.shape = shape
                 self.assigned_val: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
 
             def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
-                """Test function assign."""
+                """Test function assign.
+
+                Args:
+                    val: Test parameter `val`.
+                """
                 self.assigned_val = val
 
         class DummyWeightNoAssign:
             """Test class DummyWeightNoAssign."""
 
             def __init__(self, name: str, shape: tuple[int, ...]) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    name: Test parameter `name`.
+                    shape: Test parameter `shape`.
+                """
                 self.name = name
                 self.shape = shape
 
@@ -325,7 +341,11 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
             """Test class DummyVar."""
 
             def __init__(self, shape: tuple[int, ...]) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    shape: Test parameter `shape`.
+                """
                 self.shape = shape
 
         # Both present variable and missing variable

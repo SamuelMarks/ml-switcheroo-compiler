@@ -11,9 +11,7 @@ import pytest
 import ml_switcheroo_compiler.backends.dask.types as dask_types
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class _MockBackendModule:
@@ -105,7 +103,11 @@ def _sample_shape_fn(a: int, b: int) -> tuple[int, int]:
 
 
 def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify dask backend types functions covering both branches of dtype and ImportError."""
+    """Verify dask backend types functions covering both branches of dtype and ImportError.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
 
     class _DummyDaskBackend:
         """Dummy backend class for dask types."""
@@ -121,7 +123,7 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
     arr2 = dask_types.array(_DummyDaskBackend, [3, 4], dtype="float32")
     assert cast("EagerTensorProtocol", getattr(arr2, "compute"))().tolist() == [3.0, 4.0]
 
-    arr3 = cast("Callable[..., EagerTensorProtocol]", dask_types.array)(_DummyDaskBackend, [5, 6], dtype=cast("Callable[..., EagerTensorProtocol]", _MockDaskDtypeWrapper)("int32"))
+    arr3 = cast("EagerCallableProtocol", dask_types.array)(_DummyDaskBackend, [5, 6], dtype=cast("EagerCallableProtocol", _MockDaskDtypeWrapper)("int32"))
     assert cast("EagerTensorProtocol", getattr(arr3, "compute"))().tolist() == [5, 6]
 
     as_arr = dask_types.asarray(_DummyDaskBackend, [7, 8])

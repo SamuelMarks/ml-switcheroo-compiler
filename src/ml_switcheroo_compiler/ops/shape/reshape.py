@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Callable, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -479,7 +479,7 @@ class Diagflat(OpDef):
 
         size = math.prod(getattr(v, "shape"))
         k = args[1] if len(args) > 1 else kwargs.get("k", 0)
-        s = size + cast("Callable[..., EagerTensorProtocol]", abs)(k)
+        s = size + cast("EagerCallableProtocol", abs)(k)
         return (s, s)
 
 

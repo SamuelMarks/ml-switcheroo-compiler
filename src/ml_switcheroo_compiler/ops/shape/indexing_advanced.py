@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # pylint: disable=duplicate-code
@@ -52,7 +52,7 @@ class TopK(OpDef):
         """
         if k is None:
             k = kwargs.get("k", 1)
-        k = cast("Callable[..., EagerTensorProtocol]", _normalize_k)(k)
+        k = cast("EagerCallableProtocol", _normalize_k)(k)
 
         if not hasattr(x, "shape") or not x.shape:
             return (None,)

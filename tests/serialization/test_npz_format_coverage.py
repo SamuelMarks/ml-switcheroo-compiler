@@ -13,9 +13,7 @@ import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class _DummyGenerator:
@@ -200,7 +198,7 @@ def test_npz_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fmt.save(data, filepath)
     loaded = fmt.load(filepath)
     assert "w1" in loaded
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(loaded["w1"], data["w1"])
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(loaded["w1"], data["w1"])
 
     # Backend with save_npz and load_npz
     mock_b = _MockBackendNPZ()

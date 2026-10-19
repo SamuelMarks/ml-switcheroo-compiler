@@ -13,18 +13,21 @@ from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 # Helper to avoid repetitive tensor creation
 def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
-    """Test function make_tensor."""
+    """Test function make_tensor.
+
+    Args:
+        val: Test parameter `val`.
+        shape: Test parameter `shape`.
+    """
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return cast("Callable[..., EagerTensorProtocol]", Tensor)(val, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape, DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
+    return cast("EagerCallableProtocol", Tensor)(val, cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
 
 
 def test_unary_math_rules() -> None:
@@ -35,15 +38,20 @@ def test_unary_math_rules() -> None:
     for op in ops:
 
         def f(x: EagerValue, op_bound: EagerValue = op) -> EagerValue:
-            """Test function f."""
-            return cast("Callable[..., EagerTensorProtocol]", dispatch_op)(op_bound, x)
+            """Test function f.
+
+            Args:
+                x: Test parameter `x`.
+                op_bound: Test parameter `op_bound`.
+            """
+            return cast("EagerCallableProtocol", dispatch_op)(op_bound, x)
 
         x = make_tensor([0.5, 0.5])
         cot = make_tensor([1.0, 1.0])
         try:
-            out, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x)
-            grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
-            assert cast("Callable[..., EagerTensorProtocol]", len)(grads) == 1
+            out, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x)
+            grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+            assert cast("EagerCallableProtocol", len)(grads) == 1
         except Exception as e:
             # Catching exceptions allows us to see which ones are actually missing vs which crash
             print(f"Failed {op}: {e}")
@@ -81,15 +89,21 @@ def test_binary_math_rules() -> None:
     for op in ops:
 
         def f(x: EagerValue, y: EagerValue, op_bound: EagerValue = op) -> EagerValue:
-            """Test function f."""
-            return cast("Callable[..., EagerTensorProtocol]", dispatch_op)(op_bound, x, y)
+            """Test function f.
+
+            Args:
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+                op_bound: Test parameter `op_bound`.
+            """
+            return cast("EagerCallableProtocol", dispatch_op)(op_bound, x, y)
 
         x = make_tensor([0.5, 0.5])
         y = make_tensor([0.2, 0.2])
         cot = make_tensor([1.0, 1.0])
         try:
-            out, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x, y)
-            grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
-            assert cast("Callable[..., EagerTensorProtocol]", len)(grads) == 2
+            out, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x, y)
+            grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+            assert cast("EagerCallableProtocol", len)(grads) == 2
         except Exception as e:
             print(f"Failed {op}: {e}")

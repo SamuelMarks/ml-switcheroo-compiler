@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.shape import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_broadcast_dim_equal() -> None:
@@ -29,8 +27,8 @@ def test_broadcast_dim_ones_and_symbolic() -> None:
     """Test broadcasting unit and symbolic wildcard dimensions."""
     assert _broadcast_dim(1, 8, (1,), (8,)) == 8
     assert _broadcast_dim(8, 1, (8,), (1,)) == 8
-    assert cast("Callable[..., EagerTensorProtocol]", _broadcast_dim)("?", 16, ("?",), (16,)) == 16
-    assert cast("Callable[..., EagerTensorProtocol]", _broadcast_dim)(16, "?", (16,), ("?",)) == 16
+    assert cast("EagerCallableProtocol", _broadcast_dim)("?", 16, ("?",), (16,)) == 16
+    assert cast("EagerCallableProtocol", _broadcast_dim)(16, "?", (16,), ("?",)) == 16
     assert _broadcast_dim(-1, 32, (-1,), (32,)) == 32
     assert _broadcast_dim(32, -1, (32,), (-1,)) == 32
 
@@ -46,7 +44,7 @@ def test_broadcast_shapes_success() -> None:
     assert broadcast_shapes((), (3, 4)) == (3, 4)
     assert broadcast_shapes((1, 4), (5, 1)) == (5, 4)
     assert broadcast_shapes((2, 1, 6), (3, 6)) == (2, 3, 6)
-    assert cast("Callable[..., EagerTensorProtocol]", broadcast_shapes)(("?", 1), (10, 4)) == (10, 4)
+    assert cast("EagerCallableProtocol", broadcast_shapes)(("?", 1), (10, 4)) == (10, 4)
 
 
 def test_broadcast_shapes_failure() -> None:
@@ -58,7 +56,7 @@ def test_broadcast_shapes_failure() -> None:
 def test_validate_matmul_shapes_strict_2d() -> None:
     """Test strict 2-D matrix multiplication validation rules."""
     assert validate_matrix_multiply_shapes((2, 3), (3, 4), strict_2d=True) == (2, 4)
-    assert cast("Callable[..., EagerTensorProtocol]", validate_matrix_multiply_shapes)(("?", 3), (3, "?"), strict_2d=True) == ("?", "?")
+    assert cast("EagerCallableProtocol", validate_matrix_multiply_shapes)(("?", 3), (3, "?"), strict_2d=True) == ("?", "?")
 
     # Incompatible inner dimension
     with pytest.raises(ShapeMismatchError):
@@ -83,7 +81,7 @@ def test_validate_matmul_shapes_zero_rank() -> None:
 def test_validate_matmul_shapes_1d_dot() -> None:
     """Test 1-D vector dot product shape inference."""
     assert validate_matrix_multiply_shapes((4,), (4,)) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", validate_matrix_multiply_shapes)(("?",), (4,)) == ()
+    assert cast("EagerCallableProtocol", validate_matrix_multiply_shapes)(("?",), (4,)) == ()
 
     with pytest.raises(ShapeMismatchError):
         validate_matrix_multiply_shapes((4,), (5,))

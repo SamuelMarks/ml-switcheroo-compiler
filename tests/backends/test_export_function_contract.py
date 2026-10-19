@@ -15,7 +15,12 @@ if TYPE_CHECKING:
 
 
 def dummy_export(*args: EagerValue, **kwargs: EagerValue) -> None:
-    """Test function dummy_export."""
+    """Test function dummy_export.
+
+    Args:
+        args: Test parameter `args`.
+        kwargs: Test parameter `kwargs`.
+    """
     pass
 
 
@@ -31,7 +36,11 @@ def test_aot_compile_function_integration() -> None:
     """Test export_function integration via aot.compile_function."""
 
     def dummy_func(x: EagerValue) -> EagerValue:
-        """Test function dummy_func."""
+        """Test function dummy_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     compiled = compile_function(dummy_func, backend="numpy")

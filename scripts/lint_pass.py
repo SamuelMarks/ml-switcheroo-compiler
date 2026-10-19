@@ -57,6 +57,35 @@ def _has_assertion_or_verification(func_node: ast.FunctionDef | ast.AsyncFunctio
     return False
 
 
+def _is_excluded_middle_boolop(expr: ast.BoolOp) -> bool:
+    """Return True if a BoolOp is an `or` tautology such as `x is not None or x is None` or `... or True`.
+
+    Args:
+        expr (ast.BoolOp): BoolOp AST node to inspect.
+
+    Returns:
+        bool: True if the BoolOp is a tautological disjunction.
+    """
+    if not isinstance(expr.op, ast.Or):
+        return False
+    for val in expr.values:
+        if isinstance(val, ast.Constant) and val.value is True:
+            return True
+    if len(expr.values) == 2:
+        lhs, rhs = expr.values[0], expr.values[1]
+        if (
+            isinstance(lhs, ast.Compare)
+            and isinstance(rhs, ast.Compare)
+            and len(lhs.ops) == 1
+            and len(rhs.ops) == 1
+            and ast.dump(lhs.left) == ast.dump(rhs.left)
+            and ast.dump(lhs.comparators[0]) == ast.dump(rhs.comparators[0])
+            and {type(lhs.ops[0]), type(rhs.ops[0])} in ({ast.Is, ast.IsNot}, {ast.Eq, ast.NotEq})
+        ):
+            return True
+    return False
+
+
 def _check_assert_node(path: str, node: ast.Assert) -> str | None:
     """Check an ast.Assert node for vacuous boolean constants or tautological comparisons.
 
@@ -70,10 +99,14 @@ def _check_assert_node(path: str, node: ast.Assert) -> str | None:
     test_expr: ast.expr = node.test
     if isinstance(test_expr, ast.Constant) and isinstance(test_expr.value, bool):
         return f"FAILED: Vacuous 'assert {test_expr.value}' found in {path}:{node.lineno}"
+    if isinstance(test_expr, ast.BoolOp) and _is_excluded_middle_boolop(test_expr):
+        return f"FAILED: Tautological disjunction found in {path}:{node.lineno}"
     if isinstance(test_expr, ast.Compare) and len(test_expr.ops) == 1 and isinstance(test_expr.ops[0], (ast.Eq, ast.Is)) and ast.dump(test_expr.left) == ast.dump(test_expr.comparators[0]):
         return f"FAILED: Tautological comparison found in {path}:{node.lineno}"
     if isinstance(test_expr, ast.Compare) and len(test_expr.ops) == 1 and isinstance(test_expr.ops[0], ast.IsNot) and isinstance(test_expr.left, ast.Name) and test_expr.left.id == "_exc":
         return f"FAILED: Tautological 'assert _exc is not None' found in {path}:{node.lineno}"
+    if isinstance(test_expr, ast.Call) and isinstance(test_expr.func, ast.Name) and test_expr.func.id == "isinstance" and len(test_expr.args) == 2 and isinstance(test_expr.args[0], ast.Name) and test_expr.args[0].id == "_state":
+        return f"FAILED: Vacuous 'assert isinstance(_state, ...)' found in {path}:{node.lineno}"
     return None
 
 

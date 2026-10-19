@@ -1,11 +1,11 @@
-"""Core utilities."""
+"""Implementation of math log exp operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_log_exp`)."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 
 
@@ -116,7 +116,8 @@ def _np_xlog1py(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     func = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.where(args[0] == 0, 0, args[0] * host_backend.log1p(args[1])))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.where(args[0] == 0, 0, args[0] * mod.log1p(args[1])))
 
 
 @global_eager_registry.register("Xlogy")
@@ -134,4 +135,5 @@ def _np_xlogy(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     func = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.where(args[0] == 0, 0, args[0] * host_backend.log(args[1])))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.where(args[0] == 0, 0, args[0] * mod.log(args[1])))

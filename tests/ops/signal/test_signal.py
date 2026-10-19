@@ -8,9 +8,7 @@ import numpy as np
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_signal_missing() -> None:
@@ -23,7 +21,7 @@ def test_signal_missing() -> None:
         shape = None
 
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", sig._validate_conv2d_args)(cast("Callable[..., EagerTensorProtocol]", FakeShape)(), cast("Callable[..., EagerTensorProtocol]", FakeShape)())
+        cast("EagerCallableProtocol", sig._validate_conv2d_args)(cast("EagerCallableProtocol", FakeShape)(), cast("EagerCallableProtocol", FakeShape)())
 
     class FakeShape2:
         """Test class FakeShape2."""
@@ -31,10 +29,10 @@ def test_signal_missing() -> None:
         shape = (1, 1)
 
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", sig._validate_conv2d_args)(cast("Callable[..., EagerTensorProtocol]", FakeShape2)(), cast("Callable[..., EagerTensorProtocol]", FakeShape)())
+        cast("EagerCallableProtocol", sig._validate_conv2d_args)(cast("EagerCallableProtocol", FakeShape2)(), cast("EagerCallableProtocol", FakeShape)())
 
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", sig._validate_conv2d_args)(cast("Callable[..., EagerTensorProtocol]", FakeShape)(), cast("Callable[..., EagerTensorProtocol]", FakeShape2)())
+        cast("EagerCallableProtocol", sig._validate_conv2d_args)(cast("EagerCallableProtocol", FakeShape)(), cast("EagerCallableProtocol", FakeShape2)())
 
 
 def test_signal_classes_infer_shape() -> None:
@@ -46,12 +44,12 @@ def test_signal_classes_infer_shape() -> None:
 
         shape = (1, 1)
 
-    assert cast("Callable[..., EagerTensorProtocol]", sig.Rfft)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
-    assert cast("Callable[..., EagerTensorProtocol]", sig.Fft2)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
-    assert cast("Callable[..., EagerTensorProtocol]", sig.Fftfreq)().infer_shape(5) == (5,)
-    assert cast("Callable[..., EagerTensorProtocol]", sig.Fftfreq)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", sig.Irfft)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
-    assert cast("Callable[..., EagerTensorProtocol]", sig.Ihfft)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == (1, 1)
+    assert cast("EagerCallableProtocol", sig.Rfft)().infer_shape(cast("EagerCallableProtocol", DummyData)()) == (1, 1)
+    assert cast("EagerCallableProtocol", sig.Fft2)().infer_shape(cast("EagerCallableProtocol", DummyData)()) == (1, 1)
+    assert cast("EagerCallableProtocol", sig.Fftfreq)().infer_shape(5) == (5,)
+    assert cast("EagerCallableProtocol", sig.Fftfreq)().infer_shape(cast("EagerCallableProtocol", DummyData)()) == ()
+    assert cast("EagerCallableProtocol", sig.Irfft)().infer_shape(cast("EagerCallableProtocol", DummyData)()) == (1, 1)
+    assert cast("EagerCallableProtocol", sig.Ihfft)().infer_shape(cast("EagerCallableProtocol", DummyData)()) == (1, 1)
 
 
 def test_signal_real_dsp_validation() -> None:

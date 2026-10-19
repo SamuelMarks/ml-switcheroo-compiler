@@ -46,7 +46,11 @@ def test_shape_debugger_exhaustive() -> None:
 
     # 1. debug_shapes with standard output having shape
     def model_with_shape(x: Tensor) -> Tensor:
-        """Identity model returning input tensor."""
+        """Identity model returning input tensor.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     md_out = shape_debug_mod.debug_shapes(model_with_shape, (2, 4))
@@ -56,7 +60,11 @@ def test_shape_debugger_exhaustive() -> None:
 
     # 2. debug_shapes with output lacking shape attribute
     def model_scalar_out(x: Tensor) -> None:
-        """Model returning None without shape."""
+        """Model returning None without shape.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return None
 
     md_scalar = shape_debug_mod.debug_shapes(model_scalar_out, (3,))
@@ -64,7 +72,11 @@ def test_shape_debugger_exhaustive() -> None:
 
     # 3. debug_shapes when callable raises RuntimeError
     def model_raising(x: Tensor) -> Tensor:
-        """Model raising RuntimeError for test."""
+        """Model raising RuntimeError for test.
+
+        Args:
+            x: Test parameter `x`.
+        """
         raise RuntimeError("Model execution failed")
 
     md_err = shape_debug_mod.debug_shapes(model_raising, (1,))

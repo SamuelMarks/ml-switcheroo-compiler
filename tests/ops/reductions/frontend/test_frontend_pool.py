@@ -117,7 +117,7 @@ def _test_frontend_pool_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     t_3d = _state["t_3d"]
-    assert t_3d is not None or t_3d is None
+    assert getattr(t_3d, "shape") == (1, 1, 2, 2, 2)
 
 
 def test_frontend_pool_coverage() -> None:
@@ -126,4 +126,4 @@ def test_frontend_pool_coverage() -> None:
     _test_frontend_pool_coverage_part_1(_state)
     _test_frontend_pool_coverage_part_2(_state)
     _test_frontend_pool_coverage_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

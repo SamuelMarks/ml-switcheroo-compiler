@@ -30,9 +30,7 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 device = Device(DeviceType.CPU, 0)
 
@@ -41,7 +39,7 @@ def test_vmap_no_tensor_args() -> None:
     """Test calling eager vmap when no arguments are Tensors."""
     with ConfigContext(eager_mode=True):
         f = vmap(lambda: 42)
-        assert cast("Callable[..., EagerTensorProtocol]", f)() == 42
+        assert cast("EagerCallableProtocol", f)() == 42
 
 
 def test_vmap_backend_without_asarray() -> None:
@@ -52,12 +50,18 @@ def test_vmap_backend_without_asarray() -> None:
         """Test class BackendNoAsarray."""
 
         def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                name: Test parameter `name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.array([2, 4])
 
     with patch("ml_switcheroo_compiler.ops.vmap.get_active_backend", return_value=BackendNoAsarray()):
         res = _eager_vmap(lambda t: t, 0, 0, (x,))
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("EagerTensorProtocol", getattr(res, "data")), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res, "data")), cast("EagerCallableProtocol", np.array)([1, 2]))
 
 
 def test_evaluate_static_predicate_numpy_item() -> None:

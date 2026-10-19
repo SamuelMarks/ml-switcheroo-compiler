@@ -8,9 +8,7 @@ from unittest.mock import patch
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class Dummy:
@@ -145,8 +143,8 @@ def test_broadcast_to_empty_shape() -> None:
 
     op = BroadcastTo()
     assert op.infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(42) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", NoShape)()) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(42) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", NoShape)()) == ()
     assert op.infer_shape(shape=(5, 5)) == (5, 5)
 
 
@@ -158,7 +156,11 @@ def test_dot_and_pdot_infer_shape_edge_cases() -> None:
         """Test class MockTensor."""
 
         def __init__(self, shape: tuple[int, ...]) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
     for OpClass in (Dot, Pdot):

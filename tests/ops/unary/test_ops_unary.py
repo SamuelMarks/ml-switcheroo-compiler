@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.ops.unary.special import Bitcast, Cast, Frexp
 from ml_switcheroo_compiler.ops.unary.trigonometric import Cos, Sin, Tan
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_unary_math_ops() -> None:
@@ -29,10 +27,10 @@ def test_unary_math_ops() -> None:
     x_arr = np.array([1.0, 2.0])
     ops = [(Sin(), np.sin), (Tan(), np.tan), (Cos(), np.cos), (Exp(), np.exp), (Log(), np.log), (Sqrt(), np.sqrt), (Square(), np.square), (Abs(), np.abs), (Negative(), np.negative), (Positive(), np.positive), (Sign(), np.sign), (Floor(), np.floor), (Ceil(), np.ceil), (Round(), np.round)]
     for op, np_func in ops:
-        assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(x) == ()
+        assert cast("EagerCallableProtocol", op.infer_shape)(x) == ()
         if op.op_name == "Round":
-            assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", op.eager_eval)(x_arr), cast("Callable[..., EagerTensorProtocol]", np.round)(x_arr))
-            assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", op.eager_eval)(x_arr), cast("Callable[..., EagerTensorProtocol]", np_func)(x_arr))
+            assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", op.eager_eval)(x_arr), cast("EagerCallableProtocol", np.round)(x_arr))
+            assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", op.eager_eval)(x_arr), cast("EagerCallableProtocol", np_func)(x_arr))
 
 
 def test_unary_base_op() -> None:
@@ -78,7 +76,7 @@ def test_unary_base_op() -> None:
 
     op = DummyUnary()
     assert op.infer_shape((10,)) == (10,)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", op.eager_eval)(0.0), 0.0)
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", op.eager_eval)(0.0), 0.0)
 
 
 def test_unary_special_coverage() -> None:

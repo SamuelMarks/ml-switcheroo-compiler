@@ -21,9 +21,7 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_pass_manager_coverage_branches() -> None:
@@ -42,12 +40,12 @@ def test_pass_manager_coverage_branches() -> None:
             self.outputs = ["n1"]
 
     lg = MockListGraph()
-    snap = cast("Callable[..., EagerTensorProtocol]", _snapshot_graph)(lg)
+    snap = cast("EagerCallableProtocol", _snapshot_graph)(lg)
     assert "n1" in snap["nodes"]
 
     # Restore onto list graph
     lg_target = MockListGraph()
-    cast("Callable[..., EagerTensorProtocol]", _restore_graph)(lg_target, snap)
+    cast("EagerCallableProtocol", _restore_graph)(lg_target, snap)
     assert len(lg_target.nodes) == 1
 
     # 2. load_from_config with plain execution_order

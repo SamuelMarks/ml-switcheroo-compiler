@@ -31,9 +31,7 @@ from ml_switcheroo_compiler.ops.nn.loss import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_loss_coverage() -> None:
@@ -46,17 +44,15 @@ def test_loss_coverage() -> None:
     assert categorical_generalized_cross_entropy(t_true, t_pred) is not None
     assert _compute_circle_margins(0.25) == (1.25, -0.25, 0.75, 0.25)
 
-    lp, ln = cast("Callable[..., EagerTensorProtocol]", _compute_circle_logits)(t_pred, 0.25, 256.0)
+    lp, ln = cast("EagerCallableProtocol", _compute_circle_logits)(t_pred, 0.25, 256.0)
     assert lp is not None and ln is not None
 
     assert (
-        cast("Callable[..., EagerTensorProtocol]", _compute_circle_loss_reduction)(
+        cast("EagerCallableProtocol", _compute_circle_loss_reduction)(
             lp,
             ln,
             t_true,
-            cast("Callable[..., EagerTensorProtocol]", Tensor)(
-                cast("Callable[..., EagerTensorProtocol]", np.array)([[0.0, 1.0]]), cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape=(1, 2), dtype=cast("Callable[..., EagerTensorProtocol]", DType)("float32"), device=cast("Callable[..., EagerTensorProtocol]", Device)("cpu"))
-            ),
+            cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", np.array)([[0.0, 1.0]]), cast("EagerCallableProtocol", TensorConfig)(shape=(1, 2), dtype=cast("EagerCallableProtocol", DType)("float32"), device=cast("EagerCallableProtocol", Device)("cpu"))),
         )
         is not None
     )

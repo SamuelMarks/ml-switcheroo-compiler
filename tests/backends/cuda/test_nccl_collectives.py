@@ -23,9 +23,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.distributed.host_collectives import HostCollectiveCommunicator
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_nccl_constants() -> None:
@@ -219,7 +217,11 @@ def test_nccl_driver_dll_fallback() -> None:
     mock_lib = MagicMock()
 
     def mock_cdll(path: str) -> MagicMock:
-        """Test function mock_cdll."""
+        """Test function mock_cdll.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if path == "nccl.dll":
             return mock_lib
         raise OSError("Library not found")
@@ -271,45 +273,45 @@ def test_host_collective_communicator() -> None:
     comm1 = HostCollectiveCommunicator(world_size=2, rank=1)
 
     # AllReduce SUM
-    red_sum = cast("Callable[..., EagerTensorProtocol]", comm0.all_reduce)(r0, op="SUM", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(red_sum, [6.0, 8.0, 10.0, 12.0])
+    red_sum = cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="SUM", all_ranks_data=all_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(red_sum, [6.0, 8.0, 10.0, 12.0])
 
     # AllReduce MAX
-    red_max = cast("Callable[..., EagerTensorProtocol]", comm1.all_reduce)(r1, op="MAX", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(red_max, [5.0, 6.0, 7.0, 8.0])
+    red_max = cast("EagerCallableProtocol", comm1.all_reduce)(r1, op="MAX", all_ranks_data=all_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(red_max, [5.0, 6.0, 7.0, 8.0])
 
     # AllGather
-    gathered = cast("Callable[..., EagerTensorProtocol]", comm0.all_gather)(r0, axis=0, all_ranks_data=all_data)
+    gathered = cast("EagerCallableProtocol", comm0.all_gather)(r0, axis=0, all_ranks_data=all_data)
     assert len(gathered) == 8
 
     # ReduceScatter
-    rs0 = cast("Callable[..., EagerTensorProtocol]", comm0.reduce_scatter)(r0, op="SUM", scatter_dim=0, all_ranks_data=all_data)
-    rs1 = cast("Callable[..., EagerTensorProtocol]", comm1.reduce_scatter)(r1, op="SUM", scatter_dim=0, all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(rs0, [6.0, 8.0])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(rs1, [10.0, 12.0])
+    rs0 = cast("EagerCallableProtocol", comm0.reduce_scatter)(r0, op="SUM", scatter_dim=0, all_ranks_data=all_data)
+    rs1 = cast("EagerCallableProtocol", comm1.reduce_scatter)(r1, op="SUM", scatter_dim=0, all_ranks_data=all_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(rs0, [6.0, 8.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(rs1, [10.0, 12.0])
 
     # AllToAll
-    a2a0 = cast("Callable[..., EagerTensorProtocol]", comm0.all_to_all)(r0, scatter_dim=0, gather_dim=0, all_ranks_data=all_data)
+    a2a0 = cast("EagerCallableProtocol", comm0.all_to_all)(r0, scatter_dim=0, gather_dim=0, all_ranks_data=all_data)
     assert len(a2a0) == 4
 
     # Broadcast
-    bc = cast("Callable[..., EagerTensorProtocol]", comm1.broadcast)(r1, root=0, all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(bc, r0)
+    bc = cast("EagerCallableProtocol", comm1.broadcast)(r1, root=0, all_ranks_data=all_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(bc, r0)
 
     # Additional branches: MIN, PROD, unknown op
-    red_min = cast("Callable[..., EagerTensorProtocol]", comm0.all_reduce)(r0, op="MIN", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(red_min, [1.0, 2.0, 3.0, 4.0])
-    red_prod = cast("Callable[..., EagerTensorProtocol]", comm0.all_reduce)(r0, op="PROD", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(red_prod, [5.0, 12.0, 21.0, 32.0])
-    red_other = cast("Callable[..., EagerTensorProtocol]", comm0.all_reduce)(r0, op="CUSTOM", all_ranks_data=all_data)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(red_other, [6.0, 8.0, 10.0, 12.0])
+    red_min = cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="MIN", all_ranks_data=all_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(red_min, [1.0, 2.0, 3.0, 4.0])
+    red_prod = cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="PROD", all_ranks_data=all_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(red_prod, [5.0, 12.0, 21.0, 32.0])
+    red_other = cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="CUSTOM", all_ranks_data=all_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(red_other, [6.0, 8.0, 10.0, 12.0])
 
     # Branches where all_ranks_data is None
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", comm0.all_reduce)(r0, all_ranks_data=None), r0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", comm0.all_gather)(r0, all_ranks_data=None), r0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", comm0.all_to_all)(r0, all_ranks_data=None), r0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", comm0.broadcast)(r0, all_ranks_data=None), r0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", comm0.reduce_scatter)(r0, all_ranks_data=None), [1.0, 2.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", comm0.all_reduce)(r0, all_ranks_data=None), r0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", comm0.all_gather)(r0, all_ranks_data=None), r0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", comm0.all_to_all)(r0, all_ranks_data=None), r0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", comm0.broadcast)(r0, all_ranks_data=None), r0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", comm0.reduce_scatter)(r0, all_ranks_data=None), [1.0, 2.0])
 
 
 def test_nccl_driver_exhaustive_branches() -> None:
@@ -391,7 +393,7 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state: dict[str, EagerT
         Returns:
             int: Return status code.
         """
-        cast("Callable[..., EagerTensorProtocol]", ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x12345678)
+        cast("EagerCallableProtocol", ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x12345678)
         return 0
 
     mock_rt.cudaMalloc = fake_malloc_success
@@ -443,7 +445,7 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerT
 
     setattr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("D2H failed"))
     driver.copy_device_to_host(host_buf_ptr, out_arr)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out_arr, arr)
+    assert cast("EagerCallableProtocol", np.allclose)(out_arr, arr)
     del real_buf
 
     # Restore cudaMalloc with non-zero status branch (fails cudaMalloc, falls back to host buffer)
@@ -484,4 +486,4 @@ def test_nccl_driver_cuda_rt_memory_and_streams() -> None:
     _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state)
     _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state)
     _test_nccl_driver_cuda_rt_memory_and_streams_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

@@ -17,13 +17,15 @@ from ml_switcheroo_compiler.tracing import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_text_ops_eager(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager."""
+    """Test function test_text_ops_eager.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.ops import RegexReplace, lookup, string_to_hash, text_vectorization
@@ -32,7 +34,11 @@ def test_text_ops_eager(mocker: EagerTensorProtocol) -> None:
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -50,34 +56,34 @@ def test_text_ops_eager(mocker: EagerTensorProtocol) -> None:
     assert lookup(t).config.shape == (2, 3)
     assert text_vectorization(t).config.shape == (2, 3)
     op = RegexReplace()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(1) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(1) == ()
 
 
 def test_text_ops_misc() -> None:
     """Test function test_text_ops_misc."""
     from ml_switcheroo_compiler.ops.text.ops import ArrayRepr, ArrayStr
 
-    assert cast("Callable[..., EagerTensorProtocol]", ArrayRepr)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", ArrayStr)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", ArrayRepr)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", ArrayStr)().infer_shape(()) == ()
 
 
 def test_text_classes_infer_shape() -> None:
     """Test function test_text_classes_infer_shape."""
     from ml_switcheroo_compiler.ops.text.ops import EditDistance, Hashing, RegexFullMatch, StringJoin, StringLength, StringLookup, StringLower, StringSplit, StringSubstr, StringToHash, StringToNumber, StringUpper, TextVectorization
 
-    assert cast("Callable[..., EagerTensorProtocol]", StringToHash)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringLookup)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", TextVectorization)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", EditDistance)().infer_shape(None, None) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Hashing)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", RegexFullMatch)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringJoin)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringLength)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringLower)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringSplit)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringSubstr)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringToNumber)().infer_shape(()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", StringUpper)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringToHash)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringLookup)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", TextVectorization)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", EditDistance)().infer_shape(None, None) == ()
+    assert cast("EagerCallableProtocol", Hashing)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", RegexFullMatch)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringJoin)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringLength)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringLower)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringSplit)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringSubstr)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringToNumber)().infer_shape(()) == ()
+    assert cast("EagerCallableProtocol", StringUpper)().infer_shape(()) == ()
 
 
 def test_text_eager_mode_exceptions() -> None:
@@ -172,7 +178,11 @@ def test_text_new_ops_eager() -> None:
 
 
 def test_text_ops_eager_additional(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional."""
+    """Test function test_text_ops_eager_additional.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.frontend import regex_full_match, string_join, string_length, string_lower, string_substr, string_to_number, string_upper
@@ -181,7 +191,11 @@ def test_text_ops_eager_additional(mocker: EagerTensorProtocol) -> None:
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -205,7 +219,11 @@ def test_text_ops_eager_additional(mocker: EagerTensorProtocol) -> None:
 
 
 def test_text_ops_eager_additional_more(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_more."""
+    """Test function test_text_ops_eager_additional_more.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.frontend import _string_split_eager, as_string, regex_replace
@@ -214,7 +232,11 @@ def test_text_ops_eager_additional_more(mocker: EagerTensorProtocol) -> None:
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -238,7 +260,11 @@ def test_text_ops_eager_additional_more(mocker: EagerTensorProtocol) -> None:
 
 
 def test_text_ops_eager_additional_last(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_last."""
+    """Test function test_text_ops_eager_additional_last.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.frontend import edit_distance, lookup, text_vectorization
@@ -247,7 +273,11 @@ def test_text_ops_eager_additional_last(mocker: EagerTensorProtocol) -> None:
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -267,7 +297,11 @@ def test_text_ops_eager_additional_last(mocker: EagerTensorProtocol) -> None:
 
 
 def test_text_ops_eager_additional_coverage(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_coverage."""
+    """Test function test_text_ops_eager_additional_coverage.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.ops import StringLower, StringToNumber, StringUpper
 
@@ -275,7 +309,11 @@ def test_text_ops_eager_additional_coverage(mocker: EagerTensorProtocol) -> None
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -288,7 +326,11 @@ def test_text_ops_eager_additional_coverage(mocker: EagerTensorProtocol) -> None
 
 
 def test_text_ops_eager_additional_coverage_2(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_coverage_2."""
+    """Test function test_text_ops_eager_additional_coverage_2.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.ops import Lookup, RegexFullMatch, StringLength, StringSubstr
 
@@ -296,7 +338,11 @@ def test_text_ops_eager_additional_coverage_2(mocker: EagerTensorProtocol) -> No
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -310,7 +356,11 @@ def test_text_ops_eager_additional_coverage_2(mocker: EagerTensorProtocol) -> No
 
 
 def test_text_ops_eager_additional_coverage_3(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_coverage_3."""
+    """Test function test_text_ops_eager_additional_coverage_3.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.frontend import string_lower, string_to_number, string_upper
@@ -319,7 +369,11 @@ def test_text_ops_eager_additional_coverage_3(mocker: EagerTensorProtocol) -> No
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -337,7 +391,11 @@ def test_text_ops_eager_additional_coverage_3(mocker: EagerTensorProtocol) -> No
 
 
 def test_text_ops_eager_additional_coverage_4(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_coverage_4."""
+    """Test function test_text_ops_eager_additional_coverage_4.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.frontend import _string_split_trace, text_vectorization
@@ -346,7 +404,11 @@ def test_text_ops_eager_additional_coverage_4(mocker: EagerTensorProtocol) -> No
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -364,7 +426,11 @@ def test_text_ops_eager_additional_coverage_4(mocker: EagerTensorProtocol) -> No
 
 
 def test_text_ops_eager_additional_coverage_5(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_coverage_5."""
+    """Test function test_text_ops_eager_additional_coverage_5.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.ops import lookup as ops_lookup
@@ -375,7 +441,11 @@ def test_text_ops_eager_additional_coverage_5(mocker: EagerTensorProtocol) -> No
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"
@@ -386,14 +456,18 @@ def test_text_ops_eager_additional_coverage_5(mocker: EagerTensorProtocol) -> No
     import ml_switcheroo_compiler.tracing.state as state
 
     state.global_tracing_state.start_tracing()
-    assert ops_string_to_hash(t).config.shape == (2, 3) or True
-    assert ops_lookup(t).config.shape == (2, 3) or True
-    assert ops_text_vectorization(t).config.shape == (2, 3) or True
+    assert ops_string_to_hash(t) is not None
+    assert ops_lookup(t) is not None
+    assert ops_text_vectorization(t) is not None
     state.global_tracing_state.stop_tracing()
 
 
 def test_text_ops_eager_additional_coverage_6(mocker: EagerTensorProtocol) -> None:
-    """Test function test_text_ops_eager_additional_coverage_6."""
+    """Test function test_text_ops_eager_additional_coverage_6.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.text.frontend import string_split
@@ -402,7 +476,11 @@ def test_text_ops_eager_additional_coverage_6(mocker: EagerTensorProtocol) -> No
         """Test class MockTensor."""
 
         def __init__(self, shape: EagerValue = ()) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
             self.dtype = "float32"
             self.device = "cpu"

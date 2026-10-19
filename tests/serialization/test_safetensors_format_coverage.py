@@ -15,9 +15,7 @@ import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class _DummyGenerator:
@@ -205,7 +203,7 @@ def test_safetensors_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
         "w1": np.array([1.0, 2.0], dtype=np.float32),
         "w2": np.array([10, 20], dtype=np.int32),
     }
-    cast("Callable[..., EagerTensorProtocol]", fmt.save)(data, filepath)
+    cast("EagerCallableProtocol", fmt.save)(data, filepath)
 
     # 2. Load without backend from_buffer hook (raw buffer dict returned)
     monkeypatch.setattr(registry, "get_active_backend", lambda: _PlainBackend())
@@ -217,7 +215,7 @@ def test_safetensors_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(registry, "get_active_backend", lambda: _MockBackendSafetensors())
     loaded_hook = fmt.load(filepath)
     assert "w1" in loaded_hook
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(loaded_hook, "__getitem__")("w1")), cast("EagerTensorProtocol", getattr(data, "__getitem__")("w1")))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(loaded_hook, "__getitem__")("w1")), cast("EagerTensorProtocol", getattr(data, "__getitem__")("w1")))
 
     # 4. Empty / corrupted file (< 8 bytes)
     empty_file = str(tmp_path / "empty.safetensors")

@@ -8,7 +8,7 @@ from typing import Optional, cast
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -87,7 +87,7 @@ class CustomVJPFunction:
 
         self._tracing_fwd = True
         try:
-            return cast(Optional[LogicalGraph], cast("Callable[..., EagerTensorProtocol]", _trace_function)(self.fwd, tuple(tensor_args), "fwd_pass"))
+            return cast(Optional[LogicalGraph], cast("EagerCallableProtocol", _trace_function)(self.fwd, tuple(tensor_args), "fwd_pass"))
         finally:
             self._tracing_fwd = False
 

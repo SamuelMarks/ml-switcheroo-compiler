@@ -17,7 +17,11 @@ if TYPE_CHECKING:
 
 
 def test_psum(mocker: EagerTensorProtocol) -> None:
-    """Test function test_psum."""
+    """Test function test_psum.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
@@ -27,7 +31,11 @@ def test_psum(mocker: EagerTensorProtocol) -> None:
 
 
 def test_pmean(mocker: EagerTensorProtocol) -> None:
-    """Test function test_pmean."""
+    """Test function test_pmean.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
@@ -37,7 +45,11 @@ def test_pmean(mocker: EagerTensorProtocol) -> None:
 
 
 def test_approx_max_k(mocker: EagerTensorProtocol) -> None:
-    """Test function test_approx_max_k."""
+    """Test function test_approx_max_k.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
@@ -47,7 +59,11 @@ def test_approx_max_k(mocker: EagerTensorProtocol) -> None:
 
 
 def test_approx_min_k(mocker: EagerTensorProtocol) -> None:
-    """Test function test_approx_min_k."""
+    """Test function test_approx_min_k.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
@@ -57,7 +73,11 @@ def test_approx_min_k(mocker: EagerTensorProtocol) -> None:
 
 
 def test_ctc_loss(mocker: EagerTensorProtocol) -> None:
-    """Test function test_ctc_loss."""
+    """Test function test_ctc_loss.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
@@ -67,7 +87,12 @@ def test_ctc_loss(mocker: EagerTensorProtocol) -> None:
 
 
 def test_corrcoef(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_corrcoef."""
+    """Test function test_corrcoef.
+
+    Args:
+        mocker: Test parameter `mocker`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import sys
 
     from ml_switcheroo_compiler.core.config import disable_compile, enable_compile
@@ -98,7 +123,12 @@ def test_corrcoef(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol)
 
 
 def test_correlate(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_correlate."""
+    """Test function test_correlate.
+
+    Args:
+        mocker: Test parameter `mocker`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import sys
 
     from ml_switcheroo_compiler.core.config import disable_compile, enable_compile
@@ -124,7 +154,12 @@ def test_correlate(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol
 
 
 def test_cov(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_cov."""
+    """Test function test_cov.
+
+    Args:
+        mocker: Test parameter `mocker`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import sys
 
     from ml_switcheroo_compiler.core.config import disable_compile, enable_compile
@@ -155,7 +190,11 @@ def test_cov(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> N
 
 
 def test_cov_with_kwargs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_cov_with_kwargs."""
+    """Test function test_cov_with_kwargs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
     mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats._emit_reduction_node", return_value=MagicMock(data=MagicMock(id="cov")))

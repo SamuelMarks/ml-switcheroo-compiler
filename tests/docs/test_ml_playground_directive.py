@@ -52,7 +52,11 @@ def test_get_wheel_assets_missing_dir() -> None:
 
 
 def test_get_wheel_assets_with_files(tmp_path: EagerTensorProtocol) -> None:
-    """Test get_wheel_assets with mock directory and files."""
+    """Test get_wheel_assets with mock directory and files.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     test_dir = tmp_path / "_static"
     test_dir.mkdir()
     (test_dir / "pkg_a-0.2.0-py3-none-any.whl").touch()
@@ -66,7 +70,11 @@ def test_get_wheel_assets_with_files(tmp_path: EagerTensorProtocol) -> None:
 
 
 def test_get_wheel_assets_os_error(tmp_path: EagerTensorProtocol) -> None:
-    """Test get_wheel_assets handles OSError during manifest write."""
+    """Test get_wheel_assets handles OSError during manifest write.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     test_dir = tmp_path / "_static"
     test_dir.mkdir()
     (test_dir / "pkg-0.1.0-py3-none-any.whl").touch()

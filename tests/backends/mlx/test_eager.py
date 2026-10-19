@@ -20,9 +20,9 @@ except ImportError:
     real_mx = cast("types.ModuleType", None)
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 mock_mx = MagicMock()
 mock_pkg = MagicMock()
@@ -63,21 +63,21 @@ def test_get_mlx_func() -> None:
 def test_execute_op() -> None:
     """Test function test_execute_op."""
     mock_mx.zeros = MagicMock(return_value="zeros")
-    assert cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "Zeros", shape=(1,)) == "zeros"
+    assert cast("EagerCallableProtocol", eager.execute_op)(None, "Zeros", shape=(1,)) == "zeros"
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     global_eager_registry.register("TestOp")(lambda m, *args, **kwargs: "global")
-    assert cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "TestOp") == "global"
+    assert cast("EagerCallableProtocol", eager.execute_op)(None, "TestOp") == "global"
 
     mock_mx.add = MagicMock(return_value="add")
-    assert cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "Add") == "add"
+    assert cast("EagerCallableProtocol", eager.execute_op)(None, "Add") == "add"
 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._get_mlx_func", return_value=None):
         with pytest.raises(BackendNotSupportedError):
-            cast("Callable[..., EagerTensorProtocol]", eager.execute_op)(None, "NotFoundOpXYZ")
+            cast("EagerCallableProtocol", eager.execute_op)(None, "NotFoundOpXYZ")
 
 
 def test_mlx_cast() -> None:
@@ -176,8 +176,7 @@ def test_reshape() -> None:
     eager._mlx_reshape(mock_mx, input="input", newshape=(2, 2))
     shape_mock = MagicMock()
     shape_mock.data.tolist.return_value = [2, 2]
-    eager._mlx_reshape(mock_mx, "input", shape=shape_mock)
-    assert shape_mock is not None or shape_mock is None
+    assert eager._mlx_reshape(mock_mx, "input", shape=shape_mock) == "reshape"
 
 
 def test_resolve_dtype() -> None:
@@ -218,13 +217,13 @@ def test_zeros() -> None:
 
         data = (1, 2)
 
-    eager._mlx_zeros(mock_mx, TupleShape())
-    assert shape_mock is not None or shape_mock is None
+    assert eager._mlx_zeros(mock_mx, TupleShape()) == "zeros"
 
 
 def test_ones() -> None:
     """Test function test_ones."""
     mock_mx.ones = MagicMock(return_value="ones")
+    eager._mlx_zeros(mock_mx, (1,), dtype=None)
     eager._mlx_ones(mock_mx, (1,), dtype=None)
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="float32"):
         eager._mlx_ones(mock_mx, (1,), dtype="float32")
@@ -235,8 +234,7 @@ def test_ones() -> None:
     shape_mock.data = (1,)
     mock_mx.ones.side_effect = None
     eager._mlx_ones(mock_mx, shape=shape_mock)
-    eager._mlx_ones(mock_mx, 5)
-    assert shape_mock is not None or shape_mock is None
+    assert eager._mlx_ones(mock_mx, 5) == "ones"
 
 
 def test_full() -> None:
@@ -252,8 +250,7 @@ def test_full() -> None:
     shape_mock.data = (1,)
     mock_mx.full.side_effect = None
     eager._mlx_full(mock_mx, shape=shape_mock, fill_value=5)
-    eager._mlx_full(mock_mx, 5, 5)
-    assert shape_mock is not None or shape_mock is None
+    assert eager._mlx_full(mock_mx, 5, 5) == "full"
 
 
 def test_parse_partition_k() -> None:
@@ -397,14 +394,18 @@ def test_mlx_execute_op_attribute_error_raise() -> None:
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     def mock_get_func(op: EagerValue) -> None:
-        """Test function mock_get_func."""
+        """Test function mock_get_func.
+
+        Args:
+            op: Test parameter `op`.
+        """
         raise AttributeError("mock missing")
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._get_mlx_func", side_effect=mock_get_func):
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with patch("ml_switcheroo_compiler.backends.eager_registry.mlx_eager_registry.get", return_value=None):
                 with pytest.raises(BackendNotSupportedError):
-                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "OpThatThrowsAttr", 5)
+                    cast("EagerCallableProtocol", execute_op)(None, "OpThatThrowsAttr", 5)
 
 
 def test_mlx_execute_op_attribute_error_none() -> None:
@@ -416,7 +417,7 @@ def test_mlx_execute_op_attribute_error_none() -> None:
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with patch("ml_switcheroo_compiler.backends.eager_registry.mlx_eager_registry.get", return_value=None):
                 with pytest.raises(BackendNotSupportedError):
-                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "OpWithoutFunc", 5)
+                    cast("EagerCallableProtocol", execute_op)(None, "OpWithoutFunc", 5)
 
 
 def test_mlx_cum_ops_dtype_fallbacks() -> None:
@@ -443,10 +444,9 @@ def test_mlx_cum_ops_dtype_fallbacks() -> None:
             return "float16"
 
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="real_dtype"):
-        _mlx_cummax(mx, "t", dtype=MockDtype())
-        _mlx_cummin(mx, "t", dtype="float16")
-        _mlx_cumprod(mx, "t", dtype=MockDtype())
-    assert mx is not None or mx is None
+        assert _mlx_cummax(mx, "t", dtype=MockDtype()) == "res"
+        assert _mlx_cummin(mx, "t", dtype="float16") == "res"
+        assert _mlx_cumprod(mx, "t", dtype=MockDtype()) == "res"
 
 
 def test_mlx_relu_and_zeros_and_reduce_scatter_coverage() -> None:

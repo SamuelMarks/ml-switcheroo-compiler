@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 import uuid
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Iterable, Sequence
 from typing import cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -52,7 +52,7 @@ def _emit_creation_node(
     )
     global_tracing_state.add_node(node)
 
-    proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(
+    proxy = cast("EagerCallableProtocol", ProxyTensor)(
         id=out_id,
         shape=shape,
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),

@@ -11,9 +11,7 @@ import ml_switcheroo_compiler.backends.common.mixins.image as img_mix
 from ml_switcheroo_compiler.ir.core import IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class _DummyGenerator:
@@ -186,8 +184,8 @@ def test_image_ast_visitor() -> None:
     Returns:
         None
     """
-    vis = cast("Callable[..., EagerTensorProtocol]", img_mix.ImageASTVisitor)(generator=cast("Callable[..., EagerTensorProtocol]", _DummyGenerator)())
-    node = cast("Callable[..., EagerTensorProtocol]", IRNode)("Dummy", [], {})
+    vis = cast("EagerCallableProtocol", img_mix.ImageASTVisitor)(generator=cast("EagerCallableProtocol", _DummyGenerator)())
+    node = cast("EagerCallableProtocol", IRNode)("Dummy", [], {})
 
     # With kwargs explicitly supplied
     assert vis.visit_AdjustBrightness(node, ["x"], delta=0.5) == "np_eager_adjust_brightness(x, 0.5)"

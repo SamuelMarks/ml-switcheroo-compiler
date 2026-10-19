@@ -3,7 +3,7 @@
 from typing import cast
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
+from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor, FallbackPrefixProtocol
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -17,7 +17,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         Args:
             generator: The generator instance.
         """
-        getattr(super(), "__init__")(generator=generator)
+        super().__init__(generator=cast("FallbackPrefixProtocol", generator))
 
     def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for the Send operation.

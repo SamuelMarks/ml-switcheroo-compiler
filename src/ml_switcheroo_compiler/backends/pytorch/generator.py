@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for generator.py."""
+"""Implementation of generator operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.pytorch.generator`)."""
 
 from __future__ import annotations
 
@@ -160,37 +160,40 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         return "keepdim"
 
     def _get_math_ops(self, kwargs: EagerValue) -> dict[str, str]:
-        """Get math ops.
+        """Get PyTorch mathematical operation templates.
 
         Args:
-            kwargs: The kwargs parameter.
+            kwargs (EagerValue): Keyword arguments dictionary.
 
         Returns:
-            dict[str, str]: Computed result.
+            dict[str, str]: Mapping from operation name to AST template string.
         """
-        return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
+        del kwargs
+        from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
+
+        return {k: v.ast_template for k, v in load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
     def _get_creation_ops(self, kwargs: EagerValue) -> dict[str, str]:
-        """Get creation ops.
+        """Get PyTorch tensor creation operation templates.
 
         Args:
-            kwargs: The kwargs parameter.
+            kwargs (EagerValue): Keyword arguments dictionary.
 
         Returns:
-            dict[str, str]: Computed result.
+            dict[str, str]: Mapping from operation name to AST template string.
         """
-        return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
+        return self._get_math_ops(kwargs)
 
     def _get_array_ops(self, kwargs: EagerValue) -> dict[str, str]:
-        """Get array ops.
+        """Get PyTorch array manipulation operation templates.
 
         Args:
-            kwargs: The kwargs parameter.
+            kwargs (EagerValue): Keyword arguments dictionary.
 
         Returns:
-            dict[str, str]: Computed result.
+            dict[str, str]: Mapping from operation name to AST template string.
         """
-        return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
+        return self._get_math_ops(kwargs)
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
         """Emit the code to assign a constant parameter to a local variable.

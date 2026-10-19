@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 warnings.filterwarnings("ignore")
 
 
@@ -28,10 +28,19 @@ class FullMockBackend:
     """Test class FullMockBackend."""
 
     def __getattr__(self, name: EagerValue) -> EagerValue:
-        """Test function __getattr__."""
+        """Test function __getattr__.
+
+        Args:
+            name: Test parameter `name`.
+        """
 
         def _dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function _dummy."""
+            """Test function _dummy.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             import numpy as np
 
             return np.array([0.0])
@@ -43,10 +52,19 @@ class MockNamespace:
     """Test class MockNamespace."""
 
     def __getattr__(self, name: EagerValue) -> EagerValue:
-        """Test function __getattr__."""
+        """Test function __getattr__.
+
+        Args:
+            name: Test parameter `name`.
+        """
 
         def _dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function _dummy."""
+            """Test function _dummy.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             import numpy as np
 
             return np.array([0.0])
@@ -58,12 +76,21 @@ class MissingPrimaryMockBackend:
     """Test class MissingPrimaryMockBackend."""
 
     def __getattr__(self, name: EagerValue) -> EagerValue:
-        """Test function __getattr__."""
+        """Test function __getattr__.
+
+        Args:
+            name: Test parameter `name`.
+        """
         if name in ["random", "nn", "linalg", "fft", "signal", "special", "image"]:
             return cast("EagerTensorProtocol", MockNamespace())
 
         def _missing(*args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function _missing."""
+            """Test function _missing.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise AttributeError(f"Missing {name}")
 
         raise AttributeError(f"Missing {name}")
@@ -270,11 +297,11 @@ def _disabled_test_core_math_ops_branches_sub_8(_state: dict[str, EagerTensorPro
         pass
 
     try:
-        cast("Callable[..., EagerTensorProtocol]", mod._apply_causal_mask)(cast("Callable[..., EagerTensorProtocol]", NoTriuBackend)(), cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+        cast("EagerCallableProtocol", mod._apply_causal_mask)(cast("EagerCallableProtocol", NoTriuBackend)(), cast("EagerCallableProtocol", np.ones)((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     try:
-        cast("Callable[..., EagerTensorProtocol]", mod._apply_softmax)(cast("Callable[..., EagerTensorProtocol]", NoTriuBackend)(), cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)))
+        cast("EagerCallableProtocol", mod._apply_softmax)(cast("EagerCallableProtocol", NoTriuBackend)(), cast("EagerCallableProtocol", np.ones)((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     getattr(_state, "update")({"NoTriuBackend": NoTriuBackend})
@@ -292,27 +319,60 @@ def _disabled_test_core_math_ops_branches_sub_9(_state: dict[str, EagerTensorPro
         """Test class AttnBackend."""
 
         def matmul(self, a: EagerValue, b: EagerValue) -> EagerValue:
-            """Test function matmul."""
+            """Test function matmul.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a
 
         def transpose(self, a: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function transpose."""
+            """Test function transpose.
+
+            Args:
+                a: Test parameter `a`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return a
 
         def triu(self, a: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function triu."""
+            """Test function triu.
+
+            Args:
+                a: Test parameter `a`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return a
 
         def ones(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function ones."""
+            """Test function ones.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
         def where(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function where."""
+            """Test function where.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
         def softmax(self, a: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function softmax."""
+            """Test function softmax.
+
+            Args:
+                a: Test parameter `a`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return a
 
     getattr(_state, "update")({"AttnBackend": AttnBackend})
@@ -392,14 +452,22 @@ def _disabled_test_core_math_ops_branches_sub_12(_state: dict[str, EagerTensorPr
         """Test class BackendWithStack."""
 
         def stack(self, x: EagerValue) -> EagerValue:
-            """Test function stack."""
+            """Test function stack.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     class BackendWithArray:
         """Test class BackendWithArray."""
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     mod._all_gather(BackendWithStack(), np.ones((2, 2)))
@@ -448,7 +516,11 @@ def _disabled_test_core_math_ops_branches_sub_13(_state: dict[str, EagerTensorPr
 
 
 def _run_scipy_special_ops(empty_backend: EagerValue) -> None:
-    """Invoke modifiedbesseli1, xlog1py, and xlogy on empty_backend."""
+    """Invoke modifiedbesseli1, xlog1py, and xlogy on empty_backend.
+
+    Args:
+        empty_backend: Test parameter `empty_backend`.
+    """
     for fn_name, args in (("_np_modifiedbesseli1", (empty_backend, np.array([1.0]))), ("_np_xlog1py", (empty_backend, np.array([1.0]), np.array([1.0]))), ("_np_xlogy", (empty_backend, np.array([1.0]), np.array([1.0])))):
         if hasattr(mod, fn_name):
             getattr(mod, fn_name)(*args)
@@ -517,7 +589,12 @@ def _disabled_test_core_math_ops_branches_sub_16(_state: dict[str, EagerTensorPr
     original_hasattr = _state["original_hasattr"]
 
     def mock_hasattr(obj: EagerValue, name: EagerValue) -> EagerValue:
-        """Test function mock_hasattr."""
+        """Test function mock_hasattr.
+
+        Args:
+            obj: Test parameter `obj`.
+            name: Test parameter `name`.
+        """
         if obj is np and name == "take_along_axis":
             return False
         if obj is np and name == "random":
@@ -576,7 +653,7 @@ def test_core_math_ops_branches() -> None:
         _disabled_test_core_math_ops_branches_sub_17,
     ):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_core_math_ops_missing_coverage_new() -> None:
@@ -594,7 +671,7 @@ def test_core_math_ops_missing_coverage_new() -> None:
     res_bp = mod._np_bandpart(empty_backend, np.ones((2, 2)), num_lower=-1, num_upper=-1)
     assert res_bp is not None
     with pytest.raises((AttributeError, TypeError, ValueError)):
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(mod, "_np_gamma")))(empty_backend, x=None)
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(mod, "_np_gamma")))(empty_backend, x=None)
     original_scipy = sys.modules.get("scipy.special")
     import types
 
@@ -606,7 +683,7 @@ def test_core_math_ops_missing_coverage_new() -> None:
     sys.modules["scipy.special"] = dummy_scipy_special
     try:
         try:
-            cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(mod, "_np_gamma")))(empty_backend, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0]))
+            cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(mod, "_np_gamma")))(empty_backend, cast("EagerCallableProtocol", np.array)([1.0]))
             mod._np_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
             mod._np_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
         except (AttributeError, TypeError, ValueError):
@@ -625,27 +702,60 @@ def test_core_math_ops_missing_coverage_new() -> None:
         """Test class AttnBackend."""
 
         def matmul(self, a: EagerValue, b: EagerValue) -> EagerValue:
-            """Test function matmul."""
+            """Test function matmul.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a
 
         def transpose(self, a: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function transpose."""
+            """Test function transpose.
+
+            Args:
+                a: Test parameter `a`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return a
 
         def triu(self, a: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function triu."""
+            """Test function triu.
+
+            Args:
+                a: Test parameter `a`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return a
 
         def ones(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function ones."""
+            """Test function ones.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
         def where(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function where."""
+            """Test function where.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2))
 
         def softmax(self, a: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function softmax."""
+            """Test function softmax.
+
+            Args:
+                a: Test parameter `a`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return a
 
     mod._scaled_dot_product_attention_eager(AttnBackend(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), scale=1.0)

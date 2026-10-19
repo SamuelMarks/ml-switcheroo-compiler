@@ -1,14 +1,14 @@
-"""math_linalg module."""
+"""Implementation of math linalg operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_linalg`)."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence  # noqa: F401
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 
 
@@ -143,7 +143,7 @@ def _np_customlinearsolve(backend_module: ModuleType, *args: EagerValue, **kwarg
     if callable(args[0]):
         solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
         if solve:
-            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", solve)(args[0], args[1]))
+            return cast(EagerValue, cast("EagerCallableProtocol", solve)(args[0], args[1]))
         return args[1]
     return cast(EagerValue, getattr(np.linalg, "solve")(args[0], args[1]))
 

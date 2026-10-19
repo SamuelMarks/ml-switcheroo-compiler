@@ -1,10 +1,10 @@
-"""Core abstractions and logic definitions for matrix_ops.py."""
+"""Implementation of matrix ops operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.matrix_ops`)."""
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -87,7 +87,7 @@ def cross(
     out_shape = a.shape
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)(
+        cast("EagerCallableProtocol", _emit_linalg_node)(
             "Cross",
             [a, b],
             axes or {"axisa": -1, "axisb": -1, "axisc": -1, "axis": None},
@@ -259,7 +259,7 @@ def eigh_tridiagonal(
     out_shape = getattr(EighTridiagonal(), "infer_shape")(alpha, beta)
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)(
+        cast("EagerCallableProtocol", _emit_linalg_node)(
             "EighTridiagonal",
             [alpha, beta],
             kwargs or {},

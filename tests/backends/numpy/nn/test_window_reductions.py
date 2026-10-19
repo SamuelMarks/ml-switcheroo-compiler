@@ -9,9 +9,7 @@ import numpy as np
 import ml_switcheroo_compiler.backends.numpy.eager.window_reductions as wr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def _test_window_reductions_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -29,11 +27,11 @@ def _test_window_reductions_coverage_part_1(_state: dict[str, EagerTensorProtoco
     input_2d = np.array([[[[1.0, 2.0], [3.0, 4.0]]]])  # shape (1, 1, 2, 2)
     # Target (1, 1) output should average the entire 2x2 spatial area to 2.5
     res_math = wr._np_adaptive_avg_pool2d(np, input_2d, (1, 1))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_math, [[[[2.5]]]])
+    assert cast("EagerCallableProtocol", np.allclose)(res_math, [[[[2.5]]]])
 
     # Target (2, 2) output should map exactly to 1x1 cells, preserving the input
     res_math_2x2 = wr._np_adaptive_avg_pool2d(np, input_2d, (2, 2))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_math_2x2, input_2d)
+    assert cast("EagerCallableProtocol", np.allclose)(res_math_2x2, input_2d)
 
     # AdaptiveAvgPool3D
     res = wr._np_adaptive_avg_pool3d(np, np.zeros((1, 1, 2, 2, 2)), (1, 1, 1))
@@ -44,7 +42,7 @@ def _test_window_reductions_coverage_part_1(_state: dict[str, EagerTensorProtoco
     # Verify mathematical correctness of 3D adaptive pooling
     input_3d = np.array([[[[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]]]])  # shape (1, 1, 2, 2, 2)
     res_math_3d = wr._np_adaptive_avg_pool3d(np, input_3d, (1, 1, 1))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_math_3d, [[[[[4.5]]]]])
+    assert cast("EagerCallableProtocol", np.allclose)(res_math_3d, [[[[[4.5]]]]])
 
     # AdaptiveMaxPool3D
     res = wr._np_adaptive_max_pool3d(np, np.zeros((1, 1, 2, 2, 2)), (1, 1, 1))
@@ -54,7 +52,7 @@ def _test_window_reductions_coverage_part_1(_state: dict[str, EagerTensorProtoco
 
     # AdaptiveMaxPool3D_Indices
     res = wr._np_adaptive_max_pool3d_indices(np, np.zeros((1, 1, 2, 2, 2)), (1, 1, 1))
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    assert cast("EagerCallableProtocol", len)(res) == 2
     getattr(_state, "update")({"input_2d": input_2d, "input_3d": input_3d, "res": res, "res_math": res_math})
     getattr(_state, "update")({"res_math_2x2": res_math_2x2, "res_math_3d": res_math_3d})
     _state.update(locals())
@@ -77,7 +75,7 @@ def _test_window_reductions_coverage_part_2(_state: dict[str, EagerTensorProtoco
 
     # Verify mathematical correctness of 2D adaptive max pooling
     res_max_math = wr._np_adaptive_max_pool2d(np, input_2d, (1, 1))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_max_math, [[[[4.0]]]])
+    assert cast("EagerCallableProtocol", np.allclose)(res_max_math, [[[[4.0]]]])
 
     # FractionalAvgPool
     res = cast("EagerTensorProtocol", wr._np_fractional_avg_pool(np, np.zeros((1, 1, 2, 2))))
@@ -139,4 +137,4 @@ def test_window_reductions_coverage() -> None:
     _test_window_reductions_coverage_part_1(_state)
     _test_window_reductions_coverage_part_2(_state)
     _test_window_reductions_coverage_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

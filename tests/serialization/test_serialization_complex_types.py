@@ -15,7 +15,11 @@ from ml_switcheroo_compiler.serialization import (
 
 
 def test_serialization_extras(tmp_path: Path) -> None:
-    """Test function test_serialization_extras."""
+    """Test function test_serialization_extras.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     assert TrackableResource() is not None
     assert PythonState() is not None
 

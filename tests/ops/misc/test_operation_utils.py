@@ -10,22 +10,28 @@ import pytest
 from ml_switcheroo_compiler.utils.operation_utils import _normalize_axes, _validate_squeeze_dims, compute_shape_propagation, get_source_inputs
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 class MockNode:
     """Test class MockNode."""
 
     def __init__(self, inputs: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            inputs: Test parameter `inputs`.
+        """
 
         class Op:
             """Test class Op."""
 
             def __init__(self, ins: EagerValue) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    ins: Test parameter `ins`.
+                """
                 self.inputs = ins
 
         self.operation = Op(inputs or [])
@@ -35,7 +41,11 @@ class MockHistory:
     """Test class MockHistory."""
 
     def __init__(self, inputs: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            inputs: Test parameter `inputs`.
+        """
         self.node = MockNode(inputs)
 
 
@@ -43,7 +53,11 @@ class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, inputs: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            inputs: Test parameter `inputs`.
+        """
         if inputs is not None:
             self._lineage_history = MockHistory(inputs)
 
@@ -52,7 +66,7 @@ def test_get_source_inputs() -> None:
     """Test function test_get_source_inputs."""
     t1 = MockTensor()
     t2 = MockTensor()
-    t3 = cast("Callable[..., EagerTensorProtocol]", MockTensor)([t1, t2])
+    t3 = cast("EagerCallableProtocol", MockTensor)([t1, t2])
     t4 = MockTensor([])
     assert get_source_inputs(t4) == [t4]
     assert get_source_inputs(t1) == [t1]

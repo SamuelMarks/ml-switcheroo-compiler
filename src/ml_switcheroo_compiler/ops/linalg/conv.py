@@ -1,13 +1,13 @@
-"""Core abstractions and logic definitions for conv.py."""
+"""Implementation of conv operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.conv`)."""
 
 from __future__ import annotations
 
 import typing  # noqa: F401
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
@@ -63,7 +63,7 @@ def conv_general_dilated(
     )
     out_shape = op.infer_shape(lhs, rhs, cfg)
 
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
+    return cast(TensorOrScalar, cast("EagerCallableProtocol", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
 
 
 @dispatch_eager("ConvGeneralDilatedLocal")

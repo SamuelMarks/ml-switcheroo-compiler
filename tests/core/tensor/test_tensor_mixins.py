@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPropertiesMixin
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
@@ -22,7 +20,15 @@ class DummyTensor(TensorIndexingMixin, TensorConversionMixin, TensorPropertiesMi
     """Test class DummyTensor."""
 
     def __init__(self, shape: EagerValue, dtype: EagerValue, device: EagerValue, requires_grad: EagerValue, data: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+            dtype: Test parameter `dtype`.
+            device: Test parameter `device`.
+            requires_grad: Test parameter `requires_grad`.
+            data: Test parameter `data`.
+        """
         setattr(self, "_shape", shape)
         setattr(self, "_dtype", dtype)
         setattr(self, "_device", device)
@@ -70,13 +76,22 @@ def test_tensor_conversion() -> None:
         """Test class DummyBk."""
 
         def zeros(self, s: EagerValue) -> EagerValue:
-            """Test function zeros."""
+            """Test function zeros.
+
+            Args:
+                s: Test parameter `s`.
+            """
             import numpy as np
 
-            return cast("Callable[..., EagerTensorProtocol]", np.zeros)(s)
+            return cast("EagerCallableProtocol", np.zeros)(s)
 
         def item(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return 42.0
 
     setattr(reg, "_ACTIVE_BACKEND", DummyBk())
@@ -102,10 +117,10 @@ def test_tensor_conversion() -> None:
             """Test function tolist."""
             return [1]
 
-    t3 = cast("Callable[..., EagerTensorProtocol]", DummyTensor)((1,), DType.Float32, "cpu", True, data=cast("Callable[..., EagerTensorProtocol]", BadData)())
+    t3 = cast("EagerCallableProtocol", DummyTensor)((1,), DType.Float32, "cpu", True, data=cast("EagerCallableProtocol", BadData)())
     pass
 
-    setattr(t3, "_data", cast("Callable[..., EagerTensorProtocol]", np.array)([42.0]))
+    setattr(t3, "_data", cast("EagerCallableProtocol", np.array)([42.0]))
     setattr(t3, "eval", lambda: t3)
     t3.__class__.__name__ = "Tensor"
     assert cast("EagerTensorProtocol", getattr(t3, "item"))() == 42.0
@@ -124,7 +139,12 @@ def test_tensor_indexing() -> None:
         """Test class DummyFrontend."""
 
         def __call__(self, x: EagerValue, idx: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                x: Test parameter `x`.
+                idx: Test parameter `idx`.
+            """
             return (x, idx)
 
     from ml_switcheroo_compiler.ops.registry import _FRONTEND_REGISTRY
@@ -158,7 +178,7 @@ def test_tensor_conversion_tracing() -> None:
 
         id = "id"
 
-    t = cast("Callable[..., EagerTensorProtocol]", DummyTensor)((2, 3), DType.Float32, "cpu", True, data=cast("Callable[..., EagerTensorProtocol]", PData)())
+    t = cast("EagerCallableProtocol", DummyTensor)((2, 3), DType.Float32, "cpu", True, data=cast("EagerCallableProtocol", PData)())
 
     import ml_switcheroo_compiler.backends.registry as reg
 
@@ -166,14 +186,18 @@ def test_tensor_conversion_tracing() -> None:
         """Test class DummyBk."""
 
         def zeros(self, s: EagerValue) -> EagerValue:
-            """Test function zeros."""
+            """Test function zeros.
+
+            Args:
+                s: Test parameter `s`.
+            """
             import numpy as np
 
-            return cast("Callable[..., EagerTensorProtocol]", np.zeros)(s)
+            return cast("EagerCallableProtocol", np.zeros)(s)
 
     setattr(reg, "_ACTIVE_BACKEND", DummyBk())
 
-    assert t is not None or t is None
+    assert t.shape == (2, 3)
 
 
 def test_tensor_indexing_tracing() -> None:
@@ -190,7 +214,11 @@ def test_tensor_indexing_tracing() -> None:
         """Test class DummyGraph."""
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             getattr(getattr(self, "nodes"), "__setitem__")(getattr(node, "id"), node)
 
         def __init__(self) -> None:
@@ -212,18 +240,25 @@ def test_tensor_indexing_tracing() -> None:
 
     setattr(t, "_data", DummyData())
 
-    cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
-    assert t is not None or t is None
+    assert getattr(t, "__getitem__")(0) is not None
 
 
 def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_tensor_conversion_mixin_missing."""
+    """Test function test_tensor_conversion_mixin_missing.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
 
     class MockMixin(TensorConversionMixin):
         """Test class MockMixin."""
 
         def __init__(self, data: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self._data = data
 
         @property
@@ -237,7 +272,7 @@ def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> No
             return cast("Tensor", self._data)
 
     m = MockMixin(np.array([1, 2]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(cast("Callable[..., EagerTensorProtocol]", m.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", m.numpy)(), cast("EagerCallableProtocol", np.array)([1, 2]))
 
     # Test __array__
     np.testing.assert_array_equal(np.array(m), np.array([1, 2]))
@@ -278,7 +313,7 @@ def test_tensor_mixins_array_with_id() -> None:
 
         id = "dummy_id"
 
-    t = cast("Callable[..., EagerTensorProtocol]", Tensor)(data=cast("Callable[..., EagerTensorProtocol]", DataWithId)(), config=cast("Callable[..., EagerTensorProtocol]", TensorConfig)(dtype="int32", shape=(1,), device=None))
+    t = cast("EagerCallableProtocol", Tensor)(data=cast("EagerCallableProtocol", DataWithId)(), config=cast("EagerCallableProtocol", TensorConfig)(dtype="int32", shape=(1,), device=None))
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
         mock_backend = MagicMock()
@@ -424,12 +459,12 @@ def test_tensor_mixins_properties_and_conversions() -> None:
         mock_backend.numpy.return_value = np.array([1, 2])
         mock_get_backend.return_value = mock_backend
 
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", t.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", t.numpy)(), cast("EagerCallableProtocol", np.array)([1, 2]))
 
         # fallback to asarray
         mock_backend.numpy.side_effect = Exception("No numpy")
         mock_backend.asarray.return_value = np.array([1, 2])
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", t.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", t.numpy)(), cast("EagerCallableProtocol", np.array)([1, 2]))
 
 
 def test_tensor_mixins_array_exceptions() -> None:
@@ -541,13 +576,17 @@ def test_tensor_mixins_getitem_tracing() -> None:
 
         value = "int32"
 
-    t = cast("Callable[..., EagerTensorProtocol]", Tensor)(data=cast("Callable[..., EagerTensorProtocol]", FakeData)(), config=cast("Callable[..., EagerTensorProtocol]", TensorConfig)(dtype=cast("Callable[..., EagerTensorProtocol]", MockDtype)(), shape=(2,), device=None))
+    t = cast("EagerCallableProtocol", Tensor)(data=cast("EagerCallableProtocol", FakeData)(), config=cast("EagerCallableProtocol", TensorConfig)(dtype=cast("EagerCallableProtocol", MockDtype)(), shape=(2,), device=None))
 
     class FakeArray:
         """Test class FakeArray."""
 
         def __getitem__(self, key: EagerValue) -> None:
-            """Test function __getitem__."""
+            """Test function __getitem__.
+
+            Args:
+                key: Test parameter `key`.
+            """
             raise IndexError("Simulated failure")
 
     with patch.object(t, "__array__", return_value=FakeArray()):

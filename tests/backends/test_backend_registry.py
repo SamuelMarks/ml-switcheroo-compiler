@@ -8,9 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_backend_registry() -> None:
@@ -19,7 +17,7 @@ def test_backend_registry() -> None:
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend, register_backend
     from ml_switcheroo_compiler.core.config import config
 
-    @cast("Callable[..., EagerTensorProtocol]", register_backend)("dummy_decorator")
+    @cast("EagerCallableProtocol", register_backend)("dummy_decorator")
     class DummyBackend(BaseGenerator):
         """Dummy backend for registry testing."""
 
@@ -51,8 +49,8 @@ def test_loaders_and_lazy_loading() -> None:
         loader()
     with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module", "test_lazy_no_loader": "some.other"}):
         with patch.dict(_LOADERS, {"test_lazy_fail": MagicMock(side_effect=ImportError("mock error"))}):
-            cast("Callable[..., EagerTensorProtocol]", BackendRegistry._try_load_lazy)("test_lazy_fail")
-            cast("Callable[..., EagerTensorProtocol]", BackendRegistry._try_load_lazy)("test_lazy_no_loader")
+            cast("EagerCallableProtocol", BackendRegistry._try_load_lazy)("test_lazy_fail")
+            cast("EagerCallableProtocol", BackendRegistry._try_load_lazy)("test_lazy_no_loader")
     assert callable(test_loaders_and_lazy_loading)
 
 

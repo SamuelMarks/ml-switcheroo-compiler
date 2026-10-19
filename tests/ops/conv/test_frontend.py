@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_conv_frontend_cov() -> None:
@@ -30,15 +28,25 @@ def test_conv_frontend_cov() -> None:
 
         @classmethod
         def execute_op(cls, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op_name: Test parameter `op_name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.ones((2, 2, 2))
 
         @classmethod
         def array(cls, data: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                data: Test parameter `data`.
+            """
             return data
 
-    cast("Callable[..., EagerTensorProtocol]", BackendRegistry.register)("mock_conv", MockBackendConv)
+    cast("EagerCallableProtocol", BackendRegistry.register)("mock_conv", MockBackendConv)
 
     try:
         config.eager_mode = True
@@ -54,30 +62,28 @@ def test_conv_frontend_cov() -> None:
                 self.device = None
                 self.data = np.ones((2, 2, 2))
 
-        t = cast("Callable[..., EagerTensorProtocol]", Tensor)(
-            cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", types.SimpleNamespace)(shape=(2, 2, 2), dtype=cast("Callable[..., EagerTensorProtocol]", DummyTensor)().dtype, device=None, requires_grad=False, trainable=False)
-        )
+        t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", types.SimpleNamespace)(shape=(2, 2, 2), dtype=cast("EagerCallableProtocol", DummyTensor)().dtype, device=None, requires_grad=False, trainable=False))
 
         # conv1d
-        cast("Callable[..., EagerTensorProtocol]", conv1d.conv1d)(t, t, config_obj=None)
-        cast("Callable[..., EagerTensorProtocol]", conv1d.conv1d_transpose)(t, t)
-        cast("Callable[..., EagerTensorProtocol]", conv1d.depthwise_conv1d)(t, t, config_obj=None)
-        cast("Callable[..., EagerTensorProtocol]", conv1d.separable_conv1d)(t, t, t)
+        cast("EagerCallableProtocol", conv1d.conv1d)(t, t, config_obj=None)
+        cast("EagerCallableProtocol", conv1d.conv1d_transpose)(t, t)
+        cast("EagerCallableProtocol", conv1d.depthwise_conv1d)(t, t, config_obj=None)
+        cast("EagerCallableProtocol", conv1d.separable_conv1d)(t, t, t)
 
         # conv2d
-        cast("Callable[..., EagerTensorProtocol]", conv2d.conv2d)(t, t, config_obj=None)
-        cast("Callable[..., EagerTensorProtocol]", conv2d.conv2d_transpose)(t, t)
-        cast("Callable[..., EagerTensorProtocol]", conv2d.depthwise_conv2d)(t, t, config_obj=None)
-        cast("Callable[..., EagerTensorProtocol]", conv2d.separable_conv2d)(t, t, t)
+        cast("EagerCallableProtocol", conv2d.conv2d)(t, t, config_obj=None)
+        cast("EagerCallableProtocol", conv2d.conv2d_transpose)(t, t)
+        cast("EagerCallableProtocol", conv2d.depthwise_conv2d)(t, t, config_obj=None)
+        cast("EagerCallableProtocol", conv2d.separable_conv2d)(t, t, t)
 
         # conv3d
-        cast("Callable[..., EagerTensorProtocol]", conv3d.conv3d)(t, t, config_obj=None)
-        cast("Callable[..., EagerTensorProtocol]", conv3d.conv3d_transpose)(t, t)
+        cast("EagerCallableProtocol", conv3d.conv3d)(t, t, config_obj=None)
+        cast("EagerCallableProtocol", conv3d.conv3d_transpose)(t, t)
 
     finally:
         config.eager_mode = orig_eager
         config.backend = orig_backend
-    assert orig_backend is not None or orig_backend is None
+    assert config.backend == orig_backend
 
 
 def test_conv_frontend_cov_config_obj_not_none() -> None:
@@ -95,15 +101,24 @@ def test_conv_frontend_cov_config_obj_not_none() -> None:
 
             @classmethod
             def execute_op(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function execute_op."""
+                """Test function execute_op.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return None
 
             @classmethod
             def array(cls, x: EagerValue) -> EagerValue:
-                """Test function array."""
+                """Test function array.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return types.SimpleNamespace(shape=(1, 1))
 
-        cast("Callable[..., EagerTensorProtocol]", BackendRegistry.register)("mock_conv", MockBackendConv)
+        cast("EagerCallableProtocol", BackendRegistry.register)("mock_conv", MockBackendConv)
 
         config.eager_mode = True
         config.backend = "mock_conv"
@@ -118,20 +133,18 @@ def test_conv_frontend_cov_config_obj_not_none() -> None:
                 self.device = None
                 self.data = np.ones((2, 2, 2))
 
-        t = cast("Callable[..., EagerTensorProtocol]", Tensor)(
-            cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", types.SimpleNamespace)(shape=(2, 2, 2), dtype=cast("Callable[..., EagerTensorProtocol]", DummyTensor)().dtype, device=None, requires_grad=False, trainable=False)
-        )
+        t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", types.SimpleNamespace)(shape=(2, 2, 2), dtype=cast("EagerCallableProtocol", DummyTensor)().dtype, device=None, requires_grad=False, trainable=False))
 
         # conv1d
-        cast("Callable[..., EagerTensorProtocol]", conv1d.conv1d)(t, t, config_obj=cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(conv1d, "_build_conv_config")))({}, ((0, 2, 1), (2, 1, 0), (0, 2, 1))))
+        cast("EagerCallableProtocol", conv1d.conv1d)(t, t, config_obj=cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(conv1d, "_build_conv_config")))({}, ((0, 2, 1), (2, 1, 0), (0, 2, 1))))
 
         # conv2d
-        cast("Callable[..., EagerTensorProtocol]", conv2d.conv2d)(t, t, config_obj=cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(conv2d, "_build_conv_config")))({}, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
+        cast("EagerCallableProtocol", conv2d.conv2d)(t, t, config_obj=cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(conv2d, "_build_conv_config")))({}, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
 
         # conv3d
-        cast("Callable[..., EagerTensorProtocol]", conv3d.conv3d)(t, t, config_obj=cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(conv3d, "_build_conv_config")))({}, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
+        cast("EagerCallableProtocol", conv3d.conv3d)(t, t, config_obj=cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(conv3d, "_build_conv_config")))({}, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
 
     finally:
         config.eager_mode = orig_eager
         config.backend = orig_backend
-    assert orig_backend is not None or orig_backend is None
+    assert config.backend == orig_backend

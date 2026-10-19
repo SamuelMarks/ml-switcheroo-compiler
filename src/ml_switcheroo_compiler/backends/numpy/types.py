@@ -1,11 +1,11 @@
-"""Backend utilities."""
+"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.types`)."""
 
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import generic_array
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -30,7 +30,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
 
     Returns: np.ndarray: The array tensor.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(np, data, dtype))
+    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(np, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:

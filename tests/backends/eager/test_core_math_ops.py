@@ -15,9 +15,7 @@ import ml_switcheroo_compiler.backends.eager.core_math_ops as core_math_ops
 import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_core_math_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -74,28 +72,48 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
 
         @staticmethod
         def sign(x: EagerValue) -> EagerValue:
-            """Test function sign."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.sign)(x))
+            """Test function sign.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.sign)(x))
 
         @staticmethod
         def abs(x: EagerValue) -> EagerValue:
-            """Test function abs."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.abs)(x))
+            """Test function abs.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.abs)(x))
 
         @staticmethod
         def exp(x: EagerValue) -> EagerValue:
-            """Test function exp."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.exp)(x))
+            """Test function exp.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.exp)(x))
 
         @staticmethod
         def log(x: EagerValue) -> EagerValue:
-            """Test function log."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.log)(x))
+            """Test function log.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.log)(x))
 
         @staticmethod
         def sqrt(x: EagerValue) -> EagerValue:
-            """Test function sqrt."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.sqrt)(x))
+            """Test function sqrt.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.sqrt)(x))
 
     dummy = DummyMock()
     res = core_math_ops._erf(dummy, 0.5)
@@ -192,7 +210,12 @@ def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) 
 
             @staticmethod
             def zerofraction(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function zerofraction."""
+                """Test function zerofraction.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return 1.0
 
     res = core_math_ops._np_zerofraction(MockRandomZeroFraction, np.array([0.0, 1.0]))
@@ -214,7 +237,7 @@ def test_core_math_ops_coverage() -> None:
     _test_core_math_ops_coverage_part_5(_state)
     _test_core_math_ops_coverage_part_6(_state)
     _test_core_math_ops_coverage_part_7(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_missing_i0() -> None:
@@ -227,19 +250,35 @@ def test_missing_i0() -> None:
         """Test class BkWithI0."""
 
         def i0(self, x: EagerValue) -> EagerValue:
-            """Test function i0."""
+            """Test function i0.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array([1.0])
 
         def iscomplex(self, x: EagerValue) -> EagerValue:
-            """Test function iscomplex."""
+            """Test function iscomplex.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array([1.0])
 
         def isreal(self, x: EagerValue) -> EagerValue:
-            """Test function isreal."""
+            """Test function isreal.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array([1.0])
 
         def signbit(self, x: EagerValue) -> EagerValue:
-            """Test function signbit."""
+            """Test function signbit.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array([1.0])
 
     class BkWithoutI0:
@@ -248,34 +287,51 @@ def test_missing_i0() -> None:
         pass
 
     x = np.array([1.0])
-    mod._i0(BkWithI0(), x)
-    mod._i0(BkWithoutI0(), x)
-    mod._iscomplex(BkWithI0(), x)
-    mod._iscomplex(BkWithoutI0(), x)
-    mod._isreal(BkWithI0(), x)
-    mod._isreal(BkWithoutI0(), x)
-    mod._signbit(BkWithI0(), x)
-    mod._signbit(BkWithoutI0(), x)
-    assert x is not None or x is None
+    assert mod._i0(BkWithI0(), x) is not None
+    assert mod._i0(BkWithoutI0(), x) is None
+    assert mod._iscomplex(BkWithI0(), x) is not None
+    assert mod._iscomplex(BkWithoutI0(), x) is not None
+    assert mod._isreal(BkWithI0(), x) is not None
+    assert mod._isreal(BkWithoutI0(), x) is not None
+    assert mod._signbit(BkWithI0(), x) is not None
+    assert mod._signbit(BkWithoutI0(), x) is not None
 
 
 class DummyBackend:
     """Test class DummyBackend."""
 
     def shape(self, x: EagerValue) -> EagerValue:
-        """Test function shape."""
+        """Test function shape.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (2, 2)
 
     def indices(self, x: EagerValue) -> EagerValue:
-        """Test function indices."""
+        """Test function indices.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (0, 0)
 
     def ones(self, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function ones."""
+        """Test function ones.
+
+        Args:
+            x: Test parameter `x`.
+            kwargs: Test parameter `kwargs`.
+        """
         return x
 
     def where(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function where."""
+        """Test function where.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return args[0]
 
     pass
@@ -289,22 +345,42 @@ class DummyBackendWithRandom:
 
         @staticmethod
         def triangular(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function triangular."""
+            """Test function triangular.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "random.triangular"
 
         @staticmethod
         def triangularsolve(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function triangularsolve."""
+            """Test function triangularsolve.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "random.triangularsolve"
 
         @staticmethod
         def xlog1py(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function xlog1py."""
+            """Test function xlog1py.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "random.xlog1py"
 
         @staticmethod
         def xlogy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function xlogy."""
+            """Test function xlogy.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "random.xlogy"
 
 
@@ -315,14 +391,23 @@ class AllBackend:
     """Test class AllBackend."""
 
     def __getattr__(self, name: EagerValue) -> EagerValue:
-        """Test function __getattr__."""
+        """Test function __getattr__.
+
+        Args:
+            name: Test parameter `name`.
+        """
         if name in ("__bases__", "__class__"):
             raise AttributeError()
         if name == "nn":
             return cast("EagerTensorProtocol", self)
 
         def _dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function _dummy."""
+            """Test function _dummy.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.array([1.0])
 
         setattr(_dummy, "item", lambda: 1.0)
@@ -334,12 +419,20 @@ class FallbackBackend:
     """Test class FallbackBackend."""
 
     def __init__(self, hide_names: EagerValue) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            hide_names: Test parameter `hide_names`.
+        """
         self.hide_names = hide_names
         self.np = np
 
     def __getattr__(self, name: EagerValue) -> EagerValue:
-        """Test function __getattr__."""
+        """Test function __getattr__.
+
+        Args:
+            name: Test parameter `name`.
+        """
         if cast("EagerTensorProtocol", name) in cast("EagerTensorProtocol", self.hide_names):
             raise AttributeError(f"Hidden: {name}")
         if name == "nn":
@@ -368,7 +461,14 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
     (arg, arg_int, sig) = (_state["arg"], _state["arg_int"], _state["sig"])
 
     def build_call(bk: EagerValue, use_int: EagerValue = False, use_one_arg: EagerValue = False, sig: EagerValue = sig) -> EagerValue:
-        """Test function build_call."""
+        """Test function build_call.
+
+        Args:
+            bk: Test parameter `bk`.
+            use_int: Test parameter `use_int`.
+            use_one_arg: Test parameter `use_one_arg`.
+            sig: Test parameter `sig`.
+        """
         args = []
         kwargs = {}
         val = arg_int if use_int else arg
@@ -407,7 +507,7 @@ def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol
             for use_one_arg in [False, True]:
                 (args, kwargs) = build_call(bk, use_int, use_one_arg)
                 try:
-                    cast("Callable[..., EagerTensorProtocol]", op)(*args, **cast("dict[str, EagerValue]", kwargs))
+                    cast("EagerCallableProtocol", op)(*args, **cast("dict[str, EagerValue]", kwargs))
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
                 try:
@@ -443,7 +543,7 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
     (args, kwargs, op, orig_scipy) = (_state["args"], _state["kwargs"], _state["op"], _state["orig_scipy"])
     orig_scipy2 = _state["orig_scipy2"]
     try:
-        cast("Callable[..., EagerTensorProtocol]", op)(*args, **cast("dict[str, EagerValue]", kwargs))
+        cast("EagerCallableProtocol", op)(*args, **cast("dict[str, EagerValue]", kwargs))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
@@ -475,7 +575,7 @@ def test_all_core_math_ops_coverage() -> None:
         getattr(_state, "update")({"hide": hide, "op": op, "ops": ops})
         for _sub_fn in (_test_all_core_math_ops_coverage_sub_1, _test_all_core_math_ops_coverage_sub_2, _test_all_core_math_ops_coverage_sub_3, _test_all_core_math_ops_coverage_sub_4, _test_all_core_math_ops_coverage_sub_5):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
 
 
 def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -501,13 +601,18 @@ def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
 
             @staticmethod
             def softmax(x: EagerValue, axis: EagerValue) -> EagerValue:
-                """Test function softmax."""
+                """Test function softmax.
+
+                Args:
+                    x: Test parameter `x`.
+                    axis: Test parameter `axis`.
+                """
                 return x
 
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-    cast("Callable[..., EagerTensorProtocol]", mod._apply_causal_mask)(cast("Callable[..., EagerTensorProtocol]", EmptyBk)(), arg)
-    cast("Callable[..., EagerTensorProtocol]", mod._apply_softmax)(cast("Callable[..., EagerTensorProtocol]", NNSoftmaxBk)(), arg)
-    cast("Callable[..., EagerTensorProtocol]", mod._apply_softmax)(cast("Callable[..., EagerTensorProtocol]", EmptyBk)(), arg)
+    cast("EagerCallableProtocol", mod._apply_causal_mask)(cast("EagerCallableProtocol", EmptyBk)(), arg)
+    cast("EagerCallableProtocol", mod._apply_softmax)(cast("EagerCallableProtocol", NNSoftmaxBk)(), arg)
+    cast("EagerCallableProtocol", mod._apply_softmax)(cast("EagerCallableProtocol", EmptyBk)(), arg)
     getattr(_state, "update")({"EmptyBk": EmptyBk, "NNSoftmaxBk": NNSoftmaxBk, "arg": arg, "mod": mod})
     getattr(_state, "update")({"np": np})
     _state.update(locals())
@@ -535,15 +640,20 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
             """Test function tolist."""
             return 1.0
 
-    cast("Callable[..., EagerTensorProtocol]", mod._allclose)(np, arg, arg, rtol=cast("Callable[..., EagerTensorProtocol]", DummyItem)())
-    cast("Callable[..., EagerTensorProtocol]", mod._allclose)(np, arg, arg, rtol=cast("Callable[..., EagerTensorProtocol]", DummyList)())
+    cast("EagerCallableProtocol", mod._allclose)(np, arg, arg, rtol=cast("EagerCallableProtocol", DummyItem)())
+    cast("EagerCallableProtocol", mod._allclose)(np, arg, arg, rtol=cast("EagerCallableProtocol", DummyList)())
 
     class MatmulBk:
         """Test class MatmulBk."""
 
         @staticmethod
         def matmul(a: EagerValue, b: EagerValue) -> EagerValue:
-            """Test function matmul."""
+            """Test function matmul.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a
 
     getattr(_state, "update")({"DummyItem": DummyItem, "DummyList": DummyList, "MatmulBk": MatmulBk})
@@ -568,20 +678,35 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
 
         @staticmethod
         def where(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function where."""
+            """Test function where.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return 1
 
         @staticmethod
         def floor(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function floor."""
+            """Test function floor.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return 1
 
         @staticmethod
         def ceil(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function ceil."""
+            """Test function ceil.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return 1
 
-    cast("Callable[..., EagerTensorProtocol]", mod._fix)(cast("Callable[..., EagerTensorProtocol]", BkWithWhere)(), arg)
+    cast("EagerCallableProtocol", mod._fix)(cast("EagerCallableProtocol", BkWithWhere)(), arg)
     mod._adaptive_max_pool3d_indices(np, arg, 1)
     getattr(_state, "update")({"BkWithWhere": BkWithWhere})
     _state.update(locals())
@@ -604,7 +729,7 @@ def test_missing_coverage() -> None:
     _test_missing_coverage_part_2(_state)
     _test_missing_coverage_part_3(_state)
     _test_missing_coverage_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_empty_backend() -> None:
@@ -657,77 +782,152 @@ class _BkWithLinalg:
 
         @staticmethod
         def cho_solve(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function cho_solve."""
+            """Test function cho_solve.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def solve_banded(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function solve_banded."""
+            """Test function solve_banded.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def svd(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function svd."""
+            """Test function svd.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def tensorinv(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function tensorinv."""
+            """Test function tensorinv.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def tensorsolve(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function tensorsolve."""
+            """Test function tensorsolve.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def cross(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function cross."""
+            """Test function cross.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def outer(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function outer."""
+            """Test function outer.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def det(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function det."""
+            """Test function det.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def eig(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function eig."""
+            """Test function eig.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def eigh(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function eigh."""
+            """Test function eigh.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def eigvals(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function eigvals."""
+            """Test function eigvals.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def eigvalsh(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function eigvalsh."""
+            """Test function eigvalsh.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def cholesky(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function cholesky."""
+            """Test function cholesky.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def matrix_power(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function matrix_power."""
+            """Test function matrix_power.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def norm(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function norm."""
+            """Test function norm.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
 
@@ -808,7 +1008,7 @@ def test_remaining_coverage() -> None:
     _state: dict[str, EagerTensorProtocol] = dict(locals())
     for _sub_fn in (_test_remaining_coverage_sub_1, _test_remaining_coverage_sub_2, _test_remaining_coverage_sub_3, _test_remaining_coverage_sub_4, _test_remaining_coverage_sub_5, _test_remaining_coverage_sub_6):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_unfold_coverage_manual() -> None:
@@ -821,7 +1021,11 @@ def test_unfold_coverage_manual() -> None:
         """Test class DummyBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     res = _np_unfold(DummyBackend(), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
@@ -840,7 +1044,12 @@ def test_final_fftn() -> None:
         """Test class DummyFFT."""
 
         def fftn(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function fftn."""
+            """Test function fftn.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
     class BkSpecial:
@@ -864,7 +1073,12 @@ class _BkSpecial:
 
         @staticmethod
         def householder_product(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function householder_product."""
+            """Test function householder_product.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
     class fft:
@@ -872,42 +1086,82 @@ class _BkSpecial:
 
         @staticmethod
         def fft2(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function fft2."""
+            """Test function fft2.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def fftfreq(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function fftfreq."""
+            """Test function fftfreq.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def fftn(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function fftn."""
+            """Test function fftn.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def fftshift(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function fftshift."""
+            """Test function fftshift.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def ifft(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function ifft."""
+            """Test function ifft.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def ifft2(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function ifft2."""
+            """Test function ifft2.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def ifftn(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function ifftn."""
+            """Test function ifftn.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def ifftshift(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function ifftshift."""
+            """Test function ifftshift.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
     class lax:
@@ -915,32 +1169,62 @@ class _BkSpecial:
 
         @staticmethod
         def infeed(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function infeed."""
+            """Test function infeed.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def outfeed(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function outfeed."""
+            """Test function outfeed.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def pshuffle(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function pshuffle."""
+            """Test function pshuffle.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def pswapaxes(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function pswapaxes."""
+            """Test function pswapaxes.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def ppermute(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function ppermute."""
+            """Test function ppermute.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
         @staticmethod
         def psum_scatter(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function psum_scatter."""
+            """Test function psum_scatter.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
     class random:
@@ -948,7 +1232,12 @@ class _BkSpecial:
 
         @staticmethod
         def tridiagonal(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function tridiagonal."""
+            """Test function tridiagonal.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return np.array([1.0])
 
 
@@ -998,9 +1287,8 @@ def _test_even_more_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
         _state: Shared test state dictionary.
     """
     (arg, bk) = (_state["arg"], _state["bk"])
-    mod._fftn(bk, arg)
-    mod._psumscatter(bk, arg)
-    assert arg is not None or arg is None
+    assert mod._fftn(bk, arg) is not None
+    assert mod._psumscatter(bk, arg) is not None
     _state.update(locals())
 
 
@@ -1009,4 +1297,4 @@ def test_even_more_coverage() -> None:
     _state: dict[str, EagerTensorProtocol] = dict(locals())
     for _sub_fn in (_test_even_more_coverage_sub_1, _test_even_more_coverage_sub_2, _test_even_more_coverage_sub_3):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

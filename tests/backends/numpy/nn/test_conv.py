@@ -34,9 +34,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.conv import (
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_get_transpose() -> None:
@@ -74,7 +72,7 @@ def test_parse_conv_dimension_numbers() -> None:
             self.rhs_spec = (0, 1, 2, 3)
             self.out_spec = (0, 1, 2, 3)
 
-    res3 = cast("Callable[..., EagerTensorProtocol]", _parse_conv_dimension_numbers)(4, 4, 2, cast("Callable[..., EagerTensorProtocol]", MockDimSpec)())
+    res3 = cast("EagerCallableProtocol", _parse_conv_dimension_numbers)(4, 4, 2, cast("EagerCallableProtocol", MockDimSpec)())
     assert cast("EagerTensorProtocol", tuple(res3.lhs_spec)) == cast("EagerTensorProtocol", (0, 1, 2, 3))
 
 
@@ -160,7 +158,7 @@ def test_compute_single_patch() -> None:
             self.spatial_dims = 2
 
     state = MockState()
-    cast("Callable[..., EagerTensorProtocol]", _compute_single_patch)(state, (0, 0))
+    cast("EagerCallableProtocol", _compute_single_patch)(state, (0, 0))
     assert out[0, 0, 0, 0] > 0
     lhs_pad_g = np.ones((1, 4, 3, 3))
     rhs_c_g = np.ones((4, 2, 3, 3))
@@ -171,7 +169,7 @@ def test_compute_single_patch() -> None:
     state_g.rhs_c = rhs_c_g
     state_g.out = out_g
     state_g.config = config_g
-    cast("Callable[..., EagerTensorProtocol]", _compute_single_patch)(state_g, (0, 0))
+    cast("EagerCallableProtocol", _compute_single_patch)(state_g, (0, 0))
     assert out_g[0, 0, 0, 0] > 0
 
 
@@ -210,13 +208,13 @@ def test_preprocess_conv_tensors() -> None:
             self.spatial_dims = 2
 
     spec = MockSpec()
-    (lhs_pad, rhs_c) = cast("Callable[..., EagerTensorProtocol]", _preprocess_conv_tensors)(lhs, rhs, config, spec)
+    (lhs_pad, rhs_c) = cast("EagerCallableProtocol", _preprocess_conv_tensors)(lhs, rhs, config, spec)
     assert cast("EagerTensorProtocol", getattr(lhs_pad, "shape")) == (1, 1, 3, 3)
     assert cast("EagerTensorProtocol", getattr(rhs_c, "shape")) == (1, 1, 3, 3)
     config_g = ConvConfig(window_strides=(1, 1), padding="VALID", feature_group_count=2)
     lhs_g = np.ones((1, 4, 3, 3))
     rhs_g = np.ones((4, 4, 3, 3))
-    (lhs_pad_g, rhs_c_g) = cast("Callable[..., EagerTensorProtocol]", _preprocess_conv_tensors)(lhs_g, rhs_g, config_g, spec)
+    (lhs_pad_g, rhs_c_g) = cast("EagerCallableProtocol", _preprocess_conv_tensors)(lhs_g, rhs_g, config_g, spec)
     assert cast("EagerTensorProtocol", getattr(rhs_c_g, "shape")) == (8, 2, 3, 3)
 
 
@@ -254,9 +252,9 @@ def test_np_conv_general_dilated() -> None:
 
 def test_calculate_conv_transpose_padding() -> None:
     """Test function test_calculate_conv_transpose_padding."""
-    (out_spatial, pads) = cast("Callable[..., EagerTensorProtocol]", _calculate_conv_transpose_padding)((3, 3), (3, 3), (1, 1), "VALID")
+    (out_spatial, pads) = cast("EagerCallableProtocol", _calculate_conv_transpose_padding)((3, 3), (3, 3), (1, 1), "VALID")
     assert out_spatial == [5, 5]
-    (out_spatial2, pads2) = cast("Callable[..., EagerTensorProtocol]", _calculate_conv_transpose_padding)((3, 3), (3, 3), (1, 1), "SAME")
+    (out_spatial2, pads2) = cast("EagerCallableProtocol", _calculate_conv_transpose_padding)((3, 3), (3, 3), (1, 1), "SAME")
     assert out_spatial2 == [3, 3]
 
 
@@ -297,9 +295,9 @@ def test_numpy_conv_branch_coverage() -> None:
     config = ConvConfig(window_strides=(1, 1), padding=((0, 0), (0, 0)), lhs_dilation=(1, 1), rhs_dilation=(1, 1), feature_group_count=2, batch_group_count=1)
     lhs = np.random.rand(1, 4, 3, 3)
     rhs = np.random.rand(2, 999, 2, 2)
-    cast("Callable[..., EagerTensorProtocol]", _preprocess_conv_tensors)(lhs, rhs, config, specs)
+    cast("EagerCallableProtocol", _preprocess_conv_tensors)(lhs, rhs, config, specs)
     rhs_exact = np.random.rand(2, 2, 2, 2)
-    (res_pad, res_rhs) = cast("Callable[..., EagerTensorProtocol]", _preprocess_conv_tensors)(lhs, rhs_exact, config, specs)
+    (res_pad, res_rhs) = cast("EagerCallableProtocol", _preprocess_conv_tensors)(lhs, rhs_exact, config, specs)
     assert res_pad is not None
     assert res_rhs is not None
     lhs_conv = np.ones((1, 1, 5, 5))
@@ -369,4 +367,4 @@ def test_np_conv2d_bias_grad() -> None:
     d_out = np.ones((2, 4, 8, 8), dtype=np.float32)
     db = _np_conv2d_bias_grad(np, d_out)
     assert cast("EagerTensorProtocol", getattr(db, "shape")) == (4,)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(db, 2 * 8 * 8)
+    assert cast("EagerCallableProtocol", np.allclose)(db, 2 * 8 * 8)

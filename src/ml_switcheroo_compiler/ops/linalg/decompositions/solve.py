@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for solve.py."""
+"""Implementation of solve operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.solve`)."""
 
 from __future__ import annotations
 

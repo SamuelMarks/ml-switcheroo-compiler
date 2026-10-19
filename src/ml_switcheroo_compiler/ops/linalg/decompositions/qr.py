@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for qr.py."""
+"""Implementation of qr operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.qr`)."""
 
 from __future__ import annotations
 

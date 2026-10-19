@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for kernels.py."""
+"""Implementation of kernels operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.kernels`)."""
 
 from dataclasses import dataclass
 from typing import (

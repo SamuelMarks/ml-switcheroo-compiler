@@ -1,14 +1,14 @@
-"""math_string_io module."""
+"""Implementation of math string io operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io`)."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence  # noqa: F401
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 
 
@@ -63,7 +63,7 @@ def _np_sparsemapvalues(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """
     fn = args[0]
     sp_input = args[1]
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", fn)(cast("Callable[..., EagerTensorProtocol]", backend_module.array)(sp_input)))
+    return cast(EagerValue, cast("EagerCallableProtocol", fn)(cast("EagerCallableProtocol", backend_module.array)(sp_input)))
 
 
 @numpy_eager_registry.register("SparseReshape")

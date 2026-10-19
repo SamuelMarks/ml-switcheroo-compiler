@@ -176,4 +176,4 @@ def test_yaml_registry_missing_file() -> None:
     finally:
         _YAML_REGISTRY.clear()
         _YAML_REGISTRY.update(old_registry)
-    assert old_registry is not None or old_registry is None
+    assert _YAML_REGISTRY == old_registry

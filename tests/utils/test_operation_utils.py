@@ -21,9 +21,7 @@ from ml_switcheroo_compiler.utils.operation_utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_get_source_inputs() -> None:
@@ -61,8 +59,13 @@ def test_shape_inference_strategy_base() -> None:
         """Dummy strategy."""
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int | None, ...] | list[tuple[int | None, ...]] | None:
-            """Verify the behavior and output invariants of call."""
-            return cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", cast("Callable[..., EagerTensorProtocol]", super().__call__)(*args, **kwargs))
+            """Verify the behavior and output invariants of call.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
+            return cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", cast("EagerCallableProtocol", super().__call__)(*args, **kwargs))
 
     strategy = DummyStrategy()
     assert strategy((1,), (), {}) is None

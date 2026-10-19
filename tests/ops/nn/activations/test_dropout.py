@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
 
@@ -26,19 +24,19 @@ def test_dropout_coverage() -> None:
     config.eager_mode = True
     t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", do.AlphaDropout)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", do.ActivityRegularization)().infer_shape(t) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", do.ActivityRegularization)().infer_shape([t]) == [t]
+    assert cast("EagerCallableProtocol", do.Dropout)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", do.AlphaDropout)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", do.ActivityRegularization)().infer_shape(t) == (2, 2)
+    assert cast("EagerCallableProtocol", do.ActivityRegularization)().infer_shape([t]) == [t]
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = (2, 2)
 
-    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout1d)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout2d)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", do.Dropout3d)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (2, 2)
+    assert cast("EagerCallableProtocol", do.Dropout1d)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (2, 2)
+    assert cast("EagerCallableProtocol", do.Dropout2d)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (2, 2)
+    assert cast("EagerCallableProtocol", do.Dropout3d)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (2, 2)
 
     with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
         config.eager_mode = False
@@ -61,7 +59,12 @@ def test_dropout_coverage() -> None:
         import ml_switcheroo_compiler.ops.nn.dropout as d_mod
 
         def dummy_emit(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function dummy_emit."""
+            """Test function dummy_emit.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "emitted"
 
         setattr(d_mod, "_emit_shape_node", dummy_emit)

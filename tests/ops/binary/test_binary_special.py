@@ -39,7 +39,12 @@ def test_binary_special() -> None:
 
         @staticmethod
         def evaluate(*a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function evaluate."""
+            """Test function evaluate.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return "eager_eval"
 
     import ml_switcheroo_compiler.ops.binary.special as sp
@@ -58,11 +63,21 @@ def test_binary_special() -> None:
         """Test class DummyBinary."""
 
         def floor_divide(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function floor_divide."""
+            """Test function floor_divide.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return "fd"
 
         def remainder(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function remainder."""
+            """Test function remainder.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return "r"
 
     import sys

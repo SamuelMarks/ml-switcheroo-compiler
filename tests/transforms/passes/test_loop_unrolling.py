@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_loop_unrolling_pass() -> None:
@@ -120,7 +118,7 @@ def test_loop_unrolling_extra_coverage() -> None:
 
     node = IRNode(id="n1", op_type="WhileLoop")
     heuristics = [{"op_type": "Add"}, {"op_type": "WhileLoop", "other": 1}, {"op_type": "WhileLoop", "max_iterations": "string"}, {"op_type": "WhileLoop", "max_iterations": 5}]
-    assert cast("Callable[..., EagerTensorProtocol]", detect_static_bound)(node, heuristics) == 5
+    assert cast("EagerCallableProtocol", detect_static_bound)(node, heuristics) == 5
 
     # graph loops unrolling branches
     g = IRGraph()

@@ -1,4 +1,4 @@
-"""math_general module."""
+"""Implementation of math general operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general`)."""
 
 from __future__ import annotations
 

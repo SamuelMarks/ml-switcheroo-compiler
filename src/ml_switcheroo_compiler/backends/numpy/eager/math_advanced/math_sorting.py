@@ -1,4 +1,4 @@
-"""math_sorting module."""
+"""Implementation of math sorting operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_sorting`)."""
 
 from __future__ import annotations
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E501
 import json
+import os
 import struct
 import tempfile
 from typing import TYPE_CHECKING, cast
@@ -11,20 +12,28 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_safetensors_load_save(mocker: EagerTensorProtocol) -> None:
-    """Test function test_safetensors_load_save."""
+    """Test function test_safetensors_load_save.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     fmt = SafetensorsWeightFormat()
 
     class MockNumpy:
         """Test class MockNumpy."""
 
         def __init__(self, data: EagerValue, dtype: EagerValue, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+                dtype: Test parameter `dtype`.
+                shape: Test parameter `shape`.
+            """
             self._data = data
             self.dtype = dtype
             self.shape = shape
@@ -39,7 +48,7 @@ def test_safetensors_load_save(mocker: EagerTensorProtocol) -> None:
         assert fmt.load(f.name) == {}
     with tempfile.NamedTemporaryFile() as f:
         weights = {"a": MockNumpy(b"data1", "float32", (1,)), "b": MockNumpy(b"data2", "float64", (1,)), "c": MockNumpy(b"data3", "unknown", (1,)), "skip_me": "not_numpy"}
-        cast("Callable[..., EagerTensorProtocol]", fmt.save)(weights, f.name)
+        cast("EagerCallableProtocol", fmt.save)(weights, f.name)
         mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
         del mock_backend.from_buffer
         loaded = fmt.load(f.name)
@@ -52,7 +61,7 @@ def test_safetensors_load_save(mocker: EagerTensorProtocol) -> None:
         assert "c" in loaded
         assert cast("EagerTensorProtocol", loaded["c"]["dtype"]) == cast("EagerTensorProtocol", "F32")
     with tempfile.NamedTemporaryFile() as f:
-        cast("Callable[..., EagerTensorProtocol]", fmt.save)(weights, f.name)
+        cast("EagerCallableProtocol", fmt.save)(weights, f.name)
         mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
         setattr(mock_backend.from_buffer, "side_effect", lambda b, dtype, shape: {"buf": b, "type": dtype, "sh": shape})
         loaded2 = fmt.load(f.name)
@@ -95,6 +104,7 @@ def test_safetensors_save_continue() -> None:
 
             @staticmethod
             def tobytes() -> EagerValue:
+                """Return empty bytes."""
                 return b""
 
         class MissingAttr4:
@@ -104,9 +114,8 @@ def test_safetensors_save_continue() -> None:
 
             @staticmethod
             def tobytes() -> EagerValue:
+                """Return empty bytes."""
                 return b""
 
-        cast("Callable[..., EagerTensorProtocol]", fmt.save)(
-            {"a": cast("Callable[..., EagerTensorProtocol]", MissingAttr1)(), "b": cast("Callable[..., EagerTensorProtocol]", MissingAttr2)(), "c": cast("Callable[..., EagerTensorProtocol]", MissingAttr3)(), "d": cast("Callable[..., EagerTensorProtocol]", MissingAttr4)()}, f.name
-        )
-    assert fmt is not None or fmt is None
+        cast("EagerCallableProtocol", fmt.save)({"a": cast("EagerCallableProtocol", MissingAttr1)(), "b": cast("EagerCallableProtocol", MissingAttr2)(), "c": cast("EagerCallableProtocol", MissingAttr3)(), "d": cast("EagerCallableProtocol", MissingAttr4)()}, f.name)
+        assert os.path.exists(f.name)

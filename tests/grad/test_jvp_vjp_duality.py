@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.grad.testing import check_jvp_vjp_duality
 from ml_switcheroo_compiler.ops import linalg
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_jvp_vjp_duality_linear_ops() -> None:
@@ -34,7 +32,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             Returns:
                 EagerValue: Product matrix.
             """
-            return cast("Callable[..., EagerTensorProtocol]", linalg.matmul)(x, y)
+            return cast("EagerCallableProtocol", linalg.matmul)(x, y)
 
         x_val = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         y_val = np.array([[0.5, -1.0], [1.5, 2.0]], dtype=np.float32)

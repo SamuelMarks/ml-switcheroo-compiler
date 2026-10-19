@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.core.device import Device, DeviceType, FunctionExpor
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_mlx_parity_coverage() -> None:
@@ -30,6 +28,14 @@ def test_mlx_parity_coverage() -> None:
     assert t.at[0].set(1) is t
     assert t.at[0].maximum(1) is t
     assert t.at[0].minimum(1) is t
+    t1d = Tensor(np.array([2.0, 4.0]), TensorConfig((2,), "float32", Device(DeviceType.CPU)))
+    assert cast("EagerTensorProtocol", t1d.at[0].add(3.0).data).tolist() == [5.0, 4.0]
+    assert cast("EagerTensorProtocol", t1d.at[0].multiply(2.0).data).tolist() == [10.0, 4.0]
+    assert cast("EagerTensorProtocol", t1d.at[0].set(2.0).data).tolist() == [2.0, 4.0]
+    assert cast("EagerTensorProtocol", t1d.at[0].maximum(5.0).data).tolist() == [5.0, 4.0]
+    assert cast("EagerTensorProtocol", t1d.at[0].maximum(1.0).data).tolist() == [5.0, 4.0]
+    assert cast("EagerTensorProtocol", t1d.at[0].minimum(1.0).data).tolist() == [1.0, 4.0]
+    assert cast("EagerTensorProtocol", t1d.at[0].minimum(5.0).data).tolist() == [1.0, 4.0]
     s = Stream()
     with StreamContext(s):
         pass
@@ -51,8 +57,8 @@ def test_mlx_parity_coverage() -> None:
         return x
 
     assert grad_module.jvp(f, [1], [1]) == (1, [1])
-    assert cast("Callable[..., EagerTensorProtocol]", grad_module.custom_vjp)(f)(1) == 1
-    assert cast("Callable[..., EagerTensorProtocol]", grad_module.value_and_grad)(f)(1) == (1, 1)
+    assert cast("EagerCallableProtocol", grad_module.custom_vjp)(f)(1) == 1
+    assert cast("EagerCallableProtocol", grad_module.value_and_grad)(f)(1) == (1, 1)
     assert t.eval() is t
 
 
@@ -91,7 +97,7 @@ def test_grad_coverage_extra() -> None:
         return x
 
     assert grad_module.grad(f)(1) == 1
-    assert cast("Callable[..., EagerTensorProtocol]", grad_module.jit)(f)(1) == 1
+    assert cast("EagerCallableProtocol", grad_module.jit)(f)(1) == 1
     with grad_module.disable_jit():
         pass
     assert grad_module.eval_shape(f, 1) == 1

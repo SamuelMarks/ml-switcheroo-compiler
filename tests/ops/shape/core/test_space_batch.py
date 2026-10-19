@@ -10,16 +10,18 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.space_batch import space_to_batch, space_to_batch_nd
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -27,7 +29,11 @@ class MockTensor:
 
 
 def test_space_to_batch_eager(mocker: EagerTensorProtocol) -> None:
-    """Test function test_space_to_batch_eager."""
+    """Test function test_space_to_batch_eager.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
@@ -37,7 +43,11 @@ def test_space_to_batch_eager(mocker: EagerTensorProtocol) -> None:
 
 
 def test_space_to_batch_tracing(mocker: EagerTensorProtocol) -> None:
-    """Test function test_space_to_batch_tracing."""
+    """Test function test_space_to_batch_tracing.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="node")
@@ -51,5 +61,5 @@ def test_space_to_batch_infer_shape() -> None:
     """Test function test_space_to_batch_infer_shape."""
     from ml_switcheroo_compiler.ops.shape.space_batch import SpaceToBatch, SpaceToBatchND
 
-    assert cast("Callable[..., EagerTensorProtocol]", SpaceToBatch)().infer_shape(None, None, None) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", SpaceToBatchND)().infer_shape(None, None, None) == ()
+    assert cast("EagerCallableProtocol", SpaceToBatch)().infer_shape(None, None, None) == ()
+    assert cast("EagerCallableProtocol", SpaceToBatchND)().infer_shape(None, None, None) == ()

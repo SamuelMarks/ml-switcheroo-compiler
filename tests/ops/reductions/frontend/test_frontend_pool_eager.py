@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import UnpoolOptions, adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fractional_max_pool3d, max_unpool1d, max_unpool2d, max_unpool3d
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_frontend_pool_eager() -> None:
@@ -26,7 +24,12 @@ def test_frontend_pool_eager() -> None:
         """Test class MockBackend."""
 
         def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             if args[0] in ("FractionalMaxPool3D", "AdaptiveMaxPool3D"):
                 if kwargs.get("return_indices", True):
                     return np.array([1.0]), np.array([1])
@@ -35,7 +38,11 @@ def test_frontend_pool_eager() -> None:
             return np.array([1.0])
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array(x)
 
     orig = config.eager_mode
@@ -46,15 +53,15 @@ def test_frontend_pool_eager() -> None:
             t4 = Tensor(np.array([[[[1.0]]]]), TensorConfig(shape=(1, 1, 1, 1), dtype=DType("float32"), device=Device("cpu")))
             t5 = Tensor(np.array([[[[[1.0]]]]]), TensorConfig(shape=(1, 1, 1, 1, 1), dtype=DType("float32"), device=Device("cpu")))
 
-            cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool2d)(t4, output_size=[1, 1])
-            cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool2d)(t4, output_size=[1, 1])
-            cast("Callable[..., EagerTensorProtocol]", fractional_max_pool3d)(t5, output_size=[1, 1, 1])
-            cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool3d)(t5, output_size=[1, 1, 1])
-            cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=True)
-            cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=False)
+            cast("EagerCallableProtocol", adaptive_avg_pool2d)(t4, output_size=[1, 1])
+            cast("EagerCallableProtocol", adaptive_max_pool2d)(t4, output_size=[1, 1])
+            cast("EagerCallableProtocol", fractional_max_pool3d)(t5, output_size=[1, 1, 1])
+            cast("EagerCallableProtocol", adaptive_avg_pool3d)(t5, output_size=[1, 1, 1])
+            cast("EagerCallableProtocol", adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=True)
+            cast("EagerCallableProtocol", adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=False)
             max_unpool1d(t3, t3, UnpoolOptions(kernel_size=(1,), output_size=(1,)))
             max_unpool2d(t4, t4, UnpoolOptions(kernel_size=(1, 1), output_size=(1, 1)))
             max_unpool3d(t5, t5, UnpoolOptions(kernel_size=(1, 1, 1), output_size=(1, 1, 1)))
     finally:
         config.eager_mode = orig
-    assert orig is not None or orig is None
+    assert config.eager_mode == orig

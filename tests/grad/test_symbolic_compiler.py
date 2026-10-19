@@ -15,7 +15,11 @@ if TYPE_CHECKING:
 
 
 def test_symbolic_compiler_init_and_load(tmp_path: EagerTensorProtocol) -> None:
-    """Test compiler initialization, manifest loading, caching, and missing file error handling."""
+    """Test compiler initialization, manifest loading, caching, and missing file error handling.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     compiler = SymbolicExpressionCompiler()
     manifest = compiler.load_manifest()
     assert manifest is not None

@@ -37,9 +37,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyGraph:
@@ -71,12 +69,12 @@ def test_coo_tensor_properties_and_methods() -> None:
     assert "<COOTensor shape=(2, 3) nnz=3" in repr(coo)
 
     reconstructed = coo.to_dense()
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(reconstructed, dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(reconstructed, dense_2d)
 
     # astype
     coo_f64 = coo.astype(np.float64)
     assert coo_f64.dtype == np.float64
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_f64.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_f64.to_dense)(), dense_2d)
 
     # 1D COOTensor
     dense_1d = np.array([0.0, 4.0, 0.0, 5.0])
@@ -84,7 +82,7 @@ def test_coo_tensor_properties_and_methods() -> None:
     assert coo_1d.shape == (4,)
     assert coo_1d.ndim == 1
     assert coo_1d.indices.shape == (1, 2)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_1d.to_dense)(), dense_1d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_1d.to_dense)(), dense_1d)
 
     # 1D explicit reshape
     coo_1d_direct = COOTensor(indices=np.array([1, 3]), values=np.array([4.0, 5.0]), shape=(4,))
@@ -105,7 +103,7 @@ def test_sparse_types_helpers() -> None:
     assert isinstance(z, COOTensor)
     assert z.shape == (3, 4)
     assert z.nnz == 0
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", z.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.zeros)((3, 4)))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", z.to_dense)(), cast("EagerCallableProtocol", np.zeros)((3, 4)))
 
     arr = array(type, [0.0, 2.5, 0.0])
     assert isinstance(arr, COOTensor)
@@ -137,8 +135,8 @@ def test_coo_sum_duplicates() -> None:
 
     canonical = coo_sum_duplicates(indices, values, shape)
     assert canonical.nnz == 1
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(canonical.indices, cast("Callable[..., EagerTensorProtocol]", np.array)([[0], [1]]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(canonical.values, cast("Callable[..., EagerTensorProtocol]", np.array)([5.0]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(canonical.indices, cast("EagerCallableProtocol", np.array)([[0], [1]]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(canonical.values, cast("EagerCallableProtocol", np.array)([5.0]))
 
     # Empty values
     empty = coo_sum_duplicates(np.empty((2, 0), dtype=np.int64), np.empty((0,), dtype=np.float32), (2, 2))
@@ -149,7 +147,7 @@ def test_coo_sum_duplicates() -> None:
     values_1d = np.array([1.0, 2.0, 3.0])
     canonical_1d = coo_sum_duplicates(indices_1d, values_1d, (2,))
     assert canonical_1d.nnz == 2
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", canonical_1d.to_dense)(), [3.0, 3.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", canonical_1d.to_dense)(), [3.0, 3.0])
 
     # All cancelling to zero
     zero_vals = np.array([1.0, -1.0])
@@ -164,8 +162,8 @@ def test_coo_fromdense_and_todense() -> None:
     coo = coo_fromdense(dense, index_dtype=np.int32)
     assert coo.indices.dtype == np.int32
     assert coo_todense(coo) is not None
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_todense)(coo), dense)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_todense)(dense), dense)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_todense)(coo), dense)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_todense)(dense), dense)
 
     # Pass existing COOTensor
     coo_id = coo_fromdense(coo)
@@ -185,7 +183,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     # Sparse @ Dense
     prod_dense = coo_matmat(coo_a, dense_b)
     expected_dense = dense_a @ dense_b
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(prod_dense, expected_dense, rtol=1e-5, atol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_dense, expected_dense, rtol=1e-5, atol=1e-5)
 
     # Transposed Sparse @ Dense
     dense_a_t = dense_a.T
@@ -195,7 +193,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     mat_right = rng.normal(size=(4, 2))
     prod_trans = coo_matmat(coo_a, mat_right, transpose=True)
     expected_trans = dense_a.T @ mat_right
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(prod_trans, expected_trans, rtol=1e-5, atol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_trans, expected_trans, rtol=1e-5, atol=1e-5)
 
     # Sparse @ Sparse
     dense_b_sparse = rng.choice([0.0, 1.0, -1.0], size=(5, 6), p=[0.8, 0.1, 0.1])
@@ -203,7 +201,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     prod_sp = coo_matmat(coo_a, coo_b)
     assert isinstance(prod_sp, COOTensor)
     expected_sp = dense_a @ dense_b_sparse
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", prod_sp.to_dense)(), expected_sp, rtol=1e-5, atol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", prod_sp.to_dense)(), expected_sp, rtol=1e-5, atol=1e-5)
 
     # Sparse @ Sparse with empty / disjoint matrices
     empty_coo = zeros(type, (4, 5))
@@ -220,7 +218,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     # Empty matrix with dense matrix
     empty_m = zeros(type, (4, 5))
     prod_empty_dense = coo_matmat(empty_m, dense_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(prod_empty_dense, cast("Callable[..., EagerTensorProtocol]", np.zeros)((4, 3)))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_empty_dense, cast("EagerCallableProtocol", np.zeros)((4, 3)))
 
 
 def test_coo_matvec_parity() -> None:
@@ -232,22 +230,22 @@ def test_coo_matvec_parity() -> None:
 
     res = coo_matvec(coo_m, v)
     expected = dense_m @ v
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
     # Transposed
     res_t = coo_matvec(coo_m, v, transpose=True)
     expected_t = dense_m.T @ v
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_t, expected_t)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_t, expected_t)
 
     # Sparse vector operand
     v_sparse = coo_fromdense(v)
     res_sp_v = coo_matvec(coo_m, v_sparse)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_sp_v, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_sp_v, expected)
 
     # Empty matrix @ vector
     empty_mat = zeros(type, (3, 3))
     res_empty = coo_matvec(empty_mat, v)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_empty, cast("Callable[..., EagerTensorProtocol]", np.zeros)(3))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_empty, cast("EagerCallableProtocol", np.zeros)(3))
 
 
 def test_coo_transpose_parity() -> None:
@@ -257,11 +255,11 @@ def test_coo_transpose_parity() -> None:
 
     # Default reverse transpose
     trans_def = coo_transpose(coo_3d)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", trans_def.to_dense)(), cast("Callable[..., EagerTensorProtocol]", dense_3d.transpose)())
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", trans_def.to_dense)(), cast("EagerCallableProtocol", dense_3d.transpose)())
 
     # Explicit axes
     trans_perm = coo_transpose(coo_3d, axes=[1, 2, 0])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", trans_perm.to_dense)(), cast("Callable[..., EagerTensorProtocol]", dense_3d.transpose)(1, 2, 0))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", trans_perm.to_dense)(), cast("EagerCallableProtocol", dense_3d.transpose)(1, 2, 0))
 
     # Empty tensor transpose
     empty_coo = zeros(type, (2, 3))
@@ -281,12 +279,12 @@ def test_coo_add_sub_parity() -> None:
     # Sparse + Sparse
     sum_ab = coo_add(coo_a, coo_b)
     assert isinstance(sum_ab, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", sum_ab.to_dense)(), a + b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", sum_ab.to_dense)(), a + b)
 
     # Sparse - Sparse
     diff_ab = coo_sub(coo_a, coo_b)
     assert isinstance(diff_ab, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", diff_ab.to_dense)(), a - b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", diff_ab.to_dense)(), a - b)
 
     # Identity with empty
     empty = zeros(type, (2, 2))
@@ -295,9 +293,9 @@ def test_coo_add_sub_parity() -> None:
 
     # Mixed Sparse + Dense
     dense_c = np.ones((2, 2))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_add)(coo_a, dense_c), a + dense_c)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_add)(dense_c, coo_a), dense_c + a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_sub)(coo_a, dense_c), a - dense_c)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_add)(coo_a, dense_c), a + dense_c)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_add)(dense_c, coo_a), dense_c + a)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_sub)(coo_a, dense_c), a - dense_c)
     assert coo_add(1.0, 2.0) == 3.0
 
     # Shape mismatch error
@@ -316,7 +314,7 @@ def test_coo_mul_parity() -> None:
     # Sparse * Sparse
     prod_sp = coo_mul(coo_a, coo_b)
     assert isinstance(prod_sp, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", prod_sp.to_dense)(), a * b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", prod_sp.to_dense)(), a * b)
 
     # Disjoint sparse multiply
     d1 = COOTensor(indices=np.array([[0], [0]]), values=np.array([1.0]), shape=(2, 2))
@@ -328,7 +326,7 @@ def test_coo_mul_parity() -> None:
     # Sparse * Scalar (non-zero and zero)
     prod_sc = coo_mul(coo_a, 3.5)
     assert isinstance(prod_sc, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", prod_sc.to_dense)(), a * 3.5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", prod_sc.to_dense)(), a * 3.5)
 
     prod_sc_0 = coo_mul(coo_a, 0.0)
     assert isinstance(prod_sc_0, COOTensor)
@@ -336,23 +334,23 @@ def test_coo_mul_parity() -> None:
 
     prod_sc_left = coo_mul(2.0, coo_a)
     assert isinstance(prod_sc_left, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", prod_sc_left.to_dense)(), 2.0 * a)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", prod_sc_left.to_dense)(), 2.0 * a)
 
     # Sparse * Dense
     dense_d = np.array([[10.0, 20.0], [30.0, 40.0]])
     prod_dense = coo_mul(coo_a, dense_d)
     assert isinstance(prod_dense, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", prod_dense.to_dense)(), a * dense_d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", prod_dense.to_dense)(), a * dense_d)
 
     prod_dense_rev = coo_mul(dense_d, coo_a)
     assert isinstance(prod_dense_rev, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", prod_dense_rev.to_dense)(), dense_d * a)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", prod_dense_rev.to_dense)(), dense_d * a)
 
     # Empty multiply
     empty = zeros(type, (2, 2))
     assert cast("EagerTensorProtocol", getattr(coo_mul(empty, coo_b), "nnz")) == 0
     assert cast("EagerTensorProtocol", getattr(coo_mul(empty, dense_d), "nnz")) == 0
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_mul)(cast("Callable[..., EagerTensorProtocol]", np.array)([2.0]), cast("Callable[..., EagerTensorProtocol]", np.array)([3.0])), [6.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_mul)(cast("EagerCallableProtocol", np.array)([2.0]), cast("EagerCallableProtocol", np.array)([3.0])), [6.0])
 
     # Shape mismatch error
     with pytest.raises(ValueError, match="Shape mismatch"):
@@ -366,15 +364,15 @@ def test_coo_neg_abs_relu_parity() -> None:
 
     # Neg
     neg_res = coo_neg(coo)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", neg_res.to_dense)(), -dense)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", neg_res.to_dense)(), -dense)
 
     # Abs
     abs_res = coo_abs(coo)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", abs_res.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.abs)(dense))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", abs_res.to_dense)(), cast("EagerCallableProtocol", np.abs)(dense))
 
     # ReLU
     relu_res = coo_relu(coo)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", relu_res.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.maximum)(dense, 0.0))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", relu_res.to_dense)(), cast("EagerCallableProtocol", np.maximum)(dense, 0.0))
 
 
 def test_coo_reshape_parity() -> None:
@@ -384,11 +382,11 @@ def test_coo_reshape_parity() -> None:
 
     reshaped = coo_reshape(coo, (3, 2))
     assert reshaped.shape == (3, 2)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", reshaped.to_dense)(), cast("Callable[..., EagerTensorProtocol]", dense.reshape)(3, 2))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", reshaped.to_dense)(), cast("EagerCallableProtocol", dense.reshape)(3, 2))
 
     reshaped_1d = coo_reshape(coo, (6,))
     assert reshaped_1d.shape == (6,)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", reshaped_1d.to_dense)(), cast("Callable[..., EagerTensorProtocol]", dense.reshape)(6))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", reshaped_1d.to_dense)(), cast("EagerCallableProtocol", dense.reshape)(6))
 
     # Empty reshape
     empty = zeros(type, (2, 3))
@@ -409,16 +407,16 @@ def test_coo_sum_and_mean_parity() -> None:
     s_glob_kd = coo_sum(coo, keepdims=True)
     assert isinstance(s_glob_kd, COOTensor)
     assert s_glob_kd.shape == (1, 1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", s_glob_kd.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.sum)(dense, keepdims=True))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", s_glob_kd.to_dense)(), cast("EagerCallableProtocol", np.sum)(dense, keepdims=True))
 
     # Axis sum
     s_ax0 = coo_sum(coo, axis=0)
     assert isinstance(s_ax0, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", s_ax0.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.sum)(dense, axis=0))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", s_ax0.to_dense)(), cast("EagerCallableProtocol", np.sum)(dense, axis=0))
 
     s_ax1_kd = coo_sum(coo, axis=1, keepdims=True)
     assert isinstance(s_ax1_kd, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", s_ax1_kd.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.sum)(dense, axis=1, keepdims=True))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", s_ax1_kd.to_dense)(), cast("EagerCallableProtocol", np.sum)(dense, axis=1, keepdims=True))
 
     # All axes specified as sequence
     s_all_axes = coo_sum(coo, axis=[0, 1])
@@ -430,12 +428,12 @@ def test_coo_sum_and_mean_parity() -> None:
 
     m_glob_kd = coo_mean(coo, keepdims=True)
     assert isinstance(m_glob_kd, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", m_glob_kd.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.mean)(dense, keepdims=True))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", m_glob_kd.to_dense)(), cast("EagerCallableProtocol", np.mean)(dense, keepdims=True))
 
     # Axis mean
     m_ax0 = coo_mean(coo, axis=0)
     assert isinstance(m_ax0, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", m_ax0.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.mean)(dense, axis=0))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", m_ax0.to_dense)(), cast("EagerCallableProtocol", np.mean)(dense, axis=0))
 
     m_axes = coo_mean(coo, axis=[0, 1])
     assert m_axes == float(np.mean(dense))
@@ -455,12 +453,12 @@ def test_coo_dot_parity() -> None:
     a2 = np.array([[1.0, 2.0], [3.0, 4.0]])
     b2 = np.array([[5.0, 6.0], [7.0, 8.0]])
     res22 = coo_dot(coo_fromdense(a2), b2)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res22, a2 @ b2)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res22, a2 @ b2)
 
     # 2D @ 1D
     v = np.array([2.0, 3.0])
     res21 = coo_dot(coo_fromdense(a2), v)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res21, a2 @ v)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res21, a2 @ v)
 
     # 1D @ 1D
     v1 = np.array([1.0, 2.0, 3.0])
@@ -508,7 +506,7 @@ def test_sparse_generator_lifecycle_and_emission() -> None:
 
     res = fn([coo_a, coo_b])
     assert isinstance(res, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res.to_dense)(), dense_a + dense_b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res.to_dense)(), dense_a + dense_b)
 
     # Generic visit
     node_unary = IRNode(id="u", op_type="Sin", inputs=["x"], attributes={})
@@ -528,10 +526,10 @@ def test_sparse_eager_execute_op() -> None:
 
     # Direct ops
     res_add = execute_op(type, "Add", a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_add, cast("Callable[..., EagerTensorProtocol]", a.to_dense)() + b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_add, cast("EagerCallableProtocol", a.to_dense)() + b)
 
     res_matmat = execute_op(type, "coo_matmat", a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_matmat, cast("Callable[..., EagerTensorProtocol]", a.to_dense)() @ b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_matmat, cast("EagerCallableProtocol", a.to_dense)() @ b)
 
     res_sparse_coo_tensor = execute_op(type, "SparseCooTensor", np.array([[0], [1]]), np.array([3.0]), (2, 2))
     assert isinstance(res_sparse_coo_tensor, COOTensor)
@@ -539,11 +537,11 @@ def test_sparse_eager_execute_op() -> None:
 
     # Schema mapping dispatch
     res_schema = execute_op(type, "coo_todense", a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_schema, cast("Callable[..., EagerTensorProtocol]", a.to_dense)())
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_schema, cast("EagerCallableProtocol", a.to_dense)())
 
     with patch.dict("ml_switcheroo_compiler.backends.sparse.eager._DIRECT_OPS", clear=True):
         res_mapped = execute_op(type, "coo_todense", a)
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_mapped, cast("Callable[..., EagerTensorProtocol]", a.to_dense)())
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mapped, cast("EagerCallableProtocol", a.to_dense)())
 
         with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("mock error")):
             global_eager_registry.register("coo_todense")(lambda mod, x: "dispatched_fallback")
@@ -553,13 +551,19 @@ def test_sparse_eager_execute_op() -> None:
 
     # Global eager registry fallback with COOTensor arguments
     def custom_eager(backend_mod: EagerValue, x: EagerValue, scale: EagerValue = 2.0) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Test function custom_eager."""
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.asarray)(x) * cast("Callable[..., EagerTensorProtocol]", float)(scale))
+        """Test function custom_eager.
+
+        Args:
+            backend_mod: Test parameter `backend_mod`.
+            x: Test parameter `x`.
+            scale: Test parameter `scale`.
+        """
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.asarray)(x) * cast("EagerCallableProtocol", float)(scale))
 
     global_eager_registry.register("TestSparseCustomOp")(custom_eager)
     res_custom = execute_op(type, "TestSparseCustomOp", a, 3.0)
     assert isinstance(res_custom, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_custom.to_dense)(), cast("Callable[..., EagerTensorProtocol]", a.to_dense)() * 3.0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_custom.to_dense)(), cast("EagerCallableProtocol", a.to_dense)() * 3.0)
     del global_eager_registry._registry["TestSparseCustomOp"]
 
     global_eager_registry.register("ScalarOp")(lambda mod, x: 42.0)
@@ -615,7 +619,7 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
     res = artifact(arr)
     # Result could be COOTensor or numpy array
     dense_res = cast("EagerTensorProtocol", getattr(res, "to_dense"))() if hasattr(res, "to_dense") else res
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(dense_res, arr + arr)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(dense_res, arr + arr)
 
     # 2. Multi-output execution with extra unused arguments
     g_multi = IRGraph(name="test_sparse_aot_multi")
@@ -634,15 +638,15 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
     # 3. Fallback execution when compile_fn returns None
     with patch.object(gen, "compile_fn", return_value=None):
         artifact_bad = gen._compile_aot_impl(g)
-        res_fallback = cast("Callable[..., EagerTensorProtocol]", artifact_bad)(arr, "extra_arg")
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_fallback, arr + arr)
+        res_fallback = cast("EagerCallableProtocol", artifact_bad)(arr, "extra_arg")
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_fallback, arr + arr)
 
     # Multi-output fallback execution
     with patch.object(gen_multi, "compile_fn", return_value=None):
         artifact_multi_fallback = gen_multi._compile_aot_impl(g_multi)
-        res_mf = cast("Callable[..., EagerTensorProtocol]", artifact_multi_fallback)(arr, "extra_arg")
+        res_mf = cast("EagerCallableProtocol", artifact_multi_fallback)(arr, "extra_arg")
         assert isinstance(res_mf, tuple) and len(res_mf) == 2
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_mf[0], arr + arr)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mf[0], arr + arr)
 
     # 4. Fallback execution with empty outputs
     g_empty = IRGraph(name="test_sparse_aot_empty")
@@ -651,15 +655,19 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
     g_empty.outputs = []
     with patch.object(gen, "compile_fn", return_value=None):
         artifact_empty = gen._compile_aot_impl(g_empty)
-        res_empty = cast("Callable[..., EagerTensorProtocol]", artifact_empty)(arr)
+        res_empty = cast("EagerCallableProtocol", artifact_empty)(arr)
         assert isinstance(res_empty, dict)
 
     # 5. Fallback execution when compiled_fn raises inside runner
     def exploding_sparse_fn(*args: EagerValue) -> None:
-        """Test function exploding_sparse_fn."""
+        """Test function exploding_sparse_fn.
+
+        Args:
+            args: Test parameter `args`.
+        """
         raise RuntimeError("simulated sparse execution failure")
 
     with patch.object(gen, "compile_fn", return_value=exploding_sparse_fn):
         artifact_crash = gen._compile_aot_impl(g)
-        res_recovered = cast("Callable[..., EagerTensorProtocol]", artifact_crash)(arr)
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_recovered, arr + arr)
+        res_recovered = cast("EagerCallableProtocol", artifact_crash)(arr)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_recovered, arr + arr)

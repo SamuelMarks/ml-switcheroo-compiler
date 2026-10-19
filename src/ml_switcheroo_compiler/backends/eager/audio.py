@@ -7,7 +7,6 @@ import typing
 from types import ModuleType
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 
@@ -46,31 +45,31 @@ class MFCCConfig(MelFilterbankConfig, total=False):
 
 
 def _resolve_module(module: ModuleType | EagerValue | None) -> ModuleType:
-    """Resolve backend module to NumPy if unspecified.
+    """Validate and resolve the provided execution backend module.
 
     Args:
-        module: Optional execution backend module.
+        module: Execution backend module.
 
     Returns:
         ModuleType: Resolved backend module.
     """
     if module is None:
-        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+        from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
-        return BackendRegistry.get("numpy").get_module()
-    return typing.cast(ModuleType, module)
+        return _resolve_eager_mod(None)
+    return typing.cast(ModuleType, getattr(module, "numpy", module))
 
 
 def _get_window(np_mod: ModuleType | None, window: str, frame_length: int) -> EagerValue:
     """Generate a mathematical window vector of the specified length and type.
 
     Args:
-        np_mod: Optional execution backend module.
+        np_mod: Execution backend module.
         window: Name of the window function ('hann', 'hamming', 'blackman', 'bartlett', 'rectangular').
         frame_length: Positive integer representing the number of points in the window.
 
     Returns:
-        host_backend.ndarray: 1-D array containing the window coefficients.
+        EagerValue: 1-D array containing the window coefficients.
     """
     mod: ModuleType = _resolve_module(np_mod)
     if frame_length <= 0:
@@ -100,11 +99,11 @@ def _hz_to_mel(np_mod: ModuleType | None, hz: float | EagerValue) -> float | Eag
     """Convert frequencies from Hertz to the perceptual Mel scale.
 
     Args:
-        np_mod: Optional execution backend module.
+        np_mod: Execution backend module.
         hz: Scalar frequency or array of frequencies in Hertz.
 
     Returns:
-        float | host_backend.ndarray: Frequency value or array transformed to the Mel scale.
+        float | EagerValue: Frequency value or array transformed to the Mel scale.
     """
     mod: ModuleType = _resolve_module(np_mod)
     if isinstance(hz, (int, float)):
@@ -113,18 +112,19 @@ def _hz_to_mel(np_mod: ModuleType | None, hz: float | EagerValue) -> float | Eag
     return MEL_SCALE_MULTIPLIER * typing.cast(EagerTensorProtocol, mod.log10(1.0 + hz_arr / MEL_SCALE_DIVISOR))
 
 
-def _mel_to_hz(mel: float | EagerValue) -> float | EagerValue:
+def _mel_to_hz(mel: float | EagerValue, np_mod: ModuleType | None = None) -> float | EagerValue:
     """Convert frequencies from the perceptual Mel scale back to Hertz.
 
     Args:
         mel: Scalar or array of frequency values in Mel units.
+        np_mod: Optional execution backend module for array conversion.
 
     Returns:
-        float | host_backend.ndarray: Frequency values converted back to Hertz.
+        float | EagerValue: Frequency values converted back to Hertz.
     """
     if isinstance(mel, (int, float)):
         return float(MEL_SCALE_DIVISOR * (10.0 ** (float(mel) / MEL_SCALE_MULTIPLIER) - 1.0))
-    mel_arr: EagerTensorProtocol = host_backend.asarray(mel, dtype=host_backend.float32)
+    mel_arr: EagerTensorProtocol = _resolve_module(np_mod).asarray(mel, dtype=_resolve_module(np_mod).float32) if np_mod is not None else typing.cast(EagerTensorProtocol, mel)
     return MEL_SCALE_DIVISOR * (10.0 ** (mel_arr / MEL_SCALE_MULTIPLIER) - 1.0)
 
 
@@ -145,7 +145,7 @@ def _compute_filterbank_weights(
         hz_pts: Array of boundary and peak frequencies in Hertz for each Mel band.
 
     Returns:
-        host_backend.ndarray: Weight matrix of shape (num_spectrogram_bins, num_mel_bins).
+        EagerValue: Weight matrix of shape (num_spectrogram_bins, num_mel_bins).
     """
     mod: ModuleType = _resolve_module(np_mod)
     weights: EagerValue = mod.zeros((num_spectrogram_bins, num_mel_bins), dtype=mod.float32)
@@ -177,7 +177,7 @@ def _generate_mel_filterbank_matrix(np_mod: ModuleType | None, config: MelFilter
         config: Mel filterbank parameter configuration.
 
     Returns:
-        host_backend.ndarray: Filterbank matrix of shape (num_spectrogram_bins, num_mel_bins).
+        EagerValue: Filterbank matrix of shape (num_spectrogram_bins, num_mel_bins).
     """
     mod: ModuleType = _resolve_module(np_mod)
     num_mel_bins: int = config.get("num_mel_bins", 40)
@@ -191,7 +191,7 @@ def _generate_mel_filterbank_matrix(np_mod: ModuleType | None, config: MelFilter
     mel_min: float = float(cast(float, _hz_to_mel(mod, lower_edge_hertz)))
     mel_max: float = float(cast(float, _hz_to_mel(mod, upper_edge_hertz)))
     mel_points: EagerValue = mod.linspace(mel_min, mel_max, num_mel_bins + 2, dtype=mod.float32)
-    hz_pts: EagerValue = mod.asarray(_mel_to_hz(mel_points), dtype=mod.float32)
+    hz_pts: EagerValue = mod.asarray(_mel_to_hz(mel_points, mod), dtype=mod.float32)
 
     return _compute_filterbank_weights(mod, num_spectrogram_bins, num_mel_bins, bin_freqs, hz_pts)
 
@@ -204,12 +204,12 @@ def mel_filterbank_eager(
     """Apply Mel filterbank matrix transformation to input linear spectrograms.
 
     Args:
-        backend_module: Optional execution backend module.
+        backend_module: Execution backend module.
         spectrogram: Optional input spectrogram tensor of shape (..., num_spectrogram_bins).
         config: Mel filterbank parameter configuration.
 
     Returns:
-        host_backend.ndarray: Mel-scaled spectrogram or raw filterbank weighting matrix.
+        EagerValue: Mel-scaled spectrogram or raw filterbank weighting matrix.
     """
     mod: ModuleType = _resolve_module(backend_module)
     matrix: EagerValue = _generate_mel_filterbank_matrix(mod, config)
@@ -228,13 +228,13 @@ def _power_to_db(
     """Convert power spectrogram to decibel (dB) representation with dynamic range clipping.
 
     Args:
-        np_mod: Optional execution backend module.
+        np_mod: Execution backend module.
         mel_spec: Spectrogram tensor with power values.
         amin: Minimum clipping value to avoid division by zero or log of zero.
         top_db: Maximum dynamic range threshold below peak power.
 
     Returns:
-        host_backend.ndarray: Log-scaled decibel spectrogram.
+        EagerValue: Log-scaled decibel spectrogram.
     """
     mod: ModuleType = _resolve_module(np_mod)
     if mel_spec is None:
@@ -247,34 +247,40 @@ def _power_to_db(
     return log_spec
 
 
-def _apply_dct(log_mel_spec: EagerValue | None, num_mfccs: int) -> EagerValue:
+def _apply_dct(
+    log_mel_spec: EagerValue | None,
+    num_mfccs: int,
+    np_mod: ModuleType | None = None,
+) -> EagerValue:
     """Apply Type-II Discrete Cosine Transform (DCT-II) along the innermost frequency axis.
 
     Args:
         log_mel_spec: Log-mel spectrogram array of shape (..., num_mel_bins).
         num_mfccs: Number of low-frequency cepstral coefficients to retain.
+        np_mod: Execution backend module.
 
     Returns:
-        host_backend.ndarray: Mel-frequency cepstral coefficients tensor.
+        EagerValue: Mel-frequency cepstral coefficients tensor.
     """
+    mod: ModuleType = _resolve_module(np_mod)
     if log_mel_spec is None:
-        return cast(EagerValue, host_backend.zeros((0,), dtype=host_backend.float32))
-    spec: EagerTensorProtocol = host_backend.asarray(log_mel_spec, dtype=host_backend.float32)
+        return cast(EagerValue, mod.zeros((0,), dtype=mod.float32))
+    spec: EagerTensorProtocol = mod.asarray(log_mel_spec, dtype=mod.float32)
     spec_shape = spec.shape
     n_bins: int = spec_shape[-1] if spec.ndim > 0 else 1
     if n_bins == 0 or num_mfccs <= 0:
         out_shape: tuple[int, ...] = (*spec_shape[:-1], 0) if spec.ndim > 0 else (0,)
-        return cast(EagerValue, host_backend.zeros(out_shape, dtype=host_backend.float32))
+        return cast(EagerValue, mod.zeros(out_shape, dtype=mod.float32))
 
-    n_indices: EagerTensorProtocol = host_backend.arange(n_bins, dtype=host_backend.float32)
-    k_indices: EagerTensorProtocol = host_backend.arange(num_mfccs, dtype=host_backend.float32)[:, None]
+    n_indices: EagerTensorProtocol = mod.arange(n_bins, dtype=mod.float32)
+    k_indices: EagerTensorProtocol = mod.arange(num_mfccs, dtype=mod.float32)[:, None]
 
-    basis: EagerTensorProtocol = host_backend.cos((math.pi * k_indices * (2.0 * n_indices + 1.0)) / (2.0 * float(n_bins)))
-    norm: EagerTensorProtocol = host_backend.full((num_mfccs, 1), math.sqrt(2.0 / float(n_bins)), dtype=host_backend.float32)
+    basis: EagerTensorProtocol = mod.cos((math.pi * k_indices * (2.0 * n_indices + 1.0)) / (2.0 * float(n_bins)))
+    norm: EagerTensorProtocol = mod.full((num_mfccs, 1), math.sqrt(2.0 / float(n_bins)), dtype=mod.float32)
     norm[0, 0] = math.sqrt(1.0 / float(n_bins))
     basis = basis * norm
 
-    return cast(EagerValue, host_backend.matmul(spec, basis.T))
+    return cast(EagerValue, mod.matmul(spec, basis.T))
 
 
 def _mfcc_eager_tf(
@@ -285,12 +291,12 @@ def _mfcc_eager_tf(
     """Compute MFCCs conforming to standard execution specifications.
 
     Args:
-        backend_module: Optional execution backend module.
+        backend_module: Execution backend module.
         spectrogram: Spectrogram array.
         config: MFCC parameter configuration.
 
     Returns:
-        host_backend.ndarray: Extracted Mel-frequency cepstral coefficients.
+        EagerValue: Extracted Mel-frequency cepstral coefficients.
     """
     mod: ModuleType = _resolve_module(backend_module)
     num_mfccs: int = config.get("num_mfccs", 13)
@@ -304,7 +310,7 @@ def _mfcc_eager_tf(
 
     mel_spec: EagerValue = mel_filterbank_eager(mod, spec_arr, config)
     log_mel_spec: EagerValue = _power_to_db(mod, mel_spec)
-    return _apply_dct(log_mel_spec, num_mfccs)
+    return _apply_dct(log_mel_spec, num_mfccs, mod)
 
 
 def _convert_to_np(
@@ -313,24 +319,25 @@ def _convert_to_np(
     is_torch: bool,
     is_mlx: bool,
 ) -> EagerValue:
-    """Convert tensor to NumPy ndarray across various framework bindings.
+    """Convert tensor to backend array across various framework bindings.
 
     Args:
-        np_mod: Optional execution backend module.
+        np_mod: Execution backend module.
         x: Input tensor or array-like object.
         is_torch: Boolean flag indicating if input originated from PyTorch.
         is_mlx: Boolean flag indicating if input originated from Apple MLX.
 
     Returns:
-        host_backend.ndarray: Converted NumPy ndarray.
+        EagerValue: Converted backend array.
     """
     del is_torch, is_mlx
+    mod: ModuleType = _resolve_module(np_mod)
     if x is None:
-        return cast(EagerValue, host_backend.zeros((0,), dtype=host_backend.float32))
+        return cast(EagerValue, mod.zeros((0,), dtype=mod.float32))
     np_fn = getattr(x, "numpy", None)
     if callable(np_fn):
-        return cast(EagerValue, host_backend.asarray(np_fn()))
-    return cast(EagerValue, host_backend.asarray(x))
+        return cast(EagerValue, mod.asarray(np_fn()))
+    return cast(EagerValue, mod.asarray(x))
 
 
 def _to_backend_tensor(
@@ -348,7 +355,7 @@ def _to_backend_tensor(
         np_mod: Target execution backend module.
 
     Returns:
-        host_backend.ndarray: Backend array representation.
+        EagerValue: Backend array representation.
     """
     del name, spectrogram
     mod: ModuleType = _resolve_module(np_mod)
@@ -370,7 +377,7 @@ def mfcc_eager(
         config: MFCC configuration options.
 
     Returns:
-        host_backend.ndarray: Extracted Mel-frequency cepstral coefficients.
+        EagerValue: Extracted Mel-frequency cepstral coefficients.
     """
     return _mfcc_eager_tf(backend_module, spectrogram, config)
 
@@ -390,7 +397,7 @@ def _apply_stft_batch(
         config: STFT configuration parameters.
 
     Returns:
-        host_backend.ndarray: Complex frequency-domain STFT tensor of shape (..., num_frames, fft_length // 2 + 1).
+        EagerValue: Complex frequency-domain STFT tensor of shape (..., num_frames, fft_length // 2 + 1).
     """
     mod: ModuleType = _resolve_module(np_mod)
     if audio_np is None:
@@ -460,7 +467,7 @@ def _to_backend_tensor_complex(
         backend_module: Target framework module.
 
     Returns:
-        host_backend.ndarray: Backend complex tensor.
+        EagerValue: Backend complex tensor.
     """
     del name, backend_module
     mod: ModuleType = _resolve_module(np_mod)
@@ -482,7 +489,7 @@ def stft_eager(
         config: STFT configuration parameters.
 
     Returns:
-        host_backend.ndarray: Computed STFT representation.
+        EagerValue: Computed STFT representation.
     """
     mod: ModuleType = _resolve_module(backend_module)
     win: EagerValue = _get_window(mod, config.window_fn or "hann", config.frame_length)
@@ -494,6 +501,7 @@ def _run_scipy_istft(
     win: EagerValue | None,
     frame_params: tuple[int, int, int],
     center: bool,
+    np_mod: ModuleType | None = None,
 ) -> EagerValue:
     """Execute overlap-add reconstruction to recover the time-domain signal from an STFT matrix.
 
@@ -502,12 +510,14 @@ def _run_scipy_istft(
         win: Optional 1-D window array.
         frame_params: Tuple containing (frame_length, frame_step, fft_length).
         center: Boolean flag indicating if centering padding was applied during STFT.
+        np_mod: Optional execution backend module.
 
     Returns:
-        host_backend.ndarray: Reconstructed 1-D time-domain waveform.
+        EagerValue: Reconstructed 1-D time-domain waveform.
     """
+    mod: ModuleType = _resolve_module(np_mod)
     if stft_np_flat is None or typing.cast(EagerTensorProtocol, stft_np_flat).size == 0:
-        return cast(EagerValue, host_backend.zeros((0,), dtype=host_backend.float32))
+        return cast(EagerValue, mod.zeros((0,), dtype=mod.float32))
 
     stft_flat = typing.cast(EagerTensorProtocol, stft_np_flat)
     frame_length, frame_step, fft_length = frame_params
@@ -515,15 +525,15 @@ def _run_scipy_istft(
 
     window_vec: EagerTensorProtocol
     if win is not None and typing.cast(EagerTensorProtocol, win).size == frame_length:
-        window_vec = host_backend.asarray(win, dtype=host_backend.float32)
+        window_vec = mod.asarray(win, dtype=mod.float32)
     else:
-        window_vec = typing.cast(EagerTensorProtocol, _get_window(host_backend, "hann", frame_length))
+        window_vec = typing.cast(EagerTensorProtocol, _get_window(mod, "hann", frame_length))
 
     expected_samples: int = (num_frames - 1) * frame_step + frame_length
-    time_signal: EagerTensorProtocol = host_backend.zeros((expected_samples,), dtype=host_backend.float32)
-    window_sum: EagerTensorProtocol = host_backend.zeros((expected_samples,), dtype=host_backend.float32)
+    time_signal: EagerTensorProtocol = mod.zeros((expected_samples,), dtype=mod.float32)
+    window_sum: EagerTensorProtocol = mod.zeros((expected_samples,), dtype=mod.float32)
 
-    frames_time: EagerTensorProtocol = host_backend.fft.irfft(stft_np_flat, n=fft_length, axis=-1)
+    frames_time: EagerTensorProtocol = mod.fft.irfft(stft_np_flat, n=fft_length, axis=-1)
     frames_time = frames_time[:, :frame_length]
 
     win_sq: EagerValue = window_vec**2
@@ -559,7 +569,7 @@ def _apply_istft_batch(
         center: Boolean flag indicating if centering padding was used.
 
     Returns:
-        host_backend.ndarray: Reconstructed real-valued audio waveform array.
+        EagerValue: Reconstructed real-valued audio waveform array.
     """
     mod: ModuleType = _resolve_module(np_mod)
     if stft_np is None or typing.cast(EagerTensorProtocol, stft_np).size == 0:
@@ -579,7 +589,7 @@ def _apply_istft_batch(
 
     reconstructed_list: list[EagerValue] = []
     for b in range(batch_size):
-        rec: EagerValue = _run_scipy_istft(stft_arr[b], win, params, center)
+        rec: EagerValue = _run_scipy_istft(stft_arr[b], win, params, center, mod)
         reconstructed_list.append(rec)
 
     reconstructed: EagerTensorProtocol = mod.asarray(reconstructed_list, dtype=mod.float32)
@@ -603,7 +613,7 @@ def istft_eager(
         center: Boolean flag indicating if centering padding was applied.
 
     Returns:
-        host_backend.ndarray: Reconstructed audio waveform.
+        EagerValue: Reconstructed audio waveform.
     """
     mod: ModuleType = _resolve_module(backend_module)
     win: EagerValue = _get_window(mod, config.window_fn or "hann", config.frame_length)

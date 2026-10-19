@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_tf_not_installed() -> None:
@@ -23,16 +21,22 @@ def test_tf_not_installed() -> None:
     orig_import = builtins.__import__
 
     def failing_import(name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function failing_import."""
+        """Test function failing_import.
+
+        Args:
+            name: Test parameter `name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         if name == "tensorflow":
             raise ImportError("No module named tensorflow")
-        return cast("Callable[..., EagerTensorProtocol]", orig_import)(name, *args, **kwargs)
+        return cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
 
     clean_modules = {k: v for k, v in sys.modules.items() if k != "tensorflow"}
     with patch.dict(sys.modules, clean_modules, clear=True):
         with patch("builtins.__import__", side_effect=failing_import):
             with pytest.raises(BackendNotSupportedError, match="TensorFlow is not installed"):
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add")
+                cast("EagerCallableProtocol", execute_op)(None, "Add")
 
 
 def test_tf_eager_execute_op() -> None:
@@ -42,12 +46,12 @@ def test_tf_eager_execute_op() -> None:
 
     with patch.dict(sys.modules, {"tensorflow": mock_tf}):
         mock_tf.add.return_value = "tf_add_res"
-        res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1, 2], 3)
+        res = cast("EagerCallableProtocol", execute_op)(None, "Add", [1, 2], 3)
         assert res == "tf_add_res"
 
         # Test exception during convert_to_tensor
         mock_tf.convert_to_tensor.side_effect = RuntimeError("cannot convert")
-        res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1, 2], 3)
+        res = cast("EagerCallableProtocol", execute_op)(None, "Add", [1, 2], 3)
         assert res == "tf_add_res"
 
 
@@ -58,14 +62,20 @@ def test_tf_eager_execute_op_fallback() -> None:
     with patch.dict(sys.modules, {"tensorflow": mock_tf}):
         # Registered func in global_eager_registry
         def dummy_func(module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function dummy_func."""
+            """Test function dummy_func.
+
+            Args:
+                module: Test parameter `module`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "dummy_res"
 
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=dummy_func):
-            res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownOp")
+            res = cast("EagerCallableProtocol", execute_op)(None, "UnknownOp")
             assert res == "dummy_res"
 
         # Unknown op with no registration
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with pytest.raises(BackendNotSupportedError, match="not supported by tensorflow"):
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "OpThatDoesNotExist")
+                cast("EagerCallableProtocol", execute_op)(None, "OpThatDoesNotExist")

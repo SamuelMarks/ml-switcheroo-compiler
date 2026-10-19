@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.backends.ir_to_ast import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_ast_to_ir() -> None:
@@ -71,7 +69,7 @@ def test_ast_branches() -> None:
     assert len(graph.nodes) == 0
 
     # Emit missing op
-    getattr(graph.nodes, "__setitem__")("in0", cast("Callable[..., EagerTensorProtocol]", IRNode)("in0", "Input", []))
+    getattr(graph.nodes, "__setitem__")("in0", cast("EagerCallableProtocol", IRNode)("in0", "Input", []))
     graph.nodes["unknown"] = IRNode("unknown", "UnknownOp", inputs=["in0"])
     ast_module = emit_ir_to_ast(graph, "jax")
     assert len(ast_module.body) == 1  # Only the input node gets emitted
@@ -235,9 +233,9 @@ class MLP(nn.Module):
     expected_numerical = np.maximum(0.0, test_x + 1.0)
 
     input_node = next(n for n in ir_graph.nodes.values() if n.op_type == "Input")
-    eval_res = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(ir_graph, {input_node.id: test_x})
+    eval_res = cast("EagerCallableProtocol", evaluate_graph)(ir_graph, {input_node.id: test_x})
     actual_output = list(eval_res.values())[0]
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
 
 
 def test_ir_to_ast_defaults() -> None:

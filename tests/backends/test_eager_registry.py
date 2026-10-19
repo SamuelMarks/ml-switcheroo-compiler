@@ -11,9 +11,7 @@ import pytest
 from ml_switcheroo_compiler.backends.eager_registry import EagerOpRegistry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_eager_registry() -> None:
@@ -23,7 +21,11 @@ def test_eager_registry() -> None:
 
     @r.register("foo")
     def foo(x: EagerValue) -> EagerValue:
-        """Test function foo."""
+        """Test function foo.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1)
 
     assert r.get("foo") is foo
@@ -42,7 +44,11 @@ def test_eager_registry_fallback() -> None:
 
     @global_eager_registry.register("global_foo_test")
     def gfoo(x: EagerValue) -> EagerValue:
-        """Test function gfoo."""
+        """Test function gfoo.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 2)
 
     assert r.dispatch("global_foo_test", 3) == 5
@@ -65,7 +71,7 @@ def test_decode_image_eager() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_decode_image_camel
 
     # Test empty args
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", _np_decode_image_camel)(None)) == 0
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", _np_decode_image_camel)(None)) == 0
 
     # Test not bytes
     with pytest.raises(RuntimeError, match="Expected bytes"):
@@ -127,27 +133,41 @@ def test_dynamic_fallback() -> None:
         """Test class DummyObj."""
 
         def my_op(self, *args: EagerValue) -> EagerValue:
-            """Test function my_op."""
+            """Test function my_op.
+
+            Args:
+                args: Test parameter `args`.
+            """
             return 42
 
-    assert cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("My_Op", cast("Callable[..., EagerTensorProtocol]", DummyObj)()) == 42
+    assert cast("EagerCallableProtocol", global_eager_registry.dispatch)("My_Op", cast("EagerCallableProtocol", DummyObj)()) == 42
 
     class DummyBackend:
         """Test class DummyBackend."""
 
         def my_backend_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function my_backend_op."""
+            """Test function my_backend_op.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return 43
 
         def subtract(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function subtract."""
+            """Test function subtract.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return 44
 
-    assert cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("My_Backend_Op", 1, backend_module=cast("Callable[..., EagerTensorProtocol]", DummyBackend)()) == 43
-    assert cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("sub", cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), backend_module=cast("Callable[..., EagerTensorProtocol]", DummyBackend)()) == 44
+    assert cast("EagerCallableProtocol", global_eager_registry.dispatch)("My_Backend_Op", 1, backend_module=cast("EagerCallableProtocol", DummyBackend)()) == 43
+    assert cast("EagerCallableProtocol", global_eager_registry.dispatch)("sub", cast("EagerCallableProtocol", DummyBackend)(), backend_module=cast("EagerCallableProtocol", DummyBackend)()) == 44
 
     with pytest.raises(ValueError, match="not found in registry and no universal fallback"):
-        cast("Callable[..., EagerTensorProtocol]", global_eager_registry.dispatch)("missing_op_on_backend", backend_module=cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
+        cast("EagerCallableProtocol", global_eager_registry.dispatch)("missing_op_on_backend", backend_module=cast("EagerCallableProtocol", DummyBackend)())
 
 
 def test_custom_vjp_and_tuple() -> None:
@@ -158,8 +178,13 @@ def test_custom_vjp_and_tuple() -> None:
     assert global_eager_registry.dispatch("CustomVJP", None, 1, 2) == (1, 2)
 
     def my_bwd(res: EagerValue, *args: EagerValue) -> EagerValue:
-        """Test function my_bwd."""
-        return cast("Callable[..., EagerTensorProtocol]", sum)(args)
+        """Test function my_bwd.
+
+        Args:
+            res: Test parameter `res`.
+            args: Test parameter `args`.
+        """
+        return cast("EagerCallableProtocol", sum)(args)
 
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn=my_bwd) == 3
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn="not callable") is None

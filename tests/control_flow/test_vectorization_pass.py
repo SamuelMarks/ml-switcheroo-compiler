@@ -23,9 +23,7 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 device = Device(DeviceType.CPU, 0)
 
@@ -127,15 +125,19 @@ def test_eager_vmap_nested() -> None:
         x = Tensor(x_data, TensorConfig((2, 3, 4), DType.Float32, device))
 
         def double(t: Tensor) -> Tensor:
-            """Test function double."""
+            """Test function double.
+
+            Args:
+                t: Test parameter `t`.
+            """
             return add(t, t)
 
         v_inner = vmap(double, in_axes=0, out_axes=0)
-        v_outer = cast("Callable[..., EagerTensorProtocol]", vmap)(v_inner, in_axes=0, out_axes=0)
-        res = cast("Callable[..., EagerTensorProtocol]", v_outer)(x)
+        v_outer = cast("EagerCallableProtocol", vmap)(v_inner, in_axes=0, out_axes=0)
+        res = cast("EagerCallableProtocol", v_outer)(x)
 
         expected = x_data * 2
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "data")), expected)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "data")), expected)
 
 
 def test_eager_vmap_grad() -> None:
@@ -147,16 +149,20 @@ def test_eager_vmap_grad() -> None:
 
         def loss_fn(t: Tensor) -> Tensor:
             # f(t) = t * t
-            """Test function loss_fn."""
+            """Test function loss_fn.
+
+            Args:
+                t: Test parameter `t`.
+            """
             return multiply(t, t)
 
         grad_fn = grad(loss_fn)
         v_grad = vmap(grad_fn, in_axes=0, out_axes=0)
-        res = cast("Callable[..., EagerTensorProtocol]", v_grad)(x)
+        res = cast("EagerCallableProtocol", v_grad)(x)
 
         # d/dt(t^2) = 2*t
         expected = 2.0 * x_data
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "data")), expected, rtol=1e-4)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "data")), expected, rtol=1e-4)
 
 
 def test_eager_grad_vmap() -> None:
@@ -168,19 +174,27 @@ def test_eager_grad_vmap() -> None:
         x = Tensor(x_data, TensorConfig((4,), DType.Float32, device))
 
         def f(t: Tensor) -> Tensor:
-            """Test function f."""
+            """Test function f.
+
+            Args:
+                t: Test parameter `t`.
+            """
             return multiply(t, t)
 
         v_f = vmap(f, in_axes=0, out_axes=0)
 
         def total_loss(t: Tensor) -> Tensor:
-            """Test function total_loss."""
-            return cast("Tensor", cast("Callable[..., EagerTensorProtocol]", reduce_sum)(cast("Callable[..., EagerTensorProtocol]", v_f)(t)))
+            """Test function total_loss.
+
+            Args:
+                t: Test parameter `t`.
+            """
+            return cast("Tensor", cast("EagerCallableProtocol", reduce_sum)(cast("EagerCallableProtocol", v_f)(t)))
 
         grad_vmap = grad(total_loss)
         res = grad_vmap(x)
         expected = 2.0 * x_data
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "data")), expected, rtol=1e-4)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "data")), expected, rtol=1e-4)
 
 
 def test_vectorization_helpers() -> None:
@@ -267,7 +281,7 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
     )
     setattr(g_prepend, "outputs", ["bcast", "resh"])
 
-    vec_prep = cast("Callable[..., EagerTensorProtocol]", vectorize_graph)(g_prepend, in_axes=0, batch_size=5, out_axes=0)
+    vec_prep = cast("EagerCallableProtocol", vectorize_graph)(g_prepend, in_axes=0, batch_size=5, out_axes=0)
     assert vec_prep.nodes["bcast"].attributes["shape"] == (5, 2, 3)
     assert vec_prep.nodes["resh"].attributes["newshape"] == (5, 2, 3)
 
@@ -316,7 +330,7 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
         attributes={"body": body_v, "in_axes": 0, "out_axes": 0},
     )
     setattr(outer_no_shape, "outputs", ["vmap_no_s"])
-    opt_no_s = cast("Callable[..., EagerTensorProtocol]", vectorization_pass)(outer_no_shape)
+    opt_no_s = cast("EagerCallableProtocol", vectorization_pass)(outer_no_shape)
     assert "vmap_no_s" in opt_no_s.nodes
 
     # Case where axis >= len(shape) -> axis=5, shape has len 1 -> fallback batch_size=1
@@ -429,7 +443,7 @@ def _test_vectorization_exhaustive_branches_part_5(_state: dict[str, EagerTensor
     """
     outer_dict = _state["outer_dict"]
     setattr(outer_dict, "outputs", ["vmap_dict"])
-    opt_dict = cast("Callable[..., EagerTensorProtocol]", vectorization_pass)(outer_dict)
+    opt_dict = cast("EagerCallableProtocol", vectorization_pass)(outer_dict)
     assert "vmap_dict" in opt_dict.nodes
     getattr(_state, "update")({"opt_dict": opt_dict})
 
@@ -442,7 +456,7 @@ def test_vectorization_exhaustive_branches() -> None:
     _test_vectorization_exhaustive_branches_part_3(_state)
     _test_vectorization_exhaustive_branches_part_4(_state)
     _test_vectorization_exhaustive_branches_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_vectorization_extra_branches() -> None:

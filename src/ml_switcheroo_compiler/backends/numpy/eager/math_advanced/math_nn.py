@@ -1,4 +1,4 @@
-"""math_nn module."""
+"""Implementation of math nn operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_nn`)."""
 
 from __future__ import annotations
 

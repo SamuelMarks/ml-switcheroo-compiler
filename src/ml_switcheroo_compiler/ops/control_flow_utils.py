@@ -14,7 +14,7 @@ from typing import Callable, cast
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import TensorSpec
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -136,7 +136,7 @@ def _trace_function(func: Callable[..., Tensor | tuple[Tensor, ...] | list[Tenso
     prev_eager = compiler_config.eager_mode
 
     compiler_config.eager_mode = False
-    cast("Callable[..., EagerTensorProtocol]", increment_trace_count)(func)
+    cast("EagerCallableProtocol", increment_trace_count)(func)
 
     subgraph = global_tracing_state.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)

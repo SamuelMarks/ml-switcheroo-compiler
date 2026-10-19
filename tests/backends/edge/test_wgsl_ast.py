@@ -25,9 +25,7 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_wgsl_emitter_raw_and_var() -> None:
@@ -185,12 +183,12 @@ def test_wgsl_ast_string_statements_validation() -> None:
     emitter = WGSLEmitter()
     emitter.validate("plain_string_node")
 
-    if_node = cast("Callable[..., EagerTensorProtocol]", WGSLIf)("cond", ["return;"])
+    if_node = cast("EagerCallableProtocol", WGSLIf)("cond", ["return;"])
     if_node.validate()
 
-    for_node = cast("Callable[..., EagerTensorProtocol]", WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
+    for_node = cast("EagerCallableProtocol", WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
     for_node.validate()
 
-    func = cast("Callable[..., EagerTensorProtocol]", WGSLFunction)("my_func", [], ["return;"])
+    func = cast("EagerCallableProtocol", WGSLFunction)("my_func", [], ["return;"])
     func.validate()
-    assert func is not None or func is None
+    assert getattr(func, "name") == "my_func"

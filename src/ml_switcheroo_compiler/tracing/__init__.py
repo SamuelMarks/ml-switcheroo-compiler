@@ -1,4 +1,4 @@
-"""Tracing module."""
+"""Public package exports and initialization for `ml_switcheroo_compiler.tracing`."""
 
 from ml_switcheroo_compiler.tracing.autograph import (
     LoopOptions,

@@ -47,9 +47,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.array_manipulation import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_resize() -> None:
@@ -64,24 +62,24 @@ def test_band_part() -> None:
     """Test function test_band_part."""
     x = np.array([[1, 2], [3, 4]])
     res = _np_band_part(np, x, 1, 1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, x)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, x)
 
 
 def test_diag() -> None:
     """Test function test_diag."""
     x = np.array([[1, 2], [3, 4]])
     res = _np_diag(np, x, diagonal=0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 4])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 4])
     res2 = _np_diag(np, x, k=1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res2, [2])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res2, [2])
 
 
 def test_unstack() -> None:
     """Test function test_unstack."""
     x = np.array([[1, 2], [3, 4]])
     res = _np_unstack(np, x, axis=0)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), [1, 2])
+    assert cast("EagerCallableProtocol", len)(res) == 2
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), [1, 2])
 
 
 def test_reshape() -> None:
@@ -121,7 +119,7 @@ def test_rot90() -> None:
     """Test function test_rot90."""
     x = np.array([[1, 2], [3, 4]])
     res = _np_rot90(np, x)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, cast("Callable[..., EagerTensorProtocol]", np.rot90)(x))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, cast("EagerCallableProtocol", np.rot90)(x))
 
 
 def test_gather_eager() -> None:
@@ -130,15 +128,19 @@ def test_gather_eager() -> None:
     idx = np.array([[0, 0], [1, 1]])
     res = gather_eager(np, x, 1, idx)
     expected = np.take_along_axis(x, idx, axis=1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
     res_kwargs = gather_eager(np, x, axis=1, index=idx)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_kwargs, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_kwargs, expected)
 
     class MockTensor:
         """Test class MockTensor."""
 
         def __init__(self, data: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
         def numpy(self) -> EagerValue:
@@ -148,7 +150,7 @@ def test_gather_eager() -> None:
     t_x = MockTensor(x)
     t_idx = MockTensor(idx)
     res_mock = gather_eager(np, t_x, 1, t_idx)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_mock, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mock, expected)
 
 
 def test_stack_eager() -> None:
@@ -157,17 +159,21 @@ def test_stack_eager() -> None:
     b = np.array([3, 4])
     res = stack_eager(np, [a, b], 0)
     expected = np.stack([a, b], axis=0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
     res_kwargs = stack_eager(np, tensors=[a, b], dim=0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_kwargs, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_kwargs, expected)
     res_axis = stack_eager(np, tensors=[a, b], axis=0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_axis, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_axis, expected)
 
     class MockTensor:
         """Test class MockTensor."""
 
         def __init__(self, data: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
         def numpy(self) -> EagerValue:
@@ -177,14 +183,14 @@ def test_stack_eager() -> None:
     t_a = MockTensor(a)
     t_b = MockTensor(b)
     res_mock = stack_eager(np, [t_a, t_b], 0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_mock, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mock, expected)
 
 
 def test_tile() -> None:
     """Test function test_tile."""
     x = np.array([1, 2])
     res = _np_tile(np, x, 2)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 2, 1, 2])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 2, 1, 2])
 
 
 def test_permute() -> None:
@@ -201,7 +207,7 @@ def test_triu() -> None:
     x = np.ones((3, 3))
     res = _np_triu(np, x, diagonal=1)
     expected = np.triu(x, k=1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_tril() -> None:
@@ -209,7 +215,7 @@ def test_tril() -> None:
     x = np.ones((3, 3))
     res = _np_tril(np, x, diagonal=-1)
     expected = np.tril(x, k=-1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_expand_dims() -> None:
@@ -259,7 +265,7 @@ def test_dsplit() -> None:
     """Test function test_dsplit."""
     a = np.ones((2, 2, 2))
     res = _np_dsplit(np, a, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    assert cast("EagerCallableProtocol", len)(res) == 2
 
 
 def test_dstack() -> None:
@@ -276,7 +282,7 @@ def test_hsplit() -> None:
     """Test function test_hsplit."""
     a = np.ones((2, 2))
     res = _np_hsplit(np, a, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    assert cast("EagerCallableProtocol", len)(res) == 2
 
 
 def test_hstack() -> None:
@@ -293,7 +299,7 @@ def test_vsplit() -> None:
     """Test function test_vsplit."""
     a = np.ones((2, 2))
     res = _np_vsplit(np, a, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    assert cast("EagerCallableProtocol", len)(res) == 2
 
 
 def test_vstack() -> None:
@@ -324,7 +330,7 @@ def test_roll() -> None:
     """Test function test_roll."""
     a = np.array([1, 2, 3])
     res = _np_roll(np, a, 1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [3, 1, 2])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [3, 1, 2])
 
 
 def test_block() -> None:
@@ -338,22 +344,22 @@ def test_delete() -> None:
     """Test function test_delete."""
     a = np.array([1, 2, 3])
     res = _np_delete(np, a, 1)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 3])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 3])
 
 
 def test_diag_indices() -> None:
     """Test function test_diag_indices."""
     res = _np_diag_indices(np, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), [0, 1])
+    assert cast("EagerCallableProtocol", len)(res) == 2
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), [0, 1])
 
 
 def test_diag_indices_from() -> None:
     """Test function test_diag_indices_from."""
     a = np.ones((2, 2))
     res = _np_diag_indices_from(np, a)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), [0, 1])
+    assert cast("EagerCallableProtocol", len)(res) == 2
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), [0, 1])
 
 
 def test_diagflat() -> None:
@@ -399,4 +405,4 @@ def test_insert() -> None:
     """Test function test_insert."""
     a = np.array([1, 2])
     res = _np_insert(np, a, 1, 3)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 3, 2])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 3, 2])

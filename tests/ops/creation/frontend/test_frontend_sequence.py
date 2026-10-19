@@ -21,7 +21,13 @@ def test_frontend_sequence() -> None:
         """Test class DummyBackend."""
 
         def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
 
             class T:
                 """Test class T."""

@@ -1,9 +1,9 @@
 """Math stats ops."""
 
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("Average")
@@ -163,7 +163,7 @@ def _np_confusion_matrix(backend_module: ModuleType, *args: EagerValue, **kwargs
 
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
-        num_classes = cast("Callable[..., EagerTensorProtocol]", max)(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
+        num_classes = cast("EagerCallableProtocol", max)(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
 
     y_true = np.asarray(y_true).flatten()
     y_pred = np.asarray(y_pred).flatten()

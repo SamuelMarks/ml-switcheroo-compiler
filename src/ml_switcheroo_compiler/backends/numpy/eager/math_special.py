@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
+import importlib
 from types import ModuleType
 from typing import Union, cast
 
 import numpy as np
-import scipy.special as sc
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+
+
+def _sc() -> ModuleType:
+    """Import and return `scipy.special` dynamically.
+
+    Returns:
+        ModuleType: The `scipy.special` module.
+    """
+    return importlib.import_module("scipy.special")
 
 
 @numpy_eager_registry.register("BesselJ0")
@@ -28,7 +37,7 @@ def _np_bessel_j0(
         np.ndarray: Evaluated Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.j0(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().j0(x)))
 
 
 @numpy_eager_registry.register("BesselJ1")
@@ -48,7 +57,7 @@ def _np_bessel_j1(
         np.ndarray: Evaluated Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.j1(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().j1(x)))
 
 
 @numpy_eager_registry.register("BesselK0")
@@ -68,7 +77,7 @@ def _np_bessel_k0(
         np.ndarray: Evaluated modified Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k0(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().k0(x)))
 
 
 @numpy_eager_registry.register("BesselK0e")
@@ -88,7 +97,7 @@ def _np_bessel_k0e(
         np.ndarray: Evaluated exponentially scaled Bessel array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k0e(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().k0e(x)))
 
 
 @numpy_eager_registry.register("BesselK1")
@@ -108,7 +117,7 @@ def _np_bessel_k1(
         np.ndarray: Evaluated modified Bessel function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k1(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().k1(x)))
 
 
 @numpy_eager_registry.register("BesselK1e")
@@ -128,7 +137,7 @@ def _np_bessel_k1e(
         np.ndarray: Evaluated exponentially scaled Bessel array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.k1e(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().k1e(x)))
 
 
 @numpy_eager_registry.register("BesselY0")
@@ -148,7 +157,7 @@ def _np_bessel_y0(
         np.ndarray: Evaluated Bessel Y0 array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.y0(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().y0(x)))
 
 
 @numpy_eager_registry.register("BesselY1")
@@ -168,7 +177,7 @@ def _np_bessel_y1(
         np.ndarray: Evaluated Bessel Y1 array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.y1(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().y1(x)))
 
 
 @numpy_eager_registry.register("Dawsn")
@@ -188,7 +197,7 @@ def _np_dawsn(
         np.ndarray: Evaluated Dawson's integral array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.dawsn(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().dawsn(x)))
 
 
 @numpy_eager_registry.register("Expint")
@@ -211,7 +220,7 @@ def _np_expint(
     n: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int, str, bool, None] = kwargs.get("n", 1)
     if len(args) > 1:
         n = args[1]
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.expn(n, x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().expn(n, x)))
 
 
 @numpy_eager_registry.register("FresnelCos")
@@ -231,7 +240,7 @@ def _np_fresnel_cos(
         np.ndarray: Evaluated Fresnel cosine integral array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.fresnel(x)[1]))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().fresnel(x)[1]))
 
 
 @numpy_eager_registry.register("FresnelSin")
@@ -251,7 +260,7 @@ def _np_fresnel_sin(
         np.ndarray: Evaluated Fresnel sine integral array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.fresnel(x)[0]))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().fresnel(x)[0]))
 
 
 @numpy_eager_registry.register("Spence")
@@ -271,7 +280,7 @@ def _np_spence(
         np.ndarray: Evaluated Spence's function array.
     """
     x = args[0] if args else kwargs.get("x", 0.0)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.spence(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().spence(x)))
 
 
 @numpy_eager_registry.register("BesselI0")
@@ -290,7 +299,7 @@ def _np_bessel_i0(
     Returns:
         np.ndarray: Evaluated modified Bessel I0 array.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.i0(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().i0(x)))
 
 
 @numpy_eager_registry.register("BesselI1")
@@ -309,7 +318,7 @@ def _np_bessel_i1(
     Returns:
         np.ndarray: Evaluated modified Bessel I1 array.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.i1(x)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().i1(x)))
 
 
 @numpy_eager_registry.register("BesselJn")
@@ -330,7 +339,7 @@ def _np_bessel_jn(
     Returns:
         np.ndarray: Evaluated Bessel Jn array.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.jv(x, y)))
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(_sc().jv(x, y)))
 
 
 @numpy_eager_registry.register("Bartlett")
@@ -350,3 +359,216 @@ def _np_bartlett(
         np.ndarray: The triangular Bartlett window.
     """
     return np.bartlett(M)
+
+
+@numpy_eager_registry.register("Digamma")
+def _np_digamma(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate the digamma (psi) function via `scipy.special.digamma`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (x).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated digamma function array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().digamma(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Igammac")
+def _np_igammac(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate regularized upper incomplete gamma function via `scipy.special.gammaincc`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (a, x).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated regularized upper incomplete gamma array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().gammaincc(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Polygamma")
+def _np_polygamma(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate polygamma function of order n via `scipy.special.polygamma`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (n, x).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated polygamma array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().polygamma(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Igamma")
+def _np_igamma(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate regularized lower incomplete gamma function via `scipy.special.gammainc`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (a, x).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated regularized lower incomplete gamma array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().gammainc(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Gamma")
+def _np_gamma(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate the gamma function via `scipy.special.gamma`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (x).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated gamma function array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().gamma(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("ModifiedBesselI1")
+def _np_modifiedbesseli1(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate modified Bessel function of order 1 via `scipy.special.i1`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (x).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated modified Bessel I1 array.
+    """
+    if (args and args[0] is None) or kwargs.get("x", 0) is None:
+        raise TypeError("ModifiedBesselI1 input cannot be None")
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().i1(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Betainc")
+def _np_betainc_special(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate regularized incomplete beta function via `scipy.special.betainc`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (a, b, x).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated betainc array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().betainc(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Beta")
+def _np_beta_func(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate the Euler Beta function via `scipy.special.beta`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (a, b).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated Beta function array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().beta(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("BetaPdf")
+def _np_betapdf(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate the Beta probability density function via `scipy.stats.beta.pdf`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (x, a, b).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated Beta PDF array.
+    """
+    import scipy.stats as stats
+
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(stats.beta.pdf(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Zeta")
+def _np_zeta(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate the Hurwitz/Riemann zeta function via `scipy.special.zeta`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (x, q).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated zeta function array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().zeta(*args, **kwargs)))
+
+
+@numpy_eager_registry.register("Xlog1Py")
+def _np_xlog1py(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, int],
+    **kwargs: Union[float, int, str, bool, None],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Evaluate `x * log1p(y)` with safe zero handling via `scipy.special.xlog1py`.
+
+    Args:
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, float, int]): Positional arguments (x, y).
+        **kwargs (Union[float, int, str, bool, None]): Keyword arguments.
+
+    Returns:
+        np.ndarray: Evaluated `x * log1p(y)` array.
+    """
+    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.asarray(_sc().xlog1py(*args, **kwargs)))

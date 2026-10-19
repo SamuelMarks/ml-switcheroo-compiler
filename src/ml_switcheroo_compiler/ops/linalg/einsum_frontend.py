@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for einsum_frontend.py."""
+"""Implementation of einsum frontend operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.einsum_frontend`)."""
 
 from __future__ import annotations
 

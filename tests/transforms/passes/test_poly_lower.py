@@ -90,7 +90,11 @@ def test_rest_poly_lowering() -> None:
 
 
 def test_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_missing_yaml."""
+    """Test function test_missing_yaml.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
 
     import ml_switcheroo_compiler.transforms.passes.poly_lower as poly_lower
@@ -101,7 +105,11 @@ def test_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_poly_lower_edge_rules(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_poly_lower_edge_rules."""
+    """Test function test_poly_lower_edge_rules.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.transforms.passes.poly_lower as poly_lower
 
     mock_rules = {

@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for logical.py."""
+"""Implementation of logical operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.logical`)."""
 
 from __future__ import annotations
 

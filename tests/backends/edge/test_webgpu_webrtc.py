@@ -18,7 +18,11 @@ def test_webrtc_no_handlers_yaml() -> None:
     with patch("os.path.exists") as mock_exists:
         # Simulate topology exists, but handlers yaml does not
         def fake_exists(path: EagerValue) -> EagerValue:
-            """Test function fake_exists."""
+            """Test function fake_exists.
+
+            Args:
+                path: Test parameter `path`.
+            """
             return cast("EagerTensorProtocol", "webrtc_topology.yaml") in cast("EagerTensorProtocol", path)
 
         mock_exists.side_effect = fake_exists
@@ -52,7 +56,13 @@ def test_webrtc_with_handlers_yaml() -> None:
         handlers_data = {"handlers": {"allreduce_handler": "my_allreduce_handler"}, "schema_def": {"chunk_size_bytes": 1024, "message_format": "binary"}}
 
         def mock_open_file(path: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function mock_open_file."""
+            """Test function mock_open_file.
+
+            Args:
+                path: Test parameter `path`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             if cast("EagerTensorProtocol", "webrtc_topology") in cast("EagerTensorProtocol", path):
                 return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(topology_data))())
             elif cast("EagerTensorProtocol", "webrtc_collectives") in cast("EagerTensorProtocol", path):

@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Optional, Protocol, TypeVar, Union, cast, runt
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.environment import Environment
@@ -559,7 +558,7 @@ def _evaluate_recompute_node(node: LogicalNode, env: Environment, backend: type[
     orig_attrs: dict[str, EvalValue] = cast(dict[str, EvalValue], node.attributes.get("original_attrs", {})).copy()
     resolved_node = LogicalNode(id=node.id, op_type=target_op, inputs=node.inputs, attributes=cast("Mapping[str, AttributeValue]", orig_attrs))
     kwargs = _prepare_node_kwargs(resolved_node, target_op)
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(resolved_node, env, backend, target_op, in_vals, kwargs)
+    _dispatch_op(resolved_node, env, backend, target_op, cast("list[EvalValue]", in_vals), kwargs)
 
 
 def _evaluate_node(node: LogicalNode, env: Environment, backend: type[BaseGenerator]) -> None:
@@ -592,7 +591,7 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: type[BaseGenera
         in_vals = [env.get(inp) for inp in node.inputs]
         target_op = _get_op_alias(op_type)
         kwargs = _prepare_node_kwargs(node, target_op)
-        cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(node, env, backend, target_op, in_vals, kwargs)
+        _dispatch_op(node, env, backend, target_op, cast("list[EvalValue]", in_vals), kwargs)
 
 
 def _get_op_alias(op_type: str) -> str:

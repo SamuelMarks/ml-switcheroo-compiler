@@ -16,9 +16,9 @@ from ml_switcheroo_compiler.backends.pytorch.types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 mock_torch = MagicMock()
 mock_torch.zeros = lambda shape: f"zeros_{shape}"
@@ -29,7 +29,11 @@ class MockTensor:
     """Mock tensor."""
 
     def __init__(self, data: EagerValue) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            data: Test parameter `data`.
+        """
         self.data = data
 
     def item(self) -> EagerValue:
@@ -56,16 +60,16 @@ def _patch_pytorch_types() -> Iterator[None]:
 
 def test_zeros() -> None:
     """Test coverage."""
-    res = cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2, 2))
+    res = cast("EagerCallableProtocol", zeros)(None, (2, 2))
     assert res == "zeros_(2, 2)"
 
 
 def test_array() -> None:
     """Test coverage."""
-    res1 = cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2])
+    res1 = cast("EagerCallableProtocol", array)(None, [1, 2])
     assert res1 == "tensor_[1, 2]_None"
 
-    res2 = cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2], dtype="float32")
+    res2 = cast("EagerCallableProtocol", array)(None, [1, 2], dtype="float32")
     assert res2 == "tensor_[1, 2]_mock_float32"
 
     class MockDtype:
@@ -75,20 +79,20 @@ def test_array() -> None:
             """Test function __init__."""
             self.value = "int32"
 
-    res3 = cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2], dtype=cast("Callable[..., EagerTensorProtocol]", MockDtype)())
+    res3 = cast("EagerCallableProtocol", array)(None, [1, 2], dtype=cast("EagerCallableProtocol", MockDtype)())
     assert res3 == "tensor_[1, 2]_mock_int32"
 
-    res4 = cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2], dtype="unknown_dtype")
+    res4 = cast("EagerCallableProtocol", array)(None, [1, 2], dtype="unknown_dtype")
     assert res4 == "tensor_[1, 2]_None"
 
 
 def test_asarray() -> None:
     """Test coverage."""
-    res = cast("Callable[..., EagerTensorProtocol]", asarray)(None, [1, 2])
+    res = cast("EagerCallableProtocol", asarray)(None, [1, 2])
     assert cast("EagerTensorProtocol", getattr(res, "item"))() == 1
 
 
 def test_item() -> None:
     """Test coverage."""
-    res = cast("Callable[..., EagerTensorProtocol]", item)(None, [5])
+    res = cast("EagerCallableProtocol", item)(None, [5])
     assert res == 5

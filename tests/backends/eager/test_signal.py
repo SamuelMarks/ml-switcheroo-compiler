@@ -10,9 +10,7 @@ import pytest
 from ml_switcheroo_compiler.backends.eager.signal import _apply_conv2d_batch, _apply_median_filter_batch, _generate_gaussian_kernel, _get_blur_config, gaussian_blur_eager, median_filter_eager
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class DummyConfig:
@@ -28,7 +26,7 @@ def test_signal() -> None:
     # 1. _generate_gaussian_kernel
     kernel = _generate_gaussian_kernel(np_mod, (3, 3), (1.0, 1.0))
     assert cast("EagerTensorProtocol", getattr(kernel, "shape")) == (3, 3)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", np_mod.sum)(kernel), 1.0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", np_mod.sum)(kernel), 1.0)
 
     # 2. _apply_conv2d_batch
     imgs = np.ones((1, 1, 3, 3))
@@ -42,7 +40,7 @@ def test_signal() -> None:
     c1 = _get_blur_config({"kernel_size": (5, 5)}, None)
     assert c1.kernel_size == (5, 5)
     c2 = DummyConfig()
-    assert id(cast("Callable[..., EagerTensorProtocol]", _get_blur_config)({}, c2)) == id(c2)
+    assert id(cast("EagerCallableProtocol", _get_blur_config)({}, c2)) == id(c2)
 
     # 4. gaussian_blur_eager
     imgs2 = np.ones((1, 1, 3, 3))

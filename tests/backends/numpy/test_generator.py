@@ -8,9 +8,7 @@ from unittest.mock import MagicMock, patch
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_numpy_type_translator() -> None:
@@ -21,15 +19,15 @@ def test_numpy_type_translator() -> None:
 def test_numpy_ast_visitor() -> None:
     """Test function test_numpy_ast_visitor."""
     kwargs = {"equation": "ij,jk->ik", "dimension": 1, "other": "val"}
-    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor._format_kwargs)(kwargs) == "other=val, axis=1"
+    assert cast("EagerCallableProtocol", NumpyASTVisitor._format_kwargs)(kwargs) == "other=val, axis=1"
 
     node = MagicMock(op_type="Parameter")
     node.id = "p1"
     assert NumpyASTVisitor.visit_Parameter(node, ["p1"]) == "p1 = None # Parameter"
 
-    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor.visit_Return)(None, []) == "return None"
-    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor.visit_Return)(None, ["v1"]) == "return v1"
-    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor.visit_Return)(None, ["v1", "v2"]) == "return v1, v2"
+    assert cast("EagerCallableProtocol", NumpyASTVisitor.visit_Return)(None, []) == "return None"
+    assert cast("EagerCallableProtocol", NumpyASTVisitor.visit_Return)(None, ["v1"]) == "return v1"
+    assert cast("EagerCallableProtocol", NumpyASTVisitor.visit_Return)(None, ["v1", "v2"]) == "return v1, v2"
 
     node = MagicMock(op_type="Sum")
     assert NumpyASTVisitor.generic_visit(node, ["a"], dimension=1) == "np.sum(a, axis=1)"
@@ -109,13 +107,13 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     # Test passing raw numpy array
     res1 = fn_aot(np.array([1.0, 2.0]))
     assert isinstance(res1, Tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res1.data, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res1.data, cast("EagerCallableProtocol", np.array)([1.0, 2.0]))
 
     # Test passing Tensor input
     t_in = Tensor(np.array([3.0]), TensorConfig((1,), DType.Float32, Device("cpu")))
     res2 = fn_aot(t_in)
     assert isinstance(res2, Tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res2.data, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2.data, cast("EagerCallableProtocol", np.array)([3.0]))
 
     # Test returning Tensor directly
     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y": t_in}):
@@ -136,7 +134,7 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y1": t_in, "y2": np.array([4.0])}):
         fn_multi = gen.compile_aot(g_multi)
         outs = fn_multi(t_in)
-        assert cast("Callable[..., EagerTensorProtocol]", len)(outs) == 2
+        assert cast("EagerCallableProtocol", len)(outs) == 2
         assert id(cast("EagerTensorProtocol", getattr(outs, "__getitem__")(0))) == id(t_in)
         assert isinstance(cast("EagerTensorProtocol", getattr(outs, "__getitem__")(1)), Tensor)
 

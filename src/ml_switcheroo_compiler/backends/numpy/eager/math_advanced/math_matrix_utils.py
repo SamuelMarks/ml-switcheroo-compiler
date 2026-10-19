@@ -1,4 +1,4 @@
-"""math_matrix_utils module."""
+"""Implementation of math matrix utils operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_matrix_utils`)."""
 
 from __future__ import annotations
 

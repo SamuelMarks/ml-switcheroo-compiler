@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import _n
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_manipulation import _all_gather, _np_updateslice, _updateslice
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyBackend:
@@ -37,9 +35,9 @@ def _test_math_missing_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     # math_internal.py 99 (_np_topk)
     db = DummyBackend()
     arr = cast("list[int]", np.array([1, 3, 2, 4]))
-    vals, idx = cast("Callable[..., EagerTensorProtocol]", _np_topk)(db, arr, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", sorted)(cast("Callable[..., EagerTensorProtocol]", list)(vals)) == [3, 4]
-    assert cast("Callable[..., EagerTensorProtocol]", sorted)(cast("Callable[..., EagerTensorProtocol]", list)(idx)) == [1, 3]
+    vals, idx = cast("EagerCallableProtocol", _np_topk)(db, arr, 2)
+    assert cast("EagerCallableProtocol", sorted)(cast("EagerCallableProtocol", list)(vals)) == [3, 4]
+    assert cast("EagerCallableProtocol", sorted)(cast("EagerCallableProtocol", list)(idx)) == [1, 3]
 
     # math_manipulation.py 26 (_all_gather)
     db = DummyBackend()  # no stack, no array
@@ -123,7 +121,7 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     setattr(db, "array", cast("EagerTensorProtocol", getattr(np, "array")))
     arr = np.array([1, 2, 3])
     res = _indexindim(db, arr, index=1, keepdims=True)
-    assert cast("Callable[..., EagerTensorProtocol]", list)(res) == [2]
+    assert cast("EagerCallableProtocol", list)(res) == [2]
 
     # math_arithmetic.py
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_arithmetic import _np_scattermul, _np_truncatediv, _np_truncatemod, _np_xdivy
@@ -195,7 +193,7 @@ def _test_math_missing_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
 
     db3 = DummyBackend3()
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", _fromiter)(db3, [1, 2, 3])
+        cast("EagerCallableProtocol", _fromiter)(db3, [1, 2, 3])
 
     # math_fft.py
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft import _np_hfft
@@ -210,7 +208,12 @@ def _test_math_missing_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
 
         @staticmethod
         def matmul(a: EagerValue, b: EagerValue) -> EagerValue:
-            """Test function matmul."""
+            """Test function matmul.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a
 
     arr = np.array([[[1.0, 2.0], [3.0, 4.0]]])
@@ -237,36 +240,62 @@ def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
 
         @staticmethod
         def matmul(a: EagerValue, b: EagerValue) -> EagerValue:
-            """Test function matmul."""
+            """Test function matmul.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a
 
     arr = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-    assert cast("Callable[..., EagerTensorProtocol]", _scaled_dot_product_attention_eager)(cast("Callable[..., EagerTensorProtocol]", BkAttn)(), arr, arr, arr) is not None
+    assert cast("EagerCallableProtocol", _scaled_dot_product_attention_eager)(cast("EagerCallableProtocol", BkAttn)(), arr, arr, arr) is not None
 
     class BkAttn2:
         """Test class BkAttn2."""
 
         @staticmethod
         def matmul(a: EagerValue, b: EagerValue) -> EagerValue:
-            """Test function matmul."""
+            """Test function matmul.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a
 
         @staticmethod
         def exp(a: EagerValue) -> EagerValue:
-            """Test function exp."""
+            """Test function exp.
+
+            Args:
+                a: Test parameter `a`.
+            """
             return a
 
         @staticmethod
         def sum(a: EagerValue, axis: EagerValue, keepdims: EagerValue) -> EagerValue:
-            """Test function sum."""
+            """Test function sum.
+
+            Args:
+                a: Test parameter `a`.
+                axis: Test parameter `axis`.
+                keepdims: Test parameter `keepdims`.
+            """
             return a
 
         @staticmethod
         def max(a: EagerValue, axis: EagerValue, keepdims: EagerValue) -> EagerValue:
-            """Test function max."""
+            """Test function max.
+
+            Args:
+                a: Test parameter `a`.
+                axis: Test parameter `axis`.
+                keepdims: Test parameter `keepdims`.
+            """
             return a
 
-    assert cast("Callable[..., EagerTensorProtocol]", _scaled_dot_product_attention_eager)(cast("Callable[..., EagerTensorProtocol]", BkAttn2)(), arr, arr, arr, scale=1.0) is not None
+    assert cast("EagerCallableProtocol", _scaled_dot_product_attention_eager)(cast("EagerCallableProtocol", BkAttn2)(), arr, arr, arr, scale=1.0) is not None
     getattr(_state, "update")({"BkAttn": BkAttn, "BkAttn2": BkAttn2, "arr": arr})
     _state.update(locals())
 
@@ -286,15 +315,15 @@ def _test_math_missing_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
     db = DummyBackend()
     setattr(db, "mean", cast("EagerTensorProtocol", getattr(np, "mean")))
     setattr(db, "stack", cast("EagerTensorProtocol", getattr(np, "stack")))
-    assert cast("Callable[..., EagerTensorProtocol]", _global_adaptive_pool)(db, arr, (1, 1)) is not None
+    assert cast("EagerCallableProtocol", _global_adaptive_pool)(db, arr, (1, 1)) is not None
     # 1D, 2D, 3D missing branches
     arr1d = np.array([1.0, 2.0, 3.0])
     arr2d = np.array([[1.0, 2.0], [3.0, 4.0]])
     arr3d = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-    assert cast("Callable[..., EagerTensorProtocol]", _global_adaptive_pool)(db, arr1d, 1) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", _global_adaptive_pool)(db, arr2d, (1, 1)) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", _global_adaptive_pool)(db, arr3d, (1, 1, 1)) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", _global_adaptive_pool)(db, 5, 1) == 5
+    assert cast("EagerCallableProtocol", _global_adaptive_pool)(db, arr1d, 1) is not None
+    assert cast("EagerCallableProtocol", _global_adaptive_pool)(db, arr2d, (1, 1)) is not None
+    assert cast("EagerCallableProtocol", _global_adaptive_pool)(db, arr3d, (1, 1, 1)) is not None
+    assert cast("EagerCallableProtocol", _global_adaptive_pool)(db, 5, 1) == 5
 
     # math_reduction.py
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_reduction import _apply_softmax
@@ -325,10 +354,15 @@ def _test_math_missing_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
 
             @staticmethod
             def softmax(x: EagerValue, axis: EagerValue) -> EagerValue:
-                """Test function softmax."""
+                """Test function softmax.
+
+                Args:
+                    x: Test parameter `x`.
+                    axis: Test parameter `axis`.
+                """
                 return x
 
-    assert cast("Callable[..., EagerTensorProtocol]", _apply_softmax)(cast("Callable[..., EagerTensorProtocol]", BkSoftmax2)(), arr) is not None
+    assert cast("EagerCallableProtocol", _apply_softmax)(cast("EagerCallableProtocol", BkSoftmax2)(), arr) is not None
     assert _apply_softmax(BkSoftmax1(), arr) is not None
 
     # math_testing.py
@@ -361,17 +395,17 @@ def _test_math_missing_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
     BkAttn2, HasItem, HasToList, _allclose = _state["BkAttn2"], _state["HasItem"], _state["HasToList"], _state["_allclose"]
     _global_adaptive_pool, _scaled_dot_product_attention_eager, arr = _state["_global_adaptive_pool"], _state["_scaled_dot_product_attention_eager"], _state["arr"]
     db = DummyBackend()
-    cast("Callable[..., EagerTensorProtocol]", _allclose)(db, cast("Callable[..., EagerTensorProtocol]", np.array)([1]), cast("Callable[..., EagerTensorProtocol]", np.array)([1]), rtol=cast("Callable[..., EagerTensorProtocol]", HasItem)())
-    cast("Callable[..., EagerTensorProtocol]", _allclose)(db, cast("Callable[..., EagerTensorProtocol]", np.array)([1]), cast("Callable[..., EagerTensorProtocol]", np.array)([1]), rtol=cast("Callable[..., EagerTensorProtocol]", HasToList)())
+    cast("EagerCallableProtocol", _allclose)(db, cast("EagerCallableProtocol", np.array)([1]), cast("EagerCallableProtocol", np.array)([1]), rtol=cast("EagerCallableProtocol", HasItem)())
+    cast("EagerCallableProtocol", _allclose)(db, cast("EagerCallableProtocol", np.array)([1]), cast("EagerCallableProtocol", np.array)([1]), rtol=cast("EagerCallableProtocol", HasToList)())
 
     # math_matrix.py (is_causal=True)
     assert _scaled_dot_product_attention_eager(BkAttn2(), arr, arr, arr, is_causal=True, scale=1.0) is not None
 
     # math_nn.py (len(in_shape) < spatial_dims)
-    assert cast("Callable[..., EagerTensorProtocol]", _global_adaptive_pool)(db, cast("Callable[..., EagerTensorProtocol]", np.array)(5), (1, 1)) == 5
+    assert cast("EagerCallableProtocol", _global_adaptive_pool)(db, cast("EagerCallableProtocol", np.array)(5), (1, 1)) == 5
 
     # math_testing.py (_val returning itself)
-    cast("Callable[..., EagerTensorProtocol]", _allclose)(db, cast("Callable[..., EagerTensorProtocol]", np.array)([1]), cast("Callable[..., EagerTensorProtocol]", np.array)([1]), rtol=5.0)
+    cast("EagerCallableProtocol", _allclose)(db, cast("EagerCallableProtocol", np.array)([1]), cast("EagerCallableProtocol", np.array)([1]), rtol=5.0)
     getattr(_state, "update")({"db": db})
 
 
@@ -387,7 +421,7 @@ def test_math_missing() -> None:
     _test_math_missing_part_6(_state)
     _test_math_missing_part_7(_state)
     _test_math_missing_part_8(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_math_manipulation_matrix_nn_100cov() -> None:

@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.backends.base_generator import (
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_compiled_artifact_edge_cases() -> None:
@@ -51,7 +49,7 @@ def test_compiled_artifact_edge_cases() -> None:
             self.cleaned = True
 
     mock_dir = MockTempDir()
-    art_with_dir = cast("Callable[..., EagerTensorProtocol]", CompiledArtifact)(
+    art_with_dir = cast("EagerCallableProtocol", CompiledArtifact)(
         callable_fn=lambda: None,
         temp_dir=mock_dir,
     )
@@ -77,7 +75,12 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
         """Concrete generator for testing compile_aot on class."""
 
         def _compile_aot_impl(self, graph: IRGraph | None, **kwargs: EagerValue) -> str:
-            """Compile AOT implementation."""
+            """Compile AOT implementation.
+
+            Args:
+                graph: Test parameter `graph`.
+                kwargs: Test parameter `kwargs`.
+            """
             del graph, kwargs
             return "compiled_output"
 

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import Callable
 from types import ModuleType
 from typing import Union, cast
 
 import numpy as np
-import scipy.special as sc
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import (
@@ -32,7 +32,10 @@ def _np_bessel_i0e(
     Returns:
         np.ndarray: Computed exponentially scaled Bessel i0e result.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.i0e(args[0])))
+    return cast(
+        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+        backend_module.array(importlib.import_module("scipy.special").i0e(args[0])),
+    )
 
 
 @numpy_eager_registry.register("BesselI1e")
@@ -51,7 +54,10 @@ def _np_bessel_i1e(
     Returns:
         np.ndarray: Computed exponentially scaled Bessel i1e result.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(sc.i1e(args[0])))
+    return cast(
+        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+        backend_module.array(importlib.import_module("scipy.special").i1e(args[0])),
+    )
 
 
 @numpy_eager_registry.register("modified_bessel_i0")

@@ -9,9 +9,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import ArrayAt, ArrayAtIndexer, Parameter, Tensor, TensorConfig, Variable
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_array_at() -> None:
@@ -105,7 +103,7 @@ def test_parameter_index() -> None:
             """Test function numpy."""
             return 42
 
-    param = cast("Callable[..., EagerTensorProtocol]", Parameter)(cast("Callable[..., EagerTensorProtocol]", MockData)(), t_cfg)
+    param = cast("EagerCallableProtocol", Parameter)(cast("EagerCallableProtocol", MockData)(), t_cfg)
     # The __index__ calls self.numpy(), we need to mock numpy() for Parameter since it inherits from Tensor
     with mock.patch.object(param, "numpy", return_value=42):
         assert param.__index__() == 42
@@ -127,7 +125,7 @@ def test_tensor_eval_not_tracing() -> None:
 
         id = "mock_id"
 
-    t = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", MockData)(), t_cfg)
+    t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", MockData)(), t_cfg)
 
     orig = config.eager_mode
     try:

@@ -10,9 +10,7 @@ from ml_switcheroo_compiler.ir.shape_system import SymVar
 from ml_switcheroo_compiler.ops.text.ops import AsString, EditDistance, Hashing, IntegerLookup, Lookup, RegexFullMatch, RegexReplace, StringJoin, StringLength, StringLookup, StringLower, StringSplit, StringSubstr, StringToHash, StringToNumber, StringUpper, TextVectorization
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_text_infer_shape() -> None:
@@ -26,20 +24,20 @@ def test_text_infer_shape() -> None:
         assert StringToHash().infer_shape() == ()
         assert RegexReplace().infer_shape() == ()
         assert StringSplit().infer_shape() == ()
-        assert cast("Callable[..., EagerTensorProtocol]", Lookup)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", Hashing)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", StringLookup)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", IntegerLookup)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", TextVectorization)().infer_shape(t) == (2, 2, cast("Callable[..., EagerTensorProtocol]", SymVar)("seq_len"))
-        assert cast("Callable[..., EagerTensorProtocol]", StringToNumber)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", StringLower)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", StringUpper)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", Lookup)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", Hashing)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", StringLookup)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", IntegerLookup)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", TextVectorization)().infer_shape(t) == (2, 2, cast("EagerCallableProtocol", SymVar)("seq_len"))
+        assert cast("EagerCallableProtocol", StringToNumber)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", StringLower)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", StringUpper)().infer_shape(t) == (2, 2)
         assert StringJoin().infer_shape() == ()
-        assert cast("Callable[..., EagerTensorProtocol]", StringLength)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", StringSubstr)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", RegexFullMatch)().infer_shape(t) == (2, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", EditDistance)().infer_shape(t, t) == (2,)
-        assert cast("Callable[..., EagerTensorProtocol]", AsString)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", StringLength)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", StringSubstr)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", RegexFullMatch)().infer_shape(t) == (2, 2)
+        assert cast("EagerCallableProtocol", EditDistance)().infer_shape(t, t) == (2,)
+        assert cast("EagerCallableProtocol", AsString)().infer_shape(t) == (2, 2)
     except Exception as e:
         raise e
         pass

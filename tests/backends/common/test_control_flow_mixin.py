@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.backends.common.mixins.control_flow import ControlFlowASTVisitor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 class DummyGenerator:
@@ -32,7 +30,11 @@ class DummyNode:
     """Test class DummyNode."""
 
     def __init__(self, attrs: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            attrs: Test parameter `attrs`.
+        """
         self.attributes = attrs or {}
 
 
@@ -41,16 +43,16 @@ def test_control_flow_mixin() -> None:
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Scan)(node, ["a", "b"]) == "bk_scan(a, b)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Switch)(node, ["a", "b"]) == "bk_switch(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_Scan)(node, ["a", "b"]) == "bk_scan(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_Switch)(node, ["a", "b"]) == "bk_switch(a, b)"
 
     node_td = DummyNode({"wrapped_op_name": "MyOp"})
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_TimeDistributed)(node_td, ["a"]) == "bk_time_distributed(a, 'MyOp')"
+    assert cast("EagerCallableProtocol", vis.visit_TimeDistributed)(node_td, ["a"]) == "bk_time_distributed(a, 'MyOp')"
 
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Assert)(node, ["cond"], data=["msg"]) == "bk_assert(cond, data=['msg'])"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Assert)(node, ["cond"]) == "bk_assert(cond, data=['Assertion failed.'])"
+    assert cast("EagerCallableProtocol", vis.visit_Assert)(node, ["cond"], data=["msg"]) == "bk_assert(cond, data=['msg'])"
+    assert cast("EagerCallableProtocol", vis.visit_Assert)(node, ["cond"]) == "bk_assert(cond, data=['Assertion failed.'])"
 
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_AssociativeScan)(node, ["a", "b"]) == "bk_associative_scan(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_AssociativeScan)(node, ["a", "b"]) == "bk_associative_scan(a, b)"
 
 
 def test_control_flow_mixin_advanced() -> None:
@@ -62,7 +64,11 @@ def test_control_flow_mixin_advanced() -> None:
         """Test class DummyGenerator."""
 
         def __init__(self, graph: EagerValue = None) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                graph: Test parameter `graph`.
+            """
             self.graph = graph
             self.code = ["def dummy():", "    return 1"]
             self.indent_level = 0
@@ -73,8 +79,12 @@ def test_control_flow_mixin_advanced() -> None:
             return "bk"
 
         def add_line(self, line: EagerValue) -> None:
-            """Test function add_line."""
-            cast("Callable[..., EagerTensorProtocol]", self.code.append)(line)
+            """Test function add_line.
+
+            Args:
+                line: Test parameter `line`.
+            """
+            cast("EagerCallableProtocol", self.code.append)(line)
 
     class DummyVisitor(ControlFlowASTVisitor):
         """Test class DummyVisitor."""
@@ -139,7 +149,7 @@ def test_control_flow_mixin_advanced() -> None:
         assert res_fold == "fold_val_fold1"
 
     # visit_Vmap
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Vmap)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"]) == "bk_vmap(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_Vmap)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "bk_vmap(a, b)"
 
     # visit_Pmap
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Pmap)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"]) == "bk_pmap(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_Pmap)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "bk_pmap(a, b)"

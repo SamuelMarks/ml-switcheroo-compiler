@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.random.state import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_emit_random_node_eager() -> None:
@@ -130,7 +128,7 @@ def test_rng_uniform() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.state"], "_dispatch_random") as mock_dispatch:
         mock_dispatch.return_value = "mocked_result"
 
-        result = cast("Callable[..., EagerTensorProtocol]", rng_uniform)("a", "b", (2,), dtypes.DType.Float64)
+        result = cast("EagerCallableProtocol", rng_uniform)("a", "b", (2,), dtypes.DType.Float64)
         assert result == "mocked_result"
         mock_dispatch.assert_called_once_with("rng_uniform", "a", "b", shape=(2,), dtype=dtypes.DType.Float64)
 
@@ -142,7 +140,7 @@ def test_get_numpy_rng() -> None:
         mock_backend_cls.get_numpy_rng.return_value = "mocked_rng"
         mock_get.return_value = mock_backend_cls
 
-        result = cast("Callable[..., EagerTensorProtocol]", _get_numpy_rng)("arg1", kwarg1="val1")
+        result = cast("EagerCallableProtocol", _get_numpy_rng)("arg1", kwarg1="val1")
         assert result == "mocked_rng"
         mock_get.assert_called_once_with("numpy")
         mock_backend_cls.get_numpy_rng.assert_called_once_with("arg1", kwarg1="val1")

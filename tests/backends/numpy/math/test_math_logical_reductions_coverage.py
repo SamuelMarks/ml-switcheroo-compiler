@@ -10,9 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_logical_reductions as logical_reductions
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_math_logical_reductions() -> None:
@@ -24,11 +22,11 @@ def test_math_logical_reductions() -> None:
     assert not logical_reductions._np_all(np, arr_some_false)
 
     reg_all = numpy_eager_registry.get("All")
-    assert cast("Callable[..., EagerTensorProtocol]", reg_all)(np, arr_all_true)
-    assert not cast("Callable[..., EagerTensorProtocol]", reg_all)(np, arr_some_false)
+    assert cast("EagerCallableProtocol", reg_all)(np, arr_all_true)
+    assert not cast("EagerCallableProtocol", reg_all)(np, arr_some_false)
 
     arr_counts = np.array([[0, 1, 2], [3, 0, 0]])
     assert logical_reductions._np_count_nonzero(np, arr_counts) == 3
 
     reg_count = numpy_eager_registry.get("CountNonzero")
-    assert cast("Callable[..., EagerTensorProtocol]", reg_count)(np, arr_counts) == 3
+    assert cast("EagerCallableProtocol", reg_count)(np, arr_counts) == 3

@@ -12,22 +12,24 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import check_numerical_grads, hvp
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_hvp_robustness() -> None:
     """Test function test_hvp_robustness."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     v = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, out_tan = cast("Callable[..., EagerTensorProtocol]", hvp)(f, x, v)
+    val, out_tan = cast("EagerCallableProtocol", hvp)(f, x, v)
     assert cast("EagerTensorProtocol", getattr(val, "item"))() == 8.0
     assert cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
 
@@ -36,14 +38,18 @@ def test_hessian() -> None:
     """Test function test_hessian."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     from ml_switcheroo_compiler.grad import hessian
 
-    res = cast("Callable[..., EagerTensorProtocol]", hessian)(f)(x)
+    res = cast("EagerCallableProtocol", hessian)(f)(x)
     assert res is not None
 
 
@@ -51,12 +57,16 @@ def test_check_numerical_grads() -> None:
     """Test function test_check_numerical_grads."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     check_numerical_grads(f, (x,))
-    assert x is not None or x is None
+    assert x.shape == (1,)
 
 
 def test_grad_of_grad() -> None:

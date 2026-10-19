@@ -11,16 +11,14 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.continuous.multivariate_normal import MultivariateNormalOptions, multivariate_normal
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_multivariate_normal_basic() -> None:
     """Test multivariate_normal function with default options and non-Tensor inputs."""
     with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.multivariate_normal"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", multivariate_normal)("key", "mean", "cov")
+        result = cast("EagerCallableProtocol", multivariate_normal)("key", "mean", "cov")
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("MultivariateNormal", ["key"], (), dtypes.DType.Float32, {"method": "cholesky"})
 

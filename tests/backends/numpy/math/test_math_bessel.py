@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_bessel as bessel_mod
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_math_bessel_functions(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -28,30 +26,30 @@ def test_math_bessel_functions(monkeypatch: pytest.MonkeyPatch) -> None:
     arr = np.array([0.5, 1.0])
 
     # Direct and registered BesselI0e and BesselI1e
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", bessel_mod._np_bessel_i0e)(np, arr) > 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("BesselI0e")(np, arr) > 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", bessel_mod._np_bessel_i1e)(np, arr) > 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("BesselI1e")(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", bessel_mod._np_bessel_i0e)(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", numpy_eager_registry.get)("BesselI0e")(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", bessel_mod._np_bessel_i1e)(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", numpy_eager_registry.get)("BesselI1e")(np, arr) > 0)
 
     # modified_bessel_i0
     assert bessel_mod._np_modified_bessel_i0(np) is None
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", bessel_mod._np_modified_bessel_i0)(np, arr), cast("Callable[..., EagerTensorProtocol]", np.i0)(arr))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("modified_bessel_i0")(np, arr), cast("Callable[..., EagerTensorProtocol]", np.i0)(arr))
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", bessel_mod._np_modified_bessel_i0)(np, arr), cast("EagerCallableProtocol", np.i0)(arr))
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", numpy_eager_registry.get)("modified_bessel_i0")(np, arr), cast("EagerCallableProtocol", np.i0)(arr))
 
     # modified_bessel_i1 with scipy
     assert bessel_mod._np_modified_bessel_i1(np) is None
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", bessel_mod._np_modified_bessel_i1)(np, arr) > 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("modified_bessel_i1")(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", bessel_mod._np_modified_bessel_i1)(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", numpy_eager_registry.get)("modified_bessel_i1")(np, arr) > 0)
 
     # modified_bessel_k0 with scipy
     assert bessel_mod._np_modified_bessel_k0(np) is None
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", bessel_mod._np_modified_bessel_k0)(np, arr) > 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("modified_bessel_k0")(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", bessel_mod._np_modified_bessel_k0)(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", numpy_eager_registry.get)("modified_bessel_k0")(np, arr) > 0)
 
     # modified_bessel_k1 with scipy
     assert bessel_mod._np_modified_bessel_k1(np) is None
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", bessel_mod._np_modified_bessel_k1)(np, arr) > 0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("modified_bessel_k1")(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", bessel_mod._np_modified_bessel_k1)(np, arr) > 0)
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerCallableProtocol", numpy_eager_registry.get)("modified_bessel_k1")(np, arr) > 0)
 
     # Test fallback branch when scipy is None
     monkeypatch.setattr(bessel_mod, "_get_sc", lambda: None)

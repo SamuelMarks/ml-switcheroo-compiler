@@ -20,7 +20,11 @@ def test_extract_proxy_inputs_elif_branch() -> None:
         active_graph = True
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     old_state = cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))

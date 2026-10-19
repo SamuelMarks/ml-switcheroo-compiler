@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConf
 from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, crelu, log_softmax, one_hot, rrelu, sigmoid, softmax, softplus
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_nn_activations_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -105,7 +103,11 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
             nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
@@ -114,7 +116,7 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
         assert res is not None
         res = log_softmax(t)
         assert res is not None
-        res = cast("Callable[..., EagerTensorProtocol]", sigmoid)(t)
+        res = cast("EagerCallableProtocol", sigmoid)(t)
         assert res is not None
         res = one_hot(t_idx, 2)
         assert res is not None
@@ -132,4 +134,4 @@ def test_nn_activations_coverage() -> None:
     _test_nn_activations_coverage_part_1(_state)
     _test_nn_activations_coverage_part_2(_state)
     _test_nn_activations_coverage_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

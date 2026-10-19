@@ -36,9 +36,7 @@ from ml_switcheroo_compiler.ops.normalization.frontend import group_mean, group_
 from ml_switcheroo_compiler.ops.normalization.frontend import group_norm as frontend_group_norm
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_normalization_coverage() -> None:
@@ -46,9 +44,9 @@ def test_normalization_coverage() -> None:
     config.eager_mode = True
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert cast("Callable[..., EagerTensorProtocol]", GroupMean)().infer_shape(t) == (1, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", GroupVariance)().infer_shape(t) == (1, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", GroupNorm)().infer_shape(t) == (1, 2)
+    assert cast("EagerCallableProtocol", GroupMean)().infer_shape(t) == (1, 2)
+    assert cast("EagerCallableProtocol", GroupVariance)().infer_shape(t) == (1, 2)
+    assert cast("EagerCallableProtocol", GroupNorm)().infer_shape(t) == (1, 2)
 
     import sys
 
@@ -60,7 +58,12 @@ def test_normalization_coverage() -> None:
         device = "cpu"
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "normed"
 
     orig_get_op = norm_frontend.get_op
@@ -89,21 +92,21 @@ def test_tracing_normalization_ops() -> None:
 
     try:
         # Test normalize_moments tracing
-        mean, variance = cast("Callable[..., EagerTensorProtocol]", normalize_moments)(t, t, t, t)
+        mean, variance = cast("EagerCallableProtocol", normalize_moments)(t, t, t, t)
         assert isinstance(mean, Tensor)
         assert isinstance(variance, Tensor)
         assert mean.shape == (1, 2)
         assert variance.shape == (1, 2)
 
         # Test sufficient_statistics tracing
-        counts, mean_ss, variance_ss, shift = cast("Callable[..., EagerTensorProtocol]", sufficient_statistics)(t, 1)
+        counts, mean_ss, variance_ss, shift = cast("EagerCallableProtocol", sufficient_statistics)(t, 1)
         assert isinstance(counts, Tensor)
         assert isinstance(mean_ss, Tensor)
         assert isinstance(variance_ss, Tensor)
         assert isinstance(shift, Tensor)
 
         # Test weighted_moments tracing
-        w_mean, w_variance = cast("EagerTensorProtocol", cast("Callable[..., EagerTensorProtocol]", weighted_moments)(t, 1, t))
+        w_mean, w_variance = cast("EagerTensorProtocol", cast("EagerCallableProtocol", weighted_moments)(t, 1, t))
         assert isinstance(w_mean, Tensor)
         assert isinstance(w_variance, Tensor)
         assert w_mean.shape == (1, 2)

@@ -26,9 +26,7 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_kwarg_translation_model() -> None:
@@ -44,7 +42,11 @@ def test_load_backend_mappings_cache_and_paths() -> None:
 
     # Both mappings.yaml and eager_mappings.yaml exist
     def fake_exists(p: str) -> bool:
-        """Test function fake_exists."""
+        """Test function fake_exists.
+
+        Args:
+            p: Test parameter `p`.
+        """
         return True
 
     mock_yaml_data = {"operations": {"add": {"target_api": "math.add"}}}
@@ -70,50 +72,58 @@ def test_load_backend_mappings_missing_files() -> None:
 
 
 def test_read_and_merge_variations(tmp_path: EagerTensorProtocol) -> None:
-    """Test _read_and_merge with different YAML structures."""
+    """Test _read_and_merge with different YAML structures.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     # Dict with operations key
     f1 = tmp_path / "f1.yaml"
     f1.write_text("operations:\n  op1:\n    target_api: a.b\n", encoding="utf-8")
     t1 = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(cast("Callable[..., EagerTensorProtocol]", str)(f1), t1)
+    cast("EagerCallableProtocol", _read_and_merge)(cast("EagerCallableProtocol", str)(f1), t1)
     assert "op1" in t1
 
     # Dict without operations key
     f2 = tmp_path / "f2.yaml"
     f2.write_text("op2:\n  target_api: c.d\n", encoding="utf-8")
     t2 = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(cast("Callable[..., EagerTensorProtocol]", str)(f2), t2)
+    cast("EagerCallableProtocol", _read_and_merge)(cast("EagerCallableProtocol", str)(f2), t2)
     assert "op2" in t2
 
     # Non-dict data (e.g. list)
     f3 = tmp_path / "f3.yaml"
     f3.write_text("- item1\n- item2\n", encoding="utf-8")
     t3 = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(cast("Callable[..., EagerTensorProtocol]", str)(f3), t3)
+    cast("EagerCallableProtocol", _read_and_merge)(cast("EagerCallableProtocol", str)(f3), t3)
     assert t3 == {}
 
 
 def test_load_yaml_dir(tmp_path: EagerTensorProtocol) -> None:
-    """Test _load_yaml_dir with directory of yaml and non-yaml files."""
+    """Test _load_yaml_dir with directory of yaml and non-yaml files.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     d = tmp_path / "yamls"
     d.mkdir()
     (d / "ignored.txt").write_text("hello", encoding="utf-8")
     (d / "valid.yaml").write_text("opX: {target_api: x.y}\n", encoding="utf-8")
 
     res = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _load_yaml_dir)(cast("Callable[..., EagerTensorProtocol]", str)(d), res)
+    cast("EagerCallableProtocol", _load_yaml_dir)(cast("EagerCallableProtocol", str)(d), res)
     assert "opX" in res
 
     # Non-directory
     empty_res = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _load_yaml_dir)(cast("Callable[..., EagerTensorProtocol]", str)(tmp_path / "not_a_dir"), empty_res)
+    cast("EagerCallableProtocol", _load_yaml_dir)(cast("EagerCallableProtocol", str)(tmp_path / "not_a_dir"), empty_res)
     assert empty_res == {}
 
 
 def test_resolve_custom_code() -> None:
     """Test _resolve_custom_code branches."""
     res = _resolve_custom_code("lambda x: x * 2", None)
-    assert cast("Callable[..., EagerTensorProtocol]", res)(5) == 10
+    assert cast("EagerCallableProtocol", res)(5) == 10
 
     # With backend_module having globals and property raising error
     class MockBackend:
@@ -127,7 +137,7 @@ def test_resolve_custom_code() -> None:
             raise RuntimeError("Property access failed")
 
     res2 = _resolve_custom_code("lambda x: x + MY_VAR", MockBackend())
-    assert cast("Callable[..., EagerTensorProtocol]", res2)(3) == 10
+    assert cast("EagerCallableProtocol", res2)(3) == 10
 
     # Invalid code
     assert _resolve_custom_code("lambda invalid syntax", None) is None
@@ -198,7 +208,7 @@ def test_resolve_target_api() -> None:
     """Test resolve_target_api paths and branches."""
     # custom_op
     res = resolve_target_api("custom_op", custom_code="lambda x: x * 2")
-    assert cast("Callable[..., EagerTensorProtocol]", res)(5) == 10
+    assert cast("EagerCallableProtocol", res)(5) == 10
 
     # Empty api_str
     assert resolve_target_api("") is None
@@ -215,6 +225,7 @@ def test_resolve_target_api() -> None:
     dummy = type("Dummy", (), {})()
 
     def dummy_func() -> EagerValue:
+        """Return dummy constant 777."""
         return 777
 
     setattr(dummy, "special.pkg.func", dummy_func)
@@ -316,7 +327,11 @@ def test_dispatch_eager_op() -> None:
         """Test class CallableObj."""
 
         def do_method(self, val: int) -> int:
-            """Test function do_method."""
+            """Test function do_method.
+
+            Args:
+                val: Test parameter `val`.
+            """
             return val * 10
 
     c_obj = CallableObj()
@@ -343,7 +358,11 @@ def test_dispatch_eager_op() -> None:
 
 
 def test_read_and_merge_with_operation(tmp_path: pathlib.Path) -> None:
-    """Test _read_and_merge when file contains top-level operation key."""
+    """Test _read_and_merge when file contains top-level operation key.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     yaml_file = tmp_path / "op.yaml"
     yaml_file.write_text("operation: test_single_op\ntarget_api: foo.bar\n")
     target: dict[str, EagerValue] = {}

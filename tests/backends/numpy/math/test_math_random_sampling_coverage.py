@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_rando
 from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorPermutation
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_math_random_sampling_ops() -> None:
@@ -26,13 +24,13 @@ def test_math_random_sampling_ops() -> None:
     perm_op = rand_module._np_linearoperatorpermutation(np)
     assert isinstance(perm_op, LinearOperatorPermutation)
     reg_perm = numpy_eager_registry.get("LinearOperatorPermutation")
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", reg_perm)(np), LinearOperatorPermutation)
+    assert isinstance(cast("EagerCallableProtocol", reg_perm)(np), LinearOperatorPermutation)
 
     # SobolSample
     sobol = rand_module._np_sobolsample(np, dim=3, num_results=10, skip=2)
     assert cast("EagerTensorProtocol", getattr(sobol, "shape")) == (10, 3)
     reg_sobol = numpy_eager_registry.get("SobolSample")
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", reg_sobol)(np, dim=3, num_results=10, skip=2), "shape")) == (10, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", reg_sobol)(np, dim=3, num_results=10, skip=2), "shape")) == (10, 3)
 
     # RandomCategorical branches
     logits = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -50,10 +48,10 @@ def test_math_random_sampling_ops() -> None:
 
     # RandomPermutation 0-d and 1-d
     perm_0d = rand_module._np_randompermutation(np, np.array(5))
-    assert cast("Callable[..., EagerTensorProtocol]", len)(perm_0d) == 5
+    assert cast("EagerCallableProtocol", len)(perm_0d) == 5
 
     perm_1d = rand_module._np_randompermutation(np, np.array([10, 20, 30]))
-    assert cast("Callable[..., EagerTensorProtocol]", len)(perm_1d) == 3
+    assert cast("EagerCallableProtocol", len)(perm_1d) == 3
 
     reg_rand_perm = numpy_eager_registry.get("RandomPermutation")
     assert reg_rand_perm is not None
@@ -69,7 +67,7 @@ def test_math_random_sampling_ops() -> None:
     assert isinstance(norm_none, float)
 
     reg_norm = numpy_eager_registry.get("RandomTruncatedNormal")
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", reg_norm)(np, shape=(2, 2)), "shape")) == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", reg_norm)(np, shape=(2, 2)), "shape")) == (2, 2)
 
     # RandomBernoulli branches
     bern_kw = rand_module._np_randombernoulli(np, shape=(2, 3), p=0.8)
@@ -82,4 +80,4 @@ def test_math_random_sampling_ops() -> None:
     assert isinstance(bern_none, (int, np.integer))
 
     reg_bern = numpy_eager_registry.get("RandomBernoulli")
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", reg_bern)(np, shape=(2, 2)), "shape")) == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", reg_bern)(np, shape=(2, 2)), "shape")) == (2, 2)

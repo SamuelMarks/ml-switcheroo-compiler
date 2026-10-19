@@ -1,4 +1,4 @@
-"""Nn ops module."""
+"""Implementation of nn ops operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.nn_ops`)."""
 
 from __future__ import annotations
 

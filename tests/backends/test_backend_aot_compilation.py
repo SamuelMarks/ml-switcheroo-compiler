@@ -23,7 +23,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _to_tensor(arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
@@ -220,23 +220,23 @@ def test_jax_distributed_visitor_coverage() -> None:
         generator: FakeGen = FakeGen()
 
     # Test _extract_code_lines target traversal
-    assert cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor._extract_code_lines)(cast("Callable[..., EagerTensorProtocol]", DummyVisitorWithGen)()) == ["# existing"]
-    assert cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor._extract_code_lines)(cast("Callable[..., EagerTensorProtocol]", DummyTargetNonListCode)()) == []
-    assert cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor._extract_code_lines)(cast("Callable[..., EagerTensorProtocol]", DummyEmpty)()) == []
+    assert cast("EagerCallableProtocol", JaxDistributedVisitor._extract_code_lines)(cast("EagerCallableProtocol", DummyVisitorWithGen)()) == ["# existing"]
+    assert cast("EagerCallableProtocol", JaxDistributedVisitor._extract_code_lines)(cast("EagerCallableProtocol", DummyTargetNonListCode)()) == []
+    assert cast("EagerCallableProtocol", JaxDistributedVisitor._extract_code_lines)(cast("EagerCallableProtocol", DummyEmpty)()) == []
 
     gen = JAXCodeGenerator(IRGraph())
 
     # Test visit_Send when token already exists
     gen.code.append("    token = jax.lax.create_token()")
     n_send = LogicalNode(id="send_node", op_type="Send", inputs=["x"], attributes={"dst_rank": 1})
-    cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_Send)(gen, n_send, ["x"])
+    cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Send)(gen, n_send, ["x"])
     token_creates = [line for line in gen.code if "jax.lax.create_token()" in line]
     assert len(token_creates) == 1
 
     # Test visit_Recv when token does NOT exist yet (fresh generator)
     gen_fresh = JAXCodeGenerator(IRGraph())
     n_recv0 = LogicalNode(id="recv_fresh", op_type="Recv", inputs=[], attributes={"src_rank": 1})
-    cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_Recv)(gen_fresh, n_recv0, [])
+    cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Recv)(gen_fresh, n_recv0, [])
     assert any("token = jax.lax.create_token()" in line for line in gen_fresh.code)
 
     # Test visit_Recv when token already exists
@@ -246,28 +246,28 @@ def test_jax_distributed_visitor_coverage() -> None:
         inputs=[],
         attributes={"src_rank": 0, "shape": (3, 3), "dtype": "jnp.bfloat16"},
     )
-    res_recv1 = cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_Recv)(gen, n_recv1, [])
+    res_recv1 = cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Recv)(gen, n_recv1, [])
     assert res_recv1 == "v_recv_shape_dict"
     assert any("shape=(3, 3), dtype=jnp.bfloat16" in line for line in gen.code)
 
     # Test visit_Recv with scalar integer shape metadata
     n_recv2 = LogicalNode(id="recv_scalar_shape", op_type="Recv", inputs=[], attributes={"src_rank": 2})
     n_recv2.shape_metadata = 8
-    res_recv2 = cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_Recv)(gen, n_recv2, [])
+    res_recv2 = cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Recv)(gen, n_recv2, [])
     assert res_recv2 == "v_recv_scalar_shape"
     assert any("shape=(8,)" in line for line in gen.code)
 
     # Test visit_AllGather
     n_ag = LogicalNode(id="ag", op_type="AllGather", inputs=["x"], attributes={"axis_name": "'data'"})
-    assert cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_AllGather)(gen, n_ag, ["x"]) == "jax.lax.all_gather(x, axis_name='data')"
+    assert cast("EagerCallableProtocol", JaxDistributedVisitor.visit_AllGather)(gen, n_ag, ["x"]) == "jax.lax.all_gather(x, axis_name='data')"
 
     # Test visit_ReduceScatter
     n_rs = LogicalNode(id="rs", op_type="ReduceScatter", inputs=["x"], attributes={"axis": 1, "axis_name": "'proc'", "op": "jax.lax.pmax"})
-    assert cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_ReduceScatter)(gen, n_rs, ["x"]) == "jax.lax.reduce_scatter(x, jax.lax.pmax, scatter_dimension=1, axis_name='proc')"
+    assert cast("EagerCallableProtocol", JaxDistributedVisitor.visit_ReduceScatter)(gen, n_rs, ["x"]) == "jax.lax.reduce_scatter(x, jax.lax.pmax, scatter_dimension=1, axis_name='proc')"
 
     # Test visit_AllReduce
     n_ar = LogicalNode(id="ar", op_type="AllReduce", inputs=["x"], attributes={"axis_name": "'mesh'", "op": "pmean"})
-    assert cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_AllReduce)(gen, n_ar, ["x"]) == "jax.lax.pmean(x, axis_name='mesh')"
+    assert cast("EagerCallableProtocol", JaxDistributedVisitor.visit_AllReduce)(gen, n_ar, ["x"]) == "jax.lax.pmean(x, axis_name='mesh')"
 
 
 def test_pytorch_compile_aot_impl() -> None:
@@ -653,7 +653,13 @@ def test_compiled_artifact_and_base_generator_caching() -> None:
     called = cast("list[EagerTensorProtocol]", [])
 
     def dummy_fn(*a: EagerValue, **k: EagerValue) -> EagerValue:
-        return (cast("Callable[..., EagerTensorProtocol]", called.append)((a, k)), 42)[1]
+        """Record call arguments and return 42.
+
+        Args:
+            a: Test parameter `a`.
+            k: Test parameter `k`.
+        """
+        return (cast("EagerCallableProtocol", called.append)((a, k)), 42)[1]
 
     artifact = CompiledArtifact(callable_fn=dummy_fn, binary_bytes=b"test", source_code="code")
     assert artifact(1, x=2) == 42
@@ -680,7 +686,12 @@ def test_compiled_artifact_and_base_generator_caching() -> None:
         call_count = 0
 
         def _compile_aot_impl(self, g: IRGraph, **kwargs: EagerValue) -> EagerValue:
-            """Test function _compile_aot_impl."""
+            """Test function _compile_aot_impl.
+
+            Args:
+                g: Test parameter `g`.
+                kwargs: Test parameter `kwargs`.
+            """
             self.call_count += 1
             return CompiledArtifact(callable_fn=lambda *a: 100, binary_bytes=b"bin")
 

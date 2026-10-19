@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_cuda_generator() -> None:
@@ -38,7 +36,11 @@ def test_cuda_generator_coverage() -> None:
 
 
 def test_cuda_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_cuda_missing_yaml."""
+    """Test function test_cuda_missing_yaml.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
 
     monkeypatch.setattr(os.path, "exists", lambda p: False)
@@ -46,11 +48,15 @@ def test_cuda_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
     graph = IRGraph()
     gen = CudaCodeGenerator(graph)
     assert gen.graph is graph
-    assert getattr(gen, "target_backend", None) == "cuda" or True
+    assert isinstance(gen.config.templates, dict)
 
 
 def test_cuda_runner_init_no_cupy(monkeypatch: EagerTensorProtocol) -> None:
-    """Test CUDARunner initialization without cupy."""
+    """Test CUDARunner initialization without cupy.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     monkeypatch.setattr("ml_switcheroo_compiler.backends.cuda.cuda.cupy", None)
 
     with patch("ctypes.util.find_library", return_value="libcuda.so"):
@@ -150,7 +156,7 @@ def test_cuda_runner_write_ctypes_fail() -> None:
 def test_cuda_runner_write_no_ptr() -> None:
     """Test function test_cuda_runner_write_no_ptr."""
     runner = CUDARunner()
-    assert cast("Callable[..., EagerTensorProtocol]", runner.write_buffer)(None, b"test") is None
+    assert cast("EagerCallableProtocol", runner.write_buffer)(None, b"test") is None
 
 
 def test_cuda_runner_read_cupy() -> None:
@@ -192,7 +198,7 @@ def test_cuda_runner_read_ctypes_fail() -> None:
 def test_cuda_runner_read_no_ptr() -> None:
     """Test function test_cuda_runner_read_no_ptr."""
     runner = CUDARunner()
-    assert cast("Callable[..., EagerTensorProtocol]", runner.read_buffer)(None, 4) == b"\x00" * 4
+    assert cast("EagerCallableProtocol", runner.read_buffer)(None, 4) == b"\x00" * 4
 
 
 def test_cuda_runner_free_ctypes() -> None:
@@ -212,15 +218,14 @@ def test_cuda_runner_free_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", mock_cupy):
         runner = CUDARunner()
         runner.free_buffer(ctypes.c_void_p(123))
-        # Verify that freeing a valid pointer calls the cupy allocator interface or at least completes without error
-        assert getattr(runner, "context", None) is None or True
+        assert runner.mode == "cupy"
 
 
 def test_cuda_runner_free_no_ptr() -> None:
     """Test function test_cuda_runner_free_no_ptr."""
     runner = CUDARunner()
-    cast("Callable[..., EagerTensorProtocol]", runner.free_buffer)(None)
-    assert runner is not None or runner is None
+    cast("EagerCallableProtocol", runner.free_buffer)(None)
+    assert isinstance(runner, CUDARunner)
 
 
 def test_cuda_runner_compile_cupy() -> None:
@@ -318,7 +323,11 @@ def test_extract_kernel_name_fallback() -> None:
 
 
 def test_cuda_init_yaml_edge_cases(monkeypatch: EagerTensorProtocol) -> None:
-    """Test non-yaml files and non-dict op_data in yaml_dir, and empty fallback yaml."""
+    """Test non-yaml files and non-dict op_data in yaml_dir, and empty fallback yaml.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
 
     monkeypatch.setattr(os.path, "isdir", lambda p: True)
@@ -381,7 +390,11 @@ def test_marshall_kernel_params() -> None:
         """Test class CustomVal."""
 
         def __init__(self, val: int) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.value = val
 
     args = [
@@ -391,7 +404,7 @@ def test_marshall_kernel_params() -> None:
         CustomVal(999),
         "100",
     ]
-    res = cast("Callable[..., EagerTensorProtocol]", _marshall_kernel_params)(args)
+    res = cast("EagerCallableProtocol", _marshall_kernel_params)(args)
     assert res is not None
     assert len(res) == 5
 
@@ -414,14 +427,24 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
         mock_nvrtc.nvrtcCompileProgram.return_value = 0
 
         def get_ptx_size_side_effect(prog: EagerValue, size_ptr: EagerValue) -> EagerValue:
-            """Test function get_ptx_size_side_effect."""
+            """Test function get_ptx_size_side_effect.
+
+            Args:
+                prog: Test parameter `prog`.
+                size_ptr: Test parameter `size_ptr`.
+            """
             setattr(getattr(size_ptr, "_obj"), "value", 64)
             return 0
 
         mock_nvrtc.nvrtcGetPTXSize.side_effect = get_ptx_size_side_effect
 
         def get_ptx_side_effect(prog: EagerValue, buf: EagerValue) -> EagerValue:
-            """Test function get_ptx_side_effect."""
+            """Test function get_ptx_side_effect.
+
+            Args:
+                prog: Test parameter `prog`.
+                buf: Test parameter `buf`.
+            """
             setattr(buf, "value", b"compiled_ptx_code")
             return 0
 
@@ -444,14 +467,24 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
         mock_nvrtc.nvrtcCompileProgram.return_value = 2
 
         def get_log_size_side_effect(prog: EagerValue, size_ptr: EagerValue) -> EagerValue:
-            """Test function get_log_size_side_effect."""
+            """Test function get_log_size_side_effect.
+
+            Args:
+                prog: Test parameter `prog`.
+                size_ptr: Test parameter `size_ptr`.
+            """
             setattr(getattr(size_ptr, "_obj"), "value", 64)
             return 0
 
         mock_nvrtc.nvrtcGetProgramLogSize.side_effect = get_log_size_side_effect
 
         def get_log_side_effect(prog: EagerValue, buf: EagerValue) -> EagerValue:
-            """Test function get_log_side_effect."""
+            """Test function get_log_side_effect.
+
+            Args:
+                prog: Test parameter `prog`.
+                buf: Test parameter `buf`.
+            """
             setattr(buf, "value", b"syntax error in kernel")
             return 0
 
@@ -539,8 +572,8 @@ def test_cuda_runner_cupy_nvrtc_exception_fallback() -> None:
         mock_nvrtc = MagicMock()
         mock_nvrtc.nvrtcCreateProgram.return_value = 0
         mock_nvrtc.nvrtcCompileProgram.return_value = 0
-        mock_nvrtc.nvrtcGetPTXSize.side_effect = lambda prog, s: (cast("Callable[..., EagerTensorProtocol]", setattr)(getattr(s, "_obj"), "value", 32), 0)[1]
-        mock_nvrtc.nvrtcGetPTX.side_effect = lambda prog, b: (cast("Callable[..., EagerTensorProtocol]", setattr)(b, "value", b"ptx_fallback"), 0)[1]
+        mock_nvrtc.nvrtcGetPTXSize.side_effect = lambda prog, s: (cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 32), 0)[1]
+        mock_nvrtc.nvrtcGetPTX.side_effect = lambda prog, b: (cast("EagerCallableProtocol", setattr)(b, "value", b"ptx_fallback"), 0)[1]
         mock_nvrtc.nvrtcDestroyProgram.return_value = 0
 
         with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc):
@@ -629,7 +662,7 @@ def _test_cuda_additional_branches_part_2(_state: dict[str, EagerTensorProtocol]
     setattr(runner_exec, "synchronize", lambda: None)
     g = IRGraph()
     g.outputs = ["out_0"]
-    cast("Callable[..., EagerTensorProtocol]", runner_exec.execute_graph)(g, {"barr": cast("Callable[..., EagerTensorProtocol]", bytearray)(b"\x00\x00\x00\x00")})
+    cast("EagerCallableProtocol", runner_exec.execute_graph)(g, {"barr": cast("EagerCallableProtocol", bytearray)(b"\x00\x00\x00\x00")})
 
     # 4. FusedElementwise with empty inputs
     g_empty = IRGraph()
@@ -676,8 +709,8 @@ def _test_cuda_additional_branches_part_4(_state: dict[str, EagerTensorProtocol]
             mock_nvrtc_fail = MagicMock(spec=["nvrtcCreateProgram", "nvrtcCompileProgram", "nvrtcGetProgramLogSize", "nvrtcGetProgramLog"])
             mock_nvrtc_fail.nvrtcCreateProgram.return_value = 0
             mock_nvrtc_fail.nvrtcCompileProgram.return_value = 1
-            mock_nvrtc_fail.nvrtcGetProgramLogSize.side_effect = lambda prog, s: (cast("Callable[..., EagerTensorProtocol]", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
-            mock_nvrtc_fail.nvrtcGetProgramLog.side_effect = lambda prog, b: (cast("Callable[..., EagerTensorProtocol]", setattr)(b, "value", b"err"), 0)[1]
+            mock_nvrtc_fail.nvrtcGetProgramLogSize.side_effect = lambda prog, s: (cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
+            mock_nvrtc_fail.nvrtcGetProgramLog.side_effect = lambda prog, b: (cast("EagerCallableProtocol", setattr)(b, "value", b"err"), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc_fail):
                 with pytest.raises(RuntimeError, match="NVRTC compilation failed"):
                     runner_ctypes.compile_cuda_to_ptx("code")
@@ -686,8 +719,8 @@ def _test_cuda_additional_branches_part_4(_state: dict[str, EagerTensorProtocol]
             mock_nvrtc_ok = MagicMock(spec=["nvrtcCreateProgram", "nvrtcCompileProgram", "nvrtcGetPTXSize", "nvrtcGetPTX"])
             mock_nvrtc_ok.nvrtcCreateProgram.return_value = 0
             mock_nvrtc_ok.nvrtcCompileProgram.return_value = 0
-            mock_nvrtc_ok.nvrtcGetPTXSize.side_effect = lambda prog, s: (cast("Callable[..., EagerTensorProtocol]", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
-            mock_nvrtc_ok.nvrtcGetPTX.side_effect = lambda prog, b: (cast("Callable[..., EagerTensorProtocol]", setattr)(b, "value", b"ptx_code"), 0)[1]
+            mock_nvrtc_ok.nvrtcGetPTXSize.side_effect = lambda prog, s: (cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
+            mock_nvrtc_ok.nvrtcGetPTX.side_effect = lambda prog, b: (cast("EagerCallableProtocol", setattr)(b, "value", b"ptx_code"), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc_ok):
                 assert runner_ctypes.compile_cuda_to_ptx("code") == "ptx_code"
     getattr(_state, "update")({"mock_nvrtc_fail": mock_nvrtc_fail, "mock_nvrtc_ok": mock_nvrtc_ok, "runner_ctypes": runner_ctypes})
@@ -754,15 +787,15 @@ def _test_cuda_additional_branches_part_6(_state: dict[str, EagerTensorProtocol]
     setattr(mock_cuda.cuLaunchKernel, "return_value", 0)
     unmapped_node = IRNode("unmapped", "UnsupportedUnknownOp")
     gen_cuda = CudaCodeGenerator(IRGraph())
-    cast("Callable[..., EagerTensorProtocol]", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_cuda, "ptx", {})
+    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_cuda, "ptx", {})
 
     mapped_node = IRNode("mapped", "Add", inputs=[])
     setattr(getattr(getattr(gen_cuda.config, "templates"), "__getitem__")("add"), "workgroup_size", [16, 16, 2])
-    cast("Callable[..., EagerTensorProtocol]", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_cuda, "ptx", {})
+    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_cuda, "ptx", {})
 
     # FusedElementwise dispatch
     fused_node = IRNode("fused", "FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
-    cast("Callable[..., EagerTensorProtocol]", runner_sync._dispatch_compute_node)(fused_node, 0, gen_cuda, "ptx", {})
+    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(fused_node, 0, gen_cuda, "ptx", {})
 
     # execute_graph with an unmapped op node
     g_unmapped = IRGraph()
@@ -783,7 +816,7 @@ def test_cuda_additional_branches() -> None:
     _test_cuda_additional_branches_part_4(_state)
     _test_cuda_additional_branches_part_5(_state)
     _test_cuda_additional_branches_part_6(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -798,7 +831,11 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
             mock_lib_dev.cuInit.return_value = 0
 
             def set_count_positive(count_ref: EagerValue) -> EagerValue:
-                """Test function set_count_positive."""
+                """Test function set_count_positive.
+
+                Args:
+                    count_ref: Test parameter `count_ref`.
+                """
                 setattr(getattr(count_ref, "_obj"), "value", 1)
                 return 0
 
@@ -807,7 +844,11 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
                 assert CUDARunner.is_available() is True
 
             def set_count_zero(count_ref: EagerValue) -> EagerValue:
-                """Test function set_count_zero."""
+                """Test function set_count_zero.
+
+                Args:
+                    count_ref: Test parameter `count_ref`.
+                """
                 setattr(getattr(count_ref, "_obj"), "value", 0)
                 return 0
 
@@ -820,7 +861,7 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
     lines = cast("list[EagerTensorProtocol]", [])
     # FusedElementwise: input 'x' is freed, input 'y' is in inputs_set so skipped
     fused_node = IRNode("fused_node", "FusedElementwise", inputs=["x", "y"], attributes={"scalar_expr": "in0 + in1"})
-    cast("Callable[..., EagerTensorProtocol]", gen._emit_node)(
+    cast("EagerCallableProtocol", gen._emit_node)(
         fused_node,
         0,
         {"x": "d_x", "y": "d_y"},
@@ -966,7 +1007,7 @@ def test_cuda_full_coverage_branches() -> None:
     _test_cuda_full_coverage_branches_part_2(_state)
     _test_cuda_full_coverage_branches_part_3(_state)
     _test_cuda_full_coverage_branches_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_cuda_streams_and_events_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -984,7 +1025,13 @@ def _test_cuda_streams_and_events_part_1(_state: dict[str, EagerTensorProtocol])
     mock_lib.cuEventRecord.return_value = 0
 
     def mock_elapsed(ptr: EagerValue, s: EagerValue, e: EagerValue) -> EagerValue:
-        """Test function mock_elapsed."""
+        """Test function mock_elapsed.
+
+        Args:
+            ptr: Test parameter `ptr`.
+            s: Test parameter `s`.
+            e: Test parameter `e`.
+        """
         setattr(getattr(ptr, "contents"), "value", 12.5)
         return 0
 
@@ -1072,7 +1119,7 @@ def test_cuda_streams_and_events() -> None:
     _test_cuda_streams_and_events_part_1(_state)
     _test_cuda_streams_and_events_part_2(_state)
     _test_cuda_streams_and_events_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_cuda_generator_synthesized_kernels_and_runner_none_lib() -> None:
@@ -1152,7 +1199,11 @@ def test_cuda_prepare_input_buffers() -> None:
         """Test class _WrapperWithData."""
 
         def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                arr: Test parameter `arr`.
+            """
             self.data = arr
 
     graph = IRGraph()
@@ -1165,7 +1216,7 @@ def test_cuda_prepare_input_buffers() -> None:
     wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
     list_raw = [1, 2, 3]
 
-    buffers = cast("Callable[..., EagerTensorProtocol]", _prepare_cuda_input_buffers)(
+    buffers = cast("EagerCallableProtocol", _prepare_cuda_input_buffers)(
         graph,
         (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw),
     )
@@ -1186,7 +1237,11 @@ def test_cuda_evaluate_fallback() -> None:
         """Test class _MockTensor."""
 
         def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
     # 1. Single output graph
@@ -1202,7 +1257,7 @@ def test_cuda_evaluate_fallback() -> None:
     assert res_single is not None
 
     # Test with arg.data wrapper and extra arguments
-    res_wrapper = cast("Callable[..., EagerTensorProtocol]", _evaluate_cuda_fallback)(g_single, (cast("Callable[..., EagerTensorProtocol]", _MockTensor)(arr), "extra_arg"))
+    res_wrapper = cast("EagerCallableProtocol", _evaluate_cuda_fallback)(g_single, (cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
     assert res_wrapper is not None
 
     # 2. Multi output graph
@@ -1269,8 +1324,8 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     mock_runner.execute_graph.return_value = {"out": np.array([42.0])}
     with patch.object(CUDARunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner):
-            res_avail = cast("Callable[..., EagerTensorProtocol]", artifact.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
-            assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_avail, cast("Callable[..., EagerTensorProtocol]", np.array)([42.0]))
+            res_avail = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            assert cast("EagerCallableProtocol", np.array_equal)(res_avail, cast("EagerCallableProtocol", np.array)([42.0]))
 
     # 3b. Multi output
     g_multi = IRGraph()
@@ -1287,7 +1342,7 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
     with patch.object(CUDARunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner_multi):
-            res_m = cast("Callable[..., EagerTensorProtocol]", art_multi.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+            res_m = cast("EagerCallableProtocol", art_multi.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_m == (100, 200)
 
     # 3c. Exception inside CUDARunner block falls back to evaluator
@@ -1295,12 +1350,12 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     mock_runner_err.execute_graph.side_effect = RuntimeError("GPU crash")
     with patch.object(CUDARunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner_err):
-            res_err = cast("Callable[..., EagerTensorProtocol]", artifact.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+            res_err = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_err is not None
 
     # 4. Runner when CUDARunner.is_available() is False -> fallback
     with patch.object(CUDARunner, "is_available", return_value=False):
-        res_fallback = cast("Callable[..., EagerTensorProtocol]", artifact.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+        res_fallback = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
         assert res_fallback is not None
 
 

@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 device = Device(DeviceType.CPU, 0)
 
 
@@ -38,7 +36,7 @@ def test_while_loop_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("EagerTensorProtocol", val) < cast("EagerTensorProtocol", 5), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((), DType.Bool, device))
+            return cast("EagerCallableProtocol", Tensor)(cast("EagerTensorProtocol", val) < cast("EagerTensorProtocol", 5), cast("EagerCallableProtocol", TensorConfig)((), DType.Bool, device))
 
         def body_fn(val: EagerValue) -> EagerValue:
             """Body fn.
@@ -51,7 +49,7 @@ def test_while_loop_eager() -> None:
             """
             return cast("EagerTensorProtocol", val) + cast("EagerTensorProtocol", 1)
 
-        res = cast("Callable[..., EagerTensorProtocol]", while_loop)(cond_fn, body_fn, 0)
+        res = cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, 0)
         assert res == 5
 
 
@@ -87,7 +85,7 @@ def test_while_loop_trace() -> None:
 
         init_val = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
         global_tracing_state.start_tracing()
-        res = cast("Callable[..., EagerTensorProtocol]", while_loop)(cond_fn, body_fn, init_val)
+        res = cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, init_val)
         assert res.dtype == DType.Float32
         global_tracing_state.stop_tracing()
 
@@ -126,7 +124,7 @@ def test_while_loop_tuple_init() -> None:
             (v1, v2) = cast("EagerTensorProtocol", state)
             return (Tensor(cast("EagerTensorProtocol", getattr(v1, "data")) + 1, TensorConfig((), DType.Int32, device)), v2)
 
-        (res1, _res2) = cast("Callable[..., EagerTensorProtocol]", while_loop)(cond_fn, body_fn, (t1, t2))
+        (res1, _res2) = cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, (t1, t2))
         assert res1.data == 2
     with ConfigContext(eager_mode=False):
         pt1 = Tensor(ProxyTensor(id="mock1", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
@@ -158,7 +156,7 @@ def test_while_loop_tuple_init() -> None:
 
         global_tracing_state.start_tracing()
         try:
-            res_trace = cast("Callable[..., EagerTensorProtocol]", while_loop)(cond_fn_trace, body_fn_trace, [pt1, pt2])
+            res_trace = cast("EagerCallableProtocol", while_loop)(cond_fn_trace, body_fn_trace, [pt1, pt2])
             assert isinstance(res_trace, list)
             assert len(res_trace) == 2
         finally:

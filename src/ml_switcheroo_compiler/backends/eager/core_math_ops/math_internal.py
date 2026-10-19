@@ -1,4 +1,4 @@
-"""math_internal module."""
+"""Implementation of math internal operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal`)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import builtins  # noqa: F401
 import typing  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -121,15 +121,16 @@ def _np_tensorarraywrite(backend_module: EagerValue, *args: EagerValue, **kwargs
         res[index] = value
         return res
 
-    if isinstance(arr, host_backend.ndarray):
+    mod = _resolve_eager_mod(backend_module)
+    if isinstance(arr, mod.ndarray):
         if index < arr.shape[0]:
             res_arr = arr.copy()
             res_arr[index] = value
             return cast(EagerValue, res_arr)
         pad_shape = list(arr.shape)
         pad_shape[0] = index - arr.shape[0] + 1
-        pad = host_backend.zeros(pad_shape, dtype=arr.dtype)
-        res_arr = host_backend.concatenate([arr, pad], axis=0)
+        pad = mod.zeros(pad_shape, dtype=arr.dtype)
+        res_arr = mod.concatenate([arr, pad], axis=0)
         res_arr[index] = value
         return cast(EagerValue, res_arr)
 
@@ -155,8 +156,9 @@ def _np_topk(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     """
     arr = args[0]
     k = int(cast(int, args[1])) if len(args) > 1 else 1
-    if isinstance(arr, (list, host_backend.ndarray)):
-        arr_np = host_backend.array(arr)
-        idx = host_backend.argsort(arr_np)[-k:][::-1]
+    mod = _resolve_eager_mod(backend_module)
+    if isinstance(arr, (list, mod.ndarray)):
+        arr_np = mod.array(arr)
+        idx = mod.argsort(arr_np)[-k:][::-1]
         return arr_np[idx], idx
     return [0], [0]

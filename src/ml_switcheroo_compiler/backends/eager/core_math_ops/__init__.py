@@ -1,4 +1,4 @@
-"""core_math_ops module."""
+"""Public package exports and initialization for `ml_switcheroo_compiler.backends.eager.core_math_ops`."""
 
 import builtins  # noqa: F401
 

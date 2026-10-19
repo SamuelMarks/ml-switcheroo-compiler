@@ -9,10 +9,52 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import median_filter_eager
 from ml_switcheroo_compiler.backends.eager.signal import gaussian_blur_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.configs import BlurConfig
+
+
+@numpy_eager_registry.register("ExtractVolumePatches")
+def _np_extract_volume_patches(
+    backend_module: ModuleType,
+    *args: EagerValue,
+    **kwargs: EagerValue,
+) -> EagerValue:
+    """Extract 3D volume patches using NumPy `lib.stride_tricks.sliding_window_view`.
+
+    Args:
+        backend_module (ModuleType): Active NumPy backend module.
+        *args (EagerValue): Positional arguments containing 5D input tensor and optional kernel/stride sizes.
+        **kwargs (EagerValue): Keyword arguments (`ksizes`, `strides`).
+
+    Returns:
+        EagerValue: Extracted 6D reshaped volume patches tensor.
+    """
+    _ = backend_module
+    if not args:
+        return cast(EagerValue, np.asarray([]))
+    input_tensor = np.asarray(args[0])
+    ksizes = cast("list[int]", kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
+    strides = cast("list[int]", kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
+
+    if input_tensor.ndim != 5:
+        return cast(EagerValue, input_tensor)
+
+    try:
+        view = np.lib.stride_tricks.sliding_window_view(input_tensor, tuple(ksizes))
+    except ValueError:
+        return cast(EagerValue, input_tensor)
+
+    step_view = view[
+        :: int(strides[0]),
+        :: int(strides[1]),
+        :: int(strides[2]),
+        :: int(strides[3]),
+        :: int(strides[4]),
+    ]
+    out_shape = step_view.shape[:5] + (-1,)
+    return cast(EagerValue, step_view.reshape(out_shape))
 
 
 @numpy_eager_registry.register("Degeneration")
@@ -78,7 +120,7 @@ def _np_median_filter(
     Returns:
         np.ndarray: Result.
     """
-    return np.asarray(cast("Callable[..., EagerTensorProtocol]", median_filter_eager)(backend_module, images, **kwargs))
+    return np.asarray(cast("EagerCallableProtocol", median_filter_eager)(backend_module, images, **kwargs))
 
 
 @numpy_eager_registry.register("Sharpen")

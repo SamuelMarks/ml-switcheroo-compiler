@@ -16,9 +16,7 @@ from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.ops.io import SparsePlus, SparseSigmoid, _fallback_load, set_default_stream, set_memory_limit, set_wired_limit, sparse_plus, sparse_sigmoid
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_io_fallback_load() -> None:
@@ -228,7 +226,7 @@ def test_io_functions() -> None:
     _test_io_functions_part_3(_state)
     _test_io_functions_part_4(_state)
     _test_io_functions_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_set_limits_not_mlx() -> None:
@@ -241,7 +239,7 @@ def test_set_limits_not_mlx() -> None:
     set_memory_limit(1024)
     set_wired_limit(512)
     core_config.backend = orig_backend
-    assert orig_backend is not None or orig_backend is None
+    assert core_config.backend == orig_backend
 
 
 def test_io_stubs() -> None:
@@ -273,8 +271,8 @@ def test_io_stubs() -> None:
         pass
         pass
     fh = io.TFRecordWriter("path")
-    assert cast("Callable[..., EagerTensorProtocol]", fh.write)(None) is None
-    assert cast("Callable[..., EagerTensorProtocol]", fh.close)() is None
+    assert cast("EagerCallableProtocol", fh.write)(None) is None
+    assert cast("EagerCallableProtocol", fh.close)() is None
 
 
 def test_io_reading_writing() -> None:
@@ -288,7 +286,7 @@ def test_io_reading_writing() -> None:
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, "test.txt")
-                assert isinstance(cast("Callable[..., EagerTensorProtocol]", write_file)(path, "hello world"), Tensor)
+                assert isinstance(cast("EagerCallableProtocol", write_file)(path, "hello world"), Tensor)
                 assert isinstance(read_file(path), Tensor)
                 path_npy = os.path.join(d, "test.npy")
                 t = Tensor(np.array([1, 2, 3]), TensorConfig((3,), "int64", "cpu"))
@@ -350,7 +348,13 @@ def test_numpy_io_eager_and_format_fallback() -> None:
         """Test class MockBackend."""
 
         def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                name: Test parameter `name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "executed"
 
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
@@ -359,7 +363,7 @@ def test_numpy_io_eager_and_format_fallback() -> None:
         assert cast("EagerTensorProtocol", savez("x", [1])) == cast("EagerTensorProtocol", "executed")
         assert cast("EagerTensorProtocol", savez_compressed("x", [1])) == cast("EagerTensorProtocol", "executed")
         assert cast("EagerTensorProtocol", save_gguf("x", {"t": [1]})) == cast("EagerTensorProtocol", "executed")
-    assert cast("Callable[..., EagerTensorProtocol]", _fallback_load)(123) is None
+    assert cast("EagerCallableProtocol", _fallback_load)(123) is None
     assert _fallback_load("test.bin") is None
     with mock.patch("ml_switcheroo_compiler.serialization.formats.h5.H5WeightFormat.load", return_value="h5load"):
         assert _fallback_load("test.h5") == "h5load"
@@ -373,11 +377,15 @@ def test_numpy_io_infer_shape_args() -> None:
         """Test class DummyNode."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
-    assert cast("Callable[..., EagerTensorProtocol]", Load)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", Save)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", Savez)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", SavezCompressed)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", SaveGguf)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyNode)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Load)().infer_shape(cast("EagerCallableProtocol", DummyNode)((2, 2)), cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Save)().infer_shape(cast("EagerCallableProtocol", DummyNode)((2, 2)), cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Savez)().infer_shape(cast("EagerCallableProtocol", DummyNode)((2, 2)), cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", SavezCompressed)().infer_shape(cast("EagerCallableProtocol", DummyNode)((2, 2)), cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", SaveGguf)().infer_shape(cast("EagerCallableProtocol", DummyNode)((2, 2)), cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)

@@ -11,7 +11,7 @@ import ml_switcheroo_compiler.backends.eager.signal as signal_mod
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class MockCpuResult:
@@ -138,7 +138,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.mean)(x, axis=dim, keepdims=keepdim))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -153,7 +153,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -500,13 +500,13 @@ def test_signal_coverage() -> None:
     backend = SignalBackendWrapper()
 
     # 1. Gaussian kernel calculation
-    k = cast("Callable[..., EagerTensorProtocol]", signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
+    k = cast("EagerCallableProtocol", signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
     assert cast("EagerTensorProtocol", getattr(k, "shape")) == (3, 3)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", float)(cast("Callable[..., EagerTensorProtocol]", np.sum)(k)), 1.0, atol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", float)(cast("EagerCallableProtocol", np.sum)(k)), 1.0, atol=1e-5)
 
     # 2. _apply_conv2d_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        cast("Callable[..., EagerTensorProtocol]", signal_mod._apply_conv2d_batch)(backend, cast("Callable[..., EagerTensorProtocol]", np.ones)((3, 3)), k, "reflect")
+        cast("EagerCallableProtocol", signal_mod._apply_conv2d_batch)(backend, cast("EagerCallableProtocol", np.ones)((3, 3)), k, "reflect")
 
     # 3. _get_blur_config with config_obj None and with dict
     cfg1 = signal_mod._get_blur_config({"kernel_size": (5, 5), "sigma": (2.0, 2.0), "data_format": "NCHW"}, None)
@@ -521,7 +521,7 @@ def test_signal_coverage() -> None:
     assert cfg2.data_format == "None"
 
     # Fallback when kwargs does not have get attribute
-    cfg_no_get = cast("Callable[..., EagerTensorProtocol]", signal_mod._get_blur_config)(None, None)
+    cfg_no_get = cast("EagerCallableProtocol", signal_mod._get_blur_config)(None, None)
     assert cfg_no_get.kernel_size == (3, 3)
     assert cfg_no_get.data_format is None
 
@@ -531,15 +531,15 @@ def test_signal_coverage() -> None:
 
     # 4. gaussian_blur_eager full execution
     imgs = np.ones((1, 2, 8, 8), dtype=np.float32)
-    blurred = cast("Callable[..., EagerTensorProtocol]", signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
+    blurred = cast("EagerCallableProtocol", signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
     assert cast("EagerTensorProtocol", getattr(blurred, "shape")) == (1, 2, 8, 8)
 
     # 5. _apply_median_filter_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        cast("Callable[..., EagerTensorProtocol]", signal_mod._apply_median_filter_batch)(backend, cast("Callable[..., EagerTensorProtocol]", np.ones)((2, 2)), (3, 3), "same")
+        cast("EagerCallableProtocol", signal_mod._apply_median_filter_batch)(backend, cast("EagerCallableProtocol", np.ones)((2, 2)), (3, 3), "same")
 
     # 6. median_filter_eager with same padding and reflect padding
-    med_same = cast("Callable[..., EagerTensorProtocol]", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
+    med_same = cast("EagerCallableProtocol", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
     assert cast("EagerTensorProtocol", getattr(med_same, "shape")) == (1, 2, 8, 8)
-    med_reflect = cast("Callable[..., EagerTensorProtocol]", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
+    med_reflect = cast("EagerCallableProtocol", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
     assert cast("EagerTensorProtocol", getattr(med_reflect, "shape")) == (1, 2, 8, 8)

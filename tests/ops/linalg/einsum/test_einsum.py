@@ -9,9 +9,7 @@ import pytest
 from ml_switcheroo_compiler.ops.linalg.einsum import Einsum, EinsumEquationParser, EinsumLexer, EinsumPlanner, EinsumValidator, ParsedEquationPart
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_einsum_lexer() -> None:
@@ -40,7 +38,7 @@ def test_einsum_planner_calculate_output_shape_missing_char() -> None:
 
     axis_map = {"a": 2, "b": 3}
     out_sub = ["a", "c", "b"]
-    assert cast("Callable[..., EagerTensorProtocol]", EinsumPlanner._resolve_chars)(out_sub, axis_map) == [2, 3]
+    assert cast("EagerCallableProtocol", EinsumPlanner._resolve_chars)(out_sub, axis_map) == [2, 3]
 
 
 def test_parsed_equation_part() -> None:
@@ -49,7 +47,7 @@ def test_parsed_equation_part() -> None:
     part.validate_length()
     part.validate_characters()
     amap = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", part.process_axis_map)(amap)
+    cast("EagerCallableProtocol", part.process_axis_map)(amap)
     assert amap["i"] == 2
     assert amap["j"] == 3
     with pytest.raises(ValueError):
@@ -58,11 +56,11 @@ def test_parsed_equation_part() -> None:
         ParsedEquationPart("i1", (2, 3)).validate_characters()
     amap = cast("dict[str, EagerTensorProtocol]", {"i": 5})
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", part.process_axis_map)(amap)
+        cast("EagerCallableProtocol", part.process_axis_map)(amap)
     amap = cast("dict[str, EagerTensorProtocol]", {"i": 2})
-    cast("Callable[..., EagerTensorProtocol]", part.process_axis_map)(amap)
+    cast("EagerCallableProtocol", part.process_axis_map)(amap)
     amap = cast("dict[str, EagerTensorProtocol]", {"i": 1})
-    cast("Callable[..., EagerTensorProtocol]", part.process_axis_map)(amap)
+    cast("EagerCallableProtocol", part.process_axis_map)(amap)
 
 
 def test_einsum_planner() -> None:
@@ -81,10 +79,10 @@ def test_einsum_planner() -> None:
     assert named == (2, 5)
     assert bcast == (3, 4)
     amap = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", EinsumPlanner._parse_named_part)("ij", (2, 3), amap)
+    cast("EagerCallableProtocol", EinsumPlanner._parse_named_part)("ij", (2, 3), amap)
     assert amap == {"i": 2, "j": 3}
     amap = {}
-    bcast = cast("Optional[tuple[int, ...]]", cast("Callable[..., EagerTensorProtocol]", EinsumPlanner._parse_ellipsis_part)("i...j", (2, 3, 4, 5), amap, None))
+    bcast = cast("Optional[tuple[int, ...]]", cast("EagerCallableProtocol", EinsumPlanner._parse_ellipsis_part)("i...j", (2, 3, 4, 5), amap, None))
     assert amap == {"i": 2, "j": 5}
     assert bcast == (3, 4)
     (amap_2, bcast_2) = cast("EagerTensorProtocol", EinsumPlanner.build_axis_size_map("...ij,jk", [(3, 4, 2, 3), (3, 4)]))
@@ -120,12 +118,12 @@ def test_einsum_op() -> None:
     op = Einsum()
     with pytest.raises(ValueError):
         op.infer_shape()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)((2, 3), (3, 4), equation="ij,jk->ik") == (2, 4)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)((2, 3), (3, 4), subscripts="ij,jk->ik") == (2, 4)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)("ij,jk->ik", (2, 3), (3, 4)) == (2, 4)
+    assert cast("EagerCallableProtocol", op.infer_shape)((2, 3), (3, 4), equation="ij,jk->ik") == (2, 4)
+    assert cast("EagerCallableProtocol", op.infer_shape)((2, 3), (3, 4), subscripts="ij,jk->ik") == (2, 4)
+    assert cast("EagerCallableProtocol", op.infer_shape)("ij,jk->ik", (2, 3), (3, 4)) == (2, 4)
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", op.infer_shape)((2, 3))
+        cast("EagerCallableProtocol", op.infer_shape)((2, 3))
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", op.infer_shape)((2, 3), None, equation="ij,jk")
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)((2, 3), "string", equation="ij,jk") == ()
+        cast("EagerCallableProtocol", op.infer_shape)((2, 3), None, equation="ij,jk")
+    assert cast("EagerCallableProtocol", op.infer_shape)((2, 3), "string", equation="ij,jk") == ()
     assert op.infer_shape(equation="ij,jk") == ()

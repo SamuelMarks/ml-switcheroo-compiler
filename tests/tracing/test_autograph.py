@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, do_not_convert, set_loop_options
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_loop_options() -> None:
@@ -28,15 +26,23 @@ def test_do_not_convert() -> None:
 
     @do_not_convert
     def dummy_func(x: int) -> int:
-        """Test function dummy_func."""
+        """Test function dummy_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x + 1
 
-    assert cast("Callable[..., EagerTensorProtocol]", dummy_func)(5) == 6
+    assert cast("EagerCallableProtocol", dummy_func)(5) == 6
     assert bool(cast("EagerTensorProtocol", getattr(dummy_func, "__wrapped__"))._autograph_do_not_convert) is True
 
-    @cast("Callable[..., EagerTensorProtocol]", do_not_convert)()
+    @cast("EagerCallableProtocol", do_not_convert)()
     def dummy_func2(x: int) -> int:
-        """Test function dummy_func2."""
+        """Test function dummy_func2.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x + 2
 
     assert dummy_func2(5) == 7

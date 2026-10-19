@@ -1,14 +1,14 @@
-"""math_manipulation module."""
+"""Implementation of math manipulation operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_manipulation`)."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence  # noqa: F401
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np  # noqa: F401
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 
 
@@ -236,7 +236,7 @@ def _np_extractpatchesoptions(backend_module: ModuleType, *args: EagerValue, **k
     """
     from ml_switcheroo_compiler.ops.vision.bbox import ExtractPatchesOptions
 
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", ExtractPatchesOptions)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", ExtractPatchesOptions)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TensorArrayStack")

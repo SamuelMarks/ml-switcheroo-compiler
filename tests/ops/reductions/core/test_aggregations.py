@@ -7,16 +7,18 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.ops.reductions.aggregations import NaryMathOp
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
 
 
@@ -34,8 +36,8 @@ def test_nary_math_op_infer_shape() -> None:
     assert op.infer_shape(inputs=[]) == ()
 
     # Valid list
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)([t1, t2]) == (2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(inputs=[t1, t2]) == (2, 3)
+    assert cast("EagerCallableProtocol", op.infer_shape)([t1, t2]) == (2, 3)
+    assert cast("EagerCallableProtocol", op.infer_shape)(inputs=[t1, t2]) == (2, 3)
 
     # Not a list
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(t1) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(t1) == ()

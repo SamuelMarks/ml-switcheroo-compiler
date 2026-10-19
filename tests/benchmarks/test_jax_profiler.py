@@ -191,4 +191,4 @@ def test_jax_profiler_exhaustive() -> None:
     _test_jax_profiler_exhaustive_part_2(_state)
     _test_jax_profiler_exhaustive_part_3(_state)
     _test_jax_profiler_exhaustive_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

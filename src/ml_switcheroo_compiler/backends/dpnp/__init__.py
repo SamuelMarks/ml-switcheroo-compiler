@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 from . import eager, generator, types
 from .eager import execute_op
@@ -38,7 +38,7 @@ type.__setattr__(DPNPGenerator, "get_device", staticmethod(get_device))
 type.__setattr__(DPNPGenerator, "get_usm_type", staticmethod(get_usm_type))
 type.__setattr__(DPNPGenerator, "is_sycl_array", staticmethod(is_sycl_array))
 type.__setattr__(DPNPGenerator, "item", staticmethod(item))
-type.__setattr__(DPNPGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", staticmethod)(execute_op))
+type.__setattr__(DPNPGenerator, "execute_op", cast("EagerCallableProtocol", staticmethod)(execute_op))
 
 __all__ = [
     "DPNPGenerator",

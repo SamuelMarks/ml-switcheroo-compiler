@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.transforms.autodiff import _accumulate_gradients, _add_nodes, _backward_pass, _copy_graph, _extract_gradients, _get_input_tangents, _get_reachable_from_output, _invoke_jvp_rule, _process_jvp_node, grad, hvp, jvp
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_add_nodes() -> None:
@@ -41,53 +39,67 @@ def test_copy_graph() -> None:
 
 def test_get_reachable_from_output() -> None:
     """Test function test_get_reachable_from_output."""
-    n1 = cast("Callable[..., EagerTensorProtocol]", LogicalNode)("n1", "Input", [])
+    n1 = cast("EagerCallableProtocol", LogicalNode)("n1", "Input", [])
     n2 = LogicalNode("n2", "Add", inputs=["n1", "n1"])
     n3 = LogicalNode("n3", "Mul", inputs=["n2", "n2"])
-    assert cast("Callable[..., EagerTensorProtocol]", _get_reachable_from_output)([n1, n2, n3], "n3") == {"n3", "n2", "n1"}
+    assert cast("EagerCallableProtocol", _get_reachable_from_output)([n1, n2, n3], "n3") == {"n3", "n2", "n1"}
 
 
 def test_accumulate_gradients(mocker: EagerTensorProtocol) -> None:
-    """Test function test_accumulate_gradients."""
+    """Test function test_accumulate_gradients.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
     mock_get_vjp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff.get_vjp")
 
     def dummy_vjp(graph: EagerValue, node: EagerValue, adj: EagerValue) -> EagerValue:
-        """Test function dummy_vjp."""
+        """Test function dummy_vjp.
+
+        Args:
+            graph: Test parameter `graph`.
+            node: Test parameter `node`.
+            adj: Test parameter `adj`.
+        """
         return ["da", "db"]
 
     setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
     adj = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
+    cast("EagerCallableProtocol", _accumulate_gradients)(g, n1, "adj", adj)
     assert adj == {"a": "da", "b": "db"}
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._add_nodes", return_value="added")
-    cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
+    cast("EagerCallableProtocol", _accumulate_gradients)(g, n1, "adj", adj)
     assert adj == {"a": "added", "b": "added"}
     setattr(mock_get_vjp, "side_effect", ValueError)
     from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 
     with pytest.raises(MissingJVPRuleError):
-        cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
+        cast("EagerCallableProtocol", _accumulate_gradients)(g, n1, "adj", adj)
     setattr(mock_get_vjp, "side_effect", None)
     setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da"])
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", _accumulate_gradients)(g, n1, "adj", adj)
+        cast("EagerCallableProtocol", _accumulate_gradients)(g, n1, "adj", adj)
 
 
 def test_backward_pass(mocker: EagerTensorProtocol) -> None:
-    """Test function test_backward_pass."""
+    """Test function test_backward_pass.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
-    n2 = cast("Callable[..., EagerTensorProtocol]", LogicalNode)("n2", "Input", [])
+    n2 = cast("EagerCallableProtocol", LogicalNode)("n2", "Input", [])
     mock_acc = mocker.patch("ml_switcheroo_compiler.transforms.autodiff._accumulate_gradients")
-    cast("Callable[..., EagerTensorProtocol]", _backward_pass)(g, [n1, n2], {"n1"}, {"n1": "adj"})
+    cast("EagerCallableProtocol", _backward_pass)(g, [n1, n2], {"n1"}, {"n1": "adj"})
     mock_acc.assert_called_once()
     mock_acc.reset_mock()
     _backward_pass(g, [n1], set(), {"n1": "adj"})
     mock_acc.assert_not_called()
     mock_acc.reset_mock()
-    cast("Callable[..., EagerTensorProtocol]", _backward_pass)(g, [n2], {"n2"}, {"n2": "adj"})
+    cast("EagerCallableProtocol", _backward_pass)(g, [n2], {"n2"}, {"n2": "adj"})
     mock_acc.assert_not_called()
 
 
@@ -105,7 +117,11 @@ def test_extract_gradients() -> None:
 
 
 def test_grad(mocker: EagerTensorProtocol) -> None:
-    """Test function test_grad."""
+    """Test function test_grad.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     n2 = LogicalNode("n2", "Mul", inputs=["n1", "n1"])
@@ -114,7 +130,13 @@ def test_grad(mocker: EagerTensorProtocol) -> None:
     mock_get_vjp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff.get_vjp")
 
     def dummy_vjp(graph: EagerValue, node: EagerValue, adj: EagerValue) -> EagerValue:
-        """Test function dummy_vjp."""
+        """Test function dummy_vjp.
+
+        Args:
+            graph: Test parameter `graph`.
+            node: Test parameter `node`.
+            adj: Test parameter `adj`.
+        """
         return ["da", "db"]
 
     setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
@@ -141,10 +163,16 @@ def test_invoke_jvp_rule() -> None:
     """Test function test_invoke_jvp_rule."""
 
     def mock_jvp(graph: EagerValue, node: EagerValue, tangent: EagerValue) -> EagerValue:
-        """Test function mock_jvp."""
+        """Test function mock_jvp.
+
+        Args:
+            graph: Test parameter `graph`.
+            node: Test parameter `node`.
+            tangent: Test parameter `tangent`.
+        """
         return "res"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _invoke_jvp_rule)(mock_jvp, None, None, ["t"]) == "res"
+    assert cast("EagerCallableProtocol", _invoke_jvp_rule)(mock_jvp, None, None, ["t"]) == "res"
 
     def mock_jvp_bad() -> None:
         """Test function mock_jvp_bad."""
@@ -153,11 +181,15 @@ def test_invoke_jvp_rule() -> None:
     import pytest
 
     with pytest.raises(MissingJVPRuleError):
-        cast("Callable[..., EagerTensorProtocol]", _invoke_jvp_rule)(mock_jvp_bad, None, None, ["t"])
+        cast("EagerCallableProtocol", _invoke_jvp_rule)(mock_jvp_bad, None, None, ["t"])
 
 
 def test_process_jvp_node(mocker: EagerTensorProtocol) -> None:
-    """Test function test_process_jvp_node."""
+    """Test function test_process_jvp_node.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
     mock_get_jvp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
@@ -173,7 +205,11 @@ def test_process_jvp_node(mocker: EagerTensorProtocol) -> None:
 
 
 def test_jvp_hvp(mocker: EagerTensorProtocol) -> None:
-    """Test function test_jvp_hvp."""
+    """Test function test_jvp_hvp.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     n2 = LogicalNode("n2", "Mul", inputs=["n1", "n1"])
@@ -196,7 +232,11 @@ def test_jvp_hvp(mocker: EagerTensorProtocol) -> None:
 
 
 def test_jvp_zero_output(mocker: EagerTensorProtocol) -> None:
-    """Test function test_jvp_zero_output."""
+    """Test function test_jvp_zero_output.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Input", shape_metadata=(2,))
     n2 = LogicalNode("n2", "Mul", inputs=["n1", "n1"])
@@ -204,6 +244,6 @@ def test_jvp_zero_output(mocker: EagerTensorProtocol) -> None:
     g.nodes["n2"] = n2
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp", return_value=lambda graph, node, tangents: "out_t")
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._get_input_tangents", return_value=["t1", "t1"])
-    getattr(g.nodes, "__setitem__")("t1", cast("Callable[..., EagerTensorProtocol]", LogicalNode)("t1", "Input", []))
+    getattr(g.nodes, "__setitem__")("t1", cast("EagerCallableProtocol", LogicalNode)("t1", "Input", []))
     g2 = jvp(g, ["n1"], ["t1"], ["n2", "n1"])
     assert len(g2.outputs) == 2

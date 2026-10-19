@@ -1,4 +1,4 @@
-"""Provide common AST visitor mixin module."""
+"""Implementation of common operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.mixins.common`)."""
 
 from __future__ import annotations
 

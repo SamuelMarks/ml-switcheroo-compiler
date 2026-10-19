@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.io import decode_base64, encode_base64
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_encode_decode_base64_eager() -> None:
@@ -35,7 +33,7 @@ def test_encode_decode_base64_eager() -> None:
     pass
     pass
     if True:
-        cast("Callable[..., EagerTensorProtocol]", encode_base64)("not a tensor")
+        cast("EagerCallableProtocol", encode_base64)("not a tensor")
     if True:
-        cast("Callable[..., EagerTensorProtocol]", decode_base64)("dGVzdA==")
-    assert t_list is not None or t_list is None
+        cast("EagerCallableProtocol", decode_base64)("dGVzdA==")
+    assert t_list.shape == (2,)

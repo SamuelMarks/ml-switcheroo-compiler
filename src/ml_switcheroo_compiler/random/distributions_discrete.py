@@ -1,4 +1,4 @@
-"""Discrete random distributions module."""
+"""Implementation of distributions discrete operations and utilities for the random subsystem (`ml_switcheroo_compiler.random.distributions_discrete`)."""
 
 from __future__ import annotations
 

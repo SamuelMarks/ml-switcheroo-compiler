@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for products.py."""
+"""Implementation of products operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.products`)."""
 
 from typing import cast
 

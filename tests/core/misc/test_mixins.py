@@ -17,7 +17,11 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
     """Test class DummyTensor."""
 
     def _get_op(self, name: EagerValue) -> OpDef:
-        """Test function _get_op."""
+        """Test function _get_op.
+
+        Args:
+            name: Test parameter `name`.
+        """
         return cast("OpDef", lambda *args, **kwargs: (name, args))
 
 

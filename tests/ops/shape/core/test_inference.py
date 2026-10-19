@@ -8,17 +8,20 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape_inference import _SHAPE_INFERENCE_REGISTRY, infer_shape, register_shape_inference
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_register_shape_inference() -> None:
     """Test function test_register_shape_inference."""
 
-    @cast("Callable[..., EagerTensorProtocol]", register_shape_inference)("TestShapeOp")
+    @cast("EagerCallableProtocol", register_shape_inference)("TestShapeOp")
     def my_infer_shape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function my_infer_shape."""
+        """Test function my_infer_shape.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return (2, 3)
 
     assert _SHAPE_INFERENCE_REGISTRY["TestShapeOp"] == my_infer_shape
@@ -33,14 +36,23 @@ def test_infer_shape_fallback() -> None:
         """Test class TestShapeOp2."""
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return (4, 5)
 
     assert infer_shape("TestShapeOp2") == (4, 5)
 
 
 def test_infer_shape_empty(mocker: EagerTensorProtocol) -> None:
-    """Test function test_infer_shape_empty."""
+    """Test function test_infer_shape_empty.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
 
     class NoShapeOp:
         """Test class NoShapeOp."""
@@ -59,7 +71,12 @@ def test_infer_shape_args_fallback() -> None:
         """Test class TestShapeOpArgsFallback."""
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             if any(isinstance(a, tuple) for a in args):
                 raise ValueError("Expected raw objects")
             return (10, 20)
@@ -69,11 +86,15 @@ def test_infer_shape_args_fallback() -> None:
 
         shape = (1, 2)
 
-    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("TestShapeOpArgsFallback", cast("Callable[..., EagerTensorProtocol]", MockWithShape)()) == (10, 20)
+    assert cast("EagerCallableProtocol", infer_shape)("TestShapeOpArgsFallback", cast("EagerCallableProtocol", MockWithShape)()) == (10, 20)
 
 
 def test_infer_shape_exception_handling(mocker: EagerTensorProtocol) -> None:
-    """Test outer exception handler when op instantiation or inference fails."""
+    """Test outer exception handler when op instantiation or inference fails.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
 
     class FailingOp:
         """Test class FailingOp."""
@@ -83,7 +104,12 @@ def test_infer_shape_exception_handling(mocker: EagerTensorProtocol) -> None:
             raise RuntimeError("Init failed")
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return ()
 
     mocker.patch("ml_switcheroo_compiler.ops.registry.get_op", return_value=FailingOp)
@@ -92,7 +118,11 @@ def test_infer_shape_exception_handling(mocker: EagerTensorProtocol) -> None:
 
 
 def test_infer_shape_with_yaml_data(mocker: EagerTensorProtocol) -> None:
-    """Test op with _yaml_data bypassing instance.infer_shape."""
+    """Test op with _yaml_data bypassing instance.infer_shape.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
 
     class OpWithYaml:
         """Test class OpWithYaml."""
@@ -100,7 +130,12 @@ def test_infer_shape_with_yaml_data(mocker: EagerTensorProtocol) -> None:
         _yaml_data = {"some": "data"}
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return (1, 1)
 
     mocker.patch("ml_switcheroo_compiler.ops.registry.get_op", return_value=OpWithYaml)
@@ -109,10 +144,14 @@ def test_infer_shape_with_yaml_data(mocker: EagerTensorProtocol) -> None:
 
 
 def test_normalize_inputs_list_and_non_shape(mocker: EagerTensorProtocol) -> None:
-    """Test _normalize_inputs_to_shapes branches for list of shapes and non-shape items."""
+    """Test _normalize_inputs_to_shapes branches for list of shapes and non-shape items.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     # Line 919: args[0] is a list/tuple of items with shape or tuples
-    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", [(1, 2), (1, 2)]) == (1, 2)
+    assert cast("EagerCallableProtocol", infer_shape)("Add", [(1, 2), (1, 2)]) == (1, 2)
 
     # Branch 932->927: inputs contain items without shape attributes or list/tuple
     mocker.patch("ml_switcheroo_compiler.ops.shape_inference.infer_op_shape_declarative", return_value=())
-    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", inputs=[None, 123]) == ()
+    assert cast("EagerCallableProtocol", infer_shape)("Add", inputs=[None, 123]) == ()

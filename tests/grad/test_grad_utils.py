@@ -9,13 +9,15 @@ import pytest
 from ml_switcheroo_compiler.grad.utils import _get_inputs_dict, _to_original_type
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_get_inputs_dict_missing_input(mocker: EagerTensorProtocol) -> None:
-    """Verify the behavior and output invariants of test get inputs dict missing input."""
+    """Verify the behavior and output invariants of test get inputs dict missing input.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
 
     class DummyGraph:
         """Test class DummyGraph."""
@@ -24,11 +26,15 @@ def test_get_inputs_dict_missing_input(mocker: EagerTensorProtocol) -> None:
         nodes = cast("dict[str, EagerTensorProtocol]", {})
 
     with pytest.raises(ValueError, match="Missing input value for node 'missing_inp'"):
-        cast("Callable[..., EagerTensorProtocol]", _get_inputs_dict)(cast("Callable[..., EagerTensorProtocol]", DummyGraph)())
+        cast("EagerCallableProtocol", _get_inputs_dict)(cast("EagerCallableProtocol", DummyGraph)())
 
 
 def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
-    """Verify the behavior and output invariants of test to original type dtypes."""
+    """Verify the behavior and output invariants of test to original type dtypes.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     import numpy as np
 
     from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
@@ -39,10 +45,14 @@ def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
         """Test class DummyBackend."""
 
         def asarray(self, val: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                val: Test parameter `val`.
+            """
             return val
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
+    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=cast("EagerCallableProtocol", DummyBackend)())
 
     val_int = np.array(1, dtype=np.int32)
     res_int = _to_original_type(val_int, orig)
@@ -54,7 +64,11 @@ def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
 
 
 def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
-    """Verify the behavior and output invariants of test find wrt tensors."""
+    """Verify the behavior and output invariants of test find wrt tensors.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
     from ml_switcheroo_compiler.grad.utils import _find_wrt_tensors
 
@@ -115,7 +129,7 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
     t3 = DummyTensor3(None, TensorConfig((), DType.Float32, None))
     setattr(t3, "_data", DummyDataNotInGraph())
 
-    wrt_tensors, wrt_ids = cast("Callable[..., EagerTensorProtocol]", _find_wrt_tensors)(cast("Callable[..., EagerTensorProtocol]", DummyGraph)())
+    wrt_tensors, wrt_ids = cast("EagerCallableProtocol", _find_wrt_tensors)(cast("EagerCallableProtocol", DummyGraph)())
     assert id(t) in [id(x) for x in wrt_tensors]
     assert id(t2) in [id(x) for x in wrt_tensors]
     assert id(t3) not in [id(x) for x in wrt_tensors]
@@ -131,11 +145,15 @@ def test_get_concrete_val_variants() -> None:
 
         _data = 42
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_concrete_val)(cast("Callable[..., EagerTensorProtocol]", NonProxy)()) == 42
+    assert cast("EagerCallableProtocol", _get_concrete_val)(cast("EagerCallableProtocol", NonProxy)()) == 42
 
 
 def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
-    """Test _get_inputs_dict full branch coverage including successful inputs lookup."""
+    """Test _get_inputs_dict full branch coverage including successful inputs lookup.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
@@ -143,16 +161,25 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
         """Test class DummyBackend."""
 
         def asarray(self, val: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                val: Test parameter `val`.
+            """
             return val
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
+    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=cast("EagerCallableProtocol", DummyBackend)())
 
     class NodeData:
         """Test class NodeData."""
 
         def __init__(self, id: EagerValue, concrete_value: EagerValue = None) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                id: Test parameter `id`.
+                concrete_value: Test parameter `concrete_value`.
+            """
             self.id = id
             self.concrete_value = concrete_value
 
@@ -166,7 +193,7 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
     setattr(t_valid, "_data", NodeData("in_valid", concrete_value=123.0))
 
     t_no_val = Tensor(None, TensorConfig((), DType.Float32, None))
-    proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(None, ())
+    proxy = cast("EagerCallableProtocol", ProxyTensor)(None, ())
     setattr(proxy, "id", "no_val_node")
     setattr(proxy, "concrete_value", None)
     t_no_val._data = proxy
@@ -176,7 +203,7 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
 
     Tensor(1.0, TensorConfig((), DType.Float32, None))
 
-    res = cast("Callable[..., EagerTensorProtocol]", _get_inputs_dict)(cast("Callable[..., EagerTensorProtocol]", DummyGraphSuccess)())
+    res = cast("EagerCallableProtocol", _get_inputs_dict)(cast("EagerCallableProtocol", DummyGraphSuccess)())
     assert "in_valid" in res
     assert res["in_valid"] == 123.0
     assert "no_val_node" not in res
@@ -187,5 +214,5 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
 
         nodes = cast("dict[str, EagerTensorProtocol]", {})
 
-    res_no_inputs = cast("Callable[..., EagerTensorProtocol]", _get_inputs_dict)(cast("Callable[..., EagerTensorProtocol]", GraphNoInputs)())
+    res_no_inputs = cast("EagerCallableProtocol", _get_inputs_dict)(cast("EagerCallableProtocol", GraphNoInputs)())
     assert isinstance(res_no_inputs, dict)

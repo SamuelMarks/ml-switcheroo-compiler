@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.ops.nn.gru import _compute_gru_gates, _sigmoid
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_gru_extras() -> None:
@@ -22,19 +20,35 @@ def test_gru_extras() -> None:
         shape_metadata = None
 
         def __add__(self, other: EagerValue) -> EagerValue:
-            """Test function __add__."""
+            """Test function __add__.
+
+            Args:
+                other: Test parameter `other`.
+            """
             return cast("EagerTensorProtocol", self)
 
         def __mul__(self, other: EagerValue) -> EagerValue:
-            """Test function __mul__."""
+            """Test function __mul__.
+
+            Args:
+                other: Test parameter `other`.
+            """
             return cast("EagerTensorProtocol", self)
 
         def __sub__(self, other: EagerValue) -> EagerValue:
-            """Test function __sub__."""
+            """Test function __sub__.
+
+            Args:
+                other: Test parameter `other`.
+            """
             return cast("EagerTensorProtocol", self)
 
         def __rsub__(self, other: EagerValue) -> EagerValue:
-            """Test function __rsub__."""
+            """Test function __rsub__.
+
+            Args:
+                other: Test parameter `other`.
+            """
             return cast("EagerTensorProtocol", self)
 
     from ml_switcheroo_compiler.core.config import config
@@ -48,14 +62,14 @@ def test_gru_extras() -> None:
     orig_add_node = state.global_tracing_state.add_node
     setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        cast("Callable[..., EagerTensorProtocol]", _compute_gru_gates)(
-            [cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", DummyTensor)()],
-            [cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", DummyTensor)(), cast("Callable[..., EagerTensorProtocol]", DummyTensor)()],
-            cast("Callable[..., EagerTensorProtocol]", DummyTensor)(),
+        cast("EagerCallableProtocol", _compute_gru_gates)(
+            [cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", DummyTensor)()],
+            [cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", DummyTensor)(), cast("EagerCallableProtocol", DummyTensor)()],
+            cast("EagerCallableProtocol", DummyTensor)(),
         )
-        cast("Callable[..., EagerTensorProtocol]", _sigmoid)(cast("Callable[..., EagerTensorProtocol]", DummyTensor)())
+        cast("EagerCallableProtocol", _sigmoid)(cast("EagerCallableProtocol", DummyTensor)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
         setattr(state.global_tracing_state, "add_node", orig_add_node)
-    assert orig_add_node is not None or orig_add_node is None
+    assert getattr(state.global_tracing_state, "add_node") == orig_add_node

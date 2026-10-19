@@ -9,7 +9,7 @@ import numpy as np
 import ml_switcheroo_compiler.backends.eager.utils as utils_mod
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class MockCpuResult:
@@ -136,7 +136,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.mean)(x, axis=dim, keepdims=keepdim))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -151,7 +151,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -499,21 +499,21 @@ def test_utils_to_numpy_array() -> None:
 
     # 1. Hasattr numpy
     obj_numpy = MockHasNumpyOnly(arr)
-    res1 = cast("Callable[..., EagerTensorProtocol]", utils_mod._to_numpy_array)(np, obj_numpy, "other")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res1, arr)
+    res1 = cast("EagerCallableProtocol", utils_mod._to_numpy_array)(np, obj_numpy, "other")
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res1, arr)
 
     # 2. name == "torch" and hasattr detach
     obj_torch = MockTorchDetachOnly(arr)
-    res2 = cast("Callable[..., EagerTensorProtocol]", utils_mod._to_numpy_array)(np, obj_torch, "torch")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res2, arr)
+    res2 = cast("EagerCallableProtocol", utils_mod._to_numpy_array)(np, obj_torch, "torch")
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, arr)
 
     # 3. name == "torch" but not hasattr detach
     res3 = utils_mod._to_numpy_array(np, [4.0, 5.0], "torch")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res3, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0, 5.0]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res3, cast("EagerCallableProtocol", np.array)([4.0, 5.0]))
 
     # 4. Standard fallback to np_mod.asarray
     res4 = utils_mod._to_numpy_array(np, [7.0, 8.0], "numpy")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res4, cast("Callable[..., EagerTensorProtocol]", np.array)([7.0, 8.0]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res4, cast("EagerCallableProtocol", np.array)([7.0, 8.0]))
 
 
 def test_utils_from_numpy_array() -> None:
@@ -523,23 +523,26 @@ def test_utils_from_numpy_array() -> None:
     backend = MockBackendModule()
 
     # 1. name == "torch"
-    assert id(cast("Callable[..., EagerTensorProtocol]", utils_mod._from_numpy_array)(backend, arr, "torch", orig)) == id(arr)
+    assert id(cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "torch", orig)) == id(arr)
 
     # 2. name == "mlx.core"
-    assert id(cast("Callable[..., EagerTensorProtocol]", utils_mod._from_numpy_array)(backend, arr, "mlx.core", orig)) == id(arr)
+    assert id(cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "mlx.core", orig)) == id(arr)
 
     # 3. name == "jax.numpy"
-    assert id(cast("Callable[..., EagerTensorProtocol]", utils_mod._from_numpy_array)(backend, arr, "jax.numpy", orig)) == id(arr)
+    assert id(cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "jax.numpy", orig)) == id(arr)
 
     # 4. original_tensor is not None
-    res_with_orig = cast("Callable[..., EagerTensorProtocol]", utils_mod._from_numpy_array)(backend, arr, "other", orig)
+    res_with_orig = cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "other", orig)
     assert isinstance(res_with_orig, np.ndarray)
     assert res_with_orig.dtype == np.float32
 
     # 5. original_tensor is None
-    res_no_orig = cast("Callable[..., EagerTensorProtocol]", utils_mod._from_numpy_array)(backend, arr, "other", None)
+    res_no_orig = cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "other", None)
     assert isinstance(res_no_orig, np.ndarray)
     assert res_no_orig.dtype == np.int64
+
+    # 6. backend_module without 'array' attribute
+    assert utils_mod._from_numpy_array(None, arr, "other", None) is arr
 
 
 def test_utils_channels_conversion() -> None:

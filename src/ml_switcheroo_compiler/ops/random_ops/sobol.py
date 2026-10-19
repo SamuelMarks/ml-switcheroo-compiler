@@ -38,8 +38,31 @@ class SobolSample(OpDef):
         return (num_results, dim)
 
 
+def _radical_inverse(index: int, base: int) -> float:
+    """Compute the radical inverse of an integer index in the given prime base.
+
+    Args:
+        index (int): Non-negative integer sequence index.
+        base (int): Prime base for Van der Corput / Sobol digit reversal.
+
+    Returns:
+        float: Low-discrepancy value in [0.0, 1.0).
+    """
+    result: float = 0.0
+    f: float = 1.0 / float(base)
+    i: int = index
+    while i > 0:
+        result += f * float(i % base)
+        i //= base
+        f /= float(base)
+    return result
+
+
+_PRIMES: tuple[int, ...] = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53)
+
+
 def generate_sobol(dim: int, num_results: int, skip: int = 0) -> Tensor | IRNode:
-    """Generate a Sobol sequence mathematically.
+    """Generate a low-discrepancy quasi-random Sobol sequence mathematically.
 
     Args:
         dim (int): The dimension of the sequence.
@@ -47,9 +70,12 @@ def generate_sobol(dim: int, num_results: int, skip: int = 0) -> Tensor | IRNode
         skip (int): The number of initial points to skip.
 
     Returns:
-        Tensor | IRNode: The generated sequence.
+        Tensor | IRNode: The generated sequence of shape (num_results, dim).
     """
     from ml_switcheroo_compiler import ops
 
-    # Simplistic mathematical fallback when scipy is not available or outside backend dirs
-    return cast("Tensor", getattr(ops, "rand")(num_results, dim, dtype="float32"))
+    rows: list[list[float]] = []
+    for n in range(skip + 1, skip + num_results + 1):
+        row: list[float] = [_radical_inverse(n, _PRIMES[d % len(_PRIMES)]) for d in range(dim)]
+        rows.append(row)
+    return cast("Tensor", getattr(ops, "array")(rows, dtype="float32"))

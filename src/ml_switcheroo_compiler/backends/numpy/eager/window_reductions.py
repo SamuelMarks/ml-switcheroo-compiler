@@ -1,11 +1,11 @@
 """Numpy Window Reductions."""
 
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window, _segment_sum
 
 
@@ -21,7 +21,7 @@ def _np_reduce_window(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _reduce_window)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", _reduce_window)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("SegmentSum")
@@ -36,7 +36,7 @@ def _np_segment_sum(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _segment_sum)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", _segment_sum)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("SegmentMax")

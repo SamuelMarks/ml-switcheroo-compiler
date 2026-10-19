@@ -1,4 +1,4 @@
-"""math_general module."""
+"""Implementation of math general operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_general`)."""
 
 from __future__ import annotations
 
@@ -7,12 +7,14 @@ import typing  # noqa: F401
 from types import ModuleType
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import get_special_submodule, host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
 )
+
+from .math_special import _dispatch_special
 
 
 @global_eager_registry.register("Deg2Rad")
@@ -185,7 +187,7 @@ def _lcm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
     func = getattr(backend_module, "lcm", getattr(backend_module, "least_common_multiple", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.lcm(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).lcm(args[0], args[1]))
 
 
 @global_eager_registry.register("Nextafter")
@@ -203,7 +205,7 @@ def _nextafter(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     func = getattr(backend_module, "nextafter", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.nextafter(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).nextafter(args[0], args[1]))
 
 
 @global_eager_registry.register("Real")
@@ -221,7 +223,7 @@ def _real(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     func = getattr(backend_module, "real", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.real(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).real(args[0]))
 
 
 @global_eager_registry.register("Spacing")
@@ -239,7 +241,7 @@ def _spacing(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     func = getattr(backend_module, "spacing", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.spacing(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).spacing(args[0]))
 
 
 @global_eager_registry.register("Unwrap")
@@ -257,7 +259,7 @@ def _unwrap(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     func = getattr(backend_module, "unwrap", None)
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.unwrap(args[0], **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).unwrap(args[0], **kwargs))
 
 
 @global_eager_registry.register("Beta")
@@ -277,10 +279,7 @@ def _beta(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     kwargs.pop("dtype", None)
     if hasattr(backend_module, "random") and hasattr(mod.random, "beta"):
         return cast(EagerValue, mod.random.beta(getattr(args[1], "data", args[1]), getattr(args[2], "data", args[2])))
-    func = getattr(backend_module, "beta", None)
-    if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, get_special_submodule("special").beta(*args, **kwargs))
+    return _dispatch_special("Beta", "beta", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Betainc")
@@ -295,10 +294,7 @@ def _betainc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "betainc", None)
-    if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, get_special_submodule("special").betainc(*args, **kwargs))
+    return _dispatch_special("Betainc", "betainc", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("AllToAll")
@@ -488,7 +484,8 @@ def _adjoint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     if hasattr(backend_module, "conj") and hasattr(backend_module, "transpose"):
         return cast(EagerValue, mod.conj(mod.transpose(x)))
     x_np = mod.asarray(x)
-    return cast(EagerValue, host_backend.conj(host_backend.transpose(x_np)))
+    fallback_mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, fallback_mod.conj(fallback_mod.transpose(x_np)))
 
 
 @global_eager_registry.register("Bincount")
@@ -895,7 +892,8 @@ def _np_ball(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     func = getattr(backend_module, "ball", getattr(backend_module, "ball", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.zeros(kwargs.get("shape", ()), dtype=host_backend.float32))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.zeros(kwargs.get("shape", ()), dtype=mod.float32))
 
 
 @global_eager_registry.register("BetaPdf")
@@ -910,10 +908,7 @@ def _np_betapdf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "betapdf", getattr(backend_module, "betapdf", None))
-    if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, get_special_submodule("stats").beta.pdf(*args, **kwargs))
+    return _dispatch_special("BetaPdf", "betapdf", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Gcd")
@@ -931,7 +926,7 @@ def _np_gcd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     func = getattr(backend_module, "gcd", getattr(backend_module, "gcd", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.gcd(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).gcd(args[0], args[1]))
 
 
 @global_eager_registry.register("Inner")
@@ -949,7 +944,7 @@ def _np_inner(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     func = getattr(backend_module, "inner", getattr(backend_module, "inner", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.inner(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).inner(args[0], args[1]))
 
 
 @global_eager_registry.register("R")
@@ -967,7 +962,7 @@ def _np_r(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     func = getattr(backend_module, "r", getattr(backend_module, "r", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.r_[args[0]])
+    return cast(EagerValue, _resolve_eager_mod(backend_module).r_[args[0]])
 
 
 @global_eager_registry.register("Switch")
@@ -1003,7 +998,7 @@ def _np_t(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     func = getattr(backend_module, "t", getattr(backend_module, "t", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.transpose(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).transpose(args[0]))
 
 
 @global_eager_registry.register("Trapezoid")
@@ -1021,7 +1016,8 @@ def _np_trapezoid(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     func = getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(host_backend, "trapezoid", getattr(host_backend, "trapz", None)))
+    mod = _resolve_eager_mod(backend_module)
+    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(mod, "trapezoid", getattr(mod, "trapz", None)))
     return trapz_fn(*args, **kwargs)
 
 
@@ -1040,7 +1036,8 @@ def _np_trapezoidalintegral(backend_module: EagerValue, *args: EagerValue, **kwa
     func = getattr(backend_module, "trapezoidalintegral", getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None)))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(host_backend, "trapezoid", getattr(host_backend, "trapz", None)))
+    mod = _resolve_eager_mod(backend_module)
+    trapz_fn = typing.cast("typing.Callable[..., EagerValue]", getattr(mod, "trapezoid", getattr(mod, "trapz", None)))
     return trapz_fn(*args, **kwargs)
 
 
@@ -1059,7 +1056,7 @@ def _np_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     func = getattr(backend_module, "variance", getattr(backend_module, "variance", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.var(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).var(*args, **kwargs))
 
 
 @global_eager_registry.register("Vectorize")
@@ -1077,7 +1074,7 @@ def _np_vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     func = getattr(backend_module, "vectorize", getattr(backend_module, "vectorize", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.vectorize(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).vectorize(*args, **kwargs))
 
 
 @global_eager_registry.register("Welch")
@@ -1095,7 +1092,7 @@ def _np_welch(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     func = getattr(backend_module, "welch", getattr(backend_module, "welch", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.fft.rfft(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).fft.rfft(args[0]))
 
 
 @global_eager_registry.register("WrapKeyData")
@@ -1131,7 +1128,8 @@ def _np_zerofraction(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     func = getattr(backend_module, "zerofraction", getattr(backend_module, "zerofraction", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.sum(args[0] == 0) / host_backend.size(args[0]))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.sum(args[0] == 0) / mod.size(args[0]))
 
 
 @global_eager_registry.register("Zeta")
@@ -1146,7 +1144,4 @@ def _np_zeta(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "zeta", getattr(backend_module, "zeta", None))
-    if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, get_special_submodule("special").zeta(*args, **kwargs))
+    return _dispatch_special("Zeta", "zeta", backend_module, *args, **kwargs)

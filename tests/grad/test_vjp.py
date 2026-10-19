@@ -14,17 +14,20 @@ from ml_switcheroo_compiler.grad import jvp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
-    """Test function make_tensor."""
+    """Test function make_tensor.
+
+    Args:
+        val: Test parameter `val`.
+        shape: Test parameter `shape`.
+    """
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return cast("Callable[..., EagerTensorProtocol]", Tensor)(val, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape, DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
+    return cast("EagerCallableProtocol", Tensor)(val, cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
 
 
 def test_jvp_binary() -> None:
@@ -76,11 +79,17 @@ def test_jvp_binary() -> None:
     for op in ops:
 
         def f(x: EagerValue, y: EagerValue, op_bound: EagerValue = op) -> EagerValue:
-            """Test function f."""
-            return cast("Callable[..., EagerTensorProtocol]", dispatch_op)(op_bound, x, y)
+            """Test function f.
+
+            Args:
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+                op_bound: Test parameter `op_bound`.
+            """
+            return cast("EagerCallableProtocol", dispatch_op)(op_bound, x, y)
 
         try:
-            res, out_tangent = cast("Callable[..., EagerTensorProtocol]", jvp)(f, (x, y), (tx, ty))
+            res, out_tangent = cast("EagerCallableProtocol", jvp)(f, (x, y), (tx, ty))
             assert res is not None
             assert out_tangent is not None
             evaluated_bin += 1
@@ -139,11 +148,16 @@ def test_jvp_unary() -> None:
     for op in ops:
 
         def f(x: EagerValue, op_bound: EagerValue = op) -> EagerValue:
-            """Test function f."""
-            return cast("Callable[..., EagerTensorProtocol]", dispatch_op)(op_bound, x)
+            """Test function f.
+
+            Args:
+                x: Test parameter `x`.
+                op_bound: Test parameter `op_bound`.
+            """
+            return cast("EagerCallableProtocol", dispatch_op)(op_bound, x)
 
         try:
-            res, out_tangent = cast("Callable[..., EagerTensorProtocol]", jvp)(f, (x,), (tx,))
+            res, out_tangent = cast("EagerCallableProtocol", jvp)(f, (x,), (tx,))
             assert res is not None
             assert out_tangent is not None
             evaluated_un += 1

@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for quantized_ops.py."""
+"""Implementation of quantized ops operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.nn.quantized_ops`)."""
 
 import typing
 from dataclasses import dataclass
@@ -346,7 +346,7 @@ def quantize_and_dequantize(
         return zeros_like(input) + input
 
     params = params or QuantizationParams()
-    attrs = {
+    attrs: dict[str, TensorOrScalar] = {
         "signed_input": params.signed_input,
         "num_bits": params.num_bits,
         "range_given": params.range_given,
@@ -354,7 +354,7 @@ def quantize_and_dequantize(
         "narrow_range": params.narrow_range,
         "axis": params.axis,
     }
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)("QuantizeAndDequantize", [input, input_min, input_max], attrs, input.shape, input.dtype))
+    return _emit_shape_node("QuantizeAndDequantize", [input, input_min, input_max], attrs, input.shape, input.dtype)
 
 
 def abs_max_quantize(

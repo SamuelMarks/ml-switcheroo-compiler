@@ -32,9 +32,7 @@ from ml_switcheroo_compiler.backends.eager.vision_utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_prepare_eager_transform() -> None:
@@ -124,7 +122,11 @@ def test_collinear_check_and_perspective_matrix() -> None:
 
         @staticmethod
         def svd(a: EagerValue) -> EagerValue:
-            """Test function svd."""
+            """Test function svd.
+
+            Args:
+                a: Test parameter `a`.
+            """
             return np.eye(8), np.zeros(8), np.eye(9)
 
     class MockNP:
@@ -149,7 +151,7 @@ def test_perspective_grid_and_coords() -> None:
 
     grid = _generate_perspective_grid(np, 4, 6)
     assert cast("EagerTensorProtocol", getattr(grid, "shape")) == (4, 6, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(
+    assert cast("EagerCallableProtocol", np.all)(
         cast(
             "EagerTensorProtocol",
             getattr(grid, "__getitem__")(
@@ -215,10 +217,10 @@ def test_perspective_grid_and_coords() -> None:
 
     # Identity 2D homography
     h_eye = np.eye(3, dtype=np.float32)
-    ys, xs = cast("Callable[..., EagerTensorProtocol]", _generate_perspective_coords)(np, h_eye, grid)
+    ys, xs = cast("EagerCallableProtocol", _generate_perspective_coords)(np, h_eye, grid)
     assert cast("EagerTensorProtocol", getattr(ys, "shape")) == (4, 6)
     assert cast("EagerTensorProtocol", getattr(xs, "shape")) == (4, 6)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(
+    assert cast("EagerCallableProtocol", np.allclose)(
         ys,
         cast(
             "EagerTensorProtocol",
@@ -230,7 +232,7 @@ def test_perspective_grid_and_coords() -> None:
             ),
         ),
     )
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(
+    assert cast("EagerCallableProtocol", np.allclose)(
         xs,
         cast(
             "EagerTensorProtocol",
@@ -245,7 +247,7 @@ def test_perspective_grid_and_coords() -> None:
 
     # Batched homography
     h_batch = np.stack([h_eye, h_eye], axis=0)
-    ys_b, xs_b = cast("Callable[..., EagerTensorProtocol]", _generate_perspective_coords)(np, h_batch, grid)
+    ys_b, xs_b = cast("EagerCallableProtocol", _generate_perspective_coords)(np, h_batch, grid)
     assert cast("EagerTensorProtocol", getattr(ys_b, "shape")) == (2, 4, 6)
     assert cast("EagerTensorProtocol", getattr(xs_b, "shape")) == (2, 4, 6)
 
@@ -253,17 +255,17 @@ def test_perspective_grid_and_coords() -> None:
 def test_map_coordinates_and_cubic_kernel() -> None:
     """Test nearest, bilinear, and bicubic coordinate mapping and cubic interpolation kernel."""
     # None inputs
-    assert cast("Callable[..., EagerTensorProtocol]", _map_coords_nearest)(None) == 0
-    assert cast("Callable[..., EagerTensorProtocol]", _map_coords_bilinear)(None) == 0
-    assert cast("Callable[..., EagerTensorProtocol]", _map_coords_bicubic)(None) == 0
+    assert cast("EagerCallableProtocol", _map_coords_nearest)(None) == 0
+    assert cast("EagerCallableProtocol", _map_coords_bilinear)(None) == 0
+    assert cast("EagerCallableProtocol", _map_coords_bicubic)(None) == 0
     assert _np_map_coordinates(None, None, None) == 0
 
     # Cubic kernel evaluation
     t_vals = np.array([0.0, 0.5, 1.0, 1.5, 2.5])
     w = _cubic_kernel(t_vals, a=-0.5)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w, "__getitem__")(0)), 1.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w, "__getitem__")(2)), 0.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(w, "__getitem__")(4)), 0.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w, "__getitem__")(0)), 1.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w, "__getitem__")(2)), 0.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(w, "__getitem__")(4)), 0.0)
 
     # 4x4 image
     img = np.arange(16, dtype=np.float32).reshape(4, 4)
@@ -280,19 +282,19 @@ def test_map_coordinates_and_cubic_kernel() -> None:
     # Bilinear (order=1)
     res_bilinear = _np_map_coordinates(np, img, (y_coords, x_coords), order=1, fill_value=99.0)
     expected_mid = (img[1, 1] + img[1, 2] + img[2, 1] + img[2, 2]) / 4.0
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(res_bilinear, "__getitem__")(1)), expected_mid)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(res_bilinear, "__getitem__")(1)), expected_mid)
     assert cast("EagerTensorProtocol", getattr(res_bilinear, "__getitem__")(2)) == 99.0
 
     # Bicubic (order=3)
     res_bicubic = _np_map_coordinates(np, img, (y_coords, x_coords), order=3, fill_value=0.0)
     assert cast("EagerTensorProtocol", getattr(res_bicubic, "shape")) == (3,)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("EagerTensorProtocol", getattr(res_bicubic, "__getitem__")(0)), img[0, 0], atol=1e-4)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(res_bicubic, "__getitem__")(0)), img[0, 0], atol=1e-4)
 
 
 def test_perspective_apply_batch() -> None:
     """Test applying perspective transformation over channels and batches."""
-    assert cast("Callable[..., EagerTensorProtocol]", _apply_perspective_channel)(None) == 0
-    assert cast("Callable[..., EagerTensorProtocol]", _apply_perspective_batch)(None, None, None, None) == 0
+    assert cast("EagerCallableProtocol", _apply_perspective_channel)(None) == 0
+    assert cast("EagerCallableProtocol", _apply_perspective_batch)(None, None, None, None) == 0
 
     imgs = np.ones((2, 8, 8, 3), dtype=np.float32)
     h_eye = np.eye(3, dtype=np.float32)
@@ -300,7 +302,7 @@ def test_perspective_apply_batch() -> None:
 
     out = _apply_perspective_batch(np, imgs, h_eye, cfg)
     assert cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 8, 8, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out, imgs)
+    assert cast("EagerCallableProtocol", np.allclose)(out, imgs)
 
 
 def test_dataclasses_repr() -> None:
@@ -331,7 +333,11 @@ def test_dataclasses_repr() -> None:
 
 
 def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test 4D channels_last, MapCoordsContext with valid=None, and singular-free zero-h33 homography."""
+    """Test 4D channels_last, MapCoordsContext with valid=None, and singular-free zero-h33 homography.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     # 1. 4D image with channels_last / default (branch: arr.ndim == 4 and data_format != 'channels_first')
     img_4d_last = np.ones((2, 8, 12, 3), dtype=np.float32)
     ctx_4d_last = _prepare_eager_transform(np, img_4d_last, seed=None, data_format="channels_last")
@@ -359,8 +365,12 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     orig_svd = np.linalg.svd
 
     def mock_svd(a: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-        """Test function mock_svd."""
-        u, s, vh = cast("Callable[..., EagerTensorProtocol]", orig_svd)(a)
+        """Test function mock_svd.
+
+        Args:
+            a: Test parameter `a`.
+        """
+        u, s, vh = cast("EagerCallableProtocol", orig_svd)(a)
         vh_mod = vh.copy()
         vh_mod[-1, -1] = 0.0
         return cast("tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", (u, s, vh_mod))

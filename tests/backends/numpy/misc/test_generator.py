@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, Num
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_numpy_generator_visit_kwargs_only() -> None:
@@ -90,8 +88,8 @@ def test_numpy_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    res = cast("Callable[..., EagerTensorProtocol]", OpFormatter.format_generic_fallback)(cast("Callable[..., EagerTensorProtocol]", FormatterContext)("out", op_type, input_vars, kwargs))
-    assert res == "np.zeros(shape=(2, 2))" or True
+    res = cast("EagerCallableProtocol", OpFormatter.format_generic_fallback)(cast("EagerCallableProtocol", FormatterContext)("out", op_type, input_vars, kwargs))
+    assert "zeros" in str(res)
 
 
 def test_cupy_generator_kwargs_only() -> None:
@@ -164,13 +162,22 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
 
 
 def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_numpy_generator_coverage."""
+    """Test function test_numpy_generator_coverage.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
 
     class DummyNode:
         """Test class DummyNode."""
 
         def __init__(self, op_type: EagerValue, id: EagerValue = "test_id") -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                op_type: Test parameter `op_type`.
+                id: Test parameter `id`.
+            """
             self.op_type = op_type
             self.id = id
             self.attributes = cast("dict[str, EagerTensorProtocol]", {})
@@ -184,8 +191,8 @@ def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
 
     assert NumpyTypeTranslator.get_fallback_prefix() == "np"
     assert NumpyASTVisitor._format_kwargs({"a": 1}) == "a=1"
-    assert cast("Callable[..., EagerTensorProtocol]", NumpyASTVisitor.generic_visit)(cast("Callable[..., EagerTensorProtocol]", DummyNode)("Unknown"), []) == "np.unknown()"
-    gen = cast("Callable[..., EagerTensorProtocol]", NumpyGenerator)(cast("Callable[..., EagerTensorProtocol]", DummyGraph)())
+    assert cast("EagerCallableProtocol", NumpyASTVisitor.generic_visit)(cast("EagerCallableProtocol", DummyNode)("Unknown"), []) == "np.unknown()"
+    gen = cast("EagerCallableProtocol", NumpyGenerator)(cast("EagerCallableProtocol", DummyGraph)())
     DummyNode("Einsum")
     DummyNode("PowerIteration")
     assert gen.get_fallback_prefix() == "np"

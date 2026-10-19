@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.ops.signal import Istft, Stft, istft, stft
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_stft_istft_eager() -> None:
@@ -29,7 +27,7 @@ def test_stft_istft_eager() -> None:
     assert cast("EagerTensorProtocol", getattr(Zxx, "shape")) == (10, 9, 11)
 
     # istft
-    xrec = cast("Callable[..., EagerTensorProtocol]", istft)(Zxx, nfft=16, noverlap=8)
+    xrec = cast("EagerCallableProtocol", istft)(Zxx, nfft=16, noverlap=8)
     assert cast("EagerTensorProtocol", getattr(xrec, "shape")) == (10, 96)  # (11 - 1) * 8 + 16 = 80 + 16 = 96
 
 
@@ -45,7 +43,7 @@ def test_stft_istft_tracing() -> None:
     assert cast("EagerTensorProtocol", getattr(Zxx, "shape")) == (10, 9, 11)
 
     # istft
-    xrec = cast("Callable[..., EagerTensorProtocol]", istft)(Zxx, nfft=16, noverlap=8)
+    xrec = cast("EagerCallableProtocol", istft)(Zxx, nfft=16, noverlap=8)
     assert cast("EagerTensorProtocol", getattr(xrec, "shape")) == (10, 96)
     global_tracing_state.stop_tracing()
 
@@ -53,33 +51,33 @@ def test_stft_istft_tracing() -> None:
 def test_stft_istft_infer_shape_invalid() -> None:
     """Test coverage for invalid shapes in infer_shape."""
     s = Stft()
-    assert cast("Callable[..., EagerTensorProtocol]", s.infer_shape)(None, nfft=16, noverlap=8) == ()
+    assert cast("EagerCallableProtocol", s.infer_shape)(None, nfft=16, noverlap=8) == ()
 
     class Dummy:
         """Test class Dummy."""
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", s.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)(), nfft=16, noverlap=8) == ()
+    assert cast("EagerCallableProtocol", s.infer_shape)(cast("EagerCallableProtocol", Dummy)(), nfft=16, noverlap=8) == ()
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", s.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), nfft=16, noverlap=8) == ()
+    assert cast("EagerCallableProtocol", s.infer_shape)(cast("EagerCallableProtocol", DummyShape)(), nfft=16, noverlap=8) == ()
 
     i = Istft()
-    assert cast("Callable[..., EagerTensorProtocol]", i.infer_shape)(None, nfft=16, noverlap=8) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", i.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)(), nfft=16, noverlap=8) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", i.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), nfft=16, noverlap=8) == ()
+    assert cast("EagerCallableProtocol", i.infer_shape)(None, nfft=16, noverlap=8) == ()
+    assert cast("EagerCallableProtocol", i.infer_shape)(cast("EagerCallableProtocol", Dummy)(), nfft=16, noverlap=8) == ()
+    assert cast("EagerCallableProtocol", i.infer_shape)(cast("EagerCallableProtocol", DummyShape)(), nfft=16, noverlap=8) == ()
 
     class DummyShape1D:
         """Test class DummyShape1D."""
 
         shape = (10,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", i.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape1D)(), nfft=16, noverlap=8) == ()
+    assert cast("EagerCallableProtocol", i.infer_shape)(cast("EagerCallableProtocol", DummyShape1D)(), nfft=16, noverlap=8) == ()
 
 
 def test_stft_istft_invalid_overlap() -> None:
@@ -93,7 +91,7 @@ def test_stft_istft_invalid_overlap() -> None:
 
     with pytest.raises(ValueError, match="noverlap must be less than nfft"):
         Zxx = stft(x, nfft=16, noverlap=8)
-        cast("Callable[..., EagerTensorProtocol]", istft)(Zxx, nfft=16, noverlap=16)
+        cast("EagerCallableProtocol", istft)(Zxx, nfft=16, noverlap=16)
 
     config.eager_mode = False
     global_tracing_state.start_tracing()

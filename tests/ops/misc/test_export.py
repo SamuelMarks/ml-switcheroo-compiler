@@ -10,9 +10,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.export import export_to_dot
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_export() -> None:
@@ -23,7 +21,13 @@ def test_export() -> None:
         """Test class DummyNode."""
 
         def __init__(self, id: EagerValue, op_type: EagerValue, inputs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                id: Test parameter `id`.
+                op_type: Test parameter `op_type`.
+                inputs: Test parameter `inputs`.
+            """
             self.id = id
             self.op_type = op_type
             self.inputs = inputs
@@ -40,18 +44,18 @@ def test_export() -> None:
 
         id = "n2"
 
-    t = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", DummyData)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((1,), "float32", "cpu"))
+    t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyData)(), cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
 
     state.global_tracing_state.active_graph = None
     with pytest.raises(RuntimeError):
-        cast("Callable[..., EagerTensorProtocol]", export_to_dot)("test.dot", t)
+        cast("EagerCallableProtocol", export_to_dot)("test.dot", t)
 
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
 
     import io
 
     f = io.StringIO()
-    cast("Callable[..., EagerTensorProtocol]", export_to_dot)(f, t)
+    cast("EagerCallableProtocol", export_to_dot)(f, t)
 
     lines = f.getvalue().split("\n")
     assert "digraph G {" in lines
@@ -62,7 +66,7 @@ def test_export() -> None:
     # Test string file path
     import os
 
-    cast("Callable[..., EagerTensorProtocol]", export_to_dot)("test_export.dot", t)
+    cast("EagerCallableProtocol", export_to_dot)("test_export.dot", t)
     assert os.path.exists("test_export.dot")
     os.remove("test_export.dot")
 
@@ -72,8 +76,8 @@ def test_export() -> None:
 
         id = "n3"
 
-    t_inv = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", DummyDataInvalid)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((1,), "float32", "cpu"))
+    t_inv = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyDataInvalid)(), cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
 
     f2 = io.StringIO()
-    cast("Callable[..., EagerTensorProtocol]", export_to_dot)(f2, t_inv)
+    cast("EagerCallableProtocol", export_to_dot)(f2, t_inv)
     assert "n3" not in f2.getvalue()

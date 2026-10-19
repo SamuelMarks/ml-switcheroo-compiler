@@ -21,7 +21,12 @@ def test_householder_product_fallback() -> None:
 
         @staticmethod
         def householder_product(v: EagerValue, tau: EagerValue) -> EagerValue:
-            """Test function householder_product."""
+            """Test function householder_product.
+
+            Args:
+                v: Test parameter `v`.
+                tau: Test parameter `tau`.
+            """
             return v
 
     class MockTorchLinalg:
@@ -31,5 +36,4 @@ def test_householder_product_fallback() -> None:
 
     setattr(MockTorch, "linalg", MockTorchLinalg)
 
-    # We can just check coverage.
-    assert tau is not None or tau is None
+    assert tau.shape == (2,)

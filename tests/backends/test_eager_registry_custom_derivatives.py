@@ -32,7 +32,12 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
 
     # 1. _eager_custom_jvp with callable fun
     def my_fun(x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function my_fun."""
+        """Test function my_fun.
+
+        Args:
+            x: Test parameter `x`.
+            y: Test parameter `y`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", y)
 
     res_fun = m._eager_custom_jvp(backend, 3, 4, fun=my_fun)
@@ -44,7 +49,12 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
 
     # 2. _eager_process_custom_jvp_call with 2-tuple return
     def rule_packed(primals: EagerValue, tangents: EagerValue) -> EagerValue:
-        """Test function rule_packed."""
+        """Test function rule_packed.
+
+        Args:
+            primals: Test parameter `primals`.
+            tangents: Test parameter `tangents`.
+        """
         return (getattr(primals, "__getitem__")(0) * 2, getattr(tangents, "__getitem__")(0) * 2)
 
     res_rule1 = m._eager_process_custom_jvp_call(backend, 5, 1, num_primals=1, jvp_rule=rule_packed)
@@ -52,7 +62,12 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
 
     # 3. _eager_process_custom_jvp_call with unpacked fallback on TypeError
     def rule_unpacked(p: EagerValue, t: EagerValue) -> EagerValue:
-        """Test function rule_unpacked."""
+        """Test function rule_unpacked.
+
+        Args:
+            p: Test parameter `p`.
+            t: Test parameter `t`.
+        """
         return (cast("EagerTensorProtocol", p) + cast("EagerTensorProtocol", 1), cast("EagerTensorProtocol", t) + cast("EagerTensorProtocol", 1))
 
     res_rule2 = m._eager_process_custom_jvp_call(backend, 10, 2, num_primals=1, jvp_rule=rule_unpacked)
@@ -60,7 +75,12 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
 
     # 4. _eager_process_custom_jvp_call returning non-tuple (falls back to (None, res))
     def rule_single(primals: EagerValue, tangents: EagerValue) -> EagerValue:
-        """Test function rule_single."""
+        """Test function rule_single.
+
+        Args:
+            primals: Test parameter `primals`.
+            tangents: Test parameter `tangents`.
+        """
         return 999
 
     res_rule3 = m._eager_process_custom_jvp_call(backend, 1, 1, num_primals=1, jvp_rule=rule_single)

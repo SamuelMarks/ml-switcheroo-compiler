@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.backends.cupy.eager import _verify_gpu_residency, ex
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_cupy_verify_gpu_residency() -> None:
@@ -24,14 +22,22 @@ def test_cupy_verify_gpu_residency() -> None:
         """Test class MockNdarray."""
 
         def __init__(self, data: EagerValue = None) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
     class DataWithDevice:
         """Test class DataWithDevice."""
 
         def __init__(self, device: EagerValue = None) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                device: Test parameter `device`.
+            """
             self.device = device
 
     class DataNoDevice:
@@ -40,30 +46,30 @@ def test_cupy_verify_gpu_residency() -> None:
         pass
 
     # Mock cupy array resident on GPU when cp is None
-    mock_array = cast("Callable[..., EagerTensorProtocol]", MockNdarray)(cast("Callable[..., EagerTensorProtocol]", DataWithDevice)("cuda:0"))
+    mock_array = cast("EagerCallableProtocol", MockNdarray)(cast("EagerCallableProtocol", DataWithDevice)("cuda:0"))
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-        cast("Callable[..., EagerTensorProtocol]", _verify_gpu_residency)(mock_array)
+        cast("EagerCallableProtocol", _verify_gpu_residency)(mock_array)
 
     # Valid device memory with cp not None
     mock_cp = MagicMock()
     mock_cp.ndarray = MockNdarray
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-        cast("Callable[..., EagerTensorProtocol]", _verify_gpu_residency)(mock_array)
+        cast("EagerCallableProtocol", _verify_gpu_residency)(mock_array)
 
         # res has data but data has no device attribute
-        cast("Callable[..., EagerTensorProtocol]", _verify_gpu_residency)(cast("Callable[..., EagerTensorProtocol]", MockNdarray)(cast("Callable[..., EagerTensorProtocol]", DataNoDevice)()))
+        cast("EagerCallableProtocol", _verify_gpu_residency)(cast("EagerCallableProtocol", MockNdarray)(cast("EagerCallableProtocol", DataNoDevice)()))
 
         # res has data = None
-        cast("Callable[..., EagerTensorProtocol]", _verify_gpu_residency)(cast("Callable[..., EagerTensorProtocol]", MockNdarray)(None))
+        cast("EagerCallableProtocol", _verify_gpu_residency)(cast("EagerCallableProtocol", MockNdarray)(None))
 
         # res is not an array
         _verify_gpu_residency(42)
 
     # Mock array with missing device (device is None)
-    bad_array = cast("Callable[..., EagerTensorProtocol]", MockNdarray)(cast("Callable[..., EagerTensorProtocol]", DataWithDevice)(None))
+    bad_array = cast("EagerCallableProtocol", MockNdarray)(cast("EagerCallableProtocol", DataWithDevice)(None))
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
         with pytest.raises(RuntimeError, match="CuPy array is not residing on GPU device memory"):
-            cast("Callable[..., EagerTensorProtocol]", _verify_gpu_residency)(bad_array)
+            cast("EagerCallableProtocol", _verify_gpu_residency)(bad_array)
 
 
 def test_cupy_eager_dispatch_native() -> None:
@@ -74,24 +80,24 @@ def test_cupy_eager_dispatch_native() -> None:
 
     with patch.dict(sys.modules, {"cupy": mock_cp}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-            res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
+            res = cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
             assert res == mock_cp.add.return_value
             mock_cp.add.assert_called_once()
 
             # Non-list arg (e.g. scalar int) and asarray exception handling
             mock_cp.asarray.side_effect = RuntimeError("asarray failure")
-            res_scalar = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1.0, 2.0], 5)
+            res_scalar = cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0, 2.0], 5)
             assert res_scalar == mock_cp.add.return_value
             mock_cp.asarray.side_effect = None
 
             # Ensure silent CPU NumPy fallback is prevented: unmapped op raises BackendNotSupportedError
             with pytest.raises(BackendNotSupportedError):
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "CompletelyUnsupportedOp123")
+                cast("EagerCallableProtocol", execute_op)(None, "CompletelyUnsupportedOp123")
 
             # Dispatch raises BackendNotSupportedError
             with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("dispatch failed")):
                 with pytest.raises(BackendNotSupportedError, match="Operation 'Add' is not implemented"):
-                    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", [1.0])
+                    cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0])
 
 
 def test_cupy_eager_unavailable() -> None:
@@ -99,7 +105,7 @@ def test_cupy_eager_unavailable() -> None:
     with patch.dict(sys.modules, {"cupy": None}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
             with pytest.raises(BackendNotSupportedError, match="CuPy is not installed"):
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1, 2)
+                cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 2)
 
 
 def test_cupy_eager_reductions_and_kwarg_mapping() -> None:
@@ -110,7 +116,7 @@ def test_cupy_eager_reductions_and_kwarg_mapping() -> None:
 
     with patch.dict(sys.modules, {"cupy": mock_cp}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-            cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
+            cast("EagerCallableProtocol", execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
             mock_cp.sum.assert_called_once()
             _, kwargs = mock_cp.sum.call_args
             assert "axis" in kwargs and kwargs["axis"] == 0
@@ -125,7 +131,7 @@ def test_cupy_eager_fallback_mock_mod() -> None:
     try:
         with patch.dict(sys.modules, {"cupy": None}):
             with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-                res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", 1, 2)
+                res = cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 2)
                 assert res == 42
     finally:
         delattr(cupy_eager, "add")
@@ -137,7 +143,7 @@ def test_cupy_eager_registry_fallback() -> None:
 
     mock_func = MagicMock(return_value="registered_res")
     with patch.object(global_eager_registry, "get", return_value=mock_func):
-        res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "CustomRegisteredOp", 10)
+        res = cast("EagerCallableProtocol", execute_op)(None, "CustomRegisteredOp", 10)
         assert res == "registered_res"
         mock_func.assert_called_once()
 
@@ -190,7 +196,7 @@ def test_cupy_eager_remaining_branches() -> None:
         pass
 
     empty_mod = EmptyBackendMod()
-    cast("Callable[..., EagerTensorProtocol]", _attach_vision_ops)(empty_mod)
+    cast("EagerCallableProtocol", _attach_vision_ops)(empty_mod)
     assert hasattr(empty_mod, "conv2d")
     assert hasattr(empty_mod, "maxpool2d")
     assert hasattr(empty_mod, "avgpool2d")

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot as RaggedDot
@@ -223,7 +223,7 @@ class SparseReduceSum(OpDef):
             return ()
         axis = kwargs.get("axis")
         keepdims = bool(kwargs.get("keepdims", False))
-        return cast(tuple[int, ...], cast("Callable[..., EagerTensorProtocol]", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
+        return cast(tuple[int, ...], cast("EagerCallableProtocol", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
 
 
 @register_op("SparseSoftmax")
@@ -266,7 +266,7 @@ class SparseReduceMax(OpDef):
             return ()
         axis = kwargs.get("axis")
         keepdims = bool(kwargs.get("keepdims", False))
-        return cast(tuple[int, ...], cast("Callable[..., EagerTensorProtocol]", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
+        return cast(tuple[int, ...], cast("EagerCallableProtocol", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
 
 
 @register_op("SparseBincount")

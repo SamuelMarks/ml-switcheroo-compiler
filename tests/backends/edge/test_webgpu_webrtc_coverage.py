@@ -214,7 +214,11 @@ def test_webgpu_webrtc_emitters() -> None:
         orig_exists = os.path.exists
 
         def mock_exists_no_top(path: str) -> bool:
-            """Test function mock_exists_no_top."""
+            """Test function mock_exists_no_top.
+
+            Args:
+                path: Test parameter `path`.
+            """
             if "webrtc_topology.yaml" in path:
                 return False
             return orig_exists(path)
@@ -224,7 +228,11 @@ def test_webgpu_webrtc_emitters() -> None:
         assert webrtc_mod.emit_webrtc_op("AllReduce", "local_data", "op_1") == ""
 
         def mock_exists_no_col(path: str) -> bool:
-            """Test function mock_exists_no_col."""
+            """Test function mock_exists_no_col.
+
+            Args:
+                path: Test parameter `path`.
+            """
             if "webrtc_collectives.yaml" in path:
                 return False
             return orig_exists(path)

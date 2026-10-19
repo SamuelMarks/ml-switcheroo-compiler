@@ -36,19 +36,39 @@ def test_math_sort_coverage() -> None:
         """Mock backend with sort operations."""
 
         def argsort(self, a: EagerValue, axis: int = -1) -> str:
-            """Mock argsort."""
+            """Mock argsort.
+
+            Args:
+                a: Test parameter `a`.
+                axis: Test parameter `axis`.
+            """
             return f"argsort_{axis}"
 
         def lexsort(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock lexsort."""
+            """Mock lexsort.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "lexsort_val"
 
         def searchsorted(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock searchsorted."""
+            """Mock searchsorted.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "searchsorted_val"
 
         def sort_complex(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock sort_complex."""
+            """Mock sort_complex.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "sort_complex_val"
 
     sb = SortBackend()
@@ -77,7 +97,12 @@ def test_math_sorting_coverage() -> None:
         """Backend with argsort."""
 
         def argsort(self, a: EagerValue, axis: int = -1) -> str:
-            """Mock argsort."""
+            """Mock argsort.
+
+            Args:
+                a: Test parameter `a`.
+                axis: Test parameter `axis`.
+            """
             return f"argpartition_{axis}"
 
     assert _argpartition(ArgpartBackend(), [3, 1, 2], kth=1, axis=0) == "argpartition_0"
@@ -95,15 +120,30 @@ def test_math_sorting_coverage() -> None:
         """Backend with median, percentile, quantile."""
 
         def median(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock median."""
+            """Mock median.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "median_val"
 
         def percentile(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock percentile."""
+            """Mock percentile.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "percentile_val"
 
         def quantile(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock quantile."""
+            """Mock quantile.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "quantile_val"
 
     st = StatBackend()
@@ -117,7 +157,12 @@ def test_math_sorting_coverage() -> None:
         """Backend with partition."""
 
         def partition(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock partition."""
+            """Mock partition.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "partition_val"
 
     assert _np_partition(PartitionBackend(), [3, 1, 2], 1) == "partition_val"

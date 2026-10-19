@@ -84,7 +84,11 @@ def test_jax_generate_function_signature() -> None:
 
 
 def test_jax_save_load(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_jax_save_load."""
+    """Test function test_jax_save_load.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     mock_jax = MagicMock()
     mock_jnp = MagicMock()
     mock_jax.numpy = mock_jnp
@@ -101,7 +105,11 @@ def test_jax_save_load(tmp_path: EagerTensorProtocol) -> None:
 
 
 def test_jax_savez(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_jax_savez."""
+    """Test function test_jax_savez.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     mock_jax = MagicMock()
     mock_jnp = MagicMock()
     mock_jax.numpy = mock_jnp
@@ -115,7 +123,11 @@ def test_jax_savez(tmp_path: EagerTensorProtocol) -> None:
 
 
 def test_jax_savez_compressed(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_jax_savez_compressed."""
+    """Test function test_jax_savez_compressed.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     mock_jax = MagicMock()
     mock_jnp = MagicMock()
     mock_jax.numpy = mock_jnp

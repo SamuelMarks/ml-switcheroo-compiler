@@ -1,4 +1,4 @@
-"""Core utilities."""
+"""Implementation of math sort operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_sort`)."""
 
 from __future__ import annotations
 

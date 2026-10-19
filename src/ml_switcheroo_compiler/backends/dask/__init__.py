@@ -2,9 +2,9 @@
 
 import importlib.util
 import sys
-from typing import Callable, cast
+from typing import cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 try:
     _has_pkg = importlib.util.find_spec("dask") is not None
@@ -22,4 +22,4 @@ type.__setattr__(DaskGenerator, "zeros", classmethod(zeros))
 type.__setattr__(DaskGenerator, "array", classmethod(array))
 type.__setattr__(DaskGenerator, "asarray", classmethod(asarray))
 type.__setattr__(DaskGenerator, "item", classmethod(item))
-type.__setattr__(DaskGenerator, "execute_op", cast("Callable[..., EagerTensorProtocol]", classmethod)(execute_op))
+type.__setattr__(DaskGenerator, "execute_op", cast("EagerCallableProtocol", classmethod)(execute_op))

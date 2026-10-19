@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_basic import _infer_dtype
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_infer_dtype_from_array_object() -> None:
@@ -21,4 +19,4 @@ def test_infer_dtype_from_array_object() -> None:
 
         dtype = "O"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _infer_dtype)(cast("Callable[..., EagerTensorProtocol]", ObjArr)()) == DType.Object
+    assert cast("EagerCallableProtocol", _infer_dtype)(cast("EagerCallableProtocol", ObjArr)()) == DType.Object

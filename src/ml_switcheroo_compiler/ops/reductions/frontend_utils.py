@@ -5,11 +5,11 @@ from __future__ import annotations
 # ruff: noqa: E402
 import uuid
 from collections.abc import Sequence
-from typing import Callable, cast
+from typing import cast
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -73,7 +73,7 @@ def _emit_reduction_node(
     global_tracing_state.add_node(node)
 
     dtype_val = getattr(out_dtype, "value", out_dtype)
-    proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
+    proxy = cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 

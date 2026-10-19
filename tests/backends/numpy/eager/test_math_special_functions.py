@@ -14,9 +14,7 @@ import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import numpy_eager_registry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_math_matrix_utils_coverage() -> None:
@@ -31,7 +29,12 @@ def test_math_matrix_utils_coverage() -> None:
         """Test class MockBkDist."""
 
         def distributions(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function distributions."""
+            """Test function distributions.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "hit"
 
     assert mat_utils._np_distributions(MockBkDist(), [1]) == "hit"
@@ -44,11 +47,20 @@ def test_math_matrix_utils_coverage() -> None:
             """Test class distributions."""
 
             def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 self.val = "hit2"
 
             def __eq__(self, other: object) -> bool:
-                """Test function __eq__."""
+                """Test function __eq__.
+
+                Args:
+                    other: Test parameter `other`.
+                """
                 return getattr(self, "val", None) == other
 
             def mean(self) -> EagerValue:
@@ -59,7 +71,7 @@ def test_math_matrix_utils_coverage() -> None:
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOps()}):
         res2 = mat_utils._np_distributions(np, [1])
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res2, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 0.0]))
+        cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, cast("EagerCallableProtocol", np.array)([1.0, 0.0]))
 
 
 def test_math_general_coverage() -> None:
@@ -70,7 +82,12 @@ def test_math_general_coverage() -> None:
         """Test class MockBkDesc."""
 
         def descriptive(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function descriptive."""
+            """Test function descriptive.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "hit"
 
     assert misc_ext._np_descriptive_2(MockBkDesc(), [1]) == "hit"
@@ -83,20 +100,29 @@ def test_math_general_coverage() -> None:
             """Test class descriptive."""
 
             def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 self.val = "hit2"
 
             def __eq__(self, other: object) -> bool:
-                """Test function __eq__."""
+                """Test function __eq__.
+
+                Args:
+                    other: Test parameter `other`.
+                """
                 return getattr(self, "val", None) == other
 
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOpsDesc()}):
         res2 = misc_ext._np_descriptive_2(np, [1])
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res2, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 0.0, 0.0]))
+        cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, cast("EagerCallableProtocol", np.array)([1.0, 0.0, 0.0]))
     res = misc_ext._np_descriptive_2(np, [1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [2.0, 0.66666667, 0.81649658], rtol=1e-05)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [2.0, 0.66666667, 0.81649658], rtol=1e-05)
 
 
 def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -111,18 +137,30 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
 
         @staticmethod
         def any(x: EagerValue) -> EagerValue:
-            """Test function any."""
-            return cast("Callable[..., EagerTensorProtocol]", np.any)(x)
+            """Test function any.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerCallableProtocol", np.any)(x)
 
         @staticmethod
         def isinf(x: EagerValue) -> EagerValue:
-            """Test function isinf."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.isinf)(x))
+            """Test function isinf.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.isinf)(x))
 
         @staticmethod
         def isnan(x: EagerValue) -> EagerValue:
-            """Test function isnan."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.isnan)(x))
+            """Test function isnan.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.isnan)(x))
 
     dummy_bk = DummyBk()
     bk = np
@@ -5421,7 +5459,8 @@ def _test_math_misc_coverage_part_274(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_tensor(dummy_bk, arg1)
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor(dummy_bk, arg1, arg2)
-    mod._np_read_file(bk, arg1)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file(bk, arg1)
     _state.update(locals())
 
 
@@ -5433,13 +5472,16 @@ def _test_math_misc_coverage_part_275(_state: dict[str, EagerTensorProtocol]) ->
     """
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     (bk, dummy_bk) = (_state["bk"], _state["dummy_bk"])
-    mod._np_read_file(bk, arg1, arg2)
-    mod._np_read_file(bk, arg1, arg1, arg2)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file(bk, arg1, arg2)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file(bk, arg1, arg1, arg2)
     with pytest.raises(RuntimeError):
         mod._np_read_file(bk, arg_bool)
     with pytest.raises(RuntimeError):
         mod._np_read_file(bk, arg_int)
-    mod._np_read_file(dummy_bk, arg1)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file(dummy_bk, arg1)
     _state.update(locals())
 
 
@@ -5451,7 +5493,8 @@ def _test_math_misc_coverage_part_276(_state: dict[str, EagerTensorProtocol]) ->
     """
     (arg1, arg2, arg_bool, bk) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["bk"])
     dummy_bk = _state["dummy_bk"]
-    mod._np_read_file(dummy_bk, arg1, arg2)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
         cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1)
     with pytest.raises(AttributeError):
@@ -6864,9 +6907,12 @@ def _test_math_misc_coverage_part_357(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_parse_tensor_camel(dummy_bk, arg1)
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor_camel(dummy_bk, arg1, arg2)
-    mod._np_read_file_camel(bk, arg1)
-    mod._np_read_file_camel(bk, arg1, arg2)
-    mod._np_read_file_camel(bk, arg1, arg1, arg2)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file_camel(bk, arg1)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file_camel(bk, arg1, arg2)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file_camel(bk, arg1, arg1, arg2)
     _state.update(locals())
 
 
@@ -6882,8 +6928,10 @@ def _test_math_misc_coverage_part_358(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_read_file_camel(bk, arg_bool)
     with pytest.raises(RuntimeError):
         mod._np_read_file_camel(bk, arg_int)
-    mod._np_read_file_camel(dummy_bk, arg1)
-    mod._np_read_file_camel(dummy_bk, arg1, arg2)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file_camel(dummy_bk, arg1)
+    with pytest.raises(RuntimeError):
+        mod._np_read_file_camel(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
         cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1)
     _state.update(locals())
@@ -7066,19 +7114,39 @@ def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) ->
     bk = _state["bk"]
 
     def my_rem(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function my_rem."""
+        """Test function my_rem.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return "mock"
 
     def my_cm(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function my_cm."""
+        """Test function my_cm.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return "mock"
 
     def my_desc(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function my_desc."""
+        """Test function my_desc.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return "mock"
 
     def my_dist(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function my_dist."""
+        """Test function my_dist.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return "mock"
 
     setattr(_ops, "rem", my_rem)
@@ -7190,7 +7258,11 @@ def _test_math_misc_coverage_part_373(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def descriptive(x: EagerValue) -> EagerValue:
-            """Test function descriptive."""
+            """Test function descriptive.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     mod._np_descriptive(DummyDesc(), np.array([1.0]))
@@ -7200,7 +7272,11 @@ def _test_math_misc_coverage_part_373(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def distributions(x: EagerValue) -> EagerValue:
-            """Test function distributions."""
+            """Test function distributions.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     mod._np_distributions(DummyDist(), np.array([1.0]))
@@ -7221,7 +7297,12 @@ def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) ->
         """Test class DummyDescClass."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     _orig_desc = getattr(_ops, "descriptive", None)
@@ -7236,7 +7317,12 @@ def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) ->
         """Test class DummyDistClass."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     _orig_dist = getattr(_ops, "distributions", None)
@@ -7421,17 +7507,30 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def iscomplexobj(x: EagerValue) -> EagerValue:
-            """Test function iscomplexobj."""
+            """Test function iscomplexobj.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return True
 
         @staticmethod
         def conj(x: EagerValue) -> EagerValue:
-            """Test function conj."""
+            """Test function conj.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         @staticmethod
         def sum(x: EagerValue, axis: EagerValue) -> EagerValue:
-            """Test function sum."""
+            """Test function sum.
+
+            Args:
+                x: Test parameter `x`.
+                axis: Test parameter `axis`.
+            """
             return x
 
     mod._np_vecdot(DummyBkVecdot(), np.array([1.0]), np.array([1.0]))
@@ -7440,7 +7539,12 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
 
     def test_desc_func(*args: EagerTensorProtocol, **kwargs: EagerTensorProtocol) -> EagerValue:
-        """Test function test_desc_func."""
+        """Test function test_desc_func.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return args[0]
         assert callable(test_desc_func)
 
@@ -7514,12 +7618,22 @@ def _test_math_misc_coverage_part_385(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def descriptive(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function descriptive."""
+            """Test function descriptive.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "desc_bk"
 
         @staticmethod
         def distributions(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function distributions."""
+            """Test function distributions.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "dist_bk"
 
     mod._np_descriptive(FakeDescBackend(), np.array([1.0]))
@@ -7545,7 +7659,12 @@ def _test_math_misc_coverage_part_386(_state: dict[str, EagerTensorProtocol]) ->
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
 
     def test_func(*a: EagerTensorProtocol, **k: EagerTensorProtocol) -> EagerValue:
-        """Test function test_func."""
+        """Test function test_func.
+
+        Args:
+            a: Test parameter `a`.
+            k: Test parameter `k`.
+        """
         return a[0]
         assert callable(test_func)
 
@@ -7593,7 +7712,12 @@ def _test_math_misc_coverage_part_388(_state: dict[str, EagerTensorProtocol]) ->
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
 
     def buggy_desc(*a: EagerValue, **k: EagerValue) -> None:
-        """Test function buggy_desc."""
+        """Test function buggy_desc.
+
+        Args:
+            a: Test parameter `a`.
+            k: Test parameter `k`.
+        """
         raise ValueError("buggy")
 
     _orig_desc = getattr(_ops, "descriptive", None)
@@ -7680,14 +7804,24 @@ def _test_math_misc_coverage_part_391(_state: dict[str, EagerTensorProtocol]) ->
         """Test class MockDescriptiveFunc."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> MockDescriptiveFunc:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("MockDescriptiveFunc", "mock_desc")
 
     class MockDistributionsFunc:
         """Test class MockDistributionsFunc."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> MockDistributionsFunc:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("MockDistributionsFunc", "mock_dist")
 
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
@@ -7721,7 +7855,12 @@ def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) ->
         """Test class ExplodingFunc."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> ExplodingFunc:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise ValueError("exploding")
 
     _orig_desc = cast("EagerTensorProtocol", getattr(_ops, "descriptive", None))
@@ -7752,7 +7891,12 @@ def _test_math_misc_coverage_part_393(_state: dict[str, EagerTensorProtocol]) ->
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
 
     def raise_err(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function raise_err."""
+        """Test function raise_err.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         raise ValueError("error")
 
     _orig_desc = cast("EagerTensorProtocol", getattr(_ops, "descriptive", None))
@@ -7786,12 +7930,22 @@ def _test_math_misc_coverage_part_394(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def descriptive(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function descriptive."""
+            """Test function descriptive.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "desc_bk"
 
         @staticmethod
         def distributions(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function distributions."""
+            """Test function distributions.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "dist_bk"
 
     getattr(_state, "update")({"FakeDescBackendHas": FakeDescBackendHas, "_orig_dist": _orig_dist})
@@ -7842,12 +7996,22 @@ def _test_math_misc_coverage_part_396(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def descriptive(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function descriptive."""
+            """Test function descriptive.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "desc_bk"
 
         @staticmethod
         def distributions(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function distributions."""
+            """Test function distributions.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "dist_bk"
 
     mod._np_descriptive(FakeDescBackendHas(), np.array([1.0]))
@@ -7877,7 +8041,12 @@ def _test_math_misc_coverage_part_397(_state: dict[str, EagerTensorProtocol]) ->
         """Test class BadDesc."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> BadDesc:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise RuntimeError("Boom")
 
     _orig_desc = getattr(_ops, "descriptive", None)
@@ -7917,12 +8086,21 @@ def _test_math_misc_coverage_part_398(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def iscomplexobj(x: EagerValue) -> EagerValue:
-            """Test function iscomplexobj."""
+            """Test function iscomplexobj.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return False
 
         @staticmethod
         def sum(x: EagerValue, axis: EagerValue) -> EagerValue:
-            """Test function sum."""
+            """Test function sum.
+
+            Args:
+                x: Test parameter `x`.
+                axis: Test parameter `axis`.
+            """
             return x
 
     getattr(_state, "update")({"DummyBkVecdot2": DummyBkVecdot2, "sys": sys})
@@ -7943,17 +8121,30 @@ def _test_math_misc_coverage_part_399(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def iscomplexobj(x: EagerValue) -> EagerValue:
-            """Test function iscomplexobj."""
+            """Test function iscomplexobj.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return False
 
         @staticmethod
         def conj(x: EagerValue) -> EagerValue:
-            """Test function conj."""
+            """Test function conj.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         @staticmethod
         def sum(x: EagerValue, axis: EagerValue) -> EagerValue:
-            """Test function sum."""
+            """Test function sum.
+
+            Args:
+                x: Test parameter `x`.
+                axis: Test parameter `axis`.
+            """
             return x
 
     mod._np_vecdot(DummyBkVecdot3(), np.array([1.0]), np.array([1.0]))
@@ -7983,12 +8174,20 @@ def _test_math_misc_coverage_part_400(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def asarray(x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         @staticmethod
         def array(x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     mod._np_randompermutation(DummyBkPermutation(), ScalarArray())
@@ -8010,7 +8209,13 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
 
         @staticmethod
         def vecdot(x: EagerValue, y: EagerValue, axis: EagerValue) -> EagerValue:
-            """Test function vecdot."""
+            """Test function vecdot.
+
+            Args:
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+                axis: Test parameter `axis`.
+            """
             return x
 
     mod._np_vecdot(DummyBkVecdotHas(), np.array([1.0]), np.array([1.0]))
@@ -8023,7 +8228,13 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
 
             @staticmethod
             def vecdot(x: EagerValue, y: EagerValue, axis: EagerValue) -> EagerValue:
-                """Test function vecdot."""
+                """Test function vecdot.
+
+                Args:
+                    x: Test parameter `x`.
+                    y: Test parameter `y`.
+                    axis: Test parameter `axis`.
+                """
                 return x
 
     mod._np_vecdot(DummyBkLinalgVecdotHas(), np.array([1.0]), np.array([1.0]))
@@ -8098,7 +8309,12 @@ def _test_math_misc_coverage_part_405(_state: dict[str, EagerTensorProtocol]) ->
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
 
     def val_err(*a: EagerValue, **k: EagerValue) -> None:
-        """Test function val_err."""
+        """Test function val_err.
+
+        Args:
+            a: Test parameter `a`.
+            k: Test parameter `k`.
+        """
         raise ValueError("err")
 
     _orig_rem = getattr(_ops, "rem", None)
@@ -8141,7 +8357,12 @@ def _test_math_misc_coverage_part_406(_state: dict[str, EagerTensorProtocol]) ->
         """Test class ValErrClass."""
 
         def __new__(cls, *a: EagerValue, **k: EagerValue) -> ValErrClass:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             raise ValueError("err")
 
     _orig_rem = getattr(_ops, "rem", None)
@@ -8196,7 +8417,11 @@ def _test_math_misc_coverage_part_408(_state: dict[str, EagerTensorProtocol]) ->
         """Test class Explosive."""
 
         def __getattr__(self, name: EagerValue) -> None:
-            """Test function __getattr__."""
+            """Test function __getattr__.
+
+            Args:
+                name: Test parameter `name`.
+            """
             raise ValueError("boom")
 
     _orig_desc = cast("EagerTensorProtocol", getattr(_ops, "descriptive", None))
@@ -8278,7 +8503,11 @@ def _test_math_misc_coverage_part_411(_state: dict[str, EagerTensorProtocol]) ->
         """Test class ExplodeOps."""
 
         def __getattr__(self, name: EagerValue) -> None:
-            """Test function __getattr__."""
+            """Test function __getattr__.
+
+            Args:
+                name: Test parameter `name`.
+            """
             raise ValueError("explode")
 
     import sys
@@ -8796,7 +9025,7 @@ def test_math_misc_coverage() -> None:
         _test_math_misc_coverage_part_415,
     ):
         _part_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 class DummyBackend:
@@ -8809,7 +9038,12 @@ class MockCallableClass:
     """Test class MockCallableClass."""
 
     def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         self.called = True
 
 
@@ -8833,9 +9067,9 @@ def test_math_misc_missing_branches_mocked() -> None:
         res = numpy_eager_registry._registry["confusion_matrix"](None, np.array([0]), np.array([0]), num_classes=2)
         assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
         res = numpy_eager_registry._registry["descriptive"](None, np.array([1, 2]))
-        assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 3
+        assert cast("EagerCallableProtocol", len)(res) == 3
         res = numpy_eager_registry._registry["distributions"](None, np.array([1, 2]))
-        assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+        assert cast("EagerCallableProtocol", len)(res) == 2
     finally:
         for attr, val in originals.items():
             setattr(ops, attr, val)
@@ -8890,7 +9124,12 @@ def _test_math_matrix_utils_distributions_success_part_1(_state: dict[str, Eager
         """Test class FakeInst."""
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return 42
 
     from unittest.mock import patch
@@ -8919,7 +9158,7 @@ def _test_math_matrix_utils_distributions_success_part_2(_state: dict[str, Eager
     with patch.object(_ops, "OpDef", FakeOpDef, create=True):
         with patch.object(_ops, "descriptive", FakeInst(), create=True):
             _np_descriptive_2(np)
-        with cast("Callable[..., EagerTensorProtocol]", patch.object)(_ops, "descriptive", cast("Callable[..., EagerTensorProtocol]", property)(lambda _: cast("Callable[..., EagerTensorProtocol]", int)("invalid")), create=True):
+        with cast("EagerCallableProtocol", patch.object)(_ops, "descriptive", cast("EagerCallableProtocol", property)(lambda _: cast("EagerCallableProtocol", int)("invalid")), create=True):
             _np_descriptive_2(np)
     _state.update(locals())
 
@@ -8973,7 +9212,7 @@ def test_math_matrix_utils_distributions_success() -> None:
     _test_math_matrix_utils_distributions_success_part_2(_state)
     _test_math_matrix_utils_distributions_success_part_3(_state)
     _test_math_matrix_utils_distributions_success_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_math_matrix_utils_distributions_success_2() -> None:
@@ -8983,8 +9222,12 @@ def test_math_matrix_utils_distributions_success_2() -> None:
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
 
     def _make_class(name: EagerValue) -> EagerValue:
-        """Test function _make_class."""
-        return cast("Callable[..., EagerTensorProtocol]", type)(name, (), {"__call__": lambda self, *args, **kwargs: 42})
+        """Test function _make_class.
+
+        Args:
+            name: Test parameter `name`.
+        """
+        return cast("EagerCallableProtocol", type)(name, (), {"__call__": lambda self, *args, **kwargs: 42})
 
     with patch.object(_ops, "OpDef", type, create=True):
         with patch.object(_ops, "rem", _make_class("rem"), create=True):
@@ -8999,7 +9242,11 @@ def test_math_matrix_utils_distributions_success_2() -> None:
 
 
 def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_fallback_branches_return."""
+    """Test function test_fallback_branches_return.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import _np_descriptive_2, _np_rem_2
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_matrix_utils import _np_confusion_matrix, _np_distributions
 
@@ -9012,28 +9259,48 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
         """Test class FakeDistributions."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeDistributions:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("FakeDistributions", "dist2")
 
     class FakeCM:
         """Test class FakeCM."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeCM:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("FakeCM", "cm2")
 
     class FakeDesc:
         """Test class FakeDesc."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeDesc:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("FakeDesc", "desc2")
 
     class FakeRem:
         """Test class FakeRem."""
 
         def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeRem:
-            """Test function __new__."""
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("FakeRem", "rem2")
 
     monkeypatch.setattr(ops, "OpDef", DummyOpDef, raising=False)
@@ -9138,28 +9405,54 @@ def test_fallback_exception() -> None:
         """Test class DummyBackend."""
 
         def distributions(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function distributions."""
+            """Test function distributions.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "dist_exc"
 
         def confusion_matrix(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function confusion_matrix."""
+            """Test function confusion_matrix.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "cm_exc"
 
         def descriptive(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function descriptive."""
+            """Test function descriptive.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "desc_exc"
 
         def rem(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function rem."""
+            """Test function rem.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "rem_exc"
 
     orig_import = __import__
 
     def mock_import(name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function mock_import."""
+        """Test function mock_import.
+
+        Args:
+            name: Test parameter `name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         if name == "ml_switcheroo_compiler.ops":
             raise Exception("boom")
-        return cast("Callable[..., EagerTensorProtocol]", orig_import)(name, *args, **kwargs)
+        return cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=mock_import):
         assert _np_distributions(DummyBackend(), 1) == "dist_exc"
@@ -9180,7 +9473,7 @@ def test_np_confusion_matrix_actual_logic() -> None:
         pass
 
     res = _np_confusion_matrix(DummyBackend(), [0, 1], [1, 1], num_classes=2)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, [[0, 1], [0, 1]])
+    assert cast("EagerCallableProtocol", np.array_equal)(res, [[0, 1], [0, 1]])
     res2 = _np_confusion_matrix(DummyBackend(), [0, 1], [1, 1])
     assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
     assert _np_confusion_matrix_cap(DummyBackend(), [0], [0]) is not None
@@ -9309,191 +9602,426 @@ class _SimpleForwardsDummyBackend:
     """Test class _SimpleForwardsDummyBackend."""
 
     def applyoveraxes(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function applyoveraxes."""
+        """Test function applyoveraxes.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 0
 
     def arrayrepr(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function arrayrepr."""
+        """Test function arrayrepr.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 1
 
     def arraystr(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function arraystr."""
+        """Test function arraystr.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 2
 
     def atleast1d(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function atleast1d."""
+        """Test function atleast1d.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 3
 
     def atleast2d(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function atleast2d."""
+        """Test function atleast2d.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 4
 
     def atleast3d(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function atleast3d."""
+        """Test function atleast3d.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 5
 
     def average(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function average."""
+        """Test function average.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 6
 
     def betainc(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function betainc."""
+        """Test function betainc.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 7
 
     def block(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function block."""
+        """Test function block.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 8
 
     def callable(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function callable."""
+        """Test function callable.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 9
 
     def clip(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function clip."""
+        """Test function clip.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 10
 
     def corrcoef(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function corrcoef."""
+        """Test function corrcoef.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 11
 
     def cov(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function cov."""
+        """Test function cov.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 12
 
     def debuginfs(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function debuginfs."""
+        """Test function debuginfs.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 13
 
     def debugnans(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function debugnans."""
+        """Test function debugnans.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 14
 
     def descriptive(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function descriptive."""
+        """Test function descriptive.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 15
 
     def descriptive2(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function descriptive2."""
+        """Test function descriptive2.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 16
 
     def diff(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function diff."""
+        """Test function diff.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 17
 
     def digitize(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function digitize."""
+        """Test function digitize.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 18
 
     def dotgeneral(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function dotgeneral."""
+        """Test function dotgeneral.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 19
 
     def ediff1d(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function ediff1d."""
+        """Test function ediff1d.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 20
 
     def einsumpath(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function einsumpath."""
+        """Test function einsumpath.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 21
 
     def fabs(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function fabs."""
+        """Test function fabs.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 22
 
     def interp(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function interp."""
+        """Test function interp.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 23
 
     def iterable(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function iterable."""
+        """Test function iterable.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 24
 
     def ix(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function ix."""
+        """Test function ix.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 25
 
     def key(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function key."""
+        """Test function key.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 26
 
     def kron(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function kron."""
+        """Test function kron.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 27
 
     def load(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function load."""
+        """Test function load.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 28
 
     def modf(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function modf."""
+        """Test function modf.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 29
 
     def onehot(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function onehot."""
+        """Test function onehot.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 30
 
     def raggeddot(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function raggeddot."""
+        """Test function raggeddot.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 31
 
     def ravelmultiindex(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function ravelmultiindex."""
+        """Test function ravelmultiindex.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 32
 
     def rem(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function rem."""
+        """Test function rem.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 33
 
     def rem2(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function rem2."""
+        """Test function rem2.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 34
 
     def rem3(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function rem3."""
+        """Test function rem3.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 35
 
     def serializetensor(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function serializetensor."""
+        """Test function serializetensor.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 36
 
     def serializetensorcamel(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function serializetensorcamel."""
+        """Test function serializetensorcamel.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 37
 
     def tensor(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function tensor."""
+        """Test function tensor.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 38
 
     def trapz(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function trapz."""
+        """Test function trapz.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 39
 
     def truncatediv(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function truncatediv."""
+        """Test function truncatediv.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 41
 
     def truncatemod(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function truncatemod."""
+        """Test function truncatemod.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 42
 
     def uint(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function uint."""
+        """Test function uint.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 43
 
     def uint8(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function uint8."""
+        """Test function uint8.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 44
 
     def unravelindex(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function unravelindex."""
+        """Test function unravelindex.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 45
 
     def unwrap(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function unwrap."""
+        """Test function unwrap.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 46
 
     def vectorize(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function vectorize."""
+        """Test function vectorize.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return 47
 
 
@@ -9732,7 +10260,7 @@ def test_math_general_simple_forwards() -> None:
         _test_math_general_simple_forwards_sub_14,
     ):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_math_general_missing_forwards() -> None:
@@ -9745,7 +10273,12 @@ def test_math_general_missing_forwards() -> None:
         """Test class DummyBackend."""
 
         def matmul(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function matmul."""
+            """Test function matmul.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return 1
 
     db = DummyBackend()
@@ -9755,8 +10288,8 @@ def test_math_general_missing_forwards() -> None:
     assert _np_raggeddot(db, np.ones((2, 2)), np.ones((2, 2))) is not None
     assert _np_serialize_tensor(db, 1) is not None
     assert _np_serialize_tensor_camel(db, 1) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_key)(db, 1), [1, 0])
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_clip)(db, cast("Callable[..., EagerTensorProtocol]", np.array)([5.0]), 1.0, 3.0), [3.0])
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_key)(db, 1), [1, 0])
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_clip)(db, cast("EagerCallableProtocol", np.array)([5.0]), 1.0, 3.0), [3.0])
     res = _np_one_hot(db, np.array([0]), 2)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 2)
 
@@ -9773,16 +10306,16 @@ def test_math_general_debuginfs_callable() -> None:
 
     with pytest.raises(ValueError):
         _np_debuginfs(np, np.array([np.inf]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_debuginfs)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])), [1.0])
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_debuginfs)(np, cast("EagerCallableProtocol", np.array)([1.0])), [1.0])
     with pytest.raises(ValueError):
         _np_debugnans(np, np.array([np.nan]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_debugnans)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])), [1.0])
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_debugnans)(np, cast("EagerCallableProtocol", np.array)([1.0])), [1.0])
     assert cast("EagerTensorProtocol", getattr(_np_tensor(np), "shape")) == (0,)
     assert cast("EagerTensorProtocol", getattr(_np_tensor(np, [1, 2]), "shape")) == (2,)
     res = _np_descriptive_2(np, [1.0, 2.0])
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 3
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", _np_descriptive_2)(np)) == 3
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_key)(np), [0, 0])
+    assert cast("EagerCallableProtocol", len)(res) == 3
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", _np_descriptive_2)(np)) == 3
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_key)(np), [0, 0])
     assert _np_rem_2(np) is None
 
 

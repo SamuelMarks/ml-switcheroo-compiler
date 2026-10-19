@@ -5,12 +5,11 @@ from __future__ import annotations
 import os
 import typing
 from pathlib import Path
-from typing import Callable, cast
+from typing import cast
 
 import yaml
 from ml_switcheroo_ir import AttributeValue, PartitionSpec
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -297,7 +296,14 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
     inp_axes = _get_sharding_axes(inp_sharding)
     node_axes = _get_sharding_axes(node_sharding)
 
-    return cast("IRNode | None", cast("Callable[..., EagerTensorProtocol]", _determine_spmd_communication)(node, idx, inp_id, node_sharding, inp_axes, node_axes))
+    return _determine_spmd_communication(
+        node,
+        idx,
+        inp_id,
+        cast("SPMDShardingAnnotation | None", node_sharding),
+        inp_axes,
+        node_axes,
+    )
 
 
 def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]]:

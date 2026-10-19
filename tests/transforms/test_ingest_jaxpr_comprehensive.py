@@ -9,16 +9,18 @@ import pytest
 from ml_switcheroo_compiler.transforms.foreign import ingest_jaxpr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockInvar:
     """Mock Invar."""
 
     def __init__(self, id_val: EagerValue) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            id_val: Test parameter `id_val`.
+        """
         self.id_val = id_val
         self.aval = type("MockAval", (), {"shape": (2, 3)})()
 
@@ -27,7 +29,11 @@ class MockOutvar:
     """Mock Outvar."""
 
     def __init__(self, id_val: EagerValue) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            id_val: Test parameter `id_val`.
+        """
         self.id_val = id_val
         self.aval = type("MockAval", (), {"shape": (2, 3)})()
 
@@ -36,7 +42,14 @@ class MockEqn:
     """Mock Eqn."""
 
     def __init__(self, prim_name: EagerValue, invars: EagerValue, outvars: EagerValue, params: EagerValue = None) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            prim_name: Test parameter `prim_name`.
+            invars: Test parameter `invars`.
+            outvars: Test parameter `outvars`.
+            params: Test parameter `params`.
+        """
         self.primitive = type("MockPrim", (), {"name": prim_name})()
         self.invars = invars
         self.outvars = outvars
@@ -47,7 +60,13 @@ class MockJaxpr:
     """Mock Jaxpr."""
 
     def __init__(self, eqns: EagerValue, consts: EagerValue = None, constvars: EagerValue = None) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            eqns: Test parameter `eqns`.
+            consts: Test parameter `consts`.
+            constvars: Test parameter `constvars`.
+        """
         self.eqns = eqns
         self.consts = consts or []
         self.constvars = constvars or []
@@ -58,7 +77,7 @@ def test_ingest_jaxpr_empty() -> None:
     with pytest.raises(ValueError):
         ingest_jaxpr(None)
 
-    g = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(cast("Callable[..., EagerTensorProtocol]", MockJaxpr)([]))
+    g = cast("EagerCallableProtocol", ingest_jaxpr)(cast("EagerCallableProtocol", MockJaxpr)([]))
     assert len(g.nodes) == 0
 
 
@@ -66,8 +85,8 @@ def test_extract_jaxpr_constants() -> None:
     """Test constants."""
     consts = [10, 20]
     constvars = [MockInvar(1), MockInvar(2)]
-    jaxpr = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)([], consts=consts, constvars=constvars)
-    g = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(jaxpr)
+    jaxpr = cast("EagerCallableProtocol", MockJaxpr)([], consts=consts, constvars=constvars)
+    g = cast("EagerCallableProtocol", ingest_jaxpr)(jaxpr)
 
     assert len(g.nodes) == 2
     for node in g.nodes.values():
@@ -80,11 +99,11 @@ def test_translate_jax_equation() -> None:
     outvars = [MockOutvar(3)]
 
     eqns = [
-        cast("Callable[..., EagerTensorProtocol]", MockEqn)("add", invars, outvars, {"dim": 1, "tup": (1, 2)}),
-        cast("Callable[..., EagerTensorProtocol]", MockEqn)("unknown_prim", invars, [cast("Callable[..., EagerTensorProtocol]", MockOutvar)(4)]),
+        cast("EagerCallableProtocol", MockEqn)("add", invars, outvars, {"dim": 1, "tup": (1, 2)}),
+        cast("EagerCallableProtocol", MockEqn)("unknown_prim", invars, [cast("EagerCallableProtocol", MockOutvar)(4)]),
     ]
-    jaxpr = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)(eqns)
-    g = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(jaxpr)
+    jaxpr = cast("EagerCallableProtocol", MockJaxpr)(eqns)
+    g = cast("EagerCallableProtocol", ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert g.nodes[out_id].op_type == "Add"
@@ -99,9 +118,9 @@ def test_translate_jax_equation() -> None:
 def test_translate_jax_equation_no_outvars() -> None:
     """Test translate eqn no outvars."""
     invars = [MockInvar(1)]
-    eqns = [cast("Callable[..., EagerTensorProtocol]", MockEqn)("add", invars, [])]
-    jaxpr = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)(eqns)
-    g = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(jaxpr)
+    eqns = [cast("EagerCallableProtocol", MockEqn)("add", invars, [])]
+    jaxpr = cast("EagerCallableProtocol", MockJaxpr)(eqns)
+    g = cast("EagerCallableProtocol", ingest_jaxpr)(jaxpr)
 
     assert "out" in g.nodes
     assert g.nodes["out"].op_type == "Add"
@@ -111,9 +130,9 @@ def test_translate_jax_equation_no_aval() -> None:
     """Test translate eqn no aval."""
     invars = [MockInvar(1)]
     outvars = [type("MockOutvar", (), {"id_val": 3})()]
-    eqns = [cast("Callable[..., EagerTensorProtocol]", MockEqn)("add", invars, outvars)]
-    jaxpr = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)(eqns)
-    g = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(jaxpr)
+    eqns = [cast("EagerCallableProtocol", MockEqn)("add", invars, outvars)]
+    jaxpr = cast("EagerCallableProtocol", MockJaxpr)(eqns)
+    g = cast("EagerCallableProtocol", ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert g.nodes[out_id].shape_metadata == ()
@@ -130,9 +149,9 @@ def test_translate_jax_equation_attr_branches() -> None:
 
         pass
 
-    eqns = [cast("Callable[..., EagerTensorProtocol]", MockEqn)("add", invars, outvars, {"tup": (1, 2), "obj": cast("Callable[..., EagerTensorProtocol]", CustomObj)()})]
-    jaxpr = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)(eqns)
-    g = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(jaxpr)
+    eqns = [cast("EagerCallableProtocol", MockEqn)("add", invars, outvars, {"tup": (1, 2), "obj": cast("EagerCallableProtocol", CustomObj)()})]
+    jaxpr = cast("EagerCallableProtocol", MockJaxpr)(eqns)
+    g = cast("EagerCallableProtocol", ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert "tup" in g.nodes[out_id].attributes
@@ -145,11 +164,11 @@ def test_translate_jax_equation_attr_branches_no_params() -> None:
     outvars = [MockOutvar(2)]
 
     # Passing an object without params
-    eqn = cast("Callable[..., EagerTensorProtocol]", MockEqn)("add", invars, outvars)
+    eqn = cast("EagerCallableProtocol", MockEqn)("add", invars, outvars)
     del eqn.params
     eqns = [eqn]
-    jaxpr = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)(eqns)
-    g = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(jaxpr)
+    jaxpr = cast("EagerCallableProtocol", MockJaxpr)(eqns)
+    g = cast("EagerCallableProtocol", ingest_jaxpr)(jaxpr)
 
     out_id = str(id(outvars[0]))
     assert "tup" not in g.nodes[out_id].attributes

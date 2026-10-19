@@ -27,9 +27,7 @@ from ml_switcheroo_compiler.backends.edge.onnx import (
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 pytest.importorskip("onnx")
 
@@ -336,7 +334,7 @@ def _test_onnx_additional_edges_and_validation_part_2(_state: dict[str, EagerTen
     f1, f2, f7, pytest = _state["f1"], _state["f2"], _state["f7"], _state["pytest"]
     sub_f2, sub_wt0, sub_wt2, validate_onnx_model_bytes = _state["sub_f2"], _state["sub_wt0"], _state["sub_wt2"], _state["validate_onnx_model_bytes"]
     sub_other_wt = encode_tag(5, 5) + b"\x00\x00\x00\x00"  # wire type 5 inside opset import triggers else break
-    f8 = cast("Callable[..., EagerTensorProtocol]", encode_length_delimited)(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
+    f8 = cast("EagerCallableProtocol", encode_length_delimited)(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
 
     # Top-level wire types
     f_wt0 = encode_tag(99, 0) + encode_varint(123)
@@ -383,7 +381,7 @@ def _test_onnx_additional_edges_and_validation_part_3(_state: dict[str, EagerTen
     setattr(simple_g, "outputs", ["b"])
     setattr(simple_g, "sorted_nodes", [in_a, out_b])
 
-    gen = cast("Callable[..., EagerTensorProtocol]", ONNXCodeGenerator)(simple_g)
+    gen = cast("EagerCallableProtocol", ONNXCodeGenerator)(simple_g)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 10"):
         gen.serialize_model_to_bytes(opset_version=10)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 25"):
@@ -412,4 +410,4 @@ def test_onnx_additional_edges_and_validation() -> None:
     _test_onnx_additional_edges_and_validation_part_1(_state)
     _test_onnx_additional_edges_and_validation_part_2(_state)
     _test_onnx_additional_edges_and_validation_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

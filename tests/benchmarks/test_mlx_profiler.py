@@ -22,9 +22,7 @@ from ml_switcheroo_compiler.backends.mlx.profiler import (
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_mlx_import_error() -> None:
@@ -164,7 +162,12 @@ def test_prepare_mlx_inputs_exhaustive() -> None:
         """Dummy array class for type check."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Initialize dummy array."""
+            """Initialize dummy array.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     class CustomMlxArray:
@@ -182,7 +185,7 @@ def test_prepare_mlx_inputs_exhaustive() -> None:
     custom_inst = CustomMlxArray()
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = cast("Callable[..., EagerTensorProtocol]", _prepare_mlx_inputs)(
+        res = cast("EagerCallableProtocol", _prepare_mlx_inputs)(
             {
                 "is_inst": dummy_inst,
                 "custom": custom_inst,
@@ -201,7 +204,12 @@ def test_prepare_ordered_inputs_branches() -> None:
         """Dummy array class for type check."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Initialize dummy array."""
+            """Initialize dummy array.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     class CustomMlxArray:
@@ -223,7 +231,7 @@ def test_prepare_ordered_inputs_branches() -> None:
     g.nodes["k2"] = IRNode(id="k2", op_type="Input")
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = cast("Callable[..., EagerTensorProtocol]", profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst})
+        res = cast("EagerCallableProtocol", profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst})
         assert id(res[0]) == id(dummy_inst)
         assert id(res[1]) == id(custom_inst)
 
@@ -350,4 +358,4 @@ def test_mlx_profiler_compile_and_execute() -> None:
     _test_mlx_profiler_compile_and_execute_part_2(_state)
     _test_mlx_profiler_compile_and_execute_part_3(_state)
     _test_mlx_profiler_compile_and_execute_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

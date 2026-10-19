@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.backends.numpy.eager import math_auxiliary as aux_mo
 from ml_switcheroo_compiler.core.dtype import DType
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def _test_math_auxiliary_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -26,9 +24,9 @@ def _test_math_auxiliary_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> N
     """
     monkeypatch = _state["monkeypatch"]
     c_arr = aux_module._np_constant_of_shape(np, (2, 2), value=3.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(c_arr, cast("Callable[..., EagerTensorProtocol]", np.full)((2, 2), 3.0))
+    assert cast("EagerCallableProtocol", np.allclose)(c_arr, cast("EagerCallableProtocol", np.full)((2, 2), 3.0))
     reg_cos = numpy_eager_registry.get("ConstantOfShape")
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", reg_cos)(np, (2, 2), value=3.0), cast("Callable[..., EagerTensorProtocol]", np.full)((2, 2), 3.0))
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", reg_cos)(np, (2, 2), value=3.0), cast("EagerCallableProtocol", np.full)((2, 2), 3.0))
 
     # ReduceWindow
     monkeypatch.setattr(aux_module, "_reduce_window", lambda *args, **kwargs: np.array([42.0]))
@@ -38,12 +36,12 @@ def _test_math_auxiliary_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> N
     assert reg_rw is not None
 
     # TestEagerOp
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", aux_module._np_test_eager_op)(np), [1.0, 2.0, 3.0])
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("TestEagerOp")(np), [1.0, 2.0, 3.0])
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", aux_module._np_test_eager_op)(np), [1.0, 2.0, 3.0])
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", numpy_eager_registry.get)("TestEagerOp")(np), [1.0, 2.0, 3.0])
 
     # Unknown
     assert aux_module._np_unknown(np) == 0.0
-    assert cast("Callable[..., EagerTensorProtocol]", numpy_eager_registry.get)("Unknown")(np) == 0.0
+    assert cast("EagerCallableProtocol", numpy_eager_registry.get)("Unknown")(np) == 0.0
 
     # Rand with dtype branches
     r_bf = aux_module._np_rand(np, 2, 3, dtype="bfloat16")
@@ -79,7 +77,7 @@ def _test_math_auxiliary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> N
     assert cast("EagerTensorProtocol", getattr(r_str, "dtype")) == np.int64
 
     reg_rand = numpy_eager_registry.get("Rand")
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", reg_rand)(np, 2, 2), "shape")) == (2, 2)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", reg_rand)(np, 2, 2), "shape")) == (2, 2)
 
     # IsNonDecreasing branches
     mock_diff_mod = types.SimpleNamespace(
@@ -92,24 +90,24 @@ def _test_math_auxiliary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> N
     assert aux_module._np_is_non_decreasing(mock_diff_mod, np.array([1, 2, 2, 3]))
     assert not aux_module._np_is_non_decreasing(mock_diff_mod, np.array([1, 3, 2]))
     reg_ind = numpy_eager_registry.get("IsNonDecreasing")
-    assert cast("Callable[..., EagerTensorProtocol]", reg_ind)(mock_diff_mod, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2, 3]))
+    assert cast("EagerCallableProtocol", reg_ind)(mock_diff_mod, cast("EagerCallableProtocol", np.array)([1, 2, 3]))
 
     # IsStrictlyIncreasing branches
     assert aux_module._np_is_strictly_increasing(mock_diff_mod, np.array([5]))
     assert aux_module._np_is_strictly_increasing(mock_diff_mod, np.array([1, 2, 3]))
     assert not aux_module._np_is_strictly_increasing(mock_diff_mod, np.array([1, 2, 2]))
     reg_isi = numpy_eager_registry.get("IsStrictlyIncreasing")
-    assert cast("Callable[..., EagerTensorProtocol]", reg_isi)(mock_diff_mod, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2, 3]))
+    assert cast("EagerCallableProtocol", reg_isi)(mock_diff_mod, cast("EagerCallableProtocol", np.array)([1, 2, 3]))
 
     # L2Normalize
     mat = np.array([[3.0, 4.0]])
     normed = aux_module._np_l2_normalize(np, mat, axis=-1)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(normed, [[0.6, 0.8]])
+    assert cast("EagerCallableProtocol", np.allclose)(normed, [[0.6, 0.8]])
     reg_l2 = numpy_eager_registry.get("L2Normalize")
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(cast("Callable[..., EagerTensorProtocol]", reg_l2)(np, mat, axis=-1), [[0.6, 0.8]])
+    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", reg_l2)(np, mat, axis=-1), [[0.6, 0.8]])
 
     # ReduceEuclideanNorm
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", aux_module._np_reduce_euclidean_norm)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 4.0])), 5.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", aux_module._np_reduce_euclidean_norm)(np, cast("EagerCallableProtocol", np.array)([3.0, 4.0])), 5.0)
     reg_ren = numpy_eager_registry.get("ReduceEuclideanNorm")
     getattr(_state, "update")({"mat": mat, "mock_diff_mod": mock_diff_mod, "normed": normed, "r_str": r_str})
     getattr(_state, "update")({"reg_ind": reg_ind, "reg_isi": reg_isi, "reg_l2": reg_l2, "reg_rand": reg_rand})
@@ -124,12 +122,12 @@ def _test_math_auxiliary_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> N
         _state: Shared test state dictionary.
     """
     reg_ren = _state["reg_ren"]
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(cast("Callable[..., EagerTensorProtocol]", reg_ren)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 4.0])), 5.0)
+    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", reg_ren)(np, cast("EagerCallableProtocol", np.array)([3.0, 4.0])), 5.0)
 
     # Clamp
     assert aux_module._clamp(np, 0.0, 5.0, 2.0) == 2.0
     reg_clamp = numpy_eager_registry.get("Clamp")
-    assert cast("Callable[..., EagerTensorProtocol]", reg_clamp)(np, 0.0, 5.0, 2.0) == 2.0
+    assert cast("EagerCallableProtocol", reg_clamp)(np, 0.0, 5.0, 2.0) == 2.0
 
     class SpaceConfig:
         """Mock SpaceConfig class."""
@@ -143,17 +141,17 @@ def _test_math_auxiliary_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> N
             self.axis = 0
 
     ls_cfg = aux_module._logspace(np, 1.0, 3.0, SpaceConfig())
-    assert cast("Callable[..., EagerTensorProtocol]", len)(ls_cfg) == 4
+    assert cast("EagerCallableProtocol", len)(ls_cfg) == 4
 
     ls_normal = aux_module._logspace(np, 1.0, 3.0, num=4)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(ls_normal) == 4
+    assert cast("EagerCallableProtocol", len)(ls_normal) == 4
     reg_ls = numpy_eager_registry.get("Logspace")
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", reg_ls)(np, 1.0, 3.0, num=4)) == 4
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", reg_ls)(np, 1.0, 3.0, num=4)) == 4
 
     # FromBuffer
     buf = b"\x00\x00\x80?\x00\x00\x00@"
     fb = aux_module._np_frombuffer(np, buf, dtype="float32")
-    assert cast("Callable[..., EagerTensorProtocol]", len)(fb) == 2
+    assert cast("EagerCallableProtocol", len)(fb) == 2
     getattr(_state, "update")({"SpaceConfig": SpaceConfig, "buf": buf, "fb": fb, "ls_cfg": ls_cfg})
     getattr(_state, "update")({"ls_normal": ls_normal, "reg_clamp": reg_clamp, "reg_ls": reg_ls})
     _state.update(locals())
@@ -167,14 +165,14 @@ def _test_math_auxiliary_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> N
     """
     buf = _state["buf"]
     reg_fb = numpy_eager_registry.get("FromBuffer")
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", reg_fb)(np, buf, dtype="float32")) == 2
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", reg_fb)(np, buf, dtype="float32")) == 2
 
     # DType branches
     assert isinstance(aux_module._np_dtype_op(np, "float32"), DType)
     assert isinstance(aux_module._np_dtype_op(np, np.array([1.0])), DType)
     assert isinstance(aux_module._np_dtype_op(np, [1, 2]), DType)
     reg_dt = numpy_eager_registry.get("DType")
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", reg_dt)(np, "int32"), DType)
+    assert isinstance(cast("EagerCallableProtocol", reg_dt)(np, "int32"), DType)
     assert aux_module._eager_Gradient(np, np.array([1.0, 2.0, 4.0])) is not None
     assert aux_module._eager_I0(np, np.array([0.0])) is not None
     assert cast("EagerTensorProtocol", getattr(aux_module._eager_BroadcastedIota(np, 3, (2, 3)), "shape")) == (2, 3)
@@ -200,4 +198,4 @@ def test_math_auxiliary_ops(monkeypatch: pytest.MonkeyPatch) -> None:
     _test_math_auxiliary_ops_part_2(_state)
     _test_math_auxiliary_ops_part_3(_state)
     _test_math_auxiliary_ops_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

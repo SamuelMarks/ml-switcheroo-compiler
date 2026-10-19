@@ -1,11 +1,11 @@
-"""Core abstractions and logic definitions for matmul.py."""
+"""Implementation of matmul operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.matmul`)."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Callable, Optional, Union, cast
+from typing import Optional, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -186,7 +186,7 @@ def dot_general(
     out_shape = []
     if lhs.shape and rhs.shape:
         out_shape = list(_infer_dot_general_shape(lhs.shape, rhs.shape, dimension_numbers))
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [getattr(lhs, "dtype", None)]))
+    return cast(TensorOrScalar, cast("EagerCallableProtocol", _emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [getattr(lhs, "dtype", None)]))
 
 
 def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> TensorOrScalar:
@@ -244,7 +244,7 @@ def multi_dot(arrays: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrSc
         backend = get_active_backend()
         data = backend.execute_op("MultiDot", [(getattr(a, "data") if type(a).__name__ == "Tensor" else a) for a in getattr(arrays, "__iter__")()])
         return Tensor(data, TensorConfig(getattr(data, "shape"), getattr(getattr(arrays, "__getitem__")(0), "dtype"), getattr(getattr(arrays, "__getitem__")(0), "device")))
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_linalg_node)("MultiDot", arrays, {}, [()], [getattr(getattr(arrays, "__getitem__")(0), "dtype")]))
+    return cast(TensorOrScalar, cast("EagerCallableProtocol", _emit_linalg_node)("MultiDot", arrays, {}, [()], [getattr(getattr(arrays, "__getitem__")(0), "dtype")]))
 
 
 def vecdot(x: TensorOrScalar, y: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrScalar = None) -> TensorOrScalar:

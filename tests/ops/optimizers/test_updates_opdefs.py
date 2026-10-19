@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.optimizers.updates import ApplyAdagrad, ApplyAdam, ApplyFtrl, ApplyRMSProp, apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_updates_extras_old() -> None:
@@ -44,13 +42,13 @@ def test_updates_extras_old() -> None:
 def test_opdefs() -> None:
     """Test function test_opdefs."""
     op1 = ApplyAdam()
-    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(None, None, None) == ()
+    assert cast("EagerCallableProtocol", op1.infer_shape)(None, None, None) == ()
     op2 = ApplyAdagrad()
-    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(None, None) == ()
+    assert cast("EagerCallableProtocol", op2.infer_shape)(None, None) == ()
     op3 = ApplyFtrl()
-    assert cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)(None, None, None) == ()
+    assert cast("EagerCallableProtocol", op3.infer_shape)(None, None, None) == ()
     op4 = ApplyRMSProp()
-    assert cast("Callable[..., EagerTensorProtocol]", op4.infer_shape)(None, None, None) == ()
+    assert cast("EagerCallableProtocol", op4.infer_shape)(None, None, None) == ()
 
 
 def _test_updates_extras_full_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -119,7 +117,12 @@ def _test_updates_extras_full_sub_3(_state: dict[str, EagerTensorProtocol]) -> N
         """Test class MockBackend."""
 
         def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise ValueError("mock")
 
     import ml_switcheroo_compiler.ops.optimizers.updates as updates
@@ -127,10 +130,10 @@ def _test_updates_extras_full_sub_3(_state: dict[str, EagerTensorProtocol]) -> N
     orig_get = cast("EagerTensorProtocol", getattr(updates, "get_active_backend"))
     setattr(updates, "get_active_backend", lambda: MockBackend())
     try:
-        cast("Callable[..., EagerTensorProtocol]", updates.apply_adam)(t, t, t, t, 0.1)
-        cast("Callable[..., EagerTensorProtocol]", updates.apply_adagrad)(t, t, t, 0.1)
-        cast("Callable[..., EagerTensorProtocol]", updates.apply_ftrl)(t, t, t, t, 0.1)
-        cast("Callable[..., EagerTensorProtocol]", updates.apply_rmsprop)(t, t, t, t, 0.1)
+        cast("EagerCallableProtocol", updates.apply_adam)(t, t, t, t, 0.1)
+        cast("EagerCallableProtocol", updates.apply_adagrad)(t, t, t, 0.1)
+        cast("EagerCallableProtocol", updates.apply_ftrl)(t, t, t, t, 0.1)
+        cast("EagerCallableProtocol", updates.apply_rmsprop)(t, t, t, t, 0.1)
     finally:
         setattr(updates, "get_active_backend", orig_get)
     getattr(_state, "update")({"MockBackend": MockBackend, "orig_get": orig_get, "updates": updates})
@@ -161,7 +164,7 @@ def test_updates_extras_full() -> None:
         getattr(_state, "update")({"orig_tracing": orig_tracing, "state": state, "updates": updates})
         for _sub_fn in (_test_updates_extras_full_sub_1, _test_updates_extras_full_sub_2, _test_updates_extras_full_sub_3):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
@@ -195,4 +198,4 @@ def test_apply_tracing() -> None:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
         setattr(state.global_tracing_state, "add_node", orig_add_node)
-    assert orig_add_node is not None or orig_add_node is None
+    assert getattr(state.global_tracing_state, "add_node") == orig_add_node

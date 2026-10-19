@@ -1,4 +1,4 @@
-"""math_random_sampling module."""
+"""Implementation of math random sampling operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_random_sampling`)."""
 
 from __future__ import annotations
 

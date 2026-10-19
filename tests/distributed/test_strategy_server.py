@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_strategy_server_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -63,7 +61,12 @@ def _test_strategy_server_part_2(_state: dict[str, EagerTensorProtocol]) -> None
 
         # We need to break the loop
         def set_not_running(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function set_not_running."""
+            """Test function set_not_running.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             setattr(server, "_running", False)
             return b""
 
@@ -93,7 +96,11 @@ def _test_strategy_server_part_3(_state: dict[str, EagerTensorProtocol]) -> None
 
         # Provide header len, header str, break loop
         def mock_recv(size: EagerValue) -> EagerValue:
-            """Test function mock_recv."""
+            """Test function mock_recv.
+
+            Args:
+                size: Test parameter `size`.
+            """
             if size == 4:
                 setattr(server, "_running", False)
                 return header_len
@@ -129,7 +136,11 @@ def _test_strategy_server_part_4(_state: dict[str, EagerTensorProtocol]) -> None
         header_len = len(header).to_bytes(4, "big")
 
         def mock_recv(size: EagerValue) -> EagerValue:
-            """Test function mock_recv."""
+            """Test function mock_recv.
+
+            Args:
+                size: Test parameter `size`.
+            """
             if size == 4:
                 setattr(server, "_running", False)
                 return header_len
@@ -178,7 +189,11 @@ def _test_strategy_server_part_5(_state: dict[str, EagerTensorProtocol]) -> None
                 self.calls = 0
 
             def __call__(self, size: EagerValue) -> EagerValue:
-                """Test function __call__."""
+                """Test function __call__.
+
+                Args:
+                    size: Test parameter `size`.
+                """
                 self.calls += 1
                 if self.calls == 1:
                     return header_len
@@ -236,7 +251,11 @@ def _test_strategy_server_part_6(_state: dict[str, EagerTensorProtocol]) -> None
                 self.calls = 0
 
             def __call__(self, size: EagerValue) -> EagerValue:
-                """Test function __call__."""
+                """Test function __call__.
+
+                Args:
+                    size: Test parameter `size`.
+                """
                 self.calls += 1
                 if self.calls == 1:
                     return header_len
@@ -268,7 +287,7 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     MagicMock, patch, server = _state["MagicMock"], _state["patch"], _state["server"]
-    with cast("Callable[..., EagerTensorProtocol]", patch)("select.select", side_effect=cast("Callable[..., EagerTensorProtocol]", Exception)("select error")):
+    with cast("EagerCallableProtocol", patch)("select.select", side_effect=cast("EagerCallableProtocol", Exception)("select error")):
         setattr(server, "_running", True)
 
         class MockServer:
@@ -279,7 +298,11 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
                 self.calls = 0
 
             def setblocking(self, b: EagerValue) -> None:
-                """Test function setblocking."""
+                """Test function setblocking.
+
+                Args:
+                    b: Test parameter `b`.
+                """
                 pass
 
             def close(self) -> None:
@@ -289,13 +312,18 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
         setattr(server, "_server", MockServer())
 
         def mock_warn(msg: EagerValue, stacklevel: EagerValue) -> None:
-            """Test function mock_warn."""
+            """Test function mock_warn.
+
+            Args:
+                msg: Test parameter `msg`.
+                stacklevel: Test parameter `stacklevel`.
+            """
             setattr(server, "_running", False)
 
         with patch("warnings.warn", side_effect=mock_warn):
             server._run_server()
 
-    with cast("Callable[..., EagerTensorProtocol]", patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=cast("Callable[..., EagerTensorProtocol]", Exception)("join mock fail")):
+    with cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=cast("EagerCallableProtocol", Exception)("join mock fail")):
         server.join()
 
     setattr(server, "_server", MagicMock())
@@ -357,7 +385,11 @@ def _test_strategy_server_part_9(_state: dict[str, EagerTensorProtocol]) -> None
                 self.calls = 0
 
             def __call__(self, size: EagerValue) -> EagerValue:
-                """Test function __call__."""
+                """Test function __call__.
+
+                Args:
+                    size: Test parameter `size`.
+                """
                 self.calls += 1
                 if self.calls == 1:
                     return header_len
@@ -411,7 +443,11 @@ def _test_strategy_server_part_11(_state: dict[str, EagerTensorProtocol]) -> Non
                 self.calls = 0
 
             def __call__(self, size: EagerValue) -> EagerValue:
-                """Test function __call__."""
+                """Test function __call__.
+
+                Args:
+                    size: Test parameter `size`.
+                """
                 self.calls += 1
                 if self.calls == 1:
                     return header_len
@@ -444,11 +480,15 @@ def _test_strategy_server_part_12(_state: dict[str, EagerTensorProtocol]) -> Non
         """Test class MockBackendJoin."""
 
         def join_server(self, s: EagerValue) -> None:
-            """Test function join_server."""
+            """Test function join_server.
+
+            Args:
+                s: Test parameter `s`.
+            """
             self.called = True
 
     mock_b = MockBackendJoin()
-    with cast("Callable[..., EagerTensorProtocol]", patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_b):
+    with cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_b):
         setattr(server, "_thread", MagicMock())
         server.join()
         assert getattr(mock_b, "called", False)
@@ -480,4 +520,4 @@ def test_strategy_server() -> None:
     _test_strategy_server_part_10(_state)
     _test_strategy_server_part_11(_state)
     _test_strategy_server_part_12(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

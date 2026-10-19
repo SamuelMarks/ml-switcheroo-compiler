@@ -12,23 +12,31 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockProxyTensor(ProxyMathOverloadsMixin):
     """Test class MockProxyTensor."""
 
     def __init__(self, id: EagerValue, shape: EagerValue, dtype: EagerValue) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            id: Test parameter `id`.
+            shape: Test parameter `shape`.
+            dtype: Test parameter `dtype`.
+        """
         setattr(self, "id", id)
         setattr(self, "shape", shape)
         setattr(self, "dtype", dtype)
 
 
 def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
-    """Test function test_tracer_mixins."""
+    """Test function test_tracer_mixins.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     global_tracing_state.is_tracing = False
     proxy = MockProxyTensor("1", (2, 3), "float32")
     from ml_switcheroo_compiler.core.errors import TracingError
@@ -42,7 +50,7 @@ def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
     with pytest.raises(TracingError):
         proxy @ proxy
     with pytest.raises(TracingError):
-        cast("Callable[..., EagerTensorProtocol]", proxy.assign)(proxy)
+        cast("EagerCallableProtocol", proxy.assign)(proxy)
     global_tracing_state.is_tracing = True
     global_tracing_state.active_graph = LogicalGraph("Test")
     mocker.patch("ml_switcheroo_compiler.ir.shape_system.broadcast_shapes", return_value=(2, 3))
@@ -61,21 +69,21 @@ def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
     assert res5.shape == (2, 3)
     from ml_switcheroo_compiler.ir.core import IRNode
 
-    node = cast("Callable[..., EagerTensorProtocol]", IRNode)("1", "ReadVariable", [], attributes={"variable_name": "var1"}, shape_metadata=(2, 3))
-    cast("Callable[..., EagerTensorProtocol]", global_tracing_state.add_node)(node)
-    res6 = cast("Callable[..., EagerTensorProtocol]", proxy.assign)(42)
+    node = cast("EagerCallableProtocol", IRNode)("1", "ReadVariable", [], attributes={"variable_name": "var1"}, shape_metadata=(2, 3))
+    cast("EagerCallableProtocol", global_tracing_state.add_node)(node)
+    res6 = cast("EagerCallableProtocol", proxy.assign)(42)
     assert res6.shape == ()
-    res7 = cast("Callable[..., EagerTensorProtocol]", proxy.assign)(proxy)
+    res7 = cast("EagerCallableProtocol", proxy.assign)(proxy)
     assert res7.shape == (2, 3)
-    setattr(MockProxyTensor, "__add__", lambda self, other: cast("Callable[..., EagerTensorProtocol]", self._binary_op)(other, "Add"))
-    setattr(MockProxyTensor, "__sub__", lambda self, other: cast("Callable[..., EagerTensorProtocol]", self._binary_op)(other, "Sub"))
-    res8 = cast("Callable[..., EagerTensorProtocol]", proxy.assign_add)(proxy)
+    setattr(MockProxyTensor, "__add__", lambda self, other: cast("EagerCallableProtocol", self._binary_op)(other, "Add"))
+    setattr(MockProxyTensor, "__sub__", lambda self, other: cast("EagerCallableProtocol", self._binary_op)(other, "Sub"))
+    res8 = cast("EagerCallableProtocol", proxy.assign_add)(proxy)
     assert res8.shape == (2, 3)
-    res9 = cast("Callable[..., EagerTensorProtocol]", proxy.assign_sub)(proxy)
+    res9 = cast("EagerCallableProtocol", proxy.assign_sub)(proxy)
     assert res9.shape == (2, 3)
     proxy2 = MockProxyTensor("2", (2, 3), "float32")
-    node2 = cast("Callable[..., EagerTensorProtocol]", IRNode)("2", "Add", ["1", "1"], shape_metadata=(2, 3))
-    cast("Callable[..., EagerTensorProtocol]", global_tracing_state.add_node)(node2)
+    node2 = cast("EagerCallableProtocol", IRNode)("2", "Add", ["1", "1"], shape_metadata=(2, 3))
+    cast("EagerCallableProtocol", global_tracing_state.add_node)(node2)
     with pytest.raises(ValueError):
-        cast("Callable[..., EagerTensorProtocol]", proxy2.assign)(proxy)
+        cast("EagerCallableProtocol", proxy2.assign)(proxy)
     global_tracing_state.is_tracing = False

@@ -1,17 +1,31 @@
-"""vision_filtering.py module."""
+"""Vision spatial patch extraction, bounding box cropping, IoU, and NMS eager kernels."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import ModuleType
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
+
+
+def _resolve_filter_mod(backend_module: EagerValue | None) -> ModuleType:
+    """Resolve an array module providing `zeros`, `linspace`, `stack`, and `where`.
+
+    Args:
+        backend_module: Candidate backend module or None.
+
+    Returns:
+        ModuleType: Resolved array module.
+    """
+    from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
+
+    return _resolve_eager_mod(backend_module)
 
 
 @global_eager_registry.register("ExtractVolumePatches")
@@ -24,35 +38,40 @@ def _extract_volume_patches(backend_module: EagerValue, *args: EagerValue, **kwa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Result.
+        EagerValue: Result.
     """
+    mod = _resolve_filter_mod(backend_module)
     if not args:
-        return cast(EagerValue, getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else host_backend.array([]))
+        return cast(EagerValue, getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else mod.array([]))
 
-    input_tensor = host_backend.asarray(args[0])
+    input_tensor: EagerTensorProtocol = mod.asarray(args[0])
     ksizes = cast("list[int]", kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
     strides = cast("list[int]", kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
 
     if input_tensor.ndim != 5:
         return cast(EagerValue, getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor)
 
-    window_shape = tuple(ksizes)
-    sliding_window_view = host_backend.lib.stride_tricks.sliding_window_view
-
-    try:
-        view = sliding_window_view(input_tensor, window_shape)
-    except ValueError:
+    shape = input_tensor.shape
+    if any(int(k) <= 0 or int(k) > int(s) for k, s in zip(ksizes, shape)):
         return cast(EagerValue, getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor)
 
-    step_view = view[
-        :: int(strides[0]),
-        :: int(strides[1]),
-        :: int(strides[2]),
-        :: int(strides[3]),
-        :: int(strides[4]),
-    ]
-    out_shape = step_view.shape[:5] + (-1,)
-    res = step_view.reshape(out_shape)
+    out_dims = [len(range(0, int(shape[d]) - int(ksizes[d]) + 1, int(strides[d]))) for d in range(5)]
+    patch_vol = int(ksizes[0]) * int(ksizes[1]) * int(ksizes[2]) * int(ksizes[3]) * int(ksizes[4])
+    res: EagerTensorProtocol = mod.zeros((*out_dims, patch_vol), dtype=input_tensor.dtype)
+
+    for i0, s0 in enumerate(range(0, int(shape[0]) - int(ksizes[0]) + 1, int(strides[0]))):
+        for i1, s1 in enumerate(range(0, int(shape[1]) - int(ksizes[1]) + 1, int(strides[1]))):
+            for i2, s2 in enumerate(range(0, int(shape[2]) - int(ksizes[2]) + 1, int(strides[2]))):
+                for i3, s3 in enumerate(range(0, int(shape[3]) - int(ksizes[3]) + 1, int(strides[3]))):
+                    for i4, s4 in enumerate(range(0, int(shape[4]) - int(ksizes[4]) + 1, int(strides[4]))):
+                        patch = input_tensor[
+                            s0 : s0 + int(ksizes[0]),
+                            s1 : s1 + int(ksizes[1]),
+                            s2 : s2 + int(ksizes[2]),
+                            s3 : s3 + int(ksizes[3]),
+                            s4 : s4 + int(ksizes[4]),
+                        ]
+                        res[i0, i1, i2, i3, i4] = patch.reshape(-1)
 
     return cast(EagerValue, getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res)
 
@@ -181,10 +200,11 @@ def _extract_boxes_tf(backend_module: EagerValue, images: EagerValue, boxes: Eag
     Returns:
             EagerValue: Result.
     """
-    images_np = host_backend.asarray(images)
-    boxes_np = host_backend.asarray(boxes)
-    box_indices_np = host_backend.asarray(box_indices)
-    res = _extract_boxes_batch(host_backend, images_np, boxes_np, box_indices_np, config)
+    mod = _resolve_filter_mod(backend_module)
+    images_np = mod.asarray(images)
+    boxes_np = mod.asarray(boxes)
+    box_indices_np = mod.asarray(box_indices)
+    res = _extract_boxes_batch(mod, images_np, boxes_np, box_indices_np, config)
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
@@ -285,9 +305,10 @@ def iou_eager(backend_module: EagerValue, boxes1: EagerValue, boxes2: EagerValue
     Returns:
             EagerValue: Result.
     """
-    b1 = _to_xyxy_format(host_backend, boxes1, bounding_box_format)
-    b2 = _to_xyxy_format(host_backend, boxes2, bounding_box_format)
-    res = _compute_iou(host_backend, b1, b2)
+    mod = _resolve_filter_mod(backend_module)
+    b1 = _to_xyxy_format(mod, boxes1, bounding_box_format)
+    b2 = _to_xyxy_format(mod, boxes2, bounding_box_format)
+    res = _compute_iou(mod, b1, b2)
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
@@ -384,27 +405,29 @@ def _nms_tf(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, c
     """
     if config is None:
         config = NMSConfig(max_output_size=cast(EagerTensorProtocol, boxes).shape[0] if hasattr(boxes, "shape") else 100)
-    res = _nms_torch(boxes, scores, config)
+    res = _nms_torch(boxes, scores, config, backend_module)
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
-def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig) -> EagerValue:
+def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend_module: EagerValue | None = None) -> EagerValue:
     """Execute the eager nms torch operation on the active backend array.
 
     Args:
         boxes: The boxes parameter.
         scores: The scores parameter.
         config (NMSConfig): The config parameter.
+        backend_module: Optional execution backend module.
 
     Returns:
             EagerValue: Result.
     """
-    boxes = host_backend.asarray(boxes)
-    scores = host_backend.asarray(scores)
-    bxs, scs, idxs, order = _sort_boxes_by_score(host_backend, boxes, scores, config.score_threshold)
+    mod = _resolve_filter_mod(backend_module)
+    boxes = mod.asarray(boxes)
+    scores = mod.asarray(scores)
+    bxs, _, idxs, order = _sort_boxes_by_score(mod, boxes, scores, config.score_threshold)
     if getattr(bxs, "__len__")() == 0:
-        return cast(EagerValue, host_backend.array([], dtype=host_backend.int64))
-    kept_local = _apply_suppression_threshold(host_backend, bxs, order, config.max_output_size, config.iou_threshold)
+        return cast(EagerValue, mod.array([], dtype=mod.int64))
+    kept_local = _apply_suppression_threshold(mod, bxs, order, config.max_output_size, config.iou_threshold)
     return cast(EagerTensorProtocol, idxs)[kept_local]
 
 

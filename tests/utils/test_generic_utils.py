@@ -30,9 +30,7 @@ from ml_switcheroo_compiler.utils.generic_utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 CustomObjectScope = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
 custom_object_scope = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "custom_object_scope"))
 deserialize_object = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
@@ -61,7 +59,7 @@ def test_set_random_seed() -> None:
     del sys.modules["ml_switcheroo_compiler.backends.numpy.utils"]
     with mock.patch("random.seed", side_effect=ImportError):
         set_random_seed(42)
-    assert m is not None or m is None
+    assert getattr(m, "set_numpy_seed").called
 
 
 def test_validate_cache() -> None:
@@ -214,7 +212,11 @@ def test_custom_object_scope_and_serialization() -> None:
         """CustomDense test class."""
 
         def __init__(self, units: int = 32) -> None:
-            """Initialize CustomDense."""
+            """Initialize CustomDense.
+
+            Args:
+                units: Test parameter `units`.
+            """
             self.units = units
 
         def get_config(self) -> dict[str, int]:
@@ -223,7 +225,11 @@ def test_custom_object_scope_and_serialization() -> None:
 
         @classmethod
         def from_config(cls, config: dict[str, int]) -> CustomDense:
-            """Instantiate from config."""
+            """Instantiate from config.
+
+            Args:
+                config: Test parameter `config`.
+            """
             return cls(**config)
 
     # Scoped registration
@@ -232,7 +238,7 @@ def test_custom_object_scope_and_serialization() -> None:
         assert id(get_registered_object("CustomDense")) == id(CustomDense)
 
         layer = CustomDense(units=64)
-        serialized = cast("Callable[..., EagerTensorProtocol]", serialize_object)(layer)
+        serialized = cast("EagerCallableProtocol", serialize_object)(layer)
         assert serialized is not None
         assert serialized["class_name"] == "CustomDense"
         assert serialized["config"] == {"units": 64}
@@ -254,7 +260,11 @@ def test_custom_object_scope_and_serialization() -> None:
         """SimpleLayer test class."""
 
         def __init__(self, val: int = 0) -> None:
-            """Initialize SimpleLayer."""
+            """Initialize SimpleLayer.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.val = val
 
     deserialized_simple = deserialize_object(
@@ -280,7 +290,7 @@ def test_custom_object_scope_and_serialization() -> None:
     assert get_registered_name(NamedCustomLayer) == "NamedCustomLayer"
     assert get_registered_name(None) == ""
     assert get_registered_name(lambda x: x) == "<lambda>"
-    assert cast("Callable[..., EagerTensorProtocol]", get_registered_name)(123) == "int"
+    assert cast("EagerCallableProtocol", get_registered_name)(123) == "int"
 
     assert get_registered_object(None) is None
     assert get_registered_object("") is None
@@ -308,7 +318,7 @@ def test_is_symbolic_tensor_and_dtype() -> None:
     t = Tensor([1, 2], TensorConfig((2,), "float32", "cpu"))
     assert is_symbolic_tensor(t)
 
-    assert not cast("Callable[..., EagerTensorProtocol]", is_symbolic_tensor)(cast("Callable[..., EagerTensorProtocol]", DummyObj)())
+    assert not cast("EagerCallableProtocol", is_symbolic_tensor)(cast("EagerCallableProtocol", DummyObj)())
     assert not is_symbolic_tensor(123)
     assert not is_symbolic_tensor()
 
@@ -336,34 +346,34 @@ def test_bounding_boxes_conversions() -> None:
     # xyxy <-> xywh
     xyxy_boxes = np.array([[10.0, 20.0, 50.0, 80.0]], dtype=np.float32)
     xywh_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xywh")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(xywh_boxes, [[10.0, 20.0, 40.0, 60.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(xywh_boxes, [[10.0, 20.0, 40.0, 60.0]])
 
     # Custom target fallback and custom source validation
     with mock.patch.object(bounding_boxes, "SUPPORTED_FORMATS", ("xyxy", "custom")):
         res_custom = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="custom")
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_custom, xyxy_boxes)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_custom, xyxy_boxes)
         with pytest.raises(ValueError, match="Unrecognized source format"):
             bounding_boxes.convert_format(xyxy_boxes, source="custom", target="xyxy")
 
     # xywh -> center_xywh
     center_boxes = bounding_boxes.convert_format(xywh_boxes, source="xywh", target="center_xywh")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(center_boxes, [[30.0, 50.0, 40.0, 60.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(center_boxes, [[30.0, 50.0, 40.0, 60.0]])
 
     # center_xywh -> yxyx
     yxyx_boxes = bounding_boxes.convert_format(center_boxes, source="center_xywh", target="yxyx")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(yxyx_boxes, [[20.0, 10.0, 80.0, 50.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(yxyx_boxes, [[20.0, 10.0, 80.0, 50.0]])
 
     # yxyx -> rel_xyxy
     rel_boxes = bounding_boxes.convert_format(yxyx_boxes, source="yxyx", target="rel_xyxy", image_shape=(100, 200))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(rel_boxes, [[0.05, 0.2, 0.25, 0.8]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(rel_boxes, [[0.05, 0.2, 0.25, 0.8]])
 
     # rel_xyxy -> xyxy
     back_to_xyxy = bounding_boxes.convert_format(rel_boxes, source="rel_xyxy", target="xyxy", image_shape=(100, 200))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(back_to_xyxy, xyxy_boxes)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(back_to_xyxy, xyxy_boxes)
 
     # Identity conversion
     same_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xyxy")
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(same_boxes, xyxy_boxes)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(same_boxes, xyxy_boxes)
 
     # Validations
     with pytest.raises(ValueError, match="Unsupported bounding box format"):
@@ -396,7 +406,11 @@ def test_framework_agnostic_serialization_separation() -> None:
         """Agnostic layer for serialization testing."""
 
         def __init__(self, size: int = 128) -> None:
-            """Initialize AgnosticLayer."""
+            """Initialize AgnosticLayer.
+
+            Args:
+                size: Test parameter `size`.
+            """
             self.size = size
 
         def get_config(self) -> dict[str, int]:
@@ -405,7 +419,11 @@ def test_framework_agnostic_serialization_separation() -> None:
 
         @classmethod
         def from_config(cls, config: dict[str, int]) -> AgnosticLayer:
-            """Create instance from configuration."""
+            """Create instance from configuration.
+
+            Args:
+                config: Test parameter `config`.
+            """
             return cls(**config)
 
     assert get_registered_name(AgnosticLayer) == "AgnosticLayer"

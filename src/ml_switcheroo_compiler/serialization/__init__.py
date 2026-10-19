@@ -13,7 +13,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, TypeVar, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
@@ -21,7 +21,9 @@ from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.serialization.formats.base import WeightFormatProtocol
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
@@ -69,22 +71,22 @@ def _infer_weight_format(filepath: str) -> str:
     return "pickle"
 
 
-def _get_format_handler(fmt: str) -> TensorOrScalar:
+def _get_format_handler(fmt: str) -> WeightFormatProtocol:
     """Get the appropriate weight format handler based on the format string.
 
     Args:
         fmt (str): The format string representing the serialization format.
 
     Returns:
-        TensorOrScalar: An instance of the corresponding weight format handler.
+        WeightFormatProtocol: An instance of the corresponding weight format handler.
     """
     if fmt == "h5":
-        return cast(TensorOrScalar, H5WeightFormat())
+        return H5WeightFormat()
     if fmt == "safetensors":
-        return cast(TensorOrScalar, SafetensorsWeightFormat())
+        return SafetensorsWeightFormat()
     if fmt == "npz":
-        return cast(TensorOrScalar, NpzWeightFormat())
-    return cast(TensorOrScalar, PickleWeightFormat())
+        return NpzWeightFormat()
+    return PickleWeightFormat()
 
 
 def _save_as_h5(weights_np: TensorOrScalar, filepath: str) -> None:
@@ -94,7 +96,7 @@ def _save_as_h5(weights_np: TensorOrScalar, filepath: str) -> None:
         weights_np (TensorOrScalar): The weights_np parameter.
         filepath (str): The filepath parameter.
     """
-    getattr(H5WeightFormat(), "save")(weights_np, filepath)
+    H5WeightFormat().save(cast("dict[str, TensorLike]", weights_np), filepath)
 
 
 def _save_as_safetensors(weights_np: TensorOrScalar, filepath: str) -> None:
@@ -184,8 +186,8 @@ def load_weights(filepath: str, target_model: TensorOrScalar = None) -> TensorOr
     """
     fmt = _infer_weight_format(filepath)
     handler = _get_format_handler(fmt)
-    weights = getattr(handler, "load")(filepath)
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _validate_and_map_weights)(weights, target_model))
+    weights = handler.load(filepath)
+    return cast(TensorOrScalar, cast("EagerCallableProtocol", _validate_and_map_weights)(weights, target_model))
 
 
 def save_weights(model: TensorOrScalar, filepath: str, overwrite: bool = True, **kwargs: AttrValue) -> None:
@@ -197,9 +199,10 @@ def save_weights(model: TensorOrScalar, filepath: str, overwrite: bool = True, *
         overwrite (bool): The overwrite parameter.
         **kwargs (AttrValue): Keyword args.
     """
-    _ = (model, overwrite, kwargs)
+    _ = (overwrite, kwargs)
+    weights = _extract_model_weights(cast("LoadedModel", model)) if model is not None else {}
     with open(filepath, "wb") as f:
-        pickle.dump({}, f)
+        pickle.dump(weights, f)
 
 
 def export_to_onnx(graph: IRGraph, filepath: str) -> None:

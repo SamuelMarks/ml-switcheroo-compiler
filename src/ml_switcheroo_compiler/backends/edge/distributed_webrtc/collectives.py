@@ -774,7 +774,7 @@ def get_collective_backend(backend_name: str) -> EagerValue | None:
 
 
 def _dispatch_pytorch_collective(op: str, tensor: EagerValue, kwargs: dict[str, EagerValue]) -> EagerValue | None:
-    """Attempt to dispatch collective operation to PyTorch distributed backend.
+    """Attempt to dispatch collective operation to PyTorch distributed backend via BackendRegistry.
 
     Args:
         op (str): Collective operation name.
@@ -785,29 +785,28 @@ def _dispatch_pytorch_collective(op: str, tensor: EagerValue, kwargs: dict[str, 
         EagerValue | None: Computed tensor if handled, else None.
     """
     try:
-        from ml_switcheroo_compiler.backends.pytorch.distributed_collectives import (
-            pytorch_all_gather,
-            pytorch_all_reduce,
-            pytorch_broadcast,
-            pytorch_reduce_scatter,
-        )
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
+        pt_backend = BackendRegistry.get("pytorch")
         group = kwargs.get("group")
         if op == "AllReduce":
-            return pytorch_all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), group=group)
+            return cast(EagerValue, getattr(pt_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), group=group))
         if op == "AllGather":
-            return pytorch_all_gather(tensor, axis=int(cast(int, kwargs.get("axis", 0))), group=group)
+            return cast(EagerValue, getattr(pt_backend, "all_gather")(tensor, axis=int(cast(int, kwargs.get("axis", 0))), group=group))
         if op == "ReduceScatter":
-            return pytorch_reduce_scatter(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0))), group=group)
+            return cast(
+                EagerValue,
+                getattr(pt_backend, "reduce_scatter")(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0))), group=group),
+            )
         if op == "Broadcast":
-            return pytorch_broadcast(tensor, src=int(cast(int, kwargs.get("root", 0))), group=group)
+            return cast(EagerValue, getattr(pt_backend, "broadcast")(tensor, src=int(cast(int, kwargs.get("root", 0))), group=group))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
 
 
 def _dispatch_jax_collective(op: str, tensor: EagerValue, kwargs: dict[str, EagerValue]) -> EagerValue | None:
-    """Attempt to dispatch collective operation to JAX distributed backend.
+    """Attempt to dispatch collective operation to JAX distributed backend via BackendRegistry.
 
     Args:
         op (str): Collective operation name.
@@ -818,19 +817,16 @@ def _dispatch_jax_collective(op: str, tensor: EagerValue, kwargs: dict[str, Eage
         EagerValue | None: Computed tensor if handled, else None.
     """
     try:
-        from ml_switcheroo_compiler.backends.jax.distributed_collectives import (
-            jax_all_gather,
-            jax_all_reduce,
-            jax_broadcast,
-        )
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
+        jax_backend = BackendRegistry.get("jax")
         axis_name = str(kwargs.get("axis_name", "data"))
         if op == "AllReduce":
-            return jax_all_reduce(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name)
+            return cast(EagerValue, getattr(jax_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name))
         if op == "AllGather":
-            return jax_all_gather(tensor, axis_name=axis_name, axis=int(cast(int, kwargs.get("axis", 0))))
+            return cast(EagerValue, getattr(jax_backend, "all_gather")(tensor, axis_name=axis_name, axis=int(cast(int, kwargs.get("axis", 0)))))
         if op == "Broadcast":
-            return jax_broadcast(tensor, src=int(cast(int, kwargs.get("root", 0))))
+            return cast(EagerValue, getattr(jax_backend, "broadcast")(tensor, src=int(cast(int, kwargs.get("root", 0)))))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None

@@ -17,7 +17,11 @@ if TYPE_CHECKING:
 
 
 def test_dispatch_eager_unsupported(monkeypatch: EagerTensorProtocol) -> None:
-    """Test dispatch fallback in eager mode when unsupported."""
+    """Test dispatch fallback in eager mode when unsupported.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     config.eager_mode = True
 
     # Mock backend to simulate an unsupported function
@@ -52,7 +56,12 @@ def test_dispatch_tracing() -> None:
             op_name = "TestDispatchTracing"
 
             def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-                """Test function infer_shape."""
+                """Test function infer_shape.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 raise ValueError("Simulate shape inference failure")
 
         t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))

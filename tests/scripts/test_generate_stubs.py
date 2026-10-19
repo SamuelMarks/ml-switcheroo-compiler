@@ -17,7 +17,7 @@ from pytest import CaptureFixture
 import scripts.generate_stubs as gs
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_clean_type_annotation() -> None:
@@ -102,7 +102,7 @@ def test_generate_stubs_from_snapshot_exhaustive(tmp_path: Path) -> None:
             "invalid_category": "not_a_list",
         }
     }
-    count = cast("Callable[..., EagerTensorProtocol]", gs._generate_stubs_from_snapshot)(snap_data, "numpy", cast("Callable[..., EagerTensorProtocol]", str)(out_file))
+    count = cast("EagerCallableProtocol", gs._generate_stubs_from_snapshot)(snap_data, "numpy", cast("EagerCallableProtocol", str)(out_file))
     assert count >= 3
     content = out_file.read_text(encoding="utf-8")
     assert "def f_full(x: Tensor, y: Tensor = ..., *args: Tensor, kw1: Tensor, **kwargs: Tensor) -> int: ..." in content
@@ -131,19 +131,39 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
     setattr(fake_mod, "non_callable", 42)
 
     def f_normal(x: EagerValue, y: EagerValue = 10) -> None:
-        """Test function f_normal."""
+        """Test function f_normal.
+
+        Args:
+            x: Test parameter `x`.
+            y: Test parameter `y`.
+        """
         pass
 
     def f_varargs(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function f_varargs."""
+        """Test function f_varargs.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         pass
 
     def f_kwonly(*, k1: EagerValue, k2: EagerValue = 20) -> None:
-        """Test function f_kwonly."""
+        """Test function f_kwonly.
+
+        Args:
+            k1: Test parameter `k1`.
+            k2: Test parameter `k2`.
+        """
         pass
 
     def f_varpos_kw(*args: EagerValue, k1: EagerValue) -> None:
-        """Test function f_varpos_kw."""
+        """Test function f_varpos_kw.
+
+        Args:
+            k1: Test parameter `k1`.
+            args: Test parameter `args`.
+        """
         pass
 
     class BadSig:
@@ -165,7 +185,11 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
     real_sig = inspect.signature
 
     def smart_sig(obj: Callable[..., EagerValue]) -> inspect.Signature:
-        """Test function smart_sig."""
+        """Test function smart_sig.
+
+        Args:
+            obj: Test parameter `obj`.
+        """
         if getattr(obj, "fail_sig", False):
             raise ValueError("Signature failed")
         return real_sig(obj)
@@ -175,10 +199,16 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
     real_import = importlib.import_module
 
     def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> types.ModuleType:
-        """Test function mock_import."""
+        """Test function mock_import.
+
+        Args:
+            name: Test parameter `name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         if name == "fake_fw":
             return fake_mod
-        return cast("types.ModuleType", cast("Callable[..., EagerTensorProtocol]", real_import)(name, *args, **kwargs))
+        return cast("types.ModuleType", cast("EagerCallableProtocol", real_import)(name, *args, **kwargs))
 
     with patch("inspect.signature", side_effect=smart_sig):
         with patch("scripts.generate_stubs.importlib.import_module", side_effect=mock_import):
@@ -367,7 +397,7 @@ def test_format_params_via_ecosystem() -> None:
         "invalid",
         {"name": ""},
     ]
-    res = cast("Callable[..., EagerTensorProtocol]", gs.format_params_via_ecosystem)(params, has_varargs=True)
+    res = cast("EagerCallableProtocol", gs.format_params_via_ecosystem)(params, has_varargs=True)
     assert "x: Tensor" in res
     assert "dim: int = 0" in res
 
@@ -442,7 +472,46 @@ def test_generate_stubs_fallback_generation(tmp_path: Path) -> None:
     with patch("scripts.generate_stubs._generate_stubs_from_live_module", return_value=0):
         gs.generate_stubs(snapshot_dir=str(snap_dir), out_base_dir=str(out_base))
 
+    with patch("scripts.generate_stubs._generate_stubs_from_live_module", return_value=5):
+        gs.generate_stubs(snapshot_dir=str(snap_dir), out_base_dir=str(out_base))
+
     stub_file = edge_dir / "snapshot_stubs.pyi"
     assert stub_file.exists()
     content = stub_file.read_text(encoding="utf-8")
     assert "def add" in content
+
+
+def test_sanitize_default_and_format_param_list_coverage() -> None:
+    """Verify _sanitize_default, _format_param_list, and validate_pyi_stub branches."""
+    import pytest
+
+    assert gs._sanitize_default("<unrepresentable>") == "..."
+    assert gs._sanitize_default("42") == "42"
+    assert gs._sanitize_default("[1, 2]") == "[1, 2]"
+    assert gs._sanitize_default("lambda x: x") == "..."
+    assert gs._sanitize_default("invalid syntax :::") == "..."
+
+    sig = gs._format_param_list(
+        [
+            {"name": "x", "annotation": "int", "default": "1", "kind": "POSITIONAL_OR_KEYWORD"},
+            {"name": "y", "annotation": "", "default": None, "kind": "POSITIONAL_OR_KEYWORD"},
+            {"name": "args", "kind": "VAR_POSITIONAL"},
+            {"name": "kwargs", "kind": "VAR_KEYWORD"},
+        ],
+        has_varargs=True,
+    )
+    assert sig == "x: int = 1, y: Tensor, *args, **kwargs"
+
+    sig_varargs = gs._format_param_list(
+        [{"name": "self", "kind": "POSITIONAL_OR_KEYWORD"}],
+        has_varargs=True,
+    )
+    assert "*args: Tensor" in sig_varargs
+
+    with pytest.raises(SyntaxError):
+        gs.validate_pyi_stub("def broken(:\n")
+
+    assert gs._clean_type_annotation("Union['int', 'UnknownType']") == "Tensor"
+    assert gs._clean_type_annotation("Union['int']") == "int"
+    assert gs._clean_type_annotation("x[1:]") == "Tensor"
+    assert gs._clean_type_annotation("x[") == "Tensor"

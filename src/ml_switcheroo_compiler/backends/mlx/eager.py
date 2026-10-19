@@ -1,10 +1,10 @@
-"""Backend utilities."""
+"""Implementation of eager operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.mlx.eager`)."""
 
 from __future__ import annotations
 
 import builtins
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 try:
     import mlx.core as mx
@@ -12,6 +12,7 @@ except ImportError:
     mx = cast(ModuleType, None)
 
 from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerCallableProtocol,
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
@@ -68,7 +69,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
         func = _get_mlx_func(op_type)
         if func is None:
             raise AttributeError(f"No attribute found for {op_type}")
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", func)(*args, **kwargs))
+        return cast(EagerValue, cast("EagerCallableProtocol", func)(*args, **kwargs))
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -841,7 +842,7 @@ def _mlx_reduce_scatter(backend_module: ModuleType, tensor: EagerValue, **kwargs
     rank = int(cast(int, kwargs.get("rank", 0)))
 
     if all_ranks_data:
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _mlx_ring_reduce_scatter)(mx_mod, all_ranks_data, scatter_dim, rank, red_op))
+        return cast(EagerValue, cast("EagerCallableProtocol", _mlx_ring_reduce_scatter)(mx_mod, all_ranks_data, scatter_dim, rank, red_op))
 
     world_size = int(cast(int, kwargs.get("world_size", 1)))
     if hasattr(tensor, "shape"):

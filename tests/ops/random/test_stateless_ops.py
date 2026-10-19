@@ -46,7 +46,11 @@ def test_ops_random_unified_package() -> None:
 
 
 def test_stateless_random_uniform(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_random_uniform` delegates to uniform, multiply, and add."""
+    """Verify `stateless_random_uniform` delegates to uniform, multiply, and add.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.continuous.uniform", return_value="unif")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
@@ -62,7 +66,11 @@ def test_stateless_random_uniform(mocker: EagerTensorProtocol) -> None:
 
 
 def test_stateless_random_normal(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_random_normal` delegates to normal, multiply, and add."""
+    """Verify `stateless_random_normal` delegates to normal, multiply, and add.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.continuous.normal", return_value="norm")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
@@ -77,7 +85,11 @@ def test_stateless_random_normal(mocker: EagerTensorProtocol) -> None:
 
 
 def test_stateless_random_binomial(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_random_binomial` delegates to discrete binomial."""
+    """Verify `stateless_random_binomial` delegates to discrete binomial.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete.binomial", return_value="binom")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     res = stateless_random_binomial((2, 3), seed, 10.0, 0.5, "int32")
@@ -87,7 +99,11 @@ def test_stateless_random_binomial(mocker: EagerTensorProtocol) -> None:
 
 
 def test_stateless_truncated_normal(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_truncated_normal` delegates to truncated_normal, multiply, and add."""
+    """Verify `stateless_truncated_normal` delegates to truncated_normal, multiply, and add.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.continuous.truncated_normal", return_value="trunc")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
@@ -101,7 +117,11 @@ def test_stateless_truncated_normal(mocker: EagerTensorProtocol) -> None:
 
 
 def test_stateless_categorical(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_categorical` delegates to categorical and cast."""
+    """Verify `stateless_categorical` delegates to categorical and cast.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete.categorical", return_value="cat")
     mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="cast")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
@@ -117,7 +137,11 @@ def test_stateless_categorical(mocker: EagerTensorProtocol) -> None:
 
 
 def test_stateless_gamma(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_gamma` delegates to continuous gamma."""
+    """Verify `stateless_gamma` delegates to continuous gamma.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.continuous.gamma", return_value="gamma")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     alpha = Tensor(2.0, TensorConfig((), "float32", "cpu"))
@@ -128,7 +152,11 @@ def test_stateless_gamma(mocker: EagerTensorProtocol) -> None:
 
 
 def test_stateless_beta(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_beta` delegates to continuous beta."""
+    """Verify `stateless_beta` delegates to continuous beta.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.continuous.beta", return_value="beta")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     alpha = Tensor(2.0, TensorConfig((), "float32", "cpu"))
@@ -140,7 +168,11 @@ def test_stateless_beta(mocker: EagerTensorProtocol) -> None:
 
 
 def test_stateless_shuffle(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_shuffle` delegates to transformations.shuffle."""
+    """Verify `stateless_shuffle` delegates to transformations.shuffle.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.transformations.shuffle", return_value="shuffle")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     x = Tensor([1, 2, 3], TensorConfig((3,), "int32", "cpu"))
@@ -230,7 +262,11 @@ def test_stateless_split() -> None:
 
 
 def test_stateless_poisson(mocker: EagerTensorProtocol) -> None:
-    """Verify `stateless_poisson` delegates to discrete poisson."""
+    """Verify `stateless_poisson` delegates to discrete poisson.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete.poisson", return_value="poisson")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     lam = Tensor(2.0, TensorConfig((), "float32", "cpu"))

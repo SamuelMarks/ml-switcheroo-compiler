@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_frontend_utils_missing() -> None:
@@ -23,6 +21,6 @@ def test_frontend_utils_missing() -> None:
 
         shape = (10,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", _multinomial_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)(), size=5) == (5,)
+    assert cast("EagerCallableProtocol", _multinomial_shape)(cast("EagerCallableProtocol", MockTensor)(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)

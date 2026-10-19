@@ -11,9 +11,7 @@ import numpy as np
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class _DummyGenerator:
@@ -192,6 +190,6 @@ def test_pickle_format(tmp_path: Path) -> None:
     fmt = PickleWeightFormat()
     filepath = str(tmp_path / "model.pkl")
     data = {"w": [1.0, 2.0, 3.0], "b": 0.5}
-    cast("Callable[..., EagerTensorProtocol]", fmt.save)(data, filepath)
+    cast("EagerCallableProtocol", fmt.save)(data, filepath)
     loaded = fmt.load(filepath)
     assert loaded == data

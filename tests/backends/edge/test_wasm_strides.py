@@ -11,9 +11,9 @@ from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 @pytest.fixture(autouse=True)
@@ -46,8 +46,12 @@ def global_wasm_mock() -> Iterator[None]:
         }
 
         def mock_template_resolver(template_name: EagerValue) -> EagerValue:
-            """Test function mock_template_resolver."""
-            return {"body": cast("Callable[..., EagerTensorProtocol]", mock_bodies.get)(template_name, cast("EagerTensorProtocol", "// ") + cast("EagerTensorProtocol", template_name))}
+            """Test function mock_template_resolver.
+
+            Args:
+                template_name: Test parameter `template_name`.
+            """
+            return {"body": cast("EagerCallableProtocol", mock_bodies.get)(template_name, cast("EagerTensorProtocol", "// ") + cast("EagerTensorProtocol", template_name))}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
 

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -75,7 +74,7 @@ def convolve2d(
 
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", _emit_signal_node)(
+        cast("EagerCallableProtocol", _emit_signal_node)(
             "Convolve2d",
             [in1, in2],
             kwargs,

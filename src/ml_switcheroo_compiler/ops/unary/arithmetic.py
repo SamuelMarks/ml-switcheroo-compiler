@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for arithmetic.py."""
+"""Implementation of arithmetic operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.arithmetic`)."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 

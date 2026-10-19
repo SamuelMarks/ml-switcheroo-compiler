@@ -167,6 +167,24 @@ backends:
       vararg: true
       kwarg: true
       return_type: tensor
+    _execute_binom_pmf:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_convolve2d:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_welch:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
     _execute_bessel_jn:
       args: []
       kwargs: []

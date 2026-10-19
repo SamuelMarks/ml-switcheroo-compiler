@@ -9,18 +9,30 @@ if TYPE_CHECKING:
 
 
 def test_mapping_loader_dir_yaml(monkeypatch: EagerTensorProtocol) -> None:
-    """Test loading mappings from a directory of yaml files."""
+    """Test loading mappings from a directory of yaml files.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 
     def mock_isdir(path: EagerValue) -> EagerValue:
-        """Test function mock_isdir."""
+        """Test function mock_isdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return True
 
     def mock_listdir(path: EagerValue) -> EagerValue:
-        """Test function mock_listdir."""
+        """Test function mock_listdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return ["test.yaml"]
 
     mock_data = {"TestOp": {"target_api": "test_api"}}

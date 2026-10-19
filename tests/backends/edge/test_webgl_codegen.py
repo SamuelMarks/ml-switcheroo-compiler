@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -206,4 +205,4 @@ def test_webgl_slice_and_concat_runner() -> None:
 
     inp = np.arange(16, dtype=np.float32).reshape(4, 4)
     res = artifact(inp)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, inp[0:2, :])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp[0:2, :])

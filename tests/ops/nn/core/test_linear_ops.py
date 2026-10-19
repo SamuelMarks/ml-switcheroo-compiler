@@ -26,11 +26,19 @@ def test_linear_ops_coverage() -> None:
     b = Tensor(np.ones((3,)), TensorConfig(shape=(3,), dtype=DType("float32"), device=Device("cpu")))
 
     def mock_matmul(*args: EagerValue) -> EagerValue:
-        """Test function mock_matmul."""
+        """Test function mock_matmul.
+
+        Args:
+            args: Test parameter `args`.
+        """
         return "mm"
 
     def mock_add(*args: EagerValue) -> EagerValue:
-        """Test function mock_add."""
+        """Test function mock_add.
+
+        Args:
+            args: Test parameter `args`.
+        """
         return "add"
 
     orig_matmul = cast("EagerTensorProtocol", getattr(linear, "matmul"))
@@ -49,7 +57,11 @@ def test_linear_ops_coverage() -> None:
     w_bi = Tensor(np.ones((3, 2, 4)), TensorConfig(shape=(3, 2, 4), dtype=DType("float32"), device=Device("cpu")))
 
     def mock_einsum(*args: EagerValue) -> EagerValue:
-        """Test function mock_einsum."""
+        """Test function mock_einsum.
+
+        Args:
+            args: Test parameter `args`.
+        """
         return "es"
 
     orig_einsum = cast("EagerTensorProtocol", getattr(linear, "einsum"))

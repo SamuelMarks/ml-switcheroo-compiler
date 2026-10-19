@@ -1,11 +1,11 @@
-"""math_polynomial module."""
+"""Implementation of math polynomial operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_polynomial`)."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 
 
@@ -40,4 +40,4 @@ def _np_polyint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     func = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.polyint(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).polyint(*args, **kwargs))

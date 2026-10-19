@@ -9,9 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_internal as mi
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class MockBackend:
@@ -22,7 +20,12 @@ class MockBackend:
         return {"precision": 8}
 
     def rawmatmul(self, a: np.ndarray[tuple[int, ...], np.dtype[np.generic]], b: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Mock rawmatmul."""
+        """Mock rawmatmul.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", (cast("EagerTensorProtocol", a) @ cast("EagerTensorProtocol", b)) + cast("EagerTensorProtocol", 1))
 
 
@@ -36,7 +39,7 @@ def _test_math_internal_operations_part_1(_state: dict[str, EagerTensorProtocol]
 
     # 1. _np_population_count
     pop = mi._np_population_count(bk, [0, 1, 3, 7, 15])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(pop, [0, 1, 2, 3, 4])
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(pop, [0, 1, 2, 3, 4])
 
     # 2. _np_get_printoptions_
     assert mi._np_get_printoptions_(bk) == {"precision": 8}
@@ -88,7 +91,7 @@ def _test_math_internal_operations_part_2(_state: dict[str, EagerTensorProtocol]
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     b = np.array([[2.0, 0.0], [1.0, 2.0]])
     res_bkm = mi._np_rawmatmul(bk, a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_bkm, a @ b + 1)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_bkm, a @ b + 1)
 
     class EmptyBackend:
         """Test class EmptyBackend."""
@@ -96,7 +99,7 @@ def _test_math_internal_operations_part_2(_state: dict[str, EagerTensorProtocol]
         pass
 
     res_default_mm = mi._np_rawmatmul(EmptyBackend(), a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_default_mm, a @ b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_default_mm, a @ b)
 
     # 10. _np_rawmerge
     merge_list = mi._np_rawmerge(bk, [10, 20])
@@ -144,10 +147,10 @@ def _test_math_internal_operations_part_3(_state: dict[str, EagerTensorProtocol]
     assert cast("EagerTensorProtocol", getattr(scan_empty, "size")) == 0
 
     scan_no_acc = mi._np_scanop(bk, elems=np.array([1, 2, 3]), fn=lambda x, y: x + y)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(scan_no_acc, [1, 3, 6])
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(scan_no_acc, [1, 3, 6])
 
     scan_with_acc = mi._np_scanop(bk, lambda x, y: x + y, np.array([1, 2, 3]), 10)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(scan_with_acc, [11, 13, 16])
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(scan_with_acc, [11, 13, 16])
 
     # 14. _np_tensorarrayread and _np_tensorarraywrite (both within bounds and extending)
     handle = [10, 20]
@@ -157,7 +160,7 @@ def _test_math_internal_operations_part_3(_state: dict[str, EagerTensorProtocol]
     assert cast("EagerTensorProtocol", getattr(h_in, "__getitem__")(0)) == 99
 
     h_ext = mi._np_tensorarraywrite(bk, handle, 4, 88)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(h_ext) == 5
+    assert cast("EagerCallableProtocol", len)(h_ext) == 5
     getattr(_state, "update")({"h_ext": h_ext, "h_in": h_in, "handle": handle, "scan_empty": scan_empty})
     getattr(_state, "update")({"scan_invalid": scan_invalid, "scan_no_acc": scan_no_acc, "scan_with_acc": scan_with_acc, "sw_false": sw_false})
     getattr(_state, "update")({"sw_op_false": sw_op_false, "sw_op_true": sw_op_true, "sw_true": sw_true})
@@ -186,4 +189,4 @@ def test_math_internal_operations() -> None:
     _test_math_internal_operations_part_2(_state)
     _test_math_internal_operations_part_3(_state)
     _test_math_internal_operations_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

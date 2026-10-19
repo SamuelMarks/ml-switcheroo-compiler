@@ -25,16 +25,18 @@ from ml_switcheroo_compiler.serialization.utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, data: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            data: Test parameter `data`.
+        """
         self._data = data
 
     def numpy(self) -> EagerValue:
@@ -46,7 +48,11 @@ class MockTensorWithData:
     """Test class MockTensorWithData."""
 
     def __init__(self, data: EagerValue) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            data: Test parameter `data`.
+        """
         self.data = MockTensor(data)
 
 
@@ -69,7 +75,7 @@ class MockBadTensor:
 def test_extract_numpy_weights() -> None:
     """Test function test_extract_numpy_weights."""
     w = {"a": MockTensor("a_data"), "b": MockTensorWithData("b_data"), "c": MockListTensor(), "d": MockBadTensor()}
-    res = cast("Callable[..., EagerTensorProtocol]", _extract_numpy_weights)(w)
+    res = cast("EagerCallableProtocol", _extract_numpy_weights)(w)
     assert res["a"] == "a_data"
     assert res["b"] == "b_data"
     assert res["c"] == [1, 2]
@@ -77,16 +83,20 @@ def test_extract_numpy_weights() -> None:
 
 def test_to_numpy() -> None:
     """Test function test_to_numpy."""
-    assert cast("Callable[..., EagerTensorProtocol]", to_numpy)(cast("Callable[..., EagerTensorProtocol]", MockTensor)("a_data")) == "a_data"
-    assert cast("Callable[..., EagerTensorProtocol]", to_numpy)(cast("Callable[..., EagerTensorProtocol]", MockTensorWithData)("b_data")) == "b_data"
-    assert cast("Callable[..., EagerTensorProtocol]", to_numpy)(cast("Callable[..., EagerTensorProtocol]", MockListTensor)()) == [1, 2]
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", to_numpy)(cast("Callable[..., EagerTensorProtocol]", MockBadTensor)()), MockBadTensor)
+    assert cast("EagerCallableProtocol", to_numpy)(cast("EagerCallableProtocol", MockTensor)("a_data")) == "a_data"
+    assert cast("EagerCallableProtocol", to_numpy)(cast("EagerCallableProtocol", MockTensorWithData)("b_data")) == "b_data"
+    assert cast("EagerCallableProtocol", to_numpy)(cast("EagerCallableProtocol", MockListTensor)()) == [1, 2]
+    assert isinstance(cast("EagerCallableProtocol", to_numpy)(cast("EagerCallableProtocol", MockBadTensor)()), MockBadTensor)
 
 
 def test_concatenate_arrays(mocker: EagerTensorProtocol) -> None:
-    """Test function test_concatenate_arrays."""
+    """Test function test_concatenate_arrays.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.ops.concatenate", return_value="concat")
-    assert cast("Callable[..., EagerTensorProtocol]", concatenate_arrays)([1, 2]) == "concat"
+    assert cast("EagerCallableProtocol", concatenate_arrays)([1, 2]) == "concat"
 
 
 def test_is_numpy_array() -> None:
@@ -94,7 +104,7 @@ def test_is_numpy_array() -> None:
     import numpy as np
 
     assert is_numpy_array(np.array([1]))
-    assert cast("Callable[..., EagerTensorProtocol]", is_numpy_array)(cast("Callable[..., EagerTensorProtocol]", MockTensor)())
+    assert cast("EagerCallableProtocol", is_numpy_array)(cast("EagerCallableProtocol", MockTensor)())
 
     class Arr:
         """Test class Arr."""
@@ -103,7 +113,7 @@ def test_is_numpy_array() -> None:
             """Test function __array__."""
             return np.array([1])
 
-    assert cast("Callable[..., EagerTensorProtocol]", is_numpy_array)(cast("Callable[..., EagerTensorProtocol]", Arr)())
+    assert cast("EagerCallableProtocol", is_numpy_array)(cast("EagerCallableProtocol", Arr)())
     assert not is_numpy_array(1)
 
 
@@ -116,7 +126,7 @@ def test_dtype_to_descr() -> None:
 
         value = "unknown"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _dtype_to_descr)(cast("Callable[..., EagerTensorProtocol]", FakeDtype)()) == "<f4"
+    assert cast("EagerCallableProtocol", _dtype_to_descr)(cast("EagerCallableProtocol", FakeDtype)()) == "<f4"
     assert _dtype_to_descr(DType.Int64) == "<i8"
     assert _dtype_to_descr("float32") == "<f4"
     assert _dtype_to_descr("unknown") == "<f4"
@@ -131,14 +141,14 @@ def test_extract_arr_shape_dtype() -> None:
         shape = (2, 3)
         dtype = type("D", (), {"name": "float32"})()
 
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_arr_shape_dtype)(cast("Callable[..., EagerTensorProtocol]", Arr)()) == ((2, 3), "float32")
+    assert cast("EagerCallableProtocol", _extract_arr_shape_dtype)(cast("EagerCallableProtocol", Arr)()) == ((2, 3), "float32")
 
     class Arr2:
         """Test class Arr2."""
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_arr_shape_dtype)(cast("Callable[..., EagerTensorProtocol]", Arr2)()) == ((), "<f4")
+    assert cast("EagerCallableProtocol", _extract_arr_shape_dtype)(cast("EagerCallableProtocol", Arr2)()) == ((), "<f4")
 
 
 def test_get_shape_and_dtype() -> None:
@@ -158,7 +168,7 @@ def test_get_shape_and_dtype() -> None:
 
             return Arr()
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_shape_and_dtype)(cast("Callable[..., EagerTensorProtocol]", EvalTensor)()) == ((2,), "float32")
+    assert cast("EagerCallableProtocol", _get_shape_and_dtype)(cast("EagerCallableProtocol", EvalTensor)()) == ((2,), "float32")
 
     class NpyTensor:
         """Test class NpyTensor."""
@@ -174,14 +184,14 @@ def test_get_shape_and_dtype() -> None:
 
             return Arr()
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_shape_and_dtype)(cast("Callable[..., EagerTensorProtocol]", NpyTensor)()) == ((3,), "int32")
+    assert cast("EagerCallableProtocol", _get_shape_and_dtype)(cast("EagerCallableProtocol", NpyTensor)()) == ((3,), "int32")
 
     class DataNpyTensor:
         """Test class DataNpyTensor."""
 
         data = NpyTensor()
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_shape_and_dtype)(cast("Callable[..., EagerTensorProtocol]", DataNpyTensor)()) == ((3,), "int32")
+    assert cast("EagerCallableProtocol", _get_shape_and_dtype)(cast("EagerCallableProtocol", DataNpyTensor)()) == ((3,), "int32")
 
     class SimpleTensor:
         """Test class SimpleTensor."""
@@ -189,7 +199,7 @@ def test_get_shape_and_dtype() -> None:
         shape = (4,)
         dtype = "float32"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_shape_and_dtype)(cast("Callable[..., EagerTensorProtocol]", SimpleTensor)()) == ((4,), "float32")
+    assert cast("EagerCallableProtocol", _get_shape_and_dtype)(cast("EagerCallableProtocol", SimpleTensor)()) == ((4,), "float32")
 
 
 def test_extract_arr_bytes() -> None:
@@ -202,15 +212,15 @@ def test_extract_arr_bytes() -> None:
             """Test function tobytes."""
             return b"t1"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_arr_bytes)(cast("Callable[..., EagerTensorProtocol]", T1)()) == b"t1"
+    assert cast("EagerCallableProtocol", _extract_arr_bytes)(cast("EagerCallableProtocol", T1)()) == b"t1"
 
     class T2:
         """Test class T2."""
 
         data = T1()
 
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_arr_bytes)(cast("Callable[..., EagerTensorProtocol]", T2)()) == b"t1"
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_arr_bytes)(cast("Callable[..., EagerTensorProtocol]", object)()) == b""
+    assert cast("EagerCallableProtocol", _extract_arr_bytes)(cast("EagerCallableProtocol", T2)()) == b"t1"
+    assert cast("EagerCallableProtocol", _extract_arr_bytes)(cast("EagerCallableProtocol", object)()) == b""
 
 
 def test_get_data_bytes() -> None:
@@ -231,7 +241,7 @@ def test_get_data_bytes() -> None:
 
             return cast("EagerTensorProtocol", Arr())
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_data_bytes)(cast("Callable[..., EagerTensorProtocol]", EvalT)()) == b"eval"
+    assert cast("EagerCallableProtocol", _get_data_bytes)(cast("EagerCallableProtocol", EvalT)()) == b"eval"
 
     class NumpyT:
         """Test class NumpyT."""
@@ -248,15 +258,15 @@ def test_get_data_bytes() -> None:
 
             return cast("EagerTensorProtocol", Arr())
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_data_bytes)(cast("Callable[..., EagerTensorProtocol]", NumpyT)()) == b"npy"
+    assert cast("EagerCallableProtocol", _get_data_bytes)(cast("EagerCallableProtocol", NumpyT)()) == b"npy"
 
     class DataNpyT:
         """Test class DataNpyT."""
 
         data = NumpyT()
 
-    assert cast("Callable[..., EagerTensorProtocol]", _get_data_bytes)(cast("Callable[..., EagerTensorProtocol]", DataNpyT)()) == b"npy"
-    assert cast("Callable[..., EagerTensorProtocol]", _get_data_bytes)(cast("Callable[..., EagerTensorProtocol]", object)()) == b""
+    assert cast("EagerCallableProtocol", _get_data_bytes)(cast("EagerCallableProtocol", DataNpyT)()) == b"npy"
+    assert cast("EagerCallableProtocol", _get_data_bytes)(cast("EagerCallableProtocol", object)()) == b""
 
 
 def test_tensor_to_npy_bytes() -> None:
@@ -279,12 +289,16 @@ def test_tensor_to_npy_bytes() -> None:
             """Test function numpy."""
             return MockArr()
 
-    b = cast("Callable[..., EagerTensorProtocol]", _tensor_to_npy_bytes)(cast("Callable[..., EagerTensorProtocol]", MockT)())
+    b = cast("EagerCallableProtocol", _tensor_to_npy_bytes)(cast("EagerCallableProtocol", MockT)())
     assert b.startswith(b"\x93NUMPY")
 
 
 def test_get_npz_bytes(mocker: EagerTensorProtocol) -> None:
-    """Test function test_get_npz_bytes."""
+    """Test function test_get_npz_bytes.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.get_npz_bytes, "return_value", b"npz_bytes")
     assert get_npz_bytes({}) == b"npz_bytes"
@@ -307,12 +321,16 @@ def test_get_npz_bytes(mocker: EagerTensorProtocol) -> None:
             """Test function numpy."""
             return MockArr()
 
-    b = cast("Callable[..., EagerTensorProtocol]", get_npz_bytes)({"a": cast("Callable[..., EagerTensorProtocol]", MockT)(), "b.npy": cast("Callable[..., EagerTensorProtocol]", MockT)()})
+    b = cast("EagerCallableProtocol", get_npz_bytes)({"a": cast("EagerCallableProtocol", MockT)(), "b.npy": cast("EagerCallableProtocol", MockT)()})
     assert len(b) > 0
 
 
 def test_load_npz(mocker: EagerTensorProtocol) -> None:
-    """Test function test_load_npz."""
+    """Test function test_load_npz.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.load_npz, "return_value", [1, 2])
     assert cast("EagerTensorProtocol", load_npz("file")) == cast("EagerTensorProtocol", [1, 2])
@@ -322,18 +340,26 @@ def test_load_npz(mocker: EagerTensorProtocol) -> None:
 
 
 def test_save_load_ir_graph(mocker: EagerTensorProtocol) -> None:
-    """Test function test_save_load_ir_graph."""
+    """Test function test_save_load_ir_graph.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.serialization.ir_format.graph_to_json", return_value="json_graph")
     mocker.patch("ml_switcheroo_compiler.serialization.ir_format.json_to_graph", return_value="graph_obj")
     import tempfile
 
     with tempfile.NamedTemporaryFile() as f:
-        cast("Callable[..., EagerTensorProtocol]", save_ir_graph)("graph", f.name)
+        cast("EagerCallableProtocol", save_ir_graph)("graph", f.name)
         assert cast("EagerTensorProtocol", load_ir_graph(f.name)) == cast("EagerTensorProtocol", "graph_obj")
 
 
 def test_load_npz_extra(mocker: EagerTensorProtocol) -> None:
-    """Test function test_load_npz_extra."""
+    """Test function test_load_npz_extra.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     assert parse_npz("file") == {}
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     del mock_backend.load_npz
@@ -349,7 +375,7 @@ def test_dtype_to_descr_extra() -> None:
 
         value = "unknown"
 
-    assert cast("Callable[..., EagerTensorProtocol]", _dtype_to_descr)(cast("Callable[..., EagerTensorProtocol]", FakeDtype)()) == "<f4"
+    assert cast("EagerCallableProtocol", _dtype_to_descr)(cast("EagerCallableProtocol", FakeDtype)()) == "<f4"
     assert _dtype_to_descr("int8") == "|i1"
 
     class FakeDtype2:

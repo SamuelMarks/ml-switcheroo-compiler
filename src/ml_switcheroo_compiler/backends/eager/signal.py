@@ -1,21 +1,21 @@
-"""signal.py module."""
+"""Eager signal and 2D spatial filtering operations for backend array modules."""
 
-from typing import Callable, Optional, cast
+from typing import Optional, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
 def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], sigma: tuple[float, float]) -> EagerValue:
-    """Execute the eager generate gaussian kernel operation on the active backend array.
+    """Generate a normalized 2D Gaussian filter kernel on the active backend module.
 
     Args:
-        np_mod: The np_mod parameter.
-        kernel_size (tuple[int, int]): The kernel_size parameter.
-        sigma (tuple[float, float]): The sigma parameter.
+        np_mod (EagerValue): Active backend array module.
+        kernel_size (tuple[int, int]): Spatial height and width of the Gaussian kernel.
+        sigma (tuple[float, float]): Standard deviation along x and y dimensions.
 
     Returns:
-            EagerValue: Result.
+        EagerValue: Normalized 2D Gaussian kernel array.
     """
     kx, ky = kernel_size
     sx, sy = sigma
@@ -27,93 +27,90 @@ def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], 
 
 
 def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue, mode: str) -> EagerValue:
-    """Execute the eager apply conv2d batch operation on the active backend array.
+    """Apply a 2D spatial filter kernel across a 4D NCHW batch of images.
 
     Args:
-        np_mod: The np_mod parameter.
-        imgs: The imgs parameter.
-        kernel: The kernel parameter.
-        mode (str): The mode parameter.
+        np_mod (EagerValue): Active backend array module.
+        imgs (EagerValue): Input 4D image batch tensor of shape (B, C, H, W).
+        kernel (EagerValue): 2D spatial convolution kernel of shape (kH, kW).
+        mode (str): Boundary padding mode (e.g. 'reflect').
 
     Returns:
-            EagerValue: Result.
+        EagerValue: Filtered 4D image batch tensor.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If the input images tensor is not 4-dimensional.
     """
-    # Basic implementation for 4D images (B, C, H, W)
+    del mode
     if getattr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    B, C, H, W = cast(tuple[int, ...], getattr(imgs, "shape"))
+    _b, _c, H, W = cast(tuple[int, ...], getattr(imgs, "shape"))
     kH, kW = cast(tuple[int, ...], getattr(kernel, "shape"))
     pad_h = kH // 2
     pad_w = kW // 2
     padded = getattr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
     out = getattr(np_mod, "zeros_like")(imgs)
-    # Simple nested loops or vectorization
-    # Since np_mod might be cupy or jax, use standard indexing
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
-            # kernel shape is (kH, kW), expand to (1, 1, kH, kW)
             expanded_kernel = getattr(np_mod, "expand_dims")(getattr(np_mod, "expand_dims")(kernel, 0), 0)
             out[:, :, y, x] = getattr(np_mod, "sum")(region * expanded_kernel, axis=(-2, -1))
     return cast(EagerValue, out)
 
 
 def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: Optional[BlurConfig]) -> BlurConfig:
-    """Execute the eager get blur config operation on the active backend array.
+    """Resolve or construct a BlurConfig instance from keyword arguments.
 
     Args:
-        kwargs (dict[str, object]): The kwargs parameter.
-        config_obj: The config_obj parameter.
+        kwargs (dict[str, EagerValue]): Keyword arguments dictionary.
+        config_obj (Optional[BlurConfig]): Explicit BlurConfig instance if provided.
 
     Returns:
-            BlurConfig: Result.
+        BlurConfig: Resolved Gaussian blur configuration.
     """
     if config_obj is None:
-        return cast(
-            BlurConfig,
-            cast("Callable[..., EagerTensorProtocol]", BlurConfig)(
-                kernel_size=kwargs.get("kernel_size", (3, 3)) if hasattr(kwargs, "get") else (3, 3),
-                sigma=kwargs.get("sigma", (1.0, 1.0)) if hasattr(kwargs, "get") else (1.0, 1.0),
-                data_format=str(kwargs.get("data_format", None)) if hasattr(kwargs, "get") else None,
-            ),
+        ks = kwargs.get("kernel_size", (3, 3)) if hasattr(kwargs, "get") else (3, 3)
+        sg = kwargs.get("sigma", (1.0, 1.0)) if hasattr(kwargs, "get") else (1.0, 1.0)
+        df = str(kwargs.get("data_format", None)) if hasattr(kwargs, "get") else None
+        return BlurConfig(
+            kernel_size=cast("tuple[int, int]", ks),
+            sigma=cast("tuple[float, float]", sg),
+            data_format=df,
         )
     return config_obj
 
 
 def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_obj: Optional[BlurConfig] = None, **kwargs: EagerValue) -> EagerValue:
-    """Execute the eager gaussian blur eager operation on the active backend array.
+    """Apply eager 2D Gaussian blur filtering to a 4D image batch.
 
     Args:
-        backend_module: The backend_module parameter.
-        images: The images parameter.
-        config_obj: The config_obj parameter.
-        **kwargs: Keyword args.
+        backend_module (EagerValue): Active backend array module.
+        images (EagerValue): Input 4D image batch tensor.
+        config_obj (Optional[BlurConfig]): Optional blur configuration object.
+        **kwargs (EagerValue): Additional blur configuration keyword parameters.
 
     Returns:
-            EagerValue: Result.
+        EagerValue: Blurred 4D image batch tensor.
     """
     config = _get_blur_config(kwargs, config_obj)
-    kernel = cast("Callable[..., EagerTensorProtocol]", _generate_gaussian_kernel)(backend_module, config.kernel_size, config.sigma)
+    kernel = _generate_gaussian_kernel(backend_module, cast("tuple[int, int]", config.kernel_size), cast("tuple[float, float]", config.sigma))
     return _apply_conv2d_batch(backend_module, images, kernel, "reflect")
 
 
 def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size: tuple[int, int], padding: str) -> EagerValue:
-    """Execute the eager apply median filter batch operation on the active backend array.
+    """Apply a 2D spatial median filter across a 4D NCHW batch of images.
 
     Args:
-        np_mod: The np_mod parameter.
-        imgs: The imgs parameter.
-        kernel_size (tuple[int, int]): The kernel_size parameter.
-        padding (str): The padding parameter.
+        np_mod (EagerValue): Active backend array module.
+        imgs (EagerValue): Input 4D image batch tensor of shape (B, C, H, W).
+        kernel_size (tuple[int, int]): Spatial window size (kH, kW).
+        padding (str): Padding mode ('same' or 'reflect').
 
     Returns:
-            EagerValue: Result.
+        EagerValue: Median-filtered 4D image batch tensor.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If the input images tensor is not 4-dimensional.
     """
     if getattr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
@@ -126,7 +123,6 @@ def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
-            # flattening the last two dims and taking median
             flat_region = getattr(np_mod, "reshape")(region, (B, C, kH * kW))
             out[:, :, y, x] = getattr(np_mod, "median")(flat_region, axis=-1)
     return cast(EagerValue, out)
@@ -139,16 +135,17 @@ def median_filter_eager(
     padding: str = "same",
     data_format: Optional[EagerValue] = None,
 ) -> EagerValue:
-    """Execute the eager median filter eager operation on the active backend array.
+    """Apply eager 2D median filtering to a 4D image batch.
 
     Args:
-        backend_module: The backend_module parameter.
-        images: The images parameter.
-        kernel_size (tuple[int, int]): The kernel_size parameter.
-        padding (str): The padding parameter.
-        data_format: The data_format parameter.
+        backend_module (EagerValue): Active backend array module.
+        images (EagerValue): Input 4D image batch tensor.
+        kernel_size (tuple[int, int]): Spatial window size (kH, kW).
+        padding (str): Boundary padding mode ('same' or 'reflect').
+        data_format (Optional[EagerValue]): Optional channel layout format.
 
     Returns:
-            EagerValue: Result.
+        EagerValue: Median-filtered 4D image batch tensor.
     """
+    del data_format
     return _apply_median_filter_batch(backend_module, images, kernel_size, padding)

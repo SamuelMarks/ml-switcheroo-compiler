@@ -10,9 +10,7 @@ import pytest
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp, register_vjp
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_vjp_registry_coverage() -> None:
@@ -24,7 +22,7 @@ def test_vjp_registry_coverage() -> None:
     if "fake_op" in _VJP_REGISTRY:
         del _VJP_REGISTRY["fake_op"]
 
-    @cast("Callable[..., EagerTensorProtocol]", register_vjp)("fake_op")
+    @cast("EagerCallableProtocol", register_vjp)("fake_op")
     def fake_vjp() -> None:
         """Evaluate and process the fake vjp operation.
 
@@ -34,7 +32,7 @@ def test_vjp_registry_coverage() -> None:
 
     with pytest.raises(ValueError, match="already registered"):
 
-        @cast("Callable[..., EagerTensorProtocol]", register_vjp)("fake_op")
+        @cast("EagerCallableProtocol", register_vjp)("fake_op")
         def fake_vjp2() -> None:
             """Evaluate and process the fake vjp2 operation.
 
@@ -71,7 +69,11 @@ def test_vjp_registry_lazy_load() -> None:
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
 
     def mock_get_data(name: str) -> None:
-        """Mock loader that populates registry on demand."""
+        """Mock loader that populates registry on demand.
+
+        Args:
+            name: Test parameter `name`.
+        """
         getattr(_VJP_REGISTRY, "__setitem__")(name, "lazy_loaded_vjp")
         return None
 

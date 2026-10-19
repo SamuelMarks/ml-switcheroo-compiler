@@ -16,9 +16,7 @@ from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_nd import conv, conv_transpose, depthwise_conv, separable_conv
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 GenericConvConfig = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_nd"), "GenericConvConfig"))
 
 
@@ -35,20 +33,20 @@ def test_conv_nd_extra() -> None:
     with ConfigContext(eager_mode=True):
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv1d") as mock_conv1d:
             mock_conv1d.return_value = "res"
-            cast("Callable[..., EagerTensorProtocol]", conv)(t1_1d, t2_1d, conf_1d)
+            cast("EagerCallableProtocol", conv)(t1_1d, t2_1d, conf_1d)
             assert mock_conv1d.called
         t1_depth_1d = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
         t2_depth_1d = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), "float32", device))
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.depthwise_conv1d") as mock_dw:
             mock_dw.return_value = "res"
-            cast("Callable[..., EagerTensorProtocol]", depthwise_conv)(t1_depth_1d, t2_depth_1d, conf_1d)
+            cast("EagerCallableProtocol", depthwise_conv)(t1_depth_1d, t2_depth_1d, conf_1d)
             assert mock_dw.called
         t1_sep_1d = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
         t2_sep_dw = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), "float32", device))
         t2_sep_pw = Tensor(np.ones((4, 2, 1)), TensorConfig((4, 2, 1), "float32", device))
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.separable_conv1d") as mock_sep:
             mock_sep.return_value = "res"
-            cast("Callable[..., EagerTensorProtocol]", separable_conv)(t1_sep_1d, t2_sep_dw, t2_sep_pw, conf_1d)
+            cast("EagerCallableProtocol", separable_conv)(t1_sep_1d, t2_sep_dw, t2_sep_pw, conf_1d)
             assert mock_sep.called
 
 
@@ -92,16 +90,16 @@ def test_conv_nd_2d_3d() -> None:
     with ConfigContext(eager_mode=True):
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv2d") as mock_conv2d:
             mock_conv2d.return_value = "res"
-            cast("Callable[..., EagerTensorProtocol]", conv)(t1_2d, t2_2d, conf)
+            cast("EagerCallableProtocol", conv)(t1_2d, t2_2d, conf)
             assert mock_conv2d.called
         with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv3d") as mock_conv3d:
             mock_conv3d.return_value = "res"
-            cast("Callable[..., EagerTensorProtocol]", conv)(t1_3d, t2_3d, conf)
+            cast("EagerCallableProtocol", conv)(t1_3d, t2_3d, conf)
             assert mock_conv3d.called
         with pytest.raises(ValueError):
-            cast("Callable[..., EagerTensorProtocol]", depthwise_conv)(t1_3d, t2_3d, conf)
+            cast("EagerCallableProtocol", depthwise_conv)(t1_3d, t2_3d, conf)
         with pytest.raises(ValueError):
-            cast("Callable[..., EagerTensorProtocol]", separable_conv)(t1_3d, t2_3d, t2_3d, conf)
+            cast("EagerCallableProtocol", separable_conv)(t1_3d, t2_3d, t2_3d, conf)
 
 
 gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
@@ -126,7 +124,12 @@ def test_conv_nd_coverage() -> None:
         global_tracing_state.is_tracing = True
 
         def dummy_emit(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function dummy_emit."""
+            """Test function dummy_emit.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "emitted"
 
         import ml_switcheroo_compiler.ops.nn.conv_nd as conv_nd_mod

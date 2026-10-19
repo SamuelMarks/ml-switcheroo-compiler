@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_rope_infer_shape() -> None:
@@ -27,7 +25,7 @@ def test_rope_infer_shape() -> None:
 
         shape = (1, 2)
 
-    assert cast("Callable[..., EagerTensorProtocol]", RopeOp)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (1, 2)
+    assert cast("EagerCallableProtocol", RopeOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
 
 
 def test_rope() -> None:
@@ -100,4 +98,4 @@ def test_scaled_dot() -> None:
 
         shape = (1, 2)
 
-    assert cast("Callable[..., EagerTensorProtocol]", ScaledDotProductAttention)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), None, None, None) == (1, 2)
+    assert cast("EagerCallableProtocol", ScaledDotProductAttention)().infer_shape(cast("EagerCallableProtocol", DummyShape)(), None, None, None) == (1, 2)

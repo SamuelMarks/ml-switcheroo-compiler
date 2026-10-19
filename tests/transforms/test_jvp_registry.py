@@ -73,7 +73,11 @@ def test_jvp_registry_full_branches() -> None:
     assert len(rules_cached) > 0
 
     def mock_get_data(name: EagerValue) -> None:
-        """Test function mock_get_data."""
+        """Test function mock_get_data.
+
+        Args:
+            name: Test parameter `name`.
+        """
         getattr(_JVP_REGISTRY, "__setitem__")(name, "lazy_jvp_result")
         return None
 

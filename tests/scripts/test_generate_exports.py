@@ -15,7 +15,7 @@ import pytest
 import scripts.generate_exports as ge
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 _real_import = importlib.import_module
 
 
@@ -30,9 +30,15 @@ def _mock_mod_import(mod_obj: EagerValue) -> Callable[..., EagerValue]:
     """
 
     def _imp(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function _imp."""
+        """Test function _imp.
+
+        Args:
+            name: Test parameter `name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         if name in ("subprocess", "scripts", "scripts.generate_exports", "ast", "os", "sys", "tempfile", "builtins"):
-            return cast("Callable[..., EagerTensorProtocol]", _real_import)(name, *args, **kwargs)
+            return cast("EagerCallableProtocol", _real_import)(name, *args, **kwargs)
         return mod_obj
 
     return _imp
@@ -112,14 +118,18 @@ def test_process_file_no_src_dir(tmp_path: Path) -> None:
     f.write_text("")
 
     def fake_abs(p: str) -> str:
-        """Mock absolute path."""
+        """Mock absolute path.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if p == "src":
             return "/tmp/src"
         return "/tmp/other/file.py"
 
     with patch("os.path.abspath", fake_abs):
         ge.process_file(str(f))
-    assert f is not None or f is None
+    assert f.exists()
 
 
 def test_process_file_import_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -134,7 +144,11 @@ def test_process_file_import_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     f.write_text("")
 
     def fake_abspath(p: str) -> str:
-        """Mock absolute path."""
+        """Mock absolute path.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if p == "src":
             return str(tmp_path / "src")
         return os.path.join(os.getcwd(), p) if not os.path.isabs(p) else p
@@ -142,7 +156,7 @@ def test_process_file_import_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr("os.path.abspath", fake_abspath)
     with patch("scripts.generate_exports.importlib.import_module", side_effect=Exception):
         ge.process_file(str(f))
-    assert f is not None or f is None
+    assert f.read_text() == ""
 
 
 def setup_mock_src(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -159,7 +173,11 @@ def setup_mock_src(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     src.mkdir(exist_ok=True)
 
     def fake_abspath(p: str) -> str:
-        """Mock absolute path."""
+        """Mock absolute path.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if p == "src":
             return str(src)
         if not os.path.isabs(p):
@@ -187,7 +205,7 @@ def test_process_file_magic_from(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         __all__ = ["x"]
 
     with patch("subprocess.run"), patch("scripts.generate_exports._get_exports_from_submodule", return_value=["x", "y"]):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod2)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod2)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -214,7 +232,7 @@ def test_process_file_magic_auto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         _z = 3
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert '"x"' in content
@@ -239,7 +257,7 @@ def test_process_file_no_magic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert '"x"' in content
@@ -263,7 +281,7 @@ def test_process_file_existing_all_match(tmp_path: Path, monkeypatch: pytest.Mon
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ['x']"
 
@@ -286,7 +304,7 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
         x = 1
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n"
 
@@ -309,7 +327,7 @@ def test_process_file_append(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         x = 1
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -333,13 +351,18 @@ def test_process_file_syntax_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ["
 
 
 def test_process_file_invalid_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test processing a file where existing __all__ is an invalid type."""
+    """Test processing a file where existing __all__ is an invalid type.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_invalid_all.py"
     f.write_text("x = 1\n__all__ = 123\n")
@@ -350,24 +373,32 @@ def test_process_file_invalid_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         __all__ = 123
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n\n__all__ = [\n]\n"
 
 
 def test_generate_init_no_rewrite_needed(tmp_path: Path) -> None:
-    """Test function test_generate_init_no_rewrite_needed."""
+    """Test function test_generate_init_no_rewrite_needed.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     init_file = tmp_path / "__init__.py"
     init_file.write_text("x = 1\n__all__ = ['y']")
     with patch("scripts.generate_exports._get_exports_from_submodule") as mock_get:
         mock_get.return_value = ["y"]
         with patch("subprocess.run"):
             ge.generate_init(filepath=str(init_file), module_name="test_mod", submodules=["sub1"])
-    assert init_file is not None or init_file is None
+    assert init_file.read_text() == "x = 1\n__all__ = ['y']"
 
 
 def test_generate_init_invalid_all_type(tmp_path: Path) -> None:
-    """Test function test_generate_init_invalid_all_type."""
+    """Test function test_generate_init_invalid_all_type.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     init_file = tmp_path / "__init__.py"
     init_file.write_text("x = 1\n__all__ = 123")
     with patch("scripts.generate_exports._get_exports_from_submodule") as mock_get:
@@ -378,17 +409,27 @@ def test_generate_init_invalid_all_type(tmp_path: Path) -> None:
 
 
 def test_process_file_no_py_extension(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_no_py_extension."""
+    """Test function test_process_file_no_py_extension.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_no_ext"
     f.write_text("x = 1\n")
     with patch("scripts.generate_exports.importlib.import_module", side_effect=ImportError):
         ge.process_file(str(f))
-    assert f is not None or f is None
+    assert f.read_text() == "x = 1\n"
 
 
 def test_process_file_expr_not_call(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_expr_not_call."""
+    """Test function test_process_file_expr_not_call.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_expr.py"
     f.write_text("x = 1\n__all__\n'string'\n__all__.sort()\n__all__.extend(['x'])")
@@ -399,14 +440,18 @@ def test_process_file_expr_not_call(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
 
 
 def test_generate_init_same_source(tmp_path: Path) -> None:
-    """Test function test_generate_init_same_source."""
+    """Test function test_generate_init_same_source.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     init_file = tmp_path / "__init__.py"
     init_file.write_text("old text")
     with patch("scripts.generate_exports._get_exports_from_submodule") as mock_get:
@@ -418,7 +463,12 @@ def test_generate_init_same_source(tmp_path: Path) -> None:
 
 
 def test_process_file_same_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_same_source."""
+    """Test function test_process_file_same_source.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_same.py"
     original_source = "x = 1\n__all__ = [y]\n"
@@ -430,22 +480,32 @@ def test_process_file_same_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         __all__ = ["x"]
 
     def mock_subprocess_run(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function mock_subprocess_run."""
+        """Test function mock_subprocess_run.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         cmd = args[0]
         if cmd and cast("EagerTensorProtocol", "ruff") in cast("EagerTensorProtocol", cmd):
             tmp_name = cast("EagerTensorProtocol", getattr(cmd, "__getitem__")(-1))
-            if cast("Callable[..., EagerTensorProtocol]", os.path.exists)(tmp_name):
-                with cast("Callable[..., EagerTensorProtocol]", builtins.open)(tmp_name, "w") as tmp_f:
+            if cast("EagerCallableProtocol", os.path.exists)(tmp_name):
+                with cast("EagerCallableProtocol", builtins.open)(tmp_name, "w") as tmp_f:
                     tmp_f.write(original_source)
 
     with patch("subprocess.run", side_effect=mock_subprocess_run):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == original_source
 
 
 def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_ast_elements_middle."""
+    """Test function test_process_file_ast_elements_middle.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_ast_elements_mid.py"
     f.write_text("x = 1\n__all__ = ['x', y, 'z']\n")
@@ -456,7 +516,7 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
         __all__ = ["x", "z"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_empty_all.py"
@@ -468,13 +528,18 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod2)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod2)())):
             ge.process_file(str(f))
     assert "x = 1\n\n__all__ = [\n" in f.read_text()
 
 
 def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_no_end_lineno."""
+    """Test function test_process_file_no_end_lineno.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_no_end_lineno.py"
     f.write_text("x = 1\n__all__ = ['x']\n")
@@ -487,7 +552,11 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     original_walk = __import__("ast").walk
 
     def mock_walk(node: EagerValue) -> EagerValue:
-        """Test function mock_walk."""
+        """Test function mock_walk.
+
+        Args:
+            node: Test parameter `node`.
+        """
         nodes = list(original_walk(node))
         for n in nodes:
             if hasattr(n, "end_lineno"):
@@ -496,13 +565,18 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
     with patch("subprocess.run"):
         with patch("ast.walk", side_effect=mock_walk):
-            with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+            with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
                 ge.process_file(str(f))
-    assert original_walk is not None or original_walk is None
+    assert "__all__" in f.read_text()
 
 
 def test_process_file_complex_targets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_complex_targets."""
+    """Test function test_process_file_complex_targets.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_complex.py"
     f.write_text("x = 1\nother = __all__ = ['x']\n__all__.something()\nother.append('x')")
@@ -513,7 +587,7 @@ def test_process_file_complex_targets(tmp_path: Path, monkeypatch: pytest.Monkey
         __all__ = ["x", "y"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "other.append" in content
@@ -529,7 +603,11 @@ def test_process_file_complex_targets(tmp_path: Path, monkeypatch: pytest.Monkey
 
 
 def test_generate_init_no_new_exports(tmp_path: Path) -> None:
-    """Test function test_generate_init_no_new_exports."""
+    """Test function test_generate_init_no_new_exports.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     init_file = tmp_path / "__init__.py"
     init_file.write_text("x = 1\n")
     with patch("scripts.generate_exports._get_exports_from_submodule", return_value=["y"]):
@@ -540,7 +618,12 @@ def test_generate_init_no_new_exports(tmp_path: Path) -> None:
 
 
 def test_process_file_tuple_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_tuple_all."""
+    """Test function test_process_file_tuple_all.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_tuple.py"
     f.write_text("x = 1\n__all__ = ('x',)")
@@ -551,13 +634,18 @@ def test_process_file_tuple_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ('x',)"
 
 
 def test_process_file_extend_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test function test_process_file_extend_all."""
+    """Test function test_process_file_extend_all.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_extend.py"
     f.write_text("x = 1\n__all__.extend(['x'])\n")
@@ -568,7 +656,7 @@ def test_process_file_extend_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("Callable[..., EagerTensorProtocol]", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("Callable[..., EagerTensorProtocol]", _mock_mod_import)(cast("Callable[..., EagerTensorProtocol]", MockMod)())):
+        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -584,7 +672,11 @@ def test_main() -> None:
 
 
 def test_main_block(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test function test_main_block."""
+    """Test function test_main_block.
+
+    Args:
+        capsys: Test parameter `capsys`.
+    """
     import runpy
     import sys
 

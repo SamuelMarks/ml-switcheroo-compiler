@@ -1,4 +1,4 @@
-"""Core utilities."""
+"""Implementation of math reduction operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_reduction`)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import typing  # noqa: F401
 from types import ModuleType
 from typing import Callable, Optional, Protocol, Union, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -163,7 +163,7 @@ def _numel(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
         return float(cast(EagerTensorProtocol, x).size)
     if hasattr(x, "numel"):
         return float(cast(ModuleType, x).numel())
-    return float(host_backend.asarray(x).size)
+    return float(_resolve_eager_mod(backend_module).asarray(x).size)
 
 
 @global_eager_registry.register("Pmean")
@@ -539,7 +539,7 @@ def _np_fmax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     func = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.fmax(args[0], args[1]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).fmax(args[0], args[1]))
 
 
 @global_eager_registry.register("ScatterMax")
@@ -593,7 +593,7 @@ def _np_weibullmin(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     func = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.random.weibull(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).random.weibull(*args, **kwargs))
 
 
 @global_eager_registry.register("WindowHamming")
@@ -611,4 +611,4 @@ def _np_windowhamming(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     func = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.hamming(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).hamming(*args, **kwargs))

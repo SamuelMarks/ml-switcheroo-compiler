@@ -33,9 +33,7 @@ from ml_switcheroo_compiler.ops.ragged.core import RaggedDot
 from ml_switcheroo_compiler.ops.ragged.frontend import ragged_dot, ragged_stack, ragged_stack_dynamic_partitions
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_ragged_ops() -> None:
@@ -72,12 +70,12 @@ def _test_ragged_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
     assert RaggedDynamicBroadcast().infer_shape() == ()
     assert RaggedConstant().infer_shape() == ()
     assert RaggedCrossHashed().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", RaggedRange)().infer_shape()) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", RaggedRowSplitsToSegmentIds)().infer_shape()) == 1
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", RaggedSegmentIdsToRowSplits)().infer_shape()) == 1
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", RaggedRange)().infer_shape()) == 2
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", RaggedRowSplitsToSegmentIds)().infer_shape()) == 1
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", RaggedSegmentIdsToRowSplits)().infer_shape()) == 1
     assert RaggedStack().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", RaggedStackDynamicPartitions)().infer_shape()) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", len)(cast("Callable[..., EagerTensorProtocol]", BooleanMask)().infer_shape()) == 1
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", RaggedStackDynamicPartitions)().infer_shape()) == 2
+    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", BooleanMask)().infer_shape()) == 1
     assert MapFlatValues().infer_shape(t) == ()
     getattr(_state, "update")({"t": t})
     _state.update(locals())
@@ -92,7 +90,7 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     t = _state["t"]
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
-        assert cast("Callable[..., EagerTensorProtocol]", ragged_tensor_to_dense)(t) is not None
+        assert cast("EagerCallableProtocol", ragged_tensor_to_dense)(t) is not None
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -105,11 +103,15 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
             nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
-        assert cast("Callable[..., EagerTensorProtocol]", ragged_tensor_to_dense)(t) is not None
+        assert cast("EagerCallableProtocol", ragged_tensor_to_dense)(t) is not None
         config.eager_mode = True
         global_tracing_state.is_tracing = False
     getattr(_state, "update")({"DummyGraph": DummyGraph, "global_tracing_state": global_tracing_state, "mock_backend": mock_backend})
@@ -158,7 +160,11 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
             nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
@@ -167,11 +173,21 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
             """Test class DummyOpMask."""
 
             def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function __call__."""
+                """Test function __call__.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "masked"
 
             def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function infer_shape."""
+                """Test function infer_shape.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return ()
 
         setattr(ragged_frontend, "get_op", lambda x: DummyOpMask)
@@ -180,8 +196,8 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
         orig_emit = linalg_utils._emit_linalg_node
         setattr(linalg_utils, "_emit_linalg_node", lambda *args, **kwargs: "masked")
         try:
-            assert cast("Callable[..., EagerTensorProtocol]", boolean_mask)(t, t) is not None
-            assert cast("Callable[..., EagerTensorProtocol]", map_flat_values)(cast("Callable[..., EagerTensorProtocol]", DummyOp)(), t) is not None
+            assert cast("EagerCallableProtocol", boolean_mask)(t, t) is not None
+            assert cast("EagerCallableProtocol", map_flat_values)(cast("EagerCallableProtocol", DummyOp)(), t) is not None
         finally:
             linalg_utils._emit_linalg_node = orig_emit
     finally:
@@ -197,4 +213,4 @@ def test_ragged_coverage() -> None:
     _test_ragged_coverage_part_2(_state)
     _test_ragged_coverage_part_3(_state)
     _test_ragged_coverage_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

@@ -8,14 +8,14 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _resolve_dense_backend() -> EagerValue:
-    """Resolve the underlying array buffer backend via the NumPy backend module.
+    """Resolve the underlying array buffer backend via the BackendRegistry.
 
     Returns:
         EagerValue: Registered host array backend module.
     """
-    from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-    return cast(EagerValue, NumpyGenerator.get_module())
+    return cast(EagerValue, BackendRegistry.get("numpy").get_module())
 
 
 def asarray(data: EagerValue, dtype: EagerValue = None) -> EagerValue:

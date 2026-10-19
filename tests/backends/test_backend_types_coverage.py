@@ -14,7 +14,11 @@ if TYPE_CHECKING:
 
 
 def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify 100% line and branch coverage for dask/types.py."""
+    """Verify 100% line and branch coverage for dask/types.py.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.backends.dask.types as dask_types
 
     # 1. ImportError branch coverage
@@ -41,7 +45,11 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify 100% line and branch coverage for mlx/types.py."""
+    """Verify 100% line and branch coverage for mlx/types.py.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.backends.mlx.types as mlx_types
 
     # 1. ImportError branch coverage
@@ -72,7 +80,11 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
         @staticmethod
         def asarray(data: EagerValue) -> EagerValue:
-            """Create asarray."""
+            """Create asarray.
+
+            Args:
+                data: Test parameter `data`.
+            """
             return np.array(data)
 
     monkeypatch.setattr(mlx_types, "mx", MockMxWithAsarray)
@@ -86,7 +98,11 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify 100% line and branch coverage for keras/types.py."""
+    """Verify 100% line and branch coverage for keras/types.py.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.backends.keras.types as keras_types
 
     # 1. Exception/ImportError branch coverage
@@ -115,7 +131,11 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
         @staticmethod
         def asarray(data: EagerValue) -> EagerValue:
-            """Asarray."""
+            """Asarray.
+
+            Args:
+                data: Test parameter `data`.
+            """
             return np.array(data)
 
     monkeypatch.setattr(keras_types, "kops", MockKopsWithAsarray)

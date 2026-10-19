@@ -16,7 +16,7 @@ from typing import (
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -128,7 +128,7 @@ def _create_vmap_symbolic_args(args: TensorOrScalar, in_axes: int | tuple[int, .
         if isinstance(a, Tensor):
             axis = _resolve_vmap_axis(in_axes, i)
             new_shape = _compute_vmap_shape(a, axis)
-            proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
+            proxy = cast("EagerCallableProtocol", ProxyTensor)(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
             symbolic_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
         else:
             symbolic_args.append(a)

@@ -173,7 +173,11 @@ def test_orchestrator_executes_manifest_workload() -> None:
 
 
 def test_orchestrator_manifest_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test orchestrator execution when load_model_workloads fails."""
+    """Test orchestrator execution when load_model_workloads fails.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     monkeypatch.setattr(
         "ml_switcheroo_compiler.benchmarks.config_models.load_model_workloads",
         lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("Disk failure")),
@@ -292,11 +296,19 @@ def test_cross_framework_benchmarking_runs_without_synthetic_fallback_warnings()
 
 
 def test_load_model_workloads_fallback_paths(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test load_model_workloads falling back to primary and fallback manifests."""
+    """Test load_model_workloads falling back to primary and fallback manifests.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     real_exists = os.path.exists
 
     def mock_exists_no_standard(path: str) -> bool:
-        """Test function mock_exists_no_standard."""
+        """Test function mock_exists_no_standard.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if "standard_workloads.yaml" in path:
             return False
         return real_exists(path)
@@ -306,7 +318,11 @@ def test_load_model_workloads_fallback_paths(monkeypatch: pytest.MonkeyPatch) ->
     assert "mlp_model" in w_primary
 
     def mock_exists_fallback(path: str) -> bool:
-        """Test function mock_exists_fallback."""
+        """Test function mock_exists_fallback.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if "standard_workloads.yaml" in path or ("workloads.yaml" in path and "model_workloads.yaml" not in path):
             return False
         return real_exists(path)

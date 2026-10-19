@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 if TYPE_CHECKING:
     pass
@@ -124,7 +124,7 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(mod, data, dtype))
+        return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(mod, data, dtype))
 
     @classmethod
     def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -140,7 +140,7 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(mod, data))
+        return cast(EagerValue, cast("EagerCallableProtocol", generic_asarray)(mod, data))
 
     @classmethod
     def item(cls: type, data: EagerValue) -> float:
@@ -156,4 +156,4 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
-        return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(mod, data))
+        return cast(float, cast("EagerCallableProtocol", generic_item)(mod, data))

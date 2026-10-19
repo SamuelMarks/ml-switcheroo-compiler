@@ -76,7 +76,7 @@ class CppGenerator(BaseGenerator):
             use_openmp (bool): The use_openmp parameter.
             strict (bool): Whether to raise UnimplementedMathError on unsupported operations.
         """
-        getattr(super(), "__init__")(graph=graph)
+        super().__init__(graph=cast("IRGraph", graph))
         self.use_simd = use_simd
         self.use_openmp = use_openmp
         self.strict = strict

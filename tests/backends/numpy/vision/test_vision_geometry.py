@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_generator, _np_affine_grid, _np_affine_transform, _np_elastic_transform, _np_extract_bounding_boxes, _np_iou, _np_nms, _np_perspective_transform
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_np_affine_generator() -> None:
@@ -27,14 +25,14 @@ def test_np_elastic_transform() -> None:
     """Test function test_np_elastic_transform."""
     images = np.ones((2, 2))
     res = _np_elastic_transform(np, images, None)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, images)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_np_extract_bounding_boxes() -> None:
     """Test function test_np_extract_bounding_boxes."""
     images = np.ones((2, 2))
     res = _np_extract_bounding_boxes(np, images, None, None)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, images)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_np_iou() -> None:
@@ -42,7 +40,14 @@ def test_np_iou() -> None:
 
     @global_eager_registry.register("IoU")
     def _dummy_iou(bm: EagerValue, b1: EagerValue, b2: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function _dummy_iou."""
+        """Test function _dummy_iou.
+
+        Args:
+            bm: Test parameter `bm`.
+            b1: Test parameter `b1`.
+            b2: Test parameter `b2`.
+            kwargs: Test parameter `kwargs`.
+        """
         return np.ones((1,))
 
     with pytest.raises(IndexError):
@@ -54,7 +59,15 @@ def test_np_nms() -> None:
 
     @global_eager_registry.register("NonMaxSuppression")
     def _dummy_nms(bm: EagerValue, b: EagerValue, s: EagerValue, max_out: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function _dummy_nms."""
+        """Test function _dummy_nms.
+
+        Args:
+            bm: Test parameter `bm`.
+            b: Test parameter `b`.
+            s: Test parameter `s`.
+            max_out: Test parameter `max_out`.
+            kwargs: Test parameter `kwargs`.
+        """
         return np.ones((1,))
 
     with pytest.raises(TypeError):
@@ -65,7 +78,7 @@ def test_np_perspective_transform() -> None:
     """Test function test_np_perspective_transform."""
     images = np.ones((2, 2))
     res = _np_perspective_transform(np, images, None, None, None)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, images)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_np_affine_grid() -> None:
@@ -80,7 +93,7 @@ def test_np_affine_transform() -> None:
     """Test function test_np_affine_transform."""
     images = np.ones((2, 2))
     res = _np_affine_transform(np, images, None)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, images)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_numpy_vision_geometry_eager_extra() -> None:

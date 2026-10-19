@@ -8,7 +8,7 @@ from typing import Optional, TypeVar, Union, cast
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -333,7 +333,7 @@ def _execute_generated_code(
     namespace = _get_namespace(backend, generator_cls)
 
     try:
-        compiled_fn: Callable[..., TensorOrScalar] | None = cast("Callable[..., EagerTensorProtocol]", _build_generated_entrypoint)(code, namespace, backend, strict)
+        compiled_fn: Callable[..., TensorOrScalar] | None = cast("EagerCallableProtocol", _build_generated_entrypoint)(code, namespace, backend, strict)
         if compiled_fn is None:
             return _fallback_eager(fn, args, kw)
         res = compiled_fn(*args, **kw)
@@ -429,9 +429,9 @@ def compile_function(fn: TensorOrScalar, backend: str = "numpy", **kwargs: AttrV
         if key in _COMPILATION_CACHE:
             return _COMPILATION_CACHE[key](*args, **kw)
 
-        graph = cast("Callable[..., EagerTensorProtocol]", _trace_function_graph)(fn, args, kw)
+        graph = cast("EagerCallableProtocol", _trace_function_graph)(fn, args, kw)
         if graph is None:
-            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _fallback_eager)(fn, args, kw))
+            return cast(TensorOrScalar, cast("EagerCallableProtocol", _fallback_eager)(fn, args, kw))
 
         try:
             generator_cls = BackendRegistry.get(backend)
@@ -440,7 +440,7 @@ def compile_function(fn: TensorOrScalar, backend: str = "numpy", **kwargs: AttrV
                 from ml_switcheroo_compiler.core.errors import CompilationError
 
                 raise CompilationError(f"Target backend '{backend}' not found: {e}") from e
-            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _fallback_eager)(fn, args, kw))
+            return cast(TensorOrScalar, cast("EagerCallableProtocol", _fallback_eager)(fn, args, kw))
 
         static_fn = cast("Callable[..., Optional[Callable[..., TensorOrScalar]]]", _try_static_compile_aot)(generator_cls, graph, kwargs)
         if static_fn is not None:
@@ -449,7 +449,7 @@ def compile_function(fn: TensorOrScalar, backend: str = "numpy", **kwargs: AttrV
 
         return cast(
             TensorOrScalar,
-            cast("Callable[..., EagerTensorProtocol]", _compile_with_generator_instance)(generator_cls, graph, backend, key, kwargs, fn, args, kw),
+            cast("EagerCallableProtocol", _compile_with_generator_instance)(generator_cls, graph, backend, key, kwargs, fn, args, kw),
         )
 
     return compiled_wrapper

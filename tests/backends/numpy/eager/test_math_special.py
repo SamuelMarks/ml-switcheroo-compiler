@@ -11,25 +11,23 @@ import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as ma
 import ml_switcheroo_compiler.backends.numpy.eager.math_special as ms
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_math_advanced_coverage() -> None:
     """Test function test_math_advanced_coverage."""
     ops = [getattr(ma, name) for name in dir(ma) if name.startswith("_") and callable(getattr(ma, name))]
-    arg = np.array([1.0, 2.0])
     for op in ops:
+        arg = np.array([1.0, 2.0])
         sig = inspect.signature(op)
         args_to_pass = []
         for p in sig.parameters.values():
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("n",):
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(1)
+                cast("EagerCallableProtocol", args_to_pass.append)(1)
             else:
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -52,9 +50,9 @@ def test_math_special_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("n",):
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(1)
+                cast("EagerCallableProtocol", args_to_pass.append)(1)
             else:
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):

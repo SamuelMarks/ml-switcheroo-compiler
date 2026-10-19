@@ -12,9 +12,7 @@ import ml_switcheroo_compiler.backends.numpy.eager.math_stats as ms
 from ml_switcheroo_compiler.backends.numpy.eager.math_stats import _np_randomcategorical, _np_randomshuffle
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_math_stats_coverage() -> None:
@@ -28,9 +26,9 @@ def test_math_stats_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("a", "b", "x", "y", "tensor"):
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
             else:
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):

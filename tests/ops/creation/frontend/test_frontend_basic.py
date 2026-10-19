@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_basic import _create_backend_array, _get_dtype_val, _infer_dtype, _try_create_array, array, asarray, convert_to_numpy, convert_to_tensor, empty, empty_like, frombuffer, full, full_like, ones, ones_like, zeros, zeros_like
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_frontend_basic() -> None:
@@ -42,7 +40,12 @@ def test_frontend_basic() -> None:
         """Test class DummyBackend."""
 
         def array(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -53,7 +56,12 @@ def test_frontend_basic() -> None:
             return T()
 
         def asarray(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -63,18 +71,23 @@ def test_frontend_basic() -> None:
 
             return T()
 
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", _try_create_array)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), [1], "int32"), "dtype")) == "float32"
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", _try_create_array)(cast("Callable[..., EagerTensorProtocol]", DummyBackend)(), [1], None), "dtype")) == "float32"
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", _try_create_array)(cast("EagerCallableProtocol", DummyBackend)(), [1], "int32"), "dtype")) == "float32"
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", _try_create_array)(cast("EagerCallableProtocol", DummyBackend)(), [1], None), "dtype")) == "float32"
 
     class DummyBackendThrow:
         """Test class DummyBackendThrow."""
 
         def array(self, x: EagerValue, dtype: EagerValue = None) -> None:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+                dtype: Test parameter `dtype`.
+            """
             raise Exception()
 
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        cast("Callable[..., EagerTensorProtocol]", _try_create_array)(cast("Callable[..., EagerTensorProtocol]", DummyBackendThrow)(), [1], None)
+        cast("EagerCallableProtocol", _try_create_array)(cast("EagerCallableProtocol", DummyBackendThrow)(), [1], None)
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend", return_value=DummyBackend()):
         assert cast("EagerTensorProtocol", getattr(_create_backend_array([1], None), "dtype")) == "float32"
         from ml_switcheroo_compiler.core.config import config
@@ -100,7 +113,11 @@ def test_frontend_basic() -> None:
                 self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         state.global_tracing_state.is_tracing = True
@@ -129,7 +146,12 @@ def test_frontend_basic_functions() -> None:
         """Test class DummyBackend."""
 
         def array(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -140,7 +162,12 @@ def test_frontend_basic_functions() -> None:
             return T()
 
         def asarray(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -151,7 +178,12 @@ def test_frontend_basic_functions() -> None:
             return T()
 
         def zeros(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function zeros."""
+            """Test function zeros.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -162,7 +194,12 @@ def test_frontend_basic_functions() -> None:
             return T()
 
         def ones(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function ones."""
+            """Test function ones.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -173,7 +210,13 @@ def test_frontend_basic_functions() -> None:
             return T()
 
         def full(self, s: EagerValue, v: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function full."""
+            """Test function full.
+
+            Args:
+                s: Test parameter `s`.
+                v: Test parameter `v`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -184,7 +227,12 @@ def test_frontend_basic_functions() -> None:
             return T()
 
         def empty(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function empty."""
+            """Test function empty.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -195,7 +243,14 @@ def test_frontend_basic_functions() -> None:
             return T()
 
         def frombuffer(self, s: EagerValue, dtype: EagerValue = None, count: EagerValue = None, offset: EagerValue = None) -> EagerValue:
-            """Test function frombuffer."""
+            """Test function frombuffer.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+                count: Test parameter `count`.
+                offset: Test parameter `offset`.
+            """
 
             class T:
                 """Test class T."""
@@ -227,7 +282,11 @@ def test_frontend_basic_functions() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True
@@ -303,7 +362,12 @@ def test_frontend_basic_missing_branches() -> None:
         """Test class DummyBackend4."""
 
         def empty(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function empty."""
+            """Test function empty.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -327,14 +391,17 @@ def test_frontend_basic_convert() -> None:
         """Test class DummyBackend4."""
 
         def convert_to_numpy(self, x: EagerValue) -> EagerValue:
-            """Test function convert_to_numpy."""
+            """Test function convert_to_numpy.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return "numpy_arr"
 
     import ml_switcheroo_compiler.backends.registry as reg
 
     setattr(reg, "_ACTIVE_BACKEND", DummyBackend4())
-    convert_to_numpy(t)
-    assert t is not None or t is None
+    assert convert_to_numpy(t) == "numpy_arr"
 
 
 def test_frontend_basic_kwargs() -> None:
@@ -348,7 +415,12 @@ def test_frontend_basic_kwargs() -> None:
         """Test class DummyBackend."""
 
         def zeros(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function zeros."""
+            """Test function zeros.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -359,7 +431,12 @@ def test_frontend_basic_kwargs() -> None:
             return T()
 
         def ones(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function ones."""
+            """Test function ones.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -370,7 +447,13 @@ def test_frontend_basic_kwargs() -> None:
             return T()
 
         def full(self, s: EagerValue, v: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function full."""
+            """Test function full.
+
+            Args:
+                s: Test parameter `s`.
+                v: Test parameter `v`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -381,7 +464,12 @@ def test_frontend_basic_kwargs() -> None:
             return T()
 
         def empty(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function empty."""
+            """Test function empty.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -392,7 +480,14 @@ def test_frontend_basic_kwargs() -> None:
             return T()
 
         def frombuffer(self, s: EagerValue, dtype: EagerValue = None, count: EagerValue = None, offset: EagerValue = None) -> EagerValue:
-            """Test function frombuffer."""
+            """Test function frombuffer.
+
+            Args:
+                s: Test parameter `s`.
+                dtype: Test parameter `dtype`.
+                count: Test parameter `count`.
+                offset: Test parameter `offset`.
+            """
 
             class T:
                 """Test class T."""
@@ -413,7 +508,11 @@ def test_frontend_basic_kwargs() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True
@@ -450,17 +549,23 @@ def test_frontend_basic_coverage() -> None:
 
         data = DummyItem()
 
-    assert cast("Callable[..., EagerTensorProtocol]", _unpack_shape)((cast("Callable[..., EagerTensorProtocol]", DummyData)(), cast("Callable[..., EagerTensorProtocol]", DummyItem)(), 2)) == (1, 1, 2)
+    assert cast("EagerCallableProtocol", _unpack_shape)((cast("EagerCallableProtocol", DummyData)(), cast("EagerCallableProtocol", DummyItem)(), 2)) == (1, 1, 2)
     assert _extract_fill_value(1) == 1
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_fill_value)(cast("Callable[..., EagerTensorProtocol]", DummyData)()) == 1
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_fill_value)(cast("Callable[..., EagerTensorProtocol]", DummyItem)()) == 1
+    assert cast("EagerCallableProtocol", _extract_fill_value)(cast("EagerCallableProtocol", DummyData)()) == 1
+    assert cast("EagerCallableProtocol", _extract_fill_value)(cast("EagerCallableProtocol", DummyItem)()) == 1
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
         """Test class DummyBackend."""
 
         def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                a: Test parameter `a`.
+                k: Test parameter `k`.
+            """
             return op
 
     setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
@@ -478,7 +583,11 @@ def test_frontend_basic_coverage() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True

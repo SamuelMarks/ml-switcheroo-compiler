@@ -10,7 +10,7 @@ import pytest
 import ml_switcheroo_compiler.backends.eager.core_group_ops as group_ops_mod
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class MockCpuResult:
@@ -137,7 +137,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.mean)(x, axis=dim, keepdims=keepdim))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -152,7 +152,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -509,10 +509,10 @@ def test_core_group_ops_coverage() -> None:
     failing_backend = MockFailingAxisBackend(torch_backend)
     x_test = np.ones((2, 4, 8, 8))
 
-    mean_res = cast("Callable[..., EagerTensorProtocol]", group_ops_mod._invoke_grouped_op)(failing_backend, "mean", x_test, (2, 3))
+    mean_res = cast("EagerCallableProtocol", group_ops_mod._invoke_grouped_op)(failing_backend, "mean", x_test, (2, 3))
     assert cast("EagerTensorProtocol", getattr(mean_res, "shape")) == (2, 4, 1, 1)
 
-    var_res = cast("Callable[..., EagerTensorProtocol]", group_ops_mod._invoke_grouped_op)(failing_backend, "variance", x_test, (2, 3))
+    var_res = cast("EagerCallableProtocol", group_ops_mod._invoke_grouped_op)(failing_backend, "variance", x_test, (2, 3))
     assert cast("EagerTensorProtocol", getattr(var_res, "shape")) == (2, 4, 1, 1)
 
     # 4. _group_mean and _group_variance with positional groups vs kwarg groups
@@ -549,16 +549,16 @@ def test_core_group_ops_coverage() -> None:
     bias = np.full((4,), 0.5, dtype=np.float32)
 
     aff_both = group_ops_mod._apply_affine_transform(np, out, 1, weight=weight, bias=bias)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(aff_both, cast("Callable[..., EagerTensorProtocol]", np.full)((2, 4, 8, 8), 2.5))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(aff_both, cast("EagerCallableProtocol", np.full)((2, 4, 8, 8), 2.5))
 
     aff_w_only = group_ops_mod._apply_affine_transform(np, out, 1, weight=weight, bias=None)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(aff_w_only, cast("Callable[..., EagerTensorProtocol]", np.full)((2, 4, 8, 8), 2.0))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(aff_w_only, cast("EagerCallableProtocol", np.full)((2, 4, 8, 8), 2.0))
 
     aff_b_only = group_ops_mod._apply_affine_transform(np, out, 1, weight=None, bias=bias)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(aff_b_only, cast("Callable[..., EagerTensorProtocol]", np.full)((2, 4, 8, 8), 1.5))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(aff_b_only, cast("EagerCallableProtocol", np.full)((2, 4, 8, 8), 1.5))
 
     aff_none = group_ops_mod._apply_affine_transform(np, out, 1, weight=None, bias=None)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(aff_none, out)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(aff_none, out)
 
     # 6. _group_norm with negative axis and with positive axis
     gn_neg = group_ops_mod._group_norm(np, x, groups=2, axis=-1, weight=np.ones(8), bias=np.zeros(8))

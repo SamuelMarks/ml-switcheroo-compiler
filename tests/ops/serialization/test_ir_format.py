@@ -9,15 +9,13 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.serialization.ir_format import graph_to_flatbuffers, graph_to_json, graph_to_protobuf, json_to_graph
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_ir_format() -> None:
     """Test function test_ir_format."""
     graph = IRGraph()
-    getattr(graph.nodes, "__setitem__")("test_node", cast("Callable[..., EagerTensorProtocol]", IRNode)("test_node", "TestOp", ["input1"]))
+    getattr(graph.nodes, "__setitem__")("test_node", cast("EagerCallableProtocol", IRNode)("test_node", "TestOp", ["input1"]))
     json_str = graph_to_json(graph)
     assert "TestOp" in json_str
     loaded_graph = json_to_graph(json_str)

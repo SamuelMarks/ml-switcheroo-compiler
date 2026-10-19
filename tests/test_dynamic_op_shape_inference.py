@@ -32,9 +32,7 @@ from ml_switcheroo_compiler.ops.shape_inference import (
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_symbolic_dimension() -> None:
@@ -284,7 +282,11 @@ def test_shape_inference_pass_with_strides_and_symbolic() -> None:
 
 
 def test_load_shape_signatures_missing_file(monkeypatch: EagerTensorProtocol) -> None:
-    """Test loading shape signatures when YAML file does not exist."""
+    """Test loading shape signatures when YAML file does not exist.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.ops.shape_inference as si
 
     monkeypatch.setattr(si, "_CACHED_SIGNATURES", None)
@@ -296,7 +298,7 @@ def test_load_shape_signatures_missing_file(monkeypatch: EagerTensorProtocol) ->
 
 def test_broadcast_shapes_none_and_edge_cases() -> None:
     """Test broadcasting with None inputs."""
-    assert cast("Callable[..., EagerTensorProtocol]", broadcast_shapes)(None, None) == ()
+    assert cast("EagerCallableProtocol", broadcast_shapes)(None, None) == ()
 
 
 def test_conv_3d_and_symbolic() -> None:
@@ -428,24 +430,32 @@ def test_infer_shape_input_extractors() -> None:
         """Test class DummyMeta."""
 
         def __init__(self, s: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                s: Test parameter `s`.
+            """
             self.shape_metadata = s
 
     class DummyShape:
         """Test class DummyShape."""
 
         def __init__(self, s: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                s: Test parameter `s`.
+            """
             self.shape_metadata = None
             self.shape = s
 
     # Positional args
-    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", cast("Callable[..., EagerTensorProtocol]", DummyMeta)((2, 3)), cast("Callable[..., EagerTensorProtocol]", DummyShape)((1, 3))) == (2, 3)
+    assert cast("EagerCallableProtocol", infer_shape)("Add", cast("EagerCallableProtocol", DummyMeta)((2, 3)), cast("EagerCallableProtocol", DummyShape)((1, 3))) == (2, 3)
     assert infer_shape("Add", (2, 3), [1, 3]) == (2, 3)
 
     # inputs kwarg
-    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", inputs=[cast("Callable[..., EagerTensorProtocol]", DummyMeta)((2, 3)), cast("Callable[..., EagerTensorProtocol]", DummyShape)((1, 3))]) == (2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
+    assert cast("EagerCallableProtocol", infer_shape)("Add", inputs=[cast("EagerCallableProtocol", DummyMeta)((2, 3)), cast("EagerCallableProtocol", DummyShape)((1, 3))]) == (2, 3)
+    assert cast("EagerCallableProtocol", infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
 
 
 def test_coverage_gap_fillers() -> None:

@@ -1,6 +1,6 @@
 # mypy: ignore-errors
 # pylint: disable=too-many-lines
-"""Auto-generated module exports."""
+"""Public package exports and initialization for `ml_switcheroo_compiler.ops.vision`."""
 
 from ml_switcheroo_compiler.ops.vision.affine import (
     AffineConfig,
@@ -36,6 +36,7 @@ from ml_switcheroo_compiler.ops.vision.affine import (
 )
 from ml_switcheroo_compiler.ops.vision.bbox import (
     Callable,
+    EagerCallableProtocol,
     ExtractBoundingBoxes,
     ExtractPatchesOptions,
     Iou,
@@ -132,8 +133,8 @@ __all__ = [
     "BlurConfig",
     "Callable",
     "DType",
+    "EagerCallableProtocol",
     "EagerTensorProtocol",
-    "TensorOrScalar",
     "ElasticConfig",
     "ElasticTransform",
     "Equalization",
@@ -151,6 +152,7 @@ __all__ = [
     "Solarize",
     "Tensor",
     "TensorConfig",
+    "TensorOrScalar",
     "adjust_brightness",
     "adjust_contrast",
     "adjust_hue",

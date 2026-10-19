@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.ops.shape.pad_and_tile import Searchsorted, SortComp
 from ml_switcheroo_compiler.ops.unary.logical import Ediff1d, Isin, Issubdtype
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class MockTensor:
@@ -50,8 +48,8 @@ def test_foreign_call_shape_introspection() -> None:
 
         output_shapes = [(3, 5), (2, 2)]
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockExternalModule)()) == (4, 8)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockMultiOutputModule)()) == (3, 5)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", MockExternalModule)()) == (4, 8)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", MockMultiOutputModule)()) == (3, 5)
 
     # 4. Bound subgraph introspection
     class MockNode:
@@ -70,11 +68,15 @@ def test_foreign_call_shape_introspection() -> None:
 
         subgraph = MockSubgraph()
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockGraphContainer)()) == (1, 64)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", MockGraphContainer)()) == (1, 64)
 
     # 5. Callable with return annotation
     def annotated_fn(x: int) -> tuple[int, int]:
-        """Test function annotated_fn."""
+        """Test function annotated_fn.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (x, x)
 
     assert cast("EagerTensorProtocol", op.infer_shape(annotated_fn)) == cast("EagerTensorProtocol", (int, int))
@@ -96,23 +98,23 @@ def test_searchsorted_and_sort_complex_shape() -> None:
     # Searchsorted with 1D sequence and 1D / 2D values
     seq_1d = MockTensor((10,))
     val_1d = MockTensor((5,))
-    assert cast("Callable[..., EagerTensorProtocol]", ss.infer_shape)(seq_1d, val_1d) == (5,)
+    assert cast("EagerCallableProtocol", ss.infer_shape)(seq_1d, val_1d) == (5,)
 
     val_2d = MockTensor((3, 7))
-    assert cast("Callable[..., EagerTensorProtocol]", ss.infer_shape)(seq_1d, val_2d) == (3, 7)
+    assert cast("EagerCallableProtocol", ss.infer_shape)(seq_1d, val_2d) == (3, 7)
 
     # Searchsorted with multidimensional sequence and broadcasted values
     seq_batched = MockTensor((2, 1, 10))
     val_batched = MockTensor((1, 4, 8))
     # Leading batch dims (2, 1) and (1, 4) broadcast to (2, 4) + (8,)
-    assert cast("Callable[..., EagerTensorProtocol]", ss.infer_shape)(seq_batched, val_batched) == (2, 4, 8)
+    assert cast("EagerCallableProtocol", ss.infer_shape)(seq_batched, val_batched) == (2, 4, 8)
 
     # SortComplex preserves input shape
     inp_2d = MockTensor((4, 5))
-    assert cast("Callable[..., EagerTensorProtocol]", sc.infer_shape)(inp_2d) == (4, 5)
+    assert cast("EagerCallableProtocol", sc.infer_shape)(inp_2d) == (4, 5)
 
     inp_4d = MockTensor((2, 3, 8, 8))
-    assert cast("Callable[..., EagerTensorProtocol]", sc.infer_shape)(inp_4d) == (2, 3, 8, 8)
+    assert cast("EagerCallableProtocol", sc.infer_shape)(inp_4d) == (2, 3, 8, 8)
 
 
 def test_linalg_and_random_shape_grounding() -> None:
@@ -124,12 +126,12 @@ def test_linalg_and_random_shape_grounding() -> None:
     # 1D @ 1D -> scalar ()
     x1 = MockTensor((4,))
     y1 = MockTensor((4,))
-    assert cast("Callable[..., EagerTensorProtocol]", vecdot.infer_shape)(x1, y1) == ()
+    assert cast("EagerCallableProtocol", vecdot.infer_shape)(x1, y1) == ()
 
     # Batched vecdot (2, 3, 5) and (2, 1, 5) along axis -1 -> (2, 3)
     x_batch = MockTensor((2, 3, 5))
     y_batch = MockTensor((2, 1, 5))
-    assert cast("Callable[..., EagerTensorProtocol]", vecdot.infer_shape)(x_batch, y_batch, axis=-1) == (2, 3)
+    assert cast("EagerCallableProtocol", vecdot.infer_shape)(x_batch, y_batch, axis=-1) == (2, 3)
 
     # 2. CustomLinearSolve: solves AX = B
     solve = CustomLinearSolve()
@@ -138,18 +140,18 @@ def test_linalg_and_random_shape_grounding() -> None:
     # A: (2, 4, 4), B: (2, 4) -> X: (2, 4)
     mat_a = MockTensor((2, 4, 4))
     rhs_b1 = MockTensor((2, 4))
-    assert cast("Callable[..., EagerTensorProtocol]", solve.infer_shape)(mat_a, rhs_b1) == (2, 4)
+    assert cast("EagerCallableProtocol", solve.infer_shape)(mat_a, rhs_b1) == (2, 4)
 
     # A: (2, 4, 4), B: (2, 4, 3) -> X: (2, 4, 3)
     rhs_b2 = MockTensor((2, 4, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", solve.infer_shape)(mat_a, rhs_b2) == (2, 4, 3)
+    assert cast("EagerCallableProtocol", solve.infer_shape)(mat_a, rhs_b2) == (2, 4, 3)
 
     # 3. CustomRoot: matches initial guess x0
     croot = CustomRoot()
     assert croot.infer_shape() == ()
     x0 = MockTensor((10, 2))
-    assert cast("Callable[..., EagerTensorProtocol]", croot.infer_shape)(None, x0) == (10, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", croot.infer_shape)(x0) == (10, 2)
+    assert cast("EagerCallableProtocol", croot.infer_shape)(None, x0) == (10, 2)
+    assert cast("EagerCallableProtocol", croot.infer_shape)(x0) == (10, 2)
 
     # 4. Rademacher: output sample shape
     rad = Rademacher()
@@ -172,7 +174,7 @@ def test_logical_reduction_ops_shape() -> None:
     # Isin preserves element shape
     el = MockTensor((3, 4, 5))
     test_el = MockTensor((10,))
-    assert cast("Callable[..., EagerTensorProtocol]", isin_op.infer_shape)(el, test_el) == (3, 4, 5)
+    assert cast("EagerCallableProtocol", isin_op.infer_shape)(el, test_el) == (3, 4, 5)
 
     # Ediff1d produces 1D differences
     assert ediff.infer_shape() == (0,)

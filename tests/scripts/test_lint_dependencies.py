@@ -30,7 +30,19 @@ def test_check_dependencies_violations() -> None:
         os.makedirs(core_dir)
         bad_file: str = os.path.join(core_dir, "bad.py")
         with open(bad_file, "w", encoding="utf-8") as f:
-            f.write('import importlib\nimport sklearn\nimport numpy as np\nfrom scipy.optimize import minimize\np = __import__("psutil")\nsub = "special"\ns = importlib.import_module(f"scipy.{sub}")\ndyn = importlib.import_module(f"{sub}")\nother = __import__()\nnum = __import__(123)\n')
+            f.write(
+                "import importlib\n"
+                "import sklearn\n"
+                "import numpy as np\n"
+                "from scipy.optimize import minimize\n"
+                'p = __import__("psutil")\n'
+                'sub = "special"\n'
+                's = importlib.import_module(f"scipy.{sub}")\n'
+                'dyn = importlib.import_module(f"{sub}")\n'
+                'dyn_empty = importlib.import_module(f".{sub}")\n'
+                "other = __import__()\n"
+                "num = __import__(123)\n"
+            )
         violations: list[str] = check_dependencies(temp_dir)
         assert len(violations) >= 5
         assert any("sklearn" in v for v in violations)

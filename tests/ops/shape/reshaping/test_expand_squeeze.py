@@ -12,14 +12,17 @@ from ml_switcheroo_compiler.ops import atleast_1d, atleast_2d, atleast_3d, expan
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
-    """Helper to create test tensor."""
-    return cast("Tensor", cast("Callable[..., EagerTensorProtocol]", Tensor)(data, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape, "float32", "cpu")))
+    """Helper to create test tensor.
+
+    Args:
+        data: Test parameter `data`.
+        shape: Test parameter `shape`.
+    """
+    return cast("Tensor", cast("EagerCallableProtocol", Tensor)(data, cast("EagerCallableProtocol", TensorConfig)(shape, "float32", "cpu")))
 
 
 def test_expand_dims_eager() -> None:

@@ -13,7 +13,7 @@ from typing import (
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 
 
 @dataclass
@@ -431,7 +431,7 @@ def _interpolate_rotation(np: ModuleType, cfg: RotationInterpolationConfig) -> E
     dx = src_x_clip - getattr(coords, "__getitem__")(0)
     dy = src_y_clip - getattr(coords, "__getitem__")(2)
 
-    pixels = cast("Callable[..., EagerTensorProtocol]", _gather_rotation_pixels)(cfg.img, coords)
+    pixels = cast("EagerCallableProtocol", _gather_rotation_pixels)(cfg.img, coords)
     weights = _compute_rotation_weights(dx, dy)
 
     interp = np.multiply(pixels[0], weights[0]) + np.multiply(pixels[1], weights[1]) + np.multiply(pixels[2], weights[2]) + np.multiply(pixels[3], weights[3])

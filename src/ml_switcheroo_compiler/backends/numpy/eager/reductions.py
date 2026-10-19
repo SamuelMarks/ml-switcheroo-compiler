@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for reductions.py."""
+"""Implementation of reductions operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.reductions`)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
 from ml_switcheroo_compiler.backends.eager import nms_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.configs import WindowConfig
@@ -206,7 +206,7 @@ def _np_nms(backend_module: ModuleType, boxes: EagerValue, scores: EagerValue, m
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", nms_eager)(backend_module, boxes, scores, max_output_size, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", nms_eager)(backend_module, boxes, scores, max_output_size, **kwargs))
 
 
 @numpy_eager_registry.register("TrapezoidalIntegral")

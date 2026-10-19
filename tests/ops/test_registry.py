@@ -10,9 +10,7 @@ from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as regi
 from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_registry_get_op() -> None:
@@ -128,16 +126,25 @@ def test_registry_remaining() -> None:
         """DummyShim."""
 
         def __init__(self, data: EagerValue) -> None:
-            """__init__."""
+            """__init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.operations = data
 
         def get_generator_mapping(self, prefix: EagerValue, op_name: EagerValue) -> EagerValue:
-            """get_generator_mapping."""
-            op = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(self.operations, "get")))(op_name, {})
+            """get_generator_mapping.
+
+            Args:
+                prefix: Test parameter `prefix`.
+                op_name: Test parameter `op_name`.
+            """
+            op = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(self.operations, "get")))(op_name, {})
             if not op:
                 return None
             variants = cast("EagerTensorProtocol", getattr(op, "get"))("variants", {})
-            backend = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(variants, "get")))(prefix, {})
+            backend = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(variants, "get")))(prefix, {})
             return cast("EagerTensorProtocol", getattr(backend, "get"))("generator")
 
     from ml_switcheroo_compiler.ops.registry import _RegistryShim

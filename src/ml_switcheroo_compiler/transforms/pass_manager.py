@@ -142,7 +142,7 @@ class PassManager:
             name (str, optional): The name of the pass.
         """
         self.passes.append(ir_pass)
-        getattr(self.pass_names, "append")(name or getattr(ir_pass, "__name__", "unknown_pass"))
+        self.pass_names.append(name or str(getattr(ir_pass, "__name__", "unknown_pass")))
 
     @staticmethod
     def _resolve_config_path(config_path: str | None) -> str:

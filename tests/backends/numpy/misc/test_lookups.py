@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.lookups import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_hashing() -> None:
@@ -27,7 +25,7 @@ def test_hashing() -> None:
     """
     inputs = np.array([1, 2])
     res = _np_hashing(np, inputs, num_bins=10)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, inputs)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, inputs)
 
 
 def test_integer_lookup() -> None:
@@ -38,7 +36,7 @@ def test_integer_lookup() -> None:
     """
     inputs = np.array([1, 2])
     res = _np_integer_lookup(np, inputs)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, inputs)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, inputs)
 
 
 def test_lookup() -> None:
@@ -50,7 +48,7 @@ def test_lookup() -> None:
     inputs = np.array([1, 2])
     vocab = np.array([1, 2, 3])
     res = _np_lookup(np, inputs, vocab)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, cast("Callable[..., EagerTensorProtocol]", np.array)([0, 1], dtype=np.int32))
+    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([0, 1], dtype=np.int32))
 
 
 def test_string_lookup() -> None:
@@ -61,4 +59,4 @@ def test_string_lookup() -> None:
     """
     inputs = np.array(["a", "b"])
     res = _np_string_lookup(np, inputs)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, inputs)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, inputs)

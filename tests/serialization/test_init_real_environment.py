@@ -174,7 +174,11 @@ def _test_missing_init_unmocked_part_7(_state: dict[str, EagerTensorProtocol]) -
 
 
 def test_missing_init_unmocked(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_missing_init_unmocked."""
+    """Test function test_missing_init_unmocked.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     _state: dict[str, EagerTensorProtocol] = {"tmp_path": tmp_path}
     _test_missing_init_unmocked_part_1(_state)
     _test_missing_init_unmocked_part_2(_state)
@@ -183,4 +187,4 @@ def test_missing_init_unmocked(tmp_path: EagerTensorProtocol) -> None:
     _test_missing_init_unmocked_part_5(_state)
     _test_missing_init_unmocked_part_6(_state)
     _test_missing_init_unmocked_part_7(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

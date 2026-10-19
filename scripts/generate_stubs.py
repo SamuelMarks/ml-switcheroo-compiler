@@ -9,17 +9,105 @@ import json
 import keyword
 import os
 
-from ml_ecosystem_snapshots.stubs import (
-    _format_param_list,
-    _sanitize_default,
-    validate_pyi_stub,
-)
-
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
     SnapshotGroundingEngine,
     _resolve_default_snapshot_dir,
 )
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
+
+
+def _sanitize_default(default_str: str) -> str:
+    """Sanitize complex or un-importable default values for stubs.
+
+    Args:
+        default_str (str): The default value string to sanitize.
+
+    Returns:
+        str: The sanitized default value string.
+    """
+    if default_str == "<unrepresentable>":
+        return "..."
+    try:
+        node: ast.expr = ast.parse(default_str, mode="eval").body
+        if isinstance(node, ast.Constant):
+            return repr(node.value)
+        if isinstance(
+            node,
+            (
+                ast.List,
+                ast.Dict,
+                ast.Tuple,
+                ast.Set,
+                ast.Name,
+                ast.Attribute,
+                ast.UnaryOp,
+                ast.BinOp,
+            ),
+        ):
+            return default_str
+        return "..."
+    except SyntaxError:
+        return "..."
+
+
+def _format_param_list(
+    params: list[dict[str, AttributeValue]],
+    has_varargs: bool = False,
+) -> str:
+    """Format a list of parameter dictionaries into a Python signature string.
+
+    Args:
+        params (list[dict[str, AttributeValue]]): List of parameter dictionary definitions.
+        has_varargs (bool): Whether to append generic varargs if none are present.
+
+    Returns:
+        str: A comma-separated parameter string for def statements.
+    """
+    param_strs: list[str] = []
+
+    for p in params:
+        p_name: AttributeValue = p.get("name")
+        p_anno: AttributeValue = p.get("annotation")
+        p_default: AttributeValue = p.get("default")
+        p_kind: AttributeValue = p.get("kind")
+
+        if p_kind == "VAR_POSITIONAL":
+            p_str = f"*{p_name}"
+        elif p_kind == "VAR_KEYWORD":
+            p_str = f"**{p_name}"
+        else:
+            p_str = str(p_name)
+            p_str += f": {p_anno}" if p_anno else ": Tensor"
+            if p_default is not None:
+                sanitized: str = _sanitize_default(str(p_default))
+                p_str += f" = {sanitized}"
+
+        param_strs.append(p_str)
+
+    if has_varargs and not any(p.get("kind") == "VAR_POSITIONAL" for p in params):
+        param_strs.append("*args: Tensor")
+
+    return ", ".join(param_strs)
+
+
+def validate_pyi_stub(stub_content: str) -> bool:
+    """Validate that a generated .pyi stub compiles into valid Python AST.
+
+    Args:
+        stub_content (str): The string content of the .pyi stub file.
+
+    Returns:
+        bool: True if the stub compiles without syntax errors.
+
+    Raises:
+        SyntaxError: If the stub content is syntactically invalid.
+    """
+    try:
+        ast.parse(stub_content)
+    except SyntaxError as e:
+        raise SyntaxError(str(e)) from e
+    return True
+
 
 BACKENDS_CONFIG: dict[str, str | tuple[str, ...]] = {
     "numpy": "numpy",
@@ -241,10 +329,7 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
 
     try:
         parsed = ast.parse(f"x: {cleaned}")
-        stmt = parsed.body[0]
-        if isinstance(stmt, ast.AnnAssign):
-            return _validate_annot_ast(stmt.annotation, cleaned)
-        return "Tensor"
+        return _validate_annot_ast(getattr(parsed.body[0], "annotation"), cleaned)
     except Exception:
         return "Tensor"
 
@@ -624,8 +709,7 @@ def generate_stubs(
         if count == 0:
             count = _generate_fallback_backend_stubs(be_name, stub_path)
 
-        if os.path.exists(stub_path):
-            print(f"Generated {stub_path} ({count} stubs).")
+        print(f"Generated {stub_path} ({count} stubs).")
 
 
 def main() -> None:

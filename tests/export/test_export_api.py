@@ -13,9 +13,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.export.export_api import ExportArchive
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_export_archive_init() -> None:
@@ -38,7 +36,7 @@ def test_track() -> None:
     """Test function test_track."""
     archive = ExportArchive()
     resource = {"some": "data"}
-    cast("Callable[..., EagerTensorProtocol]", archive.track)(resource)
+    cast("EagerCallableProtocol", archive.track)(resource)
     assert id(resource) in archive.trackables
 
 

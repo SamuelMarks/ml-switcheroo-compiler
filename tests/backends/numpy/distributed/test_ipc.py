@@ -10,9 +10,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data, _exchange_ipc_data_coordinator, _exchange_ipc_data_worker, _ipc_all_gather, _ipc_all_reduce, _ipc_reduce_scatter
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_ipc_coordinator_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -30,7 +28,11 @@ def _test_ipc_coordinator_part_1(_state: dict[str, EagerTensorProtocol]) -> None
             return (1, np.array([2]))  # rank 1, data 2
 
         def send(self, data: EagerValue) -> None:
-            """Test function send."""
+            """Test function send.
+
+            Args:
+                data: Test parameter `data`.
+            """
             pass
 
         def close(self) -> None:
@@ -42,7 +44,11 @@ def _test_ipc_coordinator_part_1(_state: dict[str, EagerTensorProtocol]) -> None
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     getattr(_state, "update")({"MockConnection": MockConnection})
@@ -61,7 +67,12 @@ def _test_ipc_coordinator_part_2(_state: dict[str, EagerTensorProtocol]) -> None
         """Test class MockListener."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def accept(self) -> EagerValue:
@@ -77,11 +88,20 @@ def _test_ipc_coordinator_part_2(_state: dict[str, EagerTensorProtocol]) -> None
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     def mock_client(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function mock_client."""
+        """Test function mock_client.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return MockConnection()
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
@@ -99,15 +119,20 @@ def _test_ipc_coordinator_part_3(_state: dict[str, EagerTensorProtocol]) -> None
     monkeypatch = _state["monkeypatch"]
     res = _exchange_ipc_data_coordinator(2, np.array([1]), 0.1, 0.01)
     assert len(res) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res[0], cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res[1], cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res[0], cast("EagerCallableProtocol", np.array)([1]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res[1], cast("EagerCallableProtocol", np.array)([2]))
 
     # Exception branch
     class ErrorListener:
         """Test class ErrorListener."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def __enter__(self) -> None:
@@ -115,24 +140,32 @@ def _test_ipc_coordinator_part_3(_state: dict[str, EagerTensorProtocol]) -> None
             raise Exception("test error")
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", ErrorListener)
     res_err = _exchange_ipc_data_coordinator(2, np.array([1]), 0.1, 0.01)
     assert len(res_err) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_err[0], cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_err[1], cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_err[0], cast("EagerCallableProtocol", np.array)([1]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_err[1], cast("EagerCallableProtocol", np.array)([1]))
     getattr(_state, "update")({"ErrorListener": ErrorListener, "res": res, "res_err": res_err})
 
 
 def test_ipc_coordinator(monkeypatch: EagerTensorProtocol) -> None:
-    """Test IPC coordinator."""
+    """Test IPC coordinator.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     _state: dict[str, EagerTensorProtocol] = {"monkeypatch": monkeypatch}
     _test_ipc_coordinator_part_1(_state)
     _test_ipc_coordinator_part_2(_state)
     _test_ipc_coordinator_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_ipc_worker_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -150,7 +183,11 @@ def _test_ipc_worker_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
             return [np.array([1]), np.array([2])]
 
         def send(self, data: EagerValue) -> None:
-            """Test function send."""
+            """Test function send.
+
+            Args:
+                data: Test parameter `data`.
+            """
             pass
 
         def close(self) -> None:
@@ -162,7 +199,11 @@ def _test_ipc_worker_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     getattr(_state, "update")({"MockConnection": MockConnection})
@@ -181,7 +222,12 @@ def _test_ipc_worker_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         """Test class MockListener."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def accept(self) -> EagerValue:
@@ -197,11 +243,20 @@ def _test_ipc_worker_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     def mock_client(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function mock_client."""
+        """Test function mock_client.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return MockConnection()
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
@@ -219,10 +274,15 @@ def _test_ipc_worker_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     monkeypatch = _state["monkeypatch"]
     res = _exchange_ipc_data_worker(1, 2, np.array([2]), 0.1, 0.01)
     assert len(res) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res[0], cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res[0], cast("EagerCallableProtocol", np.array)([1]))
 
     def mock_client_err(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function mock_client_err."""
+        """Test function mock_client_err.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         raise Exception("test connection error")
 
     import time
@@ -241,22 +301,30 @@ def _test_ipc_worker_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
 
     res_err = _exchange_ipc_data_worker(1, 2, np.array([2]), 0.1, 0.01)
     assert len(res_err) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_err[0], cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_err[0], cast("EagerCallableProtocol", np.array)([2]))
     getattr(_state, "update")({"mock_client_err": mock_client_err, "mock_time": mock_time, "orig_time": orig_time, "res": res})
     getattr(_state, "update")({"res_err": res_err, "time": time})
 
 
 def test_ipc_worker(monkeypatch: EagerTensorProtocol) -> None:
-    """Test IPC worker."""
+    """Test IPC worker.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     _state: dict[str, EagerTensorProtocol] = {"monkeypatch": monkeypatch}
     _test_ipc_worker_part_1(_state)
     _test_ipc_worker_part_2(_state)
     _test_ipc_worker_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_ipc_exchange_ipc_data(monkeypatch: EagerTensorProtocol) -> None:
-    """Test standard exchange entrypoint."""
+    """Test standard exchange entrypoint.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc._exchange_ipc_data_coordinator", lambda *args: ["mock_coord"])
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc._exchange_ipc_data_worker", lambda *args: ["mock_worker"])
 
@@ -265,7 +333,11 @@ def test_ipc_exchange_ipc_data(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_ipc_collectives(monkeypatch: EagerTensorProtocol) -> None:
-    """Test ipc collectives fallback logic."""
+    """Test ipc collectives fallback logic.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     monkeypatch.setenv("RANK", "0")
     monkeypatch.setenv("WORLD_SIZE", "2")
 
@@ -277,35 +349,35 @@ def test_ipc_collectives(monkeypatch: EagerTensorProtocol) -> None:
 
     # sum op
     res_reduce_scatter_sum = _ipc_reduce_scatter(np.array([1, 2]), "sum", axis=0, mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_reduce_scatter_sum, cast("Callable[..., EagerTensorProtocol]", np.array)([4]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_reduce_scatter_sum, cast("EagerCallableProtocol", np.array)([4]))
 
     # max op
     res_reduce_scatter_max = _ipc_reduce_scatter(np.array([1, 2]), "max", axis=0, mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_reduce_scatter_max, cast("Callable[..., EagerTensorProtocol]", np.array)([3]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_reduce_scatter_max, cast("EagerCallableProtocol", np.array)([3]))
 
     # min op
     res_reduce_scatter_min = _ipc_reduce_scatter(np.array([1, 2]), "min", axis=0, mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_reduce_scatter_min, cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_reduce_scatter_min, cast("EagerCallableProtocol", np.array)([1]))
 
     # fallback op
     res_reduce_scatter_fallback = _ipc_reduce_scatter(np.array([1, 2]), "unknown", axis=0, mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_reduce_scatter_fallback, cast("Callable[..., EagerTensorProtocol]", np.array)([4]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_reduce_scatter_fallback, cast("EagerCallableProtocol", np.array)([4]))
 
     # sum op
     res_all_reduce_sum = _ipc_all_reduce(np.array([1, 2]), "sum", mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_all_reduce_sum, cast("Callable[..., EagerTensorProtocol]", np.array)([4, 6]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_all_reduce_sum, cast("EagerCallableProtocol", np.array)([4, 6]))
 
     # max op
     res_all_reduce_max = _ipc_all_reduce(np.array([1, 2]), "max", mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_all_reduce_max, cast("Callable[..., EagerTensorProtocol]", np.array)([3, 4]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_all_reduce_max, cast("EagerCallableProtocol", np.array)([3, 4]))
 
     # min op
     res_all_reduce_min = _ipc_all_reduce(np.array([1, 2]), "min", mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_all_reduce_min, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_all_reduce_min, cast("EagerCallableProtocol", np.array)([1, 2]))
 
     # fallback op
     res_all_reduce_fallback = _ipc_all_reduce(np.array([1, 2]), "unknown", mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_all_reduce_fallback, cast("Callable[..., EagerTensorProtocol]", np.array)([4, 6]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_all_reduce_fallback, cast("EagerCallableProtocol", np.array)([4, 6]))
 
     monkeypatch.delenv("RANK", raising=False)
     monkeypatch.delenv("WORLD_SIZE", raising=False)
@@ -320,13 +392,13 @@ def test_ipc_collectives_no_mesh() -> None:
     t = np.array([1, 2])
 
     res_gather = _ipc_all_gather(t, axis=0, mesh=None)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_gather, cast("Callable[..., EagerTensorProtocol]", np.expand_dims)(t, axis=0))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_gather, cast("EagerCallableProtocol", np.expand_dims)(t, axis=0))
 
     res_gather_no_axis = _ipc_all_gather(t, axis=None, mesh=None)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_gather_no_axis, t)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_gather_no_axis, t)
 
     res_reduce_scatter = _ipc_reduce_scatter(t, "sum", 0, mesh=None)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_reduce_scatter, t)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_reduce_scatter, t)
 
     # string fallback
     assert _ipc_all_gather("string_tensor", 0, mesh=None) == "string_tensor"
@@ -334,7 +406,7 @@ def test_ipc_collectives_no_mesh() -> None:
     assert _ipc_all_reduce("string_tensor", "sum", mesh=None) == "string_tensor"
 
     res_all_reduce = _ipc_all_reduce(t, "sum", mesh=None)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_all_reduce, t)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_all_reduce, t)
 
 
 def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -355,7 +427,11 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_1(_state: dict
             return (1, np.array([2]))  # rank 1, data 2
 
         def send(self, data: EagerValue) -> None:
-            """Test function send."""
+            """Test function send.
+
+            Args:
+                data: Test parameter `data`.
+            """
             pass
 
         def close(self) -> None:
@@ -367,7 +443,11 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_1(_state: dict
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     getattr(_state, "update")({"MockConnection": MockConnection, "_exchange_ipc_data_coordinator": _exchange_ipc_data_coordinator, "time": time})
@@ -386,7 +466,12 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_2(_state: dict
         """Test class MockListener."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def accept(self) -> EagerValue:
@@ -402,12 +487,21 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_2(_state: dict
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     # Ensure Client fails so we hit the timeout
     def mock_client_err(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function mock_client_err."""
+        """Test function mock_client_err.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         raise Exception("test connection error")
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
@@ -436,18 +530,22 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_3(_state: dict
     res = _exchange_ipc_data_coordinator(2, np.array([1]), 0.1, 0.01)
     # The timeout breaks the loop, it should still return gathered_sorted
     assert len(res) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res[0], cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res[1], cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res[0], cast("EagerCallableProtocol", np.array)([1]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res[1], cast("EagerCallableProtocol", np.array)([2]))
     getattr(_state, "update")({"mock_time": mock_time, "orig_time": orig_time, "res": res})
 
 
 def test_ipc_exchange_ipc_data_coordinator_timeout_fallback(monkeypatch: EagerTensorProtocol) -> None:
-    """Test coordinator timeout fallback loop."""
+    """Test coordinator timeout fallback loop.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     _state: dict[str, EagerTensorProtocol] = {"monkeypatch": monkeypatch}
     _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_1(_state)
     _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_2(_state)
     _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_ipc_coordinator_sleep_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -468,7 +566,11 @@ def _test_ipc_coordinator_sleep_part_1(_state: dict[str, EagerTensorProtocol]) -
             return (1, np.array([2]))  # rank 1, data 2
 
         def send(self, data: EagerValue) -> None:
-            """Test function send."""
+            """Test function send.
+
+            Args:
+                data: Test parameter `data`.
+            """
             pass
 
         def close(self) -> None:
@@ -480,7 +582,11 @@ def _test_ipc_coordinator_sleep_part_1(_state: dict[str, EagerTensorProtocol]) -
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     getattr(_state, "update")({"MockConnection": MockConnection, "_exchange_ipc_data_coordinator": _exchange_ipc_data_coordinator, "time": time})
@@ -499,7 +605,12 @@ def _test_ipc_coordinator_sleep_part_2(_state: dict[str, EagerTensorProtocol]) -
         """Test class MockListener."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
         def accept(self) -> EagerValue:
@@ -515,12 +626,21 @@ def _test_ipc_coordinator_sleep_part_2(_state: dict[str, EagerTensorProtocol]) -
             return cast("EagerTensorProtocol", self)
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     # Client fails first few times, then hits timeout to break loop
     def mock_client_err(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function mock_client_err."""
+        """Test function mock_client_err.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         raise Exception("test connection error")
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
@@ -556,16 +676,24 @@ def _test_ipc_coordinator_sleep_part_3(_state: dict[str, EagerTensorProtocol]) -
 
 
 def test_ipc_coordinator_sleep(monkeypatch: EagerTensorProtocol) -> None:
-    """Test coordinator sleep branch before timeout."""
+    """Test coordinator sleep branch before timeout.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     _state: dict[str, EagerTensorProtocol] = {"monkeypatch": monkeypatch}
     _test_ipc_coordinator_sleep_part_1(_state)
     _test_ipc_coordinator_sleep_part_2(_state)
     _test_ipc_coordinator_sleep_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_ipc_all_gather_no_axis(monkeypatch: EagerTensorProtocol) -> None:
-    """Test all gather without axis."""
+    """Test all gather without axis.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     monkeypatch.setenv("RANK", "0")
     monkeypatch.setenv("WORLD_SIZE", "2")
 
@@ -576,4 +704,4 @@ def test_ipc_all_gather_no_axis(monkeypatch: EagerTensorProtocol) -> None:
 
     # Mesh>1 triggers IPC, axis=None -> concatenates along axis=0
     res_gather = _ipc_all_gather(np.array([1]), axis=None, mesh=mock_mesh)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_gather, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(res_gather, cast("EagerCallableProtocol", np.array)([1, 2]))

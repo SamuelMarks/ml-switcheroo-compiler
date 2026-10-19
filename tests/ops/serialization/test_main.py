@@ -57,9 +57,7 @@ from ml_switcheroo_compiler.serialization import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class _MockVarItem:
@@ -117,7 +115,7 @@ class MockModel:
                 """Test function numpy."""
                 return "ema2_data"
 
-        cast("Callable[..., EagerTensorProtocol]", self.ema_variables.append)(cast("Callable[..., EagerTensorProtocol]", EMA2)())
+        cast("EagerCallableProtocol", self.ema_variables.append)(cast("EagerCallableProtocol", EMA2)())
 
     def get_config(self) -> EagerValue:
         """Test function get_config."""
@@ -141,7 +139,11 @@ def test_get_format_handler() -> None:
 
 
 def test_save_load_helpers(mocker: EagerTensorProtocol) -> None:
-    """Test function test_save_load_helpers."""
+    """Test function test_save_load_helpers.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.serialization.H5WeightFormat.save")
     _save_as_h5({}, "test.h5")
     mocker.patch("ml_switcheroo_compiler.serialization.SafetensorsWeightFormat.save")
@@ -158,31 +160,43 @@ def test_save_load_helpers(mocker: EagerTensorProtocol) -> None:
 
 def test_validate_and_map_weights() -> None:
     """Test function test_validate_and_map_weights."""
-    assert cast("Callable[..., EagerTensorProtocol]", _validate_and_map_weights)({"a": 1}) == {"a": 1}
+    assert cast("EagerCallableProtocol", _validate_and_map_weights)({"a": 1}) == {"a": 1}
 
 
 def test_load_save_weights(mocker: EagerTensorProtocol) -> None:
-    """Test function test_load_save_weights."""
+    """Test function test_load_save_weights.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.serialization.PickleWeightFormat.load", return_value={"a": 1})
     assert load_weights("test.pkl") == {"a": 1}
     with tempfile.NamedTemporaryFile() as f:
-        cast("Callable[..., EagerTensorProtocol]", save_weights)(cast("Callable[..., EagerTensorProtocol]", MockModel)(), f.name)
+        cast("EagerCallableProtocol", save_weights)(cast("EagerCallableProtocol", MockModel)(), f.name)
         assert os.path.exists(f.name)
 
 
 def test_export_funcs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_export_funcs."""
+    """Test function test_export_funcs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mock_graph = mocker.MagicMock()
     setattr(mock_graph.to_json, "return_value", "{}")
     with tempfile.NamedTemporaryFile() as f:
-        cast("Callable[..., EagerTensorProtocol]", export_to_onnx)(mock_graph, f.name)
-        cast("Callable[..., EagerTensorProtocol]", export_to_tflite)(mock_graph, f.name)
-        cast("Callable[..., EagerTensorProtocol]", export_model_topology)(mock_graph, f.name)
-    assert cast("Callable[..., EagerTensorProtocol]", graph_to_json)(mock_graph) == "{}"
+        cast("EagerCallableProtocol", export_to_onnx)(mock_graph, f.name)
+        cast("EagerCallableProtocol", export_to_tflite)(mock_graph, f.name)
+        cast("EagerCallableProtocol", export_model_topology)(mock_graph, f.name)
+    assert cast("EagerCallableProtocol", graph_to_json)(mock_graph) == "{}"
 
 
 def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
-    """Test function test_extract_model_state."""
+    """Test function test_extract_model_state.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.serialization.to_numpy", side_effect=lambda x: x.numpy())
 
     class MockModelNoConfig:
@@ -191,15 +205,15 @@ def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
         pass
 
     m2 = MockModelNoConfig()
-    cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(m2)
+    cast("EagerCallableProtocol", _compile_model_metadata)(m2)
     m = MockModel()
-    weights = cast("Callable[..., EagerTensorProtocol]", _extract_model_weights)(m)
+    weights = cast("EagerCallableProtocol", _extract_model_weights)(m)
     assert weights == {"w1": "w1_data", "weight_1": "w2_data"}
     state = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _extract_optimizer_state)(m, state)
+    cast("EagerCallableProtocol", _extract_optimizer_state)(m, state)
     assert state == {"v1": "v1_data", "opt_state_1": "v2_data", "m1": "m1_data", "momentum_1": "m2_data"}
     state = {}
-    cast("Callable[..., EagerTensorProtocol]", _extract_non_trainable_state)(m, state, weights)
+    cast("EagerCallableProtocol", _extract_non_trainable_state)(m, state, weights)
 
     class NT2:
         """Test class NT2."""
@@ -210,19 +224,19 @@ def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
             """Test function numpy."""
             return "nt2_data"
 
-    cast("Callable[..., EagerTensorProtocol]", _extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
+    cast("EagerCallableProtocol", _extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
     pass
     state = {}
-    cast("Callable[..., EagerTensorProtocol]", _extract_ema_state)(m, state)
+    cast("EagerCallableProtocol", _extract_ema_state)(m, state)
     pass
-    state = cast("dict[str, EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", _extract_model_state)(m, weights))
+    state = cast("dict[str, EagerTensorProtocol]", cast("EagerCallableProtocol", _extract_model_state)(m, weights))
 
     class MockModelNoOptimizer:
         """Test class MockModelNoOptimizer."""
 
         pass
 
-    cast("Callable[..., EagerTensorProtocol]", _extract_optimizer_state)(cast("Callable[..., EagerTensorProtocol]", MockModelNoOptimizer)(), {})
+    cast("EagerCallableProtocol", _extract_optimizer_state)(cast("EagerCallableProtocol", MockModelNoOptimizer)(), {})
     pass
 
 
@@ -235,15 +249,20 @@ def test_compile_model_metadata() -> None:
         pass
 
     m2 = MockModelNoConfig()
-    cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(m2)
+    cast("EagerCallableProtocol", _compile_model_metadata)(m2)
     m = MockModel()
-    (config, meta) = cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(m)
+    (config, meta) = cast("EagerCallableProtocol", _compile_model_metadata)(m)
     assert config == {"conf": "mock"}
     assert "keras_version" in meta
 
 
 def test_write_h5_to_zip(mocker: EagerTensorProtocol, tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_write_h5_to_zip."""
+    """Test function test_write_h5_to_zip.
+
+    Args:
+        mocker: Test parameter `mocker`.
+        tmp_path: Test parameter `tmp_path`.
+    """
     mocker.patch("ml_switcheroo_compiler.serialization._save_as_h5")
     with tempfile.NamedTemporaryFile() as f:
         with zipfile.ZipFile(f.name, "w") as zf:
@@ -252,11 +271,15 @@ def test_write_h5_to_zip(mocker: EagerTensorProtocol, tmp_path: EagerTensorProto
     keras_path = str(tmp_path / "model_bundle.keras")
     ctx = KerasSerializationContext(keras_path, {}, {}, {}, {})
     _write_keras_zip(ctx)
-    assert ctx is not None or ctx is None
+    assert os.path.exists(keras_path)
 
 
 def test_keras_zip_save_load(mocker: EagerTensorProtocol) -> None:
-    """Test function test_keras_zip_save_load."""
+    """Test function test_keras_zip_save_load.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.serialization._load_h5_weights", return_value={"w1": "w1_data"})
     mocker.patch("ml_switcheroo_compiler.serialization._save_as_h5")
     mocker.patch("ml_switcheroo_compiler.serialization.to_numpy", side_effect=lambda x: x.numpy())
@@ -267,10 +290,10 @@ def test_keras_zip_save_load(mocker: EagerTensorProtocol) -> None:
         pass
 
     m2 = MockModelNoConfig()
-    cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(m2)
+    cast("EagerCallableProtocol", _compile_model_metadata)(m2)
     m = MockModel()
     with tempfile.NamedTemporaryFile() as f:
-        cast("Callable[..., EagerTensorProtocol]", save_model)(m, f.name)
+        cast("EagerCallableProtocol", save_model)(m, f.name)
         m_loaded = load_model(f.name)
         assert m_loaded.config == {"conf": "mock"}
 

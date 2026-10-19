@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_householder_product_coverage() -> None:
@@ -25,10 +23,15 @@ def test_householder_product_coverage() -> None:
 
         @staticmethod
         def householder_product(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function householder_product."""
+            """Test function householder_product.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return np.array([[1, 0], [0, 1]])
 
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _householder_product)(MockBackend, v, tau), v)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _householder_product)(MockBackend, v, tau), v)
 
     class MockBackendLinalg:
         """Test class MockBackendLinalg."""
@@ -38,7 +41,12 @@ def test_householder_product_coverage() -> None:
 
             @staticmethod
             def householder_product(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function householder_product."""
+                """Test function householder_product.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return np.array([[1, 0], [0, 1]])
 
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _householder_product)(MockBackendLinalg, v, tau), v)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _householder_product)(MockBackendLinalg, v, tau), v)

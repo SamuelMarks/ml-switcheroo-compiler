@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 import ml_switcheroo_compiler.ops.linalg.linear_operator as linop_mod
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class DummyWithShape:
@@ -37,10 +35,10 @@ def test_linear_operators_coverage() -> None:
     base_op = linop_mod.BaseLinearOperator()
 
     assert base_op.infer_shape(DummyWithShape((3, 3))) == (3, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", base_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)([3, 3])) == (3, 3)
+    assert cast("EagerCallableProtocol", base_op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)([3, 3])) == (3, 3)
     assert base_op.infer_shape(operand=DummyWithShape((4, 4))) == (4, 4)
     assert base_op.infer_shape(operator=DummyWithShape((5, 5))) == (5, 5)
-    assert cast("Callable[..., EagerTensorProtocol]", base_op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)()) == ()
+    assert cast("EagerCallableProtocol", base_op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
     assert base_op.infer_shape() == ()
 
     derived_classes: list[type[linop_mod.BaseLinearOperator]] = [

@@ -40,11 +40,21 @@ def test_strategy_exhaustive_extra() -> None:
         """Test class MockBackend."""
 
         def mock_pull(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
-            """Test function mock_pull."""
+            """Test function mock_pull.
+
+            Args:
+                graph: Test parameter `graph`.
+                resolver: Test parameter `resolver`.
+            """
             return True
 
         def mock_push(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
-            """Test function mock_push."""
+            """Test function mock_push.
+
+            Args:
+                graph: Test parameter `graph`.
+                resolver: Test parameter `resolver`.
+            """
             return True
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
@@ -70,7 +80,12 @@ def test_strategy_exhaustive_extra() -> None:
         """Test class MockBackendMWMS."""
 
         def mock_sync(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
-            """Test function mock_sync."""
+            """Test function mock_sync.
+
+            Args:
+                graph: Test parameter `graph`.
+                resolver: Test parameter `resolver`.
+            """
             return True
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackendMWMS()):

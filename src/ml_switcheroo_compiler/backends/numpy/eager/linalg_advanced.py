@@ -1,13 +1,13 @@
-"""Linalg extras module."""
+"""Implementation of linalg advanced operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced`)."""
 
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 
 
 def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[int]) -> list[int]:
@@ -294,7 +294,7 @@ for op_name in [
 
         return _wrapper
 
-    getattr(numpy_eager_registry, "register")(op_name)(cast("Callable[..., EagerTensorProtocol]", make_linalg_wrapper)(op_name))
+    getattr(numpy_eager_registry, "register")(op_name)(cast("EagerCallableProtocol", make_linalg_wrapper)(op_name))
 
 
 @numpy_eager_registry.register("Lu")
@@ -574,3 +574,42 @@ def _np_svd(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
     full_matrices: bool = bool(kwargs.get("full_matrices", True))
     compute_uv: bool = bool(kwargs.get("compute_uv", True))
     return cast(EagerValue, getattr(np.linalg, "svd")(args[0], full_matrices=full_matrices, compute_uv=compute_uv))
+
+
+@numpy_eager_registry.register("Schur")
+def _np_schur(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Compute Schur decomposition of a matrix via `scipy.linalg.schur`.
+
+    Args:
+        backend_module (ModuleType): Active NumPy backend module.
+        *args (EagerValue): Positional arguments (a).
+        **kwargs (EagerValue): Keyword arguments.
+
+    Returns:
+        EagerValue: Tuple of `(T, Z)` Schur form and unitary Schur transformation matrix.
+    """
+    import scipy.linalg
+
+    _ = backend_module
+    return cast(EagerValue, scipy.linalg.schur(*args, **kwargs))
+
+
+@numpy_eager_registry.register("BandedTriangularSolve")
+def _np_banded_triangular_solve(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Solve a banded triangular linear system via `scipy.linalg.solve_banded`.
+
+    Args:
+        backend_module (ModuleType): Active NumPy backend module.
+        *args (EagerValue): Positional arguments (ab, b).
+        **kwargs (EagerValue): Keyword arguments (`lower`).
+
+    Returns:
+        EagerValue: Solution array `x`.
+    """
+    import scipy.linalg
+
+    _ = (backend_module, kwargs)
+    ab, b = np.asarray(args[0]), np.asarray(args[1])
+    k = ab.shape[0] - 1
+    l_and_u = (1, 1) if k == 2 else (k, 0)
+    return cast(EagerValue, scipy.linalg.solve_banded(l_and_u, ab, b))

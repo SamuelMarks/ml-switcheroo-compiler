@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class DummyWithShape:
@@ -40,8 +38,8 @@ class DummyWithoutShape:
 def test_attention_scaled_dot_product_coverage() -> None:
     """Test full coverage for attention module functions and classes."""
     op = attention_mod.ScaledDotProductAttention()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithShape)((4, 8, 16)), None, None, None) == (4, 8, 16)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyWithoutShape)(), None, None, None) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)((4, 8, 16)), None, None, None) == (4, 8, 16)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)(), None, None, None) == ()
 
     q = Tensor(np.ones((2, 4, 8), dtype=np.float32), TensorConfig((2, 4, 8), "float32", "cpu"))
     k = Tensor(np.ones((2, 4, 8), dtype=np.float32), TensorConfig((2, 4, 8), "float32", "cpu"))
@@ -60,7 +58,7 @@ def test_attention_scaled_dot_product_coverage() -> None:
             assert isinstance(res_t, Tensor)
 
             raw_arr = np.ones((2, 4, 8), dtype=np.float32)
-            res_mixed = cast("Callable[..., EagerTensorProtocol]", attention_mod.scaled_dot_product_attention)(q, raw_arr, raw_arr, 0.25)
+            res_mixed = cast("EagerCallableProtocol", attention_mod.scaled_dot_product_attention)(q, raw_arr, raw_arr, 0.25)
             assert isinstance(res_mixed, Tensor)
 
             class _NoShapeData:

@@ -26,9 +26,7 @@ from ml_switcheroo_compiler.grad.options import GradOptions
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_grad_api_overwrite_with_gradient_full() -> None:
@@ -44,13 +42,17 @@ def test_grad_api_overwrite_with_gradient_full() -> None:
 
     # Test backward logic of overwrite_with_gradient directly via custom VJP invocation
     def target_fn(x: Tensor) -> Tensor:
-        """Function with gradient overwrite."""
+        """Function with gradient overwrite.
+
+        Args:
+            x: Test parameter `x`.
+        """
         overwritten = overwrite_with_gradient(x, g)
         return cast("Tensor", cast("EagerTensorProtocol", overwritten) * cast("EagerTensorProtocol", 2.0))
 
     # Under value_and_grad
     vag = value_and_grad(target_fn)
-    val, computed_grad = cast("Callable[..., EagerTensorProtocol]", vag)(t)
+    val, computed_grad = cast("EagerCallableProtocol", vag)(t)
     assert val is not None
     assert computed_grad is not None
 
@@ -69,7 +71,7 @@ def test_grad_api_backward_non_proxy_data() -> None:
             """String representation."""
             return "raw_val_str"
 
-    loss_tensor = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", NonProxyData)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((), DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
+    loss_tensor = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", NonProxyData)(), cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
 
     global_tracing_state.start_tracing("test_graph")
     global_tracing_state.active_graph = graph
@@ -86,12 +88,16 @@ def test_grad_api_grad_has_aux_branch() -> None:
     opts = GradOptions(has_aux=True)
 
     def fn_aux(x: float) -> tuple[float, str]:
-        """Primal function with auxiliary payload."""
+        """Primal function with auxiliary payload.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x * 5.0, "auxiliary"
 
     grad_fn = grad(fn_aux, options=opts)
-    grads, aux = cast("Callable[..., EagerTensorProtocol]", grad_fn)(2.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(grads, 5.0)
+    grads, aux = cast("EagerCallableProtocol", grad_fn)(2.0)
+    assert cast("EagerCallableProtocol", np.isclose)(grads, 5.0)
     assert aux == "auxiliary"
 
 
@@ -100,14 +106,18 @@ def test_grad_api_value_and_grad_has_aux_branch() -> None:
     opts = GradOptions(has_aux=True)
 
     def fn_with_aux(x: float) -> tuple[float, str]:
-        """Primal function with auxiliary payload."""
+        """Primal function with auxiliary payload.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x * 3.0, "aux_info"
 
     vag_fn = value_and_grad(fn_with_aux, options=opts)
-    (loss, aux), grad_val = cast("Callable[..., EagerTensorProtocol]", vag_fn)(4.0)
+    (loss, aux), grad_val = cast("EagerCallableProtocol", vag_fn)(4.0)
     assert aux == "aux_info"
     assert loss == 12.0
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(grad_val, 3.0)
+    assert cast("EagerCallableProtocol", np.isclose)(grad_val, 3.0)
 
 
 def test_grad_api_nth_order_grad_graph() -> None:
@@ -142,11 +152,16 @@ def test_grad_api_nth_order_grad() -> None:
 
     # Verify chaining
     def f(x: EagerValue) -> EagerValue:
+        """Compute cubic polynomial x^3.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     first_order = nth_order_grad(f, n=1)
     res_1 = first_order(2.0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.isclose)(res_1, 12.0)
+    assert cast("EagerCallableProtocol", np.isclose)(res_1, 12.0)
 
 
 def test_grad_api_symbolic_hvp_and_hvp() -> None:

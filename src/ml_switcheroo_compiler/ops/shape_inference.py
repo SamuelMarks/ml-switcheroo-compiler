@@ -13,8 +13,6 @@ from typing import Optional, Union, cast
 import yaml
 from pydantic import BaseModel, ConfigDict
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-
 ShapeInferFn = Callable[..., "ShapeType"]
 _SHAPE_INFERENCE_REGISTRY: dict[str, ShapeInferFn] = {}
 
@@ -701,7 +699,11 @@ def _dispatch_elementwise_and_reduction(
             return ()
         axis = kwargs.get("axis", kwargs.get("axes"))
         keepdims = bool(kwargs.get("keepdims", False))
-        return cast(Optional[ShapeType], cast("Callable[..., EagerTensorProtocol]", infer_reduction)(valid_shapes[0], axis=axis, keepdims=keepdims))
+        return infer_reduction(
+            valid_shapes[0],
+            axis=cast("Optional[Union[int, Sequence[int]]]", axis if isinstance(axis, (int, list, tuple)) else None),
+            keepdims=keepdims,
+        )
     return None
 
 
@@ -731,7 +733,10 @@ def _dispatch_view_ops(
         return infer_transpose(valid_shapes[0], cast("Optional[Sequence[int]]", axes if isinstance(axes, (list, tuple)) else None))
     if category == "squeeze":
         axis = kwargs.get("axis")
-        return cast(Optional[ShapeType], cast("Callable[..., EagerTensorProtocol]", infer_squeeze)(valid_shapes[0], axis=axis if isinstance(axis, (int, list, tuple)) else None))
+        return infer_squeeze(
+            valid_shapes[0],
+            axis=cast("Optional[Union[int, Sequence[int]]]", axis if isinstance(axis, (int, list, tuple)) else None),
+        )
     if category == "expand_dims":
         axis = kwargs.get("axis", 0)
         return infer_expand_dims(valid_shapes[0], axis=int(axis) if isinstance(axis, (int, float)) else 0)
@@ -828,16 +833,13 @@ def _dispatch_spatial_and_pooling(
                 s_dims = 3
             else:
                 s_dims = 2
-            return cast(
-                Optional[ShapeType],
-                cast("Callable[..., EagerTensorProtocol]", infer_conv)(
-                    valid_shapes[0],
-                    valid_shapes[1],
-                    stride=kwargs.get("stride", kwargs.get("strides", 1)),
-                    padding=kwargs.get("padding", 0),
-                    dilation=kwargs.get("dilation", kwargs.get("dilations", 1)),
-                    spatial_dims=s_dims,
-                ),
+            return infer_conv(
+                valid_shapes[0],
+                valid_shapes[1],
+                stride=cast("Union[int, Sequence[int]]", kwargs.get("stride", kwargs.get("strides", 1))),
+                padding=cast("Union[int, Sequence[int], str]", kwargs.get("padding", 0)),
+                dilation=cast("Union[int, Sequence[int]]", kwargs.get("dilation", kwargs.get("dilations", 1))),
+                spatial_dims=s_dims,
             )
         raise ValueError(f"Spatial op '{op_type}' requires input and weight shapes")
     if category == "pooling":
@@ -848,15 +850,12 @@ def _dispatch_spatial_and_pooling(
                 s_dims = 3
             else:
                 s_dims = 2
-            return cast(
-                Optional[ShapeType],
-                cast("Callable[..., EagerTensorProtocol]", infer_pool)(
-                    valid_shapes[0],
-                    kernel_size=kwargs.get("kernel_size", kwargs.get("window_size", 2)),
-                    stride=kwargs.get("stride", kwargs.get("strides")),
-                    padding=kwargs.get("padding", 0),
-                    spatial_dims=s_dims,
-                ),
+            return infer_pool(
+                valid_shapes[0],
+                kernel_size=cast("Union[int, Sequence[int]]", kwargs.get("kernel_size", kwargs.get("window_size", 2))),
+                stride=cast("Optional[Union[int, Sequence[int]]]", kwargs.get("stride", kwargs.get("strides"))),
+                padding=cast("Union[int, Sequence[int]]", kwargs.get("padding", 0)),
+                spatial_dims=s_dims,
             )
         raise ValueError(f"Pooling op '{op_type}' requires an input shape")
     return None

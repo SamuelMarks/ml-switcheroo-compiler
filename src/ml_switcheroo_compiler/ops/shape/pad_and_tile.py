@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Callable, Optional, Union, cast
+from typing import Optional, Union, cast
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
@@ -711,7 +711,7 @@ class Repeat(OpDef):
         axis = kwargs.get("axis", None)
         in_shape = getattr(a, "shape", ())
         if axis is None:
-            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _repeat_infer_no_axis)(in_shape, repeats))
+            return cast(TensorOrScalar, cast("EagerCallableProtocol", _repeat_infer_no_axis)(in_shape, repeats))
         out_shape = list(in_shape)
         if isinstance(repeats, int):
             out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None
@@ -820,7 +820,7 @@ class Tile(OpDef):
             reps = (reps,)
         else:
             reps = cast(EagerTensorProtocol, tuple(reps))
-        return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _compute_tile_shape)(in_shape, reps))
+        return cast(TensorOrScalar, cast("EagerCallableProtocol", _compute_tile_shape)(in_shape, reps))
 
 
 def _get_unique_inverse_shape(axis: int | None, in_shape: TensorOrScalar) -> TensorOrScalar:

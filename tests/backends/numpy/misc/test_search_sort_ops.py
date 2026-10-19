@@ -9,18 +9,16 @@ import numpy as np
 from ml_switcheroo_compiler.backends.numpy.eager.search_sort_ops import _np_argsort, _np_partition, _np_percentile, _np_quantile, _np_search_sorted, _np_setdiff1d, _np_setxor1d, _np_sort, _np_sort_complex, _np_sort_key_val, _np_top_k, _np_unique
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_sort_key_val() -> None:
     """Test function test_sort_key_val."""
     keys = np.array([3, 1, 2])
     values = np.array([10, 20, 30])
-    (res_keys, res_values) = cast("Callable[..., EagerTensorProtocol]", _np_sort_key_val)(np, keys, values)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_keys, [1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_values, [20, 30, 10])
+    (res_keys, res_values) = cast("EagerCallableProtocol", _np_sort_key_val)(np, keys, values)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_keys, [1, 2, 3])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_values, [20, 30, 10])
 
 
 def test_partition() -> None:
@@ -48,23 +46,23 @@ def test_unique() -> None:
     """Test function test_unique."""
     a = np.array([1, 1, 2, 2, 3])
     res = _np_unique(np, a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 2, 3])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 2, 3])
 
 
 def test_argsort() -> None:
     """Test function test_argsort."""
     a = np.array([3, 1, 2])
     res = _np_argsort(np, a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 2, 0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 2, 0])
 
 
 def test_sort() -> None:
     """Test function test_sort."""
     a = np.array([3, 1, 2])
     res = _np_sort(np, a, is_stable=True, axis=0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 2, 3])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 2, 3])
     res2 = _np_sort(np, a, is_stable=False)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res2, [1, 2, 3])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res2, [1, 2, 3])
 
 
 def test_top_k() -> None:
@@ -79,7 +77,7 @@ def test_search_sorted() -> None:
     x = np.array([1, 2, 3])
     v = np.array([2])
     res = _np_search_sorted(np, x, v)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1])
 
 
 def test_setdiff1d() -> None:
@@ -87,7 +85,7 @@ def test_setdiff1d() -> None:
     a = np.array([1, 2, 3])
     b = np.array([2])
     res = _np_setdiff1d(np, a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 3])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 3])
 
 
 def test_setxor1d() -> None:
@@ -95,11 +93,11 @@ def test_setxor1d() -> None:
     a = np.array([1, 2, 3])
     b = np.array([2, 4])
     res = _np_setxor1d(np, a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1, 3, 4])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 3, 4])
 
 
 def test_sort_complex() -> None:
     """Test function test_sort_complex."""
     a = np.array([1 + 2j, 1 + 1j, 2 + 1j])
     res = _np_sort_complex(np, a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [1 + 1j, 1 + 2j, 2 + 1j])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1 + 1j, 1 + 2j, 2 + 1j])

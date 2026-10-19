@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConf
 from ml_switcheroo_compiler.ops.binary import clip, divide_no_nan, polar, rem, view_as_complex, view_as_real
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_divide_no_nan() -> None:
@@ -91,11 +89,11 @@ def test_binary_math_coverage() -> None:
         shape = (1, 2)
 
     op = math_ops.BinaryMathOp()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), cast("Callable[..., EagerTensorProtocol]", DummyShape)()) is not None
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyShape)(), cast("EagerCallableProtocol", DummyShape)()) is not None
 
     op_beta = math_ops.Betainc()
-    assert cast("Callable[..., EagerTensorProtocol]", op_beta.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), cast("Callable[..., EagerTensorProtocol]", DummyShape)(), cast("Callable[..., EagerTensorProtocol]", DummyShape)()) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", op_beta.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), cast("Callable[..., EagerTensorProtocol]", DummyShape)()) is not None
+    assert cast("EagerCallableProtocol", op_beta.infer_shape)(cast("EagerCallableProtocol", DummyShape)(), cast("EagerCallableProtocol", DummyShape)(), cast("EagerCallableProtocol", DummyShape)()) is not None
+    assert cast("EagerCallableProtocol", op_beta.infer_shape)(cast("EagerCallableProtocol", DummyShape)(), cast("EagerCallableProtocol", DummyShape)()) is not None
 
     ops = [
         math_ops.DivideNoNan(),
@@ -125,9 +123,9 @@ def test_binary_math_coverage() -> None:
 
     poly_ops = [math_ops.Polyadd(), math_ops.Polysub(), math_ops.Polymul(), math_ops.Polydiv(), math_ops.Polyval(), math_ops.Poly(), math_ops.Polyder(), math_ops.Polyfit(), math_ops.Polyint(), math_ops.Roots()]
     for p in poly_ops:
-        assert cast("Callable[..., EagerTensorProtocol]", p.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) is not None
+        assert cast("EagerCallableProtocol", p.infer_shape)(cast("EagerCallableProtocol", DummyShape)()) is not None
         assert p.infer_shape() == ()
 
     c = math_ops.Clip()
-    assert cast("Callable[..., EagerTensorProtocol]", c.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (1, 2)
+    assert cast("EagerCallableProtocol", c.infer_shape)(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
     assert c.infer_shape() == ()

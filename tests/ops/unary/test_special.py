@@ -8,16 +8,18 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.ops.unary.special import Lbeta
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -27,8 +29,8 @@ class MockTensor:
 def test_mvlgamma_infer_shape() -> None:
     """Test function test_mvlgamma_infer_shape."""
     op = Lbeta()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)((2, 3))) == (2,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)(())) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", MockTensor)((2, 3))) == (2,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", MockTensor)(())) == ()
 
 
 def test_missing_classes_infer_shape() -> None:

@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyGenerator:
@@ -24,43 +22,90 @@ class DummyGenerator:
         self.lines = cast("list[EagerTensorProtocol]", [])
 
     def _emit_body_return(self, returns: EagerValue) -> None:
-        """Test function _emit_body_return."""
-        cast("Callable[..., EagerTensorProtocol]", self.lines.append)(f"return {returns}")
+        """Test function _emit_body_return.
+
+        Args:
+            returns: Test parameter `returns`.
+        """
+        cast("EagerCallableProtocol", self.lines.append)(f"return {returns}")
 
     def emit_constant(self, node: EagerValue) -> EagerValue:
-        """Test function emit_constant."""
+        """Test function emit_constant.
+
+        Args:
+            node: Test parameter `node`.
+        """
         return "42.0"
 
     def assign_var_name(self, id: EagerValue, prefix: EagerValue = "tensor") -> EagerValue:
-        """Test function assign_var_name."""
+        """Test function assign_var_name.
+
+        Args:
+            id: Test parameter `id`.
+            prefix: Test parameter `prefix`.
+        """
         return f"{prefix}_1"
 
     def _emit_constant_assignment(self, var: EagerValue, val: EagerValue) -> None:
-        """Test function _emit_constant_assignment."""
-        cast("Callable[..., EagerTensorProtocol]", self.lines.append)(f"{var} = {val}")
+        """Test function _emit_constant_assignment.
+
+        Args:
+            var: Test parameter `var`.
+            val: Test parameter `val`.
+        """
+        cast("EagerCallableProtocol", self.lines.append)(f"{var} = {val}")
 
     def _emit_input_assignment(self, var: EagerValue, node: EagerValue, pref: EagerValue, idx: EagerValue) -> None:
-        """Test function _emit_input_assignment."""
-        cast("Callable[..., EagerTensorProtocol]", self.lines.append)(f"{var} = {pref}[{idx}]")
+        """Test function _emit_input_assignment.
+
+        Args:
+            var: Test parameter `var`.
+            node: Test parameter `node`.
+            pref: Test parameter `pref`.
+            idx: Test parameter `idx`.
+        """
+        cast("EagerCallableProtocol", self.lines.append)(f"{var} = {pref}[{idx}]")
 
     def _emit_output_assignment(self, node: EagerValue, invars: EagerValue, returns: EagerValue) -> None:
-        """Test function _emit_output_assignment."""
-        cast("Callable[..., EagerTensorProtocol]", self._output_returns.append)(returns)
+        """Test function _emit_output_assignment.
+
+        Args:
+            node: Test parameter `node`.
+            invars: Test parameter `invars`.
+            returns: Test parameter `returns`.
+        """
+        cast("EagerCallableProtocol", self._output_returns.append)(returns)
 
     def visit(self, node: EagerValue, invars: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function visit."""
+        """Test function visit.
+
+        Args:
+            node: Test parameter `node`.
+            invars: Test parameter `invars`.
+            kwargs: Test parameter `kwargs`.
+        """
         return "visited"
 
     def add_line(self, line: EagerValue) -> None:
-        """Test function add_line."""
-        cast("Callable[..., EagerTensorProtocol]", self.lines.append)(line)
+        """Test function add_line.
+
+        Args:
+            line: Test parameter `line`.
+        """
+        cast("EagerCallableProtocol", self.lines.append)(line)
 
 
 class DummyNode:
     """Test class DummyNode."""
 
     def __init__(self, op_type: EagerValue, id: EagerValue, inputs: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            op_type: Test parameter `op_type`.
+            id: Test parameter `id`.
+            inputs: Test parameter `inputs`.
+        """
         self.op_type = op_type
         self.id = id
         self.inputs = inputs or []
@@ -71,7 +116,7 @@ class DummyNode:
 def test_visitor() -> None:
     """Test function test_visitor."""
     gen = DummyGenerator()
-    vis = cast("Callable[..., EagerTensorProtocol]", CodeGeneratorVisitor)(gen)
+    vis = cast("EagerCallableProtocol", CodeGeneratorVisitor)(gen)
 
     n_const = DummyNode("Constant", "c1")
     n_in = DummyNode("Input", "i1")
@@ -93,10 +138,10 @@ def test_visitor() -> None:
 def test_visitor_compute_node_branches() -> None:
     """Test function test_visitor_compute_node_branches."""
     gen = DummyGenerator()
-    vis = cast("Callable[..., EagerTensorProtocol]", CodeGeneratorVisitor)(gen)
+    vis = cast("EagerCallableProtocol", CodeGeneratorVisitor)(gen)
 
     n_op = DummyNode("Op", "op2")
     n_op.attributes = {}
     n_op.shape_metadata = ()
-    cast("Callable[..., EagerTensorProtocol]", vis.handle_compute_node)(n_op)
+    cast("EagerCallableProtocol", vis.handle_compute_node)(n_op)
     assert "tensor_1 = visited" in gen.lines

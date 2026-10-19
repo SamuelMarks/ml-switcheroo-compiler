@@ -43,6 +43,37 @@ class ArrayAt:
         self.tensor = tensor
         self.indices = indices
 
+    def _apply_update(self, op_name: str, value: TensorOrScalar) -> Tensor:
+        """Apply indexed update on multi-dimensional tensor and return the tensor.
+
+        Args:
+            op_name (str): Update operation kind ('add', 'mul', 'set', 'max', 'min').
+            value (TensorOrScalar): Value to apply at indices.
+
+        Returns:
+            Tensor: Updated tensor.
+        """
+        data = getattr(self.tensor, "data", None)
+        idx = getattr(self.indices, "data", self.indices)
+        val = getattr(value, "data", value)
+        ndim = getattr(data, "ndim", 0)
+        if data is not None and hasattr(data, "copy") and isinstance(ndim, int) and ndim > 0:
+            copied: TensorOrScalar = cast(TensorOrScalar, getattr(data, "copy")())
+            cur = getattr(copied, "__getitem__")(idx)
+            if op_name == "add":
+                new_val = getattr(cur, "__add__")(val)
+            elif op_name == "mul":
+                new_val = getattr(cur, "__mul__")(val)
+            elif op_name == "set":
+                new_val = val
+            elif op_name == "max":
+                new_val = cur if bool(getattr(cur, "__ge__")(val)) else val
+            else:
+                new_val = cur if bool(getattr(cur, "__le__")(val)) else val
+            getattr(copied, "__setitem__")(idx, new_val)
+            self.tensor._data = copied
+        return self.tensor
+
     def add(self, value: TensorOrScalar) -> Tensor:
         """Add value at indices.
 
@@ -52,8 +83,7 @@ class ArrayAt:
         Returns:
             Tensor: Updated tensor.
         """
-        _ = value
-        return self.tensor
+        return self._apply_update("add", value)
 
     def multiply(self, value: TensorOrScalar) -> Tensor:
         """Multiply value at indices.
@@ -64,8 +94,7 @@ class ArrayAt:
         Returns:
             Tensor: Updated tensor.
         """
-        _ = value
-        return self.tensor
+        return self._apply_update("mul", value)
 
     def set(self, value: TensorOrScalar) -> Tensor:
         """Set value at indices.
@@ -76,8 +105,7 @@ class ArrayAt:
         Returns:
             Tensor: Updated tensor.
         """
-        _ = value
-        return self.tensor
+        return self._apply_update("set", value)
 
     def maximum(self, value: TensorOrScalar) -> Tensor:
         """Maximum value at indices.
@@ -88,8 +116,7 @@ class ArrayAt:
         Returns:
             Tensor: Updated tensor.
         """
-        _ = value
-        return self.tensor
+        return self._apply_update("max", value)
 
     def minimum(self, value: TensorOrScalar) -> Tensor:
         """Minimum value at indices.
@@ -100,8 +127,7 @@ class ArrayAt:
         Returns:
             Tensor: Updated tensor.
         """
-        _ = value
-        return self.tensor
+        return self._apply_update("min", value)
 
 
 class ArrayAtIndexer:

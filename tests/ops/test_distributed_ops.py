@@ -46,17 +46,19 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockArray:
     """Test class MockArray."""
 
     def __init__(self, shape: EagerValue) -> None:
-        """Test function __init__."""
-        self.shape = cast("Callable[..., EagerTensorProtocol]", tuple)(shape)
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
+        self.shape = cast("EagerCallableProtocol", tuple)(shape)
 
 
 def _test_distributed_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -66,33 +68,33 @@ def _test_distributed_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op1 = ShardTensor()
-    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op1.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op1.infer_shape)(None) == ()
 
     op2 = NcclAllReduce()
-    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op2.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op2.infer_shape)(None) == ()
 
     op3 = HierarchicalCopyAllReduce()
-    assert cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op3.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op3.infer_shape)(None) == ()
 
     op4 = Broadcast()
-    assert cast("Callable[..., EagerTensorProtocol]", op4.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op4.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op4.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op4.infer_shape)(None) == ()
 
     op5 = AllGather()
-    assert cast("Callable[..., EagerTensorProtocol]", op5.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op5.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), world_size=2, axis=0) == (4, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op5.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op5.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op5.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), world_size=2, axis=0) == (4, 2)
+    assert cast("EagerCallableProtocol", op5.infer_shape)(None) == ()
 
     op6 = Reduce()
-    assert cast("Callable[..., EagerTensorProtocol]", op6.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op6.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op6.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op6.infer_shape)(None) == ()
 
     op7 = AllReduce()
-    assert cast("Callable[..., EagerTensorProtocol]", op7.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op7.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op7.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op7.infer_shape)(None) == ()
     getattr(_state, "update")({"op1": op1, "op2": op2, "op3": op3, "op4": op4})
     getattr(_state, "update")({"op5": op5, "op6": op6, "op7": op7})
     _state.update(locals())
@@ -105,32 +107,32 @@ def _test_distributed_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op8 = ReduceScatter()
-    assert cast("Callable[..., EagerTensorProtocol]", op8.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2))) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op8.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((4, 2)), world_size=2, axis=0) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op8.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op8.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", op8.infer_shape)(cast("EagerCallableProtocol", MockArray)((4, 2)), world_size=2, axis=0) == (2, 2)
+    assert cast("EagerCallableProtocol", op8.infer_shape)(None) == ()
 
     op9 = AllToAll()
-    assert cast("Callable[..., EagerTensorProtocol]", op9.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op9.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op9.infer_shape() == ()
 
     op10 = BroadcastArrays()
-    assert cast("Callable[..., EagerTensorProtocol]", op10.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op10.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op10.infer_shape() == ()
 
     op11 = BroadcastTo()
-    assert cast("Callable[..., EagerTensorProtocol]", op11.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op11.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op11.infer_shape() == ()
 
     op12 = BroadcastToRank()
-    assert cast("Callable[..., EagerTensorProtocol]", op12.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op12.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op12.infer_shape() == ()
 
     op13 = BroadcastedIota()
-    assert cast("Callable[..., EagerTensorProtocol]", op13.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op13.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op13.infer_shape() == ()
 
     op14 = Pbroadcast()
-    assert cast("Callable[..., EagerTensorProtocol]", op14.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op14.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op14.infer_shape() == ()
     getattr(_state, "update")({"op10": op10, "op11": op11, "op12": op12, "op13": op13})
     getattr(_state, "update")({"op14": op14, "op8": op8, "op9": op9})
@@ -144,29 +146,29 @@ def _test_distributed_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op15 = Pmax()
-    assert cast("Callable[..., EagerTensorProtocol]", op15.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op15.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op15.infer_shape() == ()
 
     op16 = Pmin()
-    assert cast("Callable[..., EagerTensorProtocol]", op16.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op16.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op16.infer_shape() == ()
     op17 = Outfeed()
-    assert cast("Callable[..., EagerTensorProtocol]", op17.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == ()
+    assert cast("EagerCallableProtocol", op17.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == ()
     assert op17.infer_shape() == ()
 
     op18 = Pshuffle()
-    assert cast("Callable[..., EagerTensorProtocol]", op18.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op18.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op18.infer_shape() == ()
 
     op19 = Pswapaxes()
-    assert cast("Callable[..., EagerTensorProtocol]", op19.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 3)), axis1=0, axis2=1) == (3, 2)
+    assert cast("EagerCallableProtocol", op19.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 3)), axis1=0, axis2=1) == (3, 2)
 
     op20 = Ppermute()
-    assert cast("Callable[..., EagerTensorProtocol]", op20.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (2, 2)
+    assert cast("EagerCallableProtocol", op20.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
     assert op20.infer_shape() == ()
 
     op21 = PsumScatter()
-    assert cast("Callable[..., EagerTensorProtocol]", op21.infer_shape)(cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 2)), cast("Callable[..., EagerTensorProtocol]", MockArray)((2, 1))) == (None, 2)
+    assert cast("EagerCallableProtocol", op21.infer_shape)(cast("EagerCallableProtocol", MockArray)((2, 2)), cast("EagerCallableProtocol", MockArray)((2, 1))) == (None, 2)
     getattr(_state, "update")({"op15": op15, "op16": op16, "op17": op17, "op18": op18})
     getattr(_state, "update")({"op19": op19, "op20": op20, "op21": op21})
 
@@ -177,7 +179,7 @@ def test_distributed_ops_infer_shape() -> None:
     _test_distributed_ops_infer_shape_part_1(_state)
     _test_distributed_ops_infer_shape_part_2(_state)
     _test_distributed_ops_infer_shape_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_distributed_ops_eager() -> None:
@@ -223,7 +225,7 @@ def test_distributed_ops_eager() -> None:
         # Oh, in distributed_ops.py, pmax is missing! Let's check `cat -n src/ml_switcheroo_compiler/ops/distributed_ops.py | grep -E "def pmax"`
 
     config.eager_mode = False
-    assert t is not None or t is None
+    assert config.eager_mode is False
 
 
 def test_distributed_ops_tracing() -> None:

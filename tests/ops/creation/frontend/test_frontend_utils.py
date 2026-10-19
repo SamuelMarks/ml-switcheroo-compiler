@@ -10,9 +10,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_utils import _emit_creation_node
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_frontend_utils() -> None:
@@ -27,7 +25,11 @@ def test_frontend_utils() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True
@@ -57,7 +59,11 @@ def test_frontend_utils_constant() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True
@@ -69,7 +75,12 @@ def test_frontend_utils_constant() -> None:
         """Test class DummyBackend."""
 
         def array(self, value: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                value: Test parameter `value`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -108,7 +119,11 @@ def test_frontend_utils_constant_scalar() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     state.global_tracing_state.is_tracing = True
@@ -120,7 +135,12 @@ def test_frontend_utils_constant_scalar() -> None:
         """Test class DummyBackend."""
 
         def array(self, value: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                value: Test parameter `value`.
+                dtype: Test parameter `dtype`.
+            """
 
             class T:
                 """Test class T."""
@@ -153,7 +173,7 @@ def test_frontend_utils_missing_3() -> None:
 
         shape = (10,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", _multinomial_shape)(cast("Callable[..., EagerTensorProtocol]", MockTensor)(), size=5) == (5,)
+    assert cast("EagerCallableProtocol", _multinomial_shape)(cast("EagerCallableProtocol", MockTensor)(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)
 

@@ -10,16 +10,18 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.bbox import _extract_bounding_boxes_eager, crop, crop_and_resize, crop_images, draw_bounding_boxes, extract_bounding_boxes, extract_patches, pad_images, pad_to_bounding_box
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -27,7 +29,11 @@ class MockTensor:
 
 
 def test_vision_bbox_funcs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_bbox_funcs."""
+    """Test function test_vision_bbox_funcs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.bbox._emit_shape_node", return_value="node")
@@ -54,18 +60,26 @@ def test_vision_bbox_funcs(mocker: EagerTensorProtocol) -> None:
 
 
 def test_extract_bounding_boxes_eager_extra(mocker: EagerTensorProtocol) -> None:
-    """Test function test_extract_bounding_boxes_eager_extra."""
+    """Test function test_extract_bounding_boxes_eager_extra.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    _extract_bounding_boxes_eager(t, t, t, None)
-    assert mock_backend is not None or mock_backend is None
+    res = _extract_bounding_boxes_eager(t, t, t, None)
+    assert res is not None
 
 
 def test_extract_bounding_boxes_kwargs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_extract_bounding_boxes_kwargs."""
+    """Test function test_extract_bounding_boxes_kwargs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.bbox._emit_shape_node", return_value="node")
@@ -83,6 +97,6 @@ def test_bbox_opdef_infer_shape() -> None:
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert cast("Callable[..., EagerTensorProtocol]", ExtractBoundingBoxes)().infer_shape(t) == (1, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", Iou)().infer_shape(t) == (1, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", Nms)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", ExtractBoundingBoxes)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", Iou)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", Nms)().infer_shape(t) == (1, 2, 3)

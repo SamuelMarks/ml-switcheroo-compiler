@@ -24,9 +24,7 @@ from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_wgsl_config_model() -> None:
@@ -49,7 +47,7 @@ def test_wgsl_config_model() -> None:
             }
         }
     }
-    config = cast("Callable[..., EagerTensorProtocol]", WgslTemplatesConfig)(**data)
+    config = cast("EagerCallableProtocol", WgslTemplatesConfig)(**data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["workgroup_size"] == [1, 2, 3]
     assert dumped["templates"]["test"]["workgroup_layout"]["max_workgroup_invocations"] == 256
@@ -86,7 +84,7 @@ def test_wasm_config_model() -> None:
             }
         }
     }
-    config = cast("Callable[..., EagerTensorProtocol]", WasmTemplatesConfig)(**data)
+    config = cast("EagerCallableProtocol", WasmTemplatesConfig)(**data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["simd_unroll_factor"] == 4
     assert dumped["templates"]["test"]["alignment"]["alignment_bytes"] == 16

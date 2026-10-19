@@ -41,9 +41,7 @@ from ml_switcheroo_compiler.ops.shape.frontend import (
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_frontend_pool_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -53,14 +51,14 @@ def _test_frontend_pool_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -
         _state: Shared test state dictionary.
     """
     (t_2d, t_3d) = (_state["t_2d"], _state["t_3d"])
-    assert cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool2d)(t_2d, (2, 2)) is not None
+    assert cast("EagerCallableProtocol", adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
+    assert cast("EagerCallableProtocol", adaptive_max_pool2d)(t_2d, (2, 2)) is not None
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        (p, i) = cast("Callable[..., EagerTensorProtocol]", fractional_max_pool3d)(t_3d, (2, 2, 2))
+        (p, i) = cast("EagerCallableProtocol", fractional_max_pool3d)(t_3d, (2, 2, 2))
     with pytest.raises(TypeError):
-        (p, i) = cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t_3d, (2, 2, 2), return_indices=True)
-    assert cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
+        (p, i) = cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (2, 2, 2), return_indices=True)
+    assert cast("EagerCallableProtocol", adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
+    assert cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -84,7 +82,11 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
         nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     setattr(global_tracing_state, "active_graph", DummyGraph())
@@ -96,11 +98,21 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
         """Test class DummyOp."""
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "pool"
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return ()
 
     getattr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "fu": fu, "orig_emit": orig_emit})
@@ -117,14 +129,14 @@ def _test_frontend_pool_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -
     (t_2d, t_3d) = (_state["t_2d"], _state["t_3d"])
     setattr(fu, "_emit_reduction_node", lambda *args, **kwargs: DummyOp())
     try:
-        assert cast("Callable[..., EagerTensorProtocol]", fractional_max_pool2d)(t_2d, (2, 2)) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool2d)(t_2d, (2, 2)) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", unfold)(t_2d, (2, 2)) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", fold)(t_2d, (4, 4), (2, 2)) is not None
-        (p, i) = cast("Callable[..., EagerTensorProtocol]", fractional_max_pool3d)(t_3d, (2, 2, 2))
-        assert cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
+        assert cast("EagerCallableProtocol", fractional_max_pool2d)(t_2d, (2, 2)) is not None
+        assert cast("EagerCallableProtocol", adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
+        assert cast("EagerCallableProtocol", adaptive_max_pool2d)(t_2d, (2, 2)) is not None
+        assert cast("EagerCallableProtocol", unfold)(t_2d, (2, 2)) is not None
+        assert cast("EagerCallableProtocol", fold)(t_2d, (4, 4), (2, 2)) is not None
+        (p, i) = cast("EagerCallableProtocol", fractional_max_pool3d)(t_3d, (2, 2, 2))
+        assert cast("EagerCallableProtocol", adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
+        assert cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
     finally:
         setattr(fu, "_emit_reduction_node", orig_emit)
         config.eager_mode = True
@@ -141,19 +153,21 @@ def test_frontend_pool_coverage() -> None:
 
         id = "dummy"
 
-    t_2d = cast("Callable[..., EagerTensorProtocol]", Tensor)(
-        cast("Callable[..., EagerTensorProtocol]", DummyDataId)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape=(1, 1, 4, 4), dtype=cast("Callable[..., EagerTensorProtocol]", DType)("float32"), device=cast("Callable[..., EagerTensorProtocol]", Device)("cpu"))
-    )
-    t_3d = cast("Callable[..., EagerTensorProtocol]", Tensor)(
-        cast("Callable[..., EagerTensorProtocol]", DummyDataId)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape=(1, 1, 4, 4, 4), dtype=cast("Callable[..., EagerTensorProtocol]", DType)("float32"), device=cast("Callable[..., EagerTensorProtocol]", Device)("cpu"))
-    )
+    t_2d = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyDataId)(), cast("EagerCallableProtocol", TensorConfig)(shape=(1, 1, 4, 4), dtype=cast("EagerCallableProtocol", DType)("float32"), device=cast("EagerCallableProtocol", Device)("cpu")))
+    t_3d = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyDataId)(), cast("EagerCallableProtocol", TensorConfig)(shape=(1, 1, 4, 4, 4), dtype=cast("EagerCallableProtocol", DType)("float32"), device=cast("EagerCallableProtocol", Device)("cpu")))
     import ml_switcheroo_compiler.backends.registry as registry_mod
 
     class MockBackend:
         """Test class MockBackend."""
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             if op == "FractionalMaxPool3D" or (op == "AdaptiveMaxPool3D" and kwargs.get("return_indices")):
                 return (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2)))
             if cast("EagerTensorProtocol", "3D") in cast("EagerTensorProtocol", op):
@@ -161,7 +175,12 @@ def test_frontend_pool_coverage() -> None:
             return np.zeros((1, 1, 2, 2))
 
         def array(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+                dtype: Test parameter `dtype`.
+            """
             return np.array(x)
 
     orig_backend = registry_mod.get_active_backend
@@ -172,7 +191,7 @@ def test_frontend_pool_coverage() -> None:
         getattr(_state, "update")({"t_3d": t_3d})
         for _sub_fn in (_test_frontend_pool_coverage_sub_1, _test_frontend_pool_coverage_sub_2, _test_frontend_pool_coverage_sub_3):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
     finally:
         registry_mod.get_active_backend = orig_backend
 
@@ -192,7 +211,7 @@ def _test_shape_frontend_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) 
     assert insert(t, 0, 1) is not None
     assert fill_diagonal(t, 0) is not None
     assert moveaxis(t, 0, 1) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", permute)(t, [1, 0]) is not None
+    assert cast("EagerCallableProtocol", permute)(t, [1, 0]) is not None
     assert swapaxes(t, 0, 1) is not None
     assert roll(t, 1) is not None
     assert atleast_1d(t) is not None
@@ -218,8 +237,8 @@ def _test_shape_frontend_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) 
     setattr(backend_inst, "res", np.array(4))
     assert size(t) is not None
     setattr(backend_inst, "res", np.zeros((4,)))
-    assert cast("Callable[..., EagerTensorProtocol]", reshape)(t, (4,)) is not None
-    assert cast("Callable[..., EagerTensorProtocol]", flip)(t) is not None
+    assert cast("EagerCallableProtocol", reshape)(t, (4,)) is not None
+    assert cast("EagerCallableProtocol", flip)(t) is not None
     assert fliplr(t) is not None
     assert flipud(t) is not None
     config.eager_mode = False
@@ -245,7 +264,11 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
         nodes = cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     setattr(global_tracing_state, "active_graph", DummyGraph())
@@ -257,11 +280,21 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
         """Test class DummyOp."""
 
         def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "shape"
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function infer_shape."""
+            """Test function infer_shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return ()
 
     getattr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "orig_emit": orig_emit, "shape_utils": shape_utils})
@@ -296,7 +329,7 @@ def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) 
         assert insert(t, 0, 1) is not None
         assert fill_diagonal(t, 0) is not None
         assert moveaxis(t, 0, 1) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", permute)(t, [1, 0]) is not None
+        assert cast("EagerCallableProtocol", permute)(t, [1, 0]) is not None
         assert swapaxes(t, 0, 1) is not None
         assert roll(t, 1) is not None
         assert atleast_1d(t) is not None
@@ -320,8 +353,8 @@ def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) 
             assert diag_indices_from(t) is not None
         setattr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
         assert size(t) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", reshape)(t, (4,)) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", flip)(t) is not None
+        assert cast("EagerCallableProtocol", reshape)(t, (4,)) is not None
+        assert cast("EagerCallableProtocol", flip)(t) is not None
         assert fliplr(t) is not None
         assert flipud(t) is not None
     finally:
@@ -351,15 +384,30 @@ def test_shape_frontend_coverage() -> None:
             self.res = np.zeros((2, 2))
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return self.res
 
         def array(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+                dtype: Test parameter `dtype`.
+            """
             return np.array(x)
 
         def item(self, x: EagerValue) -> EagerValue:
-            """Test function item."""
+            """Test function item.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return cast("EagerTensorProtocol", getattr(x, "item"))() if hasattr(x, "item") else x
 
     backend_inst = MockShapeBackend()
@@ -371,7 +419,7 @@ def test_shape_frontend_coverage() -> None:
         getattr(_state, "update")({"t": t})
         for _sub_fn in (_test_shape_frontend_coverage_sub_1, _test_shape_frontend_coverage_sub_2, _test_shape_frontend_coverage_sub_3, _test_shape_frontend_coverage_sub_4, _test_shape_frontend_coverage_sub_5):
             _sub_fn(_state)
-        assert isinstance(_state, dict)
+        assert len(_state) > 0
     finally:
         registry_mod.get_active_backend = orig_backend
 

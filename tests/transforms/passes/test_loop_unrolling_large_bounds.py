@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_loop_unrolling_missing_coverage() -> None:
@@ -26,7 +24,7 @@ def test_loop_unrolling_missing_coverage() -> None:
         op_type = "Add"
         id = "mock"
 
-    assert cast("Callable[..., EagerTensorProtocol]", detect_static_bound)(cast("Callable[..., EagerTensorProtocol]", MockNode)(), []) is None
+    assert cast("EagerCallableProtocol", detect_static_bound)(cast("EagerCallableProtocol", MockNode)(), []) is None
 
     g = IRGraph()
     n1 = LogicalNode(id="n1", op_type="Add")

@@ -340,3 +340,35 @@ def test_main_block_execution(tmp_path: Path) -> None:
         with pytest.raises(SystemExit) as exc_info:
             runpy.run_module("scripts.check_snapshot_drift", run_name="__main__")
         assert exc_info.value.code == 0
+
+
+def test_is_breaking_and_flatten_edge_cases() -> None:
+    """Test _is_breaking_param_change and _flatten_snapshot_items edge branches."""
+    from scripts.check_snapshot_drift import (
+        DiffResult,
+        _flatten_snapshot_items,
+        _is_breaking_param_change,
+        diff_snapshots,
+        generate_changelog,
+    )
+
+    assert _is_breaking_param_change([{"name": "x"}, {"name": "y"}], [{"name": "x"}]) is True
+    assert _is_breaking_param_change([{"name": "x"}], [{"name": "x"}, {"name": "y", "default": None}]) is True
+    assert _is_breaking_param_change([{"name": "x", "default": "1"}], [{"name": "x", "default": None}]) is True
+    assert _is_breaking_param_change([{"name": "x", "default": "1"}], [{"name": "x", "default": "2"}]) is True
+    assert _is_breaking_param_change([{"name": "x", "default": "1"}], [{"name": "x", "default": "1"}, {"name": "args", "kind": "VAR_POSITIONAL"}]) is False
+
+    res_non_break = diff_snapshots(
+        {"categories": {"math": [{"api_path": "f", "params": [{"name": "x", "annotation": "int"}]}, {"api_path": "same", "params": [{"name": "x"}]}]}},
+        {"categories": {"math": [{"api_path": "f", "params": [{"name": "x", "annotation": "float"}]}, {"api_path": "same", "params": [{"name": "x"}]}, {"api_path": "added_fn", "params": []}]}},
+    )
+    assert res_non_break.non_breaking_signature_changed == ["f"]
+    assert res_non_break.added == ["added_fn"]
+    assert "Non-Breaking Signature Changes" in generate_changelog(res_non_break)
+
+    assert _flatten_snapshot_items({"categories": "not_a_dict"}) == {}
+    assert _flatten_snapshot_items({"categories": {"math": "not_a_list"}}) == {}
+    assert _flatten_snapshot_items({"categories": {"math": ["not_a_dict", {"name": ""}]}}) == {}
+
+    empty_changelog = generate_changelog(DiffResult())
+    assert "No changes detected." in empty_changelog

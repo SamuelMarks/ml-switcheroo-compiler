@@ -35,9 +35,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_jagged_reductions_without_padding() -> None:
@@ -143,7 +141,7 @@ def test_layout_conversions() -> None:
 
     # to_regular padding
     regular_padded = to_regular(jagged, fill_value=0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(regular_padded, cast("Callable[..., EagerTensorProtocol]", np.array)([[1, 2], [3, 0]]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(regular_padded, cast("EagerCallableProtocol", np.array)([[1, 2], [3, 0]]))
 
     # from_regular
     from_reg = from_regular([[1, 2], [3, 4]])
@@ -210,7 +208,7 @@ def test_eager_dispatch_error_and_fallbacks() -> None:
     assert _unwrap_arg(t1) is not None
     assert _unwrap_arg(5) == 5
     res = execute_op("Add", t1, t2)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, [4.0, 6.0])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [4.0, 6.0])
 
     # Classmethod dispatch
     assert ak_pkg.execute_op("Add", 1, 2) == 3
@@ -218,7 +216,13 @@ def test_eager_dispatch_error_and_fallbacks() -> None:
 
     # Global eager registry fallback
     def mock_ak_op(backend_ctx: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> str:
-        """Test function mock_ak_op."""
+        """Test function mock_ak_op.
+
+        Args:
+            backend_ctx: Test parameter `backend_ctx`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         del backend_ctx, args, kwargs
         return "custom_awkward_eval"
 
@@ -235,7 +239,12 @@ def test_eager_dispatch_error_and_fallbacks() -> None:
 
         @staticmethod
         def sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function sum."""
+            """Test function sum.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             del args, kwargs
             raise RuntimeError("internal awkward crash")
 
@@ -330,7 +339,11 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_2(_state: dict[str, 
 
         @staticmethod
         def to_regular(_: EagerValue) -> EagerValue:
-            """Test function to_regular."""
+            """Test function to_regular.
+
+            Args:
+                _: Test parameter `_`.
+            """
             raise RuntimeError("to_regular error")
 
     getattr(_state, "update")({"FakeNoBroadcastAk": FakeNoBroadcastAk, "FakeNoToRegularAk": FakeNoToRegularAk, "b1": b1, "b2": b2})
@@ -362,29 +375,45 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
         )
 
         res_non_list = to_regular(np.array([1, 2]))
-        assert cast("Callable[..., EagerTensorProtocol]", len)(res_non_list) == 2
+        assert cast("EagerCallableProtocol", len)(res_non_list) == 2
 
     class FakeBrokenConversionsAk:
         """Test class FakeBrokenConversionsAk."""
 
         @staticmethod
         def from_regular(_: EagerValue) -> EagerValue:
-            """Test function from_regular."""
+            """Test function from_regular.
+
+            Args:
+                _: Test parameter `_`.
+            """
             raise RuntimeError("from_regular error")
 
         @staticmethod
         def to_numpy(_: EagerValue) -> EagerValue:
-            """Test function to_numpy."""
+            """Test function to_numpy.
+
+            Args:
+                _: Test parameter `_`.
+            """
             raise RuntimeError("to_numpy error")
 
         @staticmethod
         def from_numpy(_: EagerValue) -> EagerValue:
-            """Test function from_numpy."""
+            """Test function from_numpy.
+
+            Args:
+                _: Test parameter `_`.
+            """
             raise RuntimeError("from_numpy error")
 
         @staticmethod
         def from_iter(_: EagerValue) -> EagerValue:
-            """Test function from_iter."""
+            """Test function from_iter.
+
+            Args:
+                _: Test parameter `_`.
+            """
             raise RuntimeError("from_iter error")
 
     getattr(_state, "update")({"FakeBrokenConversionsAk": FakeBrokenConversionsAk, "res_non_list": res_non_list, "res_reg": res_reg})
@@ -412,14 +441,14 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_4(_state: dict[str, 
             """Test function tolist."""
             return [10, 20]
 
-    assert cast("Callable[..., EagerTensorProtocol]", to_list)(cast("Callable[..., EagerTensorProtocol]", ObjectWithToList)()) == [10, 20]
+    assert cast("EagerCallableProtocol", to_list)(cast("EagerCallableProtocol", ObjectWithToList)()) == [10, 20]
 
     class ObjectWithLayout:
         """Test class ObjectWithLayout."""
 
         layout = "dummy_layout"
 
-    assert cast("Callable[..., EagerTensorProtocol]", get_layout)(cast("Callable[..., EagerTensorProtocol]", ObjectWithLayout)()) == "dummy_layout"
+    assert cast("EagerCallableProtocol", get_layout)(cast("EagerCallableProtocol", ObjectWithLayout)()) == "dummy_layout"
     getattr(_state, "update")({"ObjectWithLayout": ObjectWithLayout, "ObjectWithToList": ObjectWithToList})
 
 
@@ -430,7 +459,7 @@ def test_awkward_fallbacks_and_comprehensive_coverage() -> None:
     _test_awkward_fallbacks_and_comprehensive_coverage_part_2(_state)
     _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state)
     _test_awkward_fallbacks_and_comprehensive_coverage_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_awkward_full_branches_and_edge_cases() -> None:
@@ -439,10 +468,16 @@ def test_awkward_full_branches_and_edge_cases() -> None:
     real_import = __import__
 
     def fake_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function fake_import."""
+        """Test function fake_import.
+
+        Args:
+            name: Test parameter `name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         if name == "awkward":
             raise ImportError("no awkward")
-        return cast("Callable[..., EagerTensorProtocol]", real_import)(name, *args, **kwargs)
+        return cast("EagerCallableProtocol", real_import)(name, *args, **kwargs)
 
     with mock.patch("importlib.import_module", side_effect=fake_import):
         res = execute_op("Sum", [[1, 2], [3]], axis=1)

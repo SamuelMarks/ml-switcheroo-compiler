@@ -399,14 +399,14 @@ class SparseGenerator(PythonStringGenerator):
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-            from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+            from ml_switcheroo_compiler.backends.registry import BackendRegistry
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict), backend=NumpyGenerator)
+            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict), backend=BackendRegistry.get("numpy"))
             if not graph.outputs:
                 return cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:

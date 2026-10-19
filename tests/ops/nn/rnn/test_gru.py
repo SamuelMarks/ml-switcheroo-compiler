@@ -27,11 +27,19 @@ def test_gru_coverage() -> None:
     b = Tensor(np.ones((12,)), TensorConfig(shape=(12,), dtype=DType("float32"), device=Device("cpu")))
 
     def mock_matmul(*args: EagerValue) -> EagerValue:
-        """Test function mock_matmul."""
+        """Test function mock_matmul.
+
+        Args:
+            args: Test parameter `args`.
+        """
         return Tensor(np.ones((1, 12)), TensorConfig(shape=(1, 12), dtype=DType("float32"), device=Device("cpu")))
 
     def mock_gates(*args: EagerValue) -> EagerValue:
-        """Test function mock_gates."""
+        """Test function mock_gates.
+
+        Args:
+            args: Test parameter `args`.
+        """
         return "hidden"
 
     orig_matmul = gru_mod.matmul
@@ -54,7 +62,12 @@ def test_gru_coverage() -> None:
         """Test class MockBackend."""
 
         def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "gru_res"
 
     orig_backend = gru_mod.get_active_backend
@@ -68,7 +81,12 @@ def test_gru_coverage() -> None:
     orig_emit = gru_mod._emit_shape_node
 
     def dummy_emit(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function dummy_emit."""
+        """Test function dummy_emit.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return "emitted"
 
     setattr(gru_mod, "_emit_shape_node", dummy_emit)

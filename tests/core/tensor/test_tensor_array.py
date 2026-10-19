@@ -24,7 +24,11 @@ def test_tensor_array() -> None:
         """Test class DummyData."""
 
         def __init__(self, val: EagerValue = 0) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.id = "id"
             self.val = val
 
@@ -33,7 +37,11 @@ def test_tensor_array() -> None:
             return self.val
 
         def __array__(self, dtype: EagerValue = None) -> EagerValue:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Args:
+                dtype: Test parameter `dtype`.
+            """
             return np.array(self.val)
 
     t_idx = Tensor(data="test", config=TensorConfig((1,), "int32", "cpu"))

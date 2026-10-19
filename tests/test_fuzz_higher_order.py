@@ -17,9 +17,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import hvp
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 pytest.importorskip("hypothesis")
 
@@ -30,7 +28,12 @@ pytest.importorskip("hypothesis")
     val1=st.floats(min_value=-1.5, max_value=1.5, allow_nan=False, allow_infinity=False),
 )
 def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: EagerTensorProtocol) -> None:
-    """Test higher-order equivalence."""
+    """Test higher-order equivalence.
+
+    Args:
+        backend_name: Test parameter `backend_name`.
+        val1: Test parameter `val1`.
+    """
     if backend_name == "mlx":
         pytest.importorskip("mlx.core")
     from ml_switcheroo_compiler.core.config import config
@@ -44,16 +47,20 @@ def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: Eager
 
         # Test f(x) = x^3
         def f(x: EagerValue) -> EagerValue:
-            """Test function f."""
+            """Test function f.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return ops.multiply(x, ops.multiply(x, x))
 
         x = Tensor(arr_x, TensorConfig((1,), DType.Float32, Device("cpu")))
         v = Tensor(arr_v, TensorConfig((1,), DType.Float32, Device("cpu")))
 
-        _, tan = cast("Callable[..., EagerTensorProtocol]", hvp)(f, (x,), (v,))
+        _, tan = cast("EagerCallableProtocol", hvp)(f, (x,), (v,))
         computed = float(np.asarray(backend.asarray(tan))[0])
 
         expected = 6.0 * val1
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(computed, expected, rtol=1e-2, atol=1e-2)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(computed, expected, rtol=1e-2, atol=1e-2)
     finally:
         config.backend = prev

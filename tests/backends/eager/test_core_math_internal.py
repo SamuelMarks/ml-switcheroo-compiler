@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import (
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class _EmptyBackend:
@@ -43,7 +41,12 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
         """Backend with copysign."""
 
         def copysign(self, x: float, y: float) -> float:
-            """Copysign."""
+            """Copysign.
+
+            Args:
+                x: Test parameter `x`.
+                y: Test parameter `y`.
+            """
             return math.copysign(x, y)
 
     assert _copysign(BackendCopysign(), -5.0, 1.0) == 5.0
@@ -53,22 +56,35 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
         """Backend with abs and sign."""
 
         def abs(self, val: EagerValue) -> EagerValue:
-            """Abs."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.abs)(val))
+            """Abs.
+
+            Args:
+                val: Test parameter `val`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.abs)(val))
 
         def sign(self, val: EagerValue) -> EagerValue:
-            """Sign."""
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.sign)(val))
+            """Sign.
+
+            Args:
+                val: Test parameter `val`.
+            """
+            return cast("EagerValue", cast("EagerCallableProtocol", np.sign)(val))
 
     res_cs = _copysign(BackendAbsSign(), np.array([5.0, -3.0]), np.array([-1.0, 1.0]))
-    assert cast("Callable[..., EagerTensorProtocol]", list)(res_cs) == [-5.0, 3.0]
+    assert cast("EagerCallableProtocol", list)(res_cs) == [-5.0, 3.0]
 
     # 2. _getprintoptions
     class BackendPrintOptions:
         """Backend with get_printoptions."""
 
         def get_printoptions(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, EagerValue]:
-            """Get print options."""
+            """Get print options.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return {"precision": 4}
 
     getattr(_state, "update")({"BackendAbsSign": BackendAbsSign, "BackendCopysign": BackendCopysign, "BackendPrintOptions": BackendPrintOptions, "empty_backend": empty_backend})
@@ -147,12 +163,12 @@ def _test_math_internal_all_branches_part_3(_state: dict[str, EagerTensorProtoco
     # Case F: arr is numpy.ndarray (index < shape[0])
     np_arr1 = np.array([1, 2, 3])
     w_arr1 = _np_tensorarraywrite(empty_backend, np_arr1, 1, 99)
-    assert cast("Callable[..., EagerTensorProtocol]", list)(w_arr1) == [1, 99, 3]
+    assert cast("EagerCallableProtocol", list)(w_arr1) == [1, 99, 3]
 
     # Case G: arr is numpy.ndarray (index >= shape[0] -> padded with zeros)
     np_arr2 = np.array([1, 2])
     w_arr2 = _np_tensorarraywrite(empty_backend, np_arr2, 4, 100, index=4)
-    assert cast("Callable[..., EagerTensorProtocol]", list)(w_arr2) == [1, 2, 0, 0, 100]
+    assert cast("EagerCallableProtocol", list)(w_arr2) == [1, 2, 0, 0, 100]
 
     # Case H: arr is dict
     w_dict = _np_tensorarraywrite(empty_backend, {0: "a"}, 1, "b")
@@ -163,13 +179,13 @@ def _test_math_internal_all_branches_part_3(_state: dict[str, EagerTensorProtoco
 
     # 5. _np_topk
     # Case A: arr is list/ndarray
-    vals, indices = cast("Callable[..., EagerTensorProtocol]", _np_topk)(empty_backend, [10, 50, 20, 40, 30], 2)
-    assert cast("Callable[..., EagerTensorProtocol]", list)(vals) == [50, 40]
-    assert cast("Callable[..., EagerTensorProtocol]", list)(indices) == [1, 3]
+    vals, indices = cast("EagerCallableProtocol", _np_topk)(empty_backend, [10, 50, 20, 40, 30], 2)
+    assert cast("EagerCallableProtocol", list)(vals) == [50, 40]
+    assert cast("EagerCallableProtocol", list)(indices) == [1, 3]
 
     # Default k=1
-    vals_def, indices_def = cast("Callable[..., EagerTensorProtocol]", _np_topk)(empty_backend, [10, 50, 20])
-    assert cast("Callable[..., EagerTensorProtocol]", list)(vals_def) == [50]
+    vals_def, indices_def = cast("EagerCallableProtocol", _np_topk)(empty_backend, [10, 50, 20])
+    assert cast("EagerCallableProtocol", list)(vals_def) == [50]
     getattr(_state, "update")({"indices": indices, "indices_def": indices_def, "np_arr1": np_arr1, "np_arr2": np_arr2})
     getattr(_state, "update")({"vals": vals, "vals_def": vals_def, "w_arr1": w_arr1, "w_arr2": w_arr2})
     getattr(_state, "update")({"w_dict": w_dict, "w_list1": w_list1, "w_list2": w_list2, "w_list_none": w_list_none})
@@ -186,7 +202,7 @@ def _test_math_internal_all_branches_part_4(_state: dict[str, EagerTensorProtoco
     assert list(indices_def) == [1]
 
     # Case B: arr is not list or ndarray
-    v_fb, i_fb = cast("Callable[..., EagerTensorProtocol]", _np_topk)(empty_backend, "not_an_array")
+    v_fb, i_fb = cast("EagerCallableProtocol", _np_topk)(empty_backend, "not_an_array")
     assert v_fb == [0]
     assert i_fb == [0]
 
@@ -207,4 +223,4 @@ def test_math_internal_all_branches() -> None:
     _test_math_internal_all_branches_part_2(_state)
     _test_math_internal_all_branches_part_3(_state)
     _test_math_internal_all_branches_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

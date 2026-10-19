@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for eig.py."""
+"""Implementation of eig operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.eig`)."""
 
 from __future__ import annotations
 

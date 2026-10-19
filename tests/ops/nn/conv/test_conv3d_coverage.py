@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConf
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class DummyWithShape:
@@ -52,7 +50,7 @@ def test_conv3d_full_coverage() -> None:
             TensorConfig((2, 2, 2, 2, 4), DType("float32"), Device("cpu")),
         )
 
-        cfg = cast("Callable[..., EagerTensorProtocol]", ConvConfig)(
+        cfg = cast("EagerCallableProtocol", ConvConfig)(
             window_strides=(1, 1, 1),
             padding="VALID",
             dimension_numbers=((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)),

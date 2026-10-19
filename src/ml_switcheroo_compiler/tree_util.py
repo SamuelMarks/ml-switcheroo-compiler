@@ -49,7 +49,7 @@ class TreeDef:
         """
         return hash(str(self.node_type) + str(self.children_defs))
 
-    def _eq(self, other: TensorOrScalar | TreeDef) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality with another TreeDef.
 
         Args:
@@ -62,8 +62,7 @@ class TreeDef:
             return False
         return self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
 
-
-setattr(TreeDef, "__eq__", TreeDef._eq)
+    _eq = __eq__
 
 
 def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:

@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for complex_types.py."""
+"""Implementation of complex types operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.complex_types`)."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 

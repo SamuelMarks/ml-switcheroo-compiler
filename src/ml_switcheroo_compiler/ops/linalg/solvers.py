@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for solvers.py."""
+"""Implementation of solvers operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.solvers`)."""
 
 from __future__ import annotations
 

@@ -16,9 +16,7 @@ from ml_switcheroo_compiler.ir.shape_system import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_non_polynomial_operators_evaluation() -> None:
@@ -137,15 +135,25 @@ def test_unary_operations_and_piecewise() -> None:
 
     # SymPiecewise conditional nodes
     def cond_1(env: EagerValue) -> EagerValue:
+        """Check if x > 10.
+
+        Args:
+            env: Test parameter `env`.
+        """
         return cast("EagerValue", getattr(env, "__getitem__")("x") > 10)
 
     def cond_2(env: EagerValue) -> EagerValue:
+        """Check if x > 0.
+
+        Args:
+            env: Test parameter `env`.
+        """
         return cast("EagerValue", getattr(env, "__getitem__")("x") > 0)
 
-    piecewise = cast("Callable[..., EagerTensorProtocol]", SymPiecewise)(
+    piecewise = cast("EagerCallableProtocol", SymPiecewise)(
         cases=[
-            (cond_1, cast("Callable[..., EagerTensorProtocol]", SymConst)(100)),
-            (cond_2, cast("Callable[..., EagerTensorProtocol]", SymConst)(50)),
+            (cond_1, cast("EagerCallableProtocol", SymConst)(100)),
+            (cond_2, cast("EagerCallableProtocol", SymConst)(50)),
         ],
         default=SymConst(0),
     )

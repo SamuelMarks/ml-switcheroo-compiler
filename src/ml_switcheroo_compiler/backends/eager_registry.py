@@ -1,4 +1,4 @@
-"""eager_registry.py module."""
+"""Implementation of eager registry operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager_registry`)."""
 
 from __future__ import annotations
 
@@ -34,6 +34,23 @@ class ShapeProtocol(Protocol):
 
         Returns:
             Sequence[Union[int, str]]: Array shape sequence.
+        """
+        ...
+
+
+@runtime_checkable
+class EagerCallableProtocol(Protocol):
+    """Protocol for dynamic backend callables and factories returning an `EagerTensorProtocol`."""
+
+    def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+        """Invoke the callable with arbitrary eager operands.
+
+        Args:
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            EagerTensorProtocol: Result of invoking the callable.
         """
         ...
 

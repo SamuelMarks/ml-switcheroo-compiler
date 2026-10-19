@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for __init__.py."""
+"""Public package exports and initialization for `ml_switcheroo_compiler.ops.unary`."""
 
 import ml_switcheroo_compiler.ops.binary.special as _binary_special
 import ml_switcheroo_compiler.ops.unary.arithmetic as _arith

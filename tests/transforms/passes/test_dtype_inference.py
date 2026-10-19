@@ -10,22 +10,24 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import _get_promoted_dtype, _get_value_dtype, _handle_cast_dtype, _infer_constant_dtype, _infer_input_dtype, _infer_op_dtype, _infer_output_dtype, dtype_inference_pass
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class DummyVal:
     """Test class DummyVal."""
 
     def __init__(self, dt: str) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            dt: Test parameter `dt`.
+        """
         self.dtype = dt
 
 
 def test_get_value_dtype() -> None:
     """Test function test_get_value_dtype."""
-    assert cast("Callable[..., EagerTensorProtocol]", _get_value_dtype)(cast("Callable[..., EagerTensorProtocol]", DummyVal)("float16")) == DType.Float16
+    assert cast("EagerCallableProtocol", _get_value_dtype)(cast("EagerCallableProtocol", DummyVal)("float16")) == DType.Float16
     assert _get_value_dtype(True) == DType.Bool
     assert _get_value_dtype(1) == DType.Int32
     assert _get_value_dtype(1.0) == DType.Float32

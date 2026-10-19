@@ -9,9 +9,7 @@ import pytest
 from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 pytest.importorskip("mlx.core")
 
@@ -24,10 +22,10 @@ def test_mlx_types() -> None:
     assert zeros is not None
     import mlx.core as mx
 
-    cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2])
-    cast("Callable[..., EagerTensorProtocol]", asarray)(None, [3, 4])
-    cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2,))
-    cast("Callable[..., EagerTensorProtocol]", item)(None, cast("Callable[..., EagerTensorProtocol]", mx.array)([5]))
+    cast("EagerCallableProtocol", array)(None, [1, 2])
+    cast("EagerCallableProtocol", asarray)(None, [3, 4])
+    cast("EagerCallableProtocol", zeros)(None, (2,))
+    cast("EagerCallableProtocol", item)(None, cast("EagerCallableProtocol", mx.array)([5]))
 
 
 def test_mlx_types_asarray_mock() -> None:
@@ -37,13 +35,17 @@ def test_mlx_types_asarray_mock() -> None:
     from ml_switcheroo_compiler.backends.mlx.types import asarray
 
     setattr(mx, "asarray", lambda x: mx.array(x))
-    cast("Callable[..., EagerTensorProtocol]", asarray)(None, [1, 2])
+    cast("EagerCallableProtocol", asarray)(None, [1, 2])
     delattr(mx, "asarray")
     assert callable(asarray)
 
 
 def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_mlx_init_import_error."""
+    """Test function test_mlx_init_import_error.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import importlib.util
     import sys
 
@@ -52,7 +54,12 @@ def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
         del sys.modules["ml_switcheroo_compiler.backends.mlx"]
 
     def mock_find_spec(name: EagerValue, package: EagerValue = None) -> EagerValue:
-        """Test function mock_find_spec."""
+        """Test function mock_find_spec.
+
+        Args:
+            name: Test parameter `name`.
+            package: Test parameter `package`.
+        """
         if name == "mlx":
             return None
         return cast("EagerValue", getattr(importlib.util, "_find_spec")(name, package))

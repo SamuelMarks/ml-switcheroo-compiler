@@ -27,9 +27,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_zero_copy_buffer_views_between_arrow_and_tensor() -> None:
@@ -45,7 +43,7 @@ def test_zero_copy_buffer_views_between_arrow_and_tensor() -> None:
 
     back_tensor = arrow_tensor_to_tensor(arrow_tensor)
     assert isinstance(back_tensor, Tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(back_tensor.data, raw_np)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(back_tensor.data, raw_np)
 
     # Verify zero-copy buffer sharing
     assert shares_buffer(ir_tensor, arrow_tensor) is True
@@ -89,7 +87,7 @@ def test_record_batch_and_tensor_conversions() -> None:
     # RecordBatch back to Tensor
     t_reconstructed = record_batch_to_tensor(rb)
     assert isinstance(t_reconstructed, Tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(t_reconstructed.data, mat)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(t_reconstructed.data, mat)
 
     # 1D Tensor to RecordBatch
     vec = np.array([1.5, 2.5, 3.5], dtype=np.float32)
@@ -97,16 +95,16 @@ def test_record_batch_and_tensor_conversions() -> None:
     rb1d = tensor_to_record_batch(t1d, names=["single"])
     assert cast("EagerTensorProtocol", getattr(rb1d, "num_columns")) == 1
     t1d_rec = record_batch_to_tensor(rb1d)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(t1d_rec, "data")), vec)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(t1d_rec, "data")), vec)
 
     # Subset of columns extraction
     t_subset = record_batch_to_tensor(rb, columns=["col_y"])
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(t_subset, "data")), mat[:, 1])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(t_subset, "data")), mat[:, 1])
 
     # Classmethod invocation
     rb_cls = cast("EagerTensorProtocol", getattr(PyArrowComputeGenerator, "tensor_to_record_batch"))(t2d)
     t_cls = cast("EagerTensorProtocol", getattr(PyArrowComputeGenerator, "record_batch_to_tensor"))(rb_cls)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(t_cls.data, mat)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(t_cls.data, mat)
 
 
 def test_from_arrow_and_to_arrow_universal_dispatch() -> None:
@@ -354,14 +352,14 @@ def test_aot_execution_with_arrow_inputs_and_zero_copy() -> None:
     # Execute with Arrow arrays
     pa_x = pa.array([1.0, 2.0, 3.0], type=pa.float32())
     pa_y = pa.array([10.0, 20.0, 30.0], type=pa.float32())
-    out_zc = cast("Callable[..., EagerTensorProtocol]", runner_zc)(pa_x, y=pa_y)
+    out_zc = cast("EagerCallableProtocol", runner_zc)(pa_x, y=pa_y)
     assert out_zc is not None
     assert type(out_zc).__name__ == "Tensor"
 
     # Execute without zero_copy
     gen_no_zc = PyArrowComputeGenerator(g, zero_copy=False)
     runner_no_zc = gen_no_zc._compile_aot_impl(g)
-    out_no_zc = cast("Callable[..., EagerTensorProtocol]", runner_no_zc)(pa_x, pa_y)
+    out_no_zc = cast("EagerCallableProtocol", runner_no_zc)(pa_x, pa_y)
     assert out_no_zc is not None
 
 
@@ -598,7 +596,7 @@ def _test_fallback_and_edge_branches_part_5(_state: dict[str, EagerTensorProtoco
             """Test function __array__."""
             raise TypeError("fail")
 
-    assert bool(cast("Callable[..., EagerTensorProtocol]", shares_buffer)(cast("Callable[..., EagerTensorProtocol]", FailArrayObj)(), cast("Callable[..., EagerTensorProtocol]", np.array)([1]))) is False
+    assert bool(cast("EagerCallableProtocol", shares_buffer)(cast("EagerCallableProtocol", FailArrayObj)(), cast("EagerCallableProtocol", np.array)([1]))) is False
 
     # shares_buffer fallback with non-array objects
     class DummyObj:
@@ -606,7 +604,7 @@ def _test_fallback_and_edge_branches_part_5(_state: dict[str, EagerTensorProtoco
 
         pass
 
-    assert bool(cast("Callable[..., EagerTensorProtocol]", shares_buffer)(cast("Callable[..., EagerTensorProtocol]", DummyObj)(), cast("Callable[..., EagerTensorProtocol]", DummyObj)())) is False
+    assert bool(cast("EagerCallableProtocol", shares_buffer)(cast("EagerCallableProtocol", DummyObj)(), cast("EagerCallableProtocol", DummyObj)())) is False
     getattr(_state, "update")({"DummyObj": DummyObj, "FailArrayObj": FailArrayObj})
 
 
@@ -618,7 +616,7 @@ def test_fallback_and_edge_branches() -> None:
     _test_fallback_and_edge_branches_part_3(_state)
     _test_fallback_and_edge_branches_part_4(_state)
     _test_fallback_and_edge_branches_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_eager_and_generator_coverage_branches() -> None:
@@ -631,7 +629,7 @@ def test_eager_and_generator_coverage_branches() -> None:
 
     # hash_sum with non-table object without group_by
     with pytest.raises(BackendNotSupportedError, match="not supported"):
-        cast("Callable[..., EagerTensorProtocol]", execute_op)("hash_sum", cast("Callable[..., EagerTensorProtocol]", object)(), "dept", "salary")
+        cast("EagerCallableProtocol", execute_op)("hash_sum", cast("EagerCallableProtocol", object)(), "dept", "salary")
 
     # cbrt with no arguments
     with pytest.raises(BackendNotSupportedError, match="not supported"):
@@ -677,7 +675,7 @@ def test_eager_and_generator_coverage_branches() -> None:
 
     # group_by on object without group_by method
     with pytest.raises(BackendNotSupportedError, match="not supported"):
-        cast("Callable[..., EagerTensorProtocol]", execute_op)("group_by", cast("Callable[..., EagerTensorProtocol]", object)())
+        cast("EagerCallableProtocol", execute_op)("group_by", cast("EagerCallableProtocol", object)())
 
     # AOT runner with raw scalar inputs and keyword Tensor inputs
     g = IRGraph()
@@ -693,5 +691,5 @@ def test_eager_and_generator_coverage_branches() -> None:
 
     # Raw list/ndarray as positional, Tensor as keyword
     t_kw = Tensor(np.array([10.0, 20.0]), TensorConfig((2,), "float32", "cpu"))
-    res_kw = cast("Callable[..., EagerTensorProtocol]", runner)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0]), b=t_kw)
+    res_kw = cast("EagerCallableProtocol", runner)(cast("EagerCallableProtocol", np.array)([1.0, 2.0]), b=t_kw)
     assert res_kw is not None

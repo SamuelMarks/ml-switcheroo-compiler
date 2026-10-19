@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, Union, cast
 from ml_switcheroo_compiler.ops.tensor_array import TensorArrayRead, TensorArrayStack, TensorArrayWrite
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class MockHandle:
@@ -40,9 +38,9 @@ def test_tensor_array_infer_shape() -> None:
     h2 = MockHandle((2, 3), size=None)
     h3 = MockHandle(elem_shape=(), size="non_int")
 
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", TensorArrayRead)().infer_shape)(h1, 0) == (2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", TensorArrayRead)().infer_shape)(h3, 0) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", TensorArrayWrite)().infer_shape)(h1, 0, None) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", TensorArrayStack)().infer_shape)(h1) == (4, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", TensorArrayStack)().infer_shape)(h2) == (None, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", TensorArrayStack)().infer_shape)(h3) == (None,)
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", TensorArrayRead)().infer_shape)(h1, 0) == (2, 3)
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", TensorArrayRead)().infer_shape)(h3, 0) == ()
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", TensorArrayWrite)().infer_shape)(h1, 0, None) == ()
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", TensorArrayStack)().infer_shape)(h1) == (4, 2, 3)
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", TensorArrayStack)().infer_shape)(h2) == (None, 2, 3)
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", TensorArrayStack)().infer_shape)(h3) == (None,)

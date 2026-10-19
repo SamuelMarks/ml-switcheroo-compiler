@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dce import _find_side_effect_nodes, dce_pass
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_dce_basic() -> None:
@@ -85,7 +83,7 @@ def test_dce_pass_no_outputs_attribute() -> None:
             self.nodes: dict[str, LogicalNode] = {}
 
     mock_graph = MockGraphWithoutOutputs()
-    res = cast("Callable[..., EagerTensorProtocol]", dce_pass)(mock_graph)
+    res = cast("EagerCallableProtocol", dce_pass)(mock_graph)
     assert bool(res) is False
 
 

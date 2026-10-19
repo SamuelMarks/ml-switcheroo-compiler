@@ -184,7 +184,7 @@ class CudaCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (Optional[list[CodeGeneratorVisitor]], optional): Visitor delegates.
         """
-        getattr(super(), "__init__")(graph, delegates)
+        super().__init__(graph, delegates)
         yaml_dir: str = os.path.join(os.path.dirname(__file__), "cuda_orchestration")
         yaml_path: str = os.path.join(os.path.dirname(__file__), "cuda_templates.yaml")
         self.config = load_hardware_templates(yaml_dir, yaml_path)

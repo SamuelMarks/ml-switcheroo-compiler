@@ -24,7 +24,11 @@ def test_transpiler_config() -> None:
 
 
 def test_load_transpiler_config(tmp_path: Path) -> None:
-    """Test loading transpiler config."""
+    """Test loading transpiler config.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     yaml_content = """
 frameworks:
   jax:
@@ -53,7 +57,11 @@ def test_is_callable_op_symbol() -> None:
 
 
 def test_load_transpiler_config_empty(tmp_path: Path) -> None:
-    """Test loading empty or non-dict transpiler config."""
+    """Test loading empty or non-dict transpiler config.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     file_path = tmp_path / "empty.yaml"
     with open(file_path, "w") as f:
         f.write("")
@@ -70,7 +78,11 @@ def test_load_transpiler_config_empty(tmp_path: Path) -> None:
 
 
 def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
-    """Test loading from transpiler rules directory."""
+    """Test loading from transpiler rules directory.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import os
     from unittest.mock import patch
 
@@ -93,7 +105,11 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
     rules_dir_str = str(rules_dir)
 
     def mock_join(*args: str) -> str:
-        """Test function mock_join."""
+        """Test function mock_join.
+
+        Args:
+            args: Test parameter `args`.
+        """
         if "rules" in args:
             if args[-1] == "rules":
                 return rules_dir_str
@@ -101,13 +117,21 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
         return real_join(*args)
 
     def mock_isdir(path: str) -> bool:
-        """Test function mock_isdir."""
+        """Test function mock_isdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if rules_dir_str in str(path) or str(path).endswith("rules"):
             return True
         return real_isdir(path)
 
     def mock_listdir(path: str) -> list[str]:
-        """Test function mock_listdir."""
+        """Test function mock_listdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if rules_dir_str in str(path) or str(path).endswith("rules"):
             return ["ignored.txt", "valid.yaml", "only_ast.yaml", "only_ir.yaml", "non_dict.yaml", "broken.yaml"]
         return real_listdir(path)
@@ -120,7 +144,11 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
         assert "Cos" in cfg.ir_to_ast_ops
 
     def mock_isdir_false(path: str) -> bool:
-        """Test function mock_isdir_false."""
+        """Test function mock_isdir_false.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if rules_dir_str in str(path) or "rules" in str(path):
             return False
         return real_isdir(path)

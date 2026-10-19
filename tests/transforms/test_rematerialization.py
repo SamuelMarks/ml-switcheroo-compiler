@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, _load_rules, rematerialization_pass
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_rematerialization_pass() -> None:
@@ -111,7 +109,7 @@ def test_rematerialization_max_dist() -> None:
 
     rules = {"target_ops": ["A"], "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0}}
 
-    res = cast("Callable[..., EagerTensorProtocol]", _find_target_nodes)([node], consumers, node_indices, rules)
+    res = cast("EagerCallableProtocol", _find_target_nodes)([node], consumers, node_indices, rules)
     assert not res
 
 

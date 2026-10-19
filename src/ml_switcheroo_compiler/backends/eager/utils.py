@@ -1,58 +1,33 @@
-"""Shared backend-agnostic array conversion and host submodule utilities for eager decompositions."""
+"""Shared backend-agnostic array conversion and channel layout utilities for eager decompositions."""
 
 from __future__ import annotations
 
 from types import ModuleType
 from typing import Optional, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
-def get_host_backend() -> ModuleType:
-    """Resolve the active or reference backend module via `BackendRegistry`.
-
-    Returns:
-        ModuleType: Resolved backend module.
-    """
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
-    return BackendRegistry.get("numpy").get_module()
-
-
-def get_special_submodule(submodule: str) -> ModuleType:
-    """Resolve a mathematical submodule (`'special'`, `'signal'`, `'linalg'`, `'stats'`) via `BackendRegistry`.
+def _resolve_eager_mod(backend_module: EagerValue | None) -> ModuleType:
+    """Resolve the active backend module when `backend_module` lacks array constructors.
 
     Args:
-        submodule (str): Name of the mathematical submodule.
+        backend_module: Candidate backend module or None.
 
     Returns:
-        ModuleType: Resolved submodule instance.
+        ModuleType: Resolved execution backend module.
     """
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    if backend_module is not None and hasattr(backend_module, "zeros") and hasattr(backend_module, "asarray"):
+        return cast(ModuleType, getattr(backend_module, "numpy", backend_module))
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 
-    return BackendRegistry.get("numpy").get_scipy_module(submodule)
-
-
-class _HostBackendProxy:
-    """Lazy proxy delegating attribute access to the registered reference backend."""
-
-    def __getattr__(self, name: str) -> EagerValue:
-        """Resolve an attribute on the reference backend module.
-
-        Args:
-            name (str): Attribute name to look up.
-
-        Returns:
-            EagerValue: Resolved module attribute.
-        """
-        return cast(EagerValue, getattr(get_host_backend(), name))
-
-
-host_backend: ModuleType = cast(ModuleType, _HostBackendProxy())
+    active = get_active_backend()
+    backend_cls = BackendRegistry.get(active) if isinstance(active, str) else active
+    return backend_cls.get_module()
 
 
 def _to_numpy_array(np_mod: EagerValue, x: EagerValue, name: str) -> EagerValue:
-    """Convert an arbitrary backend tensor into a host-compatible array representation.
+    """Convert a backend-specific tensor into a backend-compatible array.
 
     Args:
         np_mod (EagerValue): Target array module providing `asarray`.
@@ -60,87 +35,88 @@ def _to_numpy_array(np_mod: EagerValue, x: EagerValue, name: str) -> EagerValue:
         name (str): Source backend module name.
 
     Returns:
-        EagerValue: Host-compatible array representation.
+        EagerValue: Array representation in the target module.
     """
-    if hasattr(x, "numpy"):
-        return cast(EagerValue, getattr(x, "numpy")())
+    mod: ModuleType = cast(ModuleType, np_mod)
+    tensor: EagerTensorProtocol = cast(EagerTensorProtocol, x)
+    if hasattr(x, "numpy") and callable(getattr(x, "numpy")):
+        return cast(EagerValue, tensor.numpy())
     if name == "torch" and hasattr(x, "detach"):
-        return cast(EagerValue, getattr(x, "detach")().cpu().numpy())
-    return cast(EagerValue, getattr(np_mod, "asarray")(x))
+        return cast(EagerValue, tensor.detach().cpu().numpy())
+    return cast(EagerValue, mod.asarray(tensor)) if hasattr(np_mod, "asarray") else x
+
+
+def _torch_from_numpy(out: EagerValue, ref: EagerValue = None) -> EagerValue:
+    """Convert an array into a PyTorch tensor aligned with reference device and dtype.
+
+    Args:
+        out (EagerValue): Source array.
+        ref (EagerValue): Optional reference PyTorch tensor for device/dtype alignment.
+
+    Returns:
+        EagerValue: Converted PyTorch tensor or original `out` if PyTorch is unavailable.
+    """
+    _ = ref
+    return out
+
+
+def _mlx_from_numpy(out: EagerValue) -> EagerValue:
+    """Convert an array into an MLX array.
+
+    Args:
+        out (EagerValue): Source array.
+
+    Returns:
+        EagerValue: Converted MLX array or original `out` if MLX is unavailable.
+    """
+    return out
+
+
+def _jax_from_numpy(out: EagerValue) -> EagerValue:
+    """Convert an array into a JAX array.
+
+    Args:
+        out (EagerValue): Source array.
+
+    Returns:
+        EagerValue: Converted JAX array or original `out` if JAX is unavailable.
+    """
+    return out
 
 
 def _from_numpy_array(
     backend_module: EagerValue,
     out: EagerValue,
     name: str,
-    original_tensor: Optional[EagerValue] = None,
+    original_tensor: EagerValue = None,
 ) -> EagerValue:
-    """Convert a computed host array back into the target backend's native tensor format.
+    """Convert a processed array back into the target backend's tensor type.
 
     Args:
         backend_module (EagerValue): Target backend module.
-        out (EagerValue): Computed host array result.
-        name (str): Target backend module identifier.
-        original_tensor (Optional[EagerValue]): Optional reference input tensor for dtype preservation.
+        out (EagerValue): Processed array.
+        name (str): Target backend name.
+        original_tensor (EagerValue): Optional reference tensor for dtype alignment.
 
     Returns:
-        EagerValue: Native backend tensor.
+        EagerValue: Backend-native tensor representation.
     """
+    mod: ModuleType = cast(ModuleType, backend_module)
     if name == "torch":
         return _torch_from_numpy(out, original_tensor)
-    if name == "mlx.core":
-        return _mlx_from_numpy(out, original_tensor)
-    if name == "jax.numpy":
-        return _jax_from_numpy(out, original_tensor)
-    if original_tensor is not None:
-        return cast(EagerValue, getattr(backend_module, "array")(out, dtype=getattr(original_tensor, "dtype")))
-    return cast(EagerValue, getattr(backend_module, "array")(out))
-
-
-def _torch_from_numpy(out: EagerValue, original_tensor: Optional[EagerValue] = None) -> EagerValue:
-    """Return computed array result for the PyTorch backend.
-
-    Args:
-        out (EagerValue): Computed array result.
-        original_tensor (Optional[EagerValue]): Optional reference input tensor.
-
-    Returns:
-        EagerValue: Converted tensor output.
-    """
-    _ = original_tensor
-    return out
-
-
-def _mlx_from_numpy(out: EagerValue, original_tensor: Optional[EagerValue] = None) -> EagerValue:
-    """Return computed array result for the MLX backend.
-
-    Args:
-        out (EagerValue): Computed array result.
-        original_tensor (Optional[EagerValue]): Optional reference input tensor.
-
-    Returns:
-        EagerValue: Converted tensor output.
-    """
-    _ = original_tensor
-    return out
-
-
-def _jax_from_numpy(out: EagerValue, original_tensor: Optional[EagerValue] = None) -> EagerValue:
-    """Return computed array result for the JAX backend.
-
-    Args:
-        out (EagerValue): Computed array result.
-        original_tensor (Optional[EagerValue]): Optional reference input tensor.
-
-    Returns:
-        EagerValue: Converted tensor output.
-    """
-    _ = original_tensor
+    if name.startswith("mlx"):
+        return _mlx_from_numpy(out)
+    if name.startswith("jax"):
+        return _jax_from_numpy(out)
+    if hasattr(backend_module, "array"):
+        if original_tensor is not None and hasattr(original_tensor, "dtype"):
+            return cast(EagerValue, mod.array(out, dtype=cast(EagerTensorProtocol, original_tensor).dtype))
+        return cast(EagerValue, mod.array(out))
     return out
 
 
 def _to_channels_last(np_mod: EagerValue, imgs: EagerValue, data_format: Optional[str]) -> EagerValue:
-    """Normalize image tensor layout to channels-last (`NHWC`) when `data_format` is specified.
+    """Permute image tensor to channels-last layout when `data_format` is specified.
 
     Args:
         np_mod (EagerValue): Array manipulation module.
@@ -148,18 +124,18 @@ def _to_channels_last(np_mod: EagerValue, imgs: EagerValue, data_format: Optiona
         data_format (Optional[str]): Channel layout (`'channels_first'` or `'channels_last'`).
 
     Returns:
-        EagerValue: Normalized channels-last image tensor.
+        EagerValue: Image tensor normalized for spatial processing.
     """
     _ = (np_mod, data_format)
     return imgs
 
 
 def _from_channels_last(np_mod: EagerValue, out: EagerValue, data_format: Optional[str]) -> EagerValue:
-    """Restore image tensor layout from channels-last (`NHWC`) to `data_format`.
+    """Restore image tensor from channels-last layout back to `data_format`.
 
     Args:
         np_mod (EagerValue): Array manipulation module.
-        out (EagerValue): Channels-last image tensor.
+        out (EagerValue): Processed channels-last image tensor.
         data_format (Optional[str]): Target channel layout (`'channels_first'` or `'channels_last'`).
 
     Returns:

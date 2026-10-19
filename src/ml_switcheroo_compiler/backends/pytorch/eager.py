@@ -1,4 +1,4 @@
-"""Backend utilities."""
+"""Implementation of eager operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.pytorch.eager`)."""
 
 from __future__ import annotations
 

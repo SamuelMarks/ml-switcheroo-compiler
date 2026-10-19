@@ -9,7 +9,11 @@ if TYPE_CHECKING:
 
 
 def test_metal_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_metal_load_yaml_dict_string."""
+    """Test function test_metal_load_yaml_dict_string.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
     from unittest.mock import MagicMock, patch
 
@@ -17,11 +21,19 @@ def test_metal_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     def mock_isdir(path: EagerValue) -> EagerValue:
-        """Test function mock_isdir."""
+        """Test function mock_isdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return True
 
     def mock_listdir(path: EagerValue) -> EagerValue:
-        """Test function mock_listdir."""
+        """Test function mock_listdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return ["test.yaml"]
 
     mock_data = {"templates": {"op1": "string body", "op2": ["not", "string", "or", "dict_with_body"]}}
@@ -39,7 +51,11 @@ def test_metal_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_metal_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_metal_load_fallback_yaml."""
+    """Test function test_metal_load_fallback_yaml.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
     from unittest.mock import MagicMock, patch
 
@@ -47,11 +63,19 @@ def test_metal_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     def mock_isdir(path: EagerValue) -> EagerValue:
-        """Test function mock_isdir."""
+        """Test function mock_isdir.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return False
 
     def mock_exists(path: EagerValue) -> EagerValue:
-        """Test function mock_exists."""
+        """Test function mock_exists.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return True
 
     mock_data = {"templates": {"op3": {"body": "test"}}}
@@ -68,7 +92,11 @@ def test_metal_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_metal_runner_init_coverage(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_metal_runner_init_coverage."""
+    """Test function test_metal_runner_init_coverage.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.metal.metal import MetalRunner

@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerato
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class TestStableHLOCodeGenerator(unittest.TestCase):
@@ -178,7 +176,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         """Test dynamic dimension formatting with wildcard ? symbol."""
         gen = StableHLOCodeGenerator(IRGraph())
         self.assertEqual(gen._map_type(("batch", 16), "float32"), "tensor<?x16xf32>")
-        cast("Callable[..., EagerTensorProtocol]", self.assertEqual)(cast("Callable[..., EagerTensorProtocol]", gen._map_type)((None, "?", 3), "int32"), "tensor<?x?x3xi32>")
+        cast("EagerCallableProtocol", self.assertEqual)(cast("EagerCallableProtocol", gen._map_type)((None, "?", 3), "int32"), "tensor<?x?x3xi32>")
         self.assertEqual(gen._map_type((-1, 32), "float64"), "tensor<?x32xf64>")
 
     def test_stablehlo_control_flow_if(self) -> None:
@@ -306,26 +304,34 @@ def test_stablehlo_no_schema() -> None:
 
 
 def test_verify_stablehlo_mlir_with_opt_binary(monkeypatch: EagerTensorProtocol) -> None:
-    """Test verify_stablehlo_mlir using mocked mlir-opt binary."""
+    """Test verify_stablehlo_mlir using mocked mlir-opt binary.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import subprocess
 
     from ml_switcheroo_compiler.backends.edge.stablehlo import verify_stablehlo_mlir
 
     # Success case
     mock_res_success = subprocess.CompletedProcess(args=["mlir-opt"], returncode=0, stdout=b"", stderr=b"")
-    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_success)
+    cast("EagerCallableProtocol", monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_success)
     monkeypatch.setattr("os.path.exists", lambda path: True)
     assert verify_stablehlo_mlir("some mlir", mlir_opt_path="/usr/bin/mlir-opt") is True
 
     # Failure case
     mock_res_fail = subprocess.CompletedProcess(args=["mlir-opt"], returncode=1, stdout=b"", stderr=b"parse error")
-    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_fail)
+    cast("EagerCallableProtocol", monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_fail)
     with pytest.raises(ValueError, match="mlir-opt verification failed"):
         verify_stablehlo_mlir("bad mlir", mlir_opt_path="/usr/bin/mlir-opt")
 
 
 def test_verify_stablehlo_mlir_structural(monkeypatch: EagerTensorProtocol) -> None:
-    """Test verify_stablehlo_mlir structural fallback checks without mlir-opt."""
+    """Test verify_stablehlo_mlir structural fallback checks without mlir-opt.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from ml_switcheroo_compiler.backends.edge.stablehlo import verify_stablehlo_mlir
 
     monkeypatch.setattr("shutil.which", lambda prog: None)
@@ -645,7 +651,11 @@ def test_stablehlo_while_extra_block_inputs() -> None:
 
 
 def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test StableHLO AOT compilation artifact execution with schema fallback, single and multi-output."""
+    """Test StableHLO AOT compilation artifact execution with schema fallback, single and multi-output.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     g = IRGraph()
     inp1 = LogicalNode(id="in1", op_type="Input")
     inp2 = LogicalNode(id="in2", op_type="Input")
@@ -659,7 +669,7 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     # Test 1: Normal schema existence and single output return
     gen1 = StableHLOCodeGenerator(g)
     artifact1 = gen1._compile_aot_impl(g)
-    res_single = cast("Callable[..., EagerTensorProtocol]", artifact1)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0], dtype=np.float32), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0], dtype=np.float32))
+    res_single = cast("EagerCallableProtocol", artifact1)(cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), cast("EagerCallableProtocol", np.array)([2.0], dtype=np.float32))
     assert res_single is not None
 
     # Test 2: Schema fallback when schema yaml does not exist, and multi-output
@@ -667,7 +677,11 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     orig_exists = os.path.exists
 
     def mock_exists(p: str) -> bool:
-        """Test function mock_exists."""
+        """Test function mock_exists.
+
+        Args:
+            p: Test parameter `p`.
+        """
         if "stablehlo_schema.yaml" in p:
             return False
         return orig_exists(p)
@@ -676,13 +690,13 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     gen2 = StableHLOCodeGenerator(g)
     artifact2 = gen2._compile_aot_impl(g)
 
-    res = cast("Callable[..., EagerTensorProtocol]", artifact2)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0], dtype=np.float32), in2=cast("Callable[..., EagerTensorProtocol]", np.array)([2.0], dtype=np.float32))
+    res = cast("EagerCallableProtocol", artifact2)(cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), in2=cast("EagerCallableProtocol", np.array)([2.0], dtype=np.float32))
     assert isinstance(res, tuple)
     assert len(res) == 2
 
     # Test 3: Graph has no outputs
     g.outputs = []
-    res_dict = cast("Callable[..., EagerTensorProtocol]", artifact2)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0], dtype=np.float32), cast("Callable[..., EagerTensorProtocol]", np.array)([2.0], dtype=np.float32))
+    res_dict = cast("EagerCallableProtocol", artifact2)(cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), cast("EagerCallableProtocol", np.array)([2.0], dtype=np.float32))
     assert isinstance(res_dict, dict)
 
 

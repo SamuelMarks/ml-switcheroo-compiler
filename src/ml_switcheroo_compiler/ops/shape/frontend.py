@@ -12,7 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Callable, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -388,7 +388,7 @@ def block(arrays: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Block")().infer_shape(arrays)
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, cast("Sequence[Union[int, str]]", out_shape), "float32"))
+    return cast(TensorOrScalar, cast("EagerCallableProtocol", _emit_shape_node)("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, cast("Sequence[Union[int, str]]", out_shape), "float32"))
 
 
 def delete(arr: TensorOrScalar, obj: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:

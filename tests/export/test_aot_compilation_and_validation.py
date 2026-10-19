@@ -22,9 +22,7 @@ from ml_switcheroo_compiler.export.export_api import (
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_cpp_compile_aot() -> None:
@@ -58,7 +56,11 @@ def test_webgpu_compile_aot() -> None:
 
 
 def test_wasm_compile_aot(tmp_path: EagerTensorProtocol) -> None:
-    """Test WasmCodeGenerator compile_aot producing wasm artifacts and raising CompilationError when toolchain missing."""
+    """Test WasmCodeGenerator compile_aot producing wasm artifacts and raising CompilationError when toolchain missing.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     from unittest.mock import patch
 
     g = IRGraph(name="test_aot_wasm")
@@ -99,11 +101,15 @@ def test_compile_function_strict_diagnostics() -> None:
     t = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
     c = compile_function(f, backend="non_existent_backend", strict=True)
     with pytest.raises(CompilationError, match="Target backend 'non_existent_backend' not found"):
-        cast("Callable[..., EagerTensorProtocol]", c)(t)
+        cast("EagerCallableProtocol", c)(t)
 
 
 def test_binary_validation_utilities(tmp_path: EagerTensorProtocol) -> None:
-    """Test binary validation utilities for ONNX, StableHLO, and SavedModel."""
+    """Test binary validation utilities for ONNX, StableHLO, and SavedModel.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     assert validate_onnx_binary(str(tmp_path / "missing.onnx")) is False
     assert validate_stablehlo_binary(str(tmp_path / "missing.mlirbc")) is False
     assert validate_saved_model_binary(str(tmp_path / "missing_dir")) is False

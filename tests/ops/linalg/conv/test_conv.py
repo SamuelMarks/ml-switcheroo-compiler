@@ -21,7 +21,12 @@ if TYPE_CHECKING:
 @patch("ml_switcheroo_compiler.ops.linalg.conv._emit_linalg_node")
 @patch("ml_switcheroo_compiler.ops.linalg.conv.ConvGeneralDilated.infer_shape", return_value=(1, 1, 1, 1))
 def test_conv_general_dilated(mock_infer: EagerTensorProtocol, mock_emit: EagerTensorProtocol) -> None:
-    """Test function test_conv_general_dilated."""
+    """Test function test_conv_general_dilated.
+
+    Args:
+        mock_infer: Test parameter `mock_infer`.
+        mock_emit: Test parameter `mock_emit`.
+    """
     lhs = MagicMock()
     lhs.dtype = "float32"
     rhs = MagicMock()
@@ -35,7 +40,12 @@ def test_conv_general_dilated(mock_infer: EagerTensorProtocol, mock_emit: EagerT
 @patch("ml_switcheroo_compiler.ops.linalg.conv._emit_linalg_node")
 @patch("ml_switcheroo_compiler.ops.linalg.conv.ConvGeneralDilatedLocal.infer_shape", return_value=(1, 1, 1, 1))
 def test_conv_general_dilated_local(mock_infer: EagerTensorProtocol, mock_emit: EagerTensorProtocol) -> None:
-    """Test function test_conv_general_dilated_local."""
+    """Test function test_conv_general_dilated_local.
+
+    Args:
+        mock_infer: Test parameter `mock_infer`.
+        mock_emit: Test parameter `mock_emit`.
+    """
     lhs = MagicMock()
     lhs.dtype = "float32"
     rhs = MagicMock()
@@ -49,7 +59,12 @@ def test_conv_general_dilated_local(mock_infer: EagerTensorProtocol, mock_emit: 
 @patch("ml_switcheroo_compiler.ops.linalg.conv._emit_linalg_node")
 @patch("ml_switcheroo_compiler.ops.linalg.conv.ConvGeneralDilatedPatches.infer_shape", return_value=(1, 1, 1, 1))
 def test_conv_general_dilated_patches(mock_infer: EagerTensorProtocol, mock_emit: EagerTensorProtocol) -> None:
-    """Test function test_conv_general_dilated_patches."""
+    """Test function test_conv_general_dilated_patches.
+
+    Args:
+        mock_infer: Test parameter `mock_infer`.
+        mock_emit: Test parameter `mock_emit`.
+    """
     lhs = MagicMock()
     lhs.dtype = "float32"
 
@@ -60,7 +75,12 @@ def test_conv_general_dilated_patches(mock_infer: EagerTensorProtocol, mock_emit
 @patch("ml_switcheroo_compiler.ops.linalg.conv._emit_linalg_node")
 @patch("ml_switcheroo_compiler.ops.linalg.conv.ConvWithGeneralPadding.infer_shape", return_value=(1, 1, 1, 1))
 def test_conv_with_general_padding(mock_infer: EagerTensorProtocol, mock_emit: EagerTensorProtocol) -> None:
-    """Test function test_conv_with_general_padding."""
+    """Test function test_conv_with_general_padding.
+
+    Args:
+        mock_infer: Test parameter `mock_infer`.
+        mock_emit: Test parameter `mock_emit`.
+    """
     lhs = MagicMock()
     lhs.dtype = "float32"
     rhs = MagicMock()

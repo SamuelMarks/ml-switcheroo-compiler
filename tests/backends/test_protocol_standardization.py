@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Union, cast
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.grad.utils import GradTensorProtocol
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.eager_evaluator import (
@@ -17,14 +17,18 @@ from ml_switcheroo_compiler.ops.eager_evaluator import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    pass
 
 
 class MockEagerTensor:
     """Mock tensor satisfying EagerTensorProtocol."""
 
     def __init__(self, shape: tuple[int, ...] = (2, 2)) -> None:
-        """Initialize MockEagerTensor."""
+        """Initialize MockEagerTensor.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self._shape = shape
         self._dtype = "float32"
 
@@ -43,11 +47,20 @@ class MockEagerTensor:
         return self._shape[0]
 
     def __getitem__(self, key: EagerValue) -> MockEagerTensor:
-        """Get item."""
+        """Get item.
+
+        Args:
+            key: Test parameter `key`.
+        """
         return self
 
     def __setitem__(self, key: EagerValue, value: EagerValue) -> None:
-        """Set item."""
+        """Set item.
+
+        Args:
+            key: Test parameter `key`.
+            value: Test parameter `value`.
+        """
         pass
 
     def __neg__(self) -> MockEagerTensor:
@@ -55,39 +68,75 @@ class MockEagerTensor:
         return self
 
     def __add__(self, other: EagerValue) -> MockEagerTensor:
-        """Addition."""
+        """Addition.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return self
 
     def __sub__(self, other: EagerValue) -> MockEagerTensor:
-        """Subtraction."""
+        """Subtraction.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return self
 
     def __mul__(self, other: EagerValue) -> MockEagerTensor:
-        """Multiplication."""
+        """Multiplication.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return self
 
     def __truediv__(self, other: EagerValue) -> MockEagerTensor:
-        """Division."""
+        """Division.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return self
 
     def __lt__(self, other: EagerValue) -> EagerValue:
-        """Less than."""
+        """Less than.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return True
 
     def __le__(self, other: EagerValue) -> EagerValue:
-        """Less than or equal."""
+        """Less than or equal.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return True
 
     def __gt__(self, other: EagerValue) -> EagerValue:
-        """Greater than."""
+        """Greater than.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return False
 
     def __ge__(self, other: EagerValue) -> EagerValue:
-        """Greater than or equal."""
+        """Greater than or equal.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return True
 
     def __pow__(self, other: EagerValue) -> MockEagerTensor:
-        """Exponentiation."""
+        """Exponentiation.
+
+        Args:
+            other: Test parameter `other`.
+        """
         return self
 
 
@@ -139,7 +188,11 @@ class MockInterpreterTensor:
         return self._shape
 
     def __getitem__(self, key: EagerValue) -> MockInterpreterTensor:
-        """Get item."""
+        """Get item.
+
+        Args:
+            key: Test parameter `key`.
+        """
         return self
 
     def item(self) -> Union[int, float, bool]:
@@ -200,14 +253,24 @@ def test_custom_eager_eval_strategy() -> None:
         """Op class with eager_eval method."""
 
         def eager_eval(self, a: int, b: int) -> int:
-            """Evaluate operation eagerly."""
+            """Evaluate operation eagerly.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a + b
 
     class OpWithForward:
         """Op class with forward method."""
 
         def forward(self, a: int, b: int) -> int:
-            """Forward pass."""
+            """Forward pass.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return a * b
 
     class OpWithoutEval:
@@ -220,7 +283,13 @@ def test_custom_eager_eval_strategy() -> None:
 
         @classmethod
         def execute_op(cls, op_type: str, *args: int, **kwargs: int) -> str:
-            """Execute op."""
+            """Execute op.
+
+            Args:
+                op_type: Test parameter `op_type`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return f"executed_{op_type}"
 
     strategy = CustomEagerEvalStrategy()
@@ -259,17 +328,17 @@ def test_custom_eager_eval_strategy() -> None:
 
     # Test base abstract evaluate method
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        cast("Callable[..., EagerTensorProtocol]", EvaluationStrategy)()
+        cast("EagerCallableProtocol", EvaluationStrategy)()
 
     # Test instance passed as op_cls
-    ctx_inst = cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(
-        op_cls=cast("Callable[..., EagerTensorProtocol]", OpWithEagerEval)(),  # instance rather than type
+    ctx_inst = cast("EagerCallableProtocol", EvaluationContext)(
+        op_cls=cast("EagerCallableProtocol", OpWithEagerEval)(),  # instance rather than type
         op_type="Add",
         args=[10, 20],
         kwargs={},
         backend=DummyBackend,
     )
-    assert cast("Callable[..., EagerTensorProtocol]", strategy.evaluate)(ctx_inst) == 30
+    assert cast("EagerCallableProtocol", strategy.evaluate)(ctx_inst) == 30
 
 
 def test_eager_evaluator_dispatch_and_packing() -> None:
@@ -290,7 +359,12 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
         """Custom op class for testing strategy."""
 
         def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Eager eval."""
+            """Eager eval.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             pass
 
     custom_strat = EagerEvaluator._get_strategy(CustomOpClass)
@@ -298,7 +372,7 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
 
     res = EagerEvaluator.evaluate("Add", t1, t2)
     assert isinstance(res, Tensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res.data, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0, 6.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res.data, cast("EagerCallableProtocol", np.array)([4.0, 6.0]))
 
     # Test packing multiple tuple outputs
     res_tuple = EagerEvaluator._pack_outputs((arr1, arr2), t1, "cpu")

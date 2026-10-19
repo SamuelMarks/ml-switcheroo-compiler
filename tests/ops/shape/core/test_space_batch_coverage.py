@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
 
@@ -48,10 +46,10 @@ def test_shape_space_batch_coverage() -> None:
     try:
         # OpDef infer_shape
         nd_op = space_batch_mod.SpaceToBatchND()
-        assert cast("Callable[..., EagerTensorProtocol]", nd_op.infer_shape)(None, [2, 2], [[0, 0], [0, 0]]) == ()
+        assert cast("EagerCallableProtocol", nd_op.infer_shape)(None, [2, 2], [[0, 0], [0, 0]]) == ()
 
         sb_op = space_batch_mod.SpaceToBatch()
-        assert cast("Callable[..., EagerTensorProtocol]", sb_op.infer_shape)(None, 2, [[0, 0], [0, 0]]) == ()
+        assert cast("EagerCallableProtocol", sb_op.infer_shape)(None, 2, [[0, 0], [0, 0]]) == ()
 
         # space_to_batch eager mode
         config.eager_mode = True

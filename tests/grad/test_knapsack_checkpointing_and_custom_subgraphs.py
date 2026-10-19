@@ -25,9 +25,7 @@ from ml_switcheroo_compiler.grad.custom_vjp_ops import custom_vjp
 from ml_switcheroo_compiler.grad.jvp_vjp import custom_jvp
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_load_cost_models() -> None:
@@ -162,7 +160,7 @@ def test_evaluate_node_costs_edge_cases() -> None:
         shape_metadata=(-1, "str_dim", 4),
         attributes={"dtype": "float64"},
     )
-    footprint, flop = cast("Callable[..., EagerTensorProtocol]", _evaluate_node_costs)(
+    footprint, flop = cast("EagerCallableProtocol", _evaluate_node_costs)(
         node=node,
         memory_sizes=None,
         heavy_ops={"Conv"},

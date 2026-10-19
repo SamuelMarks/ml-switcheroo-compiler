@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_translation_eager,
     random_zoom_eager,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("AugMix")
@@ -107,7 +107,7 @@ def _np_random_crop(backend_module: ModuleType, images: EagerValue, size: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", random_crop_eager)(backend_module, images, size, seed))
+    return cast(EagerValue, cast("EagerCallableProtocol", random_crop_eager)(backend_module, images, size, seed))
 
 
 @numpy_eager_registry.register("RandomErasing")
@@ -493,7 +493,7 @@ def _np_random_rotation(backend_module: ModuleType, images: EagerValue, **kwargs
     B, H, W, _ = getattr(images, "shape")
 
     rng = np.random.default_rng(kwargs.get("seed", None))
-    angles = rng.uniform(*cast("Callable[..., EagerTensorProtocol]", _resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
+    angles = rng.uniform(*cast("EagerCallableProtocol", _resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
 
     y, x = getattr(getattr(_create_rotation_mesh(np, H, W), "__iter__")(), "__iter__")()
 
@@ -523,7 +523,7 @@ def _np_random_translation(backend_module: ModuleType, images: EagerValue, heigh
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", random_translation_eager)(backend_module, images, height_factor, width_factor, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", random_translation_eager)(backend_module, images, height_factor, width_factor, **kwargs))
 
 
 @numpy_eager_registry.register("RandomZoom")
@@ -540,7 +540,7 @@ def _np_random_zoom(backend_module: ModuleType, images: EagerValue, height_facto
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", random_zoom_eager)(backend_module, images, height_factor, width_factor, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", random_zoom_eager)(backend_module, images, height_factor, width_factor, **kwargs))
 
 
 __all__ = [

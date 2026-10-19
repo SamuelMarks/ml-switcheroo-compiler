@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 MetricsVal = Union[list[float], float]
 
@@ -214,8 +214,8 @@ def test_metrics_empty_and_single() -> None:
     res_single = metrics_mod.compute_statistical_metrics([12.5], batch_size=2, total_flops=1e9, total_bytes_accessed=1e6)
     assert res_single["std_latency_ms"] == 0.0
     assert res_single["mean_latency_ms"] == 12.5
-    assert cast("Callable[..., EagerTensorProtocol]", float)(res_single["gflops"]) > 0.0
-    assert cast("Callable[..., EagerTensorProtocol]", float)(res_single["bandwidth_gb_s"]) > 0.0
+    assert cast("EagerCallableProtocol", float)(res_single["gflops"]) > 0.0
+    assert cast("EagerCallableProtocol", float)(res_single["bandwidth_gb_s"]) > 0.0
 
     # 3. Multiple latencies with percentiles
     lats = [5.0, 10.0, 15.0, 20.0, 25.0]
@@ -223,7 +223,7 @@ def test_metrics_empty_and_single() -> None:
     assert res_multi["min_latency_ms"] == 5.0
     assert res_multi["max_latency_ms"] == 25.0
     assert res_multi["p50_latency_ms"] == 15.0
-    assert cast("Callable[..., EagerTensorProtocol]", float)(res_multi["std_latency_ms"]) > 0.0
+    assert cast("EagerCallableProtocol", float)(res_multi["std_latency_ms"]) > 0.0
     assert res_multi["warmup_iterations"] == 1
 
 

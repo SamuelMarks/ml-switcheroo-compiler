@@ -11,9 +11,7 @@ import pytest
 import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged as sr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_sparse_and_ragged_coverage() -> None:
@@ -27,9 +25,9 @@ def test_sparse_and_ragged_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t", "sp_input"):
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
             else:
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
         with pytest.raises(TypeError):
             op(*args_to_pass)
         try:

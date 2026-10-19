@@ -13,9 +13,7 @@ import yaml
 import scripts.standardize_backend_mappings as sbm
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_build_default_ast_template() -> None:
@@ -45,7 +43,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_translations": {"axis": "dim", "drop": None},
         "dtype_overrides": {"float64": "float32"},
     }
-    result = cast("Callable[..., EagerTensorProtocol]", sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
+    result = cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
     assert result["operation"] == "Add"
     assert result["backend"] == "numpy"
     assert result["target_api"] == "np.add"
@@ -59,7 +57,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_map": ["invalid_list"],
         "dtype_overrides": ["invalid_list"],
     }
-    result_non_dict = cast("Callable[..., EagerTensorProtocol]", sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
+    result_non_dict = cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
     assert result_non_dict["kwarg_map"] == {}
     assert result_non_dict["dtype_overrides"] == {}
 
@@ -115,6 +113,6 @@ def test_run_standardization_and_main(tmp_path: Path) -> None:
 def test_runpy_entrypoint() -> None:
     """Verify script executes as main via runpy."""
     script_path = os.path.abspath(sbm.__file__)
-    with patch("scripts.standardize_backend_mappings.run_standardization", return_value=0):
+    with patch("scripts.standardize_backend_mappings.run_standardization", return_value=0) as mock_run:
         runpy.run_path(script_path, run_name="__main__")
-    assert script_path is not None or script_path is None
+        assert mock_run.called

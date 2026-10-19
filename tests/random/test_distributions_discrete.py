@@ -22,9 +22,7 @@ from ml_switcheroo_compiler.random.distributions_discrete import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_randint() -> None:
@@ -61,7 +59,7 @@ def test_categorical() -> None:
     """Test categorical function."""
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", categorical)("key", "logits", axis=0, shape=(2, 2))
+        result = cast("EagerCallableProtocol", categorical)("key", "logits", axis=0, shape=(2, 2))
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomCategorical", ["key"], (2, 2), dtypes.DType.Int32, {"axis": 0})
 
@@ -86,7 +84,7 @@ def test_permutation() -> None:
 
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Tensor", cast("Callable[..., EagerTensorProtocol]", permutation)("key", "x"))
+        result = cast("Tensor", cast("EagerCallableProtocol", permutation)("key", "x"))
         assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
         mock_emit.assert_called_once_with("RandomPermutation", ["key", "x"], (), None, {"axis": 0, "independent": False})
 
@@ -115,13 +113,13 @@ def test_binomial() -> None:
     """Test binomial function."""
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", binomial)("key", "n", "p", shape=(2, 2), dtype=dtypes.DType.Int64)
+        result = cast("EagerCallableProtocol", binomial)("key", "n", "p", shape=(2, 2), dtype=dtypes.DType.Int64)
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomBinomial", ["key"], (2, 2), dtypes.DType.Int64)
 
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", binomial)("key", "n", "p")
+        result = cast("EagerCallableProtocol", binomial)("key", "n", "p")
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomBinomial", ["key"], (), dtypes.DType.Int32)
 
@@ -130,13 +128,13 @@ def test_poisson() -> None:
     """Test poisson function."""
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", poisson)("key", "lam", shape=(2, 2), dtype=dtypes.DType.Int64)
+        result = cast("EagerCallableProtocol", poisson)("key", "lam", shape=(2, 2), dtype=dtypes.DType.Int64)
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomPoisson", ["key", "lam"], (2, 2), dtypes.DType.Int64)
 
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", poisson)("key", "lam")
+        result = cast("EagerCallableProtocol", poisson)("key", "lam")
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomPoisson", ["key", "lam"], (), dtypes.DType.Int32)
 
@@ -145,13 +143,13 @@ def test_multinomial() -> None:
     """Test multinomial function."""
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", multinomial)("key", 5, "pvals", shape=(2, 2))
+        result = cast("EagerCallableProtocol", multinomial)("key", 5, "pvals", shape=(2, 2))
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomMultinomial", ["key", "pvals"], (2, 2), dtypes.DType.Int32, {"n": 5})
 
     with patch.object(sys.modules["ml_switcheroo_compiler.random.distributions_discrete"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = cast("Callable[..., EagerTensorProtocol]", multinomial)("key", 5, "pvals")
+        result = cast("EagerCallableProtocol", multinomial)("key", 5, "pvals")
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomMultinomial", ["key", "pvals"], (), dtypes.DType.Int32, {"n": 5})
 

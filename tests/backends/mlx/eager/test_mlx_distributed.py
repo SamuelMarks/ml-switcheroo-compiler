@@ -7,13 +7,15 @@ from typing import TYPE_CHECKING, cast
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_mlx_all_to_all_fallback(mocker: EagerTensorProtocol) -> None:
-    """Test all to all fallback."""
+    """Test all to all fallback.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_to_all
 
     class DummyCore:
@@ -28,13 +30,17 @@ def test_mlx_all_to_all_fallback(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
     assert _mlx_all_to_all(None, "tensor") == "tensor"
 
 
 def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
-    """Test reduce scatter exception."""
+    """Test reduce scatter exception.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_reduce_scatter
 
     class DummyGroup:
@@ -48,7 +54,11 @@ def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
         """Test class DummyDistributed."""
 
         def all_sum(self, tensor: EagerValue) -> EagerValue:
-            """Test function all_sum."""
+            """Test function all_sum.
+
+            Args:
+                tensor: Test parameter `tensor`.
+            """
 
             class DummyTensor:
                 """Test class DummyTensor."""
@@ -57,7 +67,11 @@ def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
                 ndim = 1
 
                 def __getitem__(self, idx: EagerValue) -> EagerValue:
-                    """Test function __getitem__."""
+                    """Test function __getitem__.
+
+                    Args:
+                        idx: Test parameter `idx`.
+                    """
                     return "sliced"
 
             return DummyTensor()
@@ -74,14 +88,18 @@ def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
     res = _mlx_reduce_scatter(DummyMLX.core, "tensor", group=DummyGroup())
     assert res == "sliced"
 
 
 def test_mlx_reduce_scatter_not_supported(mocker: EagerTensorProtocol) -> None:
-    """Test reduce scatter not supported."""
+    """Test reduce scatter not supported.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_reduce_scatter
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -97,7 +115,7 @@ def test_mlx_reduce_scatter_not_supported(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         _mlx_reduce_scatter(None, "tensor")

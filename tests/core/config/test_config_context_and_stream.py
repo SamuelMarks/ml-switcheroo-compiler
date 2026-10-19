@@ -90,7 +90,11 @@ def test_config_more_props() -> None:
 
 
 def test_config_clear_cache(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_config_clear_cache."""
+    """Test function test_config_clear_cache.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import ml_switcheroo_compiler.core.device as dev
 
     monkeypatch.setattr(dev, "clear_cache", lambda: None)

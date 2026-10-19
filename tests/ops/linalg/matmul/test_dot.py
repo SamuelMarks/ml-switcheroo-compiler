@@ -9,9 +9,7 @@ import pytest
 from ml_switcheroo_compiler.ops.linalg.dot import Dot, DotGeneral, Inner, Outer, Pdot, Tensordot, _has_valid_shape
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_dot_infer_shapes() -> None:
@@ -24,9 +22,9 @@ def test_dot_infer_shapes() -> None:
 
     t = MockTensor()
     assert Dot().infer_shape(t, t) == (2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", Tensordot)().infer_shape(t, t) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Inner)().infer_shape(t, t) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Outer)().infer_shape(t, t) == ()
+    assert cast("EagerCallableProtocol", Tensordot)().infer_shape(t, t) == ()
+    assert cast("EagerCallableProtocol", Inner)().infer_shape(t, t) == ()
+    assert cast("EagerCallableProtocol", Outer)().infer_shape(t, t) == ()
     dg = DotGeneral()
     assert dg.infer_shape(t, t, (((1,), (0,)), ((), ()))) == (2, 3)
     assert dg.infer_shape(lhs=t, rhs=t, dimension_numbers=(((1,), (0,)), ((), ()))) == ()
@@ -36,7 +34,7 @@ def test_dot_infer_shapes() -> None:
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", dg.infer_shape)(cast("Callable[..., EagerTensorProtocol]", BadTensor)(), t, (((1,), (0,)), ((), ()))) == (2, 3)
+    assert cast("EagerCallableProtocol", dg.infer_shape)(cast("EagerCallableProtocol", BadTensor)(), t, (((1,), (0,)), ((), ()))) == (2, 3)
     assert dg._compute_out_shape((2, 3), (3, 4), (((1,), (0,)), ((), ()))) == (2, 4)
     assert dg._compute_out_shape((5, 2, 3), (5, 3, 4), (((2,), (1,)), ((0,), (0,)))) == (5, 2, 4)
 
@@ -49,14 +47,14 @@ def test_dot_has_shape() -> None:
 
         shape = (1,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", _has_valid_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)())
+    assert cast("EagerCallableProtocol", _has_valid_shape)(cast("EagerCallableProtocol", DummyShape)())
 
     class DummyNoShape:
         """Test class DummyNoShape."""
 
         pass
 
-    assert not cast("Callable[..., EagerTensorProtocol]", _has_valid_shape)(cast("Callable[..., EagerTensorProtocol]", DummyNoShape)())
+    assert not cast("EagerCallableProtocol", _has_valid_shape)(cast("EagerCallableProtocol", DummyNoShape)())
 
 
 def test_pdot_infer_shape() -> None:

@@ -30,9 +30,7 @@ from ml_switcheroo_compiler.ops.nn.conv_utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_conv_utils_extra() -> None:
@@ -53,20 +51,24 @@ def test_prepare_depthwise_conv_extra() -> None:
     with ConfigContext(eager_mode=True):
         with patch("ml_switcheroo_compiler.ops.nn.conv_utils.reshape") as mock_reshape:
             mock_reshape.return_value = "reshaped"
-            rhs_reshaped, conf = cast("Callable[..., EagerTensorProtocol]", _prepare_depthwise_conv)(t1, t2, 1, ((0, 1, 2), (0, 1, 2), (0, 1, 2)), strides=1, lhs_dilation=1, rhs_dilation=1)
+            rhs_reshaped, conf = cast("EagerCallableProtocol", _prepare_depthwise_conv)(t1, t2, 1, ((0, 1, 2), (0, 1, 2), (0, 1, 2)), strides=1, lhs_dilation=1, rhs_dilation=1)
             assert rhs_reshaped == "reshaped"
             assert cast("EagerTensorProtocol", getattr(conf, "lhs_dilation")) == (1,)
             assert cast("EagerTensorProtocol", getattr(conf, "rhs_dilation")) == (1,)
 
 
 def create_eager_tensor(data: EagerValue) -> EagerValue:
-    """Create a CPU float32 Tensor from a NumPy array."""
-    return cast("Callable[..., EagerTensorProtocol]", Tensor)(
+    """Create a CPU float32 Tensor from a NumPy array.
+
+    Args:
+        data: Test parameter `data`.
+    """
+    return cast("EagerCallableProtocol", Tensor)(
         data,
-        cast("Callable[..., EagerTensorProtocol]", TensorConfig)(
+        cast("EagerCallableProtocol", TensorConfig)(
             cast("EagerTensorProtocol", getattr(data, "shape")),
             DType.Float32,
-            cast("Callable[..., EagerTensorProtocol]", Device)("cpu"),
+            cast("EagerCallableProtocol", Device)("cpu"),
         ),
     )
 
@@ -87,11 +89,11 @@ def test_conv_utils_missing_branches() -> None:
         lhs = create_eager_tensor(np.ones((1, 2, 2, 3)))
         rhs = create_eager_tensor(np.ones((2, 2, 3, 1)))
 
-        r, c = cast("Callable[..., EagerTensorProtocol]", _prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, config_obj="mock_config")
+        r, c = cast("EagerCallableProtocol", _prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, config_obj="mock_config")
         assert cast("EagerTensorProtocol", getattr(r, "shape")) == (2, 2, 1, 3)
         assert c == "mock_config"
 
-        r2, c2 = cast("Callable[..., EagerTensorProtocol]", _prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, strides=(1, 1), lhs_dilation=(1, 1), rhs_dilation=(1, 1))
+        r2, c2 = cast("EagerCallableProtocol", _prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, strides=(1, 1), lhs_dilation=(1, 1), rhs_dilation=(1, 1))
         assert cast("EagerTensorProtocol", getattr(r2, "shape")) == (2, 2, 1, 3)
         assert getattr(c2, "window_strides", None) == (1, 1)
 
@@ -103,7 +105,13 @@ def test_conv_utils_eager_and_trace_coverage() -> None:
         """Stub backend for convolution dispatch testing."""
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Return op name or dummy array."""
+            """Return op name or dummy array.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             _ = (args, kwargs)
             return "dummy"
 

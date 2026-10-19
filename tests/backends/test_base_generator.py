@@ -9,9 +9,7 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, ClassB
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyFormatter:
@@ -29,11 +27,20 @@ class DummyFormatter:
         return "  " * self.indent_level
 
     def add_line(self, line: EagerValue) -> None:
-        """Test function add_line."""
-        cast("Callable[..., EagerTensorProtocol]", self.code.append)(cast("Callable[..., EagerTensorProtocol]", self.get_indent)() + line)
+        """Test function add_line.
+
+        Args:
+            line: Test parameter `line`.
+        """
+        cast("EagerCallableProtocol", self.code.append)(cast("EagerCallableProtocol", self.get_indent)() + line)
 
     def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
-        """Test function assign_var_name."""
+        """Test function assign_var_name.
+
+        Args:
+            node_id: Test parameter `node_id`.
+            prefix: Test parameter `prefix`.
+        """
         return f"{prefix}_foo"
 
 
@@ -68,8 +75,12 @@ class DummyEmitUtils(EmitUtilsMixin):
         self.code = cast("list[EagerTensorProtocol]", [])
 
     def add_line(self, line: EagerValue) -> None:
-        """Test function add_line."""
-        cast("Callable[..., EagerTensorProtocol]", self.code.append)(line)
+        """Test function add_line.
+
+        Args:
+            line: Test parameter `line`.
+        """
+        cast("EagerCallableProtocol", self.code.append)(line)
 
 
 def test_emit_utils_mixin() -> None:
@@ -118,7 +129,11 @@ def test_base_generator_methods() -> None:
     # kwargs mapping substitution
     # op_type in ops_map
     def get_ops_map(kwargs: EagerValue) -> EagerValue:
-        """Test function get_ops_map."""
+        """Test function get_ops_map.
+
+        Args:
+            kwargs: Test parameter `kwargs`.
+        """
         return {"TestOp": "test_prefix.testop({0}, {1}, kw={kw})"}
 
     setattr(gen, "get_ops_map", get_ops_map)
@@ -127,7 +142,11 @@ def test_base_generator_methods() -> None:
 
     # kwargs replacement where kwargs left over
     def get_ops_map2(kwargs: EagerValue) -> EagerValue:
-        """Test function get_ops_map2."""
+        """Test function get_ops_map2.
+
+        Args:
+            kwargs: Test parameter `kwargs`.
+        """
         return {"TestOp2": "test_prefix.testop({0}, {1}, kw={kw})"}
 
     setattr(gen, "get_ops_map", get_ops_map2)
@@ -151,7 +170,11 @@ class DummyPyGen(PythonStringGenerator):
     _import_header = "import dummy"
 
     def _generate_body(self, input_prefix: str = "args") -> None:
-        """Test function _generate_body."""
+        """Test function _generate_body.
+
+        Args:
+            input_prefix: Test parameter `input_prefix`.
+        """
         pass
 
 
@@ -174,7 +197,11 @@ class DummyClassGen(ClassBasedGenerator):
     """Test class DummyClassGen."""
 
     def _generate_body(self, input_prefix: str = "args") -> None:
-        """Test function _generate_body."""
+        """Test function _generate_body.
+
+        Args:
+            input_prefix: Test parameter `input_prefix`.
+        """
         pass
 
 
@@ -219,35 +246,77 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
             self.var_names = cast("dict[str, EagerTensorProtocol]", {})
 
         def assign_var_name(self, id: EagerValue, prefix: EagerValue = "") -> EagerValue:
-            """Test function assign_var_name."""
+            """Test function assign_var_name.
+
+            Args:
+                id: Test parameter `id`.
+                prefix: Test parameter `prefix`.
+            """
             return cast("EagerTensorProtocol", "var_") + cast("EagerTensorProtocol", id)
 
         def generic_visit(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function generic_visit."""
+            """Test function generic_visit.
+
+            Args:
+                node: Test parameter `node`.
+                inputs: Test parameter `inputs`.
+                kwargs: Test parameter `kwargs`.
+            """
             return f"generic({getattr(node, 'op_type')})"
 
         def _emit_input_assignment(self, var: EagerValue, node: EagerValue, prefix: EagerValue, i: EagerValue) -> None:
-            """Test function _emit_input_assignment."""
-            cast("Callable[..., EagerTensorProtocol]", self.code.append)(f"{var} = {prefix}[{i}]")
+            """Test function _emit_input_assignment.
+
+            Args:
+                var: Test parameter `var`.
+                node: Test parameter `node`.
+                prefix: Test parameter `prefix`.
+                i: Test parameter `i`.
+            """
+            cast("EagerCallableProtocol", self.code.append)(f"{var} = {prefix}[{i}]")
 
         def _emit_output_assignment(self, node: EagerValue, inputs: EagerValue, var: EagerValue) -> None:
-            """Test function _emit_output_assignment."""
-            cast("Callable[..., EagerTensorProtocol]", self.code.append)(f"ret {var}")
+            """Test function _emit_output_assignment.
+
+            Args:
+                node: Test parameter `node`.
+                inputs: Test parameter `inputs`.
+                var: Test parameter `var`.
+            """
+            cast("EagerCallableProtocol", self.code.append)(f"ret {var}")
 
         def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
-            """Test function get_ops_map."""
+            """Test function get_ops_map.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return {}
 
         def _emit_body_return(self, returns: EagerValue) -> None:
-            """Test function _emit_body_return."""
+            """Test function _emit_body_return.
+
+            Args:
+                returns: Test parameter `returns`.
+            """
             pass
 
         def add_line(self, line_str: EagerValue) -> None:
-            """Test function add_line."""
+            """Test function add_line.
+
+            Args:
+                line_str: Test parameter `line_str`.
+            """
             pass
 
         def _emit_constant_assignment(self, var: EagerValue, cst: EagerValue) -> None:
-            """Test function _emit_constant_assignment."""
+            """Test function _emit_constant_assignment.
+
+            Args:
+                var: Test parameter `var`.
+                cst: Test parameter `cst`.
+            """
             pass
 
     getattr(_state, "update")({"MockGenerator": MockGenerator})
@@ -273,7 +342,13 @@ def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTen
         """Test class MockSpecificVisitor."""
 
         def visit_TestOp(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function visit_TestOp."""
+            """Test function visit_TestOp.
+
+            Args:
+                node: Test parameter `node`.
+                inputs: Test parameter `inputs`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "visited_TestOp"
 
     setattr(gen, "visitors", [MockSpecificVisitor()])
@@ -285,13 +360,19 @@ def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTen
         """Test class MockSpecificVisitor2."""
 
         def visit_TestOp(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function visit_TestOp."""
+            """Test function visit_TestOp.
+
+            Args:
+                node: Test parameter `node`.
+                inputs: Test parameter `inputs`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "visited_TestOp"
 
     setattr(gen, "visitors", [MockSpecificVisitor2()])
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
-    res = cast("Callable[..., EagerTensorProtocol]", BaseGenerator.visit)(gen, node, [])
+    res = cast("EagerCallableProtocol", BaseGenerator.visit)(gen, node, [])
     assert res == "visited_TestOp"
     getattr(_state, "update")({"BaseGenerator": BaseGenerator, "MockSpecificVisitor2": MockSpecificVisitor2, "gen": gen, "node": node})
     getattr(_state, "update")({"res": res, "visitor": visitor})
@@ -311,7 +392,13 @@ def _test_code_generator_visitor_missing_lines_part_4(_state: dict[str, EagerTen
         """Test class MockSpecificVisitor2."""
 
         def visit_OtherOp(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function visit_OtherOp."""
+            """Test function visit_OtherOp.
+
+            Args:
+                node: Test parameter `node`.
+                inputs: Test parameter `inputs`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "visited_OtherOp"
 
     setattr(gen, "visitors", [MockSpecificVisitor2()])
@@ -332,7 +419,7 @@ def test_code_generator_visitor_missing_lines() -> None:
     _test_code_generator_visitor_missing_lines_part_2(_state)
     _test_code_generator_visitor_missing_lines_part_3(_state)
     _test_code_generator_visitor_missing_lines_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_base_generator_maps() -> None:
@@ -348,7 +435,12 @@ def test_base_generator_maps() -> None:
             return "m"
 
         def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
-            """Test function get_ops_map."""
+            """Test function get_ops_map.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             ops = super().get_ops_map(kwargs)
             ops["Add"] = "m.add"
             return ops
@@ -370,7 +462,11 @@ def test_class_based_generator_full() -> None:
         _forward_method_name = "forward"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
-            """Test function _generate_body."""
+            """Test function _generate_body.
+
+            Args:
+                input_prefix: Test parameter `input_prefix`.
+            """
             self.add_line("self.generated = True")
 
         def _emit_init_body(self) -> bool:
@@ -400,7 +496,11 @@ def test_class_based_generator_full() -> None:
         _base_class_name = cast("str", None)
 
         def _generate_body(self, input_prefix: str = "args") -> None:
-            """Test function _generate_body."""
+            """Test function _generate_body.
+
+            Args:
+                input_prefix: Test parameter `input_prefix`.
+            """
             pass
 
         def _emit_init_body(self) -> bool:
@@ -430,11 +530,19 @@ def test_ir_graph_walker() -> None:
         """Test class DummyVisitor."""
 
         def __init__(self, g: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                g: Test parameter `g`.
+            """
             self.g = g
 
         def generate_body(self, p: EagerValue) -> None:
-            """Test function generate_body."""
+            """Test function generate_body.
+
+            Args:
+                p: Test parameter `p`.
+            """
             setattr(self.g, "called", p)
 
     gen = BaseGenerator(IRGraph())
@@ -470,11 +578,19 @@ def test_ast_walker_missing_lines() -> None:
         """Test class DummyVisitor."""
 
         def __init__(self, g: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                g: Test parameter `g`.
+            """
             self.g = g
 
         def generate_body(self, p: EagerValue) -> None:
-            """Test function generate_body."""
+            """Test function generate_body.
+
+            Args:
+                p: Test parameter `p`.
+            """
             pass
 
     import sys
@@ -502,7 +618,11 @@ def test_class_based_generator_has_base_no_params() -> None:
         _base_class_name = "Base3"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
-            """Test function _generate_body."""
+            """Test function _generate_body.
+
+            Args:
+                input_prefix: Test parameter `input_prefix`.
+            """
             pass
 
         def _emit_init_body(self) -> bool:
@@ -534,7 +654,11 @@ def test_class_based_generator_has_base_no_params_not_python() -> None:
         _base_class_name = "Base3"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
-            """Test function _generate_body."""
+            """Test function _generate_body.
+
+            Args:
+                input_prefix: Test parameter `input_prefix`.
+            """
             pass
 
         def _emit_init_body(self) -> bool:
@@ -572,15 +696,33 @@ def test_ast_walker_proper() -> None:
             return "numpy"
 
         def _emit_input_assignment(self, v: EagerValue, n: EagerValue, p: EagerValue, i: EagerValue) -> None:
-            """Test function _emit_input_assignment."""
+            """Test function _emit_input_assignment.
+
+            Args:
+                v: Test parameter `v`.
+                n: Test parameter `n`.
+                p: Test parameter `p`.
+                i: Test parameter `i`.
+            """
             pass
 
         def _emit_output_assignment(self, n: EagerValue, i: EagerValue, v: EagerValue) -> None:
-            """Test function _emit_output_assignment."""
+            """Test function _emit_output_assignment.
+
+            Args:
+                n: Test parameter `n`.
+                i: Test parameter `i`.
+                v: Test parameter `v`.
+            """
             pass
 
         def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
-            """Test function get_ops_map."""
+            """Test function get_ops_map.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return {}
 
     gen = MyGen(g)
@@ -600,7 +742,11 @@ def test_class_based_generator_has_base_no_params_not_python_2() -> None:
         _base_class_name = "Base3"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
-            """Test function _generate_body."""
+            """Test function _generate_body.
+
+            Args:
+                input_prefix: Test parameter `input_prefix`.
+            """
             pass
 
         def _emit_init_body(self) -> bool:
@@ -631,7 +777,11 @@ def test_class_based_generator_has_base_no_params_is_python() -> None:
         _base_class_name = "Base3"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
-            """Test function _generate_body."""
+            """Test function _generate_body.
+
+            Args:
+                input_prefix: Test parameter `input_prefix`.
+            """
             pass
 
         def _emit_init_body(self) -> bool:
@@ -661,12 +811,21 @@ def test_class_based_generator_has_base_no_params_hit_457() -> None:
         """Test class Gen6."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
-            cast("Callable[..., EagerTensorProtocol]", super().__init__)(*args, **kwargs)
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
+            cast("EagerCallableProtocol", super().__init__)(*args, **kwargs)
             self._base_class_name = "BaseClass"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
-            """Test function _generate_body."""
+            """Test function _generate_body.
+
+            Args:
+                input_prefix: Test parameter `input_prefix`.
+            """
             pass
 
         def _emit_init_body(self) -> bool:
@@ -695,11 +854,19 @@ def test_graph_walker_lines() -> None:
         """Test class DummyVisitor."""
 
         def __init__(self, g: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                g: Test parameter `g`.
+            """
             self.g = g
 
         def generate_body(self, p: EagerValue) -> None:
-            """Test function generate_body."""
+            """Test function generate_body.
+
+            Args:
+                p: Test parameter `p`.
+            """
             pass
 
     import ml_switcheroo_compiler.backends.base_generator as bg
@@ -712,7 +879,7 @@ def test_graph_walker_lines() -> None:
         w.walk()
     finally:
         setattr(bg, "CodeGeneratorVisitor", old)
-    assert old is not None or old is None
+    assert getattr(bg, "CodeGeneratorVisitor") is old
 
 
 def test_base_generator_coverage_extras() -> None:
@@ -760,7 +927,12 @@ def test_get_ops_map_fallbacks_coverage() -> None:
         mock_reg.operations.keys.return_value = ["Dct", "Idct", "Mdct", "InverseMdct", "Frame", "OverlapAndAdd"]
 
         def mock_get(prefix: EagerValue, name: EagerValue) -> EagerValue:
-            """Test function mock_get."""
+            """Test function mock_get.
+
+            Args:
+                prefix: Test parameter `prefix`.
+                name: Test parameter `name`.
+            """
             if prefix == "test_prefix":
                 return cast("EagerTensorProtocol", "mapped_") + cast("EagerTensorProtocol", name)
             return None
@@ -796,7 +968,12 @@ def test_base_generator_compile_aot() -> None:
         """Test class CustomGen."""
 
         def _compile_aot_impl(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function _compile_aot_impl."""
+            """Test function _compile_aot_impl.
+
+            Args:
+                graph: Test parameter `graph`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "compiled_artifact"
 
     g = IRGraph()
@@ -838,7 +1015,7 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
         op_type="Argmin",
         attributes={"dim": 0, "keepdim": True, "_internal_attr": "hidden"},
     )
-    argmin_res = cast("Callable[..., EagerTensorProtocol]", cupy_bg.visit_OpNode)(argmin_node, ["x"])
+    argmin_res = cast("EagerCallableProtocol", cupy_bg.visit_OpNode)(argmin_node, ["x"])
     assert "cupy.argmin" in argmin_res
     assert "x" in argmin_res
     assert "axis=0" in argmin_res
@@ -849,12 +1026,12 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
     torch_bg = BaseGenerator(g)
     setattr(torch_bg, "backend_name", "pytorch")
     atan2_node = IRNode(id="n2", op_type="Atan2", attributes={"out_var": "out_val"})
-    atan2_res = cast("Callable[..., EagerTensorProtocol]", torch_bg.visit_OpNode)(atan2_node, ["in_x", "in_y"])
+    atan2_res = cast("EagerCallableProtocol", torch_bg.visit_OpNode)(atan2_node, ["in_x", "in_y"])
     assert "out_val = torch.atan2(in_x, in_y)" in atan2_res
 
     # ast_template with default out variable name from node.id
     atan2_node_default_out = IRNode(id="atan2_id", op_type="Atan2")
-    atan2_res_default = cast("Callable[..., EagerTensorProtocol]", torch_bg.visit_OpNode)(atan2_node_default_out, ["in_x", "in_y"])
+    atan2_res_default = cast("EagerCallableProtocol", torch_bg.visit_OpNode)(atan2_node_default_out, ["in_x", "in_y"])
     assert "tensor_0 = torch.atan2(in_x, in_y)" in atan2_res_default
     getattr(_state, "update")({"BaseGenerator": BaseGenerator, "IRGraph": IRGraph, "IRNode": IRNode, "MagicMock": MagicMock})
     getattr(_state, "update")({"argmin_node": argmin_node, "argmin_res": argmin_res, "atan2_node": atan2_node, "atan2_node_default_out": atan2_node_default_out})
@@ -888,9 +1065,9 @@ def _test_base_generator_visit_and_visit_opnode_part_2(_state: dict[str, EagerTe
 
     # 4. Exception in load_backend_mappings falling back to generic_visit
     bad_bg = BaseGenerator(g)
-    with cast("Callable[..., EagerTensorProtocol]", patch)(
+    with cast("EagerCallableProtocol", patch)(
         "ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings",
-        side_effect=cast("Callable[..., EagerTensorProtocol]", RuntimeError)("disk error"),
+        side_effect=cast("EagerCallableProtocol", RuntimeError)("disk error"),
     ):
         unknown_node = IRNode(id="n3", op_type="Add")
         fallback_res = bad_bg.visit_OpNode(unknown_node, ["arg1", "arg2"])
@@ -920,7 +1097,13 @@ def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTe
         """Test class CustomVisitor."""
 
         def visit_VisitorOp(self, node: EagerTensorProtocol, input_vars: list[str], **kwargs: EagerValue) -> str:
-            """Test function visit_VisitorOp."""
+            """Test function visit_VisitorOp.
+
+            Args:
+                node: Test parameter `node`.
+                input_vars: Test parameter `input_vars`.
+                kwargs: Test parameter `kwargs`.
+            """
             return f"visitor_handled({', '.join(input_vars)})"
 
     setattr(bg, "visitors", [CustomVisitor()])
@@ -931,10 +1114,16 @@ def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTe
         """Test class CustomGenerator."""
 
         def visit_SubclassOp(self, node: EagerTensorProtocol, input_vars: list[str], **kwargs: EagerValue) -> str:
-            """Test function visit_SubclassOp."""
+            """Test function visit_SubclassOp.
+
+            Args:
+                node: Test parameter `node`.
+                input_vars: Test parameter `input_vars`.
+                kwargs: Test parameter `kwargs`.
+            """
             return f"subclass_handled({', '.join(input_vars)})"
 
-    cg = cast("Callable[..., EagerTensorProtocol]", CustomGenerator)(g)
+    cg = cast("EagerCallableProtocol", CustomGenerator)(g)
     setattr(cg, "visitors", [])
     s_node = IRNode(id="n6", op_type="SubclassOp")
     assert cg.visit(s_node, ["s1"]) == "subclass_handled(s1)"
@@ -967,7 +1156,7 @@ def _test_base_generator_visit_and_visit_opnode_part_4(_state: dict[str, EagerTe
     saved_opnode = BaseGenerator.visit_OpNode
     delattr(BaseGenerator, "visit_OpNode")
     try:
-        nog = cast("Callable[..., EagerTensorProtocol]", NoOpNodeGenerator)(g)
+        nog = cast("EagerCallableProtocol", NoOpNodeGenerator)(g)
         g_node = IRNode(id="n7", op_type="GenericOp")
         assert nog.visit(g_node, ["g1"]) == "np.genericop(g1)"
     finally:
@@ -982,4 +1171,4 @@ def test_base_generator_visit_and_visit_opnode() -> None:
     _test_base_generator_visit_and_visit_opnode_part_2(_state)
     _test_base_generator_visit_and_visit_opnode_part_3(_state)
     _test_base_generator_visit_and_visit_opnode_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

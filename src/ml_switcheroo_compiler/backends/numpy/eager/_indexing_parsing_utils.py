@@ -8,7 +8,7 @@ from typing import (
     cast,
 )
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _eval_constant(node: ast.AST) -> EagerValue:
@@ -78,14 +78,15 @@ def _eval_call(node: ast.AST, _eval_fn: EagerValue) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
+    eval_fn_callable = cast(Callable[[ast.AST], EagerValue], _eval_fn)
     func = getattr(node, "func", None)
     if isinstance(func, ast.Name):
         if getattr(func, "id", "") == "slice":
-            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _eval_slice_call)(node, _eval_fn))
+            return cast(EagerValue, _eval_slice_call(node, eval_fn_callable))
         if getattr(func, "id", "") == "array":
-            return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _eval_array_call)(node, _eval_fn))
+            return _eval_array_call(node, eval_fn_callable)
     if _is_np_array_call(node):
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _eval_array_call)(node, _eval_fn))
+        return _eval_array_call(node, eval_fn_callable)
     raise ValueError("Unsupported Call")
 
 

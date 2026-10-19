@@ -4,9 +4,24 @@ from __future__ import annotations
 
 import argparse
 import glob
+import os
 import sys
 
 import yaml
+
+
+def _record_op_backend(op_counts: dict[str, list[str]], op: str, be: str) -> None:
+    """Record a backend supporting an operation if not already recorded.
+
+    Args:
+        op_counts (dict[str, list[str]]): Mapping of operation names to supporting backend names.
+        op (str): Operation name.
+        be (str): Backend identifier.
+    """
+    if op not in op_counts:
+        op_counts[op] = []
+    if be not in op_counts[op]:
+        op_counts[op].append(be)
 
 
 def validate_n_to_m(snapshot_dir: str | None = None) -> list[str]:
@@ -19,21 +34,29 @@ def validate_n_to_m(snapshot_dir: str | None = None) -> list[str]:
         list[str]: A list of error messages describing operations that violate Rule 4.
     """
     del snapshot_dir
-    # Gather all operations registered across all mappings.yaml
     op_counts: dict[str, list[str]] = {}
-    backend_maps: list[str] = glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True)
-    for bp in backend_maps:
+    backend_maps: list[str] = glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True) + glob.glob("src/ml_switcheroo_compiler/backends/**/eager_mappings.yaml", recursive=True) + glob.glob("src/ml_switcheroo_compiler/backends/**/mappings/*.yaml", recursive=True)
+    for bp in sorted(backend_maps):
         with open(bp, encoding="utf-8") as f:
             data = yaml.safe_load(f)
-            be: str = data.get("backend_name", "")
-            for op, spec in data.get("operations", {}).items():
-                if spec.get("target_api") or spec.get("ast_template") or spec.get("custom_code"):
-                    if op not in op_counts:
-                        op_counts[op] = []
-                    op_counts[op].append(be)
+        if not isinstance(data, dict):
+            continue
+        parts = os.path.normpath(bp).split(os.sep)
+        fallback_be = parts[3] if len(parts) > 3 else ""
+        if "operation" in data and isinstance(data["operation"], str):
+            op = data["operation"]
+            be = str(data.get("backend") or fallback_be)
+            if data.get("target_api") or data.get("ast_template") or data.get("custom_code"):
+                _record_op_backend(op_counts, op, be)
+        else:
+            be = str(data.get("backend_name") or fallback_be)
+            ops_dict = data.get("operations", {})
+            if isinstance(ops_dict, dict):
+                for op, spec in ops_dict.items():
+                    if isinstance(spec, dict) and (spec.get("target_api") or spec.get("ast_template") or spec.get("custom_code")):
+                        _record_op_backend(op_counts, str(op), be)
 
     errors: list[str] = []
-    # Log violations
     for op, backends in op_counts.items():
         if len(backends) < 2:
             errors.append(f"Operation '{op}' violates Rule 4 (N-to-M). It is only supported by 1 backend ({backends[0]}).")

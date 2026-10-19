@@ -13,14 +13,12 @@ from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_fallback_load_branches() -> None:
     """Test function test_fallback_load_branches."""
-    assert cast("Callable[..., EagerTensorProtocol]", io._fallback_load)(123) is None
+    assert cast("EagerCallableProtocol", io._fallback_load)(123) is None
     assert io._fallback_load("unsupported.txt") is None
 
 
@@ -42,7 +40,7 @@ def test_tracing_mode_emits() -> None:
         io.decode_csv(t, [1.0])
         io.parse_example(t, {"f": 1})
         io.serialize_tensor(t)
-        cast("Callable[..., EagerTensorProtocol]", io.parse_tensor)(t, "float32")
+        cast("EagerCallableProtocol", io.parse_tensor)(t, "float32")
         io.encode_base64(t)
         io.decode_base64(t)
         io.parse_sequence_example(t)

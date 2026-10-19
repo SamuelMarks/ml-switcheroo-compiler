@@ -10,16 +10,18 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.transforms import elastic_transform, flip_left_right, flip_up_down, perspective_transform
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -27,7 +29,11 @@ class MockTensor:
 
 
 def test_vision_transforms_funcs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_transforms_funcs."""
+    """Test function test_vision_transforms_funcs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.transforms._emit_shape_node", return_value="node")
@@ -49,7 +55,11 @@ def test_vision_transforms_funcs(mocker: EagerTensorProtocol) -> None:
 
 
 def test_vision_transforms_funcs_kwargs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_transforms_funcs_kwargs."""
+    """Test function test_vision_transforms_funcs_kwargs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.transforms._emit_shape_node", return_value="node")
@@ -70,4 +80,4 @@ def test_transforms_opdef_infer_shape() -> None:
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert cast("Callable[..., EagerTensorProtocol]", ElasticTransform)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", ElasticTransform)().infer_shape(t) == (1, 2, 3)

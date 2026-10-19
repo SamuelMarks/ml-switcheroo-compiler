@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_wasm_simd_activations_codegen() -> None:
@@ -191,7 +189,7 @@ def test_wasm_unimplemented_and_binary_simd_fallbacks() -> None:
 
     # 3. Direct invocation of _generate_binary_simd_op for fallback binary_scalars mapping
     gen_direct = WasmCodeGenerator(graph_binary)
-    cast("Callable[..., EagerTensorProtocol]", gen_direct._generate_binary_simd_op)(node, "add", "add_direct", ["in_a", "in_b"], (4,), 4)
+    cast("EagerCallableProtocol", gen_direct._generate_binary_simd_op)(node, "add", "add_direct", ["in_a", "in_b"], (4,), 4)
     assert any("buf_in_a[i_add_direct] + buf_in_b[i_add_direct]" in line for line in gen_direct.code)
 
 
@@ -324,4 +322,4 @@ def test_wasm_edge_branches_intrinsics_and_templates() -> None:
     _test_wasm_edge_branches_intrinsics_and_templates_part_1(_state)
     _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state)
     _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

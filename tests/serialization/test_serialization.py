@@ -26,9 +26,7 @@ from ml_switcheroo_compiler.serialization import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_serialization_primitives_and_custom_objects() -> None:
@@ -42,7 +40,11 @@ def test_serialization_primitives_and_custom_objects() -> None:
         """Test class CustomDense."""
 
         def __init__(self, units: int = 32) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                units: Test parameter `units`.
+            """
             self.units = units
 
         def get_config(self) -> dict[str, EagerValue]:
@@ -51,8 +53,12 @@ def test_serialization_primitives_and_custom_objects() -> None:
 
         @classmethod
         def from_config(cls, cfg: dict[str, EagerValue]) -> CustomDense:
-            """Test function from_config."""
-            return cast("CustomDense", cast("Callable[..., EagerTensorProtocol]", cls)(**cfg))
+            """Test function from_config.
+
+            Args:
+                cfg: Test parameter `cfg`.
+            """
+            return cast("CustomDense", cast("EagerCallableProtocol", cls)(**cfg))
 
     obj = CustomDense(units=64)
     serialized = serialize_object(obj)
@@ -69,7 +75,11 @@ def test_serialization_primitives_and_custom_objects() -> None:
         """Test class ScopedLayer."""
 
         def __init__(self, rate: float = 0.5) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                rate: Test parameter `rate`.
+            """
             self.rate = rate
 
         def get_config(self) -> dict[str, EagerValue]:
@@ -109,7 +119,7 @@ def test_universal_model_loader_and_save_model() -> None:
                 return {"architecture": "linear", "hidden_dim": 128}
 
         m = DummyModel()
-        cast("Callable[..., EagerTensorProtocol]", save_model)(m, model_path)
+        cast("EagerCallableProtocol", save_model)(m, model_path)
         assert os.path.exists(model_path)
 
         # Successful load
@@ -210,21 +220,30 @@ def test_variable_restoration_engine() -> None:
         restored = run_restore_ops(tmpdir)
         assert "dense_w" in restored
         assert "dense_b" in restored
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(restored["dense_w"], var1)
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(restored["dense_b"], var2)
+        assert cast("EagerCallableProtocol", np.allclose)(restored["dense_w"], var1)
+        assert cast("EagerCallableProtocol", np.allclose)(restored["dense_b"], var2)
 
         # Restore into target model with matching shapes
         class MockVar:
             """Test class MockVar."""
 
             def __init__(self, name: str, shape: tuple[int, ...]) -> None:
-                """Test function __init__."""
+                """Test function __init__.
+
+                Args:
+                    name: Test parameter `name`.
+                    shape: Test parameter `shape`.
+                """
                 self.name = name
                 self.shape = shape
                 self.assigned = None
 
             def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
-                """Test function assign."""
+                """Test function assign.
+
+                Args:
+                    val: Test parameter `val`.
+                """
                 setattr(self, "assigned", val)
 
         class TargetModel:
@@ -239,8 +258,8 @@ def test_variable_restoration_engine() -> None:
 
         model_inst = TargetModel()
         run_restore_ops(tmpdir, target_model=model_inst)
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(model_inst.weights[0].assigned, var1)
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(model_inst.weights[1].assigned, var2)
+        assert cast("EagerCallableProtocol", np.allclose)(model_inst.weights[0].assigned, var1)
+        assert cast("EagerCallableProtocol", np.allclose)(model_inst.weights[1].assigned, var2)
 
         # Shape mismatch in target model raises ValueError
         class IncompatibleModel:
@@ -268,4 +287,4 @@ def test_file_handler() -> None:
             """Test function to_json."""
             return "{}"
 
-    assert cast("Callable[..., EagerTensorProtocol]", graph_to_json)(cast("Callable[..., EagerTensorProtocol]", DummyGraph)()) == "{}"
+    assert cast("EagerCallableProtocol", graph_to_json)(cast("EagerCallableProtocol", DummyGraph)()) == "{}"

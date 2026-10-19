@@ -10,9 +10,7 @@ import torch
 import ml_switcheroo_compiler.backends.pytorch.eager as pytorch_eager
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def _test_pytorch_eager_additional_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -38,7 +36,7 @@ def _test_pytorch_eager_additional_sub_1(_state: dict[str, EagerTensorProtocol])
 
         value = "int4"
 
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager._execute_cast)(cast("Callable[..., EagerTensorProtocol]", torch.tensor)([1.0]), cast("Callable[..., EagerTensorProtocol]", DummyDtype)())
+    cast("EagerCallableProtocol", pytorch_eager._execute_cast)(cast("EagerCallableProtocol", torch.tensor)([1.0]), cast("EagerCallableProtocol", DummyDtype)())
 
     class DummyDtypeBfloat16:
         """Test class DummyDtypeBfloat16."""
@@ -64,14 +62,14 @@ def _test_pytorch_eager_additional_sub_2(_state: dict[str, EagerTensorProtocol])
 
         value = "float16"
 
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager._execute_cast)(cast("Callable[..., EagerTensorProtocol]", torch.tensor)([1.0]), cast("Callable[..., EagerTensorProtocol]", DummyDtypeFloat16)())
+    cast("EagerCallableProtocol", pytorch_eager._execute_cast)(cast("EagerCallableProtocol", torch.tensor)([1.0]), cast("EagerCallableProtocol", DummyDtypeFloat16)())
 
     class DummyDtypeFloat8_e4m3fn:
         """Test class DummyDtypeFloat8_e4m3fn."""
 
         value = "float8_e4m3fn"
 
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager._execute_cast)(cast("Callable[..., EagerTensorProtocol]", torch.tensor)([1.0]), cast("Callable[..., EagerTensorProtocol]", DummyDtypeFloat8_e4m3fn)())
+    cast("EagerCallableProtocol", pytorch_eager._execute_cast)(cast("EagerCallableProtocol", torch.tensor)([1.0]), cast("EagerCallableProtocol", DummyDtypeFloat8_e4m3fn)())
     pytorch_eager._execute_cummax(torch.tensor([1, 2]), dim=0)
     pytorch_eager._execute_cummin(torch.tensor([1, 2]), dim=0)
     pytorch_eager._execute_cumlogsumexp(torch.tensor([1.0, 2.0]), dim=0)
@@ -101,14 +99,14 @@ def _test_pytorch_eager_additional_sub_3(_state: dict[str, EagerTensorProtocol])
 
         value = "float8_e5m2"
 
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager._execute_cast)(cast("Callable[..., EagerTensorProtocol]", torch.tensor)([1.0]), cast("Callable[..., EagerTensorProtocol]", DummyDtypeFloat8_e5m2)())
+    cast("EagerCallableProtocol", pytorch_eager._execute_cast)(cast("EagerCallableProtocol", torch.tensor)([1.0]), cast("EagerCallableProtocol", DummyDtypeFloat8_e5m2)())
 
     class DummyDtypeInt32:
         """Test class DummyDtypeInt32."""
 
         value = "int32"
 
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager._execute_cast)(cast("Callable[..., EagerTensorProtocol]", torch.tensor)([1.0]), cast("Callable[..., EagerTensorProtocol]", DummyDtypeInt32)())
+    cast("EagerCallableProtocol", pytorch_eager._execute_cast)(cast("EagerCallableProtocol", torch.tensor)([1.0]), cast("EagerCallableProtocol", DummyDtypeInt32)())
     getattr(_state, "update")({"DummyDtypeFloat8_e5m2": DummyDtypeFloat8_e5m2, "DummyDtypeInt32": DummyDtypeInt32})
     _state.update(locals())
 
@@ -121,19 +119,19 @@ def _test_pytorch_eager_additional_sub_4(_state: dict[str, EagerTensorProtocol])
     """
     with pytest.raises(ValueError):
         pytorch_eager._execute_accumulate_n(inputs=[])
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager.execute_op)(None, "Add", cast("Callable[..., EagerTensorProtocol]", torch.tensor)(1), cast("Callable[..., EagerTensorProtocol]", torch.tensor)(2))
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager.execute_op)(None, "RaggedTensorToDense", 1)
+    cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Add", cast("EagerCallableProtocol", torch.tensor)(1), cast("EagerCallableProtocol", torch.tensor)(2))
+    cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "RaggedTensorToDense", 1)
     try:
-        cast("Callable[..., EagerTensorProtocol]", pytorch_eager.execute_op)(None, "unknownop", cast("Callable[..., EagerTensorProtocol]", torch.tensor)(1))
+        cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "unknownop", cast("EagerCallableProtocol", torch.tensor)(1))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
-    cast("Callable[..., EagerTensorProtocol]", pytorch_eager.execute_op)(None, "Zeros", 2)
+    cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Zeros", 2)
     try:
-        cast("Callable[..., EagerTensorProtocol]", pytorch_eager.execute_op)(None, "Descriptive", cast("Callable[..., EagerTensorProtocol]", torch.tensor)([1.0]))
+        cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Descriptive", cast("EagerCallableProtocol", torch.tensor)([1.0]))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     try:
-        cast("Callable[..., EagerTensorProtocol]", pytorch_eager.execute_op)(None, "totally_unknown_and_unregistered", 1)
+        cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "totally_unknown_and_unregistered", 1)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     pass
@@ -148,4 +146,4 @@ def test_pytorch_eager_additional() -> None:
     getattr(_state, "update")({"pytest": pytest})
     for _sub_fn in (_test_pytorch_eager_additional_sub_1, _test_pytorch_eager_additional_sub_2, _test_pytorch_eager_additional_sub_3, _test_pytorch_eager_additional_sub_4):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

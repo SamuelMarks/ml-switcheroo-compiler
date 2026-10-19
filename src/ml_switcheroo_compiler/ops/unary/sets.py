@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for sets.py."""
+"""Implementation of sets operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.sets`)."""
 
 from __future__ import annotations
 

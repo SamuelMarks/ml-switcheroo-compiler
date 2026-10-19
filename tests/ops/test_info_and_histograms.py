@@ -20,9 +20,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.info_and_histograms import AxisIndex
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_axis_index_infer_shape() -> None:
@@ -54,8 +52,8 @@ def test_grid_and_indices_infer_shapes_extras() -> None:
 
     op = Indices()
     assert op.infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)((2, 2)) == (2, 2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)((2, 2)) == (2, 2, 2)
+    assert cast("EagerCallableProtocol", op.infer_shape)(None) == ()
     op = cast("Indices", Ix())
     assert op.infer_shape() == ()
 
@@ -64,14 +62,14 @@ def test_grid_and_indices_infer_shapes_extras() -> None:
 
         shape = (3,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)(), cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (3, 1)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)(), cast("EagerCallableProtocol", Dummy)()) == (3, 1)
 
     class DummyNoShape:
         """DummyNoShape."""
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyNoShape)()) == (1,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyNoShape)()) == (1,)
     assert MaskIndices().infer_shape() == (None,)
     assert Mgrid().infer_shape(shape=(5, 5)) == (5, 5)
     assert Ogrid().infer_shape(shape=(4,)) == (4,)
@@ -86,21 +84,25 @@ def test_histograms_infer_shapes() -> None:
         """DummyShape."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """__init__."""
+            """__init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
-    assert cast("Callable[..., EagerTensorProtocol]", Histogram)().infer_shape(bins=cast("Callable[..., EagerTensorProtocol]", DummyShape)((5,))) == (4,)
+    assert cast("EagerCallableProtocol", Histogram)().infer_shape(bins=cast("EagerCallableProtocol", DummyShape)((5,))) == (4,)
     assert Histogram().infer_shape(bins=10) == (10,)
     assert Histogram().infer_shape(bins="auto") == (10,)
-    assert cast("Callable[..., EagerTensorProtocol]", Histogram2d)().infer_shape(bins=cast("Callable[..., EagerTensorProtocol]", DummyShape)((5,))) == (10, 10)
-    assert cast("Callable[..., EagerTensorProtocol]", Histogram2d)().infer_shape(bins=[10, cast("Callable[..., EagerTensorProtocol]", DummyShape)((5,))]) == (10, 4)
-    assert cast("Callable[..., EagerTensorProtocol]", Histogram2d)().infer_shape(bins=[cast("Callable[..., EagerTensorProtocol]", DummyShape)((2,)), 5]) == (1, 5)
-    assert cast("Callable[..., EagerTensorProtocol]", HistogramBinEdges)().infer_shape(bins=cast("Callable[..., EagerTensorProtocol]", DummyShape)((5,))) == (5,)
+    assert cast("EagerCallableProtocol", Histogram2d)().infer_shape(bins=cast("EagerCallableProtocol", DummyShape)((5,))) == (10, 10)
+    assert cast("EagerCallableProtocol", Histogram2d)().infer_shape(bins=[10, cast("EagerCallableProtocol", DummyShape)((5,))]) == (10, 4)
+    assert cast("EagerCallableProtocol", Histogram2d)().infer_shape(bins=[cast("EagerCallableProtocol", DummyShape)((2,)), 5]) == (1, 5)
+    assert cast("EagerCallableProtocol", HistogramBinEdges)().infer_shape(bins=cast("EagerCallableProtocol", DummyShape)((5,))) == (5,)
     assert HistogramBinEdges().infer_shape(bins=10) == (11,)
     assert HistogramBinEdges().infer_shape(bins="auto") == (11,)
     assert Histogramdd().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Histogramdd)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((5, 2))) == (10, 10)
-    assert cast("Callable[..., EagerTensorProtocol]", Histogramdd)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((5,))) == (10,)
+    assert cast("EagerCallableProtocol", Histogramdd)().infer_shape(cast("EagerCallableProtocol", DummyShape)((5, 2))) == (10, 10)
+    assert cast("EagerCallableProtocol", Histogramdd)().infer_shape(cast("EagerCallableProtocol", DummyShape)((5,))) == (10,)
 
 
 def test_histograms_infer_shapes_branch() -> None:
@@ -131,44 +133,48 @@ def test_math_misc_infer_shapes() -> None:
         """DummyShape."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """__init__."""
+            """__init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
     assert Gradient().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Gradient)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Gradient)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2, 2)
     assert I0().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", I0)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2,))) == (2,)
+    assert cast("EagerCallableProtocol", I0)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2,))) == (2,)
     assert Interp().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Interp)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((3,))) == (3,)
-    assert cast("Callable[..., EagerTensorProtocol]", Intersect1d)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2,)), cast("Callable[..., EagerTensorProtocol]", DummyShape)((3,))) == (None,)
+    assert cast("EagerCallableProtocol", Interp)().infer_shape(cast("EagerCallableProtocol", DummyShape)((3,))) == (3,)
+    assert cast("EagerCallableProtocol", Intersect1d)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2,)), cast("EagerCallableProtocol", DummyShape)((3,))) == (None,)
     assert Kron().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Kron)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 3)), cast("Callable[..., EagerTensorProtocol]", DummyShape)((4, 5))) == (8, 15)
+    assert cast("EagerCallableProtocol", Kron)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 3)), cast("EagerCallableProtocol", DummyShape)((4, 5))) == (8, 15)
     assert Median().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Median)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Median)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2)), axis=0) == (2,)
+    assert cast("EagerCallableProtocol", Median)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == ()
+    assert cast("EagerCallableProtocol", Median)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2)), axis=0) == (2,)
     assert Mish().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Mish)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Mish)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2, 2)
     assert Modf().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Modf)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Modf)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2, 2)
     assert Piecewise().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Piecewise)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Piecewise)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2, 2)
     assert Rot90().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Rot90)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 3))) == (3, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", Rot90)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 3)), k=2) == (3, 2)
+    assert cast("EagerCallableProtocol", Rot90)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 3))) == (3, 2)
+    assert cast("EagerCallableProtocol", Rot90)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 3)), k=2) == (3, 2)
     assert Trapezoid().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Trapezoid)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2,)
+    assert cast("EagerCallableProtocol", Trapezoid)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2,)
     assert Tri().infer_shape(2) == (2, 2)
     assert Tri().infer_shape(2, M=3) == (2, 3)
     assert Tril().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Tril)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Tril)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2, 2)
     assert TrimZeros().infer_shape() == (None,)
     assert Triu().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Triu)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Triu)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2, 2)
     assert Unwrap().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Unwrap)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2))) == (2, 2)
+    assert cast("EagerCallableProtocol", Unwrap)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2))) == (2, 2)
     assert Vander().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Vander)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((3,))) == (3, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", Vander)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((3,)), N=4) == (3, 4)
+    assert cast("EagerCallableProtocol", Vander)().infer_shape(cast("EagerCallableProtocol", DummyShape)((3,))) == (3, 3)
+    assert cast("EagerCallableProtocol", Vander)().infer_shape(cast("EagerCallableProtocol", DummyShape)((3,)), N=4) == (3, 4)
 
 
 def test_math_misc_infer_shapes_branches() -> None:
@@ -179,13 +185,17 @@ def test_math_misc_infer_shapes_branches() -> None:
         """DummyShape."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """__init__."""
+            """__init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
-    assert cast("Callable[..., EagerTensorProtocol]", Median)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2)), axis=0, keepdims=True) == (1, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", Median)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2)), axis=[0, 1]) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Median)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2)), axis=5) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", Rot90)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 3)), axes=(1, 5)) == (2, 3)
+    assert cast("EagerCallableProtocol", Median)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2)), axis=0, keepdims=True) == (1, 2)
+    assert cast("EagerCallableProtocol", Median)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2)), axis=[0, 1]) == ()
+    assert cast("EagerCallableProtocol", Median)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 2)), axis=5) == (2, 2)
+    assert cast("EagerCallableProtocol", Rot90)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2, 3)), axes=(1, 5)) == (2, 3)
     assert Tri().infer_shape(2, M=2) == (2, 2)
     assert Tri().infer_shape(2) == (2, 2)
 
@@ -205,10 +215,14 @@ def test_trapezoid_branch() -> None:
         """DummyShape."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """__init__."""
+            """__init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
-    assert cast("Callable[..., EagerTensorProtocol]", Trapezoid)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2,)), axis=5) == (2,)
+    assert cast("EagerCallableProtocol", Trapezoid)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2,)), axis=5) == (2,)
 
 
 def test_misc_ops_infer_shapes() -> None:

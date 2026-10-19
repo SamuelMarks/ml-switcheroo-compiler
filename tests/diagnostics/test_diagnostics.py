@@ -28,9 +28,7 @@ from ml_switcheroo_compiler.diagnostics import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_traceback_reconstructor() -> None:
@@ -54,7 +52,7 @@ def test_debug_shapes() -> None:
         """
         return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1.0)
 
-    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model, (2, 2))
+    res = cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
     assert "| input | (2, 2) | float64 |" in res
     assert "| output | (2, 2) | float64 |" in res
 
@@ -69,7 +67,7 @@ def test_debug_shapes() -> None:
         """
         return 5
 
-    res = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model_no_shape, (2, 2))
+    res = cast("EagerCallableProtocol", debug_shapes)(dummy_model_no_shape, (2, 2))
     assert "| output | unknown | float64 |" in res
 
     def failing_model(x: EagerValue) -> NoReturn:
@@ -94,7 +92,7 @@ def test_debug_shapes() -> None:
 
     with pytest.MonkeyPatch().context() as m:
         m.setattr(debugger, "_FORMATTERS", dummy_dict)
-        res_custom = cast("Callable[..., EagerTensorProtocol]", debug_shapes)(dummy_model, (2, 2))
+        res_custom = cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
         assert "header" in str(res_custom)
 
         m.setattr(debugger, "_FORMATTERS", {"graphviz": {"header": "H", "node": "N", "edge": "E", "footer": "F"}})
@@ -166,8 +164,8 @@ def test_numerical_anomaly_detector() -> None:
     class NonArray:
         """Non Array class."""
 
-    t3 = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", NonArray)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((2,), DType.Float32, device))
-    cast("Callable[..., EagerTensorProtocol]", check_numerical_anomaly)(t3)
+    t3 = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", NonArray)(), cast("EagerCallableProtocol", TensorConfig)((2,), DType.Float32, device))
+    cast("EagerCallableProtocol", check_numerical_anomaly)(t3)
     config.eager_mode = False
 
 
@@ -249,4 +247,4 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
 
     dump_dir: str = str(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "dump_debug"))
     enable_dump_debug_info(dump_dir)
-    assert cast("Callable[..., EagerTensorProtocol]", (cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "dump_debug")).exists)()
+    assert cast("EagerCallableProtocol", (cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "dump_debug")).exists)()

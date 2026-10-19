@@ -12,14 +12,17 @@ from ml_switcheroo_compiler.ops import append, column_stack, dsplit, dstack, hsp
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
-    """Helper to create test tensor."""
-    return cast("Tensor", cast("Callable[..., EagerTensorProtocol]", Tensor)(data, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape, "float32", "cpu")))
+    """Helper to create test tensor.
+
+    Args:
+        data: Test parameter `data`.
+        shape: Test parameter `shape`.
+    """
+    return cast("Tensor", cast("EagerCallableProtocol", Tensor)(data, cast("EagerCallableProtocol", TensorConfig)(shape, "float32", "cpu")))
 
 
 def test_append_eager() -> None:
@@ -137,7 +140,7 @@ def test_dsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2, 2)), (2, 2, 2))
     out = dsplit(x, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(out) == 2
+    assert cast("EagerCallableProtocol", len)(out) == 2
     assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 2, 1)
 
 
@@ -148,7 +151,7 @@ def test_dsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2, 2)), (2, 2, 2))
         out = dsplit(x, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", len)(out) == 2
+        assert cast("EagerCallableProtocol", len)(out) == 2
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 2, 1)
     finally:
         global_tracing_state.stop_tracing()
@@ -159,7 +162,7 @@ def test_hsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2)), (2, 2))
     out = hsplit(x, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(out) == 2
+    assert cast("EagerCallableProtocol", len)(out) == 2
     assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 1)
 
 
@@ -170,7 +173,7 @@ def test_hsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2)), (2, 2))
         out = hsplit(x, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", len)(out) == 2
+        assert cast("EagerCallableProtocol", len)(out) == 2
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 1)
     finally:
         global_tracing_state.stop_tracing()
@@ -181,7 +184,7 @@ def test_vsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2)), (2, 2))
     out = vsplit(x, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(out) == 2
+    assert cast("EagerCallableProtocol", len)(out) == 2
     assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (1, 2)
 
 
@@ -192,7 +195,7 @@ def test_vsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2)), (2, 2))
         out = vsplit(x, 2)
-        assert cast("Callable[..., EagerTensorProtocol]", len)(out) == 2
+        assert cast("EagerCallableProtocol", len)(out) == 2
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (1, 2)
     finally:
         global_tracing_state.stop_tracing()

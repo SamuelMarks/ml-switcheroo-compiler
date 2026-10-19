@@ -22,7 +22,10 @@ def _load_yaml_config(filename: str) -> dict[str, AttributeValue]:
     """Load declarative configuration from backends directory.
 
     Args:
-        filename: The filename parameter.
+        filename (str): YAML configuration filename inside backends/.
+
+    Returns:
+        dict[str, AttributeValue]: Parsed YAML dictionary or empty dictionary if missing.
     """
     path: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends", filename))
     if os.path.exists(path):
@@ -77,12 +80,9 @@ def _resolve_ecosystem_endpoint(
         expanded_np = f"{ROOT_EXPANSIONS[parts[0]]}.{'.'.join(parts[1:])}" if parts[0] in ROOT_EXPANSIONS else ""
         matched = engine.is_endpoint_valid("numpy", clean_api) or bool(expanded_np and engine.is_endpoint_valid("numpy", expanded_np))
     elif backend_name == "sparse" and clean_api.startswith("ml_switcheroo_compiler.backends.sparse.kernels."):
-        try:
-            import ml_switcheroo_compiler.backends.sparse.kernels as s_kernels
+        import ml_switcheroo_compiler.backends.sparse.kernels as s_kernels
 
-            matched = hasattr(s_kernels, clean_api.split(".")[-1])
-        except Exception:
-            matched = False
+        matched = hasattr(s_kernels, clean_api.split(".")[-1])
     elif backend_name == "cupy":
         np_equiv: str = clean_api.replace("cupy.", "numpy.").replace("cp.", "numpy.")
         valid_cupy: set[str] = engine.get_valid_endpoints("cupy")
@@ -90,8 +90,19 @@ def _resolve_ecosystem_endpoint(
     elif backend_name == "pytorch" and clean_api.startswith(("torchvision.", "torchaudio.")):
         pkg = "torchvision" if clean_api.startswith("torchvision.") else "torchaudio"
         matched = engine.is_endpoint_valid(pkg, clean_api)
-    elif backend_name == "jax" and clean_api.startswith(("jax.scipy.", "jax.ops.", "jax.numpy.linalg.")):
-        matched = True
+    elif backend_name == "jax" and clean_api.startswith("jax.scipy."):
+        scipy_equiv = clean_api.replace("jax.scipy.", "scipy.", 1)
+        matched = engine.is_endpoint_valid("jax", clean_api) or engine.is_endpoint_valid("scipy", scipy_equiv) or (len(parts) > 4 and scipy_equiv.startswith("scipy.stats.") and engine.is_endpoint_valid("scipy", ".".join(scipy_equiv.split(".")[:3])))
+    elif backend_name == "jax" and clean_api.startswith("jax.numpy.linalg."):
+        np_linalg_equiv = clean_api.replace("jax.numpy.linalg.", "numpy.linalg.", 1)
+        matched = engine.is_endpoint_valid("jax", clean_api) or engine.is_endpoint_valid("numpy", np_linalg_equiv)
+    elif backend_name == "jax" and clean_api.startswith("jax.ops."):
+        matched = engine.is_endpoint_valid("jax", clean_api) or clean_api in {
+            "jax.ops.segment_max",
+            "jax.ops.segment_min",
+            "jax.ops.segment_prod",
+            "jax.ops.segment_sum",
+        }
     elif backend_name in ("numpy", "scipy") and clean_api.startswith("scipy."):
         matched = engine.is_endpoint_valid("scipy", clean_api) or (len(parts) > 3 and clean_api.startswith("scipy.stats.") and engine.is_endpoint_valid("scipy", ".".join(parts[:3])))
 
@@ -233,52 +244,6 @@ def extract_endpoints_from_ast(expr_str: str, backend_name: str = "") -> list[tu
     return results
 
 
-def _format_mcp_diagnostics(
-    canonical_fw: str,
-    canonical_ep: str,
-    backend_name: str,
-    endpoint: str,
-    call_args: list[str],
-    call_kwargs: list[str],
-) -> list[str]:
-    """Query ml_ecosystem_snapshots for detailed anti-pattern and signature diagnostics.
-
-    Args:
-        canonical_fw (str): Canonical framework name.
-        canonical_ep (str): Canonical endpoint name.
-        backend_name (str): Compiler backend name.
-        endpoint (str): Raw endpoint string.
-        call_args (list[str]): Positional argument strings.
-        call_kwargs (list[str]): Keyword argument names.
-
-    Returns:
-        list[str]: Formatted diagnostic strings if available.
-    """
-    errors: list[str] = []
-    try:
-        from ml_ecosystem_snapshots.grounding import validate_python_call
-        from ml_ecosystem_snapshots.mcp_server import explain_anti_pattern
-
-        dummy_kwargs: dict[str, str] = {kw: "val" for kw in call_kwargs if kw and not kw.startswith("_")}
-        report = validate_python_call(canonical_fw, canonical_ep, list(call_args), dummy_kwargs)
-        for diag in report.diagnostics:
-            if diag.field == "api_path":
-                continue
-            if diag.field.startswith("kwargs."):
-                kw_name: str = diag.field[7:]
-                anti_info: dict[str, AttributeValue] = explain_anti_pattern(canonical_fw, canonical_ep, kw_name)
-                if anti_info.get("is_known_anti_pattern"):
-                    exp: str = str(anti_info.get("explanation") or "")
-                    canon: str = str(anti_info.get("canonical_argument") or "")
-                    errors.append(f"Anti-pattern detected for '{kw_name}' on '{endpoint}' in backend '{backend_name}': {exp} (use '{canon}')")
-                    continue
-            fix_msg: str = f" (suggested fix: '{diag.suggested_fix}')" if diag.suggested_fix else ""
-            errors.append(f"{diag.message}{fix_msg}")
-    except Exception:
-        pass
-    return errors
-
-
 def validate_arguments_against_snapshot(
     backend_name: str,
     endpoint: str,
@@ -315,12 +280,14 @@ def validate_arguments_against_snapshot(
     if not local_errors:
         return []
 
-    fw_target = engine.config.targets.get(backend_name)
-    canonical_fw: str = fw_target.framework if fw_target else backend_name
-    item: dict[str, AttributeValue] | None = engine.get_endpoint_item(backend_name, endpoint)
-    canonical_ep: str = str(item.get("api_path") or endpoint) if item else endpoint
-    mcp_errors = _format_mcp_diagnostics(canonical_fw, canonical_ep, backend_name, endpoint, call_args, call_kwargs)
-    return mcp_errors or local_errors
+    contract_errors = engine.validate_parameter_contract(
+        backend_name,
+        endpoint,
+        len(call_args),
+        call_kwargs,
+        raise_on_error=False,
+    )
+    return local_errors + [e for e in contract_errors if e not in local_errors]
 
 
 def _extract_op_api(spec: dict[str, AttributeValue]) -> str:

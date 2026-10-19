@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for trigonometric.py."""
+"""Implementation of trigonometric operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.trigonometric`)."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 

@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.serialization.ir_format import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_ir_format() -> None:
@@ -228,7 +226,7 @@ def test_ir_format_serialization_edge_branches() -> None:
     _test_ir_format_serialization_edge_branches_part_1(_state)
     _test_ir_format_serialization_edge_branches_part_2(_state)
     _test_ir_format_serialization_edge_branches_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
@@ -250,12 +248,12 @@ def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
         }
     }
 
-    resolved_shapes = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.update_from_feedback)(telemetry, tracker)
+    resolved_shapes = cast("EagerCallableProtocol", ShapeTracker.update_from_feedback)(telemetry, tracker)
     assert resolved_shapes["x"] == (4, 16)
     assert resolved_shapes["dense"] == (4, 32)
 
     # Resolve dynamic bounds across graph
-    resolved_bounds = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker)
+    resolved_bounds = cast("EagerCallableProtocol", ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker)
     assert "batch_dim" in resolved_bounds
     assert resolved_bounds["batch_dim"] == 4
 

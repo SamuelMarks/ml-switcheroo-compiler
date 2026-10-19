@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_rocm_generator() -> None:
@@ -38,7 +36,11 @@ def test_rocm_generator_coverage() -> None:
 
 
 def test_rocm_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
-    """Test ROCm generator with missing YAML files."""
+    """Test ROCm generator with missing YAML files.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
 
     monkeypatch.setattr(os.path, "exists", lambda p: False)
@@ -69,7 +71,11 @@ def test_extract_kernel_name_fallback() -> None:
 
 
 def test_rocm_init_yaml_edge_cases(monkeypatch: EagerTensorProtocol) -> None:
-    """Test non-yaml files and non-dict op_data in yaml_dir, and empty fallback yaml."""
+    """Test non-yaml files and non-dict op_data in yaml_dir, and empty fallback yaml.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
 
     monkeypatch.setattr(os.path, "isdir", lambda p: True)
@@ -124,11 +130,15 @@ def test_rocm_marshall_kernel_params() -> None:
         """Test class CustomVal."""
 
         def __init__(self, val: int) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                val: Test parameter `val`.
+            """
             self.value = val
 
     args = [ctypes.c_void_p(123), 42, 3.14, CustomVal(999), "100"]
-    res = cast("Callable[..., EagerTensorProtocol]", _marshall_kernel_params)(args)
+    res = cast("EagerCallableProtocol", _marshall_kernel_params)(args)
     assert res is not None
     assert len(res) == 5
 
@@ -141,14 +151,24 @@ def test_rocm_compile_hip_to_code() -> None:
     expected_code = b"compiled_hip_binary_code"
 
     def get_code_size_side_effect(prog: EagerValue, size_ptr: EagerValue) -> EagerValue:
-        """Test function get_code_size_side_effect."""
+        """Test function get_code_size_side_effect.
+
+        Args:
+            prog: Test parameter `prog`.
+            size_ptr: Test parameter `size_ptr`.
+        """
         setattr(getattr(size_ptr, "_obj"), "value", len(expected_code))
         return 0
 
     mock_hiprtc.hiprtcGetCodeSize.side_effect = get_code_size_side_effect
 
     def get_code_side_effect(prog: EagerValue, buf: EagerValue) -> EagerValue:
-        """Test function get_code_side_effect."""
+        """Test function get_code_side_effect.
+
+        Args:
+            prog: Test parameter `prog`.
+            buf: Test parameter `buf`.
+        """
         setattr(buf, "raw", expected_code)
         return 0
 
@@ -166,14 +186,24 @@ def test_rocm_compile_hip_to_code() -> None:
     mock_hiprtc.hiprtcCompileProgram.return_value = 2
 
     def get_log_size_side_effect(prog: EagerValue, size_ptr: EagerValue) -> EagerValue:
-        """Test function get_log_size_side_effect."""
+        """Test function get_log_size_side_effect.
+
+        Args:
+            prog: Test parameter `prog`.
+            size_ptr: Test parameter `size_ptr`.
+        """
         setattr(getattr(size_ptr, "_obj"), "value", 64)
         return 0
 
     mock_hiprtc.hiprtcGetProgramLogSize.side_effect = get_log_size_side_effect
 
     def get_log_side_effect(prog: EagerValue, buf: EagerValue) -> EagerValue:
-        """Test function get_log_side_effect."""
+        """Test function get_log_side_effect.
+
+        Args:
+            prog: Test parameter `prog`.
+            buf: Test parameter `buf`.
+        """
         setattr(buf, "value", b"syntax error in hip kernel")
         return 0
 
@@ -282,7 +312,7 @@ def _test_rocm_additional_coverage_part_3(_state: dict[str, EagerTensorProtocol]
                 assert bool(runner_avail.is_available()) is False
             mock_dev_zero = MagicMock()
             mock_dev_zero.hipInit.return_value = 0
-            mock_dev_zero.hipGetDeviceCount.side_effect = lambda ptr: (cast("Callable[..., EagerTensorProtocol]", setattr)(getattr(ptr, "_obj"), "value", 0), 0)[1]
+            mock_dev_zero.hipGetDeviceCount.side_effect = lambda ptr: (cast("EagerCallableProtocol", setattr)(getattr(ptr, "_obj"), "value", 0), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_dev_zero):
                 assert bool(runner_avail.is_available()) is False
     getattr(_state, "update")({"mock_dev_lib": mock_dev_lib, "mock_dev_zero": mock_dev_zero, "mock_init_fail": mock_init_fail})
@@ -299,8 +329,8 @@ def _test_rocm_additional_coverage_part_4(_state: dict[str, EagerTensorProtocol]
     mock_hiprtc = MagicMock(spec=["hiprtcCreateProgram", "hiprtcCompileProgram", "hiprtcGetProgramLogSize", "hiprtcGetProgramLog", "hiprtcDestroyProgram"])
     mock_hiprtc.hiprtcCreateProgram.return_value = 0
     mock_hiprtc.hiprtcCompileProgram.return_value = 2
-    mock_hiprtc.hiprtcGetProgramLogSize.side_effect = lambda prog, size_ptr: (cast("Callable[..., EagerTensorProtocol]", setattr)(getattr(size_ptr, "_obj"), "value", 16), 0)[1]
-    mock_hiprtc.hiprtcGetProgramLog.side_effect = lambda prog, buf: (cast("Callable[..., EagerTensorProtocol]", setattr)(buf, "value", b"err"), 0)[1]
+    mock_hiprtc.hiprtcGetProgramLogSize.side_effect = lambda prog, size_ptr: (cast("EagerCallableProtocol", setattr)(getattr(size_ptr, "_obj"), "value", 16), 0)[1]
+    mock_hiprtc.hiprtcGetProgramLog.side_effect = lambda prog, buf: (cast("EagerCallableProtocol", setattr)(buf, "value", b"err"), 0)[1]
     with patch("ctypes.cdll.LoadLibrary", return_value=mock_hiprtc):
         with pytest.raises(RuntimeError, match="HIPRTC compilation failed"):
             runner_compile.compile_hip_to_code("src")
@@ -322,8 +352,8 @@ def _test_rocm_additional_coverage_part_5(_state: dict[str, EagerTensorProtocol]
     mock_hiprtc_ok = MagicMock(spec=["hiprtcCreateProgram", "hiprtcCompileProgram", "hiprtcGetCodeSize", "hiprtcGetCode"])
     mock_hiprtc_ok.hiprtcCreateProgram.return_value = 0
     mock_hiprtc_ok.hiprtcCompileProgram.return_value = 0
-    mock_hiprtc_ok.hiprtcGetCodeSize.side_effect = lambda prog, size_ptr: (cast("Callable[..., EagerTensorProtocol]", setattr)(getattr(size_ptr, "_obj"), "value", 8), 0)[1]
-    mock_hiprtc_ok.hiprtcGetCode.side_effect = lambda prog, buf: (cast("Callable[..., EagerTensorProtocol]", setattr)(buf, "raw", b"code_bin"), 0)[1]
+    mock_hiprtc_ok.hiprtcGetCodeSize.side_effect = lambda prog, size_ptr: (cast("EagerCallableProtocol", setattr)(getattr(size_ptr, "_obj"), "value", 8), 0)[1]
+    mock_hiprtc_ok.hiprtcGetCode.side_effect = lambda prog, buf: (cast("EagerCallableProtocol", setattr)(buf, "raw", b"code_bin"), 0)[1]
     with patch("ctypes.cdll.LoadLibrary", return_value=mock_hiprtc_ok):
         assert runner_compile.compile_hip_to_code("src") == b"code_bin"
     runner_sync = ROCmRunner()
@@ -373,12 +403,12 @@ def _test_rocm_additional_coverage_part_7(_state: dict[str, EagerTensorProtocol]
     """
     (runner_sync, unmapped_node) = (_state["runner_sync"], _state["unmapped_node"])
     gen_rocm = RocmCodeGenerator(IRGraph())
-    cast("Callable[..., EagerTensorProtocol]", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_rocm, None, {})
+    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_rocm, None, {})
     mapped_node = IRNode("mapped", "Relu", inputs=[])
     setattr(getattr(getattr(gen_rocm.config, "templates"), "__getitem__")("relu"), "workgroup_size", [16, 16, 2])
-    cast("Callable[..., EagerTensorProtocol]", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_rocm, "/tmp/mock.co", {})
+    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_rocm, "/tmp/mock.co", {})
     fused_node = IRNode("fused", "FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
-    cast("Callable[..., EagerTensorProtocol]", runner_sync._dispatch_compute_node)(fused_node, 0, gen_rocm, "/tmp/mock.co", {})
+    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(fused_node, 0, gen_rocm, "/tmp/mock.co", {})
     g_unmapped = IRGraph()
     g_unmapped.nodes = {"unmapped": unmapped_node}
     with patch.object(runner_sync, "compile_hip_to_code", return_value=b"CO"):
@@ -397,7 +427,7 @@ def test_rocm_additional_coverage() -> None:
     _test_rocm_additional_coverage_part_5(_state)
     _test_rocm_additional_coverage_part_6(_state)
     _test_rocm_additional_coverage_part_7(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_rocm_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -409,11 +439,11 @@ def _test_rocm_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
     gen = RocmCodeGenerator(IRGraph())
     lines = cast("list[EagerTensorProtocol]", [])
     fused_node = IRNode("fused_node", "FusedElementwise", inputs=["x", "y"], attributes={"scalar_expr": "in0 + in1"})
-    cast("Callable[..., EagerTensorProtocol]", gen._emit_node)(fused_node, 0, {"x": "d_x", "y": "d_y"}, {"x": "fused_node", "y": "other"}, outputs_set=set(), inputs_set={"y"}, hip=lines)
+    cast("EagerCallableProtocol", gen._emit_node)(fused_node, 0, {"x": "d_x", "y": "d_y"}, {"x": "fused_node", "y": "other"}, outputs_set=set(), inputs_set={"y"}, hip=lines)
     assert any("hipFree(d_x)" in line for line in lines)
     lines.clear()
     relu_node = IRNode("relu_node", "Relu", inputs=["a", "b", "c"])
-    cast("Callable[..., EagerTensorProtocol]", gen._emit_node)(relu_node, 0, {"a": "d_a", "b": "d_b"}, {"a": "relu_node", "b": "relu_node", "c": "relu_node"}, outputs_set={"b"}, inputs_set=set(), hip=lines)
+    cast("EagerCallableProtocol", gen._emit_node)(relu_node, 0, {"a": "d_a", "b": "d_b"}, {"a": "relu_node", "b": "relu_node", "c": "relu_node"}, outputs_set={"b"}, inputs_set=set(), hip=lines)
     assert any("hipFree(d_a)" in line for line in lines)
     runner = ROCmRunner()
     runner.mode = "ctypes"
@@ -493,7 +523,7 @@ def test_rocm_full_coverage_branches() -> None:
     _test_rocm_full_coverage_branches_part_1(_state)
     _test_rocm_full_coverage_branches_part_2(_state)
     _test_rocm_full_coverage_branches_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_rocm_streams() -> None:
@@ -595,7 +625,11 @@ def test_rocm_prepare_input_buffers() -> None:
         """Test class _WrapperWithData."""
 
         def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                arr: Test parameter `arr`.
+            """
             self.data = arr
 
     graph = IRGraph()
@@ -606,7 +640,7 @@ def test_rocm_prepare_input_buffers() -> None:
     mv_raw = memoryview(b"memoryview_data")
     wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
     list_raw = [1, 2, 3]
-    buffers = cast("Callable[..., EagerTensorProtocol]", _prepare_rocm_input_buffers)(graph, (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw))
+    buffers = cast("EagerCallableProtocol", _prepare_rocm_input_buffers)(graph, (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw))
     assert buffers["x"] == arr.tobytes()
     assert buffers["y"] == b_raw
     assert buffers["in_2"] == bytes(ba_raw)
@@ -623,7 +657,11 @@ def test_rocm_evaluate_fallback() -> None:
         """Test class _MockTensor."""
 
         def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
     g_single = IRGraph()
@@ -635,7 +673,7 @@ def test_rocm_evaluate_fallback() -> None:
     arr = np.array([1.0, 2.0], dtype=np.float32)
     res_single = _evaluate_rocm_fallback(g_single, (arr,))
     assert res_single is not None
-    res_wrapper = cast("Callable[..., EagerTensorProtocol]", _evaluate_rocm_fallback)(g_single, (cast("Callable[..., EagerTensorProtocol]", _MockTensor)(arr), "extra_arg"))
+    res_wrapper = cast("EagerCallableProtocol", _evaluate_rocm_fallback)(g_single, (cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
     assert res_wrapper is not None
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
@@ -680,8 +718,8 @@ def test_rocm_compile_and_runner_dispatch() -> None:
     mock_runner.execute_graph.return_value = {"out": np.array([42.0])}
     with patch.object(ROCmRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.rocm.rocm.ROCmRunner", return_value=mock_runner):
-            res_avail = cast("Callable[..., EagerTensorProtocol]", artifact.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
-            assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_avail, cast("Callable[..., EagerTensorProtocol]", np.array)([42.0]))
+            res_avail = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            assert cast("EagerCallableProtocol", np.array_equal)(res_avail, cast("EagerCallableProtocol", np.array)([42.0]))
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
@@ -695,14 +733,14 @@ def test_rocm_compile_and_runner_dispatch() -> None:
     mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
     with patch.object(ROCmRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.rocm.rocm.ROCmRunner", return_value=mock_runner_multi):
-            res_m = cast("Callable[..., EagerTensorProtocol]", art_multi.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+            res_m = cast("EagerCallableProtocol", art_multi.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_m == (100, 200)
     mock_runner_err = MagicMock()
     mock_runner_err.execute_graph.side_effect = RuntimeError("ROCm crash")
     with patch.object(ROCmRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.rocm.rocm.ROCmRunner", return_value=mock_runner_err):
-            res_err = cast("Callable[..., EagerTensorProtocol]", artifact.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+            res_err = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_err is not None
     with patch.object(ROCmRunner, "is_available", return_value=False):
-        res_fallback = cast("Callable[..., EagerTensorProtocol]", artifact.callable_fn)(cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0], dtype=np.float32))
+        res_fallback = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
         assert res_fallback is not None

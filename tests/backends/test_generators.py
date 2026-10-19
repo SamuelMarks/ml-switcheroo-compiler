@@ -30,7 +30,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 GroupNormConfig = namedtuple("GroupNormConfig", ["prefix", "module", "reshape", "mean", "var", "sqrt", "dim_arg", "keepdim_arg"])
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
 
@@ -56,7 +56,7 @@ def test_backends_coverage() -> None:
         cast("EagerTensorProtocol", getattr(pytorch, "PyTorchCodeGenerator")),
         cast("EagerTensorProtocol", getattr(tensorflow, "TensorFlowCodeGenerator")),
     ]:
-        res = cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", gen_cls)(g).generate)()
+        res = cast("EagerCallableProtocol", cast("EagerCallableProtocol", gen_cls)(g).generate)()
         assert isinstance(res, str)
         assert len(res) > 0
 
@@ -73,11 +73,11 @@ def test_registry_coverage() -> None:
     class FakeGen:
         """Configuration class for fake gen."""
 
-    cast("Callable[..., EagerTensorProtocol]", registry.BackendRegistry.register)("fake", FakeGen)
+    cast("EagerCallableProtocol", registry.BackendRegistry.register)("fake", FakeGen)
     assert cast("EagerTensorProtocol", registry.BackendRegistry.get("fake")) == cast("EagerTensorProtocol", FakeGen)
     assert "fake" in registry.BackendRegistry.get_all()
 
-    @cast("Callable[..., EagerTensorProtocol]", registry.register_backend)("fake2")
+    @cast("EagerCallableProtocol", registry.register_backend)("fake2")
     class FakeGen2:
         """Configuration class for fake gen2."""
 
@@ -129,7 +129,7 @@ def test_coverage_brute() -> None:
             """
             return "fake"
 
-    cast("Callable[..., EagerTensorProtocol]", register_backend)("fake")(FakeGenerator)
+    cast("EagerCallableProtocol", register_backend)("fake")(FakeGenerator)
     assert BackendRegistry.get("fake") == FakeGenerator
     assert "fake" in BackendRegistry.get_all()
     with pytest.raises((ValueError, ShapeMismatchError), match="Backend 'non_existent' not found"):
@@ -212,7 +212,7 @@ def test_add_n_accumulate_n_generation() -> None:
                 """
                 return cast("str", getattr(self, f"visit_{getattr(node, 'op_type')}")(node, input_vars, **kwargs))
 
-        gen = cast("Callable[..., EagerTensorProtocol]", MockGenerator)()
+        gen = cast("EagerCallableProtocol", MockGenerator)()
         node1 = IRNode(id="n1", op_type="AddN", inputs=["a", "b", "c"], attributes={}, shape_metadata=None)
         assert cast("EagerTensorProtocol", getattr(gen, "visit_AddN"))(node1, ["a", "b", "c"]) == "a + b + c"
         assert cast("EagerTensorProtocol", getattr(gen, "visit_AddN"))(node1, []) == "0.0"
@@ -230,11 +230,19 @@ class DummyGenerator(GeneratorLifecycleMixin):
         self.code = []
 
     def add_line(self, line: EagerValue) -> None:
-        """Test function add_line."""
-        cast("Callable[..., EagerTensorProtocol]", self.code.append)(cast("EagerTensorProtocol", " ") * cast("EagerTensorProtocol", self.indent_level) + cast("EagerTensorProtocol", line))
+        """Test function add_line.
+
+        Args:
+            line: Test parameter `line`.
+        """
+        cast("EagerCallableProtocol", self.code.append)(cast("EagerTensorProtocol", " ") * cast("EagerTensorProtocol", self.indent_level) + cast("EagerTensorProtocol", line))
 
     def _generate_body(self, input_prefix: str = "args") -> None:
-        """Test function _generate_body."""
+        """Test function _generate_body.
+
+        Args:
+            input_prefix: Test parameter `input_prefix`.
+        """
         self.add_line("body")
 
 
@@ -245,7 +253,7 @@ def test_generator_lifecycle_mixin() -> None:
     assert "header" in code
     assert "def apply_model(params, *args, **kwargs) -> object:" in code
     assert " body" in code
-    assert cast("Callable[..., EagerTensorProtocol]", gen._generate_return_block)() is None
+    assert cast("EagerCallableProtocol", gen._generate_return_block)() is None
 
 
 class DummyEager(EagerExecutionMixin):
@@ -288,19 +296,23 @@ class DummyNode:
     """Test class DummyNode."""
 
     def __init__(self, attrs: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            attrs: Test parameter `attrs`.
+        """
         self.attributes = attrs or {}
 
 
 def test_generator_utils() -> None:
     """Test function test_generator_utils."""
     node = DummyNode()
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_audio_stft_attributes)(node) == (2048, 512, None, "hann", False)
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_resize_attributes)(node) == (None, "bilinear", False, False, None)
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_vision_transform_attributes)(node) == ("bilinear", 0.0, None)
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_filter_attributes)(node) == (None, None, "same", None)
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_extract_boxes_attributes)(node) == (None, "bilinear", 0.0, None)
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_stft_attributes)(node) == (2048, None, None, None, True, "reflect", False, True)
+    assert cast("EagerCallableProtocol", _extract_audio_stft_attributes)(node) == (2048, 512, None, "hann", False)
+    assert cast("EagerCallableProtocol", _extract_resize_attributes)(node) == (None, "bilinear", False, False, None)
+    assert cast("EagerCallableProtocol", _extract_vision_transform_attributes)(node) == ("bilinear", 0.0, None)
+    assert cast("EagerCallableProtocol", _extract_filter_attributes)(node) == (None, None, "same", None)
+    assert cast("EagerCallableProtocol", _extract_extract_boxes_attributes)(node) == (None, "bilinear", 0.0, None)
+    assert cast("EagerCallableProtocol", _extract_stft_attributes)(node) == (2048, None, None, None, True, "reflect", False, True)
     node_full = DummyNode(
         {
             "frame_length": 1,
@@ -329,12 +341,12 @@ def test_generator_utils() -> None:
             "onesided": False,
         }
     )
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_audio_stft_attributes)(node_full) == (1, 2, 3, "win", True)
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_resize_attributes)(node_full) == (4, "bicubic", True, True, "df")
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_vision_transform_attributes)(node_full) == ("bicubic", 1.0, "df")
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_filter_attributes)(node_full) == (5, 6, "valid", "df")
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_extract_boxes_attributes)(node_full) == (7, "bicubic", 2.0, "df")
-    assert cast("Callable[..., EagerTensorProtocol]", _extract_stft_attributes)(node_full) == (8, 9, 10, "w", False, "constant", True, False)
+    assert cast("EagerCallableProtocol", _extract_audio_stft_attributes)(node_full) == (1, 2, 3, "win", True)
+    assert cast("EagerCallableProtocol", _extract_resize_attributes)(node_full) == (4, "bicubic", True, True, "df")
+    assert cast("EagerCallableProtocol", _extract_vision_transform_attributes)(node_full) == ("bicubic", 1.0, "df")
+    assert cast("EagerCallableProtocol", _extract_filter_attributes)(node_full) == (5, 6, "valid", "df")
+    assert cast("EagerCallableProtocol", _extract_extract_boxes_attributes)(node_full) == (7, "bicubic", 2.0, "df")
+    assert cast("EagerCallableProtocol", _extract_stft_attributes)(node_full) == (8, 9, 10, "w", False, "constant", True, False)
 
 
 BACKENDS = [
@@ -547,7 +559,7 @@ def test_keras_generator_coverage() -> None:
 
         op_type = "Matmul"
 
-    res = cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"], unrelated="hi")
+    res = cast("EagerCallableProtocol", gen.visit)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"], unrelated="hi")
     assert "keras.ops.matmul(a, b" in str(res)
 
     class DummyNode2:
@@ -555,7 +567,7 @@ def test_keras_generator_coverage() -> None:
 
         op_type = "Zeros"
 
-    res2 = cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", DummyNode2)(), ["a"], shape=[1], unrelated="hi")
+    res2 = cast("EagerCallableProtocol", gen.visit)(cast("EagerCallableProtocol", DummyNode2)(), ["a"], shape=[1], unrelated="hi")
     assert "keras.ops.zeros" in str(res2)
 
 
@@ -563,7 +575,15 @@ class MockNode:
     """Mock Node."""
 
     def __init__(self, id: str, op_type: str, inputs: list[str], attributes: EagerValue, shape_metadata: Optional[tuple[int, ...]]) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            id: Test parameter `id`.
+            op_type: Test parameter `op_type`.
+            inputs: Test parameter `inputs`.
+            attributes: Test parameter `attributes`.
+            shape_metadata: Test parameter `shape_metadata`.
+        """
         self.id = id
         self.op_type = op_type
         self.inputs = inputs
@@ -584,7 +604,7 @@ def test_pytorch_generator_coverage() -> None:
 
         op_type = "Sum"
 
-    res = cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a"], unrelated="hi")
+    res = cast("EagerCallableProtocol", gen.visit)(cast("EagerCallableProtocol", DummyNode)(), ["a"], unrelated="hi")
     assert "torch.sum(a" in str(res)
 
     class ReshapeNode:
@@ -592,7 +612,7 @@ def test_pytorch_generator_coverage() -> None:
 
         op_type = "Reshape"
 
-    res2 = cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", ReshapeNode)(), ["a"], shape="(2, 2)")
+    res2 = cast("EagerCallableProtocol", gen.visit)(cast("EagerCallableProtocol", ReshapeNode)(), ["a"], shape="(2, 2)")
     assert "torch.reshape(a" in str(res2)
 
     class ReluNode:
@@ -600,7 +620,7 @@ def test_pytorch_generator_coverage() -> None:
 
         op_type = "Relu"
 
-    res3 = cast("Callable[..., EagerTensorProtocol]", gen.visit)(cast("Callable[..., EagerTensorProtocol]", ReluNode)(), ["a"], axis=1, keepdims=True)
+    res3 = cast("EagerCallableProtocol", gen.visit)(cast("EagerCallableProtocol", ReluNode)(), ["a"], axis=1, keepdims=True)
     assert "relu(a" in str(res3)
 
 
@@ -734,7 +754,12 @@ class MyGen(BaseGenerator):
     """Test class MyGen."""
 
     def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
-        """Test function get_ops_map."""
+        """Test function get_ops_map.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return {}
 
 
@@ -744,11 +769,20 @@ class MyPyGen(PythonStringGenerator):
     _import_header = ("import sys", "import os")
 
     def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
-        """Test function get_ops_map."""
+        """Test function get_ops_map.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return {}
 
     def _generate_body(self, input_prefix: str = "args") -> None:
-        """Test function _generate_body."""
+        """Test function _generate_body.
+
+        Args:
+            input_prefix: Test parameter `input_prefix`.
+        """
         pass
 
 
@@ -756,14 +790,19 @@ class MyClassGen(ClassBasedGenerator):
     """Test class MyClassGen."""
 
     def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
-        """Test function get_ops_map."""
+        """Test function get_ops_map.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return {}
 
 
 def test_base_generator_properties() -> None:
     """Test function test_base_generator_properties."""
     graph = DummyGraph()
-    gen = cast("Callable[..., EagerTensorProtocol]", MyGen)(graph)
+    gen = cast("EagerCallableProtocol", MyGen)(graph)
     setattr(gen, "var_names", {"test": "val"})
     assert gen.var_names == {"test": "val"}
     setattr(gen, "header", "my_header")
@@ -775,7 +814,7 @@ def test_base_generator_properties() -> None:
 def test_base_generator_fallbacks() -> None:
     """Test function test_base_generator_fallbacks."""
     graph = DummyGraph()
-    gen = cast("Callable[..., EagerTensorProtocol]", MyGen)(graph)
+    gen = cast("EagerCallableProtocol", MyGen)(graph)
     assert gen.get_fallback_prefix() == "np"
     assert gen.get_fallback_axis_kwarg() == "axis"
     assert gen.get_fallback_keepdims_kwarg() == "keepdims"
@@ -790,10 +829,10 @@ def test_base_generator_fallbacks() -> None:
 def test_python_string_generator_tuple_import() -> None:
     """Test function test_python_string_generator_tuple_import."""
     graph = DummyGraph()
-    gen = cast("Callable[..., EagerTensorProtocol]", MyPyGen)(graph)
+    gen = cast("EagerCallableProtocol", MyPyGen)(graph)
     code = gen.generate()
     assert "import sys\nimport os" in code
-    gen2 = cast("Callable[..., EagerTensorProtocol]", MyPyGen)(graph)
+    gen2 = cast("EagerCallableProtocol", MyPyGen)(graph)
     setattr(gen2, "_import_header", "import sys")
     code2 = gen2.generate()
     assert "import sys" in code2
@@ -802,7 +841,7 @@ def test_python_string_generator_tuple_import() -> None:
 def test_class_based_generator_prefix_code() -> None:
     """Test function test_class_based_generator_prefix_code."""
     graph = DummyGraph()
-    gen = cast("Callable[..., EagerTensorProtocol]", MyClassGen)(graph)
+    gen = cast("EagerCallableProtocol", MyClassGen)(graph)
     assert gen._get_prefix_code() == []
     assert gen._emit_init_body() == False
 
@@ -810,14 +849,14 @@ def test_class_based_generator_prefix_code() -> None:
 def test_python_string_generator_string_and_list_import() -> None:
     """Test function test_python_string_generator_string_and_list_import."""
     graph = DummyGraph()
-    gen1 = cast("Callable[..., EagerTensorProtocol]", MyPyGen)(graph)
+    gen1 = cast("EagerCallableProtocol", MyPyGen)(graph)
     setattr(gen1, "_import_header", "import something")
     assert "import something" in gen1.generate()
-    gen2 = cast("Callable[..., EagerTensorProtocol]", MyPyGen)(graph)
+    gen2 = cast("EagerCallableProtocol", MyPyGen)(graph)
     setattr(gen2, "_import_header", ["import a", "import b"])
     code2 = gen2.generate()
     assert "import a\nimport b" in code2
-    gen3 = cast("Callable[..., EagerTensorProtocol]", MyPyGen)(graph)
+    gen3 = cast("EagerCallableProtocol", MyPyGen)(graph)
     setattr(gen3, "_import_header", 42)
     gen3.generate()
 
@@ -825,7 +864,7 @@ def test_python_string_generator_string_and_list_import() -> None:
 def test_emit_output_assignment_twice() -> None:
     """Test function test_emit_output_assignment_twice."""
     graph = DummyGraph()
-    gen = cast("Callable[..., EagerTensorProtocol]", MyGen)(graph)
+    gen = cast("EagerCallableProtocol", MyGen)(graph)
     node = IRNode("Op", op_type="Op")
     gen._emit_output_assignment(node, [], "ret1")
     gen._emit_output_assignment(node, [], "ret2")
@@ -866,11 +905,11 @@ def test_jax_generator_send_recv() -> None:
     n_recv.attributes = {"src_rank": 3, "dtype": "float32"}
     n_recv.shape_metadata = (4, 4)
     gen = JAXCodeGenerator(graph)
-    out_send = cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_Send)(gen, n_send, ["in_var"])
+    out_send = cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Send)(gen, n_send, ["in_var"])
     assert out_send == ""
     assert any("# JAX Send to 2" in line for line in gen.code)
     assert any("token = jax.lax.send(in_var, token, channel=2)" in line for line in gen.code)
-    out_recv = cast("Callable[..., EagerTensorProtocol]", JaxDistributedVisitor.visit_Recv)(gen, n_recv, [])
+    out_recv = cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Recv)(gen, n_recv, [])
     assert out_recv == "v_n_recv"
     assert any("v_n_recv, token = jax.lax.recv(token, channel=3, shape=(4, 4), dtype=jnp.float32)" in line for line in gen.code)
     assert any("token = jax.lax.create_token()" in line for line in gen.code)
@@ -907,10 +946,10 @@ def test_nn_primitives_emission_cross_backend() -> None:
         ("Linear", ["x", "w"], {}),
     ]
     for op_name, inputs, attrs in ops_to_test:
-        node = cast("Callable[..., EagerTensorProtocol]", LogicalNode)(id=f"n_{op_name}", op_type=op_name, inputs=inputs, attributes=attrs)
+        node = cast("EagerCallableProtocol", LogicalNode)(id=f"n_{op_name}", op_type=op_name, inputs=inputs, attributes=attrs)
         pt_code = pt_gen.visit(node, inputs)
         assert len(pt_code) > 0, f"PyTorch emission failed for {op_name}"
-        jax_code = cast("Callable[..., EagerTensorProtocol]", jax_gen.visit)(node, inputs)
+        jax_code = cast("EagerCallableProtocol", jax_gen.visit)(node, inputs)
         assert len(jax_code) > 0, f"JAX emission failed for {op_name}"
-        mlx_code = cast("Callable[..., EagerTensorProtocol]", mlx_gen.visit)(node, inputs)
+        mlx_code = cast("EagerCallableProtocol", mlx_gen.visit)(node, inputs)
         assert len(mlx_code) > 0, f"MLX emission failed for {op_name}"

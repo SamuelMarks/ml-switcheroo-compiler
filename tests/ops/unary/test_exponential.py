@@ -12,7 +12,11 @@ if TYPE_CHECKING:
 
 
 def test_nan_to_num_call(mocker: EagerTensorProtocol) -> None:
-    """Test function test_nan_to_num_call."""
+    """Test function test_nan_to_num_call.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     op = NanToNum()
     from ml_switcheroo_compiler.core.config import config
 

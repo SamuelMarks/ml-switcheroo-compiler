@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for svd.py."""
+"""Implementation of svd operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.svd`)."""
 
 from __future__ import annotations
 

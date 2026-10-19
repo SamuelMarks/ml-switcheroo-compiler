@@ -24,9 +24,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 CustomJVPFunction = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
 
@@ -36,12 +34,21 @@ def test_custom_jvp_decorator_and_eager() -> None:
 
     @custom_jvp
     def square_scaled(x: EagerValue) -> EagerValue:
-        """Test function square_scaled."""
+        """Test function square_scaled.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return ops.multiply(x, x)
 
     @square_scaled.defjvp
     def square_scaled_jvp(primals: EagerValue, tangents: EagerValue) -> EagerValue:
-        """Test function square_scaled_jvp."""
+        """Test function square_scaled_jvp.
+
+        Args:
+            primals: Test parameter `primals`.
+            tangents: Test parameter `tangents`.
+        """
         (x,) = cast("EagerTensorProtocol", primals)
         (t,) = cast("EagerTensorProtocol", tangents)
         # Custom derivative: instead of 2 * x * t, use 42 * x * t
@@ -52,13 +59,13 @@ def test_custom_jvp_decorator_and_eager() -> None:
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     t = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, tan = cast("Callable[..., EagerTensorProtocol]", jvp)(square_scaled, (x,), (t,))
+    val, tan = cast("EagerCallableProtocol", jvp)(square_scaled, (x,), (t,))
 
     val_arr = get_active_backend().asarray(val)
     tan_arr = get_active_backend().asarray(tan)
 
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(val_arr, cast("Callable[..., EagerTensorProtocol]", np.array)([4.0], dtype=np.float32))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(tan_arr, cast("Callable[..., EagerTensorProtocol]", np.array)([84.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(val_arr, cast("EagerCallableProtocol", np.array)([4.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(tan_arr, cast("EagerCallableProtocol", np.array)([84.0], dtype=np.float32))
 
 
 def test_custom_jvp_graph_integration() -> None:
@@ -66,29 +73,42 @@ def test_custom_jvp_graph_integration() -> None:
 
     @custom_jvp
     def cube_custom(x: EagerValue) -> EagerValue:
-        """Test function cube_custom."""
+        """Test function cube_custom.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return ops.multiply(x, ops.multiply(x, x))
 
     @cube_custom.defjvp
     def cube_custom_jvp(primals: EagerValue, tangents: EagerValue) -> EagerValue:
-        """Test function cube_custom_jvp."""
+        """Test function cube_custom_jvp.
+
+        Args:
+            primals: Test parameter `primals`.
+            tangents: Test parameter `tangents`.
+        """
         (x,) = cast("EagerTensorProtocol", primals)
         (t,) = cast("EagerTensorProtocol", tangents)
         # Override derivative to 10.0 * t
         return cube_custom(x), ops.multiply(t, 10.0)
 
     def outer(x: EagerValue) -> EagerValue:
-        """Test function outer."""
+        """Test function outer.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return ops.add(cube_custom(x), 5.0)
 
     x = Tensor(np.array([3.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     t = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, tan = cast("Callable[..., EagerTensorProtocol]", jvp)(outer, (x,), (t,))
+    val, tan = cast("EagerCallableProtocol", jvp)(outer, (x,), (t,))
 
     tan_arr = get_active_backend().asarray(tan)
     # Derivative of outer w.r.t x should be 10.0 (from custom JVP rule)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(tan_arr, cast("Callable[..., EagerTensorProtocol]", np.array)([10.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(tan_arr, cast("EagerCallableProtocol", np.array)([10.0], dtype=np.float32))
 
 
 def test_custom_jvp_reverse_mode_grad() -> None:
@@ -96,24 +116,37 @@ def test_custom_jvp_reverse_mode_grad() -> None:
 
     @custom_jvp
     def f_custom(x: EagerValue) -> EagerValue:
-        """Test function f_custom."""
+        """Test function f_custom.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return ops.multiply(x, x)
 
     @f_custom.defjvp
     def f_custom_jvp(primals: EagerValue, tangents: EagerValue) -> EagerValue:
-        """Test function f_custom_jvp."""
+        """Test function f_custom_jvp.
+
+        Args:
+            primals: Test parameter `primals`.
+            tangents: Test parameter `tangents`.
+        """
         (x,) = cast("EagerTensorProtocol", primals)
         (t,) = cast("EagerTensorProtocol", tangents)
         return f_custom(x), ops.multiply(t, 2.0)
 
     def outer(x: EagerValue) -> EagerValue:
-        """Test function outer."""
+        """Test function outer.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return f_custom(x)
 
     x = Tensor(np.array([3.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     res_grad = grad(outer)(x)
 
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(res_grad), cast("Callable[..., EagerTensorProtocol]", np.array)([6.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", get_active_backend)().asarray(res_grad), cast("EagerCallableProtocol", np.array)([6.0], dtype=np.float32))
 
 
 def test_custom_jvp_has_aux() -> None:
@@ -121,12 +154,21 @@ def test_custom_jvp_has_aux() -> None:
 
     @custom_jvp
     def fn_with_aux(x: EagerValue) -> EagerValue:
-        """Test function fn_with_aux."""
+        """Test function fn_with_aux.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return ops.multiply(x, 2.0), "aux_data"
 
     @fn_with_aux.defjvp
     def fn_with_aux_jvp(primals: EagerValue, tangents: EagerValue) -> EagerValue:
-        """Test function fn_with_aux_jvp."""
+        """Test function fn_with_aux_jvp.
+
+        Args:
+            primals: Test parameter `primals`.
+            tangents: Test parameter `tangents`.
+        """
         (x,) = cast("EagerTensorProtocol", primals)
         (t,) = cast("EagerTensorProtocol", tangents)
         return (ops.multiply(x, 2.0), "aux_data"), ops.multiply(t, 99.0)
@@ -134,11 +176,11 @@ def test_custom_jvp_has_aux() -> None:
     x = Tensor(np.array([5.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     t = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    (val, aux), tan = cast("Callable[..., EagerTensorProtocol]", jvp)(fn_with_aux, (x,), (t,), has_aux=True)
+    (val, aux), tan = cast("EagerCallableProtocol", jvp)(fn_with_aux, (x,), (t,), has_aux=True)
 
     assert aux == "aux_data"
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(val), cast("Callable[..., EagerTensorProtocol]", np.array)([10.0], dtype=np.float32))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(tan), cast("Callable[..., EagerTensorProtocol]", np.array)([99.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", get_active_backend)().asarray(val), cast("EagerCallableProtocol", np.array)([10.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", get_active_backend)().asarray(tan), cast("EagerCallableProtocol", np.array)([99.0], dtype=np.float32))
 
 
 def test_custom_jvp_without_rule_fallback() -> None:
@@ -146,30 +188,44 @@ def test_custom_jvp_without_rule_fallback() -> None:
 
     @custom_jvp
     def standard_fn(x: EagerValue) -> EagerValue:
-        """Test function standard_fn."""
+        """Test function standard_fn.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return ops.multiply(x, 4.0)
 
     x = Tensor(np.array([3.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     t = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, tan = cast("Callable[..., EagerTensorProtocol]", jvp)(standard_fn, (x,), (t,))
+    val, tan = cast("EagerCallableProtocol", jvp)(standard_fn, (x,), (t,))
 
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(val), cast("Callable[..., EagerTensorProtocol]", np.array)([12.0], dtype=np.float32))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", get_active_backend)().asarray(tan), cast("Callable[..., EagerTensorProtocol]", np.array)([4.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", get_active_backend)().asarray(val), cast("EagerCallableProtocol", np.array)([12.0], dtype=np.float32))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", get_active_backend)().asarray(tan), cast("EagerCallableProtocol", np.array)([4.0], dtype=np.float32))
 
 
 def test_custom_jvp_equality_and_properties() -> None:
     """Verify CustomJVPFunction equality, representation, and non-tensor call."""
 
     def dummy(a: EagerValue, b: EagerValue) -> EagerValue:
-        """Test function dummy."""
+        """Test function dummy.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("EagerTensorProtocol", a) + cast("EagerTensorProtocol", b)
 
     cf1 = CustomJVPFunction(dummy)
     cf2 = CustomJVPFunction(dummy)
 
     def dummy2(a: EagerValue, b: EagerValue) -> EagerValue:
-        """Test function dummy2."""
+        """Test function dummy2.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return cast("EagerTensorProtocol", a) - cast("EagerTensorProtocol", b)
 
     cf3 = CustomJVPFunction(dummy2)
@@ -184,7 +240,11 @@ def test_custom_jvp_equality_and_properties() -> None:
 
 
 def test_load_primitive_autodiff_rules_cache_and_path(tmp_path: EagerTensorProtocol) -> None:
-    """Verify load_primitive_vjp_rules and load_primitive_jvp_rules loading and caching."""
+    """Verify load_primitive_vjp_rules and load_primitive_jvp_rules loading and caching.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     # Test cached lookup
     vjp_rules_cached = load_primitive_vjp_rules()
     assert "Add" in vjp_rules_cached
@@ -245,12 +305,21 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_1(_state: dict[str, E
 
     @custom_jvp
     def my_fn(x: EagerValue) -> EagerValue:
-        """Test function my_fn."""
+        """Test function my_fn.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
 
     @my_fn.defjvp
     def my_jvp(primals: EagerValue, tangents: EagerValue) -> EagerValue:
-        """Test function my_jvp."""
+        """Test function my_jvp.
+
+        Args:
+            primals: Test parameter `primals`.
+            tangents: Test parameter `tangents`.
+        """
         p = cast("EagerTensorProtocol", getattr(primals, "__getitem__")(0))
         t = cast("EagerTensorProtocol", getattr(tangents, "__getitem__")(0))
         return p * 2, t * 2
@@ -292,11 +361,20 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
     # Lines 163-164 & 169-170: unpacked signature and single return
     @custom_jvp
     def unpack_fn(x: EagerValue) -> EagerValue:
-        """Test function unpack_fn."""
+        """Test function unpack_fn.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1)
 
     def unpack_jvp(p: EagerValue, t: EagerValue) -> EagerValue:
-        """Test function unpack_jvp."""
+        """Test function unpack_jvp.
+
+        Args:
+            p: Test parameter `p`.
+            t: Test parameter `t`.
+        """
         return t
 
     unpack_fn.defjvp(unpack_jvp)
@@ -306,7 +384,12 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
 
     @custom_jvp
     def unpack4_fn(x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function unpack4_fn."""
+        """Test function unpack4_fn.
+
+        Args:
+            x: Test parameter `x`.
+            y: Test parameter `y`.
+        """
         return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", y)
 
     getattr(_state, "update")({"tan": tan, "unpack4_fn": unpack4_fn, "unpack_fn": unpack_fn, "unpack_jvp": unpack_jvp})
@@ -325,7 +408,14 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_3(_state: dict[str, E
     vjp = _state["vjp"]
 
     def unpack4_jvp(p1: EagerValue, p2: EagerValue, t1: EagerValue, t2: EagerValue) -> EagerValue:
-        """Test function unpack4_jvp."""
+        """Test function unpack4_jvp.
+
+        Args:
+            p1: Test parameter `p1`.
+            p2: Test parameter `p2`.
+            t1: Test parameter `t1`.
+            t2: Test parameter `t2`.
+        """
         return (cast("EagerTensorProtocol", p1) + cast("EagerTensorProtocol", p2), cast("EagerTensorProtocol", t1) + cast("EagerTensorProtocol", t2))
 
     unpack4_fn.defjvp(unpack4_jvp)
@@ -335,7 +425,11 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_3(_state: dict[str, E
 
     # Lines 312-347: vjp_fn called during active graph tracing
     def simple_f(x: EagerValue) -> EagerValue:
-        """Test function simple_f."""
+        """Test function simple_f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 3.0)
 
     _, vjp_fn = vjp(simple_f, 2.0)
@@ -359,7 +453,7 @@ def test_custom_jvp_and_vjp_tracing_and_unpacked_jvp() -> None:
     _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_1(_state)
     _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state)
     _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -383,7 +477,11 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_1(_state: dict[str, E
 
     @custom_jvp
     def fn_jvp_sub(x: EagerValue) -> EagerValue:
-        """Test function fn_jvp_sub."""
+        """Test function fn_jvp_sub.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
 
     fn_jvp_sub.defjvp(lambda p, t: (p[0] * 2, t[0] * 2), jvp_subgraph=subgraph_jvp)
@@ -391,11 +489,15 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_1(_state: dict[str, E
 
     @custom_jvp
     def fn_jvp_rule_graph(x: EagerValue) -> EagerValue:
-        """Test function fn_jvp_rule_graph."""
+        """Test function fn_jvp_rule_graph.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
 
     graph_rule = LogicalGraph("graph_rule")
-    cast("Callable[..., EagerTensorProtocol]", fn_jvp_rule_graph.defjvp)(graph_rule)
+    cast("EagerCallableProtocol", fn_jvp_rule_graph.defjvp)(graph_rule)
     assert fn_jvp_rule_graph.jvp_subgraph is graph_rule
     getattr(_state, "update")({"DType": DType, "Device": Device, "LogicalGraph": LogicalGraph, "Tensor": Tensor})
     getattr(_state, "update")({"TensorConfig": TensorConfig, "config": config, "custom_jvp": custom_jvp, "custom_vjp": custom_vjp})
@@ -418,12 +520,21 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_2(_state: dict[str, E
         graph = LogicalGraph("rule_with_graph")
 
         def __call__(self, primals: EagerValue, tangents: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                primals: Test parameter `primals`.
+                tangents: Test parameter `tangents`.
+            """
             return cast("EagerTensorProtocol", getattr(primals, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(tangents, "__getitem__")(0))
 
     @custom_jvp
     def fn_jvp_hasattr_graph(x: EagerValue) -> EagerValue:
-        """Test function fn_jvp_hasattr_graph."""
+        """Test function fn_jvp_hasattr_graph.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
 
     fn_jvp_hasattr_graph.defjvp(RuleWithGraph())
@@ -463,7 +574,11 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state: dict[str, E
 
     @custom_vjp
     def fn_vjp(x: EagerValue) -> EagerValue:
-        """Test function fn_vjp."""
+        """Test function fn_vjp.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 3)
 
     fn_vjp.defvjp(lambda x: (x * 3, x), lambda res, cot: (cot * 3,), bwd_subgraph=subgraph_vjp)
@@ -471,7 +586,11 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state: dict[str, E
 
     @custom_vjp
     def fn_vjp_graph(x: EagerValue) -> EagerValue:
-        """Test function fn_vjp_graph."""
+        """Test function fn_vjp_graph.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 3)
 
     fn_vjp_graph.defvjp(lambda x: (x * 3, x), subgraph_vjp)
@@ -494,12 +613,20 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_4(_state: dict[str, E
         graph = LogicalGraph("bwd_with_graph")
 
         def __call__(self, *args: EagerValue) -> EagerValue:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             return args
 
     @custom_vjp
     def fn_vjp_hasattr(x: EagerValue) -> EagerValue:
-        """Test function fn_vjp_hasattr."""
+        """Test function fn_vjp_hasattr.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 3)
 
     fn_vjp_hasattr.defvjp(lambda x: (x * 3, x), BwdWithGraph())
@@ -536,7 +663,11 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state: dict[str, E
         # Trace custom_vjp without bwd_subgraph to exercise lines 150 and 152 branches
         @custom_vjp
         def fn_vjp_nosub(x: EagerValue) -> EagerValue:
-            """Test function fn_vjp_nosub."""
+            """Test function fn_vjp_nosub.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 4)
 
         fn_vjp_nosub.defvjp(lambda x: (x * 4, x), lambda res, cot: (cot * 4,))
@@ -547,7 +678,11 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state: dict[str, E
         # Trace custom_vjp without fwd defined (fwd is None)
         @custom_vjp
         def fn_vjp_nofwd(x: EagerValue) -> EagerValue:
-            """Test function fn_vjp_nofwd."""
+            """Test function fn_vjp_nofwd.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 5)
 
         out_nofwd = fn_vjp_nofwd(t_noid)
@@ -571,4 +706,4 @@ def test_custom_jvp_and_custom_vjp_subgraph_branches() -> None:
     _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state)
     _test_custom_jvp_and_custom_vjp_subgraph_branches_part_4(_state)
     _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

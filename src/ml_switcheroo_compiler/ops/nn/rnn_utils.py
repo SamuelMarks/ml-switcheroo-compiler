@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Callable, Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -98,7 +98,7 @@ def scan(
         xs_unstacked = unstack(xs, axis=0)
 
         if conf.reverse:
-            xs_unstacked = list(cast("Callable[..., EagerTensorProtocol]", reversed)(xs_unstacked))
+            xs_unstacked = list(cast("EagerCallableProtocol", reversed)(xs_unstacked))
 
         carry = init
         ys = []
@@ -253,7 +253,7 @@ class RNNCellDeviceWrapper:
         Returns:
         tuple: Result.
         """
-        return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs))
+        return cast(TensorOrScalar, cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs))
 
 
 @dataclass
@@ -302,7 +302,7 @@ class RNNCellDropoutWrapper:
         """
         if self._config.input_keep_prob < 1.0:
             inputs = cast(Tensor, dropout(inputs, rate=1.0 - self._config.input_keep_prob))
-        out, new_state = getattr(cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs), "__iter__")()
+        out, new_state = getattr(cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._config.output_keep_prob < 1.0:
             out = dropout(out, rate=1.0 - self._config.output_keep_prob)
         return out, new_state
@@ -333,9 +333,9 @@ class RNNCellResidualWrapper:
         Returns:
             tuple: Result.
         """
-        out, new_state = getattr(cast("Callable[..., EagerTensorProtocol]", self._cell)(inputs, state, **kwargs), "__iter__")()
+        out, new_state = getattr(cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._residual_fn is not None:
-            out = cast("Callable[..., EagerTensorProtocol]", self._residual_fn)(inputs, out)
+            out = cast("EagerCallableProtocol", self._residual_fn)(inputs, out)
         else:
             out = add(inputs, out)
         return out, new_state

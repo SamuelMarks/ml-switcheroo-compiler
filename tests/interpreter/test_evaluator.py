@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_evaluator_not_implemented() -> None:
@@ -47,7 +47,7 @@ def test_evaluator_greater() -> None:
         g.nodes["b"] = LogicalNode(id="b", op_type="Input")
         g.nodes["c"] = LogicalNode(id="c", op_type="Greater", inputs=["a", "b"])
         g.outputs = ["c"]
-        res = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g, inputs={"a": cast("Callable[..., EagerTensorProtocol]", np.array)([2.0]), "b": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])})
+        res = cast("EagerCallableProtocol", evaluate_graph)(g, inputs={"a": cast("EagerCallableProtocol", np.array)([2.0]), "b": cast("EagerCallableProtocol", np.array)([1.0])})
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("c")), "__getitem__")(0))
     except Exception as e:
         raise e
@@ -65,8 +65,8 @@ def test_evaluator_relu() -> None:
         g.nodes["a"] = LogicalNode(id="a", op_type="Input")
         g.nodes["c"] = LogicalNode(id="c", op_type="Relu", inputs=["a"])
         g.outputs = ["c"]
-        res = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g, inputs={"a": cast("Callable[..., EagerTensorProtocol]", np.array)([-1.0, 2.0])})
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res["c"], cast("Callable[..., EagerTensorProtocol]", np.array)([0.0, 2.0]))
+        res = cast("EagerCallableProtocol", evaluate_graph)(g, inputs={"a": cast("EagerCallableProtocol", np.array)([-1.0, 2.0])})
+        cast("EagerCallableProtocol", np.testing.assert_array_equal)(res["c"], cast("EagerCallableProtocol", np.array)([0.0, 2.0]))
     except Exception as e:
         raise e
         pass
@@ -85,8 +85,8 @@ def test_evaluator_where() -> None:
         g.nodes["c"] = LogicalNode(id="c", op_type="Input")
         g.nodes["d"] = LogicalNode(id="d", op_type="Where", inputs=["a", "b", "c"])
         g.outputs = ["d"]
-        res = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g, inputs={"a": cast("Callable[..., EagerTensorProtocol]", np.array)([True, False]), "b": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0]), "c": cast("Callable[..., EagerTensorProtocol]", np.array)([3.0, 4.0])})
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res["d"], cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 4.0]))
+        res = cast("EagerCallableProtocol", evaluate_graph)(g, inputs={"a": cast("EagerCallableProtocol", np.array)([True, False]), "b": cast("EagerCallableProtocol", np.array)([1.0, 2.0]), "c": cast("EagerCallableProtocol", np.array)([3.0, 4.0])})
+        cast("EagerCallableProtocol", np.testing.assert_array_equal)(res["d"], cast("EagerCallableProtocol", np.array)([1.0, 4.0]))
     except Exception as e:
         raise e
         pass
@@ -141,7 +141,7 @@ def test_evaluator_stubs() -> None:
         g1.nodes = {n.id: n for n in [n1, n2, ng]}
         g1.inputs = ["n1", "n2"]
         g1.outputs = ["ng"]
-        res1 = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g1, {"n1": cast("Callable[..., EagerTensorProtocol]", np.array)([2.0]), "n2": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])})
+        res1 = cast("EagerCallableProtocol", evaluate_graph)(g1, {"n1": cast("EagerCallableProtocol", np.array)([2.0]), "n2": cast("EagerCallableProtocol", np.array)([1.0])})
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res1, "__getitem__")("ng")), "__getitem__")(0))
         g2 = IRGraph()
         nc = IRNode(id="nc", op_type="Input", inputs=[], attributes={}, shape_metadata=(1,))
@@ -151,7 +151,7 @@ def test_evaluator_stubs() -> None:
         g2.nodes = {n.id: n for n in [nc, nt, nf, nw]}
         g2.inputs = ["nc", "nt", "nf"]
         g2.outputs = ["nw"]
-        res2 = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g2, {"nc": cast("Callable[..., EagerTensorProtocol]", np.array)([True]), "nt": cast("Callable[..., EagerTensorProtocol]", np.array)([2.0]), "nf": cast("Callable[..., EagerTensorProtocol]", np.array)([3.0])})
+        res2 = cast("EagerCallableProtocol", evaluate_graph)(g2, {"nc": cast("EagerCallableProtocol", np.array)([True]), "nt": cast("EagerCallableProtocol", np.array)([2.0]), "nf": cast("EagerCallableProtocol", np.array)([3.0])})
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res2, "__getitem__")("nw")), "__getitem__")(0)) == 2.0
     except Exception as e:
         raise e
@@ -171,7 +171,7 @@ def test_evaluator_shape_kwargs() -> None:
         g1.nodes = {n.id: n for n in [n1, ne]}
         g1.inputs = ["n1"]
         g1.outputs = ["ne"]
-        res1 = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g1, {"n1": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])})
+        res1 = cast("EagerCallableProtocol", evaluate_graph)(g1, {"n1": cast("EagerCallableProtocol", np.array)([1.0])})
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res1, "__getitem__")("ne")), "shape")) == (2,)
         g2 = IRGraph()
         n2 = IRNode(id="n2", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
@@ -179,7 +179,7 @@ def test_evaluator_shape_kwargs() -> None:
         g2.nodes = {n.id: n for n in [n2, nr]}
         g2.inputs = ["n2"]
         g2.outputs = ["nr"]
-        res2 = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g2, {"n2": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0, 2.0])})
+        res2 = cast("EagerCallableProtocol", evaluate_graph)(g2, {"n2": cast("EagerCallableProtocol", np.array)([1.0, 2.0])})
         assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res2, "__getitem__")("nr")), "shape")) == (1, 2)
     except Exception as e:
         raise e
@@ -222,12 +222,16 @@ def test_evaluator_missing_output() -> None:
         """Test class MockBackend."""
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     env = Environment({"n1": 2.0})
     n = LogicalNode(id="n2", op_type="Output", inputs=["n1"])
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(n, env, cast("EagerCallableProtocol", MockBackend)())
     assert env.get("n2") == 2.0
 
 
@@ -238,7 +242,11 @@ def test_evaluator_recompute_coverage_mock() -> None:
         """Test class MockBackend."""
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     env = Environment({"n1": 2.0})
@@ -247,7 +255,7 @@ def test_evaluator_recompute_coverage_mock() -> None:
     import pytest
 
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+        cast("EagerCallableProtocol", _evaluate_node)(n, env, cast("EagerCallableProtocol", MockBackend)())
 
 
 def test_evaluator_missing_funcs() -> None:
@@ -261,39 +269,60 @@ def test_evaluator_missing_funcs() -> None:
         """Test class MockBackend."""
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "exec"
 
     env = Environment({"n1": 2.0})
     n = LogicalNode(id="n2", op_type="Unknown", inputs=["n1"])
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(n, env, cast("EagerCallableProtocol", MockBackend)())
     from ml_switcheroo_compiler.ops.eager_evaluator import BackendExecuteOpStrategy, CustomEagerEvalStrategy, EvaluationContext, EvaluationStrategy
 
     with pytest.raises(NotImplementedError):
-        cast("Callable[..., EagerTensorProtocol]", EvaluationStrategy.evaluate)(None, None)
+        cast("EagerCallableProtocol", EvaluationStrategy.evaluate)(None, None)
 
     class DummyOp:
         """Test class DummyOp."""
 
         @staticmethod
         def eager_eval(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function eager_eval."""
+            """Test function eager_eval.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "dummy"
 
-    assert cast("Callable[..., EagerTensorProtocol]", CustomEagerEvalStrategy)().evaluate(cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(DummyOp, "dummy", [], {}, None)) == "dummy"
+    assert cast("EagerCallableProtocol", CustomEagerEvalStrategy)().evaluate(cast("EagerCallableProtocol", EvaluationContext)(DummyOp, "dummy", [], {}, None)) == "dummy"
 
     class MockBackend2:
         """Test class MockBackend2."""
 
         def execute_op(self, op_type: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op_type: Test parameter `op_type`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "backend"
 
-    assert cast("Callable[..., EagerTensorProtocol]", BackendExecuteOpStrategy)().evaluate(cast("Callable[..., EagerTensorProtocol]", EvaluationContext)(None, "dummy", [], {}, cast("Callable[..., EagerTensorProtocol]", MockBackend2)())) == "backend"
+    assert cast("EagerCallableProtocol", BackendExecuteOpStrategy)().evaluate(cast("EagerCallableProtocol", EvaluationContext)(None, "dummy", [], {}, cast("EagerCallableProtocol", MockBackend2)())) == "backend"
     import numpy as np
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -340,7 +369,12 @@ def test_evaluator_base_eval_missing2() -> None:
 
         @staticmethod
         def eager_eval(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function eager_eval."""
+            """Test function eager_eval.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "dummy3"
 
     assert isinstance(EagerEvaluator._get_strategy(DummyOp3), type(EagerEvaluator._get_strategy(DummyOp3)))
@@ -385,7 +419,7 @@ def test_evaluator_base_eval_missing5() -> None:
     """Test function test_evaluator_base_eval_missing5."""
     from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", EagerEvaluator._get_strategy)(None), cast("type", cast("Callable[..., EagerTensorProtocol]", type)(cast("Callable[..., EagerTensorProtocol]", EagerEvaluator._get_strategy)(None))))
+    assert isinstance(cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(None), cast("type", cast("EagerCallableProtocol", type)(cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(None))))
 
 
 def test_evaluator_slice_parsing_edge() -> None:
@@ -405,7 +439,11 @@ def test_evaluator_slice_parsing_edge() -> None:
         """Test class MockBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     env = Environment({})
@@ -413,13 +451,13 @@ def test_evaluator_slice_parsing_edge() -> None:
     import numpy as np
 
     t = np.array([1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", _handle_slice)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), [t], {"slices": "slice(1, 2)"})
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", env.get)("n2"), cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
-    cast("Callable[..., EagerTensorProtocol]", _handle_slice)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), [t], {"dim": 0, "start": 0, "end": 2, "step": 1})
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", env.get)("n2"), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_slice_call)(cast("Callable[..., EagerTensorProtocol]", ast.parse)("unknown_func()", mode="eval").body) is None
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_slice_call)(cast("Callable[..., EagerTensorProtocol]", ast.parse)("obj.method()", mode="eval").body) is None
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_slice_call)(cast("Callable[..., EagerTensorProtocol]", ast.parse)("array([1])", mode="eval").body) == [1]
+    cast("EagerCallableProtocol", _handle_slice)(n, env, cast("EagerCallableProtocol", MockBackend)(), [t], {"slices": "slice(1, 2)"})
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", env.get)("n2"), cast("EagerCallableProtocol", np.array)([2]))
+    cast("EagerCallableProtocol", _handle_slice)(n, env, cast("EagerCallableProtocol", MockBackend)(), [t], {"dim": 0, "start": 0, "end": 2, "step": 1})
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", env.get)("n2"), cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", _parse_slice_call)(cast("EagerCallableProtocol", ast.parse)("unknown_func()", mode="eval").body) is None
+    assert cast("EagerCallableProtocol", _parse_slice_call)(cast("EagerCallableProtocol", ast.parse)("obj.method()", mode="eval").body) is None
+    assert cast("EagerCallableProtocol", _parse_slice_call)(cast("EagerCallableProtocol", ast.parse)("array([1])", mode="eval").body) == [1]
 
 
 def test_evaluator_all_slice_asts() -> None:
@@ -431,7 +469,7 @@ def test_evaluator_all_slice_asts() -> None:
     assert _parse_slice_string("()") == ()
     assert _parse_slice_string("[1, 2]") == [1, 2]
     assert _parse_slice_string("-1") == -1
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_unary)(cast("Callable[..., EagerTensorProtocol]", ast.parse)("~1", mode="eval").body) is None
+    assert cast("EagerCallableProtocol", _parse_unary)(cast("EagerCallableProtocol", ast.parse)("~1", mode="eval").body) is None
 
 
 def disabled_test_evaluator_handle_custom_ops() -> None:
@@ -446,16 +484,23 @@ def disabled_test_evaluator_handle_custom_ops() -> None:
         """Test class MockBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "exec"
 
-    env = cast("Callable[..., Environment]", Environment)(
-        {"n1": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0]), "n2": cast("Callable[..., EagerTensorProtocol]", np.array)([0]), "n3": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0]), "c": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])}
-    )
+    env = cast("Callable[..., Environment]", Environment)({"n1": cast("EagerCallableProtocol", np.array)([1.0]), "n2": cast("EagerCallableProtocol", np.array)([0]), "n3": cast("EagerCallableProtocol", np.array)([1.0]), "c": cast("EagerCallableProtocol", np.array)([1.0])})
     n_cond = LogicalNode(id="cond_out", op_type="Cond", inputs=["c", "n1"])
     from ml_switcheroo_ir import LogicalGraph
 
@@ -464,7 +509,7 @@ def disabled_test_evaluator_handle_custom_ops() -> None:
     fg = LogicalGraph()
     fg.outputs = ["n1"]
     n_cond.attributes = {"true_branch": tg, "false_branch": fg}
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_cond, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(n_cond, env, cast("EagerCallableProtocol", MockBackend)())
 
 
 def test_evaluator_handle_checkpoint() -> None:
@@ -535,13 +580,17 @@ def test_evaluator_handle_getitem() -> None:
         """Test class MockBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     env = Environment({})
     n = LogicalNode(id="n2", op_type="GetItem", inputs=["n1"])
     t = np.array([1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", _handle_getitem)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), [t], {"key": "1"})
+    cast("EagerCallableProtocol", _handle_getitem)(n, env, cast("EagerCallableProtocol", MockBackend)(), [t], {"key": "1"})
     assert env.get("n2") == 2
 
 
@@ -556,12 +605,18 @@ def test_evaluator_handle_meshgrid() -> None:
         """Test class MockBackend."""
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return ["m1", "m2"]
 
     env = Environment({})
     n = LogicalNode(id="n2", op_type="Meshgrid", inputs=["n1"])
-    cast("Callable[..., EagerTensorProtocol]", _handle_meshgrid)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), [1.0], {"output_index": 1})
+    cast("EagerCallableProtocol", _handle_meshgrid)(n, env, cast("EagerCallableProtocol", MockBackend)(), [1.0], {"output_index": 1})
     assert env.get("n2") == "m2"
 
 
@@ -577,18 +632,28 @@ def test_evaluator_target_dispatch() -> None:
         """Test class MockBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return ["m1", "m2"]
 
     env = Environment({})
     n = LogicalNode(id="n2", op_type="Slice", inputs=["n1"])
     t = np.array([1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), "GetItem", [t], {"key": "1"})
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), "Meshgrid", [t], {"output_index": 1})
+    cast("EagerCallableProtocol", _dispatch_op)(n, env, cast("EagerCallableProtocol", MockBackend)(), "GetItem", [t], {"key": "1"})
+    cast("EagerCallableProtocol", _dispatch_op)(n, env, cast("EagerCallableProtocol", MockBackend)(), "Meshgrid", [t], {"output_index": 1})
     n2 = LogicalNode(id="n3", op_type="Constant")
     n2.attributes = {"value": 5.0}
 
@@ -596,12 +661,16 @@ def test_evaluator_target_dispatch() -> None:
         """Test class MockBackend3."""
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
     from ml_switcheroo_compiler.interpreter.evaluator import _evaluate_node
 
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n2, env, cast("Callable[..., EagerTensorProtocol]", MockBackend3)())
+    cast("EagerCallableProtocol", _evaluate_node)(n2, env, cast("EagerCallableProtocol", MockBackend3)())
     assert env.get("n3") == 5.0
 
 
@@ -629,23 +698,33 @@ def test_evaluator_target_dispatch_more() -> None:
         """Test class MockBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "exec"
 
     env = Environment({})
     n = LogicalNode(id="n2", op_type="Slice", inputs=["n1"])
     t = np.array([1, 2, 3])
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), "Slice", [t], {"slices": "slice(1, 2)"})
+    cast("EagerCallableProtocol", _dispatch_op)(n, env, cast("EagerCallableProtocol", MockBackend)(), "Slice", [t], {"slices": "slice(1, 2)"})
     n2 = LogicalNode(id="n2", op_type="Checkpoint", inputs=["n1"])
     n2.attributes = {"subgraph": None}
     import pytest
 
     with pytest.raises(AttributeError):
-        cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n2, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)(), "Checkpoint", [t], {})
+        cast("EagerCallableProtocol", _dispatch_op)(n2, env, cast("EagerCallableProtocol", MockBackend)(), "Checkpoint", [t], {})
 
 
 def test_evaluate_if_node() -> None:
@@ -656,7 +735,7 @@ def test_evaluate_if_node() -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
     env = Environment()
-    cast("Callable[..., EagerTensorProtocol]", env.set)("cond", cast("Callable[..., EagerTensorProtocol]", np.array)([True]))
+    cast("EagerCallableProtocol", env.set)("cond", cast("EagerCallableProtocol", np.array)([True]))
     env.set("a", 5)
     node = LogicalNode(id="out", op_type="If", inputs=["cond"])
     then_graph = IRGraph()
@@ -669,12 +748,18 @@ def test_evaluate_if_node() -> None:
         """Test class MockBackend."""
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             if op == "Identity":
                 return cast("EagerTensorProtocol", getattr(args, "__getitem__")(0) * 2)
             return cast("EagerTensorProtocol", None)
 
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(node, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(node, env, cast("EagerCallableProtocol", MockBackend)())
     assert env.get("out") == 10
 
 
@@ -697,12 +782,18 @@ def test_evaluate_if_node_false() -> None:
         """Test class MockBackend."""
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             if op == "Identity":
                 return cast("EagerTensorProtocol", getattr(args, "__getitem__")(0) + 1)
             return cast("EagerTensorProtocol", None)
 
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(node, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(node, env, cast("EagerCallableProtocol", MockBackend)())
     assert env.get("out") == 7
 
 
@@ -725,14 +816,24 @@ def test_evaluate_if_node_no_outputs() -> None:
         """Test class MockBackend."""
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return args[0]
 
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(node, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(node, env, cast("EagerCallableProtocol", MockBackend)())
     assert env.get("out") == 99
 
 
@@ -760,7 +861,13 @@ def test_evaluate_loop_node() -> None:
         """Test class MockBackend."""
 
         def execute_op(self, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             val = args[0] if args else None
             if val is None:
                 val = 0
@@ -770,7 +877,7 @@ def test_evaluate_loop_node() -> None:
                 return cast("EagerTensorProtocol", val) - cast("EagerTensorProtocol", 1)
             return cast("EagerTensorProtocol", None)
 
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(node, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(node, env, cast("EagerCallableProtocol", MockBackend)())
     print("MEMORY:", env.memory)
     assert env.get("out") == 0
 
@@ -783,7 +890,7 @@ def test_evaluate_if_no_branch() -> None:
     from ml_switcheroo_compiler.ir.core import LogicalNode
 
     env = Environment()
-    cast("Callable[..., EagerTensorProtocol]", env.set)("cond", cast("Callable[..., EagerTensorProtocol]", np.array)([True]))
+    cast("EagerCallableProtocol", env.set)("cond", cast("EagerCallableProtocol", np.array)([True]))
     node = LogicalNode(id="out", op_type="If", inputs=["cond"])
     node.attributes = {}
 
@@ -792,7 +899,7 @@ def test_evaluate_if_no_branch() -> None:
 
         pass
 
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(node, env, cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(node, env, cast("EagerCallableProtocol", MockBackend)())
     assert "out" not in env.memory
 
 
@@ -814,14 +921,14 @@ def test_evaluator_coverage() -> None:
     g.outputs = ["n1"]
     res = evaluate_graph(g, {"n1": 1})
     assert res["n1"] == 1
-    n = cast("Callable[..., EagerTensorProtocol]", ast.Call)(func=cast("Callable[..., EagerTensorProtocol]", ast.Attribute)(), args=[])
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_slice_call)(n) is None
-    n = cast("Callable[..., EagerTensorProtocol]", ast.Call)(func=cast("Callable[..., EagerTensorProtocol]", ast.Name)(id="slice"), args=[cast("Callable[..., EagerTensorProtocol]", ast.Constant)(value=1)])
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_slice_call)(n) == cast("Callable[..., EagerTensorProtocol]", slice)(1)
-    n = cast("Callable[..., EagerTensorProtocol]", ast.Call)(func=cast("Callable[..., EagerTensorProtocol]", ast.Name)(id="array"), args=[cast("Callable[..., EagerTensorProtocol]", ast.Constant)(value=1)])
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_slice_call)(n) == 1
-    n = cast("Callable[..., EagerTensorProtocol]", ast.Call)(func=cast("Callable[..., EagerTensorProtocol]", ast.Name)(id="unknown"), args=[])
-    assert cast("Callable[..., EagerTensorProtocol]", _parse_slice_call)(n) is None
+    n = cast("EagerCallableProtocol", ast.Call)(func=cast("EagerCallableProtocol", ast.Attribute)(), args=[])
+    assert cast("EagerCallableProtocol", _parse_slice_call)(n) is None
+    n = cast("EagerCallableProtocol", ast.Call)(func=cast("EagerCallableProtocol", ast.Name)(id="slice"), args=[cast("EagerCallableProtocol", ast.Constant)(value=1)])
+    assert cast("EagerCallableProtocol", _parse_slice_call)(n) == cast("EagerCallableProtocol", slice)(1)
+    n = cast("EagerCallableProtocol", ast.Call)(func=cast("EagerCallableProtocol", ast.Name)(id="array"), args=[cast("EagerCallableProtocol", ast.Constant)(value=1)])
+    assert cast("EagerCallableProtocol", _parse_slice_call)(n) == 1
+    n = cast("EagerCallableProtocol", ast.Call)(func=cast("EagerCallableProtocol", ast.Name)(id="unknown"), args=[])
+    assert cast("EagerCallableProtocol", _parse_slice_call)(n) is None
     assert _parse_tuple(ast.Tuple(elts=[ast.Constant(value=1)])) == (1,)
     assert _parse_list(ast.List(elts=[ast.Constant(value=1)])) == [1]
     assert _parse_constant(ast.Constant(value=1)) == 1
@@ -843,22 +950,32 @@ def test_evaluator_dispatch() -> None:
         """Test class FakeBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array(x)
 
         def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                name: Test parameter `name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             if name == "Meshgrid":
                 return [1, 2]
             return 42
 
     n_slice = LogicalNode(id="slice_id", op_type="Slice")
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n_slice, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)(), "Slice", [cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2, 3])], {"slices": "slice(1, None)"})
+    cast("EagerCallableProtocol", _dispatch_op)(n_slice, env, cast("EagerCallableProtocol", FakeBackend)(), "Slice", [cast("EagerCallableProtocol", np.array)([1, 2, 3])], {"slices": "slice(1, None)"})
     assert cast("EagerTensorProtocol", getattr(env.get("slice_id"), "tolist"))() == [2, 3]
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n_slice, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)(), "Slice", [cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2, 3])], {"dim": 0, "start": 0, "end": 1, "step": 1})
+    cast("EagerCallableProtocol", _dispatch_op)(n_slice, env, cast("EagerCallableProtocol", FakeBackend)(), "Slice", [cast("EagerCallableProtocol", np.array)([1, 2, 3])], {"dim": 0, "start": 0, "end": 1, "step": 1})
     assert cast("EagerTensorProtocol", getattr(env.get("slice_id"), "tolist"))() == [1]
     n_getitem = LogicalNode(id="get_id", op_type="GetItem")
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n_getitem, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)(), "GetItem", [cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2, 3])], {"key": "slice(1, None)"})
+    cast("EagerCallableProtocol", _dispatch_op)(n_getitem, env, cast("EagerCallableProtocol", FakeBackend)(), "GetItem", [cast("EagerCallableProtocol", np.array)([1, 2, 3])], {"key": "slice(1, None)"})
     assert cast("EagerTensorProtocol", getattr(env.get("get_id"), "tolist"))() == [2, 3]
 
     class FakeSubgraph:
@@ -869,13 +986,13 @@ def test_evaluator_dispatch() -> None:
         nodes = [LogicalNode(id="out1", op_type="Abs", inputs=["in1"])]
 
     n_checkpoint = LogicalNode(id="cp_id", op_type="Checkpoint", attributes={"subgraph": FakeSubgraph()})
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n_checkpoint, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)(), "Checkpoint", [99], {})
+    cast("EagerCallableProtocol", _dispatch_op)(n_checkpoint, env, cast("EagerCallableProtocol", FakeBackend)(), "Checkpoint", [99], {})
     assert env.get("cp_id") == 99
     n_meshgrid = LogicalNode(id="mg_id", op_type="Meshgrid")
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n_meshgrid, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)(), "Meshgrid", [], {"output_index": 1})
+    cast("EagerCallableProtocol", _dispatch_op)(n_meshgrid, env, cast("EagerCallableProtocol", FakeBackend)(), "Meshgrid", [], {"output_index": 1})
     assert env.get("mg_id") == 2
     n_other = LogicalNode(id="other_id", op_type="Other")
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n_other, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)(), "Other", [], {})
+    cast("EagerCallableProtocol", _dispatch_op)(n_other, env, cast("EagerCallableProtocol", FakeBackend)(), "Other", [], {})
     assert env.get("other_id") == 42
 
     class FakeSubgraphDict:
@@ -886,7 +1003,7 @@ def test_evaluator_dispatch() -> None:
         nodes = {"out1": LogicalNode(id="out1", op_type="Abs", inputs=["in1"]), "out2": LogicalNode(id="out2", op_type="Abs", inputs=["in1"])}
 
     n_checkpoint_dict = LogicalNode(id="cp_id2", op_type="Checkpoint", attributes={"subgraph": FakeSubgraphDict()})
-    cast("Callable[..., EagerTensorProtocol]", _dispatch_op)(n_checkpoint_dict, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)(), "Checkpoint", [99], {})
+    cast("EagerCallableProtocol", _dispatch_op)(n_checkpoint_dict, env, cast("EagerCallableProtocol", FakeBackend)(), "Checkpoint", [99], {})
 
 
 def test_evaluator_uncovered() -> None:
@@ -919,32 +1036,46 @@ def test_evaluator_extra_branches() -> None:
         """Test class FakeBackend."""
 
         def asarray(self, x: EagerValue) -> EagerValue:
-            """Test function asarray."""
+            """Test function asarray.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array(x)
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array(x)
 
         def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                name: Test parameter `name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return 42
 
     backend = FakeBackend()
     n_out1 = LogicalNode(id="out_1", op_type="Output", inputs=["in1"])
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_out1, env, backend)
+    cast("EagerCallableProtocol", _evaluate_node)(n_out1, env, backend)
     assert env.get("out_1") == 10
     n_out2 = LogicalNode(id="out_2", op_type="Output", inputs=["in1", "in2"])
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_out2, env, backend)
+    cast("EagerCallableProtocol", _evaluate_node)(n_out2, env, backend)
     assert env.get("out_2") == (10, 20)
     n_const = LogicalNode(id="const_1", op_type="Constant", attributes={"value": 99})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_const, env, backend)
+    cast("EagerCallableProtocol", _evaluate_node)(n_const, env, backend)
     assert env.get("const_1") == 99
     n_recompute = LogicalNode(id="rec_1", op_type="Recompute", inputs=["in1"], attributes={"original_op": "Add", "original_attrs": {}})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_recompute, env, backend)
+    cast("EagerCallableProtocol", _evaluate_node)(n_recompute, env, backend)
     assert env.get("rec_1") == 42
     n_other = LogicalNode(id="other_1", op_type="OtherOp", inputs=["in1"])
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_other, env, backend)
+    cast("EagerCallableProtocol", _evaluate_node)(n_other, env, backend)
     assert env.get("other_1") == 42
     assert _get_op_alias("Sub") == "Subtract"
     assert _get_op_alias("Unknown") == "Unknown"
@@ -973,7 +1104,11 @@ def test_evaluator_if() -> None:
         """Test class FakeBranch."""
 
         def __init__(self, out_is_list: EagerValue = True) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                out_is_list: Test parameter `out_is_list`.
+            """
             self.nodes = [LogicalNode(id="out1", op_type="Output", inputs=["val1"])]
             if out_is_list:
                 self.outputs = ["out1"]
@@ -984,15 +1119,21 @@ def test_evaluator_if() -> None:
         """Test class FakeBackend."""
 
         def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                name: Test parameter `name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return 42
 
     n_if_then = LogicalNode(id="if_1", op_type="If", inputs=["cond"], attributes={"then_branch": FakeBranch()})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_if_node)(n_if_then, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+    cast("EagerCallableProtocol", _evaluate_if_node)(n_if_then, env, cast("EagerCallableProtocol", FakeBackend)())
     assert env.get("if_1") == 10
     env = Environment({"cond": False, "val1": 10})
     n_if_else = LogicalNode(id="if_2", op_type="If", inputs=["cond"], attributes={"else_branch": FakeBranch(out_is_list=False)})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_if_node)(n_if_else, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+    cast("EagerCallableProtocol", _evaluate_if_node)(n_if_else, env, cast("EagerCallableProtocol", FakeBackend)())
     assert env.get("if_2") == 10
     env = Environment({"cond": True, "val1": 10})
 
@@ -1005,11 +1146,11 @@ def test_evaluator_if() -> None:
             self.outputs = cast("list[EagerTensorProtocol]", [])
 
     n_if_true = LogicalNode(id="if_3", op_type="If", inputs=["cond"], attributes={"true_branch": FakeBranchNoOut()})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_if_node)(n_if_true, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+    cast("EagerCallableProtocol", _evaluate_if_node)(n_if_true, env, cast("EagerCallableProtocol", FakeBackend)())
     assert env.get("if_3") == 10
     env = Environment({"cond": False, "val1": 10})
     n_if_false = LogicalNode(id="if_4", op_type="If", inputs=["cond"], attributes={"false_branch": FakeBranchNoOut()})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_if_node)(n_if_false, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+    cast("EagerCallableProtocol", _evaluate_if_node)(n_if_false, env, cast("EagerCallableProtocol", FakeBackend)())
     assert env.get("if_4") == 10
 
     class FakeTensorBool:
@@ -1019,8 +1160,8 @@ def test_evaluator_if() -> None:
             """Test function item."""
             return True
 
-    env = cast("Callable[..., Environment]", Environment)({"cond": cast("Callable[..., EagerTensorProtocol]", FakeTensorBool)(), "val1": 10})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_if_node)(n_if_then, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+    env = cast("Callable[..., Environment]", Environment)({"cond": cast("EagerCallableProtocol", FakeTensorBool)(), "val1": 10})
+    cast("EagerCallableProtocol", _evaluate_if_node)(n_if_then, env, cast("EagerCallableProtocol", FakeBackend)())
     assert env.get("if_1") == 10
 
 
@@ -1037,14 +1178,24 @@ def test_evaluator_loop() -> None:
         """Test class FakeBackend."""
 
         def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                name: Test parameter `name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return cast("EagerValue", getattr(args, "__getitem__")(0) + 1)
 
     class FakeCondGraph:
         """Test class FakeCondGraph."""
 
         def __init__(self, out_is_tensor: EagerValue = False) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                out_is_tensor: Test parameter `out_is_tensor`.
+            """
             self.nodes = [LogicalNode(id="cond_in", op_type="Input"), LogicalNode(id="cond_out", op_type="Less", inputs=["cond_in"])]
             self.outputs = ["cond_out"]
             self.out_is_tensor = out_is_tensor
@@ -1053,7 +1204,11 @@ def test_evaluator_loop() -> None:
         """Test class FakeBodyGraph."""
 
         def __init__(self, nodes_dict: EagerValue = False) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                nodes_dict: Test parameter `nodes_dict`.
+            """
             if nodes_dict:
                 self.nodes = {"body_in": LogicalNode(id="body_in", op_type="Input"), "body_out": LogicalNode(id="body_out", op_type="Add", inputs=["body_in"])}
             else:
@@ -1064,16 +1219,22 @@ def test_evaluator_loop() -> None:
     from unittest.mock import patch
 
     def mock_eval_node(node: EagerValue, env: EagerValue, backend: EagerValue) -> None:
-        """Test function mock_eval_node."""
+        """Test function mock_eval_node.
+
+        Args:
+            node: Test parameter `node`.
+            env: Test parameter `env`.
+            backend: Test parameter `backend`.
+        """
         if cast("EagerTensorProtocol", getattr(node, "op_type")) == "Less":
-            v = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(env, "get")))(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(node, "inputs")), "__getitem__")(0)))
+            v = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(env, "get")))(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(node, "inputs")), "__getitem__")(0)))
             getattr(env, "set")(getattr(node, "id"), v < 2)
         elif cast("EagerTensorProtocol", getattr(node, "op_type")) == "Add":
-            v = cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(env, "get")))(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(node, "inputs")), "__getitem__")(0)))
+            v = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(env, "get")))(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(node, "inputs")), "__getitem__")(0)))
             getattr(env, "set")(getattr(node, "id"), v + 1)
 
     with patch("ml_switcheroo_compiler.interpreter.evaluator._evaluate_node", side_effect=mock_eval_node):
-        cast("Callable[..., EagerTensorProtocol]", _evaluate_loop_node)(n_loop, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+        cast("EagerCallableProtocol", _evaluate_loop_node)(n_loop, env, cast("EagerCallableProtocol", FakeBackend)())
         assert env.get("loop_1") == 2
 
         class FakeCondGraphDict:
@@ -1086,15 +1247,15 @@ def test_evaluator_loop() -> None:
 
         env = Environment({"in1": 0})
         n_loop2 = LogicalNode(id="loop_2", op_type="WhileLoop", inputs=["in1"], attributes={"cond": FakeCondGraphDict(), "body": FakeBodyGraph(nodes_dict=True)})
-        cast("Callable[..., EagerTensorProtocol]", _evaluate_loop_node)(n_loop2, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+        cast("EagerCallableProtocol", _evaluate_loop_node)(n_loop2, env, cast("EagerCallableProtocol", FakeBackend)())
         assert env.get("loop_2") == 2
     n_cond = LogicalNode(id="cond_1", op_type="Cond", inputs=["cond"], attributes={"then_branch": FakeCondGraph()})
     with patch("ml_switcheroo_compiler.interpreter.evaluator._evaluate_if_node") as mock_if:
-        cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_cond, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+        cast("EagerCallableProtocol", _evaluate_node)(n_cond, env, cast("EagerCallableProtocol", FakeBackend)())
         assert mock_if.called
     n_loop_alias = LogicalNode(id="loop_3", op_type="Loop", inputs=["in1"], attributes={"cond": FakeCondGraph(), "body": FakeBodyGraph()})
     with patch("ml_switcheroo_compiler.interpreter.evaluator._evaluate_loop_node") as mock_loop:
-        cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_loop_alias, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+        cast("EagerCallableProtocol", _evaluate_node)(n_loop_alias, env, cast("EagerCallableProtocol", FakeBackend)())
         assert mock_loop.called
 
 
@@ -1113,7 +1274,7 @@ def test_evaluator_if_no_branch() -> None:
         pass
 
     n_if = LogicalNode(id="if_1", op_type="If", inputs=["cond"], attributes={})
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_if_node)(n_if, env, cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+    cast("EagerCallableProtocol", _evaluate_if_node)(n_if, env, cast("EagerCallableProtocol", FakeBackend)())
     assert "if_1" not in env.memory
 
 
@@ -1129,7 +1290,12 @@ def test_evaluator_vmap_and_identity_exception() -> None:
         """Test class FailingIdentityBackend."""
 
         def execute_op(self, op_type: EagerValue, *args: EagerValue) -> None:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op_type: Test parameter `op_type`.
+                args: Test parameter `args`.
+            """
             raise RuntimeError("execute_op failed")
 
     class NoExecuteOpBackend:
@@ -1139,9 +1305,9 @@ def test_evaluator_vmap_and_identity_exception() -> None:
 
     env = Environment({"in_val": 42})
     n_id = LogicalNode(id="id_out", op_type="Identity", inputs=["in_val"])
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_id, env, cast("Callable[..., EagerTensorProtocol]", FailingIdentityBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(n_id, env, cast("EagerCallableProtocol", FailingIdentityBackend)())
     assert env.get("id_out") == 42
-    cast("Callable[..., EagerTensorProtocol]", _evaluate_node)(n_id, env, cast("Callable[..., EagerTensorProtocol]", NoExecuteOpBackend)())
+    cast("EagerCallableProtocol", _evaluate_node)(n_id, env, cast("EagerCallableProtocol", NoExecuteOpBackend)())
     assert env.get("id_out") == 42
 
     class CustomGraphLike:
@@ -1156,9 +1322,9 @@ def test_evaluator_vmap_and_identity_exception() -> None:
     g_vmap.inputs = ["arr"]
     g_vmap.outputs = ["v_out"]
     g_vmap.nodes = {"arr": LogicalNode(id="arr", op_type="Input", shape_metadata=(2,)), "v_out": LogicalNode(id="v_out", op_type="Vmap", inputs=["arr"], attributes={"body": CustomGraphLike(), "in_axes": 0, "out_axes": 0})}
-    res = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g_vmap, {"arr": cast("Callable[..., EagerTensorProtocol]", np.array)([10.0, 20.0])})
+    res = cast("EagerCallableProtocol", evaluate_graph)(g_vmap, {"arr": cast("EagerCallableProtocol", np.array)([10.0, 20.0])})
     assert "v_out" in res
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res["v_out"], cast("Callable[..., EagerTensorProtocol]", np.array)([10.0, 20.0]))
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res["v_out"], cast("EagerCallableProtocol", np.array)([10.0, 20.0]))
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     body_ir = IRGraph(name="body_ir")
@@ -1169,7 +1335,7 @@ def test_evaluator_vmap_and_identity_exception() -> None:
     g_vmap_ir.inputs = ["arr"]
     g_vmap_ir.outputs = ["v_out"]
     g_vmap_ir.nodes = {"arr": LogicalNode(id="arr", op_type="Input", shape_metadata=(2,)), "v_out": LogicalNode(id="v_out", op_type="Vmap", inputs=["arr"], attributes={"body": body_ir, "in_axes": 0, "out_axes": 0})}
-    res_ir = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g_vmap_ir, {"arr": cast("Callable[..., EagerTensorProtocol]", np.array)([10.0, 20.0])})
+    res_ir = cast("EagerCallableProtocol", evaluate_graph)(g_vmap_ir, {"arr": cast("EagerCallableProtocol", np.array)([10.0, 20.0])})
     assert "v_out" in res_ir
 
 
@@ -1206,7 +1372,7 @@ def test_evaluator_subgraphs_and_initializers() -> None:
     cp_graph.nodes["inp"] = LogicalNode(id="inp", op_type="Input")
     cp_graph.nodes["cp_node"] = LogicalNode(id="cp_node", op_type="Checkpoint", inputs=["inp"], subgraphs={"body": cp_sub})
     cp_graph.outputs = ["cp_node"]
-    out_cp = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(cp_graph, {"inp": cast("Callable[..., EagerTensorProtocol]", np.array)([3.0])})
+    out_cp = cast("EagerCallableProtocol", evaluate_graph)(cp_graph, {"inp": cast("EagerCallableProtocol", np.array)([3.0])})
     assert out_cp["cp_node"] == 6.0
     init_graph = LogicalGraph(name="init_graph")
     init_graph.inputs = ["in_val"]
@@ -1214,5 +1380,5 @@ def test_evaluator_subgraphs_and_initializers() -> None:
     init_graph.nodes["in_val"] = LogicalNode(id="in_val", op_type="Input")
     init_graph.nodes["add_node"] = LogicalNode(id="add_node", op_type="Add", inputs=["in_val", "weight"])
     init_graph.outputs = ["add_node"]
-    out_init = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(init_graph, {"in_val": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])})
+    out_init = cast("EagerCallableProtocol", evaluate_graph)(init_graph, {"in_val": cast("EagerCallableProtocol", np.array)([1.0])})
     assert out_init["add_node"] == 5.0

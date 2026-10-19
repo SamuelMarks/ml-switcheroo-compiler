@@ -9,20 +9,26 @@ import numpy as np
 from ml_switcheroo_compiler.backends.numpy.eager.math_unary import _np_erf, _np_erfc, _np_erfinv, _np_exp2, _np_igamma, _np_igammac, _np_signbit
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyModule:
     """Module without asarray."""
 
     def vectorize(self, f: EagerValue) -> EagerValue:
-        """Vectorize."""
+        """Vectorize.
+
+        Args:
+            f: Test parameter `f`.
+        """
 
         def _f(x: EagerValue) -> EagerValue:
-            """F."""
-            return [cast("Callable[..., EagerTensorProtocol]", f)(i) for i in cast("EagerTensorProtocol", x)]
+            """F.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return [cast("EagerCallableProtocol", f)(i) for i in cast("EagerTensorProtocol", x)]
 
         return _f
 

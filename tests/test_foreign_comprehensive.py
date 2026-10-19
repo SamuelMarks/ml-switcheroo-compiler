@@ -6,7 +6,7 @@ from typing import Tuple, cast
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.foreign import ForeignCall
 
 
@@ -14,7 +14,11 @@ def test_foreign_call_introspection() -> None:
     """Test dynamic shape introspection."""
 
     def my_complex_func(x: EagerValue) -> Tuple[int, int, int]:
-        """Mock complex func."""
+        """Mock complex func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (1, 2, 3)
 
     fc = ForeignCall()
@@ -60,7 +64,7 @@ def test_foreign_call_introspection() -> None:
             """Init."""
             self.output_shape = (6, 6)
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithOutputShape)()) == (6, 6)
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithOutputShape)()) == (6, 6)
 
     class WithOutputShapes:
         """Mock."""
@@ -69,7 +73,7 @@ def test_foreign_call_introspection() -> None:
             """Init."""
             self.output_shapes = [(7, 7), (8, 8)]
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithOutputShapes)()) == (7, 7)
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithOutputShapes)()) == (7, 7)
 
 
 def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -91,7 +95,7 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
             """Init."""
             self.output_shapes = cast("list[EagerTensorProtocol]", [])
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", EmptyOutputShapes)()) == ()
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", EmptyOutputShapes)()) == ()
 
     # bad output_shape
     class BadOutputShape:
@@ -101,7 +105,7 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
             """Init."""
             self.output_shape = 5
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", BadOutputShape)()) == (5,)
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", BadOutputShape)()) == (5,)
 
     # subgraph handling
     class MockSubNode:
@@ -138,7 +142,7 @@ def _test_foreign_call_introspection_branches_part_2(_state: dict[str, EagerTens
             """Init."""
             self.subgraph = MockSubgraph()
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithSubgraph)()) == (11, 11)
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithSubgraph)()) == (11, 11)
 
     # typing.get_type_hints failure fallback
     def failing_typing_hints() -> None:
@@ -186,7 +190,7 @@ def _test_foreign_call_introspection_branches_part_3(_state: dict[str, EagerTens
     assert fc.infer_shape(ast_int_return) == ()
 
     # Fallthrough
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", object)()) == ()
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", object)()) == ()
     getattr(_state, "update")({"ast_int_return": ast_int_return, "ast_str_return": ast_str_return, "non_int_tuple": non_int_tuple})
 
 
@@ -196,7 +200,7 @@ def test_foreign_call_introspection_branches() -> None:
     _test_foreign_call_introspection_branches_part_1(_state)
     _test_foreign_call_introspection_branches_part_2(_state)
     _test_foreign_call_introspection_branches_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_foreign_call_introspection_kwargs_only() -> None:
@@ -218,7 +222,7 @@ def test_foreign_call_output_shape_scalar() -> None:
             """Init."""
             self.output_shape = 5
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithScalarOutShape)()) == (5,)
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithScalarOutShape)()) == (5,)
 
 
 def test_foreign_call_inspect_signature() -> None:
@@ -273,7 +277,11 @@ def test_foreign_call_fallback_exceptions() -> None:
 
     # We monkeypatch inspect.getsource to throw OSError
     def mock_getsource(obj: EagerValue) -> None:
-        """Test function mock_getsource."""
+        """Test function mock_getsource.
+
+        Args:
+            obj: Test parameter `obj`.
+        """
         raise OSError("Cannot get source")
 
     original_getsource = inspect.getsource
@@ -301,7 +309,7 @@ def test_foreign_call_out_shape_tuple_branch() -> None:
             """Init."""
             self.output_shape = (5, 5)
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithTupleOutShape)()) == (5, 5)
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithTupleOutShape)()) == (5, 5)
 
 
 def test_foreign_call_out_shape_kwarg_tuple_branch() -> None:
@@ -330,7 +338,11 @@ def test_foreign_call_exception_branch_inspect_signature() -> None:
     original_sig = inspect.signature
 
     def failing_sig(obj: EagerValue) -> None:
-        """Mock."""
+        """Mock.
+
+        Args:
+            obj: Test parameter `obj`.
+        """
         raise ValueError("Cannot get sig")
 
     setattr(inspect, "signature", failing_sig)
@@ -359,7 +371,7 @@ def test_foreign_call_out_shapes_empty_tuple_branch() -> None:
             """Init."""
             self.output_shapes = ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithEmptyOutputShapes)()) == ()
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithEmptyOutputShapes)()) == ()
 
 
 def test_foreign_call_out_shape_tuple_branch_2() -> None:
@@ -373,7 +385,7 @@ def test_foreign_call_out_shape_tuple_branch_2() -> None:
             """Init."""
             self.output_shape = [5, 5]
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithTupleOutShape2)()) == (5, 5)
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithTupleOutShape2)()) == (5, 5)
 
 
 def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
@@ -387,7 +399,7 @@ def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
             """Init."""
             self.output_shapes = cast("EagerTensorProtocol", [[]])
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithEmptyOutputShapes2)()) == ()
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithEmptyOutputShapes2)()) == ()
 
     class WithEmptyOutputShapes3:
         """Mock."""
@@ -396,7 +408,7 @@ def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
             """Init."""
             self.output_shapes = ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithEmptyOutputShapes3)()) == ()
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithEmptyOutputShapes3)()) == ()
 
 
 def test_foreign_call_out_nodes_metadata_branch() -> None:
@@ -423,4 +435,4 @@ def test_foreign_call_out_nodes_metadata_branch() -> None:
             """Init."""
             self.subgraph = MockSubgraphNoMetadata()
 
-    assert cast("Callable[..., EagerTensorProtocol]", fc.infer_shape)(cast("Callable[..., EagerTensorProtocol]", WithSubgraphNoMetadata)()) == ()
+    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithSubgraphNoMetadata)()) == ()

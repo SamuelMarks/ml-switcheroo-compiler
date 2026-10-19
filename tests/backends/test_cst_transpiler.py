@@ -13,9 +13,7 @@ from ml_switcheroo_compiler.backends.cst_transpiler import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_build_attribute_chain() -> None:
@@ -87,8 +85,8 @@ def test_transpile_source_import() -> None:
 
     transformer = CSTTransformer("jax")
     dummy_names = [cst.ImportAlias(name=cst.Name("foo"))]
-    node = cast("Callable[..., EagerTensorProtocol]", cst.ImportFrom)(module=cast("Callable[..., EagerTensorProtocol]", cst.Integer)("1"), names=dummy_names)
-    assert id(cast("Callable[..., EagerTensorProtocol]", transformer.leave_ImportFrom)(node, node)) == id(node)
+    node = cast("EagerCallableProtocol", cst.ImportFrom)(module=cast("EagerCallableProtocol", cst.Integer)("1"), names=dummy_names)
+    assert id(cast("EagerCallableProtocol", transformer.leave_ImportFrom)(node, node)) == id(node)
 
     # Test _get_base_name fallback (Line 79)
     # create a mock Attribute with a non-Name/non-Attribute value

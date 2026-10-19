@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_evaluate_graph() -> None:
@@ -35,9 +33,9 @@ def test_evaluate_graph() -> None:
     g.nodes["add"] = LogicalNode(id="add", op_type="Add", inputs=["in", "c"])
     g.nodes["out"] = LogicalNode(id="out", op_type="Relu", inputs=["add"])
     inputs = {"in": np.array([-3.0, 1.0])}
-    outputs = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g, inputs)
+    outputs = cast("EagerCallableProtocol", evaluate_graph)(g, inputs)
     assert "out" in outputs
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(outputs["out"], cast("Callable[..., EagerTensorProtocol]", np.array)([0.0, 3.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(outputs["out"], cast("EagerCallableProtocol", np.array)([0.0, 3.0]))
 
 
 def test_missing_input() -> None:
@@ -62,7 +60,7 @@ def test_not_implemented() -> None:
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="UnknownOp", inputs=["in"])
     with pytest.raises(Exception, match=r".*"):
-        cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g, {"in": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])})
+        cast("EagerCallableProtocol", evaluate_graph)(g, {"in": cast("EagerCallableProtocol", np.array)([1.0])})
 
 
 def test_missing_output() -> None:
@@ -74,7 +72,7 @@ def test_missing_output() -> None:
     g = LogicalGraph(outputs=["missing"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     with pytest.raises(RuntimeError, match="never evaluated"):
-        cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g, {"in": cast("Callable[..., EagerTensorProtocol]", np.array)([1.0])})
+        cast("EagerCallableProtocol", evaluate_graph)(g, {"in": cast("EagerCallableProtocol", np.array)([1.0])})
 
 
 def test_all_ops() -> None:
@@ -104,6 +102,6 @@ def test_all_ops() -> None:
     g.nodes["expand"] = LogicalNode(id="expand", op_type="Expand", inputs=["min"], shape_metadata=(2,))
     g.nodes["out"] = LogicalNode(id="out", op_type="Add", inputs=["expand", "expand"])
     inputs = {"in1": np.array([2.0, 3.0]), "in2": np.array([1.0, 1.0]), "in3": np.array([[1.0, 2.0], [3.0, 4.0]])}
-    res = cast("Callable[..., EagerTensorProtocol]", evaluate_graph)(g, inputs)
+    res = cast("EagerCallableProtocol", evaluate_graph)(g, inputs)
     assert "out" in res
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res["out"], cast("Callable[..., EagerTensorProtocol]", np.array)([-12.0, -12.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res["out"], cast("EagerCallableProtocol", np.array)([-12.0, -12.0]))

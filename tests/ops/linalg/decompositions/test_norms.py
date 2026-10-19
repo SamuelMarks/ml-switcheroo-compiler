@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.norms import _norm_out_shape, matrix_exp, matrix_exponential, matrix_power, norm, power_iteration
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_norm_out_shape() -> None:
@@ -42,9 +40,9 @@ def test_norms_eager() -> None:
         res = matrix_exp(t)
         assert isinstance(res, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2,)), np.zeros((2,)), np.zeros(()))
-        (res1, res2, res3) = cast("Callable[..., EagerTensorProtocol]", power_iteration)(t, num_iters=1, u=None)
+        (res1, res2, res3) = cast("EagerCallableProtocol", power_iteration)(t, num_iters=1, u=None)
         assert isinstance(res1, Tensor)
-        (res1, res2, res3) = cast("Callable[..., EagerTensorProtocol]", power_iteration)(t, num_iters=1, u=t)
+        (res1, res2, res3) = cast("EagerCallableProtocol", power_iteration)(t, num_iters=1, u=t)
         assert isinstance(res1, Tensor)
 
 

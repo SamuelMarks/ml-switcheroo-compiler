@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 def test_random_gaussian_blur(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test random gaussian blur.
 
-    Returns:
-        None
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
     """
     monkeypatch.setattr(vision_filters, "_np_gaussian_blur", lambda mod, img, **kw: img)
     images = np.ones((1, 5, 5, 3))

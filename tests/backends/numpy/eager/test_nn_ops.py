@@ -16,9 +16,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.nn_ops import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_missing_nn_ops() -> None:
@@ -29,10 +27,10 @@ def test_missing_nn_ops() -> None:
     assert cast("EagerTensorProtocol", getattr(res_drop, "shape")) == cast("EagerTensorProtocol", getattr(x_4d, "shape"))
 
     res_no_drop = nn_ops._np_dropout2d(np, x_4d, p=0.0, training=True)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res_no_drop, x_4d)
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_no_drop, x_4d)
 
     res_test = nn_ops._np_dropout2d(np, x_4d, p=0.5, training=False)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_array_equal)(res_test, x_4d)
+    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_test, x_4d)
 
 
 def test_dropout2d_non_4d() -> None:
@@ -48,11 +46,11 @@ def test_block_masked_mm() -> None:
     b = np.ones((3, 2))
     res = _np_block_masked_mm(None, a, b)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, cast("Callable[..., EagerTensorProtocol]", np.matmul)(a, b))
+    assert cast("EagerCallableProtocol", np.allclose)(res, cast("EagerCallableProtocol", np.matmul)(a, b))
 
     # Test _np_mul registered helper
     res_mul = nn_ops._np_mul(np, a, a)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res_mul, a * a)
+    assert cast("EagerCallableProtocol", np.allclose)(res_mul, a * a)
 
 
 def test_batch_norm_1d() -> None:
@@ -63,12 +61,12 @@ def test_batch_norm_1d() -> None:
 
     out = _np_batch_norm(np, x_1d, gamma_1d, beta_1d)
     assert cast("EagerTensorProtocol", getattr(out, "shape")) == (3,)
-    assert not cast("Callable[..., EagerTensorProtocol]", np.isnan)(out).any()
+    assert not cast("EagerCallableProtocol", np.isnan)(out).any()
 
     d_out = np.ones_like(x_1d)
     grad_in = _np_batch_norm_input_grad(np, d_out, x_1d, gamma_1d)
     assert cast("EagerTensorProtocol", getattr(grad_in, "shape")) == (3,)
-    assert not cast("Callable[..., EagerTensorProtocol]", np.isnan)(grad_in).any()
+    assert not cast("EagerCallableProtocol", np.isnan)(grad_in).any()
 
 
 def test_max_pool2d_with_argmax_forward() -> None:
@@ -82,7 +80,7 @@ def test_max_pool2d_with_argmax_forward() -> None:
     # Tuple pool_size and strides
     out2 = nn_ops._np_max_pool2d_with_argmax_forward(np, x, pool_size=(2, 2), strides=(2, 2))
     assert cast("EagerTensorProtocol", getattr(out2, "shape")) == (1, 2, 2, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out1, out2)
+    assert cast("EagerCallableProtocol", np.allclose)(out1, out2)
 
     # Default stride (derived from kernel_size tuple)
     out3 = nn_ops._np_max_pool2d_with_argmax_forward(np, x, kernel_size=(2, 2))
@@ -224,7 +222,7 @@ def test_avg_pool2d_forward_and_grads() -> None:
 
     # Forward tuple pool_size, strides, and default stride
     out2 = nn_ops._np_avg_pool2d(np, x, pool_size=(2, 2), strides=(2, 2))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(out1, out2)
+    assert cast("EagerCallableProtocol", np.allclose)(out1, out2)
     out3 = nn_ops._np_avg_pool2d(np, x, pool_size=(2, 2))
     assert cast("EagerTensorProtocol", getattr(out3, "shape")) == (1, 2, 2, 2)
 
@@ -235,7 +233,7 @@ def test_avg_pool2d_forward_and_grads() -> None:
 
     # Grad tuple pool_size and default stride
     dx2 = nn_ops._np_avg_pool2d_grad(np, d_out, x, pool_size=(2, 2), strides=(2, 2))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(dx1, dx2)
+    assert cast("EagerCallableProtocol", np.allclose)(dx1, dx2)
     dx3 = nn_ops._np_avg_pool2d_grad(np, d_out, x, pool_size=(2, 2))
     assert cast("EagerTensorProtocol", getattr(dx3, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))
 
@@ -251,6 +249,6 @@ def test_max_pool2d_with_argmax_grad() -> None:
 
     # Grad tuple pool_size, strides, and default stride
     dx2 = nn_ops._np_max_pool2d_with_argmax_grad(np, d_out, x, pool_size=(2, 2), strides=(2, 2))
-    assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(dx1, dx2)
+    assert cast("EagerCallableProtocol", np.allclose)(dx1, dx2)
     dx3 = nn_ops._np_max_pool2d_with_argmax_grad(np, d_out, x, pool_size=(2, 2))
     assert cast("EagerTensorProtocol", getattr(dx3, "shape")) == cast("EagerTensorProtocol", getattr(x, "shape"))

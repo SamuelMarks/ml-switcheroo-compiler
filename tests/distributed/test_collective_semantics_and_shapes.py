@@ -24,9 +24,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jv
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_webrtc_collectives_config_validation() -> None:
@@ -66,27 +64,27 @@ def test_collective_shape_inference() -> None:
 
     # 1. AllReduce preserves shape
     ar_op = AllReduce()
-    assert cast("Callable[..., EagerTensorProtocol]", ar_op.infer_shape)(t) == (8, 16)
+    assert cast("EagerCallableProtocol", ar_op.infer_shape)(t) == (8, 16)
 
     # 2. Broadcast preserves shape
     bc_op = Broadcast()
-    assert cast("Callable[..., EagerTensorProtocol]", bc_op.infer_shape)(t) == (8, 16)
+    assert cast("EagerCallableProtocol", bc_op.infer_shape)(t) == (8, 16)
 
     # 3. AllGather concatenates along axis
     ag_op = AllGather()
-    assert cast("Callable[..., EagerTensorProtocol]", ag_op.infer_shape)(t, axis=0, world_size=4) == (32, 16)
-    assert cast("Callable[..., EagerTensorProtocol]", ag_op.infer_shape)(t, axis=1, world_size=2) == (8, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", ag_op.infer_shape)(t) == (8, 16)
+    assert cast("EagerCallableProtocol", ag_op.infer_shape)(t, axis=0, world_size=4) == (32, 16)
+    assert cast("EagerCallableProtocol", ag_op.infer_shape)(t, axis=1, world_size=2) == (8, 32)
+    assert cast("EagerCallableProtocol", ag_op.infer_shape)(t) == (8, 16)
 
     # 4. ReduceScatter splits along axis
     rs_op = ReduceScatter()
-    assert cast("Callable[..., EagerTensorProtocol]", rs_op.infer_shape)(t, axis=0, world_size=4) == (2, 16)
-    assert cast("Callable[..., EagerTensorProtocol]", rs_op.infer_shape)(t, axis=1, world_size=2) == (8, 8)
-    assert cast("Callable[..., EagerTensorProtocol]", rs_op.infer_shape)(t) == (8, 16)
+    assert cast("EagerCallableProtocol", rs_op.infer_shape)(t, axis=0, world_size=4) == (2, 16)
+    assert cast("EagerCallableProtocol", rs_op.infer_shape)(t, axis=1, world_size=2) == (8, 8)
+    assert cast("EagerCallableProtocol", rs_op.infer_shape)(t) == (8, 16)
 
     # 5. AllToAll preserves element count
     a2a_op = AllToAll()
-    assert cast("Callable[..., EagerTensorProtocol]", a2a_op.infer_shape)(t) == (8, 16)
+    assert cast("EagerCallableProtocol", a2a_op.infer_shape)(t) == (8, 16)
 
 
 def test_collective_gradient_propagation() -> None:
@@ -132,18 +130,18 @@ def test_collective_communication_semantics_eager() -> None:
 
     # AllReduce SUM
     ar_res = dispatch_collective("AllReduce", rank0_data, backend="numpy", op_type="SUM", all_ranks_data=ranks)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(ar_res, cast("Callable[..., EagerTensorProtocol]", np.array)([40.0, 60.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(ar_res, cast("EagerCallableProtocol", np.array)([40.0, 60.0]))
 
     # AllGather
     ag_res = dispatch_collective("AllGather", rank0_data, backend="numpy", axis=0, all_ranks_data=ranks)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(ag_res, cast("Callable[..., EagerTensorProtocol]", np.array)([10.0, 20.0, 30.0, 40.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(ag_res, cast("EagerCallableProtocol", np.array)([10.0, 20.0, 30.0, 40.0]))
 
     # ReduceScatter
     rs_rank0 = dispatch_collective("ReduceScatter", rank0_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=0, all_ranks_data=ranks)
     rs_rank1 = dispatch_collective("ReduceScatter", rank1_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=1, all_ranks_data=ranks)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(rs_rank0, cast("Callable[..., EagerTensorProtocol]", np.array)([40.0]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(rs_rank1, cast("Callable[..., EagerTensorProtocol]", np.array)([60.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(rs_rank0, cast("EagerCallableProtocol", np.array)([40.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(rs_rank1, cast("EagerCallableProtocol", np.array)([60.0]))
 
     # Broadcast from rank 1 to all
     bc_res = dispatch_collective("Broadcast", rank0_data, backend="numpy", root=1, all_ranks_data=ranks)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(bc_res, rank1_data)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(bc_res, rank1_data)

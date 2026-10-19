@@ -1,4 +1,4 @@
-"""math_internal module."""
+"""Implementation of math internal operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_internal`)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 
 from .math_string_io import _parse_scanop_args
@@ -73,7 +73,7 @@ def _np_blurconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """
     from ml_switcheroo_compiler.ops.configs import BlurConfig
 
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", BlurConfig)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", BlurConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("CustomRoot")
@@ -92,7 +92,7 @@ def _np_customroot(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     initial_guess = args[1]
     solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
     if solve:
-        return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", solve)(f, initial_guess))
+        return cast(EagerValue, cast("EagerCallableProtocol", solve)(f, initial_guess))
     return initial_guess
 
 
@@ -110,7 +110,7 @@ def _np_elasticconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     """
     from ml_switcheroo_compiler.ops.configs import ElasticConfig
 
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", ElasticConfig)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", ElasticConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("LinearOperator")
@@ -297,7 +297,7 @@ def _np_perspectiveconfig(backend_module: ModuleType, *args: EagerValue, **kwarg
     """
     from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", PerspectiveConfig)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", PerspectiveConfig)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("RawMatMul")
@@ -468,4 +468,4 @@ def _np_tensorconfig(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", TensorConfig)(*args, **kwargs))

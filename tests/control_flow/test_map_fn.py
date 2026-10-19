@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 device = Device(DeviceType.CPU, 0)
 
 
@@ -43,7 +41,7 @@ def test_map_fn_eager() -> None:
             return Tensor(y, TensorConfig((), DType.Int32, device))
 
         ys = map_fn(f, xs)
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("EagerTensorProtocol", getattr(ys, "data")), cast("Callable[..., EagerTensorProtocol]", np.array)([2, 4, 6]))
+        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(ys, "data")), cast("EagerCallableProtocol", np.array)([2, 4, 6]))
 
 
 def test_map_fn_trace() -> None:

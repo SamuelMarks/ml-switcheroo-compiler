@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_llvm_cpp_generator_init() -> None:
@@ -34,32 +32,32 @@ def test_llvm_cpp_helpers() -> None:
     assert gen._get_strides([2, 3]) == [3, 1]
     assert gen._get_strides([5]) == [1]
 
-    node = cast("Callable[..., EagerTensorProtocol]", IRNode)("Add", "add_1", [])
+    node = cast("EagerCallableProtocol", IRNode)("Add", "add_1", [])
     setattr(node, "shape_metadata", [2, 3])
-    assert cast("Callable[..., EagerTensorProtocol]", gen._get_shape)(node) == [2, 3]
+    assert cast("EagerCallableProtocol", gen._get_shape)(node) == [2, 3]
     setattr(node, "shape_metadata", 5)
-    assert cast("Callable[..., EagerTensorProtocol]", gen._get_shape)(node) == [5]
+    assert cast("EagerCallableProtocol", gen._get_shape)(node) == [5]
     setattr(node, "shape_metadata", None)
-    assert cast("Callable[..., EagerTensorProtocol]", gen._get_shape)(node) == [1]
+    assert cast("EagerCallableProtocol", gen._get_shape)(node) == [1]
 
 
 def test_llvm_cpp_generate() -> None:
     """Test function test_llvm_cpp_generate."""
     g = IRGraph()
-    n_in = cast("Callable[..., EagerTensorProtocol]", IRNode)("Input", "in_1", [])
+    n_in = cast("EagerCallableProtocol", IRNode)("Input", "in_1", [])
     setattr(n_in, "op_type", "Input")
     setattr(n_in, "shape_metadata", [2, 2])
     setattr(n_in, "attributes", {"buffer_offset": 0, "buffer_size": 16})
 
-    n_const = cast("Callable[..., EagerTensorProtocol]", IRNode)("Constant", "c_1", [])
+    n_const = cast("EagerCallableProtocol", IRNode)("Constant", "c_1", [])
     setattr(n_const, "op_type", "Constant")
     setattr(n_const, "attributes", {"value": 5.0})
 
-    n_add = cast("Callable[..., EagerTensorProtocol]", IRNode)("Add", "add_1", ["in_1", "c_1"])
+    n_add = cast("EagerCallableProtocol", IRNode)("Add", "add_1", ["in_1", "c_1"])
     setattr(n_add, "op_type", "Add")
     setattr(n_add, "attributes", {"buffer_offset": 16, "buffer_size": 16})
 
-    n_out = cast("Callable[..., EagerTensorProtocol]", IRNode)("Output", "out_1", ["add_1"])
+    n_out = cast("EagerCallableProtocol", IRNode)("Output", "out_1", ["add_1"])
     setattr(n_out, "inputs", ["add_1"])
     setattr(n_out, "op_type", "Output")
 
@@ -81,7 +79,7 @@ def test_llvm_cpp_generate() -> None:
 def test_llvm_cpp_generate_missing_mapping() -> None:
     """Test function test_llvm_cpp_generate_missing_mapping."""
     g = IRGraph()
-    n_add = cast("Callable[..., EagerTensorProtocol]", IRNode)("MissingOp", "miss_1", [])
+    n_add = cast("EagerCallableProtocol", IRNode)("MissingOp", "miss_1", [])
     g.nodes = {"miss_1": n_add}
     setattr(g, "sorted_nodes", [n_add])
 
@@ -93,24 +91,24 @@ def test_llvm_cpp_generate_missing_mapping() -> None:
 def test_llvm_cpp_generate_visit_methods() -> None:
     """Test function test_llvm_cpp_generate_visit_methods."""
     g = IRGraph()
-    n_cond = cast("Callable[..., EagerTensorProtocol]", IRNode)("Cond", "cond_1", ["cond"])
+    n_cond = cast("EagerCallableProtocol", IRNode)("Cond", "cond_1", ["cond"])
     setattr(n_cond, "inputs", ["cond"])
     setattr(n_cond, "op_type", "Cond")
     sg = IRGraph()
-    sn = cast("Callable[..., EagerTensorProtocol]", IRNode)("Add", "a_1", [])
+    sn = cast("EagerCallableProtocol", IRNode)("Add", "a_1", [])
     sg.nodes = {"a_1": sn}
     setattr(n_cond, "attributes", {"then_branch": sg, "else_branch": sg})
 
-    n_loop = cast("Callable[..., EagerTensorProtocol]", IRNode)("WhileLoop", "loop_1", [])
+    n_loop = cast("EagerCallableProtocol", IRNode)("WhileLoop", "loop_1", [])
     setattr(n_loop, "op_type", "WhileLoop")
     setattr(n_loop, "attributes", {"cond": sg, "body": sg})
 
-    n_conv = cast("Callable[..., EagerTensorProtocol]", IRNode)("Conv2D", "conv_1", ["in_1", "in_2"])
+    n_conv = cast("EagerCallableProtocol", IRNode)("Conv2D", "conv_1", ["in_1", "in_2"])
     setattr(n_conv, "inputs", ["in_1", "in_2"])
     setattr(n_conv, "op_type", "Conv2D")
     setattr(n_conv, "attributes", {"stride": [1, 1]})
 
-    n_conv2 = cast("Callable[..., EagerTensorProtocol]", IRNode)("Conv2D", "conv_2", ["in_1", "in_2"])
+    n_conv2 = cast("EagerCallableProtocol", IRNode)("Conv2D", "conv_2", ["in_1", "in_2"])
     setattr(n_conv2, "inputs", ["in_1", "in_2"])
     setattr(n_conv2, "op_type", "Conv2D")
     setattr(n_conv2, "attributes", {"stride": 1})
@@ -121,7 +119,11 @@ def test_llvm_cpp_generate_visit_methods() -> None:
     gen = CppGenerator(g)
 
     def mock_get_template(name: EagerValue) -> EagerValue:
-        """Test function mock_get_template."""
+        """Test function mock_get_template.
+
+        Args:
+            name: Test parameter `name`.
+        """
         if name == "if_op":
             return {"body": "if ({cond_var}.data[0] > 0.0f) {{\n{then_body}}} else {{\n{else_body}}}\n"}
         elif name == "loop_op":
@@ -180,14 +182,14 @@ def test_llvm_cpp_generate_missing_branches() -> None:
     assert "compute_graph" in out
 
     g = IRGraph()
-    n_conv = cast("Callable[..., EagerTensorProtocol]", IRNode)("Conv2D", "conv_3", ["in_1", "in_2"])
+    n_conv = cast("EagerCallableProtocol", IRNode)("Conv2D", "conv_3", ["in_1", "in_2"])
     setattr(n_conv, "inputs", ["in_1", "in_2"])
     setattr(n_conv, "op_type", "Conv2D")
 
-    n_in1 = cast("Callable[..., EagerTensorProtocol]", IRNode)("Input", "in_1", [])
+    n_in1 = cast("EagerCallableProtocol", IRNode)("Input", "in_1", [])
     setattr(n_in1, "shape_metadata", [2, 3])  # len < 4
 
-    n_in2 = cast("Callable[..., EagerTensorProtocol]", IRNode)("Input", "in_2", [])
+    n_in2 = cast("EagerCallableProtocol", IRNode)("Input", "in_2", [])
     setattr(n_in2, "shape_metadata", [3, 3])  # len < 4
 
     setattr(n_conv, "shape_metadata", [2, 2])  # len < 4
@@ -199,7 +201,7 @@ def test_llvm_cpp_generate_missing_branches() -> None:
         out2 = gen2.generate()
         assert "body" in out2
 
-    n_add = cast("Callable[..., EagerTensorProtocol]", IRNode)("Add", "add_1", ["in_1"])
+    n_add = cast("EagerCallableProtocol", IRNode)("Add", "add_1", ["in_1"])
     setattr(n_add, "inputs", ["in_1"])
     setattr(n_add, "op_type", "Add")
     g.nodes["add_1"] = n_add
@@ -507,7 +509,11 @@ def test_cpp_generate_no_graph() -> None:
 
 @patch("subprocess.run")
 def test_cpp_compile_load_failure(mock_run: EagerTensorProtocol) -> None:
-    """Test function test_cpp_compile_load_failure."""
+    """Test function test_cpp_compile_load_failure.
+
+    Args:
+        mock_run: Test parameter `mock_run`.
+    """
     gen = CppGenerator(IRGraph())
     setattr(mock_run, "return_value", MagicMock())
 
@@ -549,7 +555,7 @@ def test_cpp_generator_strict_and_genuine_math() -> None:
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
     g = IRGraph()
-    n_sin = cast("Callable[..., EagerTensorProtocol]", IRNode)("Sin", "s_1", ["in1"])
+    n_sin = cast("EagerCallableProtocol", IRNode)("Sin", "s_1", ["in1"])
     setattr(n_sin, "inputs", ["in1"])
     setattr(n_sin, "op_type", "Sin")
     g.nodes = {"s_1": n_sin}
@@ -560,7 +566,7 @@ def test_cpp_generator_strict_and_genuine_math() -> None:
     assert "std::sin(in0_val)" in code
 
     g_unk = IRGraph()
-    n_unk = cast("Callable[..., EagerTensorProtocol]", IRNode)("UnsupportedMathOp", "u_1", ["in1"])
+    n_unk = cast("EagerCallableProtocol", IRNode)("UnsupportedMathOp", "u_1", ["in1"])
     setattr(n_unk, "inputs", ["in1"])
     setattr(n_unk, "op_type", "UnsupportedMathOp")
     g_unk.nodes = {"u_1": n_unk}
@@ -575,7 +581,7 @@ def test_cpp_generator_genuine_expr_override() -> None:
     """Verify that genuine expressions override placeholder scalar_expr in C++ generator."""
     g = IRGraph()
     gen = CppGenerator(g)
-    node = cast("Callable[..., EagerTensorProtocol]", IRNode)("Relu", "relu_1", ["in_1"])
+    node = cast("EagerCallableProtocol", IRNode)("Relu", "relu_1", ["in_1"])
     setattr(node, "op_type", "Relu")
     setattr(node, "inputs", ["in_1"])
     setattr(node, "shape_metadata", [2, 2])
@@ -594,14 +600,14 @@ def test_cpp_generator_genuine_expr_override() -> None:
     }
     with patch("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", mock_registry):
         with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "{scalar_expr}"}):
-            cast("Callable[..., EagerTensorProtocol]", gen._visit_node)(node)
+            cast("EagerCallableProtocol", gen._visit_node)(node)
             assert any("std::max(0.0f, in0_val)" in ln for ln in gen.lines)
 
     # Cover line 342: mapping is empty in _YAML_REGISTRY but decl_op exists in get_cpp_operation
     gen2 = CppGenerator(g)
     with patch("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {}):
         with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "{scalar_expr}"}):
-            cast("Callable[..., EagerTensorProtocol]", gen2._visit_node)(node)
+            cast("EagerCallableProtocol", gen2._visit_node)(node)
             assert any("std::max(0.0f, in0_val)" in ln for ln in gen2.lines)
 
 
@@ -609,7 +615,7 @@ def test_cpp_generator_missing_output_and_executable_arg_counts() -> None:
     """Verify branch 138->137 (missing output node) and lines 500, 502, 504 (executable arg branches)."""
     # 1. Output in graph.nodes followed by output not in graph.nodes (branch 138->137)
     g = IRGraph()
-    n = cast("Callable[..., EagerTensorProtocol]", IRNode)("in1", "Input", [])
+    n = cast("EagerCallableProtocol", IRNode)("in1", "Input", [])
     setattr(n, "shape_metadata", [2, 2])
     g.nodes["in1"] = n
     g.outputs = ["in1", "missing_node"]
@@ -764,7 +770,7 @@ def _test_llvm_cpp_execution_verification_part_1(_state: dict[str, EagerTensorPr
     fn_ln = runner.compile_and_load(code_ln)
     x_ln = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]], dtype=np.float32)
     y_ln = np.zeros_like(x_ln)
-    cast("Callable[..., EagerTensorProtocol]", fn_ln)(cast("Callable[..., EagerTensorProtocol]", (ctypes.c_void_p * 1))(x_ln.ctypes.data), cast("Callable[..., EagerTensorProtocol]", (ctypes.c_void_p * 1))(y_ln.ctypes.data))
+    cast("EagerCallableProtocol", fn_ln)(cast("EagerCallableProtocol", (ctypes.c_void_p * 1))(x_ln.ctypes.data), cast("EagerCallableProtocol", (ctypes.c_void_p * 1))(y_ln.ctypes.data))
     mean = x_ln.mean(axis=-1, keepdims=True)
     var = x_ln.var(axis=-1, keepdims=True)
     getattr(_state, "update")({"LLVMCPPRunner": LLVMCPPRunner, "code_ln": code_ln, "compiler": compiler, "ctypes": ctypes})
@@ -825,7 +831,7 @@ def _test_llvm_cpp_execution_verification_part_3(_state: dict[str, EagerTensorPr
     setattr(g_conv3d, "outputs", ["out0"])
     setattr(g_conv3d, "sorted_nodes", [in_x3d, in_w3d, node_c3d])
 
-    code_c3d = cast("Callable[..., EagerTensorProtocol]", CppGenerator)(g_conv3d).generate(g_conv3d)
+    code_c3d = cast("EagerCallableProtocol", CppGenerator)(g_conv3d).generate(g_conv3d)
     fn_c3d = runner.compile_and_load(code_c3d)
     x_3d = np.ones((1, 1, 3, 3, 3), dtype=np.float32)
     w_3d = np.ones((1, 1, 2, 2, 2), dtype=np.float32)
@@ -896,7 +902,7 @@ def test_llvm_cpp_execution_verification() -> None:
     _test_llvm_cpp_execution_verification_part_2(_state)
     _test_llvm_cpp_execution_verification_part_3(_state)
     _test_llvm_cpp_execution_verification_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_cpp_generator_additional_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -952,9 +958,9 @@ def _test_cpp_generator_additional_coverage_part_2(_state: dict[str, EagerTensor
     # 3. visit_AvgPool3D with ksize as 1-element list [2], stride as 1-element list [1], and ksize/stride as int
     node_ap = IRNode(id="ap_out", op_type="AvgPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": [2], "stride": [1]})
     g_3d.nodes["ap_out"] = node_ap
-    gen_avgpool = cast("Callable[..., EagerTensorProtocol]", CppGenerator)(g_3d)
-    cast("Callable[..., EagerTensorProtocol]", gen_avgpool.visit_AvgPool3D)(node_ap, graph_to_use=g_3d)
-    cast("Callable[..., EagerTensorProtocol]", gen_avgpool._visit_node)(node_ap, graph_to_use=g_3d)
+    gen_avgpool = cast("EagerCallableProtocol", CppGenerator)(g_3d)
+    cast("EagerCallableProtocol", gen_avgpool.visit_AvgPool3D)(node_ap, graph_to_use=g_3d)
+    cast("EagerCallableProtocol", gen_avgpool._visit_node)(node_ap, graph_to_use=g_3d)
 
     node_ap_scalar = IRNode(id="ap_scalar", op_type="AvgPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": 2, "stride": 1})
     gen_avgpool.visit_AvgPool3D(node_ap_scalar, graph_to_use=None)
@@ -1010,12 +1016,12 @@ def _test_cpp_generator_additional_coverage_part_3(_state: dict[str, EagerTensor
 
     # 7. init_val branch (line 868) where init_val is numeric without "f" or "INFINITY"
     node_init = IRNode(id="init_op", op_type="CustomInitOp", inputs=["in0"], shape_metadata=(4, 4))
-    gen_init = cast("Callable[..., EagerTensorProtocol]", CppGenerator)(empty_g)
+    gen_init = cast("EagerCallableProtocol", CppGenerator)(empty_g)
     with (
         patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"CustomInitOp": {"variants": {"llvm_cpp": {"template": "custom_init_tpl", "init_val": "0.0"}}}}),
         patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "float val = {init_val};"}),
     ):
-        cast("Callable[..., EagerTensorProtocol]", gen_init._visit_node)(node_init, empty_g)
+        cast("EagerCallableProtocol", gen_init._visit_node)(node_init, empty_g)
     getattr(_state, "update")({"g": g, "gen_gs": gen_gs, "gen_init": gen_init, "in_data": in_data})
     getattr(_state, "update")({"in_idx": in_idx, "in_updates": in_updates, "node_gather": node_gather, "node_init": node_init})
     getattr(_state, "update")({"node_scatter": node_scatter})
@@ -1027,7 +1033,7 @@ def test_cpp_generator_additional_coverage() -> None:
     _test_cpp_generator_additional_coverage_part_1(_state)
     _test_cpp_generator_additional_coverage_part_2(_state)
     _test_cpp_generator_additional_coverage_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_cpp_generator_new_visitors_and_providers_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1180,7 +1186,7 @@ def test_cpp_generator_new_visitors_and_providers() -> None:
     _test_cpp_generator_new_visitors_and_providers_part_2(_state)
     _test_cpp_generator_new_visitors_and_providers_part_3(_state)
     _test_cpp_generator_new_visitors_and_providers_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_llvm_cpp_missing_branches_and_edge_cases() -> None:
@@ -1262,5 +1268,5 @@ def test_llvm_cpp_missing_branches_and_edge_cases() -> None:
     node_ternary = IRNode(id="ternary_op", op_type="Select", inputs=["in_2d", "in_2d", "in_2d"], shape_metadata=(4, 4))
     with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "// body {clean_id} {in2}"}):
         with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Select": {"variants": {"llvm_cpp": {"template": "elementwise_1d"}}}}):
-            cast("Callable[..., EagerTensorProtocol]", gen._visit_node)(node_ternary, g_edges)
+            cast("EagerCallableProtocol", gen._visit_node)(node_ternary, g_edges)
             assert any("src_node_2" in line for line in gen.lines)

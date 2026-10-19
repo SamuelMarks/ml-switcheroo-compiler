@@ -9,9 +9,7 @@ import pytest
 import ml_switcheroo_compiler.core.assertions as asst_mod
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_core_assertions_exhaustive() -> None:
@@ -55,9 +53,9 @@ def test_core_assertions_exhaustive() -> None:
             """Test function all."""
             return False
 
-    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", WithNumpy)())) is True
-    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", WithAll)())) is True
-    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", WithAllFalse)())) is False
+    assert bool(cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(cast("EagerCallableProtocol", WithNumpy)())) is True
+    assert bool(cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(cast("EagerCallableProtocol", WithAll)())) is True
+    assert bool(cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(cast("EagerCallableProtocol", WithAllFalse)())) is False
 
     class ValueErrorBool:
         """Test class ValueErrorBool."""
@@ -70,7 +68,7 @@ def test_core_assertions_exhaustive() -> None:
             """Test function __iter__."""
             return cast("EagerTensorProtocol", iter([True, True]))
 
-    assert bool(cast("Callable[..., EagerTensorProtocol]", asst_mod._evaluate_single_condition)(cast("Callable[..., EagerTensorProtocol]", ValueErrorBool)())) is True
+    assert bool(cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(cast("EagerCallableProtocol", ValueErrorBool)())) is True
 
     # 4. Failure in evaluate_assertions raises AssertionError
     asst_mod.record_assertion(False, "Failed assertion 1")

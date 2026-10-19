@@ -32,9 +32,7 @@ from ml_switcheroo_compiler.ops.ragged.frontend import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def _make_dummy_tensor(shape: tuple[int, ...] = (2, 2)) -> Tensor:
@@ -58,7 +56,7 @@ def test_ragged_frontend_eager_dispatch() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2), dtype=np.float32)
 
-        assert cast("Callable[..., EagerTensorProtocol]", ragged_constant)([[1, 2], [3]]) is not None
+        assert cast("EagerCallableProtocol", ragged_constant)([[1, 2], [3]]) is not None
         assert ragged_cross(t, t) is not None
         assert ragged_cross_hashed(t, t) is not None
         assert ragged_range(t) is not None
@@ -89,7 +87,7 @@ def test_ragged_frontend_tracing_dispatch() -> None:
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node") as mock_emit:
         mock_emit.return_value = t
 
-        assert id(cast("Callable[..., EagerTensorProtocol]", ragged_constant)([[1, 2], [3]])) == id(t)
+        assert id(cast("EagerCallableProtocol", ragged_constant)([[1, 2], [3]])) == id(t)
         assert ragged_cross(t, t) is t
         assert ragged_cross_hashed(t, t) is t
         assert ragged_range(t) is t

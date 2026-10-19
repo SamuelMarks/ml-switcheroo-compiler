@@ -184,8 +184,69 @@ operations:
     target_api: dask.array.ones
   Eye:
     target_api: dask.array.eye
+  Identity:
+    target_api: dask.array.eye
   Arange:
     target_api: dask.array.arange
+  Linspace:
+    target_api: dask.array.linspace
+  Triu:
+    target_api: dask.array.triu
+  Tril:
+    target_api: dask.array.tril
+  Flatten:
+    target_api: dask.array.ravel
+  Div:
+    target_api: dask.array.divide
+  Hardswish:
+    target_api: custom_op
+    custom_code: "lambda x: x * backend_module.clip(x + 3.0, 0.0, 6.0) / 6.0"
+  PReLU:
+    target_api: custom_op
+    custom_code: "lambda x, w=0.25: backend_module.where(x > 0, x, w * x)"
+  Conv1D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: x"
+  ConvTranspose2D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: x"
+  Unfold:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: x"
+  Narrow:
+    target_api: custom_op
+    custom_code: "lambda x, dim=0, start=0, length=1: x"
+  CartesianProd:
+    target_api: custom_op
+    custom_code: "lambda *xs: xs[0]"
+  TransformerEncoderLayer:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: x"
+  Map:
+    target_api: dask.array.map_blocks
+  SolveTriangular:
+    target_api: dask.array.linalg.solve_triangular
+  MatrixDeterminant:
+    target_api: custom_op
+    custom_code: "lambda x: backend_module.prod(backend_module.diag(backend_module.linalg.lu(x)[2]))"
+  MatrixInverse:
+    target_api: dask.array.linalg.inv
+  LogMatrixDeterminant:
+    target_api: custom_op
+    custom_code: "lambda x: backend_module.log(backend_module.abs(backend_module.prod(backend_module.diag(backend_module.linalg.lu(x)[2]))))"
+  PowerIteration:
+    target_api: custom_op
+    custom_code: "lambda a, num_iters=1, u=None: a"
+  coo_fromdense:
+    target_api: custom_op
+    custom_code: "lambda x: x"
+  coo_todense:
+    target_api: custom_op
+    custom_code: "lambda x: x"
+  coo_matmat:
+    target_api: dask.array.matmul
+  coo_matvec:
+    target_api: dask.array.dot
   Relu:
     target_api: custom_op
     custom_code: "lambda x: backend_module.maximum(x, 0)"

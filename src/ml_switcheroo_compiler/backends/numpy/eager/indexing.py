@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for indexing.py."""
+"""Implementation of indexing operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.eager.indexing`)."""
 
 from __future__ import annotations
 

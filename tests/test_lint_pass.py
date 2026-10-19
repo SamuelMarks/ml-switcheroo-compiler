@@ -49,6 +49,11 @@ def test_lint_pass_detects_vacuous_and_tautological_assertions(tmp_path: Path) -
     x = 5
     assert x == x
     assert x is x
+    assert x is not None or x is None
+    assert x == 1 or True
+    assert x == 1 and x == 2
+    _state = {}
+    assert isinstance(_state, dict)
 
 def test_empty() -> None:
     y = 10
@@ -78,7 +83,9 @@ def test_swallowed() -> None:
     errors = lp.check_test_file_ast(str(bad_file), check_zero_assertions=True)
     assert any("assert True" in e for e in errors)
     assert any("assert False" in e for e in errors)
+    assert sum("Tautological disjunction" in e for e in errors) == 2
     assert sum("Tautological comparison" in e for e in errors) == 2
+    assert any("Vacuous 'assert isinstance(_state, ...)'" in e for e in errors)
     assert any("Zero assertions in test function 'test_empty'" in e for e in errors)
     assert any("except Exception: pass" in e for e in errors)
     assert any("except: pass" in e for e in errors)

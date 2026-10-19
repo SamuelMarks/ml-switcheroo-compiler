@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 import ml_switcheroo_compiler.ops.unary.base as unary_base
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class _MockDimWithId:
@@ -72,10 +70,10 @@ def test_unary_base_exhaustive() -> None:
     assert op.infer_shape([4, 5]) == (4, 5)
 
     # 3. Object with shape attribute
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", _MockShapeContainer)((6, 7))) == (6, 7)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", _MockShapeContainer)((6, 7))) == (6, 7)
 
     # 4. Object with shape_metadata attribute
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", _MockShapeMetaContainer)((8, 9))) == (8, 9)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", _MockShapeMetaContainer)((8, 9))) == (8, 9)
 
     # 5. Scalar input without shape attributes
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(123) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(123) == ()

@@ -13,9 +13,7 @@ from ml_switcheroo_ir import LogicalGraph
 from ml_switcheroo_compiler.transforms.foreign import _handle_fx_call_function, _handle_fx_output, _handle_fx_placeholder, _translate_jax_equation, ingest_jaxpr, ingest_torch_fx
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_handle_fx_placeholder() -> None:
@@ -23,7 +21,7 @@ def test_handle_fx_placeholder() -> None:
     graph = LogicalGraph()
     node_map = cast("dict[str, EagerTensorProtocol]", {})
     node = MagicMock(name="ph")
-    cast("Callable[..., EagerTensorProtocol]", _handle_fx_placeholder)(node, graph, node_map)
+    cast("EagerCallableProtocol", _handle_fx_placeholder)(node, graph, node_map)
     assert node.name in node_map
 
 
@@ -61,17 +59,17 @@ def test_handle_fx_output() -> None:
     arg2 = MagicMock()
     del arg2.name
     node.args = [(arg1, arg2)]
-    cast("Callable[..., EagerTensorProtocol]", _handle_fx_output)(node, graph, node_map)
+    cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == ["out1"]
     node.args = [arg1]
-    cast("Callable[..., EagerTensorProtocol]", _handle_fx_output)(node, graph, node_map)
+    cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == ["out1"]
 
     # Test args not a tuple and no name
     no_name_arg = MagicMock()
     del no_name_arg.name
     node.args = [no_name_arg]
-    cast("Callable[..., EagerTensorProtocol]", _handle_fx_output)(node, graph, node_map)
+    cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == []  # It resets graph.outputs to empty
 
 

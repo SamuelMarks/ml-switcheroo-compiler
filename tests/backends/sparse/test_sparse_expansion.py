@@ -24,9 +24,7 @@ from ml_switcheroo_compiler.backends.sparse.kernels import (
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_csr_and_csc_tensor_conversions() -> None:
@@ -45,38 +43,38 @@ def test_csr_and_csc_tensor_conversions() -> None:
     assert csr.shape == (3, 3)
     assert csr.nnz == 5
     assert "<CSRTensor" in repr(csr)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", csr.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", csr.to_dense)(), dense_2d)
 
     # CSC Tensor
     csc = CSCTensor.from_dense(dense_2d)
     assert csc.shape == (3, 3)
     assert csc.nnz == 5
     assert "<CSCTensor" in repr(csc)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", csc.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", csc.to_dense)(), dense_2d)
 
     # Cross-conversions between COO, CSR, and CSC
     coo = COOTensor.from_dense(dense_2d)
     csr_from_coo = CSRTensor.from_coo(coo)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", csr_from_coo.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", csr_from_coo.to_dense)(), dense_2d)
 
     csc_from_coo = CSCTensor.from_coo(coo)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", csc_from_coo.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", csc_from_coo.to_dense)(), dense_2d)
 
     csc_from_coo_method = coo.to_csc()
     assert isinstance(csc_from_coo_method, CSCTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", csc_from_coo_method.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", csc_from_coo_method.to_dense)(), dense_2d)
 
     csr_from_csc = csc.to_csr()
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", csr_from_csc.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", csr_from_csc.to_dense)(), dense_2d)
 
     csc_from_csr = csr.to_csc()
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", csc_from_csr.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", csc_from_csr.to_dense)(), dense_2d)
 
     coo_from_csr = csr.to_coo()
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_from_csr.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_from_csr.to_dense)(), dense_2d)
 
     coo_from_csc = csc.to_coo()
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", coo_from_csc.to_dense)(), dense_2d)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", coo_from_csc.to_dense)(), dense_2d)
 
 
 def test_spmm_sparse_dense_matmul() -> None:
@@ -104,23 +102,23 @@ def test_spmm_sparse_dense_matmul() -> None:
 
     # SpMM with 2D dense operand
     res_csr = spmm(csr_a, dense_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_csr, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csr, expected)
 
     res_csc = spmm(csc_a, dense_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_csc, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csc, expected)
 
     res_coo = spmm(coo_a, dense_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_coo, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_coo, expected)
 
     # SpMM fallback with dense array operand
     res_dense = spmm(dense_a, dense_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_dense, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense, expected)
 
     # SpMM with 1D dense vector operand
     vec_b = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     expected_vec = np.matmul(dense_a, vec_b)
     res_vec = spmm(csr_a, vec_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_vec, expected_vec)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_vec, expected_vec)
 
 
 def test_spgemm_sparse_sparse_matmul() -> None:
@@ -147,7 +145,7 @@ def test_spgemm_sparse_sparse_matmul() -> None:
 
     prod_csr = spgemm(csr_a, csr_b)
     assert isinstance(prod_csr, CSRTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", prod_csr.to_dense)(), expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", prod_csr.to_dense)(), expected)
 
     # Shape mismatch error
     with pytest.raises(ValueError, match="Shape mismatch for SpGEMM"):
@@ -188,15 +186,15 @@ def test_spmm_and_spgemm_gradients() -> None:
     np.testing.assert_allclose(grad_b, expected_grad_b)
 
     expected_grad_a_dense = np.matmul(cotangent, dense_b.T) * (dense_a != 0)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", grad_a.to_dense)(), expected_grad_a_dense)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", grad_a.to_dense)(), expected_grad_a_dense)
 
     # 2. SpGEMM gradients
     csr_b = CSRTensor.from_dense(dense_b)
     grad_sp_a, grad_sp_b = spgemm_grad(csr_a, csr_b, cotangent)
     assert isinstance(grad_sp_a, CSRTensor)
     assert isinstance(grad_sp_b, CSRTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", grad_sp_a.to_dense)(), expected_grad_a_dense)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", grad_sp_b.to_dense)(), expected_grad_b * (dense_b != 0))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", grad_sp_a.to_dense)(), expected_grad_a_dense)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", grad_sp_b.to_dense)(), expected_grad_b * (dense_b != 0))
 
 
 def test_dense_spmm_and_fallbacks() -> None:
@@ -207,19 +205,19 @@ def test_dense_spmm_and_fallbacks() -> None:
     # 1. Sparse operand
     csr_rhs = CSRTensor.from_dense(dense_rhs)
     res_csr = dense_spmm(dense_lhs, csr_rhs)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_csr, cast("Callable[..., EagerTensorProtocol]", np.matmul)(dense_lhs, dense_rhs))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csr, cast("EagerCallableProtocol", np.matmul)(dense_lhs, dense_rhs))
 
     csc_rhs = CSCTensor.from_dense(dense_rhs)
     res_csc = dense_spmm(dense_lhs, csc_rhs)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_csc, cast("Callable[..., EagerTensorProtocol]", np.matmul)(dense_lhs, dense_rhs))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csc, cast("EagerCallableProtocol", np.matmul)(dense_lhs, dense_rhs))
 
     coo_rhs = COOTensor.from_dense(dense_rhs)
     res_coo = dense_spmm(dense_lhs, coo_rhs)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_coo, cast("Callable[..., EagerTensorProtocol]", np.matmul)(dense_lhs, dense_rhs))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_coo, cast("EagerCallableProtocol", np.matmul)(dense_lhs, dense_rhs))
 
     # 2. Dense fallback operand (branch 746->752)
     res_dense = dense_spmm(dense_lhs, dense_rhs)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_dense, cast("Callable[..., EagerTensorProtocol]", np.matmul)(dense_lhs, dense_rhs))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense, cast("EagerCallableProtocol", np.matmul)(dense_lhs, dense_rhs))
 
 
 def test_csr_add_and_csc_add() -> None:
@@ -237,7 +235,7 @@ def test_csr_add_and_csc_add() -> None:
 
     # Normal addition
     res_csr = csr_add(csr_a, csr_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_csr.to_dense)(), dense_a + dense_b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_csr.to_dense)(), dense_a + dense_b)
 
     # Shape mismatch
     with pytest.raises(ValueError, match="Shape mismatch for CSR addition"):
@@ -247,7 +245,7 @@ def test_csr_add_and_csc_add() -> None:
     with patch("ml_switcheroo_compiler.backends.sparse.kernels.coo_add", return_value=dense_a + dense_b):
         res_fb = csr_add(csr_a, csr_b)
         assert isinstance(res_fb, CSRTensor)
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_fb.to_dense)(), dense_a + dense_b)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_fb.to_dense)(), dense_a + dense_b)
 
     # CSC additions
     csc_a = CSCTensor.from_dense(dense_a)
@@ -258,7 +256,7 @@ def test_csr_add_and_csc_add() -> None:
     assert csc_add(empty_csc, csc_b) is csc_b
 
     res_csc = csc_add(csc_a, csc_b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_csc.to_dense)(), dense_a + dense_b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_csc.to_dense)(), dense_a + dense_b)
 
     with pytest.raises(ValueError, match="Shape mismatch for CSC addition"):
         csc_add(csc_a, CSCTensor.from_dense(np.ones((3, 3), dtype=np.float32)))
@@ -267,7 +265,7 @@ def test_csr_add_and_csc_add() -> None:
     with patch("ml_switcheroo_compiler.backends.sparse.kernels.coo_add", return_value=dense_a + dense_b):
         res_csc_fb = csc_add(csc_a, csc_b)
         assert isinstance(res_csc_fb, CSCTensor)
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_csc_fb.to_dense)(), dense_a + dense_b)
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_csc_fb.to_dense)(), dense_a + dense_b)
 
 
 def test_spgemm_dense_result_fallback() -> None:
@@ -280,7 +278,7 @@ def test_spgemm_dense_result_fallback() -> None:
     with patch("ml_switcheroo_compiler.backends.sparse.kernels.coo_matmat", return_value=np.matmul(dense_a, dense_b)):
         res = spgemm(csr_a, csr_b)
         assert isinstance(res, CSRTensor)
-        cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.matmul)(dense_a, dense_b))
+        cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res.to_dense)(), cast("EagerCallableProtocol", np.matmul)(dense_a, dense_b))
 
 
 def test_sparse_mask_and_sparse_conv2d() -> None:
@@ -292,12 +290,12 @@ def test_sparse_mask_and_sparse_conv2d() -> None:
     coo_data = COOTensor.from_dense(data_2d)
     res_m1 = sparse_mask(coo_data, mask_2d)
     assert isinstance(res_m1, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_m1.to_dense)(), [[1.0, 0.0], [0.0, 4.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_m1.to_dense)(), [[1.0, 0.0], [0.0, 4.0]])
 
     csr_mask = CSRTensor.from_dense(mask_2d)
     res_m2 = sparse_mask(data_2d, csr_mask)
     assert isinstance(res_m2, COOTensor)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res_m2.to_dense)(), [[1.0, 0.0], [0.0, 4.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_m2.to_dense)(), [[1.0, 0.0], [0.0, 4.0]])
 
     # sparse_conv2d_mask with padding=(0, 0)
     x = np.ones((1, 1, 3, 3), dtype=np.float32)
@@ -307,7 +305,7 @@ def test_sparse_mask_and_sparse_conv2d() -> None:
     conv_no_pad = sparse_conv2d_mask(x, w, mask_out, stride=(1, 1), padding=(0, 0))
     assert isinstance(conv_no_pad, COOTensor)
     assert conv_no_pad.shape == (1, 1, 2, 2)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", conv_no_pad.to_dense)(), cast("Callable[..., EagerTensorProtocol]", np.full)((1, 1, 2, 2), 4.0))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", conv_no_pad.to_dense)(), cast("EagerCallableProtocol", np.full)((1, 1, 2, 2), 4.0))
 
     # sparse_conv2d_mask with padding=(1, 1) and 2D inputs
     x_2d = np.ones((3, 3), dtype=np.float32)
@@ -324,6 +322,6 @@ def test_sparse_mask_and_sparse_conv2d() -> None:
     assert prep_w.ndim == 4
 
     # _apply_sparse_mask with CSRTensor mask
-    applied = cast("Callable[..., EagerTensorProtocol]", _apply_sparse_mask)(cast("Callable[..., EagerTensorProtocol]", np.ones)((1, 1, 2, 2), dtype=np.float32), csr_mask)
+    applied = cast("EagerCallableProtocol", _apply_sparse_mask)(cast("EagerCallableProtocol", np.ones)((1, 1, 2, 2), dtype=np.float32), csr_mask)
     assert isinstance(applied, COOTensor)
     assert applied.shape == (1, 1, 2, 2)

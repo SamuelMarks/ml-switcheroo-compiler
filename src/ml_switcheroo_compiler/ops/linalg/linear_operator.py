@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for linear_operator.py."""
+"""Implementation of linear operator operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.linear_operator`)."""
 
 from __future__ import annotations
 

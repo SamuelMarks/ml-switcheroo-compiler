@@ -29,9 +29,7 @@ from ml_switcheroo_compiler.ops.device import DeviceContextOp, DeviceTransferOp,
 from ml_switcheroo_compiler.ops.device import eval as ops_eval
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_exporter() -> None:
@@ -167,7 +165,7 @@ def test_ops_device_eval() -> None:
             data = "dummy_data"
 
         d = Dummy()
-        cast("Callable[..., EagerTensorProtocol]", ops_eval)(d)
+        cast("EagerCallableProtocol", ops_eval)(d)
         assert d.data == "dummy_data"
 
 
@@ -222,7 +220,7 @@ def test_ops_device_device_transfer() -> None:
     with patch("ml_switcheroo_compiler.ops.device._emit_shape_node") as mock_emit:
         mock_emit.return_value = "emitted"
         t = DummyTensor()
-        assert cast("Callable[..., EagerTensorProtocol]", device_transfer)(t, "cuda:0") == "emitted"
+        assert cast("EagerCallableProtocol", device_transfer)(t, "cuda:0") == "emitted"
         mock_emit.assert_called_once_with(
             "DeviceTransfer",
             [t],

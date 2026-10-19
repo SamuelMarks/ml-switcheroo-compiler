@@ -21,7 +21,11 @@ def test_grounding_engine_broken_import() -> None:
 
 
 def test_grounding_engine_unreadable_dir(monkeypatch: EagerTensorProtocol) -> None:
-    """Test unreadable snapshot directory handling."""
+    """Test unreadable snapshot directory handling.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     with patch("os.path.isdir", return_value=True), patch("os.listdir", side_effect=PermissionError("unreadable")):
         engine = SnapshotGroundingEngine("/dummy/dir")
         assert len(engine._raw_snapshots) == 0

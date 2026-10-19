@@ -1,11 +1,11 @@
 """Numpy Search and Sort Ops."""
 
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
 
 
@@ -136,7 +136,7 @@ def _np_top_k(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _top_k)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", _top_k)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("SearchSorted")

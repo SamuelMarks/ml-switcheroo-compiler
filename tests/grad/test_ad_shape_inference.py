@@ -13,37 +13,45 @@ from ml_switcheroo_compiler.grad.jvp_vjp import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
-    """Test function make_tensor."""
+    """Test function make_tensor.
+
+    Args:
+        val: Test parameter `val`.
+        shape: Test parameter `shape`.
+    """
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return cast("Callable[..., EagerTensorProtocol]", Tensor)(val, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape, DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
+    return cast("EagerCallableProtocol", Tensor)(val, cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
 
 
 def test_vjp_shape_dtype_inference() -> None:
     """Test function test_vjp_shape_dtype_inference."""
 
     def f(x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+            y: Test parameter `y`.
+        """
         return dispatch_op("Multiply", x, y)
 
     x = make_tensor(np.ones((2, 3), dtype=np.float32))
     y = make_tensor(np.ones((2, 3), dtype=np.float32))
 
-    out, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x, y)
+    out, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x, y)
 
     assert cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 3)
     assert cast("EagerTensorProtocol", getattr(out, "dtype")).value == "float32"
 
     cot = make_tensor(np.ones((2, 3), dtype=np.float32))
-    grads = cast("Callable[..., EagerTensorProtocol]", vjp_fn)(cot)
+    grads = cast("EagerCallableProtocol", vjp_fn)(cot)
 
-    assert cast("Callable[..., EagerTensorProtocol]", len)(grads) == 2
+    assert cast("EagerCallableProtocol", len)(grads) == 2
     assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(grads, "__getitem__")(0)), "shape")) == (2, 3)
     assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(grads, "__getitem__")(1)), "shape")) == (2, 3)

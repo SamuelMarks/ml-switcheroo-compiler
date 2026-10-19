@@ -39,7 +39,11 @@ def global_wasm_mock() -> Iterator[None]:
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
 
         def mock_template_resolver(template_name: EagerValue) -> EagerValue:
-            """Test function mock_template_resolver."""
+            """Test function mock_template_resolver.
+
+            Args:
+                template_name: Test parameter `template_name`.
+            """
             body = cast("EagerTensorProtocol", "// ") + cast("EagerTensorProtocol", template_name)
             if template_name == "mock_template_Add":
                 body = cast("EagerTensorProtocol", "wasm_f32x4_add(a, b); wasm_v128_load")

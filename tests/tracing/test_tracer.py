@@ -52,7 +52,11 @@ def test_trace_counts() -> None:
     """Verify trace counter operations including get, increment, and reset."""
 
     def dummy_fn(x: Tensor) -> Tensor:
-        """Test function dummy_fn."""
+        """Test function dummy_fn.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     reset_trace_count(dummy_fn)

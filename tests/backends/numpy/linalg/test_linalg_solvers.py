@@ -24,9 +24,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_get_uncontracted_dims() -> None:
@@ -41,7 +39,7 @@ def test_get_uncontracted_dims() -> None:
 def test_parse_dot_dimension_numbers() -> None:
     """Test parse dot dimension numbers."""
     dimension_numbers = (((1,), (0,)), ((2,), (3,)))
-    res = cast("Callable[..., EagerTensorProtocol]", _parse_dot_dimension_numbers)(dimension_numbers)
+    res = cast("EagerCallableProtocol", _parse_dot_dimension_numbers)(dimension_numbers)
     assert res == ((1,), (0,), (2,), (3,))
 
 
@@ -63,7 +61,7 @@ def test_dot_general() -> None:
     dimension_numbers = (((1,), (0,)), ((), ()))
     res = _dot_general(a, b, dimension_numbers)
     expected = np.dot(a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_trace() -> None:
@@ -85,14 +83,14 @@ def test_matrix_transpose() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_matrix_transpose(np, a)
     expected = a.T
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_sqrtm() -> None:
     """Test sqrtm."""
     a = np.array([1, 2])
     res = _np_sqrtm(a)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, a)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, a)
 
 
 def test_adjoint() -> None:
@@ -100,21 +98,21 @@ def test_adjoint() -> None:
     a = np.array([[1 + 1j, 2], [3, 4]])
     res = _np_adjoint(np, a)
     expected = np.conj(a.T)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
 
 
 def test_cholesky_solve() -> None:
     """Test cholesky solve."""
     a = np.array([1, 2])
     res = _np_cholesky_solve(np, a)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, a)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, a)
 
 
 def test_eigh_tridiagonal() -> None:
     """Test eigh tridiagonal."""
     a = np.array([1, 2])
     res = _np_eigh_tridiagonal(np, a)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, a)
+    assert cast("EagerCallableProtocol", np.array_equal)(res, a)
 
 
 def test_qr() -> None:
@@ -122,8 +120,8 @@ def test_qr() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_qr(np, a)
     expected = np.linalg.qr(a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(0)))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(1)))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(0)))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(1)))
 
 
 def test_cross() -> None:
@@ -132,13 +130,13 @@ def test_cross() -> None:
     b = np.array([0, 1, 0])
     res1 = _np_cross(np, a, b)
     expected = np.cross(a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res1, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res1, expected)
 
     res2 = _np_cross(np, a, b, axes={"axis": None})
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res2, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res2, expected)
 
     res3 = _np_cross(np, a, b, axis=None)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res3, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res3, expected)
 
 
 def test_slogdet() -> None:
@@ -146,8 +144,8 @@ def test_slogdet() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_slogdet(np, a)
     expected = np.linalg.slogdet(a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(0)))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(1)))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(0)))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), cast("EagerTensorProtocol", getattr(expected, "__getitem__")(1)))
 
 
 def test_dynamically_registered_ops() -> None:
@@ -159,15 +157,15 @@ def test_dynamically_registered_ops() -> None:
     # test solve
     solve_fn = numpy_eager_registry.get("Solve")
     b = np.array([1, 2])
-    res_solve = cast("Callable[..., EagerTensorProtocol]", solve_fn)(np, a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_solve, cast("Callable[..., EagerTensorProtocol]", np.linalg.solve)(a, b))
+    res_solve = cast("EagerCallableProtocol", solve_fn)(np, a, b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_solve, cast("EagerCallableProtocol", np.linalg.solve)(a, b))
 
     # test eig
     eig_fn = numpy_eager_registry.get("Eig")
-    res_eig = cast("Callable[..., EagerTensorProtocol]", eig_fn)(np, a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res_eig, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", np.linalg.eig)(a), "__getitem__")(0)))
+    res_eig = cast("EagerCallableProtocol", eig_fn)(np, a)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(res_eig, "__getitem__")(0)), cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", np.linalg.eig)(a), "__getitem__")(0)))
 
     # test norm
     norm_fn = numpy_eager_registry.get("Norm")
-    res_norm = cast("Callable[..., EagerTensorProtocol]", norm_fn)(np, a)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res_norm, cast("Callable[..., EagerTensorProtocol]", np.linalg.norm)(a))
+    res_norm = cast("EagerCallableProtocol", norm_fn)(np, a)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_norm, cast("EagerCallableProtocol", np.linalg.norm)(a))

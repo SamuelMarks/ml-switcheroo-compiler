@@ -8,7 +8,7 @@ from collections.abc import Callable, Iterator, Sized
 from enum import Enum
 from typing import Optional, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
@@ -607,7 +607,7 @@ class ImageDataset(Dataset):
                     if self.target_size is not None and len(t.shape) == 4:
                         t = cast(
                             Tensor,
-                            cast("Callable[..., EagerTensorProtocol]", upsample_bilinear)(t, size=self.target_size),
+                            cast("EagerCallableProtocol", upsample_bilinear)(t, size=self.target_size),
                         )
                     if self.normalize:
                         t = true_divide(t, 255.0)

@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for generator.py."""
+"""Implementation of generator operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.generator`)."""
 
 from types import ModuleType
 from typing import cast
@@ -7,7 +7,8 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -32,46 +33,48 @@ class NumpyASTVisitor:
     """Visitor methods for Numpy AST traversal."""
 
     @classmethod
-    def _format_kwargs(cls, kwargs: EagerValue) -> str:
-        """Execute format kwargs for compiler processing.
+    def _format_kwargs(cls, kwargs: dict[str, EagerValue]) -> str:
+        """Format keyword arguments for NumPy code emission.
 
         Args:
-        kwargs (EagerValue): The kwargs parameter.
+            kwargs (dict[str, EagerValue]): Keyword arguments dictionary.
 
         Returns:
-        str: Result.
+            str: Comma-separated key=value formatting string.
         """
-        filtered_kwargs = {k: v for k, v in getattr(kwargs, "items")() if k not in getattr(["equation", "dimension"], "__iter__")()}
-        if "dimension" in getattr(kwargs, "__iter__")():
-            cast(EagerTensorProtocol, filtered_kwargs)["axis"] = getattr(kwargs, "__getitem__")("dimension")
+        filtered_kwargs: dict[str, EagerValue] = {k: v for k, v in kwargs.items() if k not in ("equation", "dimension")}
+        if "dimension" in kwargs:
+            filtered_kwargs["axis"] = kwargs["dimension"]
         return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
 
     @classmethod
     def visit_Parameter(cls, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Visit parameter.
+        """Visit parameter node.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node (LogicalNode): Parameter IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (EagerValue): Keyword arguments.
 
         Returns:
-            str: Computed result.
+            str: Parameter comment assignment line.
         """
+        del input_vars, kwargs
         return f"{node.id} = None # Parameter"
 
     @classmethod
     def visit_Return(cls, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Visit return.
+        """Visit return node.
 
         Args:
-            node: The node parameter.
-            input_vars: The input_vars parameter.
-            **kwargs: The kwargs parameter.
+            node (LogicalNode): Return IR node.
+            input_vars (list[str]): Input variable names to return.
+            **kwargs (EagerValue): Keyword arguments.
 
         Returns:
-            str: Computed result.
+            str: Python return statement line.
         """
+        del node, kwargs
         if not input_vars:
             return "return None"
         if len(input_vars) == 1:
@@ -92,8 +95,9 @@ class NumpyASTVisitor:
         """
         if "dimension" in kwargs:
             return f"np.{getattr(node, 'op_type').lower()}({input_vars[0]}, axis={kwargs['dimension']})"
-        op_type = getattr(node, "op_type", "")
-        np_func = (lambda: __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("numpy").operations.get(op_type, type("Dummy", (), {"ast_template": None})()).ast_template or f"np.{op_type.lower()}")()
+        op_type = str(getattr(node, "op_type", ""))
+        op_spec = load_backend_mappings("numpy").operations.get(op_type)
+        np_func = (op_spec.ast_template if op_spec and op_spec.ast_template else None) or f"np.{op_type.lower()}"
         args_str = ", ".join(input_vars)
         kwargs_str = cls._format_kwargs(kwargs)
         if kwargs_str:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io  # noqa: F401
 import os
 from typing import TYPE_CHECKING
 

@@ -9,9 +9,7 @@ import pytest
 from ml_switcheroo_compiler.ops.unary.logical import Ediff1d, Iscomplexobj, Isin, Isrealobj, Issubdtype, Packbits, Unpackbits, iscomplex, iscomplexobj, isin, isreal, isrealobj, issubdtype, population_count, reduce_precision
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_logical_infer_shape() -> None:
@@ -31,58 +29,68 @@ def test_logical_infer_shape() -> None:
     from ml_switcheroo_compiler.ops.unary.logical import Isin
 
     assert Isin().infer_shape() == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Isin)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)(), cast("Callable[..., EagerTensorProtocol]", Dummy)()) == (2, 3)
+    assert cast("EagerCallableProtocol", Isin)().infer_shape(cast("EagerCallableProtocol", Dummy)(), cast("EagerCallableProtocol", Dummy)()) == (2, 3)
 
 
 class Dummy:
     """Dummy tensor class for testing."""
 
     def __init__(self, shape: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         if shape is not None:
             self.shape = shape
 
 
 def test_logical_infer_shape_additional() -> None:
     """Test function test_logical_infer_shape_additional."""
-    assert cast("Callable[..., EagerTensorProtocol]", Iscomplexobj)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Isrealobj)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Dummy)()) == ()
+    assert cast("EagerCallableProtocol", Iscomplexobj)().infer_shape(cast("EagerCallableProtocol", Dummy)()) == ()
+    assert cast("EagerCallableProtocol", Isrealobj)().infer_shape(cast("EagerCallableProtocol", Dummy)()) == ()
     assert Issubdtype().infer_shape() == ()
     op = Ediff1d()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,))) == (4,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_begin=cast("Callable[..., EagerTensorProtocol]", Dummy)(())) == (5,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_begin=cast("Callable[..., EagerTensorProtocol]", Dummy)((2,))) == (6,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_end=cast("Callable[..., EagerTensorProtocol]", Dummy)(())) == (5,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_end=cast("Callable[..., EagerTensorProtocol]", Dummy)((2,))) == (6,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_begin=cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)), to_end=cast("Callable[..., EagerTensorProtocol]", Dummy)((3,))) == (9,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,))) == (4,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_begin=cast("EagerCallableProtocol", Dummy)(())) == (5,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_begin=cast("EagerCallableProtocol", Dummy)((2,))) == (6,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_end=cast("EagerCallableProtocol", Dummy)(())) == (5,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_end=cast("EagerCallableProtocol", Dummy)((2,))) == (6,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_begin=cast("EagerCallableProtocol", Dummy)((2,)), to_end=cast("EagerCallableProtocol", Dummy)((3,))) == (9,)
     from ml_switcheroo_compiler.ir.shape_system import SymVar
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((None,))) == (cast("Callable[..., EagerTensorProtocol]", SymVar)("diff_len"),)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_begin=cast("Callable[..., EagerTensorProtocol]", Dummy)((None,))) == (cast("Callable[..., EagerTensorProtocol]", SymVar)("diff_len"),)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_end=cast("Callable[..., EagerTensorProtocol]", Dummy)((None,))) == (cast("Callable[..., EagerTensorProtocol]", SymVar)("diff_len"),)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((None,))) == (cast("EagerCallableProtocol", SymVar)("diff_len"),)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_begin=cast("EagerCallableProtocol", Dummy)((None,))) == (cast("EagerCallableProtocol", SymVar)("diff_len"),)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_end=cast("EagerCallableProtocol", Dummy)((None,))) == (cast("EagerCallableProtocol", SymVar)("diff_len"),)
     assert op.infer_shape(None) == (0,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_begin=[1, 2]) == (6,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_end=(10,)) == (5,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5,)), to_begin=None) == (4,)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((5, "str_dim")), to_begin=cast("Callable[..., EagerTensorProtocol]", Dummy)(())) == (5,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_begin=[1, 2]) == (6,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_end=(10,)) == (5,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), to_begin=None) == (4,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5, "str_dim")), to_begin=cast("EagerCallableProtocol", Dummy)(())) == (5,)
 
 
 def test_logical_dispatch() -> None:
     """Test function test_logical_dispatch."""
 
     def safe_call(func: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> None:
-        """Test function safe_call."""
-        with pytest.raises(RuntimeError):
-            cast("Callable[..., EagerTensorProtocol]", func)(*args, **kwargs)
+        """Test function safe_call.
 
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(population_count, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(isin, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)), cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(iscomplex, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(iscomplexobj, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(isreal, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(isrealobj, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(issubdtype, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)), cast("Callable[..., EagerTensorProtocol]", Dummy)(()))
-    cast("Callable[..., EagerTensorProtocol]", safe_call)(reduce_precision, cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)))
+        Args:
+            func: Test parameter `func`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        with pytest.raises(RuntimeError):
+            cast("EagerCallableProtocol", func)(*args, **kwargs)
+
+    cast("EagerCallableProtocol", safe_call)(population_count, cast("EagerCallableProtocol", Dummy)((2,)))
+    cast("EagerCallableProtocol", safe_call)(isin, cast("EagerCallableProtocol", Dummy)((2,)), cast("EagerCallableProtocol", Dummy)((2,)))
+    cast("EagerCallableProtocol", safe_call)(iscomplex, cast("EagerCallableProtocol", Dummy)((2,)))
+    cast("EagerCallableProtocol", safe_call)(iscomplexobj, cast("EagerCallableProtocol", Dummy)((2,)))
+    cast("EagerCallableProtocol", safe_call)(isreal, cast("EagerCallableProtocol", Dummy)((2,)))
+    cast("EagerCallableProtocol", safe_call)(isrealobj, cast("EagerCallableProtocol", Dummy)((2,)))
+    cast("EagerCallableProtocol", safe_call)(issubdtype, cast("EagerCallableProtocol", Dummy)((2,)), cast("EagerCallableProtocol", Dummy)(()))
+    cast("EagerCallableProtocol", safe_call)(reduce_precision, cast("EagerCallableProtocol", Dummy)((2,)))
 
 
 def test_logical_infer_shape_packbits() -> None:
@@ -90,9 +98,9 @@ def test_logical_infer_shape_packbits() -> None:
     from ml_switcheroo_compiler.ops.unary.logical import Packbits, Unpackbits
 
     op1 = Packbits()
-    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)), cast("Callable[..., EagerTensorProtocol]", Dummy)((3, 2))) == (3, 2)
+    assert cast("EagerCallableProtocol", op1.infer_shape)(cast("EagerCallableProtocol", Dummy)((2,)), cast("EagerCallableProtocol", Dummy)((3, 2))) == (3, 2)
     op2 = Unpackbits()
-    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Dummy)((2,)), cast("Callable[..., EagerTensorProtocol]", Dummy)((3, 2))) == (3, 2)
+    assert cast("EagerCallableProtocol", op2.infer_shape)(cast("EagerCallableProtocol", Dummy)((2,)), cast("EagerCallableProtocol", Dummy)((3, 2))) == (3, 2)
 
 
 def test_logical_infer_shape_isin() -> None:
@@ -109,5 +117,5 @@ def test_logical_infer_shape_packbits_no_shapes() -> None:
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", Packbits)().infer_shape(cast("Callable[..., EagerTensorProtocol]", NoShape)()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", Unpackbits)().infer_shape(cast("Callable[..., EagerTensorProtocol]", NoShape)()) == ()
+    assert cast("EagerCallableProtocol", Packbits)().infer_shape(cast("EagerCallableProtocol", NoShape)()) == ()
+    assert cast("EagerCallableProtocol", Unpackbits)().infer_shape(cast("EagerCallableProtocol", NoShape)()) == ()

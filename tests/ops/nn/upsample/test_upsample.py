@@ -23,9 +23,7 @@ from ml_switcheroo_compiler.ops.nn.upsample_ops import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_upsample_coverage() -> None:
@@ -79,11 +77,21 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
             """Dummy backend for upsample testing."""
 
             def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-                """Execute op return dummy array."""
+                """Execute op return dummy array.
+
+                Args:
+                    op: Test parameter `op`.
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return np.zeros((1, 1, 4, 4), dtype=np.float32)
 
             def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-                """Convert array."""
+                """Convert array.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return np.asarray(x)
 
         mock_backend.return_value = DummyBackend()
@@ -137,7 +145,7 @@ def test_upsample_brute() -> None:
 
         shape = (1, 1, 1)
 
-    cast("Callable[..., EagerTensorProtocol]", _resolve_scale_factor)(cast("Callable[..., EagerTensorProtocol]", DummyTensorDynamic)(), 2.0, 2)
+    cast("EagerCallableProtocol", _resolve_scale_factor)(cast("EagerCallableProtocol", DummyTensorDynamic)(), 2.0, 2)
 
     _upsample_resolve_size(t_2d, 8, None)
     _upsample_resolve_size(t_2d, (8, 8), None)
@@ -162,11 +170,21 @@ def test_upsample_brute() -> None:
             """Dummy backend for 1D upsampling."""
 
             def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-                """Execute op return dummy array."""
+                """Execute op return dummy array.
+
+                Args:
+                    op: Test parameter `op`.
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return np.zeros((2, 3, 8), dtype=np.float32)
 
             def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-                """Convert array."""
+                """Convert array.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return np.asarray(x)
 
         mock_backend.return_value = DummyBackend1D()

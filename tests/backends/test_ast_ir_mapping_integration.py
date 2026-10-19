@@ -32,9 +32,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_mapping_loader_resolution_and_dispatch_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -73,7 +71,11 @@ def _test_mapping_loader_resolution_and_dispatch_part_1(_state: dict[str, EagerT
 
         @staticmethod
         def direct_func(x: EagerValue) -> EagerValue:
-            """Test function direct_func."""
+            """Test function direct_func.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
 
     dmod = DirectModule()
@@ -124,15 +126,15 @@ def _test_mapping_loader_resolution_and_dispatch_part_3(_state: dict[str, EagerT
     f1, f2, f3 = _state["f1"], _state["f2"], _state["f3"]
     try:
         t1 = cast("dict[str, EagerTensorProtocol]", {})
-        cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(f1, t1)
+        cast("EagerCallableProtocol", _read_and_merge)(f1, t1)
         assert "not_dict" in t1
 
         t2 = cast("dict[str, EagerTensorProtocol]", {})
-        cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(f2, t2)
+        cast("EagerCallableProtocol", _read_and_merge)(f2, t2)
         assert "OpA" in t2
 
         t3 = cast("dict[str, EagerTensorProtocol]", {})
-        cast("Callable[..., EagerTensorProtocol]", _read_and_merge)(f3, t3)
+        cast("EagerCallableProtocol", _read_and_merge)(f3, t3)
         assert t3 == {}
     finally:
         os.unlink(f1)
@@ -144,7 +146,7 @@ def _test_mapping_loader_resolution_and_dispatch_part_3(_state: dict[str, EagerT
         with open(os.path.join(tmpdir, "valid.yaml"), "w") as f:
             f.write("OpB: {target_api: b.c}\n")
         target_dict = cast("dict[str, EagerTensorProtocol]", {})
-        cast("Callable[..., EagerTensorProtocol]", _load_yaml_dir)(tmpdir, target_dict)
+        cast("EagerCallableProtocol", _load_yaml_dir)(tmpdir, target_dict)
         assert "OpB" in target_dict
 
     _load_yaml_dir("/path/does/not/exist", {})
@@ -192,7 +194,12 @@ def _test_mapping_loader_resolution_and_dispatch_part_4(_state: dict[str, EagerT
         """Test class TargetObj."""
 
         def run_method(self, a: EagerValue, b: EagerValue = 1) -> EagerValue:
-            """Test function run_method."""
+            """Test function run_method.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+            """
             return f"method_result_{a}_{b}"
 
     obj = TargetObj()
@@ -239,7 +246,7 @@ def test_mapping_loader_resolution_and_dispatch() -> None:
     _test_mapping_loader_resolution_and_dispatch_part_3(_state)
     _test_mapping_loader_resolution_and_dispatch_part_4(_state)
     _test_mapping_loader_resolution_and_dispatch_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_ir_to_ast_generation() -> None:
@@ -505,7 +512,7 @@ def test_ast_to_ir_lowering_and_scoping() -> None:
     _test_ast_to_ir_lowering_and_scoping_part_2(_state)
     _test_ast_to_ir_lowering_and_scoping_part_3(_state)
     _test_ast_to_ir_lowering_and_scoping_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_ast_to_ir_control_flow_subgraphs() -> None:
@@ -683,7 +690,7 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
         _state: Shared test state dictionary.
     """
     ASTToIRVisitor, patch, src_attr_unpack = _state["ASTToIRVisitor"], _state["patch"], _state["src_attr_unpack"]
-    g_attr_unpack = cast("Callable[..., EagerTensorProtocol]", parse_ast_to_ir)(src_attr_unpack)
+    g_attr_unpack = cast("EagerCallableProtocol", parse_ast_to_ir)(src_attr_unpack)
     assert any(n.op_type == "GetItem" for n in g_attr_unpack.nodes.values())
 
     # 4. _handle_dict_unpack and _handle_unpack_assign with Dict target (lines 169-181, 199-202)
@@ -695,8 +702,8 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
             cst.StarredDictElement(value=cst.Name("rest")),  # non-DictElement
         ]
     )
-    assign_node = cast("Callable[..., EagerTensorProtocol]", cst.Assign)(
-        targets=[cast("Callable[..., EagerTensorProtocol]", cst.AssignTarget)(target=dict_target)],
+    assign_node = cast("EagerCallableProtocol", cst.Assign)(
+        targets=[cast("EagerCallableProtocol", cst.AssignTarget)(target=dict_target)],
         value=cst.Name("source_dict"),
     )
     vis_dict = ASTToIRVisitor()
@@ -707,8 +714,8 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
     assert "source_dict_node_dict_1" in vis_dict.graph.nodes
 
     # Dict unpack when val_node_id is None (covers branch 200->202)
-    assign_node_none = cast("Callable[..., EagerTensorProtocol]", cst.Assign)(
-        targets=[cast("Callable[..., EagerTensorProtocol]", cst.AssignTarget)(target=dict_target)],
+    assign_node_none = cast("EagerCallableProtocol", cst.Assign)(
+        targets=[cast("EagerCallableProtocol", cst.AssignTarget)(target=dict_target)],
         value=cst.Name("missing_dict"),
     )
     with patch.object(vis_dict, "_resolve_target_val_node_id", return_value=None):
@@ -786,4 +793,4 @@ def test_ast_to_ir_scoped_visitor_resolution() -> None:
     _test_ast_to_ir_scoped_visitor_resolution_part_1(_state)
     _test_ast_to_ir_scoped_visitor_resolution_part_2(_state)
     _test_ast_to_ir_scoped_visitor_resolution_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

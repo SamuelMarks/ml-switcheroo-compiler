@@ -17,14 +17,12 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_loop_options_init_and_context_manager() -> None:
     """Test LoopOptions initialization and context manager state restoration."""
-    opts1 = cast("Callable[..., EagerTensorProtocol]", LoopOptions)(
+    opts1 = cast("EagerCallableProtocol", LoopOptions)(
         parallel_iterations=8,
         swap_memory=True,
         maximum_iterations=64,
@@ -58,7 +56,7 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     graph = global_tracing_state.start_tracing("test_loop_options_graph")
     try:
         setattr(graph, "metadata", {})
-        opts = cast("Callable[..., EagerTensorProtocol]", set_loop_options)(
+        opts = cast("EagerCallableProtocol", set_loop_options)(
             parallel_iterations=16,
             swap_memory=True,
             maximum_iterations=128,
@@ -106,7 +104,7 @@ def test_while_loop_tracing_with_loop_options() -> None:
     """Test that while_loop_tracing attaches active loop options to the resulting Loop node."""
     global_tracing_state.start_tracing("test_while_loop_trace")
     try:
-        cast("Callable[..., EagerTensorProtocol]", set_loop_options)(
+        cast("EagerCallableProtocol", set_loop_options)(
             parallel_iterations=4,
             swap_memory=True,
             maximum_iterations=50,
@@ -117,11 +115,19 @@ def test_while_loop_tracing_with_loop_options() -> None:
         init_tensor = Tensor(proxy, TensorConfig((2, 2), DType.Float32, "cpu"))
 
         def cond_fn(x: Tensor) -> Tensor:
-            """Condition predicate function."""
+            """Condition predicate function.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         def body_fn(x: Tensor) -> Tensor:
-            """Loop body transformation function."""
+            """Loop body transformation function.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return x
 
         res = while_loop_tracing(cond_fn, body_fn, init_tensor)

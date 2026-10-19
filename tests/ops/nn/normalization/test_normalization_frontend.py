@@ -29,11 +29,20 @@ def test_normalization_frontend_brute() -> None:
             """Test class DummyBackend."""
 
             def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function execute_op."""
+                """Test function execute_op.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return np.zeros((2, 4, 8, 8)).astype(np.float32)
 
             def array(self, x: EagerValue) -> EagerValue:
-                """Test function array."""
+                """Test function array.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return x
 
         mock_backend.return_value = DummyBackend()
@@ -55,7 +64,12 @@ def test_normalization_frontend_brute() -> None:
     with patch.object(norm_frontend, "get_op") as mock_get_op:
 
         def dummy_op(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function dummy_op."""
+            """Test function dummy_op.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return t_in
 
         mock_get_op.return_value = lambda: dummy_op
@@ -70,5 +84,5 @@ def test_normalization_frontend_brute() -> None:
             mock_pi.return_value = (t_in, u_in, t_in)
             with patch.object(norm_frontend, "divide") as mock_div:
                 mock_div.return_value = t_in
-                spectral_normalization(t_in, u_in)
-    assert u_in is not None or u_in is None
+                res = spectral_normalization(t_in, u_in)
+    assert res is not None

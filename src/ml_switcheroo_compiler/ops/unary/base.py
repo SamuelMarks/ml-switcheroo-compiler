@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for base.py."""
+"""Implementation of base operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.base`)."""
 
 from __future__ import annotations
 

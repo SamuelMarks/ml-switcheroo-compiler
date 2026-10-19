@@ -25,9 +25,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_reductions import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_np_sum() -> None:
@@ -84,19 +82,19 @@ def test_np_any_op() -> None:
 
 def test_np_cumsum() -> None:
     """Test function test_np_cumsum."""
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", _np_cumsum)(np, [1, 2, 3]), [1, 3, 6])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", _np_cumsum)(np, [1, 2, 3]), [1, 3, 6])
 
 
 def test_np_add_n() -> None:
     """Test function test_np_add_n."""
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", _np_add_n)(np, [[1, 2], [3, 4], [5, 6]]), [9, 12])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", _np_add_n)(np, [[1, 2], [3, 4], [5, 6]]), [9, 12])
     with pytest.raises(ValueError, match="inputs must not be empty"):
         _np_add_n(np, [])
 
 
 def test_np_accumulate_n() -> None:
     """Test function test_np_accumulate_n."""
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", _np_accumulate_n)(np, [[1, 2], [3, 4], [5, 6]]), [9, 12])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", _np_accumulate_n)(np, [[1, 2], [3, 4], [5, 6]]), [9, 12])
     with pytest.raises(ValueError, match="inputs must not be empty"):
         _np_accumulate_n(np, [])
 
@@ -106,4 +104,4 @@ def test_np_cumulative_logsumexp() -> None:
     a = np.array([0.0, 1.0])
     res = _np_cumulative_logsumexp(np, a, axis=0)
     expected = np.log(np.cumsum(np.exp(a), axis=0))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)

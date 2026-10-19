@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 MetricsVal = Union[list[float], float]
 
@@ -230,7 +230,7 @@ def test_orchestrator_isolated_worker_and_helpers() -> None:
     graph = IRGraph(name="iso_graph")
 
     # 1. Successful worker run
-    cast("Callable[..., EagerTensorProtocol]", orch_mod._isolated_worker)(
+    cast("EagerCallableProtocol", orch_mod._isolated_worker)(
         ("ml_switcheroo_compiler.backends.edge.profiler", "EdgeProfiler"),
         graph,
         {},
@@ -244,7 +244,7 @@ def test_orchestrator_isolated_worker_and_helpers() -> None:
     assert isinstance(payload, dict)
 
     # 2. Failing worker run
-    cast("Callable[..., EagerTensorProtocol]", orch_mod._isolated_worker)(
+    cast("EagerCallableProtocol", orch_mod._isolated_worker)(
         ("nonexistent.module", "FakeClass"),
         graph,
         {},
@@ -293,7 +293,7 @@ def _test_orchestrator_profiler_and_isolated_branches_part_1(_state: dict[str, E
         assert "no_mod_be" not in specs
 
     with pytest.MonkeyPatch.context() as mp:
-        cast("Callable[..., EagerTensorProtocol]", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "pathlib")).Path, "exists", lambda self: False)
+        cast("EagerCallableProtocol", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "pathlib")).Path, "exists", lambda self: False)
         assert orch_mod.BenchmarkOrchestrator._load_manifest_profiles() == {}
 
     with pytest.MonkeyPatch.context() as mp:
@@ -341,7 +341,7 @@ def _test_orchestrator_profiler_and_isolated_branches_part_2(_state: dict[str, E
     weight_node = IRNode(id="w", op_type="Input", inputs=[], attributes={"shape": [10, 5], "is_weight": True})
     graph.nodes["w"] = weight_node
     graph.inputs = ["w"]
-    cast("Callable[..., EagerTensorProtocol]", BackendRegistry.register)("mock_be", MockBackendClass)
+    cast("EagerCallableProtocol", BackendRegistry.register)("mock_be", MockBackendClass)
 
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(orchestrator, "_get_profiler", lambda be: MockSimpleProfiler())
@@ -365,9 +365,9 @@ def _test_orchestrator_profiler_and_isolated_branches_part_3(_state: dict[str, E
     """
     graph, orchestrator = _state["graph"], _state["orchestrator"]
     with pytest.MonkeyPatch.context() as mp:
-        cast("Callable[..., EagerTensorProtocol]", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "get_context", lambda: cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")))
-        cast("Callable[..., EagerTensorProtocol]", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "Process", MockProcessOk)
-        cast("Callable[..., EagerTensorProtocol]", mp.setattr)(
+        cast("EagerCallableProtocol", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "get_context", lambda: cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")))
+        cast("EagerCallableProtocol", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "Process", MockProcessOk)
+        cast("EagerCallableProtocol", mp.setattr)(
             cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")),
             "Queue",
             lambda: MockDeterministicQueue([("ok", {"latencies": [1.0], "peak_memory_mb": 5.0})]),
@@ -380,7 +380,7 @@ def _test_orchestrator_profiler_and_isolated_branches_part_3(_state: dict[str, E
         assert single_isolated["latencies"] == [1.0]
 
         # Mock isolated run with error payload
-        cast("Callable[..., EagerTensorProtocol]", mp.setattr)(
+        cast("EagerCallableProtocol", mp.setattr)(
             cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")),
             "Queue",
             lambda: MockDeterministicQueue([("error", "subprocess failed")]),
@@ -389,12 +389,12 @@ def _test_orchestrator_profiler_and_isolated_branches_part_3(_state: dict[str, E
             orchestrator._run_isolated(graph, "numpy", {})
 
         # Mock isolated run with empty queue
-        cast("Callable[..., EagerTensorProtocol]", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "Queue", lambda: cast("Callable[..., EagerTensorProtocol]", MockDeterministicQueue)([]))
+        cast("EagerCallableProtocol", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "Queue", lambda: cast("EagerCallableProtocol", MockDeterministicQueue)([]))
         with pytest.raises(RuntimeError, match="terminated unexpectedly"):
             orchestrator._run_isolated(graph, "numpy", {})
 
         # Mock isolated run with timeout
-        cast("Callable[..., EagerTensorProtocol]", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "Process", MockProcessTimeout)
+        cast("EagerCallableProtocol", mp.setattr)(cast("EagerTensorProtocol", getattr(orch_mod, "multiprocessing")), "Process", MockProcessTimeout)
         with pytest.raises(RuntimeError, match="timed out"):
             orchestrator._run_isolated(graph, "numpy", {})
     getattr(_state, "update")({"metrics": metrics, "mp": mp, "single_isolated": single_isolated})
@@ -406,7 +406,7 @@ def test_orchestrator_profiler_and_isolated_branches() -> None:
     _test_orchestrator_profiler_and_isolated_branches_part_1(_state)
     _test_orchestrator_profiler_and_isolated_branches_part_2(_state)
     _test_orchestrator_profiler_and_isolated_branches_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_orchestrator_execute_full() -> None:

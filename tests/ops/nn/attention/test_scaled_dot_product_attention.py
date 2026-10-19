@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention, s
 from ml_switcheroo_compiler.tracing.tracer import TracerTape
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_scaled_dot_product_attention_eager_singleton() -> None:
@@ -56,7 +54,7 @@ def test_scaled_dot_product_attention_opdef() -> None:
 
         shape = (1, 1, 1)
 
-    res = cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)(), None, None, None)
+    res = cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyShape)(), None, None, None)
     assert res == (1, 1, 1)
 
 

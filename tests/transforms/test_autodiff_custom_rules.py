@@ -219,7 +219,11 @@ def test_checkpoint_vjp_with_fun() -> None:
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import checkpoint_vjp
 
     def sample_fn(x: EagerValue) -> EagerValue:
-        """Identity sample function for tracing."""
+        """Identity sample function for tracing.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     main_graph = IRGraph()
@@ -454,7 +458,11 @@ def test_custom_jvp_vjp() -> None:
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import custom_jvp_vjp
 
     def sample_fn(x: EagerValue) -> EagerValue:
-        """Identity function for custom JVP VJP test."""
+        """Identity function for custom JVP VJP test.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     main_g = IRGraph()

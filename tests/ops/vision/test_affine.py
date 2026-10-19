@@ -10,16 +10,18 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.affine import affine_generator, affine_grid, affine_transform, grid_sample, random_crop, random_elastic_transform, random_flip, random_perspective, random_rotation, random_shear, random_translation, random_zoom
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -27,7 +29,11 @@ class MockTensor:
 
 
 def test_vision_affine_funcs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_affine_funcs."""
+    """Test function test_vision_affine_funcs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.vision.affine._emit_shape_node", return_value="node")
@@ -74,7 +80,7 @@ def test_affine_opdef_infer_shape() -> None:
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert cast("Callable[..., EagerTensorProtocol]", AffineGenerator)().infer_shape(t) == (1, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", AffineGrid)().infer_shape(t) == (1, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", AffineTransform)().infer_shape(t) == (1, 2, 3)
-    assert cast("Callable[..., EagerTensorProtocol]", PerspectiveTransform)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", AffineGenerator)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", AffineGrid)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", AffineTransform)().infer_shape(t) == (1, 2, 3)
+    assert cast("EagerCallableProtocol", PerspectiveTransform)().infer_shape(t) == (1, 2, 3)

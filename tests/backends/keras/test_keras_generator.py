@@ -10,64 +10,65 @@ from ml_switcheroo_compiler.backends.keras.keras_mixins import KerasAudioVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class DummyNode:
     """Test class DummyNode."""
 
     def __init__(self, attrs: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            attrs: Test parameter `attrs`.
+        """
         self.attributes = attrs or {}
 
 
 def test_keras_vision_visitor() -> None:
     """Test function test_keras_vision_visitor."""
     vis = KerasVisionVisitor()
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_ElasticTransform)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"data_format": "df", "interpolation": "bicubic"}), ["a", "b"]) == "keras_elastic_transform(a, b, 'bicubic', 0.0, \"df\")"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_ElasticTransform)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"]) == "keras_elastic_transform(a, b, 'bilinear', 0.0, None)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_GaussianBlur)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_gaussian_blur(a, 3, 1.0, 'same', \"df\")"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_GaussianBlur)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a"]) == "keras_gaussian_blur(a, None, None, 'same', None)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_MedianFilter)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_median_filter(a, 3, 'same', \"df\")"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_MedianFilter)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a"]) == "keras_median_filter(a, None, 'same', None)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_IoU)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"bounding_box_format": "cxywh"}), ["a", "b"]) == "keras_iou(a, b, 'cxywh')"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_IoU)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"]) == "keras_iou(a, b, 'xyxy')"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_NonMaxSuppression)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"max_output_size": 10}), ["a", "b"]) == "keras_nms(a, b, 10, 0.5, -inf)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_NonMaxSuppression)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b"]) == "keras_nms(a, b, None, 0.5, -inf)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_ResizeBicubic)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'bicubic', True)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_ResizeBicubic)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a"]) == "keras_resize(a, None, 'bicubic', False)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_ResizeLanczos3)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'lanczos3', True)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_ResizeLanczos3)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a"]) == "keras_resize(a, None, 'lanczos3', False)"
+    assert cast("EagerCallableProtocol", vis.visit_ElasticTransform)(cast("EagerCallableProtocol", DummyNode)({"data_format": "df", "interpolation": "bicubic"}), ["a", "b"]) == "keras_elastic_transform(a, b, 'bicubic', 0.0, \"df\")"
+    assert cast("EagerCallableProtocol", vis.visit_ElasticTransform)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_elastic_transform(a, b, 'bilinear', 0.0, None)"
+    assert cast("EagerCallableProtocol", vis.visit_GaussianBlur)(cast("EagerCallableProtocol", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_gaussian_blur(a, 3, 1.0, 'same', \"df\")"
+    assert cast("EagerCallableProtocol", vis.visit_GaussianBlur)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_gaussian_blur(a, None, None, 'same', None)"
+    assert cast("EagerCallableProtocol", vis.visit_MedianFilter)(cast("EagerCallableProtocol", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_median_filter(a, 3, 'same', \"df\")"
+    assert cast("EagerCallableProtocol", vis.visit_MedianFilter)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_median_filter(a, None, 'same', None)"
+    assert cast("EagerCallableProtocol", vis.visit_IoU)(cast("EagerCallableProtocol", DummyNode)({"bounding_box_format": "cxywh"}), ["a", "b"]) == "keras_iou(a, b, 'cxywh')"
+    assert cast("EagerCallableProtocol", vis.visit_IoU)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_iou(a, b, 'xyxy')"
+    assert cast("EagerCallableProtocol", vis.visit_NonMaxSuppression)(cast("EagerCallableProtocol", DummyNode)({"max_output_size": 10}), ["a", "b"]) == "keras_nms(a, b, 10, 0.5, -inf)"
+    assert cast("EagerCallableProtocol", vis.visit_NonMaxSuppression)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_nms(a, b, None, 0.5, -inf)"
+    assert cast("EagerCallableProtocol", vis.visit_ResizeBicubic)(cast("EagerCallableProtocol", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'bicubic', True)"
+    assert cast("EagerCallableProtocol", vis.visit_ResizeBicubic)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_resize(a, None, 'bicubic', False)"
+    assert cast("EagerCallableProtocol", vis.visit_ResizeLanczos3)(cast("EagerCallableProtocol", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'lanczos3', True)"
+    assert cast("EagerCallableProtocol", vis.visit_ResizeLanczos3)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_resize(a, None, 'lanczos3', False)"
     assert (
-        cast("Callable[..., EagerTensorProtocol]", vis.visit_ExtractBoundingBoxes)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"crop_size": 10, "data_format": "df"}), ["a", "b", "c"])
+        cast("EagerCallableProtocol", vis.visit_ExtractBoundingBoxes)(cast("EagerCallableProtocol", DummyNode)({"crop_size": 10, "data_format": "df"}), ["a", "b", "c"])
         == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=10, interpolation='bilinear', extrapolation_value=0.0, data_format=\"df\"))"
     )
-    assert (
-        cast("Callable[..., EagerTensorProtocol]", vis.visit_ExtractBoundingBoxes)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b", "c"])
-        == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=None, interpolation='bilinear', extrapolation_value=0.0, data_format=None))"
-    )
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_PerspectiveTransform)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"data_format": "df"}), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=\"df\")"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_PerspectiveTransform)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=None)"
+    assert cast("EagerCallableProtocol", vis.visit_ExtractBoundingBoxes)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b", "c"]) == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=None, interpolation='bilinear', extrapolation_value=0.0, data_format=None))"
+    assert cast("EagerCallableProtocol", vis.visit_PerspectiveTransform)(cast("EagerCallableProtocol", DummyNode)({"data_format": "df"}), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=\"df\")"
+    assert cast("EagerCallableProtocol", vis.visit_PerspectiveTransform)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=None)"
 
 
 def test_keras_audio_visitor() -> None:
     """Test function test_keras_audio_visitor."""
     vis = KerasAudioVisitor()
-    assert (
-        cast("Callable[..., EagerTensorProtocol]", vis.visit_Istft)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"])
-        == "keras_istft(a, STFTConfig(frame_length=2048, frame_step=512, fft_length=None, window='hann', center=False))"
-    )
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_MelFilterbank)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4.0, 5.0)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Mfcc)(cast("Callable[..., EagerTensorProtocol]", DummyNode)({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3.0, 4.0, 5)"
+    assert cast("EagerCallableProtocol", vis.visit_Istft)(cast("EagerCallableProtocol", DummyNode)({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "keras_istft(a, STFTConfig(frame_length=2048, frame_step=512, fft_length=None, window='hann', center=False))"
+    assert cast("EagerCallableProtocol", vis.visit_MelFilterbank)(cast("EagerCallableProtocol", DummyNode)({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4.0, 5.0)"
+    assert cast("EagerCallableProtocol", vis.visit_Mfcc)(cast("EagerCallableProtocol", DummyNode)({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3.0, 4.0, 5)"
 
 
 class DummyIRNode:
     """Test class DummyIRNode."""
 
     def __init__(self, id: EagerValue, shape_metadata: EagerValue = None) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            id: Test parameter `id`.
+            shape_metadata: Test parameter `shape_metadata`.
+        """
         self.id = id
         if shape_metadata:
             self.shape_metadata = shape_metadata
@@ -82,9 +83,9 @@ class DummyGraph:
 def test_keras_signature_builder() -> None:
     """Test function test_keras_signature_builder."""
     node = DummyIRNode("in_0", (None, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", KerasSignatureBuilder.get_input_assignment)("var", node) == "var = keras.Input(shape=(None, 3), name='in_0')"
+    assert cast("EagerCallableProtocol", KerasSignatureBuilder.get_input_assignment)("var", node) == "var = keras.Input(shape=(None, 3), name='in_0')"
     node2 = DummyIRNode("in_1")
-    assert cast("Callable[..., EagerTensorProtocol]", KerasSignatureBuilder.get_input_assignment)("var2", node2) == "var2 = keras.Input(shape=(None,), name='in_1')"
+    assert cast("EagerCallableProtocol", KerasSignatureBuilder.get_input_assignment)("var2", node2) == "var2 = keras.Input(shape=(None,), name='in_1')"
     assert KerasSignatureBuilder.get_return_block(["i1"], ["o1"]) == "return keras.Model(inputs=[i1], outputs=[o1])"
 
 
@@ -100,19 +101,19 @@ def test_keras_tensor_manipulator() -> None:
 
 def test_keras_generator() -> None:
     """Test function test_keras_generator."""
-    gen = cast("Callable[..., EagerTensorProtocol]", KerasCodeGenerator)(cast("Callable[..., EagerTensorProtocol]", DummyGraph)())
+    gen = cast("EagerCallableProtocol", KerasCodeGenerator)(cast("EagerCallableProtocol", DummyGraph)())
     assert gen.get_fallback_prefix() == "keras.ops"
     assert gen.get_fallback_prefix() == "keras.ops"
-    assert cast("Callable[..., EagerTensorProtocol]", gen.visit_RaggedDot)(None, ["a", "b"]) == "keras_ragged_dot(a, b)"
+    assert cast("EagerCallableProtocol", gen.visit_RaggedDot)(None, ["a", "b"]) == "keras_ragged_dot(a, b)"
     ops = gen.get_ops_map({})
     assert "Zeros" in ops
     assert "Transpose" in ops
-    cast("Callable[..., EagerTensorProtocol]", gen._emit_input_assignment)("var1", cast("Callable[..., EagerTensorProtocol]", DummyIRNode)("in"), "inputs", 0)
+    cast("EagerCallableProtocol", gen._emit_input_assignment)("var1", cast("EagerCallableProtocol", DummyIRNode)("in"), "inputs", 0)
     assert "var1 = keras.Input" in gen.code[-1]
     assert "var1" in gen.keras_input_vars
     gen._emit_body_return(["out1"])
     assert "out1" in gen.keras_output_vars
-    cast("Callable[..., EagerTensorProtocol]", gen._emit_output_assignment)(None, ["out2"], "out2")
+    cast("EagerCallableProtocol", gen._emit_output_assignment)(None, ["out2"], "out2")
     assert "out2" in gen.keras_output_vars
     assert gen._generate_file_header() == [gen.header.strip()]
     m_open = mock_open(read_data='imports: "import tmp"\nfunctions:\n  dummy: "def dummy(): pass"')
@@ -129,12 +130,16 @@ def test_keras_generator() -> None:
     setattr(gen, "keras_output_vars", ["o"])
     from ml_switcheroo_compiler.backends.keras.generator import KerasSignatureBuilder
 
-    cast("Callable[..., EagerTensorProtocol]", gen.code.append)(cast("Callable[..., EagerTensorProtocol]", KerasSignatureBuilder.get_return_block)(gen.keras_input_vars, gen.keras_output_vars))
+    cast("EagerCallableProtocol", gen.code.append)(cast("EagerCallableProtocol", KerasSignatureBuilder.get_return_block)(gen.keras_input_vars, gen.keras_output_vars))
     assert "return keras.Model(inputs=[i], outputs=[o])" in gen.code[-1]
 
 
 def test_keras_generator_save_load(tmp_path: EagerTensorProtocol) -> None:
-    """Test save and load methods of Keras generator."""
+    """Test save and load methods of Keras generator.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     arr = [1, 2, 3]
     filepath = str(tmp_path / "dummy.pkl")
     KerasCodeGenerator.save(filepath, arr)
@@ -167,8 +172,8 @@ def test_keras_generator_conv_transpose() -> None:
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", gen.visit_ConvTranspose)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
-    assert cast("Callable[..., EagerTensorProtocol]", gen.visit_RaggedDot)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"
+    assert cast("EagerCallableProtocol", gen.visit_ConvTranspose)(cast("EagerCallableProtocol", DummyNode)(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
+    assert cast("EagerCallableProtocol", gen.visit_RaggedDot)(cast("EagerCallableProtocol", DummyNode)(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"
 
 
 def test_keras_generator_empty_prefix_yaml() -> None:
@@ -204,7 +209,11 @@ def test_keras_generator_return_only_outputs() -> None:
     gen = KerasCodeGenerator(graph)
 
     def mock_generate_body(prefix: EagerValue) -> None:
-        """Test function mock_generate_body."""
+        """Test function mock_generate_body.
+
+        Args:
+            prefix: Test parameter `prefix`.
+        """
         gen.keras_input_vars = []
         gen.keras_output_vars = ["out_var"]
 
@@ -222,7 +231,11 @@ def test_keras_generator_return_block_both_inputs_and_outputs() -> None:
     gen = KerasCodeGenerator(graph)
 
     def mock_generate_body(prefix: EagerValue) -> None:
-        """Test function mock_generate_body."""
+        """Test function mock_generate_body.
+
+        Args:
+            prefix: Test parameter `prefix`.
+        """
         gen.keras_input_vars = ["in_var"]
         gen.keras_output_vars = ["out_var"]
 
@@ -240,7 +253,11 @@ def test_keras_generator_empty_inputs_and_outputs() -> None:
     gen = KerasCodeGenerator(graph)
 
     def mock_generate_body(prefix: EagerValue) -> None:
-        """Test function mock_generate_body."""
+        """Test function mock_generate_body.
+
+        Args:
+            prefix: Test parameter `prefix`.
+        """
         gen.keras_input_vars = ["in0"]
         gen.keras_output_vars = []
 
@@ -286,8 +303,8 @@ def test_keras_generator_compile_aot() -> None:
     gen_single = KerasCodeGenerator(g_single)
     with patch.object(gen_single, "generate", return_value="invalid python syntax !!!"):
         art_single = gen_single.compile_aot(g_single)
-        res_single = cast("Callable[..., EagerTensorProtocol]", art_single)(cast("Callable[..., EagerTensorProtocol]", MockTensorWithData)(cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), "extra_arg")
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_single, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+        res_single = cast("EagerCallableProtocol", art_single)(cast("EagerCallableProtocol", MockTensorWithData)(cast("EagerCallableProtocol", np.array)([1, 2])), "extra_arg")
+        assert cast("EagerCallableProtocol", np.array_equal)(res_single, cast("EagerCallableProtocol", np.array)([1, 2]))
     g_no_out = IRGraph()
     g_no_out.nodes = {"in0": node_in}
     g_no_out.inputs = ["in0"]
@@ -307,6 +324,6 @@ def test_keras_generator_compile_aot() -> None:
     with patch.object(gen_multi, "generate", return_value="invalid syntax"):
         art_multi = gen_multi.compile_aot(g_multi)
         res_multi = art_multi(np.array([5, 6]))
-        assert cast("Callable[..., EagerTensorProtocol]", len)(res_multi) == 2
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(0)), cast("Callable[..., EagerTensorProtocol]", np.array)([5, 6]))
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(1)), cast("Callable[..., EagerTensorProtocol]", np.array)([5, 6]))
+        assert cast("EagerCallableProtocol", len)(res_multi) == 2
+        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(0)), cast("EagerCallableProtocol", np.array)([5, 6]))
+        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(1)), cast("EagerCallableProtocol", np.array)([5, 6]))

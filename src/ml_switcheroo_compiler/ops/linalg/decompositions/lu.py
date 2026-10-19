@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for lu.py."""
+"""Implementation of lu operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.lu`)."""
 
 from __future__ import annotations
 

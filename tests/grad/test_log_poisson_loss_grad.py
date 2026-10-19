@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_stirling_gammaln_accuracy() -> None:
@@ -48,16 +46,16 @@ def test_log_poisson_loss_eager_modes() -> None:
     # log_input=True: exp(pred) - targets * pred
     loss_log = _np_log_poisson_loss(np, targets, predictions, log_input=True)
     expected_log = np.exp(predictions) - targets * predictions
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(loss_log, expected_log, rtol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(loss_log, expected_log, rtol=1e-5)
 
     # log_input=False: pred - targets * log(pred)
     loss_nonlog = _np_log_poisson_loss(np, targets, predictions, log_input=False)
     expected_nonlog = predictions - targets * np.log(predictions)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(loss_nonlog, expected_nonlog, rtol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(loss_nonlog, expected_nonlog, rtol=1e-5)
 
     # compute_full_loss=True
     loss_full = _np_log_poisson_loss(np, targets, predictions, log_input=True, compute_full_loss=True)
-    assert cast("Callable[..., EagerTensorProtocol]", np.all)(cast("EagerTensorProtocol", loss_full) >= cast("EagerTensorProtocol", loss_log))
+    assert cast("EagerCallableProtocol", np.all)(cast("EagerTensorProtocol", loss_full) >= cast("EagerTensorProtocol", loss_log))
 
 
 def test_log_poisson_loss_vjp_rule() -> None:
@@ -150,8 +148,8 @@ def test_log_poisson_loss_numerical_gradcheck() -> None:
         minus = log_input.copy()
         plus[i] += eps
         minus[i] -= eps
-        l_plus = cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("Callable[..., EagerTensorProtocol]", _np_log_poisson_loss)(np, targets, plus, log_input=True))
-        l_minus = cast("Callable[..., EagerTensorProtocol]", np.sum)(cast("Callable[..., EagerTensorProtocol]", _np_log_poisson_loss)(np, targets, minus, log_input=True))
+        l_plus = cast("EagerCallableProtocol", np.sum)(cast("EagerCallableProtocol", _np_log_poisson_loss)(np, targets, plus, log_input=True))
+        l_minus = cast("EagerCallableProtocol", np.sum)(cast("EagerCallableProtocol", _np_log_poisson_loss)(np, targets, minus, log_input=True))
         numerical_grad[i] = (l_plus - l_minus) / (2.0 * eps)
 
     np.testing.assert_allclose(analytical_grad, numerical_grad, rtol=1e-4, atol=1e-4)

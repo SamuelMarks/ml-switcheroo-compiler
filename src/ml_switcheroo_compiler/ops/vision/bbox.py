@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Optional, cast
+from typing import Callable, Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -126,7 +126,7 @@ def extract_bounding_boxes(
             crop_size = (crop_size, crop_size)
         config_obj = cast(
             TensorOrScalar,
-            cast("Callable[..., EagerTensorProtocol]", BBoxConfig)(
+            cast("EagerCallableProtocol", BBoxConfig)(
                 crop_size=crop_size,
                 interpolation=cast("str", kwargs.get("interpolation", "bilinear")),
                 extrapolation_value=cast("float", kwargs.get("extrapolation_value", 0.0)),

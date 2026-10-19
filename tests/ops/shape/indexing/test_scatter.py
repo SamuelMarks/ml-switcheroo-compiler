@@ -17,7 +17,11 @@ class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -25,7 +29,11 @@ class MockTensor:
 
 
 def test_scatter(mocker: EagerTensorProtocol) -> None:
-    """Test function test_scatter."""
+    """Test function test_scatter.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -41,7 +49,11 @@ def test_scatter(mocker: EagerTensorProtocol) -> None:
 
 
 def test_scatter_nd(mocker: EagerTensorProtocol) -> None:
-    """Test function test_scatter_nd."""
+    """Test function test_scatter_nd.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
     config.eager_mode = False
@@ -55,7 +67,11 @@ def test_scatter_nd(mocker: EagerTensorProtocol) -> None:
 
 
 def test_scatter_add(mocker: EagerTensorProtocol) -> None:
-    """Test function test_scatter_add."""
+    """Test function test_scatter_add.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -70,7 +86,11 @@ def test_scatter_add(mocker: EagerTensorProtocol) -> None:
 
 
 def test_tensor_scatter_update(mocker: EagerTensorProtocol) -> None:
-    """Test function test_tensor_scatter_update."""
+    """Test function test_tensor_scatter_update.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -85,7 +105,11 @@ def test_tensor_scatter_update(mocker: EagerTensorProtocol) -> None:
 
 
 def test_tensor_scatter_max(mocker: EagerTensorProtocol) -> None:
-    """Test function test_tensor_scatter_max."""
+    """Test function test_tensor_scatter_max.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -100,7 +124,11 @@ def test_tensor_scatter_max(mocker: EagerTensorProtocol) -> None:
 
 
 def test_tensor_scatter_min(mocker: EagerTensorProtocol) -> None:
-    """Test function test_tensor_scatter_min."""
+    """Test function test_tensor_scatter_min.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -115,7 +143,11 @@ def test_tensor_scatter_min(mocker: EagerTensorProtocol) -> None:
 
 
 def test_tensor_scatter_add(mocker: EagerTensorProtocol) -> None:
-    """Test function test_tensor_scatter_add."""
+    """Test function test_tensor_scatter_add.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     src = Tensor([1], TensorConfig((1,), "float32", "cpu"))
@@ -138,7 +170,15 @@ def test_scatter_exact_shape_deduction(mocker: EagerTensorProtocol) -> None:
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
     def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
-        """Test function mock_emit."""
+        """Test function mock_emit.
+
+        Args:
+            op_name: Test parameter `op_name`.
+            inputs: Test parameter `inputs`.
+            attrs: Test parameter `attrs`.
+            shape: Test parameter `shape`.
+            dtype: Test parameter `dtype`.
+        """
         captured_shapes[op_name] = shape
         return op_name
 

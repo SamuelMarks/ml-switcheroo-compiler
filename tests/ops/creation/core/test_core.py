@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_creation_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -72,19 +70,19 @@ def _test_creation_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> No
 
         data = 4.0
 
-    f2 = cast("Callable[..., EagerTensorProtocol]", fb.full)((2, 2), cast("Callable[..., EagerTensorProtocol]", DummyFill)())
+    f2 = cast("EagerCallableProtocol", fb.full)((2, 2), cast("EagerCallableProtocol", DummyFill)())
     assert cast("EagerTensorProtocol", getattr((f2.numpy() == 4.0), "all"))()
-    zl = cast("Callable[..., EagerTensorProtocol]", fb.zeros_like)(t)
+    zl = cast("EagerCallableProtocol", fb.zeros_like)(t)
     assert zl.shape == t.shape
     assert cast("EagerTensorProtocol", getattr((zl.numpy() == 0), "all"))()
 
     # ones_like
-    ol = cast("Callable[..., EagerTensorProtocol]", fb.ones_like)(t)
+    ol = cast("EagerCallableProtocol", fb.ones_like)(t)
     assert ol.shape == t.shape
     assert cast("EagerTensorProtocol", getattr((ol.numpy() == 1), "all"))()
 
     # full_like
-    fl = cast("Callable[..., EagerTensorProtocol]", fb.full_like)(t, 5.0)
+    fl = cast("EagerCallableProtocol", fb.full_like)(t, 5.0)
     assert fl.shape == t.shape
     assert cast("EagerTensorProtocol", getattr((fl.numpy() == 5.0), "all"))()
 
@@ -93,12 +91,12 @@ def _test_creation_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> No
     assert e.shape == (2, 2)
 
     # empty_like
-    el = cast("Callable[..., EagerTensorProtocol]", fb.empty_like)(t)
+    el = cast("EagerCallableProtocol", fb.empty_like)(t)
     assert el.shape == t.shape
-    assert cast("Callable[..., EagerTensorProtocol]", fb.empty_like)(t, dtype=cast("Callable[..., EagerTensorProtocol]", DType)("float32")).dtype == cast("Callable[..., EagerTensorProtocol]", DType)("float32")
+    assert cast("EagerCallableProtocol", fb.empty_like)(t, dtype=cast("EagerCallableProtocol", DType)("float32")).dtype == cast("EagerCallableProtocol", DType)("float32")
 
     # convert_to_numpy
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", fb.convert_to_numpy)(t), np.ndarray)
+    assert isinstance(cast("EagerCallableProtocol", fb.convert_to_numpy)(t), np.ndarray)
     getattr(_state, "update")({"DummyFill": DummyFill, "e": e, "el": el, "f2": f2})
     getattr(_state, "update")({"fl": fl, "ol": ol, "zl": zl})
     _state.update(locals())
@@ -116,7 +114,7 @@ def _test_creation_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> No
 
         data = [1, 2]
 
-    assert isinstance(cast("Callable[..., EagerTensorProtocol]", fb.convert_to_numpy)(cast("Callable[..., EagerTensorProtocol]", DummyNoNumpy)()), np.ndarray)
+    assert isinstance(cast("EagerCallableProtocol", fb.convert_to_numpy)(cast("EagerCallableProtocol", DummyNoNumpy)()), np.ndarray)
 
     # frombuffer
     buf = b"hello"
@@ -149,14 +147,23 @@ def _test_creation_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> No
             nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
         import ml_switcheroo_compiler.ops.registry as registry
 
         def dummy_emit_creation_node(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function dummy_emit_creation_node."""
+            """Test function dummy_emit_creation_node.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return Tensor(None, TensorConfig(shape=(), dtype=DType("float32"), device=Device("cpu")))
 
         registry.register_util("_emit_creation_node")(dummy_emit_creation_node)
@@ -166,9 +173,9 @@ def _test_creation_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> No
         fb.zeros((2, 2))
         fb.ones((2, 2))
         fb.full((2, 2), 3.0)
-        cast("Callable[..., EagerTensorProtocol]", fb.zeros_like)(t)
-        cast("Callable[..., EagerTensorProtocol]", fb.ones_like)(t)
-        cast("Callable[..., EagerTensorProtocol]", fb.full_like)(t, 5.0)
+        cast("EagerCallableProtocol", fb.zeros_like)(t)
+        cast("EagerCallableProtocol", fb.ones_like)(t)
+        cast("EagerCallableProtocol", fb.full_like)(t, 5.0)
         fb.empty((2, 2))
         fb.frombuffer(buf, dtype=DType("int8"), count=5)
 
@@ -177,7 +184,7 @@ def _test_creation_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> No
 
             data = 2
 
-        cast("Callable[..., EagerTensorProtocol]", fb._unpack_shape)((cast("Callable[..., EagerTensorProtocol]", DummyNodeShape)(),))
+        cast("EagerCallableProtocol", fb._unpack_shape)((cast("EagerCallableProtocol", DummyNodeShape)(),))
 
     finally:
         setattr(config, "eager_mode", original_eager)
@@ -191,4 +198,4 @@ def test_creation_coverage() -> None:
     _test_creation_coverage_part_2(_state)
     _test_creation_coverage_part_3(_state)
     _test_creation_coverage_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

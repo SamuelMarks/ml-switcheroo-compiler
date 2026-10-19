@@ -11,7 +11,11 @@ if TYPE_CHECKING:
 
 
 def test_eager_mode_isolation(monkeypatch: EagerTensorProtocol) -> None:
-    """Test that when eager mode is on, we don't fall back to numpy inadvertently via AST."""
+    """Test that when eager mode is on, we don't fall back to numpy inadvertently via AST.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     cfg = config
 
     # Store old values

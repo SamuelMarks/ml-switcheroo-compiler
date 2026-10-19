@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_numpy_distributed_extra() -> None:
@@ -29,12 +27,12 @@ def test_numpy_distributed_extra() -> None:
 
     # Test all functions without global context
     dist_mod._tcp_dist_ctx.world_size = 1
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_all_reduce)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_all_gather)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([[1, 2]]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_broadcast)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_reduce_scatter)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_reduce)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_all_to_all)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_reduce)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_gather)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([[1, 2]]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_broadcast)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_reduce_scatter)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_reduce)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_to_all)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([1, 2]))
 
     # Mock context
     mock_ctx = MagicMock(spec=TCPDistributedContext)
@@ -46,14 +44,14 @@ def test_numpy_distributed_extra() -> None:
 
     # Test all_reduce with context for other op types
     mock_ctx.all_reduce_ring.return_value = np.array([4, 4])
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_all_reduce)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([4, 4]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_reduce)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([4, 4]))
 
     # Test all_gather with context
     mock_ctx.all_gather_tensors.return_value = [np.array([1]), np.array([2])]
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_all_gather)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1])), cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_gather)(np, cast("EagerCallableProtocol", np.array)([1])), cast("EagerCallableProtocol", np.array)([1, 2]))
 
     # Test broadcast with context
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_broadcast)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2])), cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_broadcast)(np, cast("EagerCallableProtocol", np.array)([1, 2])), cast("EagerCallableProtocol", np.array)([1]))
 
     # Test reduce_scatter with context for various op_types
     for op in ["sum", "prod", "max", "min", "unknown"]:
@@ -62,12 +60,12 @@ def test_numpy_distributed_extra() -> None:
 
     # Test reduce with context for various op_types
     for op, expected in zip(["sum", "prod", "max", "min", "unknown"], [3, 2, 2, 1, 3]):
-        assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_reduce)(np, cast("Callable[..., EagerTensorProtocol]", np.array)([1, 2]), op_type=op), cast("Callable[..., EagerTensorProtocol]", np.array)([expected]))
+        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_reduce)(np, cast("EagerCallableProtocol", np.array)([1, 2]), op_type=op), cast("EagerCallableProtocol", np.array)([expected]))
 
     # Test all_to_all with context
     res_all_to_all = _np_all_to_all(np, np.array([1, 2]))
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res_all_to_all) == 2
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("EagerTensorProtocol", getattr(res_all_to_all, "__getitem__")(0)), cast("Callable[..., EagerTensorProtocol]", np.array)([1]))
+    assert cast("EagerCallableProtocol", len)(res_all_to_all) == 2
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res_all_to_all, "__getitem__")(0)), cast("EagerCallableProtocol", np.array)([1]))
 
     # Clean up
     setattr(dist_mod, "_GLOBAL_NP_DIST_CONTEXT", None)
@@ -201,7 +199,7 @@ def _test_numpy_distributed_context_methods_part_5(_state: dict[str, EagerTensor
     setattr(ctx_ring, "recv_conns", [MagicMock()])
 
     for op in ["prod", "max", "min"]:
-        setattr(ctx_ring.recv_conns[0].recv, "return_value", cast("Callable[..., EagerTensorProtocol]", np.array)([2]))
+        setattr(ctx_ring.recv_conns[0].recv, "return_value", cast("EagerCallableProtocol", np.array)([2]))
         res = ctx_ring.all_reduce_ring(np.array([2]), op_type=op)
 
     ctx_ring.all_gather_tensors(np.array([1]))
@@ -216,4 +214,4 @@ def test_numpy_distributed_context_methods() -> None:
     _test_numpy_distributed_context_methods_part_3(_state)
     _test_numpy_distributed_context_methods_part_4(_state)
     _test_numpy_distributed_context_methods_part_5(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, ro
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_nn_attention_utils_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -29,8 +27,8 @@ def _test_nn_attention_utils_coverage_part_1(_state: dict[str, EagerTensorProtoc
     config.eager_mode = True
     t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig(shape=(1, 1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert cast("Callable[..., EagerTensorProtocol]", RopeOp)().infer_shape(t) == (1, 1, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", ScaledDotProductAttention)().infer_shape(t, t, t, None) == (1, 1, 2)
+    assert cast("EagerCallableProtocol", RopeOp)().infer_shape(t) == (1, 1, 2)
+    assert cast("EagerCallableProtocol", ScaledDotProductAttention)().infer_shape(t, t, t, None) == (1, 1, 2)
 
     assert rope(t, axis=2) is not None
 
@@ -47,59 +45,110 @@ class _MockAttentionBackend:
     """Test class _MockAttentionBackend."""
 
     def execute_op(self, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function execute_op."""
+        """Test function execute_op.
+
+        Args:
+            op_name: Test parameter `op_name`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         if op_name == "Concatenate":
             tensors = args[0]
             axis = kwargs.get("axis", -1)
-            return cast("Callable[..., EagerTensorProtocol]", np.concatenate)([cast("Callable[..., EagerTensorProtocol]", np.atleast_1d)(arr) if cast("Callable[..., EagerTensorProtocol]", np.ndim)(arr) == 0 else arr for arr in cast("EagerTensorProtocol", tensors)], axis=axis)
+            return cast("EagerCallableProtocol", np.concatenate)([cast("EagerCallableProtocol", np.atleast_1d)(arr) if cast("EagerCallableProtocol", np.ndim)(arr) == 0 else arr for arr in cast("EagerTensorProtocol", tensors)], axis=axis)
         return np.array([1.0])
 
     def asarray(self, x: EagerValue) -> EagerValue:
-        """Test function asarray."""
+        """Test function asarray.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return np.asarray(x)
 
     def array(self, x: EagerValue) -> EagerValue:
-        """Test function array."""
+        """Test function array.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return np.asarray(x)
 
     def expand_dims(self, x: EagerValue, axis: EagerValue) -> EagerValue:
-        """Test function expand_dims."""
-        return cast("Callable[..., EagerTensorProtocol]", np.expand_dims)(x, axis=axis)
+        """Test function expand_dims.
+
+        Args:
+            x: Test parameter `x`.
+            axis: Test parameter `axis`.
+        """
+        return cast("EagerCallableProtocol", np.expand_dims)(x, axis=axis)
 
     def multiply(self, x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function multiply."""
+        """Test function multiply.
+
+        Args:
+            x: Test parameter `x`.
+            y: Test parameter `y`.
+        """
         try:
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.multiply)(x, y))
+            return cast("EagerValue", cast("EagerCallableProtocol", np.multiply)(x, y))
         except Exception:
             return x
 
     def subtract(self, x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function subtract."""
+        """Test function subtract.
+
+        Args:
+            x: Test parameter `x`.
+            y: Test parameter `y`.
+        """
         try:
-            return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.subtract)(x, y))
+            return cast("EagerValue", cast("EagerCallableProtocol", np.subtract)(x, y))
         except Exception:
             return x
 
     def arange(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function arange."""
-        return cast("Callable[..., EagerTensorProtocol]", np.arange)(*args, **kwargs)
+        """Test function arange.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
+        return cast("EagerCallableProtocol", np.arange)(*args, **kwargs)
 
     def exp(self, x: EagerValue) -> EagerValue:
-        """Test function exp."""
-        return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.exp)(x))
+        """Test function exp.
+
+        Args:
+            x: Test parameter `x`.
+        """
+        return cast("EagerValue", cast("EagerCallableProtocol", np.exp)(x))
 
     def sin(self, x: EagerValue) -> EagerValue:
-        """Test function sin."""
-        return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.sin)(x))
+        """Test function sin.
+
+        Args:
+            x: Test parameter `x`.
+        """
+        return cast("EagerValue", cast("EagerCallableProtocol", np.sin)(x))
 
     def cos(self, x: EagerValue) -> EagerValue:
-        """Test function cos."""
-        return cast("EagerValue", cast("Callable[..., EagerTensorProtocol]", np.cos)(x))
+        """Test function cos.
+
+        Args:
+            x: Test parameter `x`.
+        """
+        return cast("EagerValue", cast("EagerCallableProtocol", np.cos)(x))
 
     def concatenate(self, x: EagerValue, axis: EagerValue) -> EagerValue:
-        """Test function concatenate."""
+        """Test function concatenate.
+
+        Args:
+            x: Test parameter `x`.
+            axis: Test parameter `axis`.
+        """
         try:
-            return cast("Callable[..., EagerTensorProtocol]", np.concatenate)([cast("Callable[..., EagerTensorProtocol]", np.atleast_1d)(arr) for arr in cast("EagerTensorProtocol", x)], axis=axis)
+            return cast("EagerCallableProtocol", np.concatenate)([cast("EagerCallableProtocol", np.atleast_1d)(arr) for arr in cast("EagerTensorProtocol", x)], axis=axis)
         except Exception:
             return x
 
@@ -135,7 +184,7 @@ def _test_nn_attention_utils_coverage_part_2(_state: dict[str, EagerTensorProtoc
     getattr(_state, "__setitem__")("_state", _state)
     for _sub_fn in (__test_nn_attention_utils_coverage_part_2_sub_1, __test_nn_attention_utils_coverage_part_2_sub_2):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -149,7 +198,7 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
     try:
         setattr(registry_mod, "get_active_backend", lambda: MockAttentionBackend())
 
-        cast("Callable[..., EagerTensorProtocol]", rope)(t, axis=2)
+        cast("EagerCallableProtocol", rope)(t, axis=2)
 
         config.eager_mode = False
         global_tracing_state.is_tracing = True
@@ -163,12 +212,16 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
                 self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
 
-        cast("Callable[..., EagerTensorProtocol]", rope)(t, axis=2)
+        cast("EagerCallableProtocol", rope)(t, axis=2)
     finally:
         config.eager_mode = False
         global_tracing_state.is_tracing = False
@@ -182,4 +235,4 @@ def test_nn_attention_utils_coverage() -> None:
     _test_nn_attention_utils_coverage_part_1(_state)
     _test_nn_attention_utils_coverage_part_2(_state)
     _test_nn_attention_utils_coverage_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

@@ -9,9 +9,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.tracing.state import TracingState
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_tracing_state() -> None:
@@ -65,14 +63,18 @@ def test_enrich_ast_and_domain_extra() -> None:
             self.domain = "existing_domain"
 
     node = MockNode()
-    cast("Callable[..., EagerTensorProtocol]", state._enrich_ast_and_domain)(node)
+    cast("EagerCallableProtocol", state._enrich_ast_and_domain)(node)
     assert node.source_ast_ref == "existing"
     assert node.domain == "existing_domain"
     state.stop_tracing()
 
 
 def test_enrich_stream_no_config(mocker: EagerTensorProtocol) -> None:
-    """Test function test_enrich_stream_no_config."""
+    """Test function test_enrich_stream_no_config.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     old_config = sys.modules.pop("ml_switcheroo_compiler.core.config", None)
     state = TracingState()
 
@@ -82,7 +84,7 @@ def test_enrich_stream_no_config(mocker: EagerTensorProtocol) -> None:
         stream = "existing"
 
     node = MockNode()
-    cast("Callable[..., EagerTensorProtocol]", state._enrich_stream)(node)
+    cast("EagerCallableProtocol", state._enrich_stream)(node)
     assert node.stream == "existing"
 
     if old_config is not None:

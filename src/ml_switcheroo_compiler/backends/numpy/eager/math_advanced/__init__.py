@@ -1,4 +1,4 @@
-"""math_advanced module."""
+"""Public package exports and initialization for `ml_switcheroo_compiler.backends.numpy.eager.math_advanced`."""
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 

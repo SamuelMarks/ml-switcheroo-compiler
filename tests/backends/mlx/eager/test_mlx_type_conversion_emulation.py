@@ -36,18 +36,16 @@ from ml_switcheroo_compiler.backends.mlx.eager import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 pytest.importorskip("mlx.core")
 
 
 def test_numpy_conversion_fallback() -> None:
     """Test function test_numpy_conversion_fallback."""
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownFakeOp", [1.0])
-    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Take", cast("Callable[..., EagerTensorProtocol]", mx.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
-    cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "TakeAlongAxis", cast("Callable[..., EagerTensorProtocol]", mx.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", mx.array)([0]), axis=0)
+        cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", [1.0])
+    cast("EagerCallableProtocol", execute_op)(None, "Take", cast("EagerCallableProtocol", mx.array)([1.0]), cast("EagerCallableProtocol", mx.array)([0]), axis=0)
+    cast("EagerCallableProtocol", execute_op)(None, "TakeAlongAxis", cast("EagerCallableProtocol", mx.array)([1.0]), cast("EagerCallableProtocol", mx.array)([0]), axis=0)
 
 
 def _test_mlx_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -184,4 +182,4 @@ def test_mlx_ops() -> None:
     _test_mlx_ops_part_2(_state)
     _test_mlx_ops_part_3(_state)
     _test_mlx_ops_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

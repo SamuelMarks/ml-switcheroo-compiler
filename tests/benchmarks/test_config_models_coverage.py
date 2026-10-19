@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 MetricsVal = Union[list[float], float]
 
@@ -279,7 +279,7 @@ def _test_config_models_loaders_part_2(_state: dict[str, EagerTensorProtocol]) -
     """
     valid_plan_yaml = _state["valid_plan_yaml"]
     try:
-        plan_loaded = cast("Callable[..., EagerTensorProtocol]", cfg_models_mod.load_benchmark_plan)(valid_plan_yaml)
+        plan_loaded = cast("EagerCallableProtocol", cfg_models_mod.load_benchmark_plan)(valid_plan_yaml)
         assert plan_loaded.name == "valid_plan"
     finally:
         os.unlink(valid_plan_yaml)
@@ -352,7 +352,11 @@ def _test_config_models_loaders_part_4(_state: dict[str, EagerTensorProtocol]) -
         orig_exists = os.path.exists
 
         def mock_exists_primary(path: str) -> bool:
-            """Test function mock_exists_primary."""
+            """Test function mock_exists_primary.
+
+            Args:
+                path: Test parameter `path`.
+            """
             if path.endswith("/standard_workloads.yaml"):
                 return False
             return orig_exists(path)
@@ -362,7 +366,11 @@ def _test_config_models_loaders_part_4(_state: dict[str, EagerTensorProtocol]) -
         assert len(workloads_primary) > 0
 
         def mock_exists_fallback(path: str) -> bool:
-            """Test function mock_exists_fallback."""
+            """Test function mock_exists_fallback.
+
+            Args:
+                path: Test parameter `path`.
+            """
             if path.endswith("/standard_workloads.yaml") or path.endswith("/workloads.yaml"):
                 return False
             return orig_exists(path)
@@ -372,7 +380,11 @@ def _test_config_models_loaders_part_4(_state: dict[str, EagerTensorProtocol]) -
         assert len(workloads_fallback) > 0
 
         def mock_exists_none(path: str) -> bool:
-            """Test function mock_exists_none."""
+            """Test function mock_exists_none.
+
+            Args:
+                path: Test parameter `path`.
+            """
             if any(path.endswith("/" + name) for name in ("standard_workloads.yaml", "workloads.yaml", "model_workloads.yaml")):
                 return False
             return orig_exists(path)
@@ -441,7 +453,11 @@ def _test_config_models_loaders_part_6(_state: dict[str, EagerTensorProtocol]) -
         orig_exists = os.path.exists
 
         def mock_exists_no_bp(path: str) -> bool:
-            """Test function mock_exists_no_bp."""
+            """Test function mock_exists_no_bp.
+
+            Args:
+                path: Test parameter `path`.
+            """
             if path.endswith("/backend_profiles.yaml"):
                 return False
             return orig_exists(path)
@@ -461,4 +477,4 @@ def test_config_models_loaders() -> None:
     _test_config_models_loaders_part_4(_state)
     _test_config_models_loaders_part_5(_state)
     _test_config_models_loaders_part_6(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

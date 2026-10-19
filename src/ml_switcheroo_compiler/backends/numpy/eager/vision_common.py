@@ -1,12 +1,12 @@
 """Vision eager common operations."""
 
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.audio import mel_filterbank_eager, mfcc_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 
 
 @numpy_eager_registry.register("MelFilterbank")
@@ -21,7 +21,7 @@ def _np_mel_filterbank(backend_module: ModuleType, _: EagerValue, **kwargs: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", mel_filterbank_eager)(backend_module, None, kwargs.get("config", kwargs)))
+    return cast(EagerValue, cast("EagerCallableProtocol", mel_filterbank_eager)(backend_module, None, kwargs.get("config", kwargs)))
 
 
 @numpy_eager_registry.register("Mfcc")
@@ -36,7 +36,7 @@ def _np_mfcc(backend_module: ModuleType, spectrogram: EagerValue, **kwargs: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", mfcc_eager)(backend_module, spectrogram, kwargs.get("config", kwargs)))
+    return cast(EagerValue, cast("EagerCallableProtocol", mfcc_eager)(backend_module, spectrogram, kwargs.get("config", kwargs)))
 
 
 @numpy_eager_registry.register("PowerIteration")
@@ -56,7 +56,7 @@ def _np_power_iteration(backend_module: ModuleType, w: EagerValue, *args: EagerV
     u = kwargs.get("u", None)
     if u is None:
         u = np.ones(getattr(w, "shape")[:-2] + (getattr(w, "shape")[-2], 1), dtype=getattr(w, "dtype"))
-    else:
+    elif getattr(u, "ndim", 1) < getattr(w, "ndim", 2):
         u = getattr(np, "expand_dims")(u, axis=-1)
     for _ in range(cast("int", num_iters)):
         w_t = getattr(np, "swapaxes")(w, -1, -2)

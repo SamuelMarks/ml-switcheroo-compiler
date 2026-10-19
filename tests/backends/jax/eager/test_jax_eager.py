@@ -12,13 +12,16 @@ from ml_switcheroo_compiler.backends.jax.eager import (
     _execute_adaptive_avg_pool,
     _execute_bessel_jn,
     _execute_binom_cdf,
+    _execute_binom_pmf,
     _execute_cast,
+    _execute_convolve2d,
     _execute_ragged_tensor_to_dense,
     _execute_unsorted_segment_max,
     _execute_unsorted_segment_min,
     _execute_unsorted_segment_prod,
     _execute_unsorted_segment_sum,
     _execute_variance,
+    _execute_welch,
     execute_op,
 )
 
@@ -29,7 +32,7 @@ except ImportError:
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_jax_eager_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -49,6 +52,12 @@ def _test_jax_eager_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     res = _execute_accumulate_n([jnp.ones((2, 2)), jnp.ones((2, 2))])
     assert jnp.all(res == 2.0)
     res = _execute_binom_cdf(1, 2, 0.5)
+    assert res is not None
+    res = _execute_binom_pmf(1, 2, 0.5)
+    assert res is not None
+    res = _execute_convolve2d(jnp.ones((2, 2)), jnp.ones((2, 2)))
+    assert res is not None
+    res = _execute_welch(jnp.ones((8,)), nperseg=4)
     assert res is not None
     res = _execute_bessel_jn(1, 2.0)
     assert res is not None
@@ -79,9 +88,9 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "int4"
 
-    res = cast("Callable[..., EagerTensorProtocol]", _execute_cast)(cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), dtype=cast("Callable[..., EagerTensorProtocol]", MockDtype)())
+    res = cast("EagerCallableProtocol", _execute_cast)(cast("EagerCallableProtocol", jnp.array)([1.0]), dtype=cast("EagerCallableProtocol", MockDtype)())
     assert res.dtype == jnp.int8
-    res = cast("Callable[..., EagerTensorProtocol]", _execute_cast)(cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", MockDtype)())
+    res = cast("EagerCallableProtocol", _execute_cast)(cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", MockDtype)())
     assert res.dtype == jnp.int8
 
     class MockDtype2:
@@ -89,7 +98,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "bfloat16"
 
-    res = cast("Callable[..., EagerTensorProtocol]", _execute_cast)(cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", MockDtype2)())
+    res = cast("EagerCallableProtocol", _execute_cast)(cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", MockDtype2)())
     assert res.dtype == jnp.bfloat16
 
     class MockDtype3:
@@ -97,7 +106,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float16"
 
-    res = cast("Callable[..., EagerTensorProtocol]", _execute_cast)(cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", MockDtype3)())
+    res = cast("EagerCallableProtocol", _execute_cast)(cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", MockDtype3)())
     assert res.dtype == jnp.float16
 
     class MockDtype4:
@@ -105,7 +114,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float8"
 
-    res = cast("Callable[..., EagerTensorProtocol]", _execute_cast)(cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", MockDtype4)())
+    res = cast("EagerCallableProtocol", _execute_cast)(cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", MockDtype4)())
     getattr(_state, "update")({"MockDtype": MockDtype, "MockDtype2": MockDtype2, "MockDtype3": MockDtype3, "MockDtype4": MockDtype4})
     getattr(_state, "update")({"res": res})
     _state.update(locals())
@@ -125,26 +134,32 @@ def _test_jax_eager_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float32"
 
-    res = cast("Callable[..., EagerTensorProtocol]", _execute_cast)(cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", MockDtype5)())
+    res = cast("EagerCallableProtocol", _execute_cast)(cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", MockDtype5)())
     assert res.dtype == jnp.float32
     res = cast("EagerTensorProtocol", _execute_ragged_tensor_to_dense([jnp.array([1.0]), jnp.array([1.0, 2.0])]))
     assert res.shape == (2, 2)
     res = cast("EagerTensorProtocol", _execute_ragged_tensor_to_dense(jnp.array([1.0])))
     assert res.shape == (1,)
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Add", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", jnp.array)([2.0]))
+    res = cast("EagerCallableProtocol", execute_op)(None, "Add", cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", jnp.array)([2.0]))
     assert res[0] == 3.0
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Variance", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0, 2.0, 3.0]))
+    res = cast("EagerCallableProtocol", execute_op)(None, "Variance", cast("EagerCallableProtocol", jnp.array)([1.0, 2.0, 3.0]))
     assert res is not None
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Cumprod", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0, 2.0, 3.0]))
+    res = cast("EagerCallableProtocol", execute_op)(None, "Cumprod", cast("EagerCallableProtocol", jnp.array)([1.0, 2.0, 3.0]))
     assert res is not None
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     @global_eager_registry.register("DummyGlobalOp")
     def _dummy_global_op(jnp_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function _dummy_global_op."""
+        """Test function _dummy_global_op.
+
+        Args:
+            jnp_module: Test parameter `jnp_module`.
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         return cast("EagerTensorProtocol", getattr(jnp_module, "array"))([42.0])
 
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "DummyGlobalOp", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]))
+    res = cast("EagerCallableProtocol", execute_op)(None, "DummyGlobalOp", cast("EagerCallableProtocol", jnp.array)([1.0]))
     assert res[0] == 42.0
     getattr(_state, "update")({"MockDtype5": MockDtype5, "_dummy_global_op": _dummy_global_op, "global_eager_registry": global_eager_registry, "res": res})
     _state.update(locals())
@@ -159,7 +174,7 @@ def _test_jax_eager_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with pytest.raises(BackendNotSupportedError):
-        cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownOp123")
+        cast("EagerCallableProtocol", execute_op)(None, "UnknownOp123")
     getattr(_state, "update")({"BackendNotSupportedError": BackendNotSupportedError})
 
 
@@ -170,7 +185,7 @@ def test_jax_eager_functions() -> None:
     _test_jax_eager_functions_part_2(_state)
     _test_jax_eager_functions_part_3(_state)
     _test_jax_eager_functions_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_jax_eager_execute_op_lambdas_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -183,10 +198,10 @@ def _test_jax_eager_execute_op_lambdas_part_1(_state: dict[str, EagerTensorProto
 
     from ml_switcheroo_compiler.backends.jax.eager import _OP_DISPATCH
 
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ActivityRegularization")))(1.0)
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AdaptiveMaxPool3D_Indices")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2, 2)), 1)
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AdaptiveLogSoftmaxWithLoss")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Adjoint")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2, 2)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ActivityRegularization")))(1.0)
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AdaptiveMaxPool3D_Indices")))(cast("EagerCallableProtocol", jnp.ones)((2, 2)), 1)
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AdaptiveLogSoftmaxWithLoss")))(cast("EagerCallableProtocol", jnp.ones)((2,)), cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Adjoint")))(cast("EagerCallableProtocol", jnp.ones)((2, 2)))
     from unittest import mock
 
     with (
@@ -196,20 +211,20 @@ def _test_jax_eager_execute_op_lambdas_part_1(_state: dict[str, EagerTensorProto
         mock.patch("jax.lax.pmax", lambda x, **kw: x, create=True),
         mock.patch("jax.lax.reduce_scatter", lambda x, *args, **kw: x, create=True),
     ):
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllGather")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllToAll")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), op_type="sum")
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), op_type="max")
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), op_type="sum")
-        cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), op_type="max")
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AlphaDropout")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AsString")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Assert")))(True, cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Assign")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignAdd")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignSub")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignVariable")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)), cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
-    cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssociativeScan")))(cast("Callable[..., EagerTensorProtocol]", jnp.ones)((2,)))
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllGather")))(cast("EagerCallableProtocol", jnp.ones)((2,)))
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllToAll")))(cast("EagerCallableProtocol", jnp.ones)((2,)))
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="sum")
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="max")
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="sum")
+        cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="max")
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AlphaDropout")))(cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AsString")))(cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Assert")))(True, cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Assign")))(cast("EagerCallableProtocol", jnp.ones)((2,)), cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignAdd")))(cast("EagerCallableProtocol", jnp.ones)((2,)), cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignSub")))(cast("EagerCallableProtocol", jnp.ones)((2,)), cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignVariable")))(cast("EagerCallableProtocol", jnp.ones)((2,)), cast("EagerCallableProtocol", jnp.ones)((2,)))
+    cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssociativeScan")))(cast("EagerCallableProtocol", jnp.ones)((2,)))
     getattr(_state, "update")({"_OP_DISPATCH": _OP_DISPATCH, "jnp": jnp, "mock": mock})
     _state.update(locals())
 
@@ -297,7 +312,7 @@ def test_jax_eager_execute_op_lambdas() -> None:
     _test_jax_eager_execute_op_lambdas_part_2(_state)
     _test_jax_eager_execute_op_lambdas_part_3(_state)
     _test_jax_eager_execute_op_lambdas_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_jax_eager_execute_op_fallback() -> None:
@@ -311,14 +326,14 @@ def test_jax_eager_execute_op_fallback() -> None:
     with mock.patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
         with mock.patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with pytest.raises(Exception, match=".*"):
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Mish", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]))
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Mul", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", jnp.array)([2.0]))
+                cast("EagerCallableProtocol", execute_op)(None, "Mish", cast("EagerCallableProtocol", jnp.array)([1.0]))
+    res = cast("EagerCallableProtocol", execute_op)(None, "Mul", cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", jnp.array)([2.0]))
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 2.0
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Sub", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", jnp.array)([2.0]))
+    res = cast("EagerCallableProtocol", execute_op)(None, "Sub", cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", jnp.array)([2.0]))
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == -1.0
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Div", cast("Callable[..., EagerTensorProtocol]", jnp.array)([1.0]), cast("Callable[..., EagerTensorProtocol]", jnp.array)([2.0]))
+    res = cast("EagerCallableProtocol", execute_op)(None, "Div", cast("EagerCallableProtocol", jnp.array)([1.0]), cast("EagerCallableProtocol", jnp.array)([2.0]))
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 0.5
-    res = cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "Eig", cast("Callable[..., EagerTensorProtocol]", jnp.eye)(2))
+    res = cast("EagerCallableProtocol", execute_op)(None, "Eig", cast("EagerCallableProtocol", jnp.eye)(2))
     assert res is not None
 
 

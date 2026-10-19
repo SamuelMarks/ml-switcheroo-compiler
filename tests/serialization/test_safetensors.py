@@ -13,9 +13,7 @@ import numpy as np
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_safetensors_format() -> None:
@@ -28,7 +26,7 @@ def test_safetensors_format() -> None:
     }
     with tempfile.TemporaryDirectory() as temp_dir:
         filepath = os.path.join(temp_dir, "weights.safetensors")
-        cast("Callable[..., EagerTensorProtocol]", fmt.save)(data, filepath)
+        cast("EagerCallableProtocol", fmt.save)(data, filepath)
 
         loaded = fmt.load(filepath)
         assert "a" in loaded
@@ -74,17 +72,27 @@ def test_safetensors_metadata() -> None:
 
 
 def test_safetensors_with_backend_mock(mocker: EagerTensorProtocol) -> None:
-    """Test function test_safetensors_with_backend_mock."""
+    """Test function test_safetensors_with_backend_mock.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     fmt = SafetensorsWeightFormat()
 
     class MockBackend:
         """Test class MockBackend."""
 
         def from_buffer(self, buffer: EagerValue, dtype: EagerValue, shape: EagerValue) -> EagerValue:
-            """Test function from_buffer."""
+            """Test function from_buffer.
+
+            Args:
+                buffer: Test parameter `buffer`.
+                dtype: Test parameter `dtype`.
+                shape: Test parameter `shape`.
+            """
             return "mocked_tensor"
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=cast("Callable[..., EagerTensorProtocol]", MockBackend)())
+    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=cast("EagerCallableProtocol", MockBackend)())
 
     data = {
         "a": np.array([1.0, 2.0], dtype=np.float32),
@@ -124,5 +132,5 @@ def test_safetensors_missing_attrs() -> None:
     }
     with tempfile.TemporaryDirectory() as temp_dir:
         filepath = os.path.join(temp_dir, "weights_missing.safetensors")
-        cast("Callable[..., EagerTensorProtocol]", fmt.save)(data, filepath)
-    assert data is not None or data is None
+        cast("EagerCallableProtocol", fmt.save)(data, filepath)
+        assert os.path.exists(filepath)

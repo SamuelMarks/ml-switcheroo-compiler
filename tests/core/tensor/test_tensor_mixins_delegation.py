@@ -12,13 +12,15 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def make_tensor(data: EagerValue) -> EagerValue:
-    """Test function make_tensor."""
+    """Test function make_tensor.
+
+    Args:
+        data: Test parameter `data`.
+    """
     cfg = TensorConfig(device=Device("cpu"), dtype=DType("float32"), shape=())
     return Tensor(data, cfg)
 
@@ -48,23 +50,36 @@ def test_exception_in_asarray() -> None:
             return [1.0]
 
         def __array__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __array__."""
+            """Test function __array__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise RuntimeError("boom")
 
-    t = cast("Callable[..., EagerTensorProtocol]", make_tensor)(cast("Callable[..., EagerTensorProtocol]", BadData)())
+    t = cast("EagerCallableProtocol", make_tensor)(cast("EagerCallableProtocol", BadData)())
     res = cast("EagerTensorProtocol", getattr(t, "__array__"))()
     assert res.shape == (1,)
 
 
 def test_item_eval_fallback(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_item_eval_fallback."""
+    """Test function test_item_eval_fallback.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
 
     class FakeBackend:
         """Test class FakeBackend."""
 
         def item(self, x: EagerValue) -> EagerValue:
-            """Test function item."""
-            return cast("Callable[..., EagerTensorProtocol]", int)(x)
+            """Test function item.
+
+            Args:
+                x: Test parameter `x`.
+            """
+            return cast("EagerCallableProtocol", int)(x)
 
     class FakeTensor(Tensor):
         """Test class FakeTensor."""
@@ -76,7 +91,7 @@ def test_item_eval_fallback(monkeypatch: EagerTensorProtocol) -> None:
     t = FakeTensor(1.0, TensorConfig(device=Device("cpu"), dtype=DType("float32"), shape=()))
     import ml_switcheroo_compiler.backends.registry as reg
 
-    cast("Callable[..., EagerTensorProtocol]", monkeypatch.setattr)(reg, "get_active_backend", lambda: cast("Callable[..., EagerTensorProtocol]", FakeBackend)())
+    cast("EagerCallableProtocol", monkeypatch.setattr)(reg, "get_active_backend", lambda: cast("EagerCallableProtocol", FakeBackend)())
     assert t.item() == 5
 
 
@@ -104,7 +119,7 @@ def test_getitem_indexerror() -> None:
     orig_add_node = state.global_tracing_state.add_node
     setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        res = cast("EagerTensorProtocol", getattr(t, "__getitem__")(cast("Callable[..., EagerTensorProtocol]", FakeProxy)()))
+        res = cast("EagerTensorProtocol", getattr(t, "__getitem__")(cast("EagerCallableProtocol", FakeProxy)()))
         assert res is not None
     finally:
         config.eager_mode = orig

@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gath
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_psum
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_math_misc_distributed() -> None:
@@ -35,5 +33,5 @@ def test_math_misc_distributed() -> None:
 def test_core_math_ops_distributed() -> None:
     """Test function test_core_math_ops_distributed."""
     t = np.array([1, 2])
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _psum)(np, t), t)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _pmean)(np, t), t)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _psum)(np, t), t)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _pmean)(np, t), t)

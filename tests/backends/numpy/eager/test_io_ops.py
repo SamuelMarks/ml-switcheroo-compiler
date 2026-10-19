@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
@@ -26,13 +27,15 @@ from ml_switcheroo_compiler.backends.numpy.eager.io_ops import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_load_save(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_load_save."""
+    """Test function test_load_save.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import os
 
     f = str(tmp_path / "test.npy")
@@ -47,15 +50,23 @@ def test_save_gguf() -> None:
 
 
 def test_savez(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_savez."""
+    """Test function test_savez.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     f = str(tmp_path / "test.npz")
     _np_savez(np, f, arr=np.array([1, 2, 3]))
     _np_savez_compressed(np, f, arr=np.array([1, 2, 3]))
-    assert f is not None or f is None
+    assert os.path.exists(f)
 
 
 def test_read_write_file(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_read_write_file."""
+    """Test function test_read_write_file.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     f = str(tmp_path / "test.txt")
     _np_write_file(np, f, b"hello")
     res = _np_read_file(np, f)
@@ -71,7 +82,7 @@ def test_decode_image() -> None:
 def test_decode_csv() -> None:
     """Test function test_decode_csv."""
     res = _np_decode_csv(np, None, record_defaults=[1, 2])
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    assert cast("EagerCallableProtocol", len)(res) == 2
 
 
 def test_parse_example() -> None:
@@ -105,7 +116,7 @@ def test_base64() -> None:
 
 def test_parse_sequence_example() -> None:
     """Test function test_parse_sequence_example."""
-    (r1, r2) = cast("Callable[..., EagerTensorProtocol]", _np_parse_sequence_example)(np, None)
+    (r1, r2) = cast("EagerCallableProtocol", _np_parse_sequence_example)(np, None)
     assert r1 == {} and r2 == {}
 
 
@@ -120,19 +131,27 @@ def test_load() -> None:
 
 
 def test_save_kwargs(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_save_kwargs."""
+    """Test function test_save_kwargs.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     f = str(tmp_path / "test.npy")
     _np_save(np, filepath=f, arr=np.array([1, 2, 3]))
     _np_save(np, file=f, arr=np.array([1, 2, 3]))
-    assert f is not None or f is None
+    assert os.path.exists(f)
 
 
 def test_savez_kwargs(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_savez_kwargs."""
+    """Test function test_savez_kwargs.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     f = str(tmp_path / "test.npz")
     _np_savez(np, filepath=f, arr=np.array([1, 2, 3]))
     _np_savez_compressed(np, file=f, arr=np.array([1, 2, 3]))
-    assert f is not None or f is None
+    assert os.path.exists(f)
 
 
 def test_read_file_invalid() -> None:
@@ -252,12 +271,16 @@ def _test_io_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None
 
 
 def test_io_ops_coverage(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_io_ops_coverage."""
+    """Test function test_io_ops_coverage.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     _state: dict[str, EagerTensorProtocol] = {"tmp_path": tmp_path}
     _test_io_ops_coverage_part_1(_state)
     _test_io_ops_coverage_part_2(_state)
     _test_io_ops_coverage_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_math_string_io_decode_image_branches() -> None:
@@ -393,7 +416,7 @@ def test_math_string_io_coverage() -> None:
     _test_math_string_io_coverage_part_2(_state)
     _test_math_string_io_coverage_part_3(_state)
     _test_math_string_io_coverage_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_math_string_io_encode_image_branches() -> None:
@@ -455,7 +478,11 @@ def test_math_string_io_read_file_camel() -> None:
 
 
 def test_math_string_io_write_file_camel(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_math_string_io_write_file_camel."""
+    """Test function test_math_string_io_write_file_camel.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import numpy as np
 
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_write_file_camel
@@ -516,11 +543,15 @@ def test_math_string_io_sparsemapvalues() -> None:
         """Test class DummyBackend."""
 
         def array(self, x: EagerValue) -> EagerValue:
-            """Test function array."""
+            """Test function array.
+
+            Args:
+                x: Test parameter `x`.
+            """
             return np.array(x)
 
     res = _np_sparsemapvalues(DummyBackend(), lambda x: x * 2, [1, 2, 3])
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, [2, 4, 6])
+    assert cast("EagerCallableProtocol", np.array_equal)(res, [2, 4, 6])
 
 
 def test_math_string_io_sparsedensematmul_fallback() -> None:
@@ -533,7 +564,12 @@ def test_math_string_io_sparsedensematmul_fallback() -> None:
         """Test class DummyBackend."""
 
         def sparsedensematmul(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function sparsedensematmul."""
+            """Test function sparsedensematmul.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "hit_bk"
 
     assert _np_sparsedensematmul(DummyBackend(), np.ones((2, 2)), np.ones((2, 2))) == "hit_bk"
@@ -546,7 +582,7 @@ def test_math_string_io_sparsedensematmul_fallback() -> None:
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     b = np.array([[5.0, 6.0], [7.0, 8.0]])
     res = _np_sparsedensematmul(EmptyBackend(), a, b)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, a @ b)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, a @ b)
 
 
 def test_math_string_io_csv_edge_cases() -> None:
@@ -558,7 +594,7 @@ def test_math_string_io_csv_edge_cases() -> None:
     with pytest.raises(RuntimeError):
         _parse_csv_row(["invalid"], [0.0], np)
     res = _parse_csv_row(["1.0"], [0.0, 2.0], np)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 2
+    assert cast("EagerCallableProtocol", len)(res) == 2
     assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 2.0
     res2 = _get_csv_data((), np)
     assert res2 == ""
@@ -617,7 +653,11 @@ def test_math_string_io_decode_image_exceptions() -> None:
 
 
 def test_math_string_io_read_write_file_camel_success(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_math_string_io_read_write_file_camel_success."""
+    """Test function test_math_string_io_read_write_file_camel_success.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import numpy as np
 
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_read_file_camel, _np_write_file_camel

@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, Meta
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_msl_templates_consolidation() -> None:
@@ -121,8 +119,8 @@ def test_metal_runner_ctypes_buffer_and_execution() -> None:
         in_b = np.array([4.0, 5.0, 6.0], dtype=np.float32)
         res = runner.execute_kernel("kernel_source", "add_kernel", in_a, in_b)
 
-        assert cast("Callable[..., EagerTensorProtocol]", len)(res) == 3
-        assert cast("Callable[..., EagerTensorProtocol]", np.allclose)(res, [10.0, 20.0, 30.0])
+        assert cast("EagerCallableProtocol", len)(res) == 3
+        assert cast("EagerCallableProtocol", np.allclose)(res, [10.0, 20.0, 30.0])
         assert mock_enc.dispatchThreads_threadsPerThreadgroup_.called
         assert mock_cmd.commit.called
         assert mock_cmd.waitUntilCompleted.called

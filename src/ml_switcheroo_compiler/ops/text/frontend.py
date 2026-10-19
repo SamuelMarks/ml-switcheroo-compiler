@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if TYPE_CHECKING:
@@ -482,7 +482,7 @@ def as_string(
         )
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", _emit_shape_node)(
+        cast("EagerCallableProtocol", _emit_shape_node)(
             "AsString",
             [input_tensor],
             kwargs,

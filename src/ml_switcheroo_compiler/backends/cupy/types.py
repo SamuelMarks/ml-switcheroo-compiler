@@ -1,6 +1,6 @@
-"""Backend utilities."""
+"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.cupy.types`)."""
 
-from typing import Callable, Optional, cast
+from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 try:
     import cupy as cp
@@ -40,7 +40,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
     Returns:
         EagerValue: The array tensor.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_array)(cp, data, dtype))
+    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(cp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -53,7 +53,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: The array tensor.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", generic_asarray)(cp, data))
+    return cast(EagerValue, cast("EagerCallableProtocol", generic_asarray)(cp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -66,4 +66,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return cast(float, cast("Callable[..., EagerTensorProtocol]", generic_item)(cp, data))
+    return cast(float, cast("EagerCallableProtocol", generic_item)(cp, data))

@@ -40,7 +40,11 @@ def test_needs_cast() -> None:
 
 
 def test_type_promotion_explicitizer_pass(mocker: EagerTensorProtocol) -> None:
-    """Test function test_type_promotion_explicitizer_pass."""
+    """Test function test_type_promotion_explicitizer_pass.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     mocker.patch("ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer.dtype_inference_pass")
     graph = LogicalGraph()
     n1 = LogicalNode("n1", "Input", attributes={"dtype": "int32"})

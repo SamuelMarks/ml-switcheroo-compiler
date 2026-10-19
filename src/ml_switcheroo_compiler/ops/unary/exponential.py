@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for exponential operations."""
+"""Implementation of exponential operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.exponential`)."""
 
 from __future__ import annotations
 

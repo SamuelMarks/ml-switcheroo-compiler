@@ -17,7 +17,13 @@ if TYPE_CHECKING:
 @patch("ml_switcheroo_compiler.backends.numpy.eager.vision_transforms.random_perspective_eager")
 @patch("ml_switcheroo_compiler.backends.numpy.eager.vision_transforms.random_elastic_transform_eager")
 def test_vision_transforms_coverage(mock_elastic: EagerTensorProtocol, mock_perspective: EagerTensorProtocol, mock_shear: EagerTensorProtocol) -> None:
-    """Test function test_vision_transforms_coverage."""
+    """Test function test_vision_transforms_coverage.
+
+    Args:
+        mock_elastic: Test parameter `mock_elastic`.
+        mock_perspective: Test parameter `mock_perspective`.
+        mock_shear: Test parameter `mock_shear`.
+    """
     setattr(mock_shear, "return_value", 1)
     res = vt._np_random_shear(np, np.zeros((2, 2, 3)), 1.0)
     assert res == 1

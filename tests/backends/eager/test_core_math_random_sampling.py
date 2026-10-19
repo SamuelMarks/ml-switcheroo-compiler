@@ -29,7 +29,12 @@ def test_math_random_sampling_coverage() -> None:
         """Mock lax container."""
 
         def pshuffle(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock pshuffle."""
+            """Mock pshuffle.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "pshuffle_val"
 
     class BackendWithLax:
@@ -54,7 +59,12 @@ def test_math_random_sampling_coverage() -> None:
         """Backend with gumbel."""
 
         def gumbel(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock gumbel."""
+            """Mock gumbel.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "gumbel_val"
 
     assert _np_gumbel(GumbelBackend(), 0.0, 1.0) == "gumbel_val"
@@ -69,7 +79,12 @@ def test_math_random_sampling_coverage() -> None:
         """Backend with rnguniform."""
 
         def rnguniform(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock rnguniform."""
+            """Mock rnguniform.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "rnguniform_val"
 
     assert _np_rnguniform(RngUniformBackend(), 0.0, 1.0) == "rnguniform_val"
@@ -84,7 +99,12 @@ def test_math_random_sampling_coverage() -> None:
         """Backend with wald."""
 
         def wald(self, *args: EagerValue, **kwargs: EagerValue) -> str:
-            """Mock wald."""
+            """Mock wald.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "wald_val"
 
     assert _np_wald(WaldBackend(), 1.0, 1.0) == "wald_val"

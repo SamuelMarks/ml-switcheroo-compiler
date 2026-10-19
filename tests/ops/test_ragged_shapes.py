@@ -25,9 +25,7 @@ from ml_switcheroo_compiler.ops.ragged import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _make_tensor(shape: tuple[EagerValue, ...]) -> Tensor:
@@ -39,7 +37,7 @@ def _make_tensor(shape: tuple[EagerValue, ...]) -> Tensor:
     Returns:
         Tensor: Dummy tensor instance.
     """
-    return cast("Tensor", cast("Callable[..., EagerTensorProtocol]", Tensor)(None, cast("Callable[..., EagerTensorProtocol]", TensorConfig)(shape, "float32", "cpu")))
+    return cast("Tensor", cast("EagerCallableProtocol", Tensor)(None, cast("EagerCallableProtocol", TensorConfig)(shape, "float32", "cpu")))
 
 
 def test_ragged_dot_and_matmul_shape_inference() -> None:
@@ -150,7 +148,7 @@ def test_ragged_splits_and_segments_conversion() -> None:
 
     splits = _make_tensor((5,))  # 4 rows
     out_seg = op_splits2seg.infer_shape(splits)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(out_seg) == 1
+    assert cast("EagerCallableProtocol", len)(out_seg) == 1
     assert isinstance(cast("EagerTensorProtocol", getattr(out_seg, "__getitem__")(0)), SymVar)
 
     # SegmentIdsToRowSplits with known num_segments=4
@@ -160,7 +158,7 @@ def test_ragged_splits_and_segments_conversion() -> None:
 
     # SegmentIdsToRowSplits with symbolic num_segments
     out_splits_sym = op_seg2splits.infer_shape(seg_ids)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(out_splits_sym) == 1
+    assert cast("EagerCallableProtocol", len)(out_splits_sym) == 1
     assert isinstance(cast("EagerTensorProtocol", getattr(out_splits_sym, "__getitem__")(0)), SymVar)
 
 
@@ -200,7 +198,7 @@ def test_boolean_mask_and_map_flat_values() -> None:
 
     # MapFlatValues preserves shape of primary input
     rt = _make_tensor((4, SymVar("seq"), 8))
-    assert cast("Callable[..., EagerTensorProtocol]", op_map.infer_shape)(None, rt) == (4, cast("Callable[..., EagerTensorProtocol]", SymVar)("seq"), 8)
+    assert cast("EagerCallableProtocol", op_map.infer_shape)(None, rt) == (4, cast("EagerCallableProtocol", SymVar)("seq"), 8)
 
     # Fallbacks
     assert isinstance(cast("EagerTensorProtocol", getattr(op_mask.infer_shape(), "__getitem__")(0)), SymVar)
@@ -243,5 +241,5 @@ def test_ragged_additional_edge_cases() -> None:
     class DummyMaskNoShape:
         """Dummy mask without shape attributes."""
 
-    res_dummy_mask = cast("Callable[..., EagerTensorProtocol]", op_mask.infer_shape)(data_3d, cast("Callable[..., EagerTensorProtocol]", DummyMaskNoShape)())
+    res_dummy_mask = cast("EagerCallableProtocol", op_mask.infer_shape)(data_3d, cast("EagerCallableProtocol", DummyMaskNoShape)())
     assert res_dummy_mask == (SymVar("masked_count"), 20, 30)

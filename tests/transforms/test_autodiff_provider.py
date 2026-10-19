@@ -228,7 +228,12 @@ def test_load_autodiff_rule_hierarchy() -> None:
         """Dummy rule model with VJP and JVP attributes."""
 
         def __init__(self, vjp: EagerValue = None, jvp: EagerValue = None) -> None:
-            """Initialize dummy rule with optional vjp and jvp strings."""
+            """Initialize dummy rule with optional vjp and jvp strings.
+
+            Args:
+                vjp: Test parameter `vjp`.
+                jvp: Test parameter `jvp`.
+            """
             self.vjp = vjp
             self.jvp = jvp
 
@@ -303,7 +308,11 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
 
     # 1. rule_file: {rule_type}_rules.yaml exists, but op not in data (branch 373->376)
     def exists_rule_file(path: str) -> bool:
-        """Check if path matches rule file."""
+        """Check if path matches rule file.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return path.endswith("vjp_rules.yaml")
 
     with patch("os.path.exists", side_effect=exists_rule_file):
@@ -316,7 +325,11 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
 
     # 2. yaml_path: rules/{op_type}.yaml exists, but op not in data (branch 381->388)
     def exists_rules_op(path: str) -> bool:
-        """Check if path matches rules directory file."""
+        """Check if path matches rules directory file.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return path.endswith("rules/OpRulesDir.yaml") or path.endswith("rules/MissingInRulesDir.yaml")
 
     with patch("os.path.exists", side_effect=exists_rules_op):
@@ -329,7 +342,11 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
 
     # 3. manifest_path: ../autodiff_rules.yaml (including non-dict rule_entry branch 385->382)
     def exists_manifest(path: str) -> bool:
-        """Check if path matches autodiff manifest."""
+        """Check if path matches autodiff manifest.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return path.endswith("autodiff_rules.yaml") and "transforms/autodiff_rules.yaml" in path
 
     manifest_data = {
@@ -346,7 +363,11 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
 
     # 4. legacy_path: autodiff_rules.yaml in same dir (including op not in data branch 392->395)
     def exists_legacy(path: str) -> bool:
-        """Check if path matches legacy autodiff rules."""
+        """Check if path matches legacy autodiff rules.
+
+        Args:
+            path: Test parameter `path`.
+        """
         return path.endswith("autodiff_rules/autodiff_rules.yaml")
 
     with patch("os.path.exists", side_effect=exists_legacy):

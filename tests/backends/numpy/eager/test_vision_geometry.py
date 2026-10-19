@@ -9,9 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_grid, _np_elastic_transform
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_elastic_transform() -> None:
@@ -20,7 +18,7 @@ def test_elastic_transform() -> None:
     arr_1d = np.array([1, 2, 3])
     disp = np.array([[[1, 1]]])
     res_1d = _np_elastic_transform(None, arr_1d, disp)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res_1d, arr_1d)
+    assert cast("EagerCallableProtocol", np.array_equal)(res_1d, arr_1d)
 
 
 def test_affine_grid() -> None:

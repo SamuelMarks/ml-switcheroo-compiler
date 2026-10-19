@@ -20,9 +20,7 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_infer_constant_shape() -> None:
@@ -62,11 +60,16 @@ def test_infer_op_shape() -> None:
         """Mock op implementation."""
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
-            """Return static shape."""
+            """Return static shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return (1, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp()):
-        assert cast("Callable[..., EagerTensorProtocol]", _infer_op_shape)(node1, shapes) == (1, 2)
+        assert cast("EagerCallableProtocol", _infer_op_shape)(node1, shapes) == (1, 2)
 
 
 def test_determine_node_shape() -> None:
@@ -83,7 +86,12 @@ def test_determine_node_shape() -> None:
         """Mock op that raises error."""
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
-            """Raise error."""
+            """Raise error.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             raise ValueError("boom")
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp2()):
@@ -104,7 +112,12 @@ def test_shape_inference_pass() -> None:
         """Mock op for pass execution."""
 
         def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
-            """Return static shape."""
+            """Return static shape.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return (2, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp3()):
@@ -140,11 +153,20 @@ def test_shape_inference_keyerror() -> None:
 
 
 def test_shape_inference_valueerror_not_found(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify operation not found ValueError fallback to shape_metadata."""
+    """Verify operation not found ValueError fallback to shape_metadata.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
     def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Mock raising not found."""
+        """Mock raising not found.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         raise ValueError("Operation 'Foo' not found")
 
     monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
@@ -154,11 +176,20 @@ def test_shape_inference_valueerror_not_found(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_shape_inference_valueerror_other(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify unexpected ValueError raises CompilationError."""
+    """Verify unexpected ValueError raises CompilationError.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
     def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Mock raising other error."""
+        """Mock raising other error.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         raise ValueError("Some other error")
 
     monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
@@ -169,11 +200,20 @@ def test_shape_inference_valueerror_other(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_shape_inference_keyerror_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify explicit KeyError returns shape_metadata."""
+    """Verify explicit KeyError returns shape_metadata.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
     def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
-        """Mock raising KeyError."""
+        """Mock raising KeyError.
+
+        Args:
+            args: Test parameter `args`.
+            kwargs: Test parameter `kwargs`.
+        """
         raise KeyError("foo")
 
     monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
@@ -191,12 +231,12 @@ def test_annotate_learned_shapes_feedback_loop() -> None:
     graph = IRGraph(name="learned_test", nodes={"in1": node1, "add": node2}, outputs=["add"])
 
     # First annotation updates in1
-    modified = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
+    modified = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
     assert bool(modified) is True
     assert graph.nodes["in1"].shape_metadata == (8, 16)
 
     # Subsequent annotation with identical shape does not modify
-    modified_again = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, {"in1": (8, 16)})
+    modified_again = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"in1": (8, 16)})
     assert bool(modified_again) is False
 
 
@@ -362,7 +402,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
 
     # ShapeTracker telemetry resolution integration
     telemetry = {"inp": [16, 32], "add": [16, 32]}
-    resolved = cast("Callable[..., EagerTensorProtocol]", ShapeTracker.update_from_feedback)(telemetry)
+    resolved = cast("EagerCallableProtocol", ShapeTracker.update_from_feedback)(telemetry)
     assert resolved["inp"] == (16, 32)
     assert resolved["add"] == (16, 32)
 
@@ -377,11 +417,11 @@ def test_shape_inference_annotation_branches() -> None:
     node = LogicalNode(id="n1", op_type="Relu", shape_metadata=(4, 4))
     graph.nodes[node.id] = node
     setattr(graph, "annotations", "invalid_annotations")
-    res1 = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, {"n1": (4, 4)})
+    res1 = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"n1": (4, 4)})
     assert bool(res1) is False
     assert isinstance(cast("EagerTensorProtocol", getattr(graph, "annotations")), dict)
     assert bool(cast("EagerTensorProtocol", getattr(graph, "annotations")).get("convergence_converged")) is True
-    res2 = cast("Callable[..., EagerTensorProtocol]", annotate_learned_shapes)(graph, None)
+    res2 = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, None)
     assert bool(res2) is False
 
 
@@ -432,8 +472,8 @@ def test_normalize_shape_edge_cases() -> None:
     assert _normalize_shape_tuple([1, 2, 3]) == (1, 2, 3)
     assert _normalize_shape_tuple((4, 5)) == (4, 5)
     assert _normalize_shape_tuple(["invalid", "str"]) is None
-    assert cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)(12345) is None
-    assert cast("Callable[..., EagerTensorProtocol]", _normalize_shape_tuple)("not_a_list") is None
+    assert cast("EagerCallableProtocol", _normalize_shape_tuple)(12345) is None
+    assert cast("EagerCallableProtocol", _normalize_shape_tuple)("not_a_list") is None
     assert _normalize_shape_tuple([object()]) is None
 
 

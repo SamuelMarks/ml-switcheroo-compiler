@@ -41,9 +41,7 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_updates_eager_false() -> None:
@@ -70,7 +68,7 @@ def test_updates_eager_false() -> None:
                 op = op_class()
                 assert op.infer_shape(t, t, t, t, t, t) == (1,)
 
-            assert cast("Callable[..., EagerTensorProtocol]", upd.LionConfigOp)().infer_shape(t) == (1,)
+            assert cast("EagerCallableProtocol", upd.LionConfigOp)().infer_shape(t) == (1,)
     finally:
         config.eager_mode = orig
 
@@ -92,21 +90,21 @@ def _test_optimizers_updates_brute_part_1(_state: dict[str, EagerTensorProtocol]
     sgd_nesterov = SGDConfig(lr=0.1, momentum=0.9, weight_decay=0.01, nesterov=True)
     sgd_update(param, grad, sgd_c)
     state_sgd = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", sgd_update)(param, grad, sgd_c, state_sgd)
-    cast("Callable[..., EagerTensorProtocol]", sgd_update)(param, grad, sgd_c, state_sgd)
-    cast("Callable[..., EagerTensorProtocol]", sgd_update)(param, grad, sgd_nesterov, state_sgd)
+    cast("EagerCallableProtocol", sgd_update)(param, grad, sgd_c, state_sgd)
+    cast("EagerCallableProtocol", sgd_update)(param, grad, sgd_c, state_sgd)
+    cast("EagerCallableProtocol", sgd_update)(param, grad, sgd_nesterov, state_sgd)
 
     adam_c = AdamHyperparams(lr=0.1, weight_decay=0.01)
     adam_update(param, grad, adam_c)
     state_adam = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", adam_update)(param, grad, adam_c, state_adam)
-    cast("Callable[..., EagerTensorProtocol]", adam_update)(param, grad, adam_c, state_adam)
+    cast("EagerCallableProtocol", adam_update)(param, grad, adam_c, state_adam)
+    cast("EagerCallableProtocol", adam_update)(param, grad, adam_c, state_adam)
 
     adamw_c = AdamWHyperparams(lr=0.1)
     adamw_update(param, grad, adamw_c)
     state_adamw = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", adamw_update)(param, grad, adamw_c, state_adamw)
-    cast("Callable[..., EagerTensorProtocol]", adamw_update)(param, grad, adamw_c, state_adamw)
+    cast("EagerCallableProtocol", adamw_update)(param, grad, adamw_c, state_adamw)
+    cast("EagerCallableProtocol", adamw_update)(param, grad, adamw_c, state_adamw)
 
     adagrad_c = AdagradConfig(lr=0.1, weight_decay=0.01)
     getattr(_state, "update")({"adagrad_c": adagrad_c, "adam_c": adam_c, "adamw_c": adamw_c, "grad": grad})
@@ -122,32 +120,32 @@ def _test_optimizers_updates_brute_part_2(_state: dict[str, EagerTensorProtocol]
         _state: Shared test state dictionary.
     """
     adagrad_c, grad, param = _state["adagrad_c"], _state["grad"], _state["param"]
-    cast("Callable[..., EagerTensorProtocol]", adagrad_update)(param, grad, adagrad_c)
+    cast("EagerCallableProtocol", adagrad_update)(param, grad, adagrad_c)
     state_adagrad = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", adagrad_update)(param, grad, adagrad_c, state_adagrad)
+    cast("EagerCallableProtocol", adagrad_update)(param, grad, adagrad_c, state_adagrad)
     rmsprop_c = RMSPropHyperparams(lr=0.1, weight_decay=0.01, centered=True, momentum=0.9)
-    cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(param, grad, rmsprop_c)
+    cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c)
     state_rmsprop = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
-    cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
+    cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
+    cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
 
     rmsprop_c2 = RMSPropHyperparams(lr=0.1)
-    cast("Callable[..., EagerTensorProtocol]", rmsprop_update)(param, grad, rmsprop_c2)
+    cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c2)
 
     adadelta_c = AdadeltaConfig(weight_decay=0.01)
-    cast("Callable[..., EagerTensorProtocol]", adadelta_update)(param, grad, adadelta_c)
+    cast("EagerCallableProtocol", adadelta_update)(param, grad, adadelta_c)
     state_adadelta = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", adadelta_update)(param, grad, adadelta_c, state_adadelta)
-    cast("Callable[..., EagerTensorProtocol]", adadelta_update)(param, grad, adadelta_c, state_adadelta)
+    cast("EagerCallableProtocol", adadelta_update)(param, grad, adadelta_c, state_adadelta)
+    cast("EagerCallableProtocol", adadelta_update)(param, grad, adadelta_c, state_adadelta)
 
     adamax_c = AdamaxHyperparams(lr=0.1, weight_decay=0.01)
-    cast("Callable[..., EagerTensorProtocol]", adamax_update)(param, grad, adamax_c)
+    cast("EagerCallableProtocol", adamax_update)(param, grad, adamax_c)
     state_adamax = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", adamax_update)(param, grad, adamax_c, state_adamax)
-    cast("Callable[..., EagerTensorProtocol]", adamax_update)(param, grad, adamax_c, state_adamax)
+    cast("EagerCallableProtocol", adamax_update)(param, grad, adamax_c, state_adamax)
+    cast("EagerCallableProtocol", adamax_update)(param, grad, adamax_c, state_adamax)
 
     lion_c = LionConfig(lr=0.1, weight_decay=0.01)
-    cast("Callable[..., EagerTensorProtocol]", lion_update)(param, grad, lion_c)
+    cast("EagerCallableProtocol", lion_update)(param, grad, lion_c)
     getattr(_state, "update")({"adadelta_c": adadelta_c, "adamax_c": adamax_c, "lion_c": lion_c, "rmsprop_c": rmsprop_c})
     getattr(_state, "update")({"rmsprop_c2": rmsprop_c2, "state_adadelta": state_adadelta, "state_adagrad": state_adagrad, "state_adamax": state_adamax})
     getattr(_state, "update")({"state_rmsprop": state_rmsprop})
@@ -162,17 +160,17 @@ def _test_optimizers_updates_brute_part_3(_state: dict[str, EagerTensorProtocol]
     """
     grad, lion_c, param = _state["grad"], _state["lion_c"], _state["param"]
     state_lion = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", lion_update)(param, grad, lion_c, state_lion)
+    cast("EagerCallableProtocol", lion_update)(param, grad, lion_c, state_lion)
 
-    cast("Callable[..., EagerTensorProtocol]", adafactor_update)(param, grad, 0.1)
-    cast("Callable[..., EagerTensorProtocol]", adafactor_update)(param, grad, 0.1, {})
+    cast("EagerCallableProtocol", adafactor_update)(param, grad, 0.1)
+    cast("EagerCallableProtocol", adafactor_update)(param, grad, 0.1, {})
 
-    cast("Callable[..., EagerTensorProtocol]", muon_update)(param, grad, 0.1)
-    cast("Callable[..., EagerTensorProtocol]", muon_update)(param, grad, 0.1, momentum=0.9, state={})
-    cast("Callable[..., EagerTensorProtocol]", apply_adam)(param, param, param, grad, 0.1)
-    cast("Callable[..., EagerTensorProtocol]", apply_adagrad)(param, param, grad, 0.1)
-    cast("Callable[..., EagerTensorProtocol]", apply_ftrl)(param, param, param, grad, 0.1)
-    cast("Callable[..., EagerTensorProtocol]", apply_rmsprop)(param, param, param, grad, 0.1)
+    cast("EagerCallableProtocol", muon_update)(param, grad, 0.1)
+    cast("EagerCallableProtocol", muon_update)(param, grad, 0.1, momentum=0.9, state={})
+    cast("EagerCallableProtocol", apply_adam)(param, param, param, grad, 0.1)
+    cast("EagerCallableProtocol", apply_adagrad)(param, param, grad, 0.1)
+    cast("EagerCallableProtocol", apply_ftrl)(param, param, param, grad, 0.1)
+    cast("EagerCallableProtocol", apply_rmsprop)(param, param, param, grad, 0.1)
 
     # Tracing
     config.eager_mode = False
@@ -189,17 +187,17 @@ def _test_optimizers_updates_brute_part_4(_state: dict[str, EagerTensorProtocol]
     Args:
         _state: Shared test state dictionary.
     """
-    global_tracing_state, grad, param, state_lion = _state["global_tracing_state"], _state["grad"], _state["param"], _state["state_lion"]
+    global_tracing_state, grad, param = _state["global_tracing_state"], _state["grad"], _state["param"]
     try:
         import sys
 
         updates_mod = sys.modules["ml_switcheroo_compiler.ops.optimizers.updates"]
         with patch.object(updates_mod, "_emit_shape_node") as mock_emit:
             mock_emit.return_value = param
-            cast("Callable[..., EagerTensorProtocol]", apply_adam)(param, param, param, grad, 0.1)
-            cast("Callable[..., EagerTensorProtocol]", apply_adagrad)(param, param, grad, 0.1)
-            cast("Callable[..., EagerTensorProtocol]", apply_ftrl)(param, param, param, grad, 0.1)
-            cast("Callable[..., EagerTensorProtocol]", apply_rmsprop)(param, param, param, grad, 0.1)
+            cast("EagerCallableProtocol", apply_adam)(param, param, param, grad, 0.1)
+            cast("EagerCallableProtocol", apply_adagrad)(param, param, grad, 0.1)
+            cast("EagerCallableProtocol", apply_ftrl)(param, param, param, grad, 0.1)
+            cast("EagerCallableProtocol", apply_rmsprop)(param, param, param, grad, 0.1)
 
             ApplyAdam().infer_shape(param, param, param)
             ApplyAdagrad().infer_shape(param, param)
@@ -207,7 +205,7 @@ def _test_optimizers_updates_brute_part_4(_state: dict[str, EagerTensorProtocol]
             ApplyRMSProp().infer_shape(param, param, param)
     finally:
         setattr(global_tracing_state, "is_tracing", False)
-    assert state_lion is not None or state_lion is None
+    assert getattr(global_tracing_state, "is_tracing") is False
 
 
 def test_optimizers_updates_brute() -> None:
@@ -217,4 +215,4 @@ def test_optimizers_updates_brute() -> None:
     _test_optimizers_updates_brute_part_2(_state)
     _test_optimizers_updates_brute_part_3(_state)
     _test_optimizers_updates_brute_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

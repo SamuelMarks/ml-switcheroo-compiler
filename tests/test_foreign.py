@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Optional, Tuple, cast
 
 # ruff: noqa
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.ir.core import LogicalGraph
 from ml_switcheroo_compiler.transforms.foreign import (
     _extract_jaxpr_constants,
@@ -41,18 +41,18 @@ def test_extract_jaxpr_constants() -> None:
     """Test jaxpr constant extraction."""
     graph = LogicalGraph()
     jaxpr_empty = MockJaxpr()
-    cast("Callable[..., EagerTensorProtocol]", _extract_jaxpr_constants)(jaxpr_empty, graph)
+    cast("EagerCallableProtocol", _extract_jaxpr_constants)(jaxpr_empty, graph)
     assert len(graph.nodes) == 0
-    jaxpr_with = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)([cast("Callable[..., EagerTensorProtocol]", MockConst)()])
-    cast("Callable[..., EagerTensorProtocol]", _extract_jaxpr_constants)(jaxpr_with, graph)
+    jaxpr_with = cast("EagerCallableProtocol", MockJaxpr)([cast("EagerCallableProtocol", MockConst)()])
+    cast("EagerCallableProtocol", _extract_jaxpr_constants)(jaxpr_with, graph)
     assert "const_0" in graph.nodes
 
 
 def test_extract_jaxpr_constants_nodes_added() -> None:
     """Test that constants are correctly added to the graph."""
     graph = LogicalGraph()
-    jaxpr_with = cast("Callable[..., EagerTensorProtocol]", MockJaxpr)([cast("Callable[..., EagerTensorProtocol]", MockConst)()])
-    cast("Callable[..., EagerTensorProtocol]", _extract_jaxpr_constants)(jaxpr_with, graph)
+    jaxpr_with = cast("EagerCallableProtocol", MockJaxpr)([cast("EagerCallableProtocol", MockConst)()])
+    cast("EagerCallableProtocol", _extract_jaxpr_constants)(jaxpr_with, graph)
     assert "const_0" in graph.nodes
     assert graph.nodes["const_0"].op_type == "Constant"
 
@@ -61,7 +61,14 @@ class MockFXNode:
     """Mock Torch FX node."""
 
     def __init__(self, name: str, op: str, target: EagerValue = None, args: tuple[EagerValue, ...] = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            name: Test parameter `name`.
+            op: Test parameter `op`.
+            target: Test parameter `target`.
+            args: Test parameter `args`.
+        """
         self.name = name
         self.op = op
         self.target = target
@@ -76,7 +83,11 @@ class MockFXGraph:
     """Mock Torch FX graph."""
 
     def __init__(self, nodes: list[EagerValue]) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            nodes: Test parameter `nodes`.
+        """
         self.nodes = nodes
 
 
@@ -84,7 +95,12 @@ class MockFXGraphModule:
     """Mock Torch FX GraphModule."""
 
     def __init__(self, nodes: Optional[list[EagerValue]] = None, has_graph: bool = True) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            nodes: Test parameter `nodes`.
+            has_graph: Test parameter `has_graph`.
+        """
         if has_graph:
             self.graph = MockFXGraph(nodes or [])
 
@@ -95,7 +111,7 @@ def test_ingest_torch_fx() -> None:
         ingest_torch_fx(None)
 
     # Missing graph attribute
-    empty_res = cast("Callable[..., EagerTensorProtocol]", ingest_torch_fx)(cast("Callable[..., EagerTensorProtocol]", object)())
+    empty_res = cast("EagerCallableProtocol", ingest_torch_fx)(cast("EagerCallableProtocol", object)())
     assert len(empty_res.nodes) == 0
 
     # Missing nodes attribute in graph
@@ -120,14 +136,14 @@ def test_ingest_torch_fx() -> None:
 
     node_x = MockFXNode("x", "placeholder")
     node_y = MockFXNode("y", "placeholder")
-    node_add = cast("Callable[..., EagerTensorProtocol]", MockFXNode)("add_1", "call_function", target=cast("Callable[..., EagerTensorProtocol]", TargetAdd)(), args=(node_x, node_y))
-    node_mul = cast("Callable[..., EagerTensorProtocol]", MockFXNode)("mul_1", "call_function", target=cast("Callable[..., EagerTensorProtocol]", TargetMul)(), args=(node_add, 2.0))
-    node_unknown = cast("Callable[..., EagerTensorProtocol]", MockFXNode)("un_1", "call_function", target="custom_sub", args=(cast("Callable[..., EagerTensorProtocol]", MockFXNode)("untracked", "placeholder"),))
+    node_add = cast("EagerCallableProtocol", MockFXNode)("add_1", "call_function", target=cast("EagerCallableProtocol", TargetAdd)(), args=(node_x, node_y))
+    node_mul = cast("EagerCallableProtocol", MockFXNode)("mul_1", "call_function", target=cast("EagerCallableProtocol", TargetMul)(), args=(node_add, 2.0))
+    node_unknown = cast("EagerCallableProtocol", MockFXNode)("un_1", "call_function", target="custom_sub", args=(cast("EagerCallableProtocol", MockFXNode)("untracked", "placeholder"),))
     node_ignored = MockFXNode("ignore_me", "get_attr")
-    node_out_tuple = cast("Callable[..., EagerTensorProtocol]", MockFXNode)("out", "output", args=((node_mul, 999),))
+    node_out_tuple = cast("EagerCallableProtocol", MockFXNode)("out", "output", args=((node_mul, 999),))
 
-    gm = cast("Callable[..., EagerTensorProtocol]", MockFXGraphModule)([node_x, node_y, node_add, node_mul, node_unknown, node_ignored, node_out_tuple])
-    res = cast("Callable[..., EagerTensorProtocol]", ingest_torch_fx)(gm)
+    gm = cast("EagerCallableProtocol", MockFXGraphModule)([node_x, node_y, node_add, node_mul, node_unknown, node_ignored, node_out_tuple])
+    res = cast("EagerCallableProtocol", ingest_torch_fx)(gm)
 
     assert "add_1" in res.nodes
     assert res.nodes["add_1"].op_type == "Add"
@@ -144,13 +160,13 @@ def test_ingest_torch_fx() -> None:
     assert res.outputs == ["mul_1"]
 
     # Test output node with single named arg
-    gm_single = cast("Callable[..., EagerTensorProtocol]", MockFXGraphModule)([node_x, cast("Callable[..., EagerTensorProtocol]", MockFXNode)("out", "output", args=(node_x,))])
-    res_single = cast("Callable[..., EagerTensorProtocol]", ingest_torch_fx)(gm_single)
+    gm_single = cast("EagerCallableProtocol", MockFXGraphModule)([node_x, cast("EagerCallableProtocol", MockFXNode)("out", "output", args=(node_x,))])
+    res_single = cast("EagerCallableProtocol", ingest_torch_fx)(gm_single)
     assert res_single.outputs == ["x"]
 
     # Test output node with non-named single arg
-    gm_raw = cast("Callable[..., EagerTensorProtocol]", MockFXGraphModule)([cast("Callable[..., EagerTensorProtocol]", MockFXNode)("out", "output", args=(123,))])
-    res_raw = cast("Callable[..., EagerTensorProtocol]", ingest_torch_fx)(gm_raw)
+    gm_raw = cast("EagerCallableProtocol", MockFXGraphModule)([cast("EagerCallableProtocol", MockFXNode)("out", "output", args=(123,))])
+    res_raw = cast("EagerCallableProtocol", ingest_torch_fx)(gm_raw)
     assert res_raw.outputs == []
 
 
@@ -160,7 +176,7 @@ def test_ingest_jaxpr() -> None:
         ingest_jaxpr(None)
 
     # Empty jaxpr without eqns or consts
-    res_empty = cast("Callable[..., EagerTensorProtocol]", ingest_jaxpr)(cast("Callable[..., EagerTensorProtocol]", object)())
+    res_empty = cast("EagerCallableProtocol", ingest_jaxpr)(cast("EagerCallableProtocol", object)())
     assert len(res_empty.nodes) == 0
 
     class MockConstWithShape:
@@ -259,17 +275,30 @@ def test_generic_utils_stubs() -> None:
 
 
 def _sample_ast_tuple(x: EagerValue) -> EagerValue:
-    """Sample AST function returning int tuple."""
+    """Sample AST function returning int tuple.
+
+    Args:
+        x: Test parameter `x`.
+    """
     return (11, 22, 33)
 
 
 def _sample_ast_int(x: EagerValue) -> EagerValue:
-    """Sample AST function returning int."""
+    """Sample AST function returning int.
+
+    Args:
+        x: Test parameter `x`.
+    """
     return 42
 
 
 def _sample_ast_vars(a: EagerValue, b: EagerValue) -> EagerValue:
-    """Sample AST function returning variable tuple."""
+    """Sample AST function returning variable tuple.
+
+    Args:
+        a: Test parameter `a`.
+        b: Test parameter `b`.
+    """
     return (a, b)
 
 
@@ -313,8 +342,8 @@ def test_foreign_coverage() -> None:
 
         output_shape = 9
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyOutputShapeTuple)()) == (3, 4)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyOutputShapeScalar)()) == (9,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyOutputShapeTuple)()) == (3, 4)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyOutputShapeScalar)()) == (9,)
 
     # 5. First arg has output_shapes
     class DummyOutputShapesList:
@@ -332,9 +361,9 @@ def test_foreign_coverage() -> None:
 
         output_shapes = 123
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyOutputShapesList)()) == (5, 6)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyOutputShapesEmpty)()) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyOutputShapesNonSeq)()) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyOutputShapesList)()) == (5, 6)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyOutputShapesEmpty)()) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyOutputShapesNonSeq)()) == ()
 
     # 6. First arg has subgraph with outputs
     class NodeWithMeta:
@@ -380,25 +409,37 @@ def test_foreign_coverage() -> None:
         """Test class Container."""
 
         def __init__(self, sg: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                sg: Test parameter `sg`.
+            """
             self.subgraph = sg
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Container)(cast("Callable[..., EagerTensorProtocol]", SubgraphValid)())) == (10, 20)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Container)(cast("Callable[..., EagerTensorProtocol]", SubgraphMissingOut)())) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Container)(cast("Callable[..., EagerTensorProtocol]", SubgraphNoMeta)())) == ()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", Container)(cast("Callable[..., EagerTensorProtocol]", SubgraphEmptyMeta)())) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Container)(cast("EagerCallableProtocol", SubgraphValid)())) == (10, 20)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Container)(cast("EagerCallableProtocol", SubgraphMissingOut)())) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Container)(cast("EagerCallableProtocol", SubgraphNoMeta)())) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Container)(cast("EagerCallableProtocol", SubgraphEmptyMeta)())) == ()
 
     # 7. Callable first argument
     # 7a. typing.get_type_hints with return annotation
     def fn_hints(x: int) -> Tuple[int, int]:
-        """Test function fn_hints."""
+        """Test function fn_hints.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (x, x)
 
     assert cast("EagerTensorProtocol", op.infer_shape(fn_hints)) == cast("EagerTensorProtocol", (int, int))
 
     # 7b. hints with no "return"
     def fn_no_ret(x: int) -> None:
-        """Test function fn_no_ret."""
+        """Test function fn_no_ret.
+
+        Args:
+            x: Test parameter `x`.
+        """
         pass
 
     assert op.infer_shape(fn_no_ret) == ()
@@ -415,15 +456,23 @@ def test_foreign_coverage() -> None:
         """Test class CallableWithSignature."""
 
         def __init__(self, ret_anno: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                ret_anno: Test parameter `ret_anno`.
+            """
             self.__annotations__ = {"return": "NonExistentTypeReference"}
             self._ret_anno = ret_anno
 
         def __call__(self, *args: EagerValue) -> None:
-            """Test function __call__."""
+            """Test function __call__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
-    mock_callable = cast("Callable[..., EagerTensorProtocol]", CallableWithSignature)(Tuple[int, int, int])
+    mock_callable = cast("EagerCallableProtocol", CallableWithSignature)(Tuple[int, int, int])
     setattr(mock_callable, "__signature__", inspect.Signature(return_annotation=Tuple[int, int, int]))
     assert cast("EagerTensorProtocol", op.infer_shape(mock_callable)) == cast("EagerTensorProtocol", (int, int, int))
 
@@ -466,5 +515,5 @@ def test_foreign_coverage() -> None:
 
         pass
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", PlainObj)(), cast("Callable[..., EagerTensorProtocol]", DummyTensor)()) == (1, 2)
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", PlainObj)(), cast("Callable[..., EagerTensorProtocol]", PlainObj)()) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", PlainObj)(), cast("EagerCallableProtocol", DummyTensor)()) == (1, 2)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", PlainObj)(), cast("EagerCallableProtocol", PlainObj)()) == ()

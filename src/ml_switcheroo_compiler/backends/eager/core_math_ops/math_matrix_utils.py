@@ -1,4 +1,4 @@
-"""math_matrix_utils module."""
+"""Implementation of math matrix utils operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_matrix_utils`)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import builtins  # noqa: F401
 from collections.abc import Callable
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
@@ -151,8 +151,9 @@ def _fill_diagonal(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     if func:
         return cast(EagerValue, func(*args, **kwargs))
     (x, val) = (args[0], args[1])
-    x_np = host_backend.array(x, copy=True)
-    host_backend.fill_diagonal(x_np, val, **kwargs)
+    mod = _resolve_eager_mod(backend_module)
+    x_np = mod.array(x, copy=True)
+    mod.fill_diagonal(x_np, val, **kwargs)
     return cast(EagerValue, getattr(backend_module, "array")(x_np) if hasattr(backend_module, "array") else x_np)
 
 
@@ -174,7 +175,8 @@ def _np_bandpart(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     func = getattr(backend_module, "bandpart", getattr(backend_module, "bandpart", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.triu(host_backend.tril(args[0], getattr(kwargs.get("num_lower", -1), "__int__", lambda: -1)()), -getattr(kwargs.get("num_upper", -1), "__int__", lambda: -1)()))
+    mod = _resolve_eager_mod(backend_module)
+    return cast(EagerValue, mod.triu(mod.tril(args[0], getattr(kwargs.get("num_lower", -1), "__int__", lambda: -1)()), -getattr(kwargs.get("num_upper", -1), "__int__", lambda: -1)()))
 
 
 @global_eager_registry.register("Geometric")
@@ -192,7 +194,7 @@ def _np_geometric(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     func = getattr(backend_module, "geometric", getattr(backend_module, "geometric", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.random.geometric(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).random.geometric(*args, **kwargs))
 
 
 @global_eager_registry.register("Triangular")
@@ -210,7 +212,7 @@ def _np_triangular(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     func = getattr(backend_module, "triangular", getattr(backend_module, "triangular", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.random.triangular(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).random.triangular(*args, **kwargs))
 
 
 @global_eager_registry.register("Tridiagonal")
@@ -228,7 +230,7 @@ def _np_tridiagonal(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     func = getattr(backend_module, "tridiagonal", getattr(backend_module, "tridiagonal", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.diag(args[0]))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).diag(args[0]))
 
 
 @global_eager_registry.register("TrilIndices")
@@ -246,7 +248,7 @@ def _np_trilindices(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     func = getattr(backend_module, "trilindices", getattr(backend_module, "trilindices", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.tril_indices(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).tril_indices(*args, **kwargs))
 
 
 @global_eager_registry.register("TrilIndicesFrom")
@@ -264,7 +266,7 @@ def _np_trilindicesfrom(backend_module: EagerValue, *args: EagerValue, **kwargs:
     func = getattr(backend_module, "trilindicesfrom", getattr(backend_module, "trilindicesfrom", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.tril_indices_from(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).tril_indices_from(*args, **kwargs))
 
 
 @global_eager_registry.register("TrimZeros")
@@ -282,7 +284,7 @@ def _np_trimzeros(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     func = getattr(backend_module, "trimzeros", getattr(backend_module, "trimzeros", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.trim_zeros(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).trim_zeros(*args, **kwargs))
 
 
 @global_eager_registry.register("TriuIndices")
@@ -300,7 +302,7 @@ def _np_triuindices(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     func = getattr(backend_module, "triuindices", getattr(backend_module, "triuindices", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.triu_indices(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).triu_indices(*args, **kwargs))
 
 
 @global_eager_registry.register("TriuIndicesFrom")
@@ -318,4 +320,4 @@ def _np_triuindicesfrom(backend_module: EagerValue, *args: EagerValue, **kwargs:
     func = getattr(backend_module, "triuindicesfrom", getattr(backend_module, "triuindicesfrom", None))
     if func is not None:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.triu_indices_from(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).triu_indices_from(*args, **kwargs))

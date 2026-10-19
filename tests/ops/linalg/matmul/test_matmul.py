@@ -12,9 +12,7 @@ import pytest
 from ml_switcheroo_compiler.core.config import config
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 mod = sys.modules["ml_switcheroo_compiler.ops.linalg.matmul"]
 
 
@@ -22,9 +20,13 @@ class DummyTensor:
     """Test class DummyTensor."""
 
     def __init__(self, shape: EagerValue) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
-        self.data = cast("Callable[..., EagerTensorProtocol]", np.zeros)(shape)
+        self.data = cast("EagerCallableProtocol", np.zeros)(shape)
         self.dtype = "float32"
         self.device = None
 
@@ -82,7 +84,7 @@ def test_matmul_tracing() -> None:
     setattr(mod, "_emit_shape_node", original_shape)
     setattr(mod, "add", original_add)
     setattr(mod, "multiply", original_multiply)
-    assert c is not None or c is None
+    assert c.shape == (2,)
 
 
 def test_matmul_eager() -> None:
@@ -115,7 +117,7 @@ def test_matmul_eager() -> None:
     mod.segmented_mm(a, b, c)
     config.eager_mode = False
     setattr(mod, "get_active_backend", original_backend)
-    assert c is not None or c is None
+    assert c.shape == (2,)
 
 
 def test_matmul_opdefs() -> None:
@@ -165,7 +167,7 @@ def test_dot_general_missing_shape() -> None:
                     pass
     finally:
         config.eager_mode = old_eager
-    assert old_eager is not None or old_eager is None
+    assert config.eager_mode == old_eager
 
 
 def test_dot_general_missing_shape_real() -> None:
@@ -204,16 +206,20 @@ def test_dot_general_missing_shape_real() -> None:
 
 
 def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_matmul_missing."""
+    """Test function test_matmul_missing.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import unittest.mock as mock
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.linalg.matmul import BlockMaskedMm, GatherMm, dot_general
 
     op1 = BlockMaskedMm()
-    assert cast("Callable[..., EagerTensorProtocol]", op1.infer_shape)((2, 3), (4, 5)) is None
+    assert cast("EagerCallableProtocol", op1.infer_shape)((2, 3), (4, 5)) is None
     op2 = GatherMm()
-    assert cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
+    assert cast("EagerCallableProtocol", op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
@@ -227,14 +233,14 @@ def test_solvers_missing() -> None:
     from ml_switcheroo_compiler.ops.linalg.solvers import Pinv
 
     op = Pinv()
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(None) == ()
+    assert cast("EagerCallableProtocol", op.infer_shape)(None) == ()
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = (3,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)()) == (3,)
+    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyShape)()) == (3,)
 
 
 def test_einsum_missing() -> None:

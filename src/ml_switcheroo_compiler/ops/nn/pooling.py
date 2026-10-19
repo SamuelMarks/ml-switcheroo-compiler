@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for pooling.py."""
+"""Implementation of pooling operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.nn.pooling`)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import typing  # noqa: F401
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Union, cast
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if TYPE_CHECKING:
@@ -388,7 +388,7 @@ def avg_pool1d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", avg_pool)(
+        cast("EagerCallableProtocol", avg_pool)(
             cast("Tensor", value),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,
@@ -408,7 +408,7 @@ def avg_pool2d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", avg_pool)(
+        cast("EagerCallableProtocol", avg_pool)(
             cast("Tensor", value),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,
@@ -428,7 +428,7 @@ def avg_pool3d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", avg_pool)(
+        cast("EagerCallableProtocol", avg_pool)(
             cast("Tensor", value),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,
@@ -448,7 +448,7 @@ def max_pool1d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", max_pool)(
+        cast("EagerCallableProtocol", max_pool)(
             cast("Tensor", inputs),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,
@@ -468,7 +468,7 @@ def max_pool2d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", max_pool)(
+        cast("EagerCallableProtocol", max_pool)(
             cast("Tensor", inputs),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,
@@ -488,7 +488,7 @@ def max_pool3d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
     """
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", max_pool)(
+        cast("EagerCallableProtocol", max_pool)(
             cast("Tensor", inputs),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,
@@ -512,7 +512,7 @@ def max_pool_with_argmax(
     """
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", max_pool)(
+        cast("EagerCallableProtocol", max_pool)(
             cast("Tensor", input),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,
@@ -609,7 +609,7 @@ def pool(
     if config.behavior.pooling_type == "AVG":
         return cast(
             TensorOrScalar,
-            cast("Callable[..., EagerTensorProtocol]", avg_pool)(
+            cast("EagerCallableProtocol", avg_pool)(
                 cast("Tensor", input),
                 window_shape=cast("tuple[int, ...]", config.window.ksize),
                 strides=config.window.strides,
@@ -618,7 +618,7 @@ def pool(
         )
     return cast(
         TensorOrScalar,
-        cast("Callable[..., EagerTensorProtocol]", max_pool)(
+        cast("EagerCallableProtocol", max_pool)(
             cast("Tensor", input),
             window_shape=cast("tuple[int, ...]", config.window.ksize),
             strides=config.window.strides,

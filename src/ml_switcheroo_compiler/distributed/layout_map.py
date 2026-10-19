@@ -33,7 +33,7 @@ class ShardingSpec:
         """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
-    def _eq(self, other: TensorOrScalar) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality with another `ShardingSpec`.
 
         Args:
@@ -46,8 +46,7 @@ class ShardingSpec:
             return False
         return self.mesh == other.mesh and self.mesh_mapping == other.mesh_mapping
 
-
-setattr(ShardingSpec, "__eq__", ShardingSpec._eq)
+    _eq = __eq__
 
 
 class LayoutMap:

@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.cholesky import CholeskyEx, cholesky_ex
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_cholesky_ex_dummy() -> None:
@@ -32,14 +30,14 @@ def test_cholesky_ex() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.array([[1.0, 0.0], [0.0, 1.0]]), np.array(0))
         mock_backend.return_value.array = lambda x: x
-        (res1, res2) = cast("Callable[..., EagerTensorProtocol]", cholesky_ex)(t, check_errors=True)
+        (res1, res2) = cast("EagerCallableProtocol", cholesky_ex)(t, check_errors=True)
         assert isinstance(res1, Tensor)
         assert isinstance(res2, Tensor)
     config.eager_mode = False
     cholesky_mod = sys.modules["ml_switcheroo_compiler.ops.linalg.decompositions.cholesky"]
     with patch.object(cholesky_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_L", "mock_info")
-        (res1, res2) = cast("Callable[..., EagerTensorProtocol]", cholesky_ex)(t, check_errors=False)
+        (res1, res2) = cast("EagerCallableProtocol", cholesky_ex)(t, check_errors=False)
         assert res1 == "mock_L"
         mock_emit.assert_called_once()
 

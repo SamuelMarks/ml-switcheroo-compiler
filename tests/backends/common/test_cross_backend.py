@@ -18,9 +18,7 @@ try:
 except Exception:
     kops = None
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_keras_generator_coverage() -> None:
@@ -76,15 +74,15 @@ def test_keras_eager_coverage() -> None:
     with pytest.raises(Exception, match=".*"):
         try:
             try:
-                cast("Callable[..., EagerTensorProtocol]", execute_op)(None, "UnknownFakeOp", None)
+                cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", None)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                 _caught_err = True
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
-        assert cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2,)) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", array)(None, [1, 2]) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", asarray)(None, [3, 4]) is not None
-        assert cast("Callable[..., EagerTensorProtocol]", item)(None, cast("Callable[..., EagerTensorProtocol]", kops.array)([5])) == 5
+        assert cast("EagerCallableProtocol", zeros)(None, (2,)) is not None
+        assert cast("EagerCallableProtocol", array)(None, [1, 2]) is not None
+        assert cast("EagerCallableProtocol", asarray)(None, [3, 4]) is not None
+        assert cast("EagerCallableProtocol", item)(None, cast("EagerCallableProtocol", kops.array)([5])) == 5
 
 
 def test_mlx_generator_coverage() -> None:

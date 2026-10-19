@@ -18,9 +18,7 @@ from ml_switcheroo_compiler.distributed.config_models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_pipeline_config_model() -> None:
@@ -32,7 +30,7 @@ def test_pipeline_config_model() -> None:
             "stage_communication": {"protocol": "p2p_queue"},
         }
     }
-    config = cast("Callable[..., EagerTensorProtocol]", PipelineTopologiesConfig)(root=data)
+    config = cast("EagerCallableProtocol", PipelineTopologiesConfig)(root=data)
     default_config = config.get("default")
     assert default_config is not None
     assert default_config.microbatch_splitting.num_microbatches == 4
@@ -130,7 +128,11 @@ def test_load_consolidated_topology_file() -> None:
 
 
 def test_load_consolidated_topology_fallback(tmp_path: EagerTensorProtocol) -> None:
-    """Test load_consolidated_topology fallback when distributed_topology.yaml is missing."""
+    """Test load_consolidated_topology fallback when distributed_topology.yaml is missing.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.distributed.config_models import load_consolidated_topology
@@ -139,7 +141,11 @@ def test_load_consolidated_topology_fallback(tmp_path: EagerTensorProtocol) -> N
     real_exists = os.path.exists
 
     def mock_exists(path: str) -> bool:
-        """Test function mock_exists."""
+        """Test function mock_exists.
+
+        Args:
+            path: Test parameter `path`.
+        """
         if path.endswith("distributed_topology.yaml"):
             return False
         return real_exists(path)
@@ -161,7 +167,11 @@ def test_load_consolidated_topology_fallback(tmp_path: EagerTensorProtocol) -> N
 
 
 def test_load_distributed_topologies(tmp_path: EagerTensorProtocol) -> None:
-    """Test load_distributed_topologies loader function."""
+    """Test load_distributed_topologies loader function.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     from ml_switcheroo_compiler.distributed.config_models import load_distributed_topologies
 
     # Default path

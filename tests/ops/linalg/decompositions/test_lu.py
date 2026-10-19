@@ -14,9 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuPivotsToPermutation, lu_factor, lu_pivots_to_permutation
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_lu_dummy() -> None:
@@ -28,8 +26,8 @@ def test_lu_dummy() -> None:
         shape = (2, 3)
 
     t = MockTensor()
-    assert cast("Callable[..., EagerTensorProtocol]", LuPivotsToPermutation)().infer_shape(t, permutation_size=4) == (2, 4)
-    assert cast("Callable[..., EagerTensorProtocol]", LuPivotsToPermutation)().infer_shape(t) == (2, 0)
+    assert cast("EagerCallableProtocol", LuPivotsToPermutation)().infer_shape(t, permutation_size=4) == (2, 4)
+    assert cast("EagerCallableProtocol", LuPivotsToPermutation)().infer_shape(t) == (2, 0)
     assert LuPivotsToPermutation().infer_shape() == ()
     assert LuPivotsToPermutation().infer_shape(None) == ()
 
@@ -41,11 +39,11 @@ def test_lu_dummy() -> None:
 
         shape = (5,)
 
-    assert cast("Callable[..., EagerTensorProtocol]", LuFactor)().infer_shape(cast("Callable[..., EagerTensorProtocol]", Mock1DTensor)()) == ((5,), (5,))
+    assert cast("EagerCallableProtocol", LuFactor)().infer_shape(cast("EagerCallableProtocol", Mock1DTensor)()) == ((5,), (5,))
 
     # kwargs 'a' and 'input'
-    assert cast("Callable[..., EagerTensorProtocol]", LuFactor)().infer_shape(a=cast("Callable[..., EagerTensorProtocol]", MockTensor)()) == ((2, 3), (2,))
-    assert cast("Callable[..., EagerTensorProtocol]", LuFactor)().infer_shape(input=cast("Callable[..., EagerTensorProtocol]", MockTensor)()) == ((2, 3), (2,))
+    assert cast("EagerCallableProtocol", LuFactor)().infer_shape(a=cast("EagerCallableProtocol", MockTensor)()) == ((2, 3), (2,))
+    assert cast("EagerCallableProtocol", LuFactor)().infer_shape(input=cast("EagerCallableProtocol", MockTensor)()) == ((2, 3), (2,))
 
 
 def test_lu_factor() -> None:

@@ -9,7 +9,7 @@ import numpy as np
 import ml_switcheroo_compiler.backends.eager.optimizers as opt_mod
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class MockCpuResult:
@@ -136,7 +136,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.mean)(x, axis=dim, keepdims=keepdim))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -151,7 +151,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("Callable[..., EagerTensorProtocol]", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -502,20 +502,20 @@ def test_optimizers_coverage() -> None:
     grad = np.full((2, 2), 0.1, dtype=np.float64)
 
     # 1. Adam
-    p_new, m_new, v_new = cast("Callable[..., EagerTensorProtocol]", opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
+    p_new, m_new, v_new = cast("EagerCallableProtocol", opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
     assert cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2, 2)
     assert cast("EagerTensorProtocol", getattr(m_new, "shape")) == (2, 2)
     assert cast("EagerTensorProtocol", getattr(v_new, "shape")) == (2, 2)
 
     # 2. Adagrad
     accum = np.zeros((2, 2), dtype=np.float64)
-    p_new_ada, accum_new_ada = cast("Callable[..., EagerTensorProtocol]", opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
+    p_new_ada, accum_new_ada = cast("EagerCallableProtocol", opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
     assert cast("EagerTensorProtocol", getattr(p_new_ada, "shape")) == (2, 2)
     assert cast("EagerTensorProtocol", getattr(accum_new_ada, "shape")) == (2, 2)
 
     # 3. Ftrl
     linear = np.zeros((2, 2), dtype=np.float64)
-    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = cast("Callable[..., EagerTensorProtocol]", opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
+    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = cast("EagerCallableProtocol", opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
     assert cast("EagerTensorProtocol", getattr(p_new_ftrl, "shape")) == (2, 2)
     assert cast("EagerTensorProtocol", getattr(accum_new_ftrl, "shape")) == (2, 2)
     assert cast("EagerTensorProtocol", getattr(linear_new_ftrl, "shape")) == (2, 2)
@@ -523,7 +523,7 @@ def test_optimizers_coverage() -> None:
     # 4. RMSProp
     ms = np.ones((2, 2), dtype=np.float64)
     mom = np.zeros((2, 2), dtype=np.float64)
-    p_new_rms, ms_new_rms, mom_new_rms = cast("Callable[..., EagerTensorProtocol]", opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
+    p_new_rms, ms_new_rms, mom_new_rms = cast("EagerCallableProtocol", opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
     assert cast("EagerTensorProtocol", getattr(p_new_rms, "shape")) == (2, 2)
     assert cast("EagerTensorProtocol", getattr(ms_new_rms, "shape")) == (2, 2)
     assert cast("EagerTensorProtocol", getattr(mom_new_rms, "shape")) == (2, 2)

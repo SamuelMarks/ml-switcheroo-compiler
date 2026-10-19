@@ -12,9 +12,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_utils import ReduceWindow, reduce_window
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_frontend_utils_extras() -> None:
@@ -55,7 +53,7 @@ def test_frontend_utils_extras() -> None:
     orig_add_node = state.global_tracing_state.add_node
     setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        cast("Callable[..., EagerTensorProtocol]", reduce_window)(t, 0.0, "add", cast("Callable[..., EagerTensorProtocol]", DummyConfig)())
+        cast("EagerCallableProtocol", reduce_window)(t, 0.0, "add", cast("EagerCallableProtocol", DummyConfig)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing

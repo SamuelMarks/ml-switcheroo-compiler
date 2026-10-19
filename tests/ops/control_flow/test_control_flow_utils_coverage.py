@@ -17,9 +17,7 @@ from ml_switcheroo_compiler.ops.control_flow_utils import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 class _PayloadWithId:
@@ -45,7 +43,7 @@ def test_control_flow_utils_wrap_proxy_inputs_tuple() -> None:
     t2 = Tensor(np.array([3.0, 4.0], dtype=np.float32), cfg)
 
     nested_args = ((t1, t2), "non_tensor")
-    input_ids, proxy_args = cast("Callable[..., EagerTensorProtocol]", _wrap_proxy_inputs)(nested_args, graph)
+    input_ids, proxy_args = cast("EagerCallableProtocol", _wrap_proxy_inputs)(nested_args, graph)
 
     assert len(input_ids) == 2
     assert isinstance(proxy_args[0], tuple)
@@ -73,7 +71,7 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
 
     # Nested tensor unwrapping (cur.data is a Tensor)
     inner_payload = _PayloadWithId("inner_id_42")
-    inner_t = cast("Callable[..., EagerTensorProtocol]", Tensor)(inner_payload, cfg)
+    inner_t = cast("EagerCallableProtocol", Tensor)(inner_payload, cfg)
     outer_t = Tensor(inner_t, cfg)
     ids_nested = _get_tensor_ids(outer_t)
     assert ids_nested == ["inner_id_42"]
@@ -90,8 +88,8 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
     assert isinstance(ids_uuid[0], str)
 
     # list/tuple of tensors
-    t_a = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", _PayloadWithId)("a"), cfg)
-    t_b = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", _PayloadWithId)("b"), cfg)
+    t_a = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", _PayloadWithId)("a"), cfg)
+    t_b = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", _PayloadWithId)("b"), cfg)
     ids_list = _get_tensor_ids([t_a, (t_b,)])
     assert ids_list == ["a", "b"]
 

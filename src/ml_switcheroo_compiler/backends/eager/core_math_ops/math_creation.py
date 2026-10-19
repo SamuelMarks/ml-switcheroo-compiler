@@ -1,4 +1,4 @@
-"""math_creation module."""
+"""Implementation of math creation operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_creation`)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import builtins  # noqa: F401
 import typing  # noqa: F401
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import host_backend
+from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 
 
@@ -130,7 +130,7 @@ def _np_fromfunction(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     func = getattr(backend_module, "fromfunction", None)
     if func:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.fromfunction(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).fromfunction(*args, **kwargs))
 
 
 @global_eager_registry.register("NpFromiter")
@@ -148,7 +148,7 @@ def _np_fromiter(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     func = getattr(backend_module, "fromiter", None)
     if func:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.fromiter(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).fromiter(*args, **kwargs))
 
 
 @global_eager_registry.register("NpFrompyfunc")
@@ -166,4 +166,4 @@ def _np_frompyfunc(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     func = getattr(backend_module, "frompyfunc", None)
     if func:
         return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, host_backend.frompyfunc(*args, **kwargs))
+    return cast(EagerValue, _resolve_eager_mod(backend_module).frompyfunc(*args, **kwargs))

@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.backends.common.mixins.variable import VariableASTVisitor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 class DummyGenerator:
@@ -39,6 +37,6 @@ def test_variable_mixin() -> None:
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
-    assert cast("Callable[..., EagerTensorProtocol]", vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
+    assert cast("EagerCallableProtocol", vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"

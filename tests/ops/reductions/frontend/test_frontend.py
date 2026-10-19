@@ -23,9 +23,7 @@ from ml_switcheroo_compiler.ops.reductions.frontend_utils import _emit_reduction
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 WindowConfig = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils"), "WindowConfig"))
 
 
@@ -104,34 +102,44 @@ def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol
             """Test class DummyBackend."""
 
             def execute_op(self, op_type: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function execute_op."""
+                """Test function execute_op.
+
+                Args:
+                    op_type: Test parameter `op_type`.
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 if kwargs.get("return_indices", False) or op_type == "FractionalMaxPool3d":
                     return (np.zeros_like(args[0]), np.zeros_like(args[0]).astype(np.int64))
                 return np.zeros_like(args[0])
 
             def array(self, x: EagerValue) -> EagerValue:
-                """Test function array."""
+                """Test function array.
+
+                Args:
+                    x: Test parameter `x`.
+                """
                 return x
 
         dummy_backend = DummyBackend()
         mock_backend.return_value = dummy_backend
         mock_backend_utils.return_value = dummy_backend
-        cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool2d)(t_2d, (4, 4))
-        cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool2d)(t_2d, (4, 4))
-        cast("Callable[..., EagerTensorProtocol]", fractional_max_pool3d)(t_3d, (4, 4, 4))
-        cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-        cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t_3d, (4, 4, 4))
-        cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
+        cast("EagerCallableProtocol", adaptive_avg_pool2d)(t_2d, (4, 4))
+        cast("EagerCallableProtocol", adaptive_max_pool2d)(t_2d, (4, 4))
+        cast("EagerCallableProtocol", fractional_max_pool3d)(t_3d, (4, 4, 4))
+        cast("EagerCallableProtocol", adaptive_avg_pool3d)(t_3d, (4, 4, 4))
+        cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4))
+        cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
         opt1 = UnpoolOptions(2, output_size=(16,))
         opt2 = UnpoolOptions((2, 2), output_size=(16, 16))
         opt3 = UnpoolOptions((2, 2, 2), output_size=(16, 16, 16))
-        cast("Callable[..., EagerTensorProtocol]", max_unpool1d)(t_1d, indices, opt1)
-        cast("Callable[..., EagerTensorProtocol]", max_unpool2d)(t_2d, indices2d, opt2)
-        cast("Callable[..., EagerTensorProtocol]", max_unpool3d)(t_3d, indices3d, opt3)
+        cast("EagerCallableProtocol", max_unpool1d)(t_1d, indices, opt1)
+        cast("EagerCallableProtocol", max_unpool2d)(t_2d, indices2d, opt2)
+        cast("EagerCallableProtocol", max_unpool3d)(t_3d, indices3d, opt3)
         w_conf = WindowConfig((1, 1, 2), (1, 1, 2), ((0, 0), (0, 0), (0, 0)), (1, 1, 1), (1, 1, 1))
-        cast("Callable[..., EagerTensorProtocol]", reduce_window)(t_1d, 0.0, "max", w_conf)
+        cast("EagerCallableProtocol", reduce_window)(t_1d, 0.0, "max", w_conf)
         t_scalar = Tensor(np.array(0.0).astype(np.float32), TensorConfig((), "float32", "cpu"))
-        cast("Callable[..., EagerTensorProtocol]", reduce_window)(t_1d, t_scalar, "max", w_conf)
+        cast("EagerCallableProtocol", reduce_window)(t_1d, t_scalar, "max", w_conf)
     getattr(_state, "update")({"DummyBackend": DummyBackend, "dummy_backend": dummy_backend, "mock_backend": mock_backend, "mock_backend_utils": mock_backend_utils})
     getattr(_state, "update")({"opt1": opt1, "opt2": opt2, "opt3": opt3, "t_scalar": t_scalar})
     getattr(_state, "update")({"w_conf": w_conf})
@@ -155,20 +163,20 @@ def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool._emit_reduction_node") as mock_emit, patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node") as mock_emit_u:
             mock_emit.return_value = t_2d
             mock_emit_u.return_value = t_1d
-            cast("Callable[..., EagerTensorProtocol]", fractional_max_pool2d)(t_2d, (4, 4))
-            cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool2d)(t_2d, (4, 4))
-            cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool2d)(t_2d, (4, 4))
-            cast("Callable[..., EagerTensorProtocol]", unfold)(t_2d, (2, 2))
-            cast("Callable[..., EagerTensorProtocol]", fold)(t_2d, (8, 8), (2, 2))
-            cast("Callable[..., EagerTensorProtocol]", fractional_max_pool3d)(t_3d, (4, 4, 4))
-            cast("Callable[..., EagerTensorProtocol]", adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-            cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t_3d, (4, 4, 4))
-            cast("Callable[..., EagerTensorProtocol]", adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
-            cast("Callable[..., EagerTensorProtocol]", max_unpool1d)(t_1d, indices, opt1)
-            cast("Callable[..., EagerTensorProtocol]", max_unpool2d)(t_2d, indices2d, opt2)
-            cast("Callable[..., EagerTensorProtocol]", max_unpool3d)(t_3d, indices3d, opt3)
-            cast("Callable[..., EagerTensorProtocol]", reduce_window)(t_1d, 0.0, "max", w_conf)
-            cast("Callable[..., EagerTensorProtocol]", reduce_window)(t_1d, t_1d, "max", w_conf)
+            cast("EagerCallableProtocol", fractional_max_pool2d)(t_2d, (4, 4))
+            cast("EagerCallableProtocol", adaptive_avg_pool2d)(t_2d, (4, 4))
+            cast("EagerCallableProtocol", adaptive_max_pool2d)(t_2d, (4, 4))
+            cast("EagerCallableProtocol", unfold)(t_2d, (2, 2))
+            cast("EagerCallableProtocol", fold)(t_2d, (8, 8), (2, 2))
+            cast("EagerCallableProtocol", fractional_max_pool3d)(t_3d, (4, 4, 4))
+            cast("EagerCallableProtocol", adaptive_avg_pool3d)(t_3d, (4, 4, 4))
+            cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4))
+            cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
+            cast("EagerCallableProtocol", max_unpool1d)(t_1d, indices, opt1)
+            cast("EagerCallableProtocol", max_unpool2d)(t_2d, indices2d, opt2)
+            cast("EagerCallableProtocol", max_unpool3d)(t_3d, indices3d, opt3)
+            cast("EagerCallableProtocol", reduce_window)(t_1d, 0.0, "max", w_conf)
+            cast("EagerCallableProtocol", reduce_window)(t_1d, t_1d, "max", w_conf)
     finally:
         global_tracing_state.is_tracing = False
     getattr(_state, "update")({"global_tracing_state": global_tracing_state})
@@ -181,7 +189,7 @@ def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol
     Args:
         _state: Shared test state dictionary.
     """
-    (global_tracing_state, indices3d) = (_state["global_tracing_state"], _state["indices3d"])
+    global_tracing_state = _state["global_tracing_state"]
     setattr(global_tracing_state, "is_tracing", True)
     try:
 
@@ -190,12 +198,12 @@ def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol
 
             id = "dummy"
 
-        t_dummy = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", DummyData)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((2,), "float32", "cpu"))
+        t_dummy = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyData)(), cast("EagerCallableProtocol", TensorConfig)((2,), "float32", "cpu"))
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils.global_tracing_state.add_node"):
-            cast("Callable[..., EagerTensorProtocol]", _emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
+            cast("EagerCallableProtocol", _emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
     finally:
         setattr(global_tracing_state, "is_tracing", False)
-    assert indices3d is not None or indices3d is None
+    assert getattr(global_tracing_state, "is_tracing") is False
 
 
 def test_reductions_frontend_brute() -> None:
@@ -205,7 +213,7 @@ def test_reductions_frontend_brute() -> None:
     _test_reductions_frontend_brute_part_2(_state)
     _test_reductions_frontend_brute_part_3(_state)
     _test_reductions_frontend_brute_part_4(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_segment_exact_shapes(mocker: EagerTensorProtocol) -> None:
@@ -217,7 +225,15 @@ def test_segment_exact_shapes(mocker: EagerTensorProtocol) -> None:
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
     def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
-        """Test function mock_emit."""
+        """Test function mock_emit.
+
+        Args:
+            op_name: Test parameter `op_name`.
+            inputs: Test parameter `inputs`.
+            attrs: Test parameter `attrs`.
+            shape: Test parameter `shape`.
+            dtype: Test parameter `dtype`.
+        """
         captured_shapes[op_name] = shape
         return op_name
 
@@ -266,10 +282,10 @@ def test_reductions_frontend_stats_ops() -> None:
     with patch.object(global_tracing_state, "add_node"):
         assert isinstance(psum(t, "devices"), Tensor)
         assert isinstance(pmean(t, "devices"), Tensor)
-        (v1, i1) = cast("Callable[..., EagerTensorProtocol]", approx_max_k)(t, k=2)
+        (v1, i1) = cast("EagerCallableProtocol", approx_max_k)(t, k=2)
         assert isinstance(v1, Tensor)
         assert isinstance(i1, Tensor)
-        (v2, i2) = cast("Callable[..., EagerTensorProtocol]", approx_min_k)(t, k=2)
+        (v2, i2) = cast("EagerCallableProtocol", approx_min_k)(t, k=2)
         assert isinstance(v2, Tensor)
         assert isinstance(i2, Tensor)
         targets = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))

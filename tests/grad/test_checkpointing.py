@@ -19,7 +19,11 @@ def test_checkpointing() -> None:
 
     # Eager mode
     def dummy(x: EagerValue) -> EagerValue:
-        """Test function dummy."""
+        """Test function dummy.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1)
 
     cp = checkpoint(dummy)
@@ -33,7 +37,11 @@ def test_checkpointing() -> None:
         """Test class FakeData."""
 
         def __init__(self, id: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                id: Test parameter `id`.
+            """
             self.id = id
 
     t1 = Tensor(np.array([1, 2]), TensorConfig(shape=(2,), dtype="float32", device="cpu"))
@@ -46,7 +54,11 @@ def test_checkpointing() -> None:
 
     # with dtype in attr
     def dummy_dtype(x: EagerValue) -> EagerValue:
-        """Test function dummy_dtype."""
+        """Test function dummy_dtype.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     # Test fallback
@@ -81,7 +93,11 @@ def test_remat_and_recompute_grad() -> None:
     from ml_switcheroo_compiler.grad.checkpointing import recompute_grad, remat
 
     def dummy(x: EagerValue) -> EagerValue:
-        """Test function dummy."""
+        """Test function dummy.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     # 106, 118

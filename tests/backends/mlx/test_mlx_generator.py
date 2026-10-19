@@ -11,7 +11,11 @@ if TYPE_CHECKING:
 
 
 def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
-    """Test save and load methods of MLX generator."""
+    """Test save and load methods of MLX generator.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
 
     # We mock mlx.core methods to verify they get called
     class MockMX:
@@ -19,17 +23,32 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
 
         @staticmethod
         def load(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function load."""
+            """Test function load.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "mock_load"
 
         @staticmethod
         def save(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function save."""
+            """Test function save.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "mock_save"
 
         @staticmethod
         def save_safetensors(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function save_safetensors."""
+            """Test function save_safetensors.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return "mock_save_safetensors"
 
     # Mock the actual module import within MLXCodeGenerator.load/save

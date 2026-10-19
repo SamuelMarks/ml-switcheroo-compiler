@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.ops.nn.activations import HardSilu, HardSwish, LogSo
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_isotonic_regression_tracing() -> None:
@@ -22,7 +20,7 @@ def test_isotonic_regression_tracing() -> None:
     global_tracing_state.start_tracing()
     try:
         y = Tensor(None, TensorConfig((5,), "float32", "cpu"))
-        out1, out2 = cast("Callable[..., EagerTensorProtocol]", isotonic_regression)(y)
+        out1, out2 = cast("EagerCallableProtocol", isotonic_regression)(y)
         assert cast("EagerTensorProtocol", getattr(out1, "shape")) == (5,)
         assert cast("EagerTensorProtocol", getattr(out2, "shape")) == (5,)
         assert cast("EagerTensorProtocol", getattr(out2, "dtype")) == DType.Int32
@@ -74,17 +72,27 @@ def test_isotonic_regression_eager() -> None:
 
 
 def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
-    """Verify the behavior and output invariants of test activations eager mode."""
+    """Verify the behavior and output invariants of test activations eager mode.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     config.eager_mode = True
 
     class DummyBackend:
         """Test class DummyBackend."""
 
         def execute_op(self, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op_name: Test parameter `op_name`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return op_name
 
-    cast("Callable[..., EagerTensorProtocol]", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=cast("Callable[..., EagerTensorProtocol]", DummyBackend)())
+    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=cast("EagerCallableProtocol", DummyBackend)())
 
     assert softmax("x", axis=1) == "Softmax"
 
@@ -100,7 +108,7 @@ def test_rrelu_non_eager_mode() -> None:
 
         id = "n"
 
-    res = cast("Callable[..., EagerTensorProtocol]", rrelu)(cast("Callable[..., EagerTensorProtocol]", DummyNode)())
+    res = cast("EagerCallableProtocol", rrelu)(cast("EagerCallableProtocol", DummyNode)())
     assert res is not None
 
 
@@ -111,26 +119,30 @@ def test_activations_infer_shape_broadcast() -> None:
         """Test class DummyTensor."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
     t1 = DummyTensor((2, 3))
     t2 = DummyTensor((2, 1))
 
     op = Softmax()
-    res = cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(t1, t2)
+    res = cast("EagerCallableProtocol", op.infer_shape)(t1, t2)
     assert res == (2, 3)
 
     op2 = LogSoftmax()
-    res2 = cast("Callable[..., EagerTensorProtocol]", op2.infer_shape)(t1, t2)
+    res2 = cast("EagerCallableProtocol", op2.infer_shape)(t1, t2)
     assert res2 == (2, 3)
 
     op3 = Sigmoid()
-    res3 = cast("Callable[..., EagerTensorProtocol]", op3.infer_shape)(t1, t2)
+    res3 = cast("EagerCallableProtocol", op3.infer_shape)(t1, t2)
     assert res3 == (2, 3)
 
     op4 = Rrelu()
-    res4 = cast("Callable[..., EagerTensorProtocol]", op4.infer_shape)(t1, t2)
+    res4 = cast("EagerCallableProtocol", op4.infer_shape)(t1, t2)
     assert res4 == (2, 3)
 
 
@@ -142,12 +154,16 @@ def test_onehot_infer_shape() -> None:
         """Test class DummyTensor."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
     t1 = DummyTensor((2, 3))
 
-    res = cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(t1, 5, axis=1)
+    res = cast("EagerCallableProtocol", op.infer_shape)(t1, 5, axis=1)
     assert res == (2, 5, 3)
 
 
@@ -167,19 +183,19 @@ def test_activations_non_eager_mode() -> None:
 
         shape_metadata = DummyShape()
 
-    res = cast("Callable[..., EagerTensorProtocol]", softmax)(cast("Callable[..., EagerTensorProtocol]", DummyNode)())
+    res = cast("EagerCallableProtocol", softmax)(cast("EagerCallableProtocol", DummyNode)())
     assert res is not None
 
-    res = cast("Callable[..., EagerTensorProtocol]", log_softmax)(cast("Callable[..., EagerTensorProtocol]", DummyNode)())
+    res = cast("EagerCallableProtocol", log_softmax)(cast("EagerCallableProtocol", DummyNode)())
     assert res is not None
 
-    res = cast("Callable[..., EagerTensorProtocol]", sigmoid)(cast("Callable[..., EagerTensorProtocol]", DummyNode)())
+    res = cast("EagerCallableProtocol", sigmoid)(cast("EagerCallableProtocol", DummyNode)())
     assert res is not None
 
-    res = cast("Callable[..., EagerTensorProtocol]", one_hot)(cast("Callable[..., EagerTensorProtocol]", DummyNode)(), 5)
+    res = cast("EagerCallableProtocol", one_hot)(cast("EagerCallableProtocol", DummyNode)(), 5)
     assert res is not None
 
-    res = cast("Callable[..., EagerTensorProtocol]", rrelu)(cast("Callable[..., EagerTensorProtocol]", DummyNode)())
+    res = cast("EagerCallableProtocol", rrelu)(cast("EagerCallableProtocol", DummyNode)())
     assert res is not None
 
 
@@ -192,16 +208,20 @@ def test_activations_infer_shape_missing() -> None:
         """Test class DummyTensor."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
     t = DummyTensor((2, 2))
 
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", HardSilu)().infer_shape)(t) == (2, 2)
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", HardSilu)().infer_shape)(t) == (2, 2)
     assert HardSilu().infer_shape() == ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", HardSwish)().infer_shape)(t) == (2, 2)
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", HardSwish)().infer_shape)(t) == (2, 2)
     assert HardSwish().infer_shape() == ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", cast("Callable[..., EagerTensorProtocol]", Squareplus)().infer_shape)(t) == (2, 2)
+    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", Squareplus)().infer_shape)(t) == (2, 2)
     assert Squareplus().infer_shape() == ()

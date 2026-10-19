@@ -8,9 +8,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.loop_tiling import _load_heuristics, loop_tiling_pass
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_load_heuristics() -> None:
@@ -52,7 +50,11 @@ def test_loop_tiling_pass_modifies_nodes() -> None:
 
 
 def test_load_heuristics_missing(monkeypatch: EagerTensorProtocol) -> None:
-    """Test function test_load_heuristics_missing."""
+    """Test function test_load_heuristics_missing.
+
+    Args:
+        monkeypatch: Test parameter `monkeypatch`.
+    """
     import os
 
     monkeypatch.setattr(os.path, "exists", lambda p: False)
@@ -122,7 +124,7 @@ def test_loop_tiling_missing_coverage_extra() -> None:
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {}) == (1, "sym", "sym", 3)
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {"TILE_H": 8, "TILE_W": 8}) == (1, "sym", "sym", 3)
     assert _split_shape("other_op", (1, 2), {}) == (1, 2)
-    assert bool(cast("Callable[..., EagerTensorProtocol]", _should_tile)("matmul", "not_tuple", {})) is False
+    assert bool(cast("EagerCallableProtocol", _should_tile)("matmul", "not_tuple", {})) is False
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass

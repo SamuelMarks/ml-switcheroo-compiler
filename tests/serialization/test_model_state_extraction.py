@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_init_classes_serialization() -> None:
@@ -24,7 +22,11 @@ def test_init_classes_serialization() -> None:
             pass
 
         def write_to_directory(self, d: EagerValue) -> None:
-            """Test function write_to_directory."""
+            """Test function write_to_directory.
+
+            Args:
+                d: Test parameter `d`.
+            """
             pass
 
     class DummyState(PythonState):
@@ -35,33 +37,53 @@ def test_init_classes_serialization() -> None:
             pass
 
         def deserialize(self, s: EagerValue) -> None:
-            """Test function deserialize."""
+            """Test function deserialize.
+
+            Args:
+                s: Test parameter `s`.
+            """
             pass
 
     class DummyMaxPolicy(MaxShardSizePolicy):
         """Test class DummyMaxPolicy."""
 
         def apply(self, x: EagerValue) -> None:
-            """Test function apply."""
+            """Test function apply.
+
+            Args:
+                x: Test parameter `x`.
+            """
             pass
 
     class DummyShardTask(ShardByTaskPolicy):
         """Test class DummyShardTask."""
 
         def apply(self, x: EagerValue) -> None:
-            """Test function apply."""
+            """Test function apply.
+
+            Args:
+                x: Test parameter `x`.
+            """
             pass
 
     class DummySavedModel(SavedModel):
         """Test class DummySavedModel."""
 
         def save(self, p: EagerValue) -> None:
-            """Test function save."""
+            """Test function save.
+
+            Args:
+                p: Test parameter `p`.
+            """
             pass
 
         @classmethod
         def load(cls, path: str) -> SavedModel:
-            """Test function load."""
+            """Test function load.
+
+            Args:
+                path: Test parameter `path`.
+            """
             pass
             return cast("SavedModel", None)
 
@@ -99,7 +121,11 @@ def test_extract_model_state_layers() -> None:
         """Test class FakeW."""
 
         def __init__(self, n: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                n: Test parameter `n`.
+            """
             self.name = n
 
         def numpy(self) -> EagerValue:
@@ -111,7 +137,7 @@ def test_extract_model_state_layers() -> None:
 
         weights = [FakeW("w1")]
 
-    ws = cast("Callable[..., EagerTensorProtocol]", _extract_model_weights)(cast("Callable[..., EagerTensorProtocol]", FakeModel)())
+    ws = cast("EagerCallableProtocol", _extract_model_weights)(cast("EagerCallableProtocol", FakeModel)())
     assert ws["w1"] == 1
 
     class FakeOpt:
@@ -126,7 +152,7 @@ def test_extract_model_state_layers() -> None:
         optimizer = FakeOpt()
 
     st = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _extract_optimizer_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelOpt)(), st)
+    cast("EagerCallableProtocol", _extract_optimizer_state)(cast("EagerCallableProtocol", FakeModelOpt)(), st)
     assert st["v1"] == 1
     assert st["m1"] == 1
 
@@ -137,9 +163,9 @@ def test_extract_model_state_layers() -> None:
 
     st = {}
     ws = cast("EagerTensorProtocol", {"nt1": 1})
-    cast("Callable[..., EagerTensorProtocol]", _extract_non_trainable_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)(), st, ws)
+    cast("EagerCallableProtocol", _extract_non_trainable_state)(cast("EagerCallableProtocol", FakeModelNT)(), st, ws)
     assert "nt1" not in st
-    cast("Callable[..., EagerTensorProtocol]", _extract_non_trainable_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)(), st, {})
+    cast("EagerCallableProtocol", _extract_non_trainable_state)(cast("EagerCallableProtocol", FakeModelNT)(), st, {})
     assert st["nt1"] == 1
 
 
@@ -154,11 +180,11 @@ def test_extract_model_state_submodules() -> None:
             """Test function get_config."""
             return {"c": 1}
 
-    st = cast("Callable[..., EagerTensorProtocol]", _extract_model_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)(), {})
+    st = cast("EagerCallableProtocol", _extract_model_state)(cast("EagerCallableProtocol", FakeModelNT)(), {})
     assert isinstance(st, dict)
-    (c, m) = cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(cast("Callable[..., EagerTensorProtocol]", FakeModelNT)())
+    (c, m) = cast("EagerCallableProtocol", _compile_model_metadata)(cast("EagerCallableProtocol", FakeModelNT)())
     assert c == {"c": 1}
-    (c2, m2) = cast("Callable[..., EagerTensorProtocol]", _compile_model_metadata)(None)
+    (c2, m2) = cast("EagerCallableProtocol", _compile_model_metadata)(None)
     assert c2 == {}
     import os
     import zipfile
@@ -190,7 +216,11 @@ def test_extract_model_state_parameters() -> None:
         """Test class FakeW."""
 
         def __init__(self, n: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                n: Test parameter `n`.
+            """
             self.name = n
 
         def numpy(self) -> EagerValue:
@@ -203,7 +233,7 @@ def test_extract_model_state_parameters() -> None:
         ema_variables = [FakeW("ema1"), FakeW("ema2")]
 
     st = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _extract_ema_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelEMA)(), st)
+    cast("EagerCallableProtocol", _extract_ema_state)(cast("EagerCallableProtocol", FakeModelEMA)(), st)
     assert st["ema1"] == 1
     assert st["ema2"] == 1
 
@@ -225,9 +255,9 @@ def test_extract_model_state_nested_objects() -> None:
         mock_w.assert_not_called()
     if os.path.exists(tf):
         os.remove(tf)
-    ctx2 = cast("Callable[..., EagerTensorProtocol]", KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
+    ctx2 = cast("EagerCallableProtocol", KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
     with patch.object(s, "_write_h5_to_zip") as mock_w:
-        cast("Callable[..., EagerTensorProtocol]", _write_keras_zip)(ctx2)
+        cast("EagerCallableProtocol", _write_keras_zip)(ctx2)
         assert mock_w.call_count == 2
     if os.path.exists(tf):
         os.remove(tf)
@@ -272,7 +302,11 @@ def test_serialize_keras_object() -> None:
 
 
 def test_read_fingerprint(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_read_fingerprint."""
+    """Test function test_read_fingerprint.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     from ml_switcheroo_compiler.serialization import read_fingerprint
 
     assert read_fingerprint("nonexistent_path") == "fingerprint"
@@ -284,7 +318,11 @@ def test_read_fingerprint(tmp_path: EagerTensorProtocol) -> None:
 
 
 def test_load_variable(tmp_path: EagerTensorProtocol) -> None:
-    """Test function test_load_variable."""
+    """Test function test_load_variable.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     import numpy as np
 
     from ml_switcheroo_compiler.serialization import load_variable
@@ -329,17 +367,17 @@ def test_export_methods() -> None:
             return "{}"
 
     g = FakeGraph()
-    cast("Callable[..., EagerTensorProtocol]", export_to_onnx)(g, "test.onnx")
+    cast("EagerCallableProtocol", export_to_onnx)(g, "test.onnx")
     assert os.path.exists("test.onnx")
     with open("test.onnx", "rb") as f:
         assert f.read() == b"ONNX"
     os.remove("test.onnx")
-    cast("Callable[..., EagerTensorProtocol]", export_to_tflite)(g, "test.tflite")
+    cast("EagerCallableProtocol", export_to_tflite)(g, "test.tflite")
     assert os.path.exists("test.tflite")
     with open("test.tflite", "rb") as f:
         assert f.read() == b"TFLITE"
     os.remove("test.tflite")
-    cast("Callable[..., EagerTensorProtocol]", export_model_topology)(g, "test.json")
+    cast("EagerCallableProtocol", export_model_topology)(g, "test.json")
     assert os.path.exists("test.json")
     with open("test.json") as f2:
         assert f2.read() == "{}"
@@ -354,12 +392,12 @@ def test_init_exports_mocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with (
-        cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"),
-        cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"),
-        cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"),
-        cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"),
-        cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"),
-        cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"),
+        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"),
+        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"),
+        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"),
+        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"),
+        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"),
+        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"),
     ):
         _save_as_h5({}, "test.h5")
         _save_as_safetensors({}, "test.st")
@@ -377,16 +415,16 @@ def test_init_exports_unmocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with pytest.raises(Exception, match=".*"):
-        cast("Callable[..., EagerTensorProtocol]", _save_as_h5)(None, None)
+        cast("EagerCallableProtocol", _save_as_h5)(None, None)
     with pytest.raises(Exception, match=".*"):
-        cast("Callable[..., EagerTensorProtocol]", _save_as_safetensors)(None, None)
+        cast("EagerCallableProtocol", _save_as_safetensors)(None, None)
     with pytest.raises(Exception, match=".*"):
-        cast("Callable[..., EagerTensorProtocol]", _load_h5_weights)(None)
+        cast("EagerCallableProtocol", _load_h5_weights)(None)
     with pytest.raises(Exception, match=".*"):
-        cast("Callable[..., EagerTensorProtocol]", _load_safetensors_weights)(None)
-    assert cast("Callable[..., EagerTensorProtocol]", _load_npz_weights)(None) == {}
+        cast("EagerCallableProtocol", _load_safetensors_weights)(None)
+    assert cast("EagerCallableProtocol", _load_npz_weights)(None) == {}
     with pytest.raises(Exception, match=".*"):
-        cast("Callable[..., EagerTensorProtocol]", _load_pickle_weights)(None)
+        cast("EagerCallableProtocol", _load_pickle_weights)(None)
 
 
 def test_init_module_exports() -> None:
@@ -396,17 +434,17 @@ def test_init_module_exports() -> None:
     import ml_switcheroo_compiler.serialization as s
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
-    with cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"):
+    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"):
         _save_as_h5({}, "test.h5")
-    with cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"):
+    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"):
         _save_as_safetensors({}, "test.st")
-    with cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"):
+    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"):
         _load_h5_weights("test.h5")
-    with cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"):
+    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"):
         _load_safetensors_weights("test.st")
-    with cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"):
+    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"):
         _load_npz_weights("test.npz")
-    with cast("Callable[..., EagerTensorProtocol]", patch.object)(cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"):
+    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"):
         _load_pickle_weights("test.pk")
     assert callable(test_init_module_exports)
 
@@ -424,9 +462,9 @@ def test_init_module_all_exports() -> None:
     tf_npz = "test_real_init_unmocked.npz"
     tf_pk = "test_real_init_unmocked.pk"
     _save_as_h5({"a": 1}, tf)
-    assert "a" in cast("Callable[..., EagerTensorProtocol]", _load_h5_weights)(tf)
+    assert "a" in cast("EagerCallableProtocol", _load_h5_weights)(tf)
     _save_as_safetensors({"a": np.array([1.0], dtype=np.float32)}, tf_st)
-    assert "a" in cast("Callable[..., EagerTensorProtocol]", _load_safetensors_weights)(tf_st)
+    assert "a" in cast("EagerCallableProtocol", _load_safetensors_weights)(tf_st)
     assert _load_npz_weights(tf_npz) == {}
     with pytest.raises(FileNotFoundError):
         _load_pickle_weights(tf_pk)
@@ -469,5 +507,5 @@ def test_extract_optimizer_state_missing_branches() -> None:
         optimizer = FakeOptEmpty()
 
     st = cast("dict[str, EagerTensorProtocol]", {})
-    cast("Callable[..., EagerTensorProtocol]", _extract_optimizer_state)(cast("Callable[..., EagerTensorProtocol]", FakeModelOptEmpty)(), st)
+    cast("EagerCallableProtocol", _extract_optimizer_state)(cast("EagerCallableProtocol", FakeModelOptEmpty)(), st)
     assert len(st) == 0

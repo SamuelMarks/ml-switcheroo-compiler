@@ -8,19 +8,17 @@ from unittest.mock import patch
 from ml_switcheroo_compiler.backends.keras.types import array, asarray, item, zeros
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_keras_types() -> None:
     """Test function test_keras_types."""
     with patch("ml_switcheroo_compiler.backends.keras.types.kops"):
         with patch("ml_switcheroo_compiler.backends.keras.types.generic_zeros", return_value="zeros"):
-            assert cast("Callable[..., EagerTensorProtocol]", zeros)(None, (2,)) == "zeros"
+            assert cast("EagerCallableProtocol", zeros)(None, (2,)) == "zeros"
         with patch("ml_switcheroo_compiler.backends.keras.types.generic_array", return_value="array"):
-            assert cast("Callable[..., EagerTensorProtocol]", array)(None, [1]) == "array"
+            assert cast("EagerCallableProtocol", array)(None, [1]) == "array"
         with patch("ml_switcheroo_compiler.backends.keras.types.generic_asarray", return_value="asarray"):
-            assert cast("Callable[..., EagerTensorProtocol]", asarray)(None, [1]) == "asarray"
+            assert cast("EagerCallableProtocol", asarray)(None, [1]) == "asarray"
         with patch("ml_switcheroo_compiler.backends.keras.types.generic_item", return_value=42.0):
-            assert cast("Callable[..., EagerTensorProtocol]", item)(None, [1]) == 42.0
+            assert cast("EagerCallableProtocol", item)(None, [1]) == 42.0

@@ -32,16 +32,18 @@ from ml_switcheroo_compiler.ops.vision.color import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
     """Test class MockTensor."""
 
     def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__."""
+        """Test function __init__.
+
+        Args:
+            shape: Test parameter `shape`.
+        """
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
@@ -88,28 +90,28 @@ def _test_vision_color_funcs_part_2(_state: dict[str, EagerTensorProtocol]) -> N
         _state: Shared test state dictionary.
     """
     mock_op, mocker, t = _state["mock_op"], _state["mocker"], _state["t"]
-    assert cast("Callable[..., EagerTensorProtocol]", equalization)(t) == cast("Callable[..., EagerTensorProtocol]", mock_op)()
-    assert cast("Callable[..., EagerTensorProtocol]", rgb_to_yiq)(t) == "node"
-    assert cast("Callable[..., EagerTensorProtocol]", yiq_to_rgb)(t) == "node"
-    assert cast("Callable[..., EagerTensorProtocol]", rgb_to_yuv)(t) == "node"
-    assert cast("Callable[..., EagerTensorProtocol]", yuv_to_rgb)(t) == "node"
+    assert cast("EagerCallableProtocol", equalization)(t) == cast("EagerCallableProtocol", mock_op)()
+    assert cast("EagerCallableProtocol", rgb_to_yiq)(t) == "node"
+    assert cast("EagerCallableProtocol", yiq_to_rgb)(t) == "node"
+    assert cast("EagerCallableProtocol", rgb_to_yuv)(t) == "node"
+    assert cast("EagerCallableProtocol", yuv_to_rgb)(t) == "node"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.color.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", rgb_to_hsv)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", hsv_to_rgb)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", adjust_hue)(t, 0.5), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", adjust_saturation)(t, 0.5), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", adjust_contrast)(t, 0.5), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", adjust_brightness)(t, 0.5), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", rgb_to_grayscale)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", random_color_jitter)(t, brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", solarize)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", invert)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", posterize)(t, 4), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", degeneration)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", augmix)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rgb_to_hsv)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", hsv_to_rgb)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", adjust_hue)(t, 0.5), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", adjust_saturation)(t, 0.5), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", adjust_contrast)(t, 0.5), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", adjust_brightness)(t, 0.5), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rgb_to_grayscale)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", random_color_jitter)(t, brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", solarize)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", invert)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", posterize)(t, 4), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", degeneration)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", augmix)(t), "config")).shape == (2, 3)
     getattr(_state, "update")({"mock_backend": mock_backend})
     _state.update(locals())
 
@@ -121,23 +123,27 @@ def _test_vision_color_funcs_part_3(_state: dict[str, EagerTensorProtocol]) -> N
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", auto_contrast)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", rand_augment)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", random_erasing)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", equalization)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", rgb_to_yiq)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", yiq_to_rgb)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", rgb_to_yuv)(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("Callable[..., EagerTensorProtocol]", yuv_to_rgb)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", auto_contrast)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rand_augment)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", random_erasing)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", equalization)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rgb_to_yiq)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", yiq_to_rgb)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rgb_to_yuv)(t), "config")).shape == (2, 3)
+    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", yuv_to_rgb)(t), "config")).shape == (2, 3)
 
 
 def test_vision_color_funcs(mocker: EagerTensorProtocol) -> None:
-    """Test function test_vision_color_funcs."""
+    """Test function test_vision_color_funcs.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     _state: dict[str, EagerTensorProtocol] = {"mocker": mocker}
     _test_vision_color_funcs_part_1(_state)
     _test_vision_color_funcs_part_2(_state)
     _test_vision_color_funcs_part_3(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_color_opdef_infer_shape() -> None:
@@ -157,20 +163,20 @@ def test_color_opdef_infer_shape() -> None:
     t = DummyTensor()
     t_last = DummyTensorLast()
 
-    assert cast("Callable[..., EagerTensorProtocol]", AdjustBrightness)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", AdjustContrast)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", AdjustHue)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", AdjustSaturation)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", AugMix)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", AutoContrast)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", Equalization)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", Invert)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", Posterize)().infer_shape(t) == (1, 3, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", Solarize)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", AdjustBrightness)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", AdjustContrast)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", AdjustHue)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", AdjustSaturation)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", AugMix)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", AutoContrast)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", Equalization)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", Invert)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", Posterize)().infer_shape(t) == (1, 3, 32, 32)
+    assert cast("EagerCallableProtocol", Solarize)().infer_shape(t) == (1, 3, 32, 32)
 
     # RgbToGrayscale
-    assert cast("Callable[..., EagerTensorProtocol]", RgbToGrayscale)().infer_shape(t, data_format="channels_first") == (1, 1, 32, 32)
-    assert cast("Callable[..., EagerTensorProtocol]", RgbToGrayscale)().infer_shape(t_last, data_format="channels_last") == (1, 32, 32, 1)
+    assert cast("EagerCallableProtocol", RgbToGrayscale)().infer_shape(t, data_format="channels_first") == (1, 1, 32, 32)
+    assert cast("EagerCallableProtocol", RgbToGrayscale)().infer_shape(t_last, data_format="channels_last") == (1, 32, 32, 1)
 
     # Empty shape
     class EmptyTensor:
@@ -178,4 +184,4 @@ def test_color_opdef_infer_shape() -> None:
 
         shape = ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", RgbToGrayscale)().infer_shape(cast("Callable[..., EagerTensorProtocol]", EmptyTensor)()) == ()
+    assert cast("EagerCallableProtocol", RgbToGrayscale)().infer_shape(cast("EagerCallableProtocol", EmptyTensor)()) == ()

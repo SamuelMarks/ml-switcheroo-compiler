@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for generator_utils.py."""
+"""Implementation of generator utils operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.generator_utils`)."""
 
 from __future__ import annotations
 

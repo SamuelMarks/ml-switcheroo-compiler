@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import threading
 from types import ModuleType
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import _band_part
 
 
@@ -44,7 +44,7 @@ def _np_band_part(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("Callable[..., EagerTensorProtocol]", _band_part)(*args, **kwargs))
+    return cast(EagerValue, cast("EagerCallableProtocol", _band_part)(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Diag")

@@ -1,4 +1,4 @@
-"""Provide mixin module."""
+"""Implementation of generator mixins operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.generator_mixins`)."""
 
 from typing import Callable, cast
 

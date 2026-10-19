@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ml_switcheroo_compiler.ops.creation.basic import Arange, Bartlett, Blackman, ConstantOfShape, CreationOp, Frombuffer, Full, Hamming, Hanning, Kaiser, Logspace, ManualSeed, Rand, Randint, Range, TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 class DummyItem:
@@ -40,12 +38,12 @@ def test_creation_basic() -> None:
     assert ri.infer_shape(0, 10, (2, 2)) == (2, 2)
     assert ri.infer_shape(0, 10) == ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", ManualSeed)().infer_shape(42) == ()
+    assert cast("EagerCallableProtocol", ManualSeed)().infer_shape(42) == ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
+    assert cast("EagerCallableProtocol", ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
     assert ConstantOfShape().infer_shape() == ()
 
-    assert cast("Callable[..., EagerTensorProtocol]", Range)().infer_shape((2, 2)) == (2, 2)
+    assert cast("EagerCallableProtocol", Range)().infer_shape((2, 2)) == (2, 2)
     assert Range().infer_shape() == ()
 
     for cls in [Blackman, Bartlett, Hamming, Hanning, Kaiser]:

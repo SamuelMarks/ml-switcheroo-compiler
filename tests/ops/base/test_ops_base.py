@@ -23,9 +23,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _test_register_and_get_op_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -175,7 +173,7 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
             get_op("UnknownOp")
     finally:
         _OP_REGISTRY.clear()
-        cast("Callable[..., EagerTensorProtocol]", _OP_REGISTRY.update)(original_registry)
+        cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
     _state.update(locals())
 
 
@@ -188,7 +186,7 @@ def test_register_and_get_op() -> None:
     _state: dict[str, EagerTensorProtocol] = dict(locals())
     for _sub_fn in (_test_register_and_get_op_sub_1, _test_register_and_get_op_sub_2):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_opdef_call_eager_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -337,7 +335,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
     finally:
         config.eager_mode = False
         _OP_REGISTRY.clear()
-        cast("Callable[..., EagerTensorProtocol]", _OP_REGISTRY.update)(original_registry)
+        cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
     _state.update(locals())
 
 
@@ -350,7 +348,7 @@ def test_opdef_call_eager() -> None:
     _state: dict[str, EagerTensorProtocol] = dict(locals())
     for _sub_fn in (_test_opdef_call_eager_sub_1, _test_opdef_call_eager_sub_2):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def _test_opdef_call_tracing_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -510,7 +508,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
             op(t_in)
     finally:
         _OP_REGISTRY.clear()
-        cast("Callable[..., EagerTensorProtocol]", _OP_REGISTRY.update)(original_registry)
+        cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
     _state.update(locals())
 
 
@@ -523,7 +521,7 @@ def test_opdef_call_tracing() -> None:
     _state: dict[str, EagerTensorProtocol] = dict(locals())
     for _sub_fn in (_test_opdef_call_tracing_sub_1, _test_opdef_call_tracing_sub_2):
         _sub_fn(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0
 
 
 def test_emit_ir_node() -> None:
@@ -553,7 +551,12 @@ def test_dispatch_eager_wrapper() -> None:
 
     @dispatch_eager("TestOp")
     def test_func(t1: EagerTensorProtocol, t2: EagerTensorProtocol) -> EagerValue:
-        """Test function test_func."""
+        """Test function test_func.
+
+        Args:
+            t1: Test parameter `t1`.
+            t2: Test parameter `t2`.
+        """
         return "not eager"
         assert callable(test_func)
 

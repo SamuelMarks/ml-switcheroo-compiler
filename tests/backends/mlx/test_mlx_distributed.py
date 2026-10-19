@@ -11,9 +11,7 @@ from ml_switcheroo_compiler.backends.mlx.eager import _mlx_reduce_scatter
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 class MockMLXArray:
@@ -38,16 +36,28 @@ class MockMLXArray:
         return self._data.ndim
 
     def __getitem__(self, item: EagerValue) -> MockMLXArray:
-        """Slice mock array."""
-        return cast("MockMLXArray", cast("Callable[..., EagerTensorProtocol]", MockMLXArray)(cast("Callable[..., EagerTensorProtocol]", getattr(self._data, "__getitem__"))(item)))
+        """Slice mock array.
+
+        Args:
+            item: Test parameter `item`.
+        """
+        return cast("MockMLXArray", cast("EagerCallableProtocol", MockMLXArray)(cast("EagerCallableProtocol", getattr(self._data, "__getitem__"))(item)))
 
     def __add__(self, other: MockMLXArray) -> MockMLXArray:
-        """Elementwise addition."""
-        return cast("MockMLXArray", cast("Callable[..., EagerTensorProtocol]", MockMLXArray)(cast("EagerTensorProtocol", self._data) + cast("EagerTensorProtocol", other._data)))
+        """Elementwise addition.
+
+        Args:
+            other: Test parameter `other`.
+        """
+        return cast("MockMLXArray", cast("EagerCallableProtocol", MockMLXArray)(cast("EagerTensorProtocol", self._data) + cast("EagerTensorProtocol", other._data)))
 
     def __mul__(self, other: MockMLXArray) -> MockMLXArray:
-        """Elementwise multiplication."""
-        return cast("MockMLXArray", cast("Callable[..., EagerTensorProtocol]", MockMLXArray)(cast("EagerTensorProtocol", self._data) * cast("EagerTensorProtocol", other._data)))
+        """Elementwise multiplication.
+
+        Args:
+            other: Test parameter `other`.
+        """
+        return cast("MockMLXArray", cast("EagerCallableProtocol", MockMLXArray)(cast("EagerTensorProtocol", self._data) * cast("EagerTensorProtocol", other._data)))
 
     def to_numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Extract NumPy view."""
@@ -59,22 +69,42 @@ class MockMLXModule:
 
     @staticmethod
     def add(a: MockMLXArray, b: MockMLXArray) -> MockMLXArray:
-        """Add two mock arrays."""
+        """Add two mock arrays.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return a + b
 
     @staticmethod
     def multiply(a: MockMLXArray, b: MockMLXArray) -> MockMLXArray:
-        """Multiply two mock arrays."""
+        """Multiply two mock arrays.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return a * b
 
     @staticmethod
     def maximum(a: MockMLXArray, b: MockMLXArray) -> MockMLXArray:
-        """Elementwise maximum."""
+        """Elementwise maximum.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return MockMLXArray(np.maximum(a._data, b._data))
 
     @staticmethod
     def minimum(a: MockMLXArray, b: MockMLXArray) -> MockMLXArray:
-        """Elementwise minimum."""
+        """Elementwise minimum.
+
+        Args:
+            a: Test parameter `a`.
+            b: Test parameter `b`.
+        """
         return MockMLXArray(np.minimum(a._data, b._data))
 
 
@@ -98,7 +128,7 @@ def test_mlx_ring_reduce_scatter_sum() -> None:
     )
     assert isinstance(res0, MockMLXArray)
     assert res0.shape == (2, 4)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", res0.to_numpy)(), 6.0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res0.to_numpy)(), 6.0)
 
     # Rank 1 should get chunk 1 reduced
     res1 = _mlx_reduce_scatter(
@@ -110,7 +140,7 @@ def test_mlx_ring_reduce_scatter_sum() -> None:
         rank=1,
     )
     assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (2, 4)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res1, "to_numpy")))(), 6.0)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res1, "to_numpy")))(), 6.0)
 
 
 def test_mlx_ring_reduce_scatter_ops() -> None:
@@ -128,7 +158,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="PROD",
         rank=0,
     )
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_prod, "to_numpy")))(), [[20.0, 60.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_prod, "to_numpy")))(), [[20.0, 60.0]])
 
     # MAX on rank 1 (gets row 1: [max(4, 30), max(5, 40)] = [30, 40])
     res_max = _mlx_reduce_scatter(
@@ -139,7 +169,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="MAX",
         rank=1,
     )
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_max, "to_numpy")))(), [[30.0, 40.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_max, "to_numpy")))(), [[30.0, 40.0]])
 
     # MIN on rank 1 (gets row 1: [min(4, 30), min(5, 40)] = [4, 5])
     res_min = _mlx_reduce_scatter(
@@ -150,7 +180,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="MIN",
         rank=1,
     )
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_min, "to_numpy")))(), [[4.0, 5.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_min, "to_numpy")))(), [[4.0, 5.0]])
 
     # Fallback op (else branch) defaults to SUM
     res_fallback = _mlx_reduce_scatter(
@@ -161,7 +191,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="UNKNOWN_OP",
         rank=0,
     )
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res_fallback, "to_numpy")))(), [[12.0, 23.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_fallback, "to_numpy")))(), [[12.0, 23.0]])
 
 
 def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
@@ -177,7 +207,7 @@ def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
         scatter_dim=0,
     )
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(res, "to_numpy")))(), [[4.0, 5.0], [6.0, 7.0]])
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "to_numpy")))(), [[4.0, 5.0], [6.0, 7.0]])
 
     # World size 1 returns tensor unchanged
     res_1 = _mlx_reduce_scatter(

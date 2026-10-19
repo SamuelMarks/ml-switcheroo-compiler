@@ -11,9 +11,7 @@ import pytest
 import ml_switcheroo_compiler.backends.numpy.eager.random_ops as ro
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_random_ops_coverage() -> None:
@@ -27,9 +25,9 @@ def test_random_ops_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t"):
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
             else:
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
         with pytest.raises(TypeError):
             op(*args_to_pass)
         try:
@@ -56,7 +54,11 @@ def test_missing_random_ops() -> None:
         """Test class DummyTable."""
 
         def lookup(self, keys: EagerValue) -> EagerValue:
-            """Test function lookup."""
+            """Test function lookup.
+
+            Args:
+                keys: Test parameter `keys`.
+            """
             return keys
 
     ro._np_lookup(np, DummyTable(), np.array([1, 2]))

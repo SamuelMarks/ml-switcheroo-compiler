@@ -107,13 +107,22 @@ def test_base_hardware_compiler_fallback_syntax_comments_strings_and_preprocesso
 
 
 def test_cuda_compiler_compile_native(tmp_path: Path) -> None:
-    """Verify CUDACompiler.compile when native nvcc is available."""
+    """Verify CUDACompiler.compile when native nvcc is available.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     cuda = CUDACompiler()
     out_file = tmp_path / "out.ptx"
 
     # Successful compilation with output file created
     def fake_run_success(cmd: list[str], **kwargs: EagerValue) -> MagicMock:
-        """Test function fake_run_success."""
+        """Test function fake_run_success.
+
+        Args:
+            cmd: Test parameter `cmd`.
+            kwargs: Test parameter `kwargs`.
+        """
         out_path = cmd[cmd.index("-o") + 1]
         Path(out_path).write_text("// Simulated PTX content", encoding="utf-8")
         return MagicMock(returncode=0, stdout="compiled ok", stderr="")
@@ -202,7 +211,11 @@ def test_cuda_compiler_validate_syntax() -> None:
 
 
 def test_hip_compiler_compile_and_validate(tmp_path: Path) -> None:
-    """Verify HIPCompiler compile and validate_syntax methods."""
+    """Verify HIPCompiler compile and validate_syntax methods.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     hip = HIPCompiler()
     out_file = tmp_path / "out.o"
 
@@ -278,7 +291,11 @@ def test_metal_compiler_is_available() -> None:
 
 
 def test_metal_compiler_compile_and_validate(tmp_path: Path) -> None:
-    """Verify MetalCompiler compile and validate_syntax methods."""
+    """Verify MetalCompiler compile and validate_syntax methods.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     metal = MetalCompiler()
     code_with_runtime = "kernel void k() {}\n// Active runtime dispatch\nruntime_code();"
     out_file = tmp_path / "out.air"
@@ -335,7 +352,11 @@ def test_metal_compiler_compile_and_validate(tmp_path: Path) -> None:
 
 
 def test_clang_compiler_compile_and_validate(tmp_path: Path) -> None:
-    """Verify ClangCompiler compile and validate_syntax methods."""
+    """Verify ClangCompiler compile and validate_syntax methods.
+
+    Args:
+        tmp_path: Test parameter `tmp_path`.
+    """
     clang = ClangCompiler()
     code = "void compute() {}"
     out_file = tmp_path / "out.o"

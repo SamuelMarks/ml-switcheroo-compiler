@@ -1,4 +1,4 @@
-"""Core abstractions and logic definitions for normalization.py."""
+"""Implementation of normalization operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.normalization`)."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 

@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 # ruff: noqa: E501
 
@@ -28,7 +26,7 @@ def test_builder_extract_proxy() -> None:
         data = FakeData()
         shape = (2, 2)
 
-    (id1, shape1) = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(cast("Callable[..., EagerTensorProtocol]", FakeTensor)())
+    (id1, shape1) = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", FakeTensor)())
     assert id1 == "my_id"
     assert shape1 == (2, 2)
 
@@ -53,14 +51,18 @@ def test_builder_extract_proxy() -> None:
         active_graph = True
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     old_state = cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
     setattr(bmod, "global_tracing_state", FakeTracingState())
-    (id2, shape2) = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(cast("Callable[..., EagerTensorProtocol]", FakeTensor2)())
+    (id2, shape2) = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", FakeTensor2)())
     assert id2 in FakeTracingState.constant_cache.values()
-    (id3, shape3) = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(cast("Callable[..., EagerTensorProtocol]", FakeTensor2)())
+    (id3, shape3) = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", FakeTensor2)())
     assert id2 == id3
     setattr(bmod, "global_tracing_state", old_state)
 
@@ -78,7 +80,11 @@ def test_builder_extract_constant() -> None:
         active_graph = True
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     old_state = cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
@@ -88,7 +94,12 @@ def test_builder_extract_constant() -> None:
         """Test class ProxyT."""
 
         def __init__(self, id: EagerValue, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                id: Test parameter `id`.
+                shape: Test parameter `shape`.
+            """
             self.id = id
             self.shape = shape
 
@@ -100,7 +111,11 @@ def test_builder_extract_constant() -> None:
         """Test class RealTensor."""
 
         def __init__(self, data: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                data: Test parameter `data`.
+            """
             self.data = data
 
         @property
@@ -109,7 +124,7 @@ def test_builder_extract_constant() -> None:
             return getattr(self.data, "shape", ())
 
     val = [ProxyT("id_1", (1,)), RealTensor(123)]
-    (id1, shape1) = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_constant)(val)
+    (id1, shape1) = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_constant)(val)
     assert id1[0] == "id_1"
     setattr(bmod, "global_tracing_state", old_state)
 
@@ -143,7 +158,11 @@ def test_builder_tensor_cache_missing() -> None:
         active_graph = True
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     old_state = cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
@@ -162,9 +181,9 @@ def test_builder_tensor_cache_missing() -> None:
         device = None
         requires_grad = False
 
-    fake_t = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", FakeData)(), cast("Callable[..., EagerTensorProtocol]", FakeConfig)())
+    fake_t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", FakeData)(), cast("EagerCallableProtocol", FakeConfig)())
     setattr(fake_t, "_data", FakeData())
-    (id1, shape1) = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_from_tensor)(fake_t)
+    (id1, shape1) = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(fake_t)
     assert shape1 == (1,)
 
     # Check that extracting twice from same tensor uses cached tensor hash if data ID is None?
@@ -188,7 +207,11 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
         active_graph = True
 
         def add_node(self, node: EagerValue) -> None:
-            """Test function add_node."""
+            """Test function add_node.
+
+            Args:
+                node: Test parameter `node`.
+            """
             pass
 
     old_state = cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
@@ -205,7 +228,7 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             """Test function tolist."""
             return [42]
 
-    (ids, shapes, first) = cast("Callable[..., EagerTensorProtocol]", TracingNodeBuilder.extract_proxy_inputs)((cast("Callable[..., EagerTensorProtocol]", DummyNotTensor)(),))
+    (ids, shapes, first) = cast("EagerCallableProtocol", TracingNodeBuilder.extract_proxy_inputs)((cast("EagerCallableProtocol", DummyNotTensor)(),))
     assert len(ids) == 1
     assert shapes[0] == ()
     setattr(bmod, "global_tracing_state", old_state)

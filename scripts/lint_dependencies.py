@@ -102,6 +102,9 @@ STDLIB_MODULES: set[str] = (
         "array",
         "random",
         "string",
+        "argparse",
+        "keyword",
+        "pprint",
     }
 )
 ALLOWED_GLOBAL_EXTERNAL: set[str] = {
@@ -264,20 +267,19 @@ def _check_module_name(
     curr_dir: str = os.path.join(current_root, mod_name)
     curr_file: str = os.path.join(current_root, f"{mod_name}.py")
 
-    if os.path.exists(top_dir) or os.path.exists(top_file) or os.path.exists(curr_dir) or os.path.exists(curr_file):
+    if mod_name == "scripts" or os.path.exists(top_dir) or os.path.exists(top_file) or os.path.exists(curr_dir) or os.path.exists(curr_file):
         return
 
     violations.append(f"{file_path}:{lineno}: Disallowed 3rd-party import '{mod_name}'")
 
 
 def main() -> int:
-    """Execute the dependency isolation linter across source files.
+    """Execute the dependency isolation linter across source and script files.
 
     Returns:
         int: Status code 0 on success, 1 if violations are present.
     """
-    directory_to_scan: str = "src/ml_switcheroo_compiler"
-    violations: list[str] = check_dependencies(directory_to_scan)
+    violations: list[str] = check_dependencies("src/ml_switcheroo_compiler") + check_dependencies("scripts")
 
     if violations:
         print("Dependency isolation violations detected:")

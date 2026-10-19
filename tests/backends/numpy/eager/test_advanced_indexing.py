@@ -11,9 +11,7 @@ import pytest
 import ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing as adv
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def _test_advanced_indexing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -45,15 +43,15 @@ def _test_advanced_indexing_coverage_part_2(_state: dict[str, EagerTensorProtoco
                 args_to_pass.append(np)
             elif p.name in ("indices", "kth", "index"):
                 if "nd" in op.__name__:
-                    cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg_indices_nd)
+                    cast("EagerCallableProtocol", args_to_pass.append)(arg_indices_nd)
                 else:
-                    cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg_indices)
+                    cast("EagerCallableProtocol", args_to_pass.append)(arg_indices)
             elif p.name == "shape":
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)((2,))
+                cast("EagerCallableProtocol", args_to_pass.append)((2,))
             elif p.name == "dim":
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(0)
+                cast("EagerCallableProtocol", args_to_pass.append)(0)
             else:
-                cast("Callable[..., EagerTensorProtocol]", args_to_pass.append)(arg)
+                cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -243,4 +241,4 @@ def test_advanced_indexing_coverage() -> None:
     _test_advanced_indexing_coverage_part_9(_state)
     _test_advanced_indexing_coverage_part_10(_state)
     _test_advanced_indexing_coverage_part_11(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

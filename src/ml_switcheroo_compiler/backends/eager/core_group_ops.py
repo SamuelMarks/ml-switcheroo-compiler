@@ -1,4 +1,4 @@
-"""Core utilities."""
+"""Implementation of core group ops operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_group_ops`)."""
 
 import builtins  # noqa: F401
 import typing  # noqa: F401

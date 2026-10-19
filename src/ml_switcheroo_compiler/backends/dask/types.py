@@ -1,4 +1,4 @@
-"""Backend utilities."""
+"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.dask.types`)."""
 
 from types import ModuleType
 from typing import Optional, cast

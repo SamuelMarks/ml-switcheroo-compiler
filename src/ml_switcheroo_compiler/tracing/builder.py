@@ -1,14 +1,14 @@
-"""Tracing node builder module."""
+"""Implementation of builder operations and utilities for the tracing subsystem (`ml_switcheroo_compiler.tracing.builder`)."""
 
 from __future__ import annotations
 
 import uuid
 from collections.abc import Mapping, Sequence
-from typing import Callable, cast
+from typing import cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape_inference import infer_shape
@@ -169,7 +169,7 @@ class TracingNodeBuilder:
         """
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 
-        out_shape = cast("Callable[..., EagerTensorProtocol]", infer_shape)(op_type, *shapes, **kwargs)
+        out_shape = cast("EagerCallableProtocol", infer_shape)(op_type, *shapes, **kwargs)
         if out_shape is None:
             out_shape = ()
         out_dtype, device = resolve_output_dtype_and_device(first_tensor, kwargs)
@@ -182,5 +182,5 @@ class TracingNodeBuilder:
         )
 
         dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype)
-        proxy = cast("Callable[..., EagerTensorProtocol]", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
+        proxy = cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
         return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))

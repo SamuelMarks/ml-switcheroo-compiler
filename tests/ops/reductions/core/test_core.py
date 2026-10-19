@@ -41,13 +41,24 @@ def test_reduction_op_call(mocker: MockerFixture) -> None:
 
 
 def test_reduction_op_infer_shape() -> None:
-    """Test infer_shape on ReductionOp returns empty tuple.
+    """Test infer_shape on ReductionOp across empty, scalar, and multidimensional inputs.
 
     Returns:
         None.
     """
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
     op = ReductionOp()
     assert op.infer_shape() == ()
+    t0 = Tensor(0.0, TensorConfig((), "float32", None))
+    assert op.infer_shape(t0) == ()
+    t2 = Tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], TensorConfig((2, 3), "float32", None))
+    assert op.infer_shape(t2) == ()
+    assert op.infer_shape(t2, keepdims=True) == (1, 1)
+    assert op.infer_shape(t2, axis=0) == (3,)
+    assert op.infer_shape(t2, axis=-1, keepdims=True) == (2, 1)
+    assert op.infer_shape(t2, axis=(0, 1)) == ()
+    assert op.infer_shape(t2, axis="invalid") == (2, 3)
 
 
 def test_reduction_op_format_args() -> None:

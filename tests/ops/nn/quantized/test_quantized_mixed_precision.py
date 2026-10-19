@@ -109,4 +109,4 @@ def test_quantized_ops() -> None:
     _state: dict[str, EagerTensorProtocol] = {}
     _test_quantized_ops_part_1(_state)
     _test_quantized_ops_part_2(_state)
-    assert isinstance(_state, dict)
+    assert len(_state) > 0

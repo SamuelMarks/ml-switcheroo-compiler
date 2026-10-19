@@ -6,9 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_h5_branches() -> None:
@@ -64,11 +62,11 @@ def test_h5_branches() -> None:
         pass
 
     setattr(reg, "get_active_backend", lambda: FakeBackend())
-    cast("Callable[..., EagerTensorProtocol]", ser.save)(weights, test_file)
+    cast("EagerCallableProtocol", ser.save)(weights, test_file)
     loaded = ser.load(test_file)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(loaded["t1"], [1, 2])
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(loaded["t2"], [3, 4])
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(loaded["t3"], [5, 6])
+    assert cast("EagerCallableProtocol", np.array_equal)(loaded["t1"], [1, 2])
+    assert cast("EagerCallableProtocol", np.array_equal)(loaded["t2"], [3, 4])
+    assert cast("EagerCallableProtocol", np.array_equal)(loaded["t3"], [5, 6])
     reg.get_active_backend = old
     if os.path.exists(test_file):
         os.remove(test_file)
@@ -84,11 +82,20 @@ def test_h5_backend_branches() -> None:
         """Test class FakeBackend."""
 
         def load_h5(self, path: EagerValue) -> EagerValue:
-            """Test function load_h5."""
+            """Test function load_h5.
+
+            Args:
+                path: Test parameter `path`.
+            """
             return {"a": 1}
 
         def save_h5(self, weights: EagerValue, path: EagerValue) -> None:
-            """Test function save_h5."""
+            """Test function save_h5.
+
+            Args:
+                weights: Test parameter `weights`.
+                path: Test parameter `path`.
+            """
             pass
 
     import ml_switcheroo_compiler.backends.registry as reg
@@ -96,7 +103,7 @@ def test_h5_backend_branches() -> None:
     old = reg.get_active_backend
     setattr(reg, "get_active_backend", lambda: FakeBackend())
     assert cast("EagerTensorProtocol", ser.load("dummy.h5")) == cast("EagerTensorProtocol", {"a": 1})
-    cast("Callable[..., EagerTensorProtocol]", ser.save)({"a": 1}, "dummy.h5")
+    cast("EagerCallableProtocol", ser.save)({"a": 1}, "dummy.h5")
     reg.get_active_backend = old
 
 
@@ -132,7 +139,7 @@ def test_h5_save_plain() -> None:
     if os.path.exists(test_file):
         os.remove(test_file)
     ser = H5WeightFormat()
-    cast("Callable[..., EagerTensorProtocol]", ser.save)({"plain": cast("Callable[..., EagerTensorProtocol]", np.array)(5)}, test_file)
+    cast("EagerCallableProtocol", ser.save)({"plain": cast("EagerCallableProtocol", np.array)(5)}, test_file)
     loaded = ser.load(test_file)
     assert "plain" in loaded
     if os.path.exists(test_file):
@@ -155,7 +162,7 @@ def test_h5_save_no_branches_taken() -> None:
 
         pass
 
-    cast("Callable[..., EagerTensorProtocol]", ser.save)({"plain2": 42}, test_file)
+    cast("EagerCallableProtocol", ser.save)({"plain2": 42}, test_file)
     loaded = ser.load(test_file)
     assert cast("EagerTensorProtocol", loaded["plain2"]) == cast("EagerTensorProtocol", 42)
     if os.path.exists(test_file):
@@ -179,4 +186,4 @@ def test_h5_missing_h5py(monkeypatch: EagerTensorProtocol) -> None:
         ser.load("dummy.h5")
 
     with pytest.raises(ImportError, match="h5py is required for H5 weight saving"):
-        cast("Callable[..., EagerTensorProtocol]", ser.save)({"a": cast("Callable[..., EagerTensorProtocol]", np.array)([1])}, "dummy.h5")
+        cast("EagerCallableProtocol", ser.save)({"a": cast("EagerCallableProtocol", np.array)([1])}, "dummy.h5")

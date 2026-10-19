@@ -8,12 +8,12 @@ import os
 import re
 import uuid
 from collections.abc import Sequence
-from typing import Callable, Union, cast
+from typing import Union, cast
 
 import yaml
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.grad.config_models import (
     AutodiffRuleModel,
     AutodiffRulesManifestModel,
@@ -200,7 +200,7 @@ class SymbolicExpressionCompiler:
         attrs.update(parsed_attrs)
 
         shape_meta = getattr(node, "shape_metadata", None)
-        return cast(str, cast("Callable[..., EagerTensorProtocol]", emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
+        return cast(str, cast("EagerCallableProtocol", emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
 
     def _resolve_symbolic_variable(
         self,

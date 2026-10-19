@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Callable, TypeVar, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -108,7 +108,7 @@ def scan_eager(f: Callable[..., TensorOrScalar], init: TensorOrScalar, xs: Tenso
         carry, y = getattr(f(carry, x), "__iter__")()
         ys.append(getattr(y, "data") if hasattr(y, "data") else y)
 
-    out_tensor = cast("Callable[..., EagerTensorProtocol]", _stack_scan_outputs)(ys, init, y if scan_length > 0 else init)
+    out_tensor = cast("EagerCallableProtocol", _stack_scan_outputs)(ys, init, y if scan_length > 0 else init)
     return carry, out_tensor
 
 

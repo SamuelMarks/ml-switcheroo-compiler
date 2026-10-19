@@ -1,13 +1,41 @@
-"""Core utilities."""
+"""Core special mathematical functions and numerical approximations for eager backends."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+from collections.abc import Callable
 from types import ModuleType
 from typing import cast
 
-from ml_switcheroo_compiler.backends.eager.utils import get_special_submodule
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerTensorProtocol,
+    EagerValue,
+    global_eager_registry,
+    numpy_eager_registry,
+)
+
+
+def _dispatch_special(op_name: str, attr_name: str, backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Dispatch a special mathematical function to `backend_module` or `numpy_eager_registry`.
+
+    Args:
+        op_name: Registered operation name in `numpy_eager_registry`.
+        attr_name: Attribute name on `backend_module` or `backend_module.special`.
+        backend_module: Active backend module.
+        *args: Positional arguments.
+        **kwargs: Keyword arguments.
+
+    Returns:
+        EagerValue: Evaluated special function result.
+    """
+    special_mod = getattr(backend_module, "special", backend_module)
+    func = getattr(special_mod, attr_name, getattr(backend_module, attr_name, None))
+    if callable(func):
+        return cast(EagerValue, func(*args, **kwargs))
+    from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
+
+    np_handler = cast("Callable[..., EagerValue]", numpy_eager_registry.get(op_name))
+    return np_handler(_resolve_eager_mod(backend_module), *args, **kwargs)
 
 
 @global_eager_registry.register("Erf")
@@ -26,8 +54,6 @@ def _erf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
     x = cast(EagerTensorProtocol, args[0])
     if hasattr(mod, "erf"):
         return cast(EagerValue, mod.erf(x))
-    # A&S approximation 7.1.26
-    # erf(x) = 1 - (a1*t + a2*t^2 + a3*t^3 + a4*t^4 + a5*t^5)*e^{-x^2}
     p = 0.3275911
     a1 = 0.254829592
     a2 = -0.284496736
@@ -77,9 +103,6 @@ def _erfinv(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     x = cast(EagerTensorProtocol, args[0])
     if hasattr(mod, "erfinv"):
         return cast(EagerValue, mod.erfinv(x))
-    # Approximation of erfinv
-    # https://en.wikipedia.org/wiki/Error_function#Approximation_with_elementary_functions
-    # For a naive approximation:
     a = 0.147
     ln_1_x2: EagerTensorProtocol = mod.log(1.0 - x * x + 1e-12)
     term1: EagerTensorProtocol = 2.0 / (3.141592653589793 * a) + ln_1_x2 / 2.0
@@ -99,7 +122,7 @@ def _bessel_i0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").i0(*args, **kwargs))
+    return _dispatch_special("BesselI0", "i0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselI0e")
@@ -114,7 +137,7 @@ def _bessel_i0e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").i0e(*args, **kwargs))
+    return _dispatch_special("BesselI0e", "i0e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselI1")
@@ -129,7 +152,7 @@ def _bessel_i1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").i1(*args, **kwargs))
+    return _dispatch_special("BesselI1", "i1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselI1e")
@@ -144,7 +167,7 @@ def _bessel_i1e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").i1e(*args, **kwargs))
+    return _dispatch_special("BesselI1e", "i1e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselJ0")
@@ -159,7 +182,7 @@ def _bessel_j0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").j0(*args, **kwargs))
+    return _dispatch_special("BesselJ0", "j0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselJ1")
@@ -174,7 +197,7 @@ def _bessel_j1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").j1(*args, **kwargs))
+    return _dispatch_special("BesselJ1", "j1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselJn")
@@ -189,7 +212,7 @@ def _bessel_jn(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").jv(*args, **kwargs))
+    return _dispatch_special("BesselJn", "jv", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK0")
@@ -204,7 +227,7 @@ def _bessel_k0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").k0(*args, **kwargs))
+    return _dispatch_special("BesselK0", "k0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK0e")
@@ -219,7 +242,7 @@ def _bessel_k0e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").k0e(*args, **kwargs))
+    return _dispatch_special("BesselK0e", "k0e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK1")
@@ -234,7 +257,7 @@ def _bessel_k1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").k1(*args, **kwargs))
+    return _dispatch_special("BesselK1", "k1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK1e")
@@ -249,7 +272,7 @@ def _bessel_k1e(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").k1e(*args, **kwargs))
+    return _dispatch_special("BesselK1e", "k1e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselY0")
@@ -264,7 +287,7 @@ def _bessel_y0(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").y0(*args, **kwargs))
+    return _dispatch_special("BesselY0", "y0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselY1")
@@ -279,7 +302,7 @@ def _bessel_y1(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").y1(*args, **kwargs))
+    return _dispatch_special("BesselY1", "y1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Digamma")
@@ -294,7 +317,7 @@ def _digamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").digamma(*args, **kwargs))
+    return _dispatch_special("Digamma", "digamma", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Igammac")
@@ -309,7 +332,7 @@ def _igammac(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").gammaincc(*args, **kwargs))
+    return _dispatch_special("Igammac", "gammaincc", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Polygamma")
@@ -324,7 +347,7 @@ def _polygamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").polygamma(*args, **kwargs))
+    return _dispatch_special("Polygamma", "polygamma", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Igamma")
@@ -339,7 +362,7 @@ def _igamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").gammainc(*args, **kwargs))
+    return _dispatch_special("Igamma", "gammainc", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Gamma")
@@ -354,7 +377,7 @@ def _gamma(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").gamma(*args, **kwargs))
+    return _dispatch_special("Gamma", "gamma", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("ModifiedBesselI1")
@@ -369,4 +392,4 @@ def _np_modifiedbesseli1(backend_module: EagerValue, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, get_special_submodule("special").i1(*args, **kwargs))
+    return _dispatch_special("ModifiedBesselI1", "i1", backend_module, *args, **kwargs)

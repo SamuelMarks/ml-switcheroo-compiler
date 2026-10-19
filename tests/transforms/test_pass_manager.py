@@ -15,9 +15,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter, IRValidator, PassManager, _graph_hash
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_load_from_config() -> None:
@@ -232,8 +230,8 @@ def test_pass_manager_nodes_list() -> None:
 
     IRValidator()
     mock_g = MockGraph()
-    cast("Callable[..., EagerTensorProtocol]", IRValidator.check_shapes)(mock_g)
-    h = cast("Callable[..., EagerTensorProtocol]", _graph_hash)(mock_g)
+    cast("EagerCallableProtocol", IRValidator.check_shapes)(mock_g)
+    h = cast("EagerCallableProtocol", _graph_hash)(mock_g)
     assert isinstance(h, str)
 
 
@@ -269,7 +267,11 @@ def test_pass_manager_cyclic_oscillation_detection_and_rollback() -> None:
     graph.nodes["A"] = node_a
 
     def oscillating_pass(g: IRGraph) -> bool:
-        """Test function oscillating_pass."""
+        """Test function oscillating_pass.
+
+        Args:
+            g: Test parameter `g`.
+        """
         node = g.nodes["A"]
         if node.op_type == "Op1":
             node.op_type = "Op2"
@@ -306,8 +308,8 @@ def test_pass_manager_coverage_branches() -> None:
             self.nodes = cast("dict[str, EagerTensorProtocol]", {})
 
     dg = DummyGraphWithoutIO()
-    cast("Callable[..., EagerTensorProtocol]", _restore_graph)(dg, snap)
-    cast("Callable[..., EagerTensorProtocol]", _restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
+    cast("EagerCallableProtocol", _restore_graph)(dg, snap)
+    cast("EagerCallableProtocol", _restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
     from ml_switcheroo_ir import LogicalGraph
 
     lg = LogicalGraph("test_lg")

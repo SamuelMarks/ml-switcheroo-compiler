@@ -6,9 +6,9 @@ import os
 import random
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Union, cast
+from typing import Union, cast
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 DatasetElement = Union[int, float, str, bool, list[int], list[float], list[str], tuple[int, ...], tuple[float, ...]]
 
@@ -399,7 +399,7 @@ def timeseries_dataset_from_array(
     )
     return cast(
         NumpyDataset,
-        cast("Callable[..., EagerTensorProtocol]", NumpyDataset)(
+        cast("EagerCallableProtocol", NumpyDataset)(
             x,
             y,
             config=BatchConfig(

@@ -40,7 +40,11 @@ def test_reductions_coverage() -> None:
             nodes = cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
-                """Test function add_node."""
+                """Test function add_node.
+
+                Args:
+                    node: Test parameter `node`.
+                """
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
@@ -53,11 +57,21 @@ def test_reductions_coverage() -> None:
             """Test class DummyOp."""
 
             def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function __call__."""
+                """Test function __call__.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return "reduction"
 
             def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-                """Test function infer_shape."""
+                """Test function infer_shape.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+                """
                 return ()
 
         setattr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())

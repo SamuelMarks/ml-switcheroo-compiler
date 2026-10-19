@@ -17,9 +17,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_check_scalar_symbolic() -> None:
@@ -38,8 +36,8 @@ def test_get_concrete_val_proxy() -> None:
 
         pass
 
-    t = cast("Callable[..., EagerTensorProtocol]", Tensor)(cast("Callable[..., EagerTensorProtocol]", MockData)(), cast("Callable[..., EagerTensorProtocol]", TensorConfig)((), DType.Float32, cast("Callable[..., EagerTensorProtocol]", Device)("cpu")))
-    setattr(t, "_data", cast("Callable[..., EagerTensorProtocol]", ProxyTensor)("t1", (), "float32"))
+    t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", MockData)(), cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
+    setattr(t, "_data", cast("EagerCallableProtocol", ProxyTensor)("t1", (), "float32"))
     setattr(getattr(t, "_data"), "concrete_value", 42.0)
 
     with mock.patch.object(Tensor, "data", new_callable=mock.PropertyMock, return_value=None):
@@ -56,12 +54,16 @@ def test_value_and_grad_has_aux() -> None:
     """Test value_and_grad with has_aux=True."""
 
     def my_func(x: EagerValue) -> EagerValue:
-        """Test function my_func."""
+        """Test function my_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x, x
 
     grad_func = value_and_grad(my_func, options=GradOptions(has_aux=True))
     t = Tensor(np.array([2.0]), config=TensorConfig(shape=(1,), dtype=DType.Float32, device="cpu"))
-    val, grads = cast("Callable[..., EagerTensorProtocol]", grad_func)(t)
+    val, grads = cast("EagerCallableProtocol", grad_func)(t)
     assert val is not None
     assert grads is not None
 
@@ -70,12 +72,16 @@ def test_value_and_grad_no_aux() -> None:
     """Test value_and_grad with has_aux=False."""
 
     def my_func(x: EagerValue) -> EagerValue:
-        """Test function my_func."""
+        """Test function my_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     grad_func = value_and_grad(my_func, options=GradOptions(has_aux=False))
     t = Tensor(np.array([2.0]), config=TensorConfig(shape=(1,), dtype=DType.Float32, device="cpu"))
-    val, grads = cast("Callable[..., EagerTensorProtocol]", grad_func)(t)
+    val, grads = cast("EagerCallableProtocol", grad_func)(t)
     assert val is not None
     assert grads is not None
 
@@ -84,36 +90,48 @@ def test_value_and_grad_basic() -> None:
     """Test value_and_grad basic functionality."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", 2.0)
 
     Tensor(np.array([3.0]), TensorConfig((1,), DType("float32"), "cpu"))
     val = Tensor(np.array([18.0]), TensorConfig((1,), DType("float32"), "cpu"))
     grad = Tensor(np.array([12.0]), TensorConfig((1,), DType("float32"), "cpu"))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", val.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([18.0]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", grad.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([12.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", val.numpy)(), cast("EagerCallableProtocol", np.array)([18.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", grad.numpy)(), cast("EagerCallableProtocol", np.array)([12.0]))
 
 
 def test_value_and_grad_aux() -> None:
     """Test value_and_grad aux functionality."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 3.0)
 
     t = Tensor(np.array([2.0]), TensorConfig((1,), DType("float32"), "cpu"))
     val = Tensor(np.array([18.0]), TensorConfig((1,), DType("float32"), "cpu"))
     grad = Tensor(np.array([12.0]), TensorConfig((1,), DType("float32"), "cpu"))
     assert t.shape == (1,)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", val.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([18.0]))
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", grad.numpy)(), cast("Callable[..., EagerTensorProtocol]", np.array)([12.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", val.numpy)(), cast("EagerCallableProtocol", np.array)([18.0]))
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", grad.numpy)(), cast("EagerCallableProtocol", np.array)([12.0]))
 
 
 def test_jacrev_basic() -> None:
     """Test jacrev basic functionality."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)
 
     Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType("float32"), "cpu"))
@@ -125,31 +143,39 @@ def test_jacfwd() -> None:
     """Test function test_jacfwd."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0, 3.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
     with ConfigContext(eager_mode=True):
-        res = cast("Callable[..., EagerTensorProtocol]", jacfwd)(f)(x)
+        res = cast("EagerCallableProtocol", jacfwd)(f)(x)
     assert res is not None
     # Analytical: df_i/dx_j = 2 * x_i if i==j else 0
     expected = np.array([[4.0, 0.0], [0.0, 6.0]], dtype=np.float32)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected, rtol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected, rtol=1e-5)
 
 
 def test_jacrev() -> None:
     """Test function test_jacrev."""
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0, 3.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
     with ConfigContext(eager_mode=True):
-        res = cast("Callable[..., EagerTensorProtocol]", jacrev)(f)(x)
+        res = cast("EagerCallableProtocol", jacrev)(f)(x)
     assert res is not None
     expected = np.array([[4.0, 0.0], [0.0, 6.0]], dtype=np.float32)
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(res, expected, rtol=1e-5)
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected, rtol=1e-5)
 
 
 def test_hessian() -> None:
@@ -157,12 +183,16 @@ def test_hessian() -> None:
     from ml_switcheroo_compiler.core.config import ConfigContext
 
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0, 3.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
     with ConfigContext(eager_mode=True):
-        res = cast("Callable[..., EagerTensorProtocol]", hessian)(f)(x)
+        res = cast("EagerCallableProtocol", hessian)(f)(x)
     assert res is not None
 
 
@@ -171,26 +201,39 @@ def test_custom_vjp() -> None:
 
     @custom_vjp
     def f(x: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0)
 
     def fwd(x: EagerValue) -> EagerValue:
-        """Test function fwd."""
+        """Test function fwd.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0), x
 
     def bwd(res: EagerValue, g: EagerValue) -> EagerValue:
-        """Test function bwd."""
+        """Test function bwd.
+
+        Args:
+            res: Test parameter `res`.
+            g: Test parameter `g`.
+        """
         return (cast("EagerTensorProtocol", g) * cast("EagerTensorProtocol", 2.0),)
 
     cast("EagerTensorProtocol", getattr(f, "defvjp"))(fwd, bwd)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     with ConfigContext(eager_mode=True):
-        out = cast("Callable[..., EagerTensorProtocol]", f)(x)
+        out = cast("EagerCallableProtocol", f)(x)
         assert out is not None
         from ml_switcheroo_compiler.grad import grad
 
-        g = cast("Callable[..., EagerTensorProtocol]", grad)(f)
+        g = cast("EagerCallableProtocol", grad)(f)
         g_res = g(x)
         assert g_res is not None
 
@@ -208,7 +251,12 @@ def test_greater_jvp_vjp() -> None:
     from ml_switcheroo_compiler.grad import jvp, vjp
 
     def f(x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function f."""
+        """Test function f.
+
+        Args:
+            x: Test parameter `x`.
+            y: Test parameter `y`.
+        """
         return cast("EagerTensorProtocol", x) > cast("EagerTensorProtocol", y)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
@@ -216,8 +264,8 @@ def test_greater_jvp_vjp() -> None:
     v1 = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     v2 = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     with ConfigContext(eager_mode=True):
-        p_jvp, t_jvp = cast("Callable[..., EagerTensorProtocol]", jvp)(f, (x, y), (v1, v2))
-        p_vjp, vjp_fn = cast("Callable[..., EagerTensorProtocol]", vjp)(f, x, y)
+        p_jvp, t_jvp = cast("EagerCallableProtocol", jvp)(f, (x, y), (v1, v2))
+        p_vjp, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x, y)
         assert p_jvp is not None
         assert t_jvp is not None
         assert p_vjp is not None
@@ -229,7 +277,11 @@ def test_checkpoint_eager() -> None:
     config.eager_mode = True
 
     def my_func(x: EagerValue) -> EagerValue:
-        """Test function my_func."""
+        """Test function my_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
 
     wrapped = checkpoint(my_func)
@@ -242,7 +294,11 @@ def test_checkpoint_not_tracing() -> None:
     global_tracing_state.is_tracing = False
 
     def my_func(x: EagerValue) -> EagerValue:
-        """Test function my_func."""
+        """Test function my_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
 
     wrapped = checkpoint(my_func)
@@ -254,7 +310,11 @@ def test_checkpoint_infer_dtype() -> None:
     global_tracing_state.is_tracing = True
 
     def my_func(x: EagerValue) -> EagerValue:
-        """Test function my_func."""
+        """Test function my_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return x
 
     wrapped = checkpoint(my_func)
@@ -279,13 +339,17 @@ def test_grad_and_value_has_aux() -> None:
     """Test function test_grad_and_value_has_aux."""
 
     def my_func(x: EagerValue) -> EagerValue:
-        """Test function my_func."""
+        """Test function my_func.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x), x
 
     opt = GradOptions(has_aux=True)
     wrapped = value_and_grad(my_func, opt)
     t = Tensor(np.array(2.0, dtype=np.float32), TensorConfig((), DType.Float32, Device("cpu")))
-    (val, aux), g_out = cast("Callable[..., EagerTensorProtocol]", wrapped)(t)
+    (val, aux), g_out = cast("EagerCallableProtocol", wrapped)(t)
     assert val is not None
     assert aux is not None
     assert g_out is not None

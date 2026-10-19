@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_checkpoint_grad() -> None:
@@ -23,7 +21,11 @@ def test_checkpoint_grad() -> None:
     config.eager_mode = False
 
     def my_fun(x: EagerValue) -> EagerValue:
-        """Test function my_fun."""
+        """Test function my_fun.
+
+        Args:
+            x: Test parameter `x`.
+        """
         return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
 
     cp_fun = checkpoint(my_fun)
@@ -35,11 +37,11 @@ def test_checkpoint_grad() -> None:
 
     from ml_switcheroo_compiler.grad.jit import jit
 
-    jitted_std = cast("Callable[..., EagerTensorProtocol]", jit)(vg_std)
-    jitted_cp = cast("Callable[..., EagerTensorProtocol]", jit)(vg_cp)
+    jitted_std = cast("EagerCallableProtocol", jit)(vg_std)
+    jitted_cp = cast("EagerCallableProtocol", jit)(vg_cp)
 
     v1, g1 = jitted_std(x)
     v2, g2 = jitted_cp(x)
 
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(v1, "numpy")))(), cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(v2, "numpy")))())
-    cast("Callable[..., EagerTensorProtocol]", np.testing.assert_allclose)(cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(g1, "numpy")))(), cast("Callable[..., EagerTensorProtocol]", cast("EagerTensorProtocol", getattr(g2, "numpy")))())
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(v1, "numpy")))(), cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(v2, "numpy")))())
+    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(g1, "numpy")))(), cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(g2, "numpy")))())

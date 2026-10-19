@@ -44,7 +44,7 @@ class ReductionOp(OpDef):
         *args: Tensor,
         **kwargs: Tensor | int | float | str | bool | tuple[int, ...] | list[int] | None,
     ) -> tuple[int, ...]:
-        """Infer the output shape of the operation.
+        """Infer the output shape of the reduction operation.
 
         Args:
             *args (Tensor): Positional tensor arguments.
@@ -53,7 +53,21 @@ class ReductionOp(OpDef):
         Returns:
             tuple[int, ...]: Inferred output shape.
         """
-        return ()  # Symbolic shape inference will handle axis reduction logic
+        if not args or not hasattr(args[0], "shape"):
+            return ()
+        in_shape = tuple(int(d) for d in args[0].shape if isinstance(d, int))
+        ndim = len(in_shape)
+        if ndim == 0:
+            return ()
+        axis = kwargs.get("axis")
+        keepdims = bool(kwargs.get("keepdims", False))
+        if axis is None:
+            return (1,) * ndim if keepdims else ()
+        axes_raw = (axis,) if isinstance(axis, int) else tuple(axis) if isinstance(axis, (tuple, list)) else ()
+        norm_axes = {a + ndim if a < 0 else a for a in axes_raw if isinstance(a, int)}
+        if keepdims:
+            return tuple(1 if i in norm_axes else d for i, d in enumerate(in_shape))
+        return tuple(d for i, d in enumerate(in_shape) if i not in norm_axes)
 
     def _format_args(
         self,

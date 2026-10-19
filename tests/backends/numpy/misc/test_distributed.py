@@ -11,9 +11,7 @@ import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_all_gather, _np_all_reduce, _np_all_to_all, _np_axis_index, _np_broadcast, _np_reduce, _np_reduce_scatter, _np_shard_tensor, set_np_distributed_context
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_axis_index() -> None:
@@ -71,12 +69,12 @@ def test_np_distributed_context() -> None:
     _np_all_reduce(np, t)
     _np_all_gather(np, t)
     _np_reduce_scatter(np, t)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_all_to_all)(np, t), t)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_reduce)(np, t), t)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_shard_tensor)(np, t), t)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_broadcast)(np, t), t)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_to_all)(np, t), t)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_reduce)(np, t), t)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_shard_tensor)(np, t), t)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_broadcast)(np, t), t)
     assert np.array_equal(dist_mod._tcp_dist_ctx.all_reduce_ring(t), t)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", dist_mod._tcp_dist_ctx.all_gather_tensors)(t)[0], t)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", dist_mod._tcp_dist_ctx.all_gather_tensors)(t)[0], t)
 
 
 def test_distributed_initialize_timeout() -> None:
@@ -111,7 +109,7 @@ def test_distributed_shutdown_no_conn() -> None:
     setattr(ctx2, "connections", [])
     ctx2.listener = None
     ctx2.shutdown()
-    assert ctx2 is not None or ctx2 is None
+    assert ctx2.rank == 0
 
 
 def test_ipc_timeout() -> None:
@@ -119,7 +117,12 @@ def test_ipc_timeout() -> None:
     from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data_worker
 
     def mock_target(rank: EagerValue, data: EagerValue) -> None:
-        """Test function mock_target."""
+        """Test function mock_target.
+
+        Args:
+            rank: Test parameter `rank`.
+            data: Test parameter `data`.
+        """
         pass
 
     _exchange_ipc_data_worker(1, 2, np.array([1]), 0.001, 0.001)
@@ -138,7 +141,12 @@ def test_ipc_worker_retry_then_success() -> None:
         """Test class MockClient."""
 
         def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             self.calls = getattr(self.__class__, "calls", 0)
             self.__class__.calls = self.calls + 1
             if self.__class__.calls < 2:
@@ -150,7 +158,11 @@ def test_ipc_worker_retry_then_success() -> None:
             return self.mock
 
         def __exit__(self, *args: EagerValue) -> None:
-            """Test function __exit__."""
+            """Test function __exit__.
+
+            Args:
+                args: Test parameter `args`.
+            """
             pass
 
     with patch("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", new=MockClient):
@@ -187,7 +199,7 @@ def test_np_ops_coverage() -> None:
     """Test function test_np_ops_coverage."""
     dmod._tcp_dist_ctx.world_size = 2
     dmod._tcp_dist_ctx.rank = 0
-    setattr(dmod._tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: cast("Callable[..., EagerTensorProtocol]", np.array)([5.0]) if op == "sum" else cast("Callable[..., EagerTensorProtocol]", np.array)([3.0]))
+    setattr(dmod._tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: cast("EagerCallableProtocol", np.array)([5.0]) if op == "sum" else cast("EagerCallableProtocol", np.array)([3.0]))
     setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])])
     t = np.array([2.0])
     assert cast("EagerTensorProtocol", getattr(_np_all_reduce(np, t, op_type="sum"), "item"))() == 5.0
@@ -195,12 +207,12 @@ def test_np_ops_coverage() -> None:
     assert cast("EagerTensorProtocol", getattr(_np_reduce(np, t, op_type="sum"), "item"))() == 5.0
     assert cast("EagerTensorProtocol", getattr(_np_all_reduce(np, t, op_type="max"), "item"))() == 3.0
     res = _np_all_gather(np, t, axis=0)
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(res, [2.0, 3.0])
+    assert cast("EagerCallableProtocol", np.array_equal)(res, [2.0, 3.0])
     t_rs = np.array([1.0, 2.0])
     setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0, 4.0])])
     assert cast("EagerTensorProtocol", getattr(_np_reduce_scatter(np, t_rs, op_type="sum"), "item"))() == 4.0
     a2a = _np_all_to_all(np, t_rs)
-    assert cast("Callable[..., EagerTensorProtocol]", len)(a2a) == 2
+    assert cast("EagerCallableProtocol", len)(a2a) == 2
 
 
 def test_tcp_dist_ctx_connection_refused() -> None:

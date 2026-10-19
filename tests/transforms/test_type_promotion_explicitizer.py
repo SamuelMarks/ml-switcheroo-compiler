@@ -70,5 +70,5 @@ def test_type_promotion_lattice_exceptions_and_missing_file() -> None:
     with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_yaml2):
         _load_declarative_promotion_lattice()
     with patch("os.path.exists", return_value=False):
-        _load_declarative_promotion_lattice()
-    assert mock_yaml2 is not None or mock_yaml2 is None
+        res_lattice = _load_declarative_promotion_lattice()
+    assert res_lattice == {}

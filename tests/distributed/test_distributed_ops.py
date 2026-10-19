@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def _check_distributed_infer_shape(classes: EagerValue, t: EagerValue) -> None:
@@ -20,7 +18,7 @@ def _check_distributed_infer_shape(classes: EagerValue, t: EagerValue) -> None:
     from ml_switcheroo_compiler.ops.registry import get_op
 
     for cls_name in cast("EagerTensorProtocol", classes):
-        OpCls = cast("Callable[..., EagerTensorProtocol]", get_op)(cls_name)
+        OpCls = cast("EagerCallableProtocol", get_op)(cls_name)
         inst = OpCls()
         if cls_name == "Recv":
             inst.infer_shape((1,), "float32", 0)
@@ -102,7 +100,13 @@ def test_all_distributed_ops() -> None:
 
         @classmethod
         def execute_op(cls, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op."""
+            """Test function execute_op.
+
+            Args:
+                op: Test parameter `op`.
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
             return DummyData()
 
     orig_eager = config.eager_mode
@@ -135,7 +139,7 @@ def test_all_distributed_ops() -> None:
             _check_distributed_infer_shape(classes, t)
     finally:
         config.eager_mode = orig_eager
-    assert orig_eager is not None or orig_eager is None
+    assert config.eager_mode == orig_eager
 
 
 def test_distributed_ops_infer_shapes_extras() -> None:
@@ -146,24 +150,28 @@ def test_distributed_ops_infer_shapes_extras() -> None:
         """Test class DummyShape."""
 
         def __init__(self, shape: EagerValue) -> None:
-            """Test function __init__."""
+            """Test function __init__.
+
+            Args:
+                shape: Test parameter `shape`.
+            """
             self.shape = shape
 
     for cls in (AllToAll, BroadcastArrays, BroadcastTo, BroadcastToRank, BroadcastedIota, Pbroadcast):
         op = cls()
         assert op.infer_shape() == ()
-        assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(1, 2) == ()  # no shape attr
+        assert cast("EagerCallableProtocol", op.infer_shape)(1, 2) == ()  # no shape attr
 
         # one shape
-        res = cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2,)))
+        res = cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyShape)((2,)))
         assert res == (2,) or (cls == BroadcastToRank and res == (2,))
 
         if cls != BroadcastToRank:
             # two shapes
-            assert cast("Callable[..., EagerTensorProtocol]", op.infer_shape)(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2, 2)), cast("Callable[..., EagerTensorProtocol]", DummyShape)((1, 2))) == (2, 2)
+            assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyShape)((2, 2)), cast("EagerCallableProtocol", DummyShape)((1, 2))) == (2, 2)
 
     # BroadcastTo specific
     assert BroadcastTo().infer_shape(shape=(3, 3)) == (3, 3)
 
     # BroadcastToRank specific
-    assert cast("Callable[..., EagerTensorProtocol]", BroadcastToRank)().infer_shape(cast("Callable[..., EagerTensorProtocol]", DummyShape)((2,)), rank=3) == (1, 1, 2)
+    assert cast("EagerCallableProtocol", BroadcastToRank)().infer_shape(cast("EagerCallableProtocol", DummyShape)((2,)), rank=3) == (1, 1, 2)

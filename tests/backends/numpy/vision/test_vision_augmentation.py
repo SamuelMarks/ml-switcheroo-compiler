@@ -39,41 +39,39 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_augmentation import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_np_augmix() -> None:
     """Test function test_np_augmix."""
     images = np.ones((1, 4, 4, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_augmix)(np, images, factor=0.1), images)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_augmix)(np, images, factor=0.1), images)
 
 
 def test_np_cutmix() -> None:
     """Test function test_np_cutmix."""
     images1 = np.ones((1, 4, 4, 3))
     images2 = np.zeros((1, 4, 4, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_cutmix)(np, images1, images2), images1)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_cutmix)(np, images1, images2), images1)
 
 
 def test_np_mixup() -> None:
     """Test function test_np_mixup."""
     images1 = np.ones((1, 4, 4, 3))
     images2 = np.zeros((1, 4, 4, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_mixup)(np, images1, images2), images1)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_mixup)(np, images1, images2), images1)
 
 
 def test_np_rand_augment() -> None:
     """Test function test_np_rand_augment."""
     images = np.ones((1, 4, 4, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_rand_augment)(np, images, factor=0.1), images)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_rand_augment)(np, images, factor=0.1), images)
 
 
 def test_np_random_color_jitter() -> None:
     """Test function test_np_random_color_jitter."""
     images = np.ones((1, 4, 4, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_random_color_jitter)(np, images), images)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_random_color_jitter)(np, images), images)
 
 
 def test_np_random_crop() -> None:
@@ -81,8 +79,15 @@ def test_np_random_crop() -> None:
 
     @global_eager_registry.register("RandomCrop")
     def _dummy_crop(bm: EagerValue, img: EagerValue, size: EagerValue, seed: EagerValue) -> EagerValue:
-        """Test function _dummy_crop."""
-        return cast("Callable[..., EagerTensorProtocol]", np.ones)(size)
+        """Test function _dummy_crop.
+
+        Args:
+            bm: Test parameter `bm`.
+            img: Test parameter `img`.
+            size: Test parameter `size`.
+            seed: Test parameter `seed`.
+        """
+        return cast("EagerCallableProtocol", np.ones)(size)
 
     images = np.ones((4, 4, 3))
     _np_random_crop(np, images, size=(2, 2))
@@ -92,7 +97,7 @@ def test_np_random_crop() -> None:
 def test_np_random_erasing() -> None:
     """Test function test_np_random_erasing."""
     images = np.ones((1, 4, 4, 3))
-    assert cast("Callable[..., EagerTensorProtocol]", np.array_equal)(cast("Callable[..., EagerTensorProtocol]", _np_random_erasing)(np, images, factor=0.1), images)
+    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_random_erasing)(np, images, factor=0.1), images)
 
 
 def test_np_flip_horizontal() -> None:
@@ -101,7 +106,7 @@ def test_np_flip_horizontal() -> None:
 
     img = np.array([[[1, 2], [3, 4]]])
     rng = random.Random(42)
-    res = cast("Callable[..., EagerTensorProtocol]", _np_flip_horizontal)(img, rng)
+    res = cast("EagerCallableProtocol", _np_flip_horizontal)(img, rng)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 2, 2)
 
 
@@ -111,7 +116,7 @@ def test_np_flip_vertical() -> None:
 
     img = np.array([[[1, 2], [3, 4]]])
     rng = random.Random(42)
-    res = cast("Callable[..., EagerTensorProtocol]", _np_flip_vertical)(img, rng)
+    res = cast("EagerCallableProtocol", _np_flip_vertical)(img, rng)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 2, 2)
 
 
@@ -121,7 +126,7 @@ def test_np_flip_both() -> None:
 
     img = np.array([[[1, 2], [3, 4]]])
     rng = random.Random(42)
-    res = cast("Callable[..., EagerTensorProtocol]", _np_flip_both)(img, rng)
+    res = cast("EagerCallableProtocol", _np_flip_both)(img, rng)
     assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 2, 2)
 
 
@@ -138,7 +143,7 @@ def test_np_random_flip() -> None:
 def test_calculate_rotation_matrix() -> None:
     """Test function test_calculate_rotation_matrix."""
     cfg = RotationConfig(theta=0.0, H=4, W=4, x=np.array([[0, 1], [0, 1]]), y=np.array([[0, 0], [1, 1]]))
-    (src_x, src_y) = cast("Callable[..., EagerTensorProtocol]", _calculate_rotation_matrix)(np, cfg)
+    (src_x, src_y) = cast("EagerCallableProtocol", _calculate_rotation_matrix)(np, cfg)
     assert cast("EagerTensorProtocol", getattr(src_x, "shape")) == (2, 2)
 
 
@@ -154,7 +159,7 @@ def test_get_interp_pixels() -> None:
     """Test function test_get_interp_pixels."""
     images = np.ones((1, 4, 4, 1))
     cfg = InterpPixelsConfig(images, np.array([[0]]), np.array([[1]]), np.array([[0]]), np.array([[1]]), 4, 4, (0, 0))
-    (Ia, Ib, Ic, Id) = cast("Callable[..., EagerTensorProtocol]", _get_interp_pixels)(np, cfg)
+    (Ia, Ib, Ic, Id) = cast("EagerCallableProtocol", _get_interp_pixels)(np, cfg)
     assert cast("EagerTensorProtocol", getattr(Ia, "shape")) == (1, 1)
 
 
@@ -193,12 +198,12 @@ def test_process_batch_item_and_apply_rotation_batch() -> None:
     images = np.ones((1, 4, 4, 1))
     out = np.zeros_like(images)
     angles = np.array([0.1])
-    (y, x) = cast("Callable[..., EagerTensorProtocol]", _create_rotation_mesh)(np, 4, 4)
+    (y, x) = cast("EagerCallableProtocol", _create_rotation_mesh)(np, 4, 4)
     options = ("bilinear", "constant", 0.0)
-    cfg = cast("Callable[..., EagerTensorProtocol]", BatchRotationConfig)(images, angles, 4, 4, x, y, options)
-    cast("Callable[..., EagerTensorProtocol]", _process_batch_item)(np, cfg, 0, out)
+    cfg = cast("EagerCallableProtocol", BatchRotationConfig)(images, angles, 4, 4, x, y, options)
+    cast("EagerCallableProtocol", _process_batch_item)(np, cfg, 0, out)
     assert out.shape == (1, 4, 4, 1)
-    res_batch = cast("Callable[..., EagerTensorProtocol]", _apply_rotation_batch)(np, cfg)
+    res_batch = cast("EagerCallableProtocol", _apply_rotation_batch)(np, cfg)
     assert cast("EagerTensorProtocol", getattr(res_batch, "shape")) == (1, 4, 4, 1)
 
 

@@ -14,7 +14,11 @@ if TYPE_CHECKING:
 
 
 def test_npz_load(mocker: EagerTensorProtocol) -> None:
-    """Test function test_npz_load."""
+    """Test function test_npz_load.
+
+    Args:
+        mocker: Test parameter `mocker`.
+    """
     fmt = NpzWeightFormat()
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.load_npz, "return_value", {"a": 1})

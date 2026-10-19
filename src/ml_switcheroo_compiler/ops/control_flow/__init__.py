@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Callable, Optional, cast  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -155,7 +155,7 @@ def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: Callable[.
         i, x = getattr(val, "__iter__")()
         return add(i, 1), body_fun(i, x)
 
-    _, res = cast("Callable[..., EagerTensorProtocol]", while_loop)(cond_fn, body_wrapper, (lower, init_val))
+    _, res = cast("EagerCallableProtocol", while_loop)(cond_fn, body_wrapper, (lower, init_val))
     return cast(TensorOrScalar, res)
 
 
@@ -182,7 +182,7 @@ def vectorized_map(fn: Callable[..., TensorOrScalar], elems: Tensor) -> TensorOr
     Returns:
         Tensor: The vectorized result tensor.
     """
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", vmap)(fn)(elems))
+    return cast(TensorOrScalar, cast("EagerCallableProtocol", vmap)(fn)(elems))
 
 
 def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -> TensorOrScalar:
@@ -340,9 +340,9 @@ def case(
         if idx == len(pred_fn_pairs):
             return default if default is not None else lambda: None
         pred, fn = pred_fn_pairs[idx]
-        return lambda: cast("Callable[..., EagerTensorProtocol]", cond)(pred, fn, _build_case(idx + 1))
+        return lambda: cast("EagerCallableProtocol", cond)(pred, fn, _build_case(idx + 1))
 
-    return cast(Optional[Tensor], cast("Callable[..., EagerTensorProtocol]", _build_case)(0)())
+    return cast(Optional[Tensor], cast("EagerCallableProtocol", _build_case)(0)())
 
 
 def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: TensorOrScalar = None) -> TensorOrScalar:
@@ -361,7 +361,7 @@ def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: Tenso
     """
     if not branch_fns:
         if default is not None:
-            return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", default)())
+            return cast(TensorOrScalar, cast("EagerCallableProtocol", default)())
         raise ValueError("switch_case requires at least one branch or a default")
 
     pred_fn_pairs = []
@@ -371,7 +371,7 @@ def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: Tenso
         pred = equal(branch_index, key_tensor)
         pred_fn_pairs.append((pred, getattr(branch_fns, "__getitem__")(key)))
 
-    return cast(TensorOrScalar, cast("Callable[..., EagerTensorProtocol]", case)(pred_fn_pairs, default))
+    return cast(TensorOrScalar, cast("EagerCallableProtocol", case)(pred_fn_pairs, default))
 
 
 @register_op("DebugInfs")
